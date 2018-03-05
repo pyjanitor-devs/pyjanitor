@@ -22,7 +22,7 @@ As of 4 March 2018, this is a super new project. The continually updated list of
 
 - Cleaning columns name (`clean_names(df)` or `df.clean_names()`)
 
-## two apis
+## apis
 
 There are three ways to use the API. The first is the functional API.
 

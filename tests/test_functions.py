@@ -1,5 +1,6 @@
 import pytest
-from janitor import clean_names, JanitorDataFrame
+from janitor import clean_names
+import janitor as jn
 import pandas as pd
 
 
@@ -22,7 +23,7 @@ def test_clean_names_functional(dataframe):
 
 
 def test_clean_names_method_chain(dataframe):
-    df = JanitorDataFrame(dataframe).clean_names()
+    df = jn.DataFrame(dataframe).clean_names()
     expected_columns = ['a', 'bell_chart', 'decorated-elephant']
     assert set(df.columns) == set(expected_columns)
 

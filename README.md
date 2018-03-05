@@ -42,7 +42,7 @@ import pandas as pd
 
 df = pd.DataFrame(...)
 df = janitor.DataFrame(df)
-df.clean_names(inplace=False).... # method chaining possible
+df.clean_names().... # method chaining possible
 ```
 
 The third is to use the `pipe()` method.

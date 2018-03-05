@@ -38,10 +38,11 @@ The second is the wrapped `pandas` DataFrame.
 
 ```python
 from janitor import clean_names
+import janitor as jn
 import pandas as pd
 
 df = pd.DataFrame(...)
-df = janitor.DataFrame(df)
+df = jn.DataFrame(df)
 df.clean_names().... # method chaining possible
 ```
 

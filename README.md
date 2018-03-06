@@ -22,7 +22,7 @@ pip install git+https://github.com/ericmjl/pyjanitor
 As of 4 March 2018, this is a super new project. The continually updated list of functions are:
 
 - Cleaning columns name (`clean_names(df)` or `df.clean_names()`)
-- Removing empty rows and columns.
+- Removing empty rows and columns. (`remove_empty(df)` or `df.remove_empty()`)
 
 ## apis
 

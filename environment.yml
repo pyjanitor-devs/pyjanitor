@@ -9,3 +9,5 @@ dependencies:
 - pytest
 - ipython
 - ipykernel
+- sphinx
+- recommonmark

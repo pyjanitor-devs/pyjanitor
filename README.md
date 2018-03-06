@@ -7,6 +7,7 @@ Python implementation of the R package [janitor](https://github.com/sfirke/janit
 It's well-explained in the R package documentation, but the high level summary is this:
 
 1. If all column names are **lowercase** and **underscored**, this makes it much, easier for data scientists to do their coding. No more dealing with crazy spaces and upper/lower-case mismatches. (I pull my hair out over this all the time!)
+1. If all empty column names and rows were removed prior to data analysis, a lot of hurt w.r.t. checking shapes could be eliminated!
 
 ## installation
 

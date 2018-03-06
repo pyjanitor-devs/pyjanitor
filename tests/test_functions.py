@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 import janitor as jn
-from janitor import clean_names, get_dupes, remove_empty
+from janitor import clean_names, encode_categorical, get_dupes, remove_empty
 
 
 @pytest.fixture
@@ -61,3 +61,11 @@ def test_get_dupes():
     df2['b'] = [1, 2, 3]
     df2_dupes = get_dupes(df2)
     assert df2_dupes.shape == (0, 2)
+
+
+def test_encode_categorical():
+    df = pd.DataFrame()
+    df['class_label'] = ['test1', 'test2', 'test1', 'test2']
+    df['numbers'] = [1, 2, 3, 2]
+    df = encode_categorical(df, 'class_label')
+    assert df['class_label'].dtypes == 'category'

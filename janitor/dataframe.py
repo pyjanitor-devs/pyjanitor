@@ -1,6 +1,6 @@
 from pandas import DataFrame, Series
 
-from .functions import clean_names, get_dupes, remove_empty
+from .functions import clean_names, encode_categorical, get_dupes, remove_empty
 
 
 class JanitorSeries(Series):
@@ -30,3 +30,6 @@ class JanitorDataFrame(DataFrame):
 
     def get_dupes(self, columns=None):
         return get_dupes(self, columns)
+
+    def encode_categorical(self, columns):
+        return encode_categorical(self, columns)

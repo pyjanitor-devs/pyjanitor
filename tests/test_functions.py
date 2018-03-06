@@ -1,8 +1,9 @@
-import pytest
-from janitor import clean_names, remove_empty
-import janitor as jn
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
+
+import janitor as jn
+from janitor import clean_names, get_dupes, remove_empty
 
 
 @pytest.fixture
@@ -46,3 +47,17 @@ def test_clean_names_pipe(dataframe):
 def test_remove_empty(null_df):
     df = remove_empty(null_df)
     assert df.shape == (8, 2)
+
+
+def test_get_dupes():
+    df = pd.DataFrame()
+    df['a'] = [1, 2, 1]
+    df['b'] = [1, 2, 1]
+    df_dupes = get_dupes(df)
+    assert df_dupes.shape == (2, 2)
+
+    df2 = pd.DataFrame()
+    df2['a'] = [1, 2, 3]
+    df2['b'] = [1, 2, 3]
+    df2_dupes = get_dupes(df2)
+    assert df2_dupes.shape == (0, 2)

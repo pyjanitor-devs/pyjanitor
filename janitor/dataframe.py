@@ -1,5 +1,6 @@
-from pandas import Series, DataFrame
-from .functions import clean_names, remove_empty
+from pandas import DataFrame, Series
+
+from .functions import clean_names, get_dupes, remove_empty
 
 
 class JanitorSeries(Series):
@@ -26,3 +27,6 @@ class JanitorDataFrame(DataFrame):
 
     def remove_empty(self):
         return remove_empty(self)
+
+    def get_dupes(self, columns=None):
+        return get_dupes(self, columns)

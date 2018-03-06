@@ -21,39 +21,41 @@ pip install git+https://github.com/ericmjl/pyjanitor
 As of 4 March 2018, this is a super new project. The continually updated list of functions are:
 
 - Cleaning columns name (`clean_names(df)` or `df.clean_names()`)
+- Removing empty rows and columns.
 
 ## apis
 
 There are three ways to use the API. The first is the functional API.
 
 ```python
-from janitor import clean_names
+from janitor import clean_names, remove_empty
 import pandas as pd
 
 df = pd.DataFrame(...)
 df = clean_names(df)
+df = remove_empty(df)
 ```
 
 The second is the wrapped `pandas` DataFrame.
 
 ```python
-from janitor import clean_names
 import janitor as jn
 import pandas as pd
 
 df = pd.DataFrame(...)
 df = jn.DataFrame(df)
-df.clean_names().... # method chaining possible
+df.clean_names().remove_empty()... # method chaining possible
 ```
 
 The third is to use the `pipe()` method.
 
 ```python
-from janitor import clean_names
+from janitor import clean_names, remove_empty
 import pandas as pd
 
 df = pd.DataFrame(...)
 (df.pipe(clean_names)
+   .pipe(remove_empty)
    .pipe(...))
 ```
 

@@ -1,5 +1,5 @@
 from pandas import Series, DataFrame
-from .functions import clean_names
+from .functions import clean_names, remove_empty
 
 
 class JanitorSeries(Series):
@@ -23,3 +23,6 @@ class JanitorDataFrame(DataFrame):
 
     def clean_names(self):
         return clean_names(self)
+
+    def remove_empty(self):
+        return remove_empty(self)

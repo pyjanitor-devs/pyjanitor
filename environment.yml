@@ -7,3 +7,5 @@ dependencies:
 - python=3.6
 - pandas
 - pytest
+- ipython
+- ipykernel

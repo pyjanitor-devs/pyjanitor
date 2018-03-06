@@ -23,6 +23,7 @@ As of 4 March 2018, this is a super new project. The continually updated list of
 
 - Cleaning columns name (`clean_names(df)` or `df.clean_names()`)
 - Removing empty rows and columns. (`remove_empty(df)` or `df.remove_empty()`)
+- Identifying duplicate entries (`get_dupes(df, columns=[...])` or `df.get_dupes(columns=[...])`)
 
 ## apis
 

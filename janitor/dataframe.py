@@ -1,6 +1,7 @@
 from pandas import DataFrame, Series
 
-from .functions import clean_names, encode_categorical, get_dupes, remove_empty
+from .functions import (clean_names, encode_categorical, get_dupes,
+                        get_features_targets, remove_empty, rename_column)
 
 
 class JanitorSeries(Series):
@@ -33,3 +34,9 @@ class JanitorDataFrame(DataFrame):
 
     def encode_categorical(self, columns):
         return encode_categorical(self, columns)
+
+    def rename_column(self, old, new):
+        return rename_column(self, old, new)
+
+    def get_features_targets(self, target_columns, feature_columns=None):
+        return get_features_targets(self, target_columns, feature_columns)

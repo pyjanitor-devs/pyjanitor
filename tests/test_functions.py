@@ -69,3 +69,16 @@ def test_encode_categorical():
     df['numbers'] = [1, 2, 3, 2]
     df = encode_categorical(df, 'class_label')
     assert df['class_label'].dtypes == 'category'
+
+
+def test_get_features_targets(dataframe):
+    dataframe = jn.DataFrame(dataframe).clean_names()
+    X, y = dataframe.get_features_targets(target_columns='bell_chart')
+    assert X.shape == (3, 2)
+    assert y.shape == (3,)
+
+
+def test_rename_column(dataframe):
+    dataframe = jn.DataFrame(dataframe).clean_names()
+    df = dataframe.rename_column('a', 'index')
+    assert set(df.columns) == set(['index', 'bell_chart', 'decorated-elephant'])  # noqa: E501

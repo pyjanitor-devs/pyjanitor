@@ -23,7 +23,7 @@ def remove_empty(df):
     Drop all rows and columns that are completely null.
 
     Implementation is shamelessly copied from StackOverflow:
-    https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
+    https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
 
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame object.

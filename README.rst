@@ -1,7 +1,7 @@
 pyjanitor
 ===========
 
-Python implementation of the R package `janitor`_].
+Python implementation of the R package `janitor`_.
 
 .. _janitor: https://github.com/sfirke/janitor
 

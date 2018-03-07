@@ -118,7 +118,7 @@ def encode_categorical(df, columns):
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
             assert col in df.columns, \
-                JanitorError(f"{col} missing from dataframe columns!")
+                JanitorError("{col} missing from dataframe columns!".format(col=col))  # noqa: E501
             df[col] = pd.Categorical(df[col])
     elif isinstance(columns, str):
         df[columns] = pd.Categorical(df[columns])

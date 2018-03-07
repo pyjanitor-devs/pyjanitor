@@ -24,7 +24,7 @@ def clean_names(df):
         df = jn.DataFrame(df).clean_names()
 
     :param df: The pandas DataFrame object.
-    :returns: A pandas DataFrame object.
+    :returns: A pandas DataFrame.
     """
     columns = [c.lower().replace(' ', '_') for c in df.columns]
     df.columns = columns
@@ -53,7 +53,7 @@ def remove_empty(df):
         df = jn.DataFrame(df).remove_empty()
 
     :param df: The pandas DataFrame object.
-    :returns: A pandas DataFrame object.
+    :returns: A pandas DataFrame.
     """
 
     nanrows = df.index[df.isnull().all(axis=1)]
@@ -109,11 +109,12 @@ def encode_categorical(df, columns):
 
         df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        jn.DataFrame(df).encode_categorical(, columns=categorical_cols)
+        jn.DataFrame(df).encode_categorical(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)
         of column names.
+    :returns: A pandas DataFrame
     """
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
@@ -151,7 +152,7 @@ def get_features_targets(df, target_columns, feature_columns=None):
 
         df = pd.DataFrame(...)
         target_cols = ['output1', 'output2']
-        jn.DataFrame(df).get_features_targets(, target_columns=target_cols)
+        X, y = jn.DataFrame(df).get_features_targets(target_columns=target_cols)  # noqa: E501
 
     :param df: The pandas DataFrame object.
     :param str/iterable target_columns: Either a column name or an iterable
@@ -159,8 +160,8 @@ def get_features_targets(df, target_columns, feature_columns=None):
     :param str/iterable feature_columns: (optional) The column name or iterable
         of column names that are the features (a.k.a. predictors) used to
         predict the targets.
-    :returns: (X, Y) the feature matrix (X) and the target matrix (Y).
-
+    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both are
+        pandas DataFrames.
     """
     Y = df[target_columns]
 
@@ -180,8 +181,25 @@ def rename_column(df, old, new):
     """
     Rename a column in place.
 
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = rename_column("old_column_name", "new_column_name")
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        jn.DataFrame(df).rename_column("old_column_name", "new_column_name")
+
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
     changing, then use the `pandas.DataFrame.rename({'old': 'new'})` syntax.
+
+    :param str old: The old column name.
+    :param str new: The new column name.
+    :returns: A pandas DataFrame.
     """
     return df.rename(columns={old: new})

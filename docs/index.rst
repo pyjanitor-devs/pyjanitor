@@ -11,6 +11,7 @@ Welcome to pyjanitor's documentation!
    :caption: Contents:
 
    api
+   contributing
 
 .. include:: ../README.rst
 

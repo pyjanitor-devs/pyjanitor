@@ -10,8 +10,8 @@ why janitor?
 
 It's well-explained in the R package documentation, but the high level summary is this:
 
-1. If all column names are **lowercase** and **underscored**, this makes it much, easier for data scientists to do their coding. No more dealing with crazy spaces and upper/lower-case mismatches. (I pull my hair out over this all the time!)
-1. If all empty column names and rows were removed prior to data analysis, a lot of hurt w.r.t. checking shapes could be eliminated!
+- If all column names are **lowercase** and **underscored**, this makes it much, easier for data scientists to do their coding. No more dealing with crazy spaces and upper/lower-case mismatches. (I pull my hair out over this all the time!)
+- If all empty column names and rows were removed prior to data analysis, a lot of hurt w.r.t. checking shapes could be eliminated!
 
 installation
 ------------
@@ -40,8 +40,8 @@ apis
 
 The idea behind the API is two-fold:
 
-1. Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
-1. Add other utility functions that make it easy to do data cleaning in `pandas`.
+- Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
+- Add other utility functions that make it easy to do data cleaning in `pandas`.
 
 As such, there are three ways to use the API. The first is the functional API.
 

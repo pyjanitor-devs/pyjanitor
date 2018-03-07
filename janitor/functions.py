@@ -10,6 +10,19 @@ def clean_names(df):
     Takes all column names, converts them to lowercase, then replaces all
     spaces with underscores.
 
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = clean_names(df)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        df = jn.DataFrame(df).clean_names()
+
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame object.
     """
@@ -22,8 +35,22 @@ def remove_empty(df):
     """
     Drop all rows and columns that are completely null.
 
-    Implementation is shamelessly copied from StackOverflow:
-    https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
+    Implementation is shamelessly copied from `StackOverflow`_.
+
+    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = remove_empty(df)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        df = jn.DataFrame(df).remove_empty()
 
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame object.
@@ -42,11 +69,25 @@ def get_dupes(df, columns=None):
     """
     Returns all duplicate rows.
 
+    Functional usage example:
+
+    .. code-block:: python
+
+        get_dupes(df)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        jn.DataFrame(df).get_dupes()
+
     :param df: The pandas DataFrame object.
     :param str/iterable columns: (optional) A column name or an iterable (list
         or tuple) of column names. Following pandas API, this only considers
         certain columns for identifying duplicates. Defaults to using all
         columns.
+    :returns: The duplicate rows, as a pandas DataFrame.
     """
     dupes = df.duplicated(subset=columns, keep=False)
     return df[dupes == True]  # noqa: E712
@@ -55,6 +96,20 @@ def get_dupes(df, columns=None):
 def encode_categorical(df, columns):
     """
     Encode the specified columns as categorical.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        encode_categorical(df, columns="my_categorical_column")  # one way
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        categorical_cols = ['col1', 'col2', 'col4']
+        jn.DataFrame(df).encode_categorical(, columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)
@@ -78,11 +133,25 @@ def get_features_targets(df, target_columns, feature_columns=None):
 
     The behaviour is as such:
 
-    1. `target_columns` is mandatory.
-    1. If `feature_columns` is present, then we will respect the column names
-       inside there.
-    1. If `feature_columns` is not passed in, then we will assume that the
-       rest of the columns are feature columns, and return them.
+    - `target_columns` is mandatory.
+    - If `feature_columns` is present, then we will respect the column names
+      inside there.
+    - If `feature_columns` is not passed in, then we will assume that the
+      rest of the columns are feature columns, and return them.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        X, y = get_features_targets(df, target_columns="measurement")
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        target_cols = ['output1', 'output2']
+        jn.DataFrame(df).get_features_targets(, target_columns=target_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable target_columns: Either a column name or an iterable
@@ -91,6 +160,7 @@ def get_features_targets(df, target_columns, feature_columns=None):
         of column names that are the features (a.k.a. predictors) used to
         predict the targets.
     :returns: (X, Y) the feature matrix (X) and the target matrix (Y).
+
     """
     Y = df[target_columns]
 
@@ -112,6 +182,6 @@ def rename_column(df, old, new):
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
-    changing, then use the pandas DataFrame.rename({'old': 'new'}) syntax.
+    changing, then use the `pandas.DataFrame.rename({'old': 'new'})` syntax.
     """
     return df.rename(columns={old: new})

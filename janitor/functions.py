@@ -37,7 +37,7 @@ def remove_empty(df):
 
     Implementation is shamelessly copied from `StackOverflow`_.
 
-    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
+    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
 
     Functional usage example:
 

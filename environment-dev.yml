@@ -11,3 +11,4 @@ dependencies:
 - ipykernel
 - sphinx
 - recommonmark
+- pipreqs

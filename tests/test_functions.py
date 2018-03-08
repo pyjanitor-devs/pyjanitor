@@ -3,7 +3,8 @@ import pandas as pd
 import pytest
 
 import janitor as jn
-from janitor import clean_names, encode_categorical, get_dupes, remove_empty
+from janitor import (clean_names, coalesce, encode_categorical, get_dupes,
+                     remove_empty, convert_excel_date)
 
 
 @pytest.fixture
@@ -82,3 +83,21 @@ def test_rename_column(dataframe):
     dataframe = jn.DataFrame(dataframe).clean_names()
     df = dataframe.rename_column('a', 'index')
     assert set(df.columns) == set(['index', 'bell_chart', 'decorated-elephant'])  # noqa: E501
+
+
+def test_coalesce():
+    df = pd.DataFrame({'a': [1, np.nan, 3],
+                       'b': [2, 3, 1],
+                       'c': [2, np.nan, 9]})
+
+    df = coalesce(df, ['a', 'b', 'c'], 'a')
+    assert df.shape == (3, 1)
+    assert pd.isnull(df).sum().sum() == 0
+
+
+def test_convert_excel_date():
+    df = pd.read_excel('../examples/dirty_data.xlsx')
+    df = jn.DataFrame(df).clean_names()
+    df = convert_excel_date(df, 'hire_date')
+
+    assert df['hire_date'].dtype == 'M8[ns]'

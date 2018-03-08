@@ -1,3 +1,6 @@
+import datetime as dt
+from functools import reduce
+
 import pandas as pd
 
 from .errors import JanitorError
@@ -192,7 +195,7 @@ def rename_column(df, old, new):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        jn.DataFrame(df).rename_column("old_column_name", "new_column_name")
+        df = jn.DataFrame(df).rename_column("old_column_name", "new_column_name")  # noqa: E501
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -203,3 +206,73 @@ def rename_column(df, old, new):
     :returns: A pandas DataFrame.
     """
     return df.rename(columns={old: new})
+
+
+def coalesce(df, columns, new_column_name):
+    """
+    Coalesces two or more columns of data in order of column names provided.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = coalesce(df, columns=['col1', 'col2'])
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        df = jn.DataFrame(df).coalesce(['col1', 'col2'])
+
+
+    The result of this function is that we take the first non-null value across
+    rows.
+
+    This is more syntactic diabetes! For R users, this should look familiar to
+    `dplyr`'s `coalesce` function; for Python users, the interface should be
+    more intuitive than the `combine_first` method (which we're just using
+    internally anyways).
+
+    :param df: A pandas DataFrame.
+    :param columns: A list of column names.
+    :param str new_column_name: The new column name after combining.
+    :returns: A pandas DataFrame.
+    """
+    series = [df[c] for c in columns]
+
+    def _coalesce(series1, series2):
+        return series1.combine_first(series2)
+    df = df.drop(columns=columns)
+    df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
+    return df
+
+
+def convert_excel_date(df, column):
+    """
+    Convert Excel's serial date format into Python datetime format.
+
+    Implementation is also from `Stack Overflow`.
+
+    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
+
+    Functional usage example:
+
+    .. code-block: python
+
+        df = convert_excel_date(df, column='date')
+
+    Method chaining example:
+
+    ..code-block: python
+
+        df = pd.DataFrame(...)
+        df = jn.DataFrame(df).convert_excel_date('date')
+
+    :param df: A pandas DataFrame.
+    :param str column: A column name.
+    :returns: A pandas DataFrame with corrected dates.
+    """
+    df[column] = (pd.TimedeltaIndex(df[column], unit='d')
+                  + dt.datetime(1899, 12, 30))
+    return df

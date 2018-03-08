@@ -1,7 +1,8 @@
 from pandas import DataFrame, Series
 
-from .functions import (clean_names, encode_categorical, get_dupes,
-                        get_features_targets, remove_empty, rename_column)
+from .functions import (clean_names, coalesce, convert_excel_date,
+                        encode_categorical, get_dupes, get_features_targets,
+                        remove_empty, rename_column)
 
 
 class JanitorSeries(Series):
@@ -40,3 +41,9 @@ class JanitorDataFrame(DataFrame):
 
     def get_features_targets(self, target_columns, feature_columns=None):
         return get_features_targets(self, target_columns, feature_columns)
+
+    def coalesce(self, columns, new_column_name):
+        return coalesce(self, columns, new_column_name)
+
+    def convert_excel_date(self, column):
+        return convert_excel_date(self, column)

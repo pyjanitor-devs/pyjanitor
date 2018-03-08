@@ -254,7 +254,7 @@ def convert_excel_date(df, column):
 
     Implementation is also from `Stack Overflow`.
 
-    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
+    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas  # noqa: E501
 
     Functional usage example:
 

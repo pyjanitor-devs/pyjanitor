@@ -36,6 +36,8 @@ As of 4 March 2018, this is a super new project. The continually updated list of
 - Encoding columns as categorical
 - Splitting your data into features and targets (for machine learning)
 - Easily renaming individual columns
+- Coalesce multiple columns into a single column
+- Convert excel date (serial format) into a Python datetime format.
 
 apis
 ----

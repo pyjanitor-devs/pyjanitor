@@ -13,3 +13,6 @@ dependencies:
 - recommonmark
 - pipreqs
 - flake8
+- xlrd
+- pip:
+  - sphinxcontrib-fulltoc

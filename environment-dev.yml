@@ -14,5 +14,6 @@ dependencies:
 - pipreqs
 - flake8
 - xlrd
+- missingno
 - pip:
   - sphinxcontrib-fulltoc

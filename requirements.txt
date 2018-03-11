@@ -1,5 +1,5 @@
-pytest==3.4.1
+pytest==3.4.2
 pandas==0.22.0
 numpy==1.14.1
-setuptools==38.5.1
-sphinxcontrib-fulltoc
+setuptools==38.5.2
+sphinxcontrib-fulltoc==1.2.0

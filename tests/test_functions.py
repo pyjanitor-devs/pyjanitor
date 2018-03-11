@@ -96,7 +96,7 @@ def test_coalesce():
 
 
 def test_convert_excel_date():
-    df = pd.read_excel('../examples/dirty_data.xlsx')
+    df = pd.read_excel('examples/dirty_data.xlsx')
     df = jn.DataFrame(df).clean_names()
     df = convert_excel_date(df, 'hire_date')
 

@@ -1,6 +1,9 @@
 pyjanitor
 ===========
 
+.. image:: https://travis-ci.org/ericmjl/pyjanitor.svg?branch=master
+    :target: https://travis-ci.org/ericmjl/pyjanitor
+
 Python implementation of the R package `janitor`_.
 
 .. _janitor: https://github.com/sfirke/janitor

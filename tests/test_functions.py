@@ -101,3 +101,8 @@ def test_convert_excel_date():
     df = convert_excel_date(df, 'hire_date')
 
     assert df['hire_date'].dtype == 'M8[ns]'
+
+
+def test_fill_empty(null_df):
+    df = jn.DataFrame(null_df).fill_empty(columns=['2'], value=3)
+    assert set(df.loc[:, '2']) == set([3])

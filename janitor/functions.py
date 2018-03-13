@@ -199,7 +199,7 @@ def rename_column(df, old, new):
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
-    changing, then use the `pandas.DataFrame.rename({'old': 'new'})` syntax.
+    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
 
     :param str old: The old column name.
     :param str new: The new column name.
@@ -230,9 +230,9 @@ def coalesce(df, columns, new_column_name):
     rows.
 
     This is more syntactic diabetes! For R users, this should look familiar to
-    `dplyr`'s `coalesce` function; for Python users, the interface should be
-    more intuitive than the `combine_first` method (which we're just using
-    internally anyways).
+    `dplyr`'s `coalesce` function; for Python users, the interface
+    should be more intuitive than the :py:meth:`pandas.Series.combine_first`
+    method (which we're just using internally anyways).
 
     :param df: A pandas DataFrame.
     :param columns: A list of column names.
@@ -258,13 +258,13 @@ def convert_excel_date(df, column):
 
     Functional usage example:
 
-    .. code-block: python
+    .. code-block:: python
 
         df = convert_excel_date(df, column='date')
 
     Method chaining example:
 
-    ..code-block: python
+    .. code-block:: python
 
         df = pd.DataFrame(...)
         df = jn.DataFrame(df).convert_excel_date('date')
@@ -275,4 +275,42 @@ def convert_excel_date(df, column):
     """
     df[column] = (pd.TimedeltaIndex(df[column], unit='d')
                   + dt.datetime(1899, 12, 30))
+    return df
+
+
+def fill_empty(df, columns, value):
+    """
+    Fill `NaN` values in specified columns with a given value.
+
+    Super sugary syntax that wraps :py:meth:`pandas.DataFrame.fillna`.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = fill_empty(df, columns=['col1', 'col2'], value=0)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        df = jn.DataFrame(df).fill_empty(df, columns='col1', value=0)
+
+    :param df: A pandas DataFrame.
+    :param columns: Either a `str` or `list` or `tuple`. If a string is passed
+        in, then only that column will be filled; if a list or tuple of strings
+        are passed in, then they will all be filled with the same value.
+    :param value: The value that replaces the `NaN` values.
+    """
+    if isinstance(columns, list) or isinstance(columns, tuple):
+        for col in columns:
+            assert col in df.columns, \
+                JanitorError("{col} missing from dataframe columns!".format(col=col))  # noqa: E501
+            df[col] = df[col].fillna(value)
+    elif isinstance(columns, str):
+        df[columns] = df[columns].fillna(value)
+    else:
+        raise JanitorError('kwarg `columns` must be a string or iterable!')
+
     return df

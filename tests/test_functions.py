@@ -11,7 +11,7 @@ from janitor import (clean_names, coalesce, encode_categorical, get_dupes,
 def dataframe():
     data = {
         'a': [1, 2, 3],
-        'Bell Chart': [1, 2, 3],
+        'Bell__Chart': [1, 2, 3],
         'decorated-elephant': [1, 2, 3],
     }
     df = pd.DataFrame(data)
@@ -28,20 +28,20 @@ def null_df():
 
 def test_clean_names_functional(dataframe):
     df = clean_names(dataframe)
-    expected_columns = ['a', 'bell_chart', 'decorated-elephant']
+    expected_columns = ['a', 'bell_chart', 'decorated_elephant']
 
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_method_chain(dataframe):
     df = jn.DataFrame(dataframe).clean_names()
-    expected_columns = ['a', 'bell_chart', 'decorated-elephant']
+    expected_columns = ['a', 'bell_chart', 'decorated_elephant']
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_pipe(dataframe):
     df = dataframe.pipe(clean_names)
-    expected_columns = ['a', 'bell_chart', 'decorated-elephant']
+    expected_columns = ['a', 'bell_chart', 'decorated_elephant']
     assert set(df.columns) == set(expected_columns)
 
 
@@ -82,7 +82,7 @@ def test_get_features_targets(dataframe):
 def test_rename_column(dataframe):
     dataframe = jn.DataFrame(dataframe).clean_names()
     df = dataframe.rename_column('a', 'index')
-    assert set(df.columns) == set(['index', 'bell_chart', 'decorated-elephant'])  # noqa: E501
+    assert set(df.columns) == set(['index', 'bell_chart', 'decorated_elephant'])  # noqa: E501
 
 
 def test_coalesce():

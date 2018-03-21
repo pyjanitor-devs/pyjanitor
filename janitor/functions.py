@@ -5,6 +5,8 @@ import pandas as pd
 
 from .errors import JanitorError
 
+import re
+
 
 def clean_names(df):
     """
@@ -29,8 +31,26 @@ def clean_names(df):
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame.
     """
-    columns = [c.lower().replace(' ', '_') for c in df.columns]
-    df.columns = columns
+    columns = [(c.lower()
+                .replace(' ', '_')
+                .replace('/', '_')
+                .replace(':', '_')
+                .replace("'", '')
+                .replace('’', '')
+                .replace(',', '_')
+                .replace('?', '_')
+                .replace('-', '_')
+                .replace('(', '_')
+                .replace(')', '_')
+                .replace('.', '_')
+                ) for c in df.columns]
+
+    newcolumns = []
+    for col in columns:
+        # NOTE: Replace repeating underscores with single ones
+        newcol = re.sub('[_]{2,}', '_', col)
+        newcolumns.append(newcol)
+    df.columns = newcolumns
     return df
 
 

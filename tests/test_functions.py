@@ -124,7 +124,7 @@ def test_multiindex_clean_names_functional(multiindex_dataframe):
 
     levels = [
         ['a', 'bell_chart', 'decorated_elephant'],
-        ['b', 'normal_distribution', 'rip_rhino_']
+        ['b', 'normal_distribution', 'r_i_p_rhino_']
     ]
 
     labels = [[1, 0, 2], [1, 0, 2]]
@@ -152,7 +152,7 @@ def test_multiindex_clean_names_pipe(multiindex_dataframe):
 
     levels = [
         ['a', 'bell_chart', 'decorated_elephant'],
-        ['b', 'normal_distribution', 'rip_rhino_']
+        ['b', 'normal_distribution', 'r_i_p_rhino_']
     ]
 
     labels = [[0, 1, 2], [0, 1, 2]]

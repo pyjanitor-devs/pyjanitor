@@ -26,6 +26,17 @@ def null_df():
     return df
 
 
+@pytest.fixture
+def multiindex_dataframe():
+    data = {
+        ('a', 'b'): [1, 2, 3],
+        ('Bell__Chart', 'Normal  Distribution'): [1, 2, 3],
+        ('decorated-elephant', "r.i.p-rhino :'("): [1, 2, 3],
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
 def test_clean_names_functional(dataframe):
     df = clean_names(dataframe)
     expected_columns = ['a', 'bell_chart', 'decorated_elephant']
@@ -106,3 +117,45 @@ def test_convert_excel_date():
 def test_fill_empty(null_df):
     df = jn.DataFrame(null_df).fill_empty(columns=['2'], value=3)
     assert set(df.loc[:, '2']) == set([3])
+
+
+def test_multiindex_clean_names_functional(multiindex_dataframe):
+    df = clean_names(multiindex_dataframe)
+
+    levels = [
+        ['a', 'bell_chart', 'decorated_elephant'],
+        ['b', 'normal_distribution', 'r_i_p_rhino_']
+    ]
+
+    labels = [[1, 0, 2], [1, 0, 2]]
+
+    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    assert set(df.columns) == set(expected_columns)
+
+
+def test_multiindex_clean_names_method_chain(multiindex_dataframe):
+    df = jn.DataFrame(multiindex_dataframe).clean_names()
+
+    levels = [
+        ['a', 'bell_chart', 'decorated_elephant'],
+        ['b', 'normal_distribution', 'r_i_p_rhino_']
+    ]
+
+    labels = [[0, 1, 2], [0, 1, 2]]
+
+    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    assert set(df.columns) == set(expected_columns)
+
+
+def test_multiindex_clean_names_pipe(multiindex_dataframe):
+    df = multiindex_dataframe.pipe(clean_names)
+
+    levels = [
+        ['a', 'bell_chart', 'decorated_elephant'],
+        ['b', 'normal_distribution', 'r_i_p_rhino_']
+    ]
+
+    labels = [[0, 1, 2], [0, 1, 2]]
+
+    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    assert set(df.columns) == set(expected_columns)

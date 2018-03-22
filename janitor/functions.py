@@ -31,26 +31,22 @@ def clean_names(df):
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame.
     """
-    columns = [(c.lower()
-                .replace(' ', '_')
-                .replace('/', '_')
-                .replace(':', '_')
-                .replace("'", '')
-                .replace('’', '')
-                .replace(',', '_')
-                .replace('?', '_')
-                .replace('-', '_')
-                .replace('(', '_')
-                .replace(')', '_')
-                .replace('.', '_')
-                ) for c in df.columns]
+    df = df.rename(
+        columns=lambda x: x.lower()
+                           .replace(' ', '_')
+                           .replace('/', '_')
+                           .replace(':', '_')
+                           .replace("'", '')
+                           .replace('’', '')
+                           .replace(',', '_')
+                           .replace('?', '_')
+                           .replace('-', '_')
+                           .replace('(', '_')
+                           .replace(')', '_')
+                           .replace('.', '_')
+    )
 
-    newcolumns = []
-    for col in columns:
-        # NOTE: Replace repeating underscores with single ones
-        newcol = re.sub('[_]{2,}', '_', col)
-        newcolumns.append(newcol)
-    df.columns = newcolumns
+    df = df.rename(columns=lambda x: re.sub('_+', '_', x))
     return df
 
 

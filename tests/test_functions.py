@@ -128,7 +128,7 @@ def test_multiindex_clean_names_functional(multiindex_dataframe):
     ]
 
     labels = [[1, 0, 2], [1, 0, 2]]
-    
+
     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
     assert set(df.columns) == set(expected_columns)
 
@@ -142,7 +142,7 @@ def test_multiindex_clean_names_method_chain(multiindex_dataframe):
     ]
 
     labels = [[0, 1, 2], [0, 1, 2]]
-    
+
     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
     assert set(df.columns) == set(expected_columns)
 
@@ -156,7 +156,6 @@ def test_multiindex_clean_names_pipe(multiindex_dataframe):
     ]
 
     labels = [[0, 1, 2], [0, 1, 2]]
-    
+
     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
     assert set(df.columns) == set(expected_columns)
-

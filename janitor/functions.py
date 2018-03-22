@@ -32,8 +32,8 @@ def clean_names(df):
     :returns: A pandas DataFrame.
     """
     df = df.rename(
-    	columns=lambda x: x.lower()
-	                       .replace(' ', '_')
+        columns=lambda x: x.lower()
+                           .replace(' ', '_')
                            .replace('/', '_')
                            .replace(':', '_')
                            .replace("'", '')
@@ -45,7 +45,7 @@ def clean_names(df):
                            .replace(')', '_')
                            .replace('.', '_')
     )
-    
+
     df = df.rename(columns=lambda x: re.sub('_+', '_', x))
     return df
 

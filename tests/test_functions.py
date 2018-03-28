@@ -159,3 +159,17 @@ def test_multiindex_clean_names_pipe(multiindex_dataframe):
 
     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
     assert set(df.columns) == set(expected_columns)
+
+
+def test_clean_names_strip_underscores(multiindex_dataframe):
+    df = clean_names(multiindex_dataframe, strip_underscores='both')
+
+    levels = [
+        ['a', 'bell_chart', 'decorated_elephant'],
+        ['b', 'normal_distribution', 'r_i_p_rhino']
+    ]
+
+    labels = [[1, 0, 2], [1, 0, 2]]
+
+    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    assert set(df.columns) == set(expected_columns)

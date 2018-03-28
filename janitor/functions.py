@@ -18,7 +18,9 @@ def _strip_underscores(df, strip_underscores=None):
         df = _strip_underscores(df, strip_underscores='left')
 
     :param df: The pandas DataFrame object.
-    :param strip_underscores: A str of either 'left', 'right' or 'both'.
+    :param strip_underscores: Removes the outer underscores from all column
+    names. Default None keeps outer underscores. Values can be either 'left',
+    'right' or 'both' or the respective shorthand 'l', 'r' and True.
     :returns: A pandas DataFrame.
     """
     underscore_options = [None, 'left', 'right', 'both', 'l', 'r', True]
@@ -57,7 +59,9 @@ def clean_names(df, strip_underscores=None):
         df = jn.DataFrame(df).clean_names()
 
     :param df: The pandas DataFrame object.
-    :param strip_underscores: A str of either 'left', 'right' or 'both'.
+    :param strip_underscores: Removes the outer underscores from all column
+    names. Default None keeps outer underscores. Values can be either 'left',
+    'right' or 'both' or the respective shorthand 'l', 'r' and True.
     :returns: A pandas DataFrame.
     """
     df = df.rename(
@@ -73,8 +77,7 @@ def clean_names(df, strip_underscores=None):
                            .replace('(', '_')
                            .replace(')', '_')
                            .replace('.', '_')
-
-                           )
+    )
 
     df = df.rename(columns=lambda x: re.sub('_+', '_', x))
     df = _strip_underscores(df, strip_underscores)
@@ -220,8 +223,8 @@ def get_features_targets(df, target_columns, feature_columns=None):
     else:
         if isinstance(target_columns, str):
             xcols = [c for c in df.columns if target_columns != c]
-        elif (isinstance(target_columns, list) or
-              isinstance(target_columns, tuple)):
+        elif (isinstance(target_columns, list)
+              or isinstance(target_columns, tuple)):
             xcols = [c for c in df.columns if c not in target_columns]
         X = df[xcols]
     return X, Y
@@ -320,8 +323,8 @@ def convert_excel_date(df, column):
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    df[column] = (pd.TimedeltaIndex(df[column], unit='d') +
-                  dt.datetime(1899, 12, 30))
+    df[column] = (pd.TimedeltaIndex(df[column], unit='d')
+                  + dt.datetime(1899, 12, 30))
     return df
 
 

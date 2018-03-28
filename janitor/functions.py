@@ -18,9 +18,10 @@ def _strip_underscores(df, strip_underscores=None):
         df = _strip_underscores(df, strip_underscores='left')
 
     :param df: The pandas DataFrame object.
-    :param strip_underscores: Removes the outer underscores from all column
-    names. Default None keeps outer underscores. Values can be either 'left',
-    'right' or 'both' or the respective shorthand 'l', 'r' and True.
+    :param strip_underscores: (optional) Removes the outer underscores from all
+        column names. Default None keeps outer underscores. Values can be
+        either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
+        and True.
     :returns: A pandas DataFrame.
     """
     underscore_options = [None, 'left', 'right', 'both', 'l', 'r', True]
@@ -31,7 +32,7 @@ def _strip_underscores(df, strip_underscores=None):
 
     if strip_underscores in ['left', 'l']:
         df = df.rename(columns=lambda x: x.lstrip('_'))
-    elif strip_underscores in ['right', 'r']:
+    elif strip_underscores in ['riaght', 'r']:
         df = df.rename(columns=lambda x: x.rstrip('_'))
     elif strip_underscores == 'both' or strip_underscores is True:
         df = df.rename(columns=lambda x: x.strip('_'))
@@ -59,9 +60,10 @@ def clean_names(df, strip_underscores=None):
         df = jn.DataFrame(df).clean_names()
 
     :param df: The pandas DataFrame object.
-    :param strip_underscores: Removes the outer underscores from all column
-    names. Default None keeps outer underscores. Values can be either 'left',
-    'right' or 'both' or the respective shorthand 'l', 'r' and True.
+    :param strip_underscores: (optional) Removes the outer underscores from all
+        column names. Default None keeps outer underscores. Values can be
+        either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
+        and True.
     :returns: A pandas DataFrame.
     """
     df = df.rename(

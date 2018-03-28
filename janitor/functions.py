@@ -8,7 +8,35 @@ from .errors import JanitorError
 import re
 
 
-def clean_names(df):
+def _strip_underscores(df, strip_underscores=None):
+    """
+    Strip underscores from the beginning, end or both of the
+    of the DataFrames column names.
+
+    .. code-block:: python
+
+        df = _strip_underscores(df, strip_underscores='left')
+
+    :param df: The pandas DataFrame object.
+    :param strip_underscores: A str of either 'left', 'right' or 'both'.
+    :returns: A pandas DataFrame.
+    """
+    underscore_options = [None, 'left', 'right', 'both', 'l', 'r', True]
+    if strip_underscores not in underscore_options:
+        raise JanitorError(
+            """strip_underscores must be one of: %s""" % underscore_options
+            )
+
+    if strip_underscores in ['left', 'l']:
+        df = df.rename(columns=lambda x: x.lstrip('_'))
+    elif strip_underscores in ['right', 'r']:
+        df = df.rename(columns=lambda x: x.rstrip('_'))
+    elif strip_underscores == 'both' or strip_underscores is True:
+        df = df.rename(columns=lambda x: x.strip('_'))
+    return df
+
+
+def clean_names(df, strip_underscores=None):
     """
     Clean column names.
 
@@ -29,6 +57,7 @@ def clean_names(df):
         df = jn.DataFrame(df).clean_names()
 
     :param df: The pandas DataFrame object.
+    :param strip_underscores: A str of either 'left', 'right' or 'both'.
     :returns: A pandas DataFrame.
     """
     df = df.rename(
@@ -44,9 +73,11 @@ def clean_names(df):
                            .replace('(', '_')
                            .replace(')', '_')
                            .replace('.', '_')
-    )
+
+                           )
 
     df = df.rename(columns=lambda x: re.sub('_+', '_', x))
+    df = _strip_underscores(df, strip_underscores)
     return df
 
 
@@ -189,8 +220,8 @@ def get_features_targets(df, target_columns, feature_columns=None):
     else:
         if isinstance(target_columns, str):
             xcols = [c for c in df.columns if target_columns != c]
-        elif (isinstance(target_columns, list)
-                or isinstance(target_columns, tuple)):
+        elif (isinstance(target_columns, list) or
+              isinstance(target_columns, tuple)):
             xcols = [c for c in df.columns if c not in target_columns]
         X = df[xcols]
     return X, Y
@@ -289,8 +320,8 @@ def convert_excel_date(df, column):
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    df[column] = (pd.TimedeltaIndex(df[column], unit='d')
-                  + dt.datetime(1899, 12, 30))
+    df[column] = (pd.TimedeltaIndex(df[column], unit='d') +
+                  dt.datetime(1899, 12, 30))
     return df
 
 

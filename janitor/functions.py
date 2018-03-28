@@ -32,7 +32,7 @@ def _strip_underscores(df, strip_underscores=None):
 
     if strip_underscores in ['left', 'l']:
         df = df.rename(columns=lambda x: x.lstrip('_'))
-    elif strip_underscores in ['riaght', 'r']:
+    elif strip_underscores in ['right', 'r']:
         df = df.rename(columns=lambda x: x.rstrip('_'))
     elif strip_underscores == 'both' or strip_underscores is True:
         df = df.rename(columns=lambda x: x.strip('_'))

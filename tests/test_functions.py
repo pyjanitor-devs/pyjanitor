@@ -162,6 +162,7 @@ def test_multiindex_clean_names_pipe(multiindex_dataframe):
 
 
 def test_clean_names_strip_underscores_both(multiindex_dataframe):
+    df = multiindex_dataframe.rename(columns=lambda x: '_' + x)
     df = clean_names(multiindex_dataframe, strip_underscores='both')
 
     levels = [
@@ -176,6 +177,7 @@ def test_clean_names_strip_underscores_both(multiindex_dataframe):
 
 
 def test_clean_names_strip_underscores_true(multiindex_dataframe):
+    df = multiindex_dataframe.rename(columns=lambda x: '_' + x)
     df = clean_names(multiindex_dataframe, strip_underscores=True)
 
     levels = [

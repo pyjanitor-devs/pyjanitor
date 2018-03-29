@@ -31,9 +31,9 @@ installation
 functionality
 -------------
 
-As of 4 March 2018, this is a super new project. The continually updated list of functions are:
+Current functionality includes:
 
-- Cleaning columns name
+- Cleaning columns name (multi-indexes are possible!)
 - Removing empty rows and columns
 - Identifying duplicate entries
 - Encoding columns as categorical

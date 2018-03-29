@@ -11,20 +11,13 @@ Python implementation of the R package `janitor`_.
 why janitor?
 ------------
 
-It's well-explained in the R package documentation, but the high level summary
-is this:
+It's well-explained in the R package documentation, but the high level summary is this:
 
-- If all column names are **lowercase** and **underscored**, this makes it
-much, easier for data scientists to do their coding. No more dealing with
-crazy spaces and upper/lower-case mismatches. (I pull my hair out over this
-all the time!)
+- If all column names are **lowercase** and **underscored**, this makes it much, easier for data scientists to do their coding. No more dealing with crazy spaces and upper/lower-case mismatches. (I pull my hair out over this all the time!)
 
-- If all empty column names and rows were removed prior to data analysis, a lot
-of hurt w.r.t. checking shapes could be eliminated!
+- If all empty column names and rows were removed prior to data analysis, a lot of hurt w.r.t. checking shapes could be eliminated!
 
-What if instead we had standard data cleaning routines implemented? Even
-better, what if they were Pythonic, easy to use, and explicit about exactly
-what they did? Perhaps we'd have a much easier time doing data science!
+What if instead we had standard data cleaning routines implemented? Even better, what if they were Pythonic, easy to use, and explicit about exactly what they did? Perhaps we'd have a much easier time doing data science!
 
 installation
 ------------
@@ -55,9 +48,7 @@ apis
 
 The idea behind the API is two-fold:
 
-- Copy the R package function names, but enable Pythonic use with method
-chaining or `pandas` piping.
-
+- Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
 - Add other utility functions that make it easy to do data cleaning in `pandas`.
 
 As such, there are three ways to use the API. The first is the functional API.
@@ -99,12 +90,6 @@ The third is to use the `pipe()` method.
 feature requests
 ----------------
 
-If you have a feature request, please post it as an issue on the GitHub
-repository issue tracker. Even better, put in a PR for it! I am more than
-happy to guide you through the codebase so that you can put in a contribution
-to the codebase.
+If you have a feature request, please post it as an issue on the GitHub repository issue tracker. Even better, put in a PR for it! I am more than happy to guide you through the codebase so that you can put in a contribution to the codebase.
 
-Because `pyjanitor` is currently maintained by volunteers and has no fiscal
-support, any feature requests will be prioritized according to what maintainers
-encounter as a need in our day-to-day jobs. Please temper expectations
-accordingly.
+Because `pyjanitor` is currently maintained by volunteers and has no fiscal support, any feature requests will be prioritized according to what maintainers encounter as a need in our day-to-day jobs. Please temper expectations accordingly.

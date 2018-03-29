@@ -21,11 +21,11 @@ What if instead we had standard data cleaning routines implemented? Even better,
 installation
 ------------
 
-`pyjanitor` is currently only installable from GitHub:
+`pyjanitor` is currently installable from PyPI:
 
 .. code-block:: bash
 
-    pip install git+https://github.com/ericmjl/pyjanitor
+    pip install pyjanitor
 
 
 functionality

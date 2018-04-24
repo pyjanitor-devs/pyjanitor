@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datetime as dt
 from functools import reduce
 
@@ -72,7 +73,7 @@ def clean_names(df, strip_underscores=None):
                            .replace('/', '_')
                            .replace(':', '_')
                            .replace("'", '')
-                           .replace('’', '')
+                           .replace(u'’', '')
                            .replace(',', '_')
                            .replace('?', '_')
                            .replace('-', '_')

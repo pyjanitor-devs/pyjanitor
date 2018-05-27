@@ -247,3 +247,18 @@ def test_clean_names_strip_underscores_l(multiindex_dataframe):
 
     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
     assert set(df.columns) == set(expected_columns)
+
+
+def test_clean_names_preserve_case_true(multiindex_dataframe):
+    df = multiindex_dataframe.rename(columns=lambda x: '_' + x)
+    df = clean_names(multiindex_dataframe, preserve_case=True)
+
+    levels = [
+        ['a', 'Bell_Chart', 'decorated_elephant'],
+        ['b', 'Normal_Distribution', 'r_i_p_rhino_']
+    ]
+
+    labels = [[1, 0, 2], [1, 0, 2]]
+
+    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    assert set(df.columns) == set(expected_columns)

@@ -40,7 +40,7 @@ def _strip_underscores(df, strip_underscores=None):
     return df
 
 
-def clean_names(df, strip_underscores=None):
+def clean_names(df, strip_underscores=None, preserve_case=False):
     """
     Clean column names.
 
@@ -65,11 +65,18 @@ def clean_names(df, strip_underscores=None):
         column names. Default None keeps outer underscores. Values can be
         either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
         and True.
+    :param preserve_case: (optional) Allows you to choose whether to make all
+    column names lowercase, or to preserve current cases. Default False makes
+    all characters lowercase.
     :returns: A pandas DataFrame.
     """
+    if preserve_case is False:
+        df = df.rename(
+            columns=lambda x: x.lower()
+        )
+
     df = df.rename(
-        columns=lambda x: x.lower()
-                           .replace(' ', '_')
+        columns=lambda x: x.replace(' ', '_')
                            .replace('/', '_')
                            .replace(':', '_')
                            .replace("'", '')
@@ -111,7 +118,6 @@ def remove_empty(df):
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame.
     """
-
     nanrows = df.index[df.isnull().all(axis=1)]
     df.drop(index=nanrows, inplace=True)
 

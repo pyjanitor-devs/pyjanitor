@@ -17,5 +17,6 @@ dependencies:
 - missingno
 - scikit-learn
 - twine
+- bumpversion
 - pip:
   - sphinxcontrib-fulltoc

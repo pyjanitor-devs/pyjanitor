@@ -16,5 +16,6 @@ dependencies:
 - xlrd
 - missingno
 - scikit-learn
+- twine
 - pip:
   - sphinxcontrib-fulltoc

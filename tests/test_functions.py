@@ -134,6 +134,7 @@ def test_multicolumn_label_encode():
     assert 'a_enc' in df.columns
     assert 'c_enc' in df.columns
 
+
 def test_multiindex_clean_names_functional(multiindex_dataframe):
     df = clean_names(multiindex_dataframe)
 

@@ -1,0 +1,6 @@
+include requirements.txt
+recursive-include examples
+recursive-include tests
+include *.rst
+recursive-include docs
+include LICENSE

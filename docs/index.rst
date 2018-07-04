@@ -13,6 +13,7 @@ Welcome to pyjanitor's documentation!
    api
    contributing
    example
+   authors
 
 .. include:: ../README.rst
 

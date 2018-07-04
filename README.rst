@@ -14,6 +14,7 @@ why janitor?
 It's well-explained in the R package documentation, but the high level summary is this:
 
 - If all column names are **lowercase** and **underscored**, this makes it much, easier for data scientists to do their coding. No more dealing with crazy spaces and upper/lower-case mismatches. (I pull my hair out over this all the time!)
+
 - If all empty column names and rows were removed prior to data analysis, a lot of hurt w.r.t. checking shapes could be eliminated!
 
 What if instead we had standard data cleaning routines implemented? Even better, what if they were Pythonic, easy to use, and explicit about exactly what they did? Perhaps we'd have a much easier time doing data science!
@@ -21,19 +22,19 @@ What if instead we had standard data cleaning routines implemented? Even better,
 installation
 ------------
 
-`pyjanitor` is currently only installable from GitHub:
+`pyjanitor` is currently installable from PyPI:
 
 .. code-block:: bash
 
-    pip install git+https://github.com/ericmjl/pyjanitor
+    pip install pyjanitor
 
 
 functionality
 -------------
 
-As of 4 March 2018, this is a super new project. The continually updated list of functions are:
+Current functionality includes:
 
-- Cleaning columns name
+- Cleaning columns name (multi-indexes are possible!)
 - Removing empty rows and columns
 - Identifying duplicate entries
 - Encoding columns as categorical

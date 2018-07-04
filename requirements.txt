@@ -3,4 +3,4 @@ pandas==0.23.1
 numpy==1.14.1
 setuptools==38.5.2
 sphinxcontrib-fulltoc==1.2.0
-scikit-learn=0.19.1
+scikit-learn=00.19.1

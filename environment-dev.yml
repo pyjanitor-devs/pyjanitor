@@ -15,5 +15,6 @@ dependencies:
 - flake8
 - xlrd
 - missingno
+- scikit-learn
 - pip:
   - sphinxcontrib-fulltoc

@@ -3,6 +3,8 @@ import datetime as dt
 from functools import reduce
 
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from warnings import warn
 
 from .errors import JanitorError
 
@@ -28,8 +30,7 @@ def _strip_underscores(df, strip_underscores=None):
     underscore_options = [None, 'left', 'right', 'both', 'l', 'r', True]
     if strip_underscores not in underscore_options:
         raise JanitorError(
-            """strip_underscores must be one of: %s""" % underscore_options
-            )
+            f"strip_underscores must be one of: {underscore_options}")
 
     if strip_underscores in ['left', 'l']:
         df = df.rename(columns=lambda x: x.lstrip('_'))
@@ -157,7 +158,7 @@ def get_dupes(df, columns=None):
 
 def encode_categorical(df, columns):
     """
-    Encode the specified columns as categorical.
+    Encode the specified columns as categorical column in pandas.
 
     Functional usage example:
 
@@ -178,6 +179,9 @@ def encode_categorical(df, columns):
         of column names.
     :returns: A pandas DataFrame
     """
+    msg = """If you are looking to encode categorical to use with scikit-learn,
+    please use the label_encode method instead."""
+    warn(msg)
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
             assert col in df.columns, \
@@ -185,6 +189,49 @@ def encode_categorical(df, columns):
             df[col] = pd.Categorical(df[col])
     elif isinstance(columns, str):
         df[columns] = pd.Categorical(df[columns])
+    else:
+        raise JanitorError('kwarg `columns` must be a string or iterable!')
+    return df
+
+
+def label_encode(df, columns):
+    """
+    Convenience function to convert labels into numerical data.
+
+    This function will create a new column with the string "_enc" appended
+    after the original column's name.
+
+    This function behaves differently from `encode_categorical`. This function
+    creates a new column of numeric data. `encode_categorical` replaces the
+    dtype of the original column with a "categorical" dtype.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        label_encode(df, columns="my_categorical_column")  # one way
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        categorical_cols = ['col1', 'col2', 'col4']
+        jn.DataFrame(df).label_encode(columns=categorical_cols)
+
+    :param df: The pandas DataFrame object.
+    :param str/iterable columns: A column name or an iterable (list or tuple)
+        of column names.
+    :returns: A pandas DataFrame
+    """
+    le = LabelEncoder()
+    if isinstance(columns, list) or isinstance(columns, tuple):
+        for col in columns:
+            assert col in df.columns, JanitorError(f"{col} missing from columns")  # noqa: E501
+            df[f'{col}_enc'] = le.fit_transform(df[col])
+    elif isinstance(columns, str):
+        assert columns in df.columns, JanitorError(f"{columns} missing from columns")  # noqa: E501
+        df[f'{columns}_enc'] = le.fit_transform(df[columns])
     else:
         raise JanitorError('kwarg `columns` must be a string or iterable!')
     return df
@@ -233,7 +280,7 @@ def get_features_targets(df, target_columns, feature_columns=None):
         if isinstance(target_columns, str):
             xcols = [c for c in df.columns if target_columns != c]
         elif (isinstance(target_columns, list)
-              or isinstance(target_columns, tuple)):
+              or isinstance(target_columns, tuple)):  # noqa: W503
             xcols = [c for c in df.columns if c not in target_columns]
         X = df[xcols]
     return X, Y
@@ -333,7 +380,7 @@ def convert_excel_date(df, column):
     :returns: A pandas DataFrame with corrected dates.
     """
     df[column] = (pd.TimedeltaIndex(df[column], unit='d')
-                  + dt.datetime(1899, 12, 30))
+                  + dt.datetime(1899, 12, 30))  # noqa: W503
     return df
 
 

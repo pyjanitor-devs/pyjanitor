@@ -2,7 +2,8 @@ from pandas import DataFrame, Series
 
 from .functions import (clean_names, coalesce, convert_excel_date,
                         encode_categorical, fill_empty, get_dupes,
-                        get_features_targets, remove_empty, rename_column)
+                        get_features_targets, label_encode, remove_empty,
+                        rename_column)
 
 
 class JanitorSeries(Series):
@@ -50,3 +51,6 @@ class JanitorDataFrame(DataFrame):
 
     def fill_empty(self, columns, value):
         return fill_empty(self, columns, value)
+
+    def label_encode(self, columns):
+        return label_encode(self, columns)

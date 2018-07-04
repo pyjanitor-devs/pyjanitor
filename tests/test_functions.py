@@ -119,6 +119,22 @@ def test_fill_empty(null_df):
     assert set(df.loc[:, '2']) == set([3])
 
 
+def test_single_column_label_encode():
+    df = pd.DataFrame({'a': ['hello', 'hello', 'sup'],
+                       'b': [1, 2, 3]})
+    df = jn.DataFrame(df).label_encode(columns='a')
+    assert 'a_enc' in df.columns
+
+
+def test_multicolumn_label_encode():
+    df = pd.DataFrame({'a': ['hello', 'hello', 'sup'],
+                       'b': [1, 2, 3],
+                       'c': ['aloha', 'nihao', 'nihao']})
+    df = jn.DataFrame(df).label_encode(columns=['a', 'c'])
+    assert 'a_enc' in df.columns
+    assert 'c_enc' in df.columns
+
+
 def test_multiindex_clean_names_functional(multiindex_dataframe):
     df = clean_names(multiindex_dataframe)
 

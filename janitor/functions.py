@@ -30,8 +30,7 @@ def _strip_underscores(df, strip_underscores=None):
     underscore_options = [None, 'left', 'right', 'both', 'l', 'r', True]
     if strip_underscores not in underscore_options:
         raise JanitorError(
-            """strip_underscores must be one of: %s""" % underscore_options
-            )
+            f"strip_underscores must be one of: {underscore_options}")
 
     if strip_underscores in ['left', 'l']:
         df = df.rename(columns=lambda x: x.lstrip('_'))

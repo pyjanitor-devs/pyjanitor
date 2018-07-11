@@ -1,9 +1,9 @@
 from pandas import DataFrame, Series
 
 from .functions import (clean_names, coalesce, convert_excel_date,
-                        encode_categorical, fill_empty, get_dupes,
-                        get_features_targets, label_encode, remove_empty,
-                        rename_column)
+                        encode_categorical, expand_column, fill_empty,
+                        get_dupes, get_features_targets, label_encode,
+                        remove_empty, rename_column)
 
 
 class JanitorSeries(Series):
@@ -54,3 +54,6 @@ class JanitorDataFrame(DataFrame):
 
     def label_encode(self, columns):
         return label_encode(self, columns)
+
+    def expand_column(self, column, sep, concat=True):
+        return expand_column(self, column, sep, concat)

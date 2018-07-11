@@ -3,9 +3,8 @@ import pandas as pd
 import pytest
 
 import janitor as jn
-from janitor import (clean_names, coalesce, convert_excel_date,
-                     encode_categorical, expand_column, get_dupes,
-                     remove_empty)
+from janitor import (clean_names, coalesce, encode_categorical, get_dupes,
+                     remove_empty, convert_excel_date)
 
 
 @pytest.fixture
@@ -279,12 +278,3 @@ def test_clean_names_preserve_case_true(multiindex_dataframe):
 
     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
     assert set(df.columns) == set(expected_columns)
-
-
-def test_expand_column():
-    data = {'col1': ['A, B', 'B, C, D', 'E, F', 'A, E, F'],
-            'col2': [1, 2, 3, 4]}
-
-    df = pd.DataFrame(data)
-    expanded = expand_column(df, 'col1', sep=', ', concat=False)
-    assert expanded.shape[1] == 6

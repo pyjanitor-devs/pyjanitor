@@ -420,3 +420,38 @@ def fill_empty(df, columns, value):
         raise JanitorError('kwarg `columns` must be a string or iterable!')
 
     return df
+
+
+def expand_column(df, column, sep, concat=True):
+    """
+    Expand a categorical column with multiple labels into dummy-coded columns.
+
+    Super sugary syntax that wraps :py:meth:`pandas.Series.str.get_dummies`.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = expand_column(df, column='colname',
+                           sep=', ')  # note space in sep
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        df = jn.DataFrame(df).expand_column(df, column='colname', sep=', ')
+
+    :param df: A pandas DataFrame.
+    :param column: A `str` indicating which column to expand.
+    :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
+    :param bool concat: Whether to return the expanded column concatenated to
+        the original dataframe (`concat=True`), or to return it standalone
+        (`concat=False`).
+    """
+    expanded = df[column].str.get_dummies(sep=sep)
+    if concat:
+        df = df.join(expanded)
+        return df
+    else:
+        return expanded

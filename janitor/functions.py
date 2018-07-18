@@ -3,6 +3,7 @@ import datetime as dt
 from functools import reduce
 
 import pandas as pd
+import pandas_flavor as pf
 from sklearn.preprocessing import LabelEncoder
 from warnings import warn
 
@@ -41,6 +42,7 @@ def _strip_underscores(df, strip_underscores=None):
     return df
 
 
+@pf.register_dataframe_method
 def clean_names(df, strip_underscores=None, preserve_case=False):
     """
     Clean column names.
@@ -95,6 +97,7 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
     return df
 
 
+@pf.register_dataframe_method
 def remove_empty(df):
     """
     Drop all rows and columns that are completely null.
@@ -128,6 +131,7 @@ def remove_empty(df):
     return df
 
 
+@pf.register_dataframe_method
 def get_dupes(df, columns=None):
     """
     Returns all duplicate rows.
@@ -156,6 +160,7 @@ def get_dupes(df, columns=None):
     return df[dupes == True]  # noqa: E712
 
 
+@pf.register_dataframe_method
 def encode_categorical(df, columns):
     """
     Encode the specified columns as categorical column in pandas.
@@ -194,6 +199,7 @@ def encode_categorical(df, columns):
     return df
 
 
+@pf.register_dataframe_method
 def label_encode(df, columns):
     """
     Convenience function to convert labels into numerical data.
@@ -237,6 +243,7 @@ def label_encode(df, columns):
     return df
 
 
+@pf.register_dataframe_method
 def get_features_targets(df, target_columns, feature_columns=None):
     """
     Get the features and targets as separate DataFrames/Series.
@@ -286,6 +293,7 @@ def get_features_targets(df, target_columns, feature_columns=None):
     return X, Y
 
 
+@pf.register_dataframe_method
 def rename_column(df, old, new):
     """
     Rename a column in place.
@@ -314,6 +322,7 @@ def rename_column(df, old, new):
     return df.rename(columns={old: new})
 
 
+@pf.register_dataframe_method
 def coalesce(df, columns, new_column_name):
     """
     Coalesces two or more columns of data in order of column names provided.
@@ -354,6 +363,7 @@ def coalesce(df, columns, new_column_name):
     return df
 
 
+@pf.register_dataframe_method
 def convert_excel_date(df, column):
     """
     Convert Excel's serial date format into Python datetime format.
@@ -384,6 +394,7 @@ def convert_excel_date(df, column):
     return df
 
 
+@pf.register_dataframe_method
 def fill_empty(df, columns, value):
     """
     Fill `NaN` values in specified columns with a given value.
@@ -422,6 +433,7 @@ def fill_empty(df, columns, value):
     return df
 
 
+@pf.register_dataframe_method
 def expand_column(df, column, sep, concat=True):
     """
     Expand a categorical column with multiple labels into dummy-coded columns.

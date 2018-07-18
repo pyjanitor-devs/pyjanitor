@@ -51,7 +51,17 @@ The idea behind the API is two-fold:
 - Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
 - Add other utility functions that make it easy to do data cleaning in `pandas`.
 
-As such, there are three ways to use the API. The first is the functional API.
+As such, there are four ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.
+
+.. code-block:: python
+
+    import pandas as pd
+    import janitor  # upon import, functions are registered as part of pandas.
+
+    df = pd.DataFrame(...)
+    df = df.clean_names().remove_empty()  # further method chaining possible.
+
+The second is the functional API.
 
 .. code-block:: python
 
@@ -62,8 +72,7 @@ As such, there are three ways to use the API. The first is the functional API.
     df = clean_names(df)
     df = remove_empty(df)
 
-
-The second is the wrapped `pandas` DataFrame.
+The third is the wrapped `pandas` DataFrame.
 
 .. code-block:: python
 
@@ -74,7 +83,7 @@ The second is the wrapped `pandas` DataFrame.
   df = jn.DataFrame(df)
   df.clean_names().remove_empty()... # method chaining possible
 
-The third is to use the `pipe()` method.
+The final way is to use the `pipe()` method.
 
 .. code-block:: python
 

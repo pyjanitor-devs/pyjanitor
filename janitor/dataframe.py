@@ -1,9 +1,27 @@
 from pandas import DataFrame, Series
 
-from .functions import (clean_names, coalesce, convert_excel_date,
-                        encode_categorical, expand_column, fill_empty,
-                        get_dupes, get_features_targets, label_encode,
-                        remove_empty, rename_column)
+from .functions import (
+    clean_names,
+    coalesce,
+    convert_excel_date,
+    encode_categorical,
+    expand_column,
+    fill_empty,
+    get_dupes,
+    get_features_targets,
+    label_encode,
+    remove_empty,
+    rename_column,
+)
+
+import warnings
+
+msg = """Janitor's subclassed DataFrame and Series will be deprecated before
+the 1.0 release. Instead of importing the Janitor DataFrame, please instead
+`import janitor`, and use the functions directly attached to native pandas
+dataframe."""
+
+warnings.warn(msg)
 
 
 class JanitorSeries(Series):

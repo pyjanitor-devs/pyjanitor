@@ -73,17 +73,6 @@ The second is the functional API.
     df = clean_names(df)
     df = remove_empty(df)
 
-The third is the wrapped `pandas` DataFrame.
-
-.. code-block:: python
-
-  import janitor as jn
-  import pandas as pd
-
-  df = pd.DataFrame(...)
-  df = jn.DataFrame(df)
-  df.clean_names().remove_empty()... # method chaining possible
-
 The final way is to use the `pipe()` method.
 
 .. code-block:: python

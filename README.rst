@@ -42,6 +42,7 @@ Current functionality includes:
 - Easily renaming individual columns
 - Coalesce multiple columns into a single column
 - Convert excel date (serial format) into a Python datetime format.
+- Expand a single column that has delimited, categorical values into dummy-encoded variables.
 
 apis
 ----

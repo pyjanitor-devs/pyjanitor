@@ -549,7 +549,7 @@ def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     :param sep: The separator delimiting the column's data.
     """
 
-    assert column in df.columns, f"column name {column} not present in dataframe"
+    assert column in df.columns, f"column name {column} not present in dataframe"  # noqa: E501
     deconcat = df[column].str.split(sep, expand=True)
     assert (
         len(new_column_names) == deconcat.shape[1]

@@ -5,7 +5,7 @@ import pytest
 import janitor as jn
 from janitor import (clean_names, coalesce, convert_excel_date,
                      encode_categorical, expand_column, get_dupes,
-                     remove_empty)
+                     remove_empty, concatenate_columns, deconcatenate_column)
 
 
 @pytest.fixture
@@ -288,3 +288,15 @@ def test_expand_column():
     df = pd.DataFrame(data)
     expanded = expand_column(df, 'col1', sep=', ', concat=False)
     assert expanded.shape[1] == 6
+
+
+def test_concatenate_columns(dataframe):
+    df = concatenate_columns(dataframe, columns=['a', 'decorated-elephant'], sep='-', new_column_name='index')
+    assert 'index' in df.columns
+
+
+def test_deconcatenate_column(dataframe):
+    df = concatenate_columns(dataframe, columns=['a', 'decorated-elephant'], sep='-', new_column_name='index')
+    df = deconcatenate_column(df, column='index', new_column_names=['A', 'B'], sep='-')  # noqa: E501
+    assert 'A' in df.columns
+    assert 'B' in df.columns

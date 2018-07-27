@@ -467,3 +467,88 @@ def expand_column(df, column, sep, concat=True):
         return df
     else:
         return expanded
+
+
+@pf.register_dataframe_method
+def concatenate_columns(df, columns: list, new_column_name: str, sep: str='-'):
+    """
+    Concatenates the set of columns into a single column, separated by a string
+    delimiter.
+
+    Used to quickly generate an index based on a group of columns.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = concatenate_columns(df,
+                                 columns=['col1', 'col2'],
+                                 new_column_name='id',
+                                 sep='-')
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...).
+              concatenate_columns(columns=['col1', 'col2'],
+                                  new_column_name='id',
+                                  sep='-'))
+
+    :param df: A pandas DataFrame.
+    :param columns: A list of columns to concatenate together.
+    :param new_column_name: The name of the new column.
+    :param sep: The separator between each column's data.
+    """
+    assert len(columns) >= 2, 'At least two columns must be specified'
+    for i, col in enumerate(columns):
+        if i == 0:
+            df[new_column_name] = df[col].astype(str)
+        else:
+            df[new_column_name] = (df[new_column_name]
+                                   + sep
+                                   + df[col].astype(str))
+
+    return df
+
+
+@pf.register_dataframe_method
+def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
+    """
+    De-concatenates a single column, split on the separator, into multiple columns.
+
+    This is the inverse of the `concatenate_columns` function.
+
+    Used to quickly split columns out of a single column.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = deconcatenate_columns(df,
+                                   column='id',
+                                   new_column_names=['col1', 'col2'],
+                                   sep='-')
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...).
+              deconcatenate_columns(columns='id',
+                                    new_column_name=['col1', 'col2'],
+                                    sep='-'))
+
+    :param df: A pandas DataFrame.
+    :param column: The column to split.
+    :param new_column_names: A list of new column names post-splitting.
+    :param sep: The separator delimiting the column's data.
+    """
+
+    assert column in df.columns, \
+        f"column name {column} not present in dataframe"
+    deconcat = df[column].str.split(sep, expand=True)
+    assert len(new_column_names) == deconcat.shape[1], \
+        "number of new column names not correct."
+    deconcat.columns = new_column_names
+    return df.join(deconcat)

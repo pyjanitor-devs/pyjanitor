@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 import datetime as dt
+import re
 from functools import reduce
-
-import pandas as pd
-import pandas_flavor as pf
-from sklearn.preprocessing import LabelEncoder
 from warnings import warn
 
-from .errors import JanitorError
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
-import re
+import pandas_flavor as pf
+
+from .errors import JanitorError
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -59,8 +59,9 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        df = jn.DataFrame(df).clean_names()
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).clean_names()
 
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
@@ -113,8 +114,9 @@ def remove_empty(df):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        df = jn.DataFrame(df).remove_empty()
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).remove_empty()
 
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame.
@@ -143,8 +145,9 @@ def get_dupes(df, columns=None):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        jn.DataFrame(df).get_dupes()
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).get_dupes()
 
     :param df: The pandas DataFrame object.
     :param str/iterable columns: (optional) A column name or an iterable (list
@@ -172,9 +175,11 @@ def encode_categorical(df, columns):
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor
         df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        jn.DataFrame(df).encode_categorical(columns=categorical_cols)
+        df = df.encode_categorical(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)
@@ -219,9 +224,11 @@ def label_encode(df, columns):
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor
         df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        jn.DataFrame(df).label_encode(columns=categorical_cols)
+        df = df.label_encode(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)
@@ -268,9 +275,11 @@ def get_features_targets(df, target_columns, feature_columns=None):
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor
         df = pd.DataFrame(...)
         target_cols = ['output1', 'output2']
-        X, y = jn.DataFrame(df).get_features_targets(target_columns=target_cols)  # noqa: E501
+        X, y = df.get_features_targets(target_columns=target_cols)  # noqa: E501
 
     :param df: The pandas DataFrame object.
     :param str/iterable target_columns: Either a column name or an iterable
@@ -311,8 +320,9 @@ def rename_column(df, old, new):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        df = jn.DataFrame(df).rename_column("old_column_name", "new_column_name")  # noqa: E501
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")  # noqa: E501
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -340,8 +350,9 @@ def coalesce(df, columns, new_column_name):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        df = jn.DataFrame(df).coalesce(['col1', 'col2'])
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).coalesce(['col1', 'col2'])
 
 
     The result of this function is that we take the first non-null value across
@@ -386,8 +397,9 @@ def convert_excel_date(df, column):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        df = jn.DataFrame(df).convert_excel_date('date')
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).convert_excel_date('date')
 
     :param df: A pandas DataFrame.
     :param str column: A column name.
@@ -416,8 +428,9 @@ def fill_empty(df, columns, value):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        df = jn.DataFrame(df).fill_empty(df, columns='col1', value=0)
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).fill_empty(df, columns='col1', value=0)
 
     :param df: A pandas DataFrame.
     :param columns: Either a `str` or `list` or `tuple`. If a string is passed
@@ -457,8 +470,9 @@ def expand_column(df, column, sep, concat=True):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        df = jn.DataFrame(df).expand_column(df, column='colname', sep=', ')
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).expand_column(df, column='colname', sep=', ')
 
     :param df: A pandas DataFrame.
     :param column: A `str` indicating which column to expand.

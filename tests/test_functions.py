@@ -50,8 +50,8 @@ def test_clean_names_functional(dataframe):
 
 
 def test_clean_names_method_chain(dataframe):
-    df = jn.DataFrame(dataframe).clean_names()
-    expected_columns = ["a", "bell_chart", "decorated_elephant"]
+    df = dataframe.clean_names()
+    expected_columns = ['a', 'bell_chart', 'decorated_elephant']
     assert set(df.columns) == set(expected_columns)
 
 
@@ -89,18 +89,15 @@ def test_encode_categorical():
 
 
 def test_get_features_targets(dataframe):
-    dataframe = jn.DataFrame(dataframe).clean_names()
-    X, y = dataframe.get_features_targets(target_columns="bell_chart")
+    dataframe = dataframe.clean_names()
+    X, y = dataframe.get_features_targets(target_columns='bell_chart')
     assert X.shape == (3, 2)
     assert y.shape == (3,)
 
 
 def test_rename_column(dataframe):
-    dataframe = jn.DataFrame(dataframe).clean_names()
-    df = dataframe.rename_column("a", "index")
-    assert set(df.columns) == set(
-        ["index", "bell_chart", "decorated_elephant"]
-    )  # noqa: E501
+    df = dataframe.clean_names().rename_column('a', 'index')
+    assert set(df.columns) == set(['index', 'bell_chart', 'decorated_elephant'])  # noqa: E501
 
 
 def test_coalesce():
@@ -112,35 +109,36 @@ def test_coalesce():
 
 
 def test_convert_excel_date():
-    df = pd.read_excel("examples/dirty_data.xlsx")
-    df = jn.DataFrame(df).clean_names()
-    df = convert_excel_date(df, "hire_date")
+    df = pd.read_excel('examples/dirty_data.xlsx').clean_names()
+    df = convert_excel_date(df, 'hire_date')
 
     assert df["hire_date"].dtype == "M8[ns]"
 
 
 def test_fill_empty(null_df):
-    df = jn.DataFrame(null_df).fill_empty(columns=["2"], value=3)
-    assert set(df.loc[:, "2"]) == set([3])
+    df = null_df.fill_empty(columns=['2'], value=3)
+    assert set(df.loc[:, '2']) == set([3])
 
 
 def test_single_column_label_encode():
-    df = pd.DataFrame({"a": ["hello", "hello", "sup"], "b": [1, 2, 3]})
-    df = jn.DataFrame(df).label_encode(columns="a")
-    assert "a_enc" in df.columns
+    df = pd.DataFrame({'a': ['hello', 'hello', 'sup'],
+                       'b': [1, 2, 3]}).label_encode(columns='a')
+    assert 'a_enc' in df.columns
+
+
+def test_single_column_fail_label_encode():
+    with pytest.raises(AssertionError):
+        df = pd.DataFrame({'a': ['hello', 'hello', 'sup'],
+                           'b': [1, 2, 3]}).label_encode(columns='c')
 
 
 def test_multicolumn_label_encode():
-    df = pd.DataFrame(
-        {
-            "a": ["hello", "hello", "sup"],
-            "b": [1, 2, 3],
-            "c": ["aloha", "nihao", "nihao"],
-        }
-    )
-    df = jn.DataFrame(df).label_encode(columns=["a", "c"])
-    assert "a_enc" in df.columns
-    assert "c_enc" in df.columns
+    df = (pd.DataFrame({'a': ['hello', 'hello', 'sup'],
+                        'b': [1, 2, 3],
+                        'c': ['aloha', 'nihao', 'nihao']})
+          .label_encode(columns=['a', 'c']))
+    assert 'a_enc' in df.columns
+    assert 'c_enc' in df.columns
 
 
 def test_multiindex_clean_names_functional(multiindex_dataframe):
@@ -158,7 +156,7 @@ def test_multiindex_clean_names_functional(multiindex_dataframe):
 
 
 def test_multiindex_clean_names_method_chain(multiindex_dataframe):
-    df = jn.DataFrame(multiindex_dataframe).clean_names()
+    df = multiindex_dataframe.clean_names()
 
     levels = [
         ["a", "bell_chart", "decorated_elephant"],
@@ -271,6 +269,11 @@ def test_clean_names_strip_underscores_l(multiindex_dataframe):
 
     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
     assert set(df.columns) == set(expected_columns)
+
+
+def test_incorrect_strip_underscores(multiindex_dataframe):
+    with pytest.raises(janitor.errors.JanitorError):
+        df = clean_names(multiindex_dataframe, strip_underscores='hello')
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):

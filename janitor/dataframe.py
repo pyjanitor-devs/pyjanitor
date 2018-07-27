@@ -14,6 +14,15 @@ from .functions import (
     rename_column,
 )
 
+import warnings
+
+msg = """Janitor's subclassed DataFrame and Series will be deprecated before
+the 1.0 release. Instead of importing the Janitor DataFrame, please instead
+`import janitor`, and use the functions directly attached to native pandas
+dataframe."""
+
+warnings.warn(msg)
+
 
 class JanitorSeries(Series):
 

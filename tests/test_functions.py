@@ -3,17 +3,10 @@ import pandas as pd
 import pytest
 
 import janitor as jn
-from janitor import (
-    clean_names,
-    coalesce,
-    convert_excel_date,
-    encode_categorical,
-    expand_column,
-    get_dupes,
-    remove_empty,
-    concatenate_columns,
-    deconcatenate_column,
-)
+from janitor import (clean_names, coalesce, concatenate_columns,
+                     convert_excel_date, deconcatenate_column,
+                     encode_categorical, expand_column, get_dupes,
+                     remove_empty)
 
 
 @pytest.fixture

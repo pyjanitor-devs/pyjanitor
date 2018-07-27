@@ -25,7 +25,7 @@ install:
   # Install Python, py.text, and required packages.
   - conda env create -f environment-dev.yml
   - source activate pyjanitor-dev
-  - python setup.py install
+  - python setup.py install --no-deps
 
 script:
   # Your test script goes here

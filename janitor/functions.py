@@ -1,4 +1,8 @@
-# -*- coding: utf-8 -*-
+"""
+pyjanitor functions.
+
+New data cleaning functions should be implemented here.
+"""
 import datetime as dt
 import re
 from functools import reduce
@@ -14,8 +18,9 @@ from .errors import JanitorError
 
 def _strip_underscores(df, strip_underscores=None):
     """
-    Strip underscores from the beginning, end or both of the
-    of the DataFrames column names.
+    Strip underscores from DataFrames column names.
+
+    Underscores can be stripped from the beginning, end or both.
 
     .. code-block:: python
 
@@ -135,7 +140,7 @@ def remove_empty(df):
 @pf.register_dataframe_method
 def get_dupes(df, columns=None):
     """
-    Returns all duplicate rows.
+    Return all duplicate rows.
 
     Functional usage example:
 
@@ -207,10 +212,10 @@ def encode_categorical(df, columns):
 @pf.register_dataframe_method
 def label_encode(df, columns):
     """
-    Convenience function to convert labels into numerical data.
+    Convert labels into numerical data.
 
     This function will create a new column with the string "_enc" appended
-    after the original column's name.
+    after the original column's name. Consider this to be syntactic sugar.
 
     This function behaves differently from `encode_categorical`. This function
     creates a new column of numeric data. `encode_categorical` replaces the
@@ -494,10 +499,9 @@ def expand_column(df, column, sep, concat=True):
 @pf.register_dataframe_method
 def concatenate_columns(
     df, columns: list, new_column_name: str, sep: str = "-"
-):  # noqa: E501
+):
     """
-    Concatenates the set of columns into a single column, separated by a string
-    delimiter.
+    Concatenates the set of columns into a single column.
 
     Used to quickly generate an index based on a group of columns.
 
@@ -539,8 +543,7 @@ def concatenate_columns(
 @pf.register_dataframe_method
 def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     """
-    De-concatenates a single column, split on the separator, into multiple
-    columns.
+    De-concatenates a single column into multiple columns.
 
     This is the inverse of the `concatenate_columns` function.
 
@@ -569,7 +572,6 @@ def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     :param new_column_names: A list of new column names post-splitting.
     :param sep: The separator delimiting the column's data.
     """
-
     assert (
         column in df.columns
     ), f"column name {column} not present in dataframe"  # noqa: E501

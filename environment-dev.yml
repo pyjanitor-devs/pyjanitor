@@ -18,6 +18,7 @@ dependencies:
 - scikit-learn
 - twine
 - bumpversion
+- pytest-cov
 - pip:
   - sphinxcontrib-fulltoc
   - pandas-flavor

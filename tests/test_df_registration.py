@@ -12,9 +12,9 @@ import janitor
 @pytest.fixture
 def dataframe():
     data = {
-        'a': [1, 2, 3],
-        'Bell__Chart': [1, 2, 3],
-        'decorated-elephant': [1, 2, 3],
+        "a": [1, 2, 3],
+        "Bell__Chart": [1, 2, 3],
+        "decorated-elephant": [1, 2, 3],
     }
     df = pd.DataFrame(data)
     return df

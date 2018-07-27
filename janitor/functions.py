@@ -30,7 +30,9 @@ def _strip_underscores(df, strip_underscores=None):
     """
     underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
-        raise JanitorError(f"strip_underscores must be one of: {underscore_options}")
+        raise JanitorError(
+            f"strip_underscores must be one of: {underscore_options}"
+        )
 
     if strip_underscores in ["left", "l"]:
         df = df.rename(columns=lambda x: x.lstrip("_"))
@@ -490,7 +492,9 @@ def expand_column(df, column, sep, concat=True):
 
 
 @pf.register_dataframe_method
-def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-"):  # noqa: E501
+def concatenate_columns(
+    df, columns: list, new_column_name: str, sep: str = "-"
+):  # noqa: E501
     """
     Concatenates the set of columns into a single column, separated by a string
     delimiter.
@@ -525,7 +529,9 @@ def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-")
         if i == 0:
             df[new_column_name] = df[col].astype(str)
         else:
-            df[new_column_name] = df[new_column_name] + sep + df[col].astype(str)  # noqa: E501
+            df[new_column_name] = (
+                df[new_column_name] + sep + df[col].astype(str)
+            )  # noqa: E501
 
     return df
 
@@ -564,7 +570,9 @@ def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     :param sep: The separator delimiting the column's data.
     """
 
-    assert column in df.columns, f"column name {column} not present in dataframe"  # noqa: E501
+    assert (
+        column in df.columns
+    ), f"column name {column} not present in dataframe"  # noqa: E501
     deconcat = df[column].str.split(sep, expand=True)
     assert (
         len(new_column_names) == deconcat.shape[1]

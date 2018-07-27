@@ -18,7 +18,11 @@ from janitor import (
 
 @pytest.fixture
 def dataframe():
-    data = {"a": [1, 2, 3], "Bell__Chart": [1, 2, 3], "decorated-elephant": [1, 2, 3]}
+    data = {
+        "a": [1, 2, 3],
+        "Bell__Chart": [1, 2, 3],
+        "decorated-elephant": [1, 2, 3],
+    }
     df = pd.DataFrame(data)
     return df
 
@@ -51,7 +55,7 @@ def test_clean_names_functional(dataframe):
 
 def test_clean_names_method_chain(dataframe):
     df = dataframe.clean_names()
-    expected_columns = ['a', 'bell_chart', 'decorated_elephant']
+    expected_columns = ["a", "bell_chart", "decorated_elephant"]
     assert set(df.columns) == set(expected_columns)
 
 
@@ -90,18 +94,22 @@ def test_encode_categorical():
 
 def test_get_features_targets(dataframe):
     dataframe = dataframe.clean_names()
-    X, y = dataframe.get_features_targets(target_columns='bell_chart')
+    X, y = dataframe.get_features_targets(target_columns="bell_chart")
     assert X.shape == (3, 2)
     assert y.shape == (3,)
 
 
 def test_rename_column(dataframe):
-    df = dataframe.clean_names().rename_column('a', 'index')
-    assert set(df.columns) == set(['index', 'bell_chart', 'decorated_elephant'])  # noqa: E501
+    df = dataframe.clean_names().rename_column("a", "index")
+    assert set(df.columns) == set(
+        ["index", "bell_chart", "decorated_elephant"]
+    )  # noqa: E501
 
 
 def test_coalesce():
-    df = pd.DataFrame({"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]})
+    df = pd.DataFrame(
+        {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]}
+    )
 
     df = coalesce(df, ["a", "b", "c"], "a")
     assert df.shape == (3, 1)
@@ -109,36 +117,41 @@ def test_coalesce():
 
 
 def test_convert_excel_date():
-    df = pd.read_excel('examples/dirty_data.xlsx').clean_names()
-    df = convert_excel_date(df, 'hire_date')
+    df = pd.read_excel("examples/dirty_data.xlsx").clean_names()
+    df = convert_excel_date(df, "hire_date")
 
     assert df["hire_date"].dtype == "M8[ns]"
 
 
 def test_fill_empty(null_df):
-    df = null_df.fill_empty(columns=['2'], value=3)
-    assert set(df.loc[:, '2']) == set([3])
+    df = null_df.fill_empty(columns=["2"], value=3)
+    assert set(df.loc[:, "2"]) == set([3])
 
 
 def test_single_column_label_encode():
-    df = pd.DataFrame({'a': ['hello', 'hello', 'sup'],
-                       'b': [1, 2, 3]}).label_encode(columns='a')
-    assert 'a_enc' in df.columns
+    df = pd.DataFrame(
+        {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
+    ).label_encode(columns="a")
+    assert "a_enc" in df.columns
 
 
 def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
-        df = pd.DataFrame({'a': ['hello', 'hello', 'sup'],
-                           'b': [1, 2, 3]}).label_encode(columns='c')
+        df = pd.DataFrame(
+            {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
+        ).label_encode(columns="c")
 
 
 def test_multicolumn_label_encode():
-    df = (pd.DataFrame({'a': ['hello', 'hello', 'sup'],
-                        'b': [1, 2, 3],
-                        'c': ['aloha', 'nihao', 'nihao']})
-          .label_encode(columns=['a', 'c']))
-    assert 'a_enc' in df.columns
-    assert 'c_enc' in df.columns
+    df = pd.DataFrame(
+        {
+            "a": ["hello", "hello", "sup"],
+            "b": [1, 2, 3],
+            "c": ["aloha", "nihao", "nihao"],
+        }
+    ).label_encode(columns=["a", "c"])
+    assert "a_enc" in df.columns
+    assert "c_enc" in df.columns
 
 
 def test_multiindex_clean_names_functional(multiindex_dataframe):
@@ -273,7 +286,7 @@ def test_clean_names_strip_underscores_l(multiindex_dataframe):
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(janitor.errors.JanitorError):
-        df = clean_names(multiindex_dataframe, strip_underscores='hello')
+        df = clean_names(multiindex_dataframe, strip_underscores="hello")
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):
@@ -292,7 +305,10 @@ def test_clean_names_preserve_case_true(multiindex_dataframe):
 
 
 def test_expand_column():
-    data = {"col1": ["A, B", "B, C, D", "E, F", "A, E, F"], "col2": [1, 2, 3, 4]}
+    data = {
+        "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
+        "col2": [1, 2, 3, 4],
+    }
 
     df = pd.DataFrame(data)
     expanded = expand_column(df, "col1", sep=", ", concat=False)
@@ -301,14 +317,20 @@ def test_expand_column():
 
 def test_concatenate_columns(dataframe):
     df = concatenate_columns(
-        dataframe, columns=["a", "decorated-elephant"], sep="-", new_column_name="index"
+        dataframe,
+        columns=["a", "decorated-elephant"],
+        sep="-",
+        new_column_name="index",
     )
     assert "index" in df.columns
 
 
 def test_deconcatenate_column(dataframe):
     df = concatenate_columns(
-        dataframe, columns=["a", "decorated-elephant"], sep="-", new_column_name="index"
+        dataframe,
+        columns=["a", "decorated-elephant"],
+        sep="-",
+        new_column_name="index",
     )
     df = deconcatenate_column(
         df, column="index", new_column_names=["A", "B"], sep="-"

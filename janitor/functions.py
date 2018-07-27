@@ -28,17 +28,16 @@ def _strip_underscores(df, strip_underscores=None):
         and True.
     :returns: A pandas DataFrame.
     """
-    underscore_options = [None, 'left', 'right', 'both', 'l', 'r', True]
+    underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
-        raise JanitorError(
-            f"strip_underscores must be one of: {underscore_options}")
+        raise JanitorError(f"strip_underscores must be one of: {underscore_options}")
 
-    if strip_underscores in ['left', 'l']:
-        df = df.rename(columns=lambda x: x.lstrip('_'))
-    elif strip_underscores in ['right', 'r']:
-        df = df.rename(columns=lambda x: x.rstrip('_'))
-    elif strip_underscores == 'both' or strip_underscores is True:
-        df = df.rename(columns=lambda x: x.strip('_'))
+    if strip_underscores in ["left", "l"]:
+        df = df.rename(columns=lambda x: x.lstrip("_"))
+    elif strip_underscores in ["right", "r"]:
+        df = df.rename(columns=lambda x: x.rstrip("_"))
+    elif strip_underscores == "both" or strip_underscores is True:
+        df = df.rename(columns=lambda x: x.strip("_"))
     return df
 
 
@@ -74,25 +73,23 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
     :returns: A pandas DataFrame.
     """
     if preserve_case is False:
-        df = df.rename(
-            columns=lambda x: x.lower()
-        )
+        df = df.rename(columns=lambda x: x.lower())
 
     df = df.rename(
-        columns=lambda x: x.replace(' ', '_')
-                           .replace('/', '_')
-                           .replace(':', '_')
-                           .replace("'", '')
-                           .replace(u'’', '')
-                           .replace(',', '_')
-                           .replace('?', '_')
-                           .replace('-', '_')
-                           .replace('(', '_')
-                           .replace(')', '_')
-                           .replace('.', '_')
+        columns=lambda x: x.replace(" ", "_")
+        .replace("/", "_")
+        .replace(":", "_")
+        .replace("'", "")
+        .replace("’", "")
+        .replace(",", "_")
+        .replace("?", "_")
+        .replace("-", "_")
+        .replace("(", "_")
+        .replace(")", "_")
+        .replace(".", "_")
     )
 
-    df = df.rename(columns=lambda x: re.sub('_+', '_', x))
+    df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
     return df
 
@@ -189,13 +186,14 @@ def encode_categorical(df, columns):
     warn(msg)
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
-            assert col in df.columns, \
-                JanitorError("{col} missing from dataframe columns!".format(col=col))  # noqa: E501
+            assert col in df.columns, JanitorError(
+                "{col} missing from dataframe columns!".format(col=col)
+            )  # noqa: E501
             df[col] = pd.Categorical(df[col])
     elif isinstance(columns, str):
         df[columns] = pd.Categorical(df[columns])
     else:
-        raise JanitorError('kwarg `columns` must be a string or iterable!')
+        raise JanitorError("kwarg `columns` must be a string or iterable!")
     return df
 
 
@@ -233,13 +231,17 @@ def label_encode(df, columns):
     le = LabelEncoder()
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
-            assert col in df.columns, JanitorError(f"{col} missing from columns")  # noqa: E501
-            df[f'{col}_enc'] = le.fit_transform(df[col])
+            assert col in df.columns, JanitorError(
+                f"{col} missing from columns"
+            )  # noqa: E501
+            df[f"{col}_enc"] = le.fit_transform(df[col])
     elif isinstance(columns, str):
-        assert columns in df.columns, JanitorError(f"{columns} missing from columns")  # noqa: E501
-        df[f'{columns}_enc'] = le.fit_transform(df[columns])
+        assert columns in df.columns, JanitorError(
+            f"{columns} missing from columns"
+        )  # noqa: E501
+        df[f"{columns}_enc"] = le.fit_transform(df[columns])
     else:
-        raise JanitorError('kwarg `columns` must be a string or iterable!')
+        raise JanitorError("kwarg `columns` must be a string or iterable!")
     return df
 
 
@@ -286,8 +288,9 @@ def get_features_targets(df, target_columns, feature_columns=None):
     else:
         if isinstance(target_columns, str):
             xcols = [c for c in df.columns if target_columns != c]
-        elif (isinstance(target_columns, list)
-              or isinstance(target_columns, tuple)):  # noqa: W503
+        elif isinstance(target_columns, list) or isinstance(
+            target_columns, tuple
+        ):  # noqa: W503
             xcols = [c for c in df.columns if c not in target_columns]
         X = df[xcols]
     return X, Y
@@ -358,6 +361,7 @@ def coalesce(df, columns, new_column_name):
 
     def _coalesce(series1, series2):
         return series1.combine_first(series2)
+
     df = df.drop(columns=columns)
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
     return df
@@ -389,8 +393,9 @@ def convert_excel_date(df, column):
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    df[column] = (pd.TimedeltaIndex(df[column], unit='d')
-                  + dt.datetime(1899, 12, 30))  # noqa: W503
+    df[column] = pd.TimedeltaIndex(df[column], unit="d") + dt.datetime(
+        1899, 12, 30
+    )  # noqa: W503
     return df
 
 
@@ -422,13 +427,14 @@ def fill_empty(df, columns, value):
     """
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
-            assert col in df.columns, \
-                JanitorError("{col} missing from dataframe columns!".format(col=col))  # noqa: E501
+            assert col in df.columns, JanitorError(
+                "{col} missing from dataframe columns!".format(col=col)
+            )  # noqa: E501
             df[col] = df[col].fillna(value)
     elif isinstance(columns, str):
         df[columns] = df[columns].fillna(value)
     else:
-        raise JanitorError('kwarg `columns` must be a string or iterable!')
+        raise JanitorError("kwarg `columns` must be a string or iterable!")
 
     return df
 
@@ -470,7 +476,7 @@ def expand_column(df, column, sep, concat=True):
 
 
 @pf.register_dataframe_method
-def concatenate_columns(df, columns: list, new_column_name: str, sep: str='-'):
+def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-"):
     """
     Concatenates the set of columns into a single column, separated by a string
     delimiter.
@@ -500,14 +506,12 @@ def concatenate_columns(df, columns: list, new_column_name: str, sep: str='-'):
     :param new_column_name: The name of the new column.
     :param sep: The separator between each column's data.
     """
-    assert len(columns) >= 2, 'At least two columns must be specified'
+    assert len(columns) >= 2, "At least two columns must be specified"
     for i, col in enumerate(columns):
         if i == 0:
             df[new_column_name] = df[col].astype(str)
         else:
-            df[new_column_name] = (df[new_column_name]
-                                   + sep
-                                   + df[col].astype(str))
+            df[new_column_name] = df[new_column_name] + sep + df[col].astype(str)
 
     return df
 
@@ -545,10 +549,10 @@ def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     :param sep: The separator delimiting the column's data.
     """
 
-    assert column in df.columns, \
-        f"column name {column} not present in dataframe"
+    assert column in df.columns, f"column name {column} not present in dataframe"
     deconcat = df[column].str.split(sep, expand=True)
-    assert len(new_column_names) == deconcat.shape[1], \
-        "number of new column names not correct."
+    assert (
+        len(new_column_names) == deconcat.shape[1]
+    ), "number of new column names not correct."
     deconcat.columns = new_column_names
     return df.join(deconcat)

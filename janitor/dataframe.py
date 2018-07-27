@@ -1,12 +1,22 @@
 from pandas import DataFrame, Series
 
-from .functions import (clean_names, coalesce, convert_excel_date,
-                        encode_categorical, expand_column, fill_empty,
-                        get_dupes, get_features_targets, label_encode,
-                        remove_empty, rename_column)
+from .functions import (
+    clean_names,
+    coalesce,
+    convert_excel_date,
+    encode_categorical,
+    expand_column,
+    fill_empty,
+    get_dupes,
+    get_features_targets,
+    label_encode,
+    remove_empty,
+    rename_column,
+)
 
 
 class JanitorSeries(Series):
+
     @property
     def _constructor(self):
         return JanitorSeries
@@ -17,6 +27,7 @@ class JanitorSeries(Series):
 
 
 class JanitorDataFrame(DataFrame):
+
     @property
     def _constructor(self):
         return JanitorDataFrame

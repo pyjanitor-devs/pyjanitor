@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import janitor as jn
+import janitor
 from janitor import (clean_names, coalesce, concatenate_columns,
                      convert_excel_date, deconcatenate_column,
                      encode_categorical, expand_column, get_dupes,

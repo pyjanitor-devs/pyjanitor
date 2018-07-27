@@ -71,8 +71,8 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
         either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
         and True.
     :param preserve_case: (optional) Allows you to choose whether to make all
-    column names lowercase, or to preserve current cases. Default False makes
-    all characters lowercase.
+        column names lowercase, or to preserve current cases. Default False
+        makes all characters lowercase.
     :returns: A pandas DataFrame.
     """
     if preserve_case is False:

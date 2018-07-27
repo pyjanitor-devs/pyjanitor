@@ -476,7 +476,7 @@ def expand_column(df, column, sep, concat=True):
 
 
 @pf.register_dataframe_method
-def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-"):
+def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-"):  # noqa: E501
     """
     Concatenates the set of columns into a single column, separated by a string
     delimiter.
@@ -511,7 +511,7 @@ def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-")
         if i == 0:
             df[new_column_name] = df[col].astype(str)
         else:
-            df[new_column_name] = df[new_column_name] + sep + df[col].astype(str)
+            df[new_column_name] = df[new_column_name] + sep + df[col].astype(str)  # noqa: E501
 
     return df
 
@@ -519,7 +519,8 @@ def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-")
 @pf.register_dataframe_method
 def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     """
-    De-concatenates a single column, split on the separator, into multiple columns.
+    De-concatenates a single column, split on the separator, into multiple
+    columns.
 
     This is the inverse of the `concatenate_columns` function.
 

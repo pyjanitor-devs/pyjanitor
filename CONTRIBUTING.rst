@@ -35,6 +35,21 @@ Implement Features
 Look through the GitHub issues for features. Anything tagged with "enhancement"
 and "help wanted" is open to whoever wants to implement it.
 
+Implementing a feature generally means writing a function that has the following form:
+
+.. code-block:: python
+
+    @pf.register_dataframe_method
+    def function(df, *args, **kwargs):
+        # stuff done here
+        return df
+
+The function signature should take a pandas dataframe as the input, and return a pandas dataframe as the output. Any manipulation to the dataframe should be implemented inside the function.
+
+This function should be implemented in `functions.py`, and should have a test accompanying it in `tests/test_functions.py`.
+
+If you're wondering why we don't have to implement the method chaining portion, it's because we use pandas-flavor's `register_dataframe_method`, which registers the function as a pandas dataframe method.
+
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 

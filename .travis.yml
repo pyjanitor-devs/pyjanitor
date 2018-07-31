@@ -30,7 +30,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  # Install Python, py.text, and required packages.
+  # Install Python, py.test, and required packages.
   - conda env create -f environment-dev.yml
   # This guarantees that Python version is matrixed.
   - conda install python=$PYTHON_VERSION

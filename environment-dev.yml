@@ -19,6 +19,6 @@ dependencies:
 - twine
 - bumpversion
 - pytest-cov
+- pandas-flavor
 - pip:
   - sphinxcontrib-fulltoc
-  - pandas-flavor

@@ -5,9 +5,14 @@ before_script:
   - sleep 5 # give xvfb some time to start
 
 language: python
-python:
-  # We don't actually use the Travis Python, but this keeps it organized.
-  - "3.5"
+matrix:
+  include:
+    - python: 3.5
+    - python: 3.6
+    - python: 3.7
+# python:
+#   # We don't actually use the Travis Python, but this keeps it organized.
+#   - "3.5"
 install:
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
@@ -24,6 +29,7 @@ install:
 
   # Install Python, py.text, and required packages.
   - conda env create -f environment-dev.yml
+  - conda env update python=$TRAVIS_PYTHON_VERSION  # guarantees that Python version is matrixed.
   - source activate pyjanitor-dev
   - python setup.py install
 

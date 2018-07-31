@@ -7,13 +7,15 @@ before_script:
 language: python
 matrix:
   include:
-    - python: 3.5
-    - python: 3.6
-    # Python 3.7 is unavailable on Travis at the moment.
-    # - python: 3.7
-# python:
-#   # We don't actually use the Travis Python, but this keeps it organized.
-#   - "3.5"
+    - python: 3.5  # we don't actually use this
+      env: PYTHON_VERSION=3.5
+
+    - python: 3.5  # we don't actually use this
+      env: PYTHON_VERSION=3.6
+
+    - python: 3.5  # we don't actually use this
+      env: PYTHON_VERSION=3.7
+
 install:
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
@@ -30,7 +32,8 @@ install:
 
   # Install Python, py.text, and required packages.
   - conda env create -f environment-dev.yml
-  - conda install python=$TRAVIS_PYTHON_VERSION  # guarantees that Python version is matrixed.
+  # This guarantees that Python version is matrixed.
+  - conda install python=$PYTHON_VERSION
   - source activate pyjanitor-dev
   - python setup.py install
 

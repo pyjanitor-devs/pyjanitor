@@ -13,7 +13,7 @@ Here's what the dirty dataframe looks like.
 .. code-block:: python
 
   import pandas as pd
-  import janitor as jn
+  import janitor
 
   df = pd.read_excel('examples/dirty_data.xlsx')
   print(df)
@@ -72,7 +72,7 @@ There's a bunch of problems with this data. Firstly, the column names are not lo
 
 .. code-block:: python
 
-  df_clean = jn.DataFrame(df).clean_names()
+  df_clean = df.clean_names()
   print(df_clean.head(2))
 
 Notice now how the column names have been made better.
@@ -91,7 +91,7 @@ If you squint at the unclean dataset, you'll notice one row and one column of da
 
 .. code-block:: python
 
-    df_clean = jn.DataFrame(df).clean_names().remove_empty()
+    df_clean = df.clean_names().remove_empty()
     print(df_clean.head(5))
 
 .. code-block:: none
@@ -119,8 +119,7 @@ Next, let's rename some of the columns. `%_allocated` and `full_time?` contain n
 
 .. code-block:: python
 
-    df_clean = (jn.DataFrame(df)
-                .clean_names()
+    df_clean = (df.clean_names()
                 .remove_empty()
                 .rename_column("%_allocated", "percent_allocated")
                 .rename_column("full_time?", "full_time"))
@@ -175,8 +174,7 @@ Rows 8 and 11 have NaN in the left certification column, but have a value in the
 
 .. code-block:: python
 
-    df_clean = (jn.DataFrame(df)
-                .clean_names()
+    df_clean = (df.clean_names()
                 .remove_empty()
                 .rename_column("%_allocated", "percent_allocated")
                 .rename_column("full_time?", "full_time")
@@ -224,13 +222,12 @@ To clean up this data, we can use the :py:meth:`convert_excel_date` method.
 
 .. code-block:: python
 
-  (jn.DataFrame(df)
-     .clean_names()
-     .remove_empty()
-     .rename_column('%_allocated', 'percent_allocated')
-     .rename_column('full_time?', 'full_time')
-     .coalesce(['certification', 'certification.1'], 'certification')
-     .convert_excel_date('hire_date'))
+  df_clean = (df.clean_names()
+              .remove_empty()
+              .rename_column('%_allocated', 'percent_allocated')
+              .rename_column('full_time?', 'full_time')
+              .coalesce(['certification', 'certification.1'], 'certification')
+              .convert_excel_date('hire_date'))
 
 This gives the output:
 

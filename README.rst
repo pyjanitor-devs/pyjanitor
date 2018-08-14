@@ -52,7 +52,7 @@ The idea behind the API is two-fold:
 - Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
 - Add other utility functions that make it easy to do data cleaning in `pandas`.
 
-As such, there are four ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.
+As such, there are three ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.
 
 .. code-block:: python
 

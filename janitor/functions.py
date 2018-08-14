@@ -588,7 +588,7 @@ def filter_string(
     df, column: str, search_string: str, complement: bool = False
 ):
     """
-    Filters a string-based column according to whether it contains a substring.
+    Filter a string-based column according to whether it contains a substring.
 
     This is super sugary syntax that builds on top of `filter_column` and
     `pandas.Series.str.contains`.
@@ -602,7 +602,7 @@ def filter_string(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string('column', search_string='pattern', complement=False)
+              .filter_string('column', search_string='pattern', complement=False)  # noqa: E501
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -640,11 +640,11 @@ def filter_string(
     :param complement: Whether to return the complement of the filter or not.
     """
     criteria = df[column].str.contains(search_string)
-    return filter_column(df, criteria, complement=complement)
+    return filter_on(df, criteria, complement=complement)
 
 
 @pf.register_dataframe_method
-def filter_column(df, criteria, complement=False):
+def filter_on(df, criteria, complement=False):
     """
     Return a dataframe filtered on a particular criteria.
 
@@ -681,6 +681,8 @@ def filter_column(df, criteria, complement=False):
               .filter_string(df['value'] < 3
                              complement=False)
               ...)
+
+    Credit to Brant Peterson for the name.
 
     :param df: A pandas DataFrame.
     :param criteria: A filtering criteria that returns an array or Series of

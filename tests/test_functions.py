@@ -1,3 +1,5 @@
+"""Tests for pyjanitor."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -11,9 +13,10 @@ from janitor import (
     deconcatenate_column,
     encode_categorical,
     expand_column,
+    filter_on,
+    filter_string,
     get_dupes,
     remove_empty,
-    filter_string,
 )
 
 
@@ -157,7 +160,7 @@ def test_single_column_label_encode():
 
 def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
-        df = pd.DataFrame(
+        df = pd.DataFrame(  # noqa: 841
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
         ).label_encode(columns="c")
 
@@ -306,7 +309,7 @@ def test_clean_names_strip_underscores_l(multiindex_dataframe):
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(janitor.errors.JanitorError):
-        df = clean_names(multiindex_dataframe, strip_underscores="hello")
+        df = clean_names(multiindex_dataframe, strip_underscores="hello")  # noqa: E501, F841
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):
@@ -368,4 +371,14 @@ def test_filter_string_complement(dataframe):
     df = filter_string(
         dataframe, column="cities", search_string="hang", complement=True
     )
+    assert len(df) == 6
+
+
+def test_filter_on(dataframe):
+    df = filter_on(dataframe, dataframe['a'] == 3)
+    assert len(df) == 3
+
+
+def test_filter_on_complement(dataframe):
+    df = filter_on(dataframe, dataframe['a'] == 3, complement=True)
     assert len(df) == 6

@@ -200,9 +200,12 @@ def encode_categorical(df, columns):
         for col in columns:
             assert col in df.columns, JanitorError(
                 "{col} missing from dataframe columns!".format(col=col)
-            )  # noqa: E501
+            )
             df[col] = pd.Categorical(df[col])
     elif isinstance(columns, str):
+        assert columns in df.columns, JanitorError(
+            "{columns} missing from dataframe columns!".format(columns=columns)
+        )
         df[columns] = pd.Categorical(df[columns])
     else:
         raise JanitorError("kwarg `columns` must be a string or iterable!")
@@ -447,14 +450,19 @@ def fill_empty(df, columns, value):
     """
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
-            assert col in df.columns, JanitorError(
-                "{col} missing from dataframe columns!".format(col=col)
-            )  # noqa: E501
+            assert (
+                col in df.columns
+            ), "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
-    elif isinstance(columns, str):
-        df[columns] = df[columns].fillna(value)
     else:
-        raise JanitorError("kwarg `columns` must be a string or iterable!")
+        assert (
+            columns in df.columns
+        ), "{col} missing from dataframe columns!".format(
+            col=columns
+        )
+        df[columns] = df[columns].fillna(value)
 
     return df
 

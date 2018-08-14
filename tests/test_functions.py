@@ -18,6 +18,7 @@ from janitor import (
     get_dupes,
     remove_empty,
 )
+from janitor.errors import JanitorError
 
 
 @pytest.fixture
@@ -38,6 +39,7 @@ def null_df():
     np.random.seed([3, 1415])
     df = pd.DataFrame(np.random.choice((1, np.nan), (10, 2)))
     df["2"] = np.nan * 10
+    df["3"] = np.nan * 10
     return df
 
 
@@ -115,11 +117,42 @@ def test_encode_categorical():
     assert df["class_label"].dtypes == "category"
 
 
+def test_encode_categorical_missing_column(dataframe):
+    with pytest.raises(AssertionError):
+        dataframe.encode_categorical("aloha")
+
+
+def test_encode_categorical_missing_columns(dataframe):
+    with pytest.raises(AssertionError):
+        dataframe.encode_categorical(["animals", "cities", "aloha"])
+
+
+def test_encode_categorical_invalid_input(dataframe):
+    with pytest.raises(JanitorError):
+        dataframe.encode_categorical(1)
+
+
 def test_get_features_targets(dataframe):
     dataframe = dataframe.clean_names()
     X, y = dataframe.get_features_targets(target_columns="bell_chart")
     assert X.shape == (9, 4)
     assert y.shape == (9,)
+
+
+def test_get_features_targets_multi_features(dataframe):
+    dataframe = dataframe.clean_names()
+    X, y = dataframe.get_features_targets(
+        feature_columns=["animals", "cities"], target_columns="bell_chart"
+    )
+    assert X.shape == (9, 2)
+    assert y.shape == (9,)
+
+
+def test_get_features_target_multi_columns(dataframe):
+    dataframe = dataframe.clean_names()
+    X, y = dataframe.get_features_targets(target_columns=["a", "bell_chart"])
+    assert X.shape == (9, 3)
+    assert y.shape == (9, 2)
 
 
 def test_rename_column(dataframe):
@@ -151,6 +184,11 @@ def test_fill_empty(null_df):
     assert set(df.loc[:, "2"]) == set([3])
 
 
+def test_fill_empty_column_string(null_df):
+    df = null_df.fill_empty(columns="2", value=3)
+    assert set(df.loc[:, "2"]) == set([3])
+
+
 def test_single_column_label_encode():
     df = pd.DataFrame(
         {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
@@ -175,6 +213,11 @@ def test_multicolumn_label_encode():
     ).label_encode(columns=["a", "c"])
     assert "a_enc" in df.columns
     assert "c_enc" in df.columns
+
+
+def test_label_encode_invalid_input(dataframe):
+    with pytest.raises(JanitorError):
+        dataframe.label_encode(1)
 
 
 def test_multiindex_clean_names_functional(multiindex_dataframe):
@@ -308,8 +351,10 @@ def test_clean_names_strip_underscores_l(multiindex_dataframe):
 
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
-    with pytest.raises(janitor.errors.JanitorError):
-        df = clean_names(multiindex_dataframe, strip_underscores="hello")  # noqa: E501, F841
+    with pytest.raises(JanitorError):
+        df = clean_names(
+            multiindex_dataframe, strip_underscores="hello"
+        )  # noqa: E501, F841
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):
@@ -336,6 +381,16 @@ def test_expand_column():
     df = pd.DataFrame(data)
     expanded = expand_column(df, "col1", sep=", ", concat=False)
     assert expanded.shape[1] == 6
+
+
+def test_expand_and_concat():
+    data = {
+        "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
+        "col2": [1, 2, 3, 4],
+    }
+
+    df = pd.DataFrame(data).expand_column("col1", sep=", ", concat=True)
+    assert df.shape[1] == 8
 
 
 def test_concatenate_columns(dataframe):
@@ -375,10 +430,10 @@ def test_filter_string_complement(dataframe):
 
 
 def test_filter_on(dataframe):
-    df = filter_on(dataframe, dataframe['a'] == 3)
+    df = filter_on(dataframe, dataframe["a"] == 3)
     assert len(df) == 3
 
 
 def test_filter_on_complement(dataframe):
-    df = filter_on(dataframe, dataframe['a'] == 3, complement=True)
+    df = filter_on(dataframe, dataframe["a"] == 3, complement=True)
     assert len(df) == 6

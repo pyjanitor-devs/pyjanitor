@@ -584,7 +584,9 @@ def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
 
 
 @pf.register_dataframe_method
-def filter_string(df, column: str, search_string: str, complement: bool=False):
+def filter_string(
+    df, column: str, search_string: str, complement: bool = False
+):
     """
     Filters a string-based column according to whether it contains a substring.
 

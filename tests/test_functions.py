@@ -3,18 +3,28 @@ import pandas as pd
 import pytest
 
 import janitor
-from janitor import (clean_names, coalesce, concatenate_columns,
-                     convert_excel_date, deconcatenate_column,
-                     encode_categorical, expand_column, get_dupes,
-                     remove_empty)
+from janitor import (
+    clean_names,
+    coalesce,
+    concatenate_columns,
+    convert_excel_date,
+    deconcatenate_column,
+    encode_categorical,
+    expand_column,
+    get_dupes,
+    remove_empty,
+    filter_string,
+)
 
 
 @pytest.fixture
 def dataframe():
     data = {
-        "a": [1, 2, 3],
-        "Bell__Chart": [1, 2, 3],
-        "decorated-elephant": [1, 2, 3],
+        "a": [1, 2, 3] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
     return df
@@ -41,20 +51,37 @@ def multiindex_dataframe():
 
 def test_clean_names_functional(dataframe):
     df = clean_names(dataframe)
-    expected_columns = ["a", "bell_chart", "decorated_elephant"]
-
+    expected_columns = [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
+        "animals",
+        "cities",
+    ]
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_method_chain(dataframe):
     df = dataframe.clean_names()
-    expected_columns = ["a", "bell_chart", "decorated_elephant"]
+    expected_columns = [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
+        "animals",
+        "cities",
+    ]
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_pipe(dataframe):
     df = dataframe.pipe(clean_names)
-    expected_columns = ["a", "bell_chart", "decorated_elephant"]
+    expected_columns = [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
+        "animals",
+        "cities",
+    ]
     assert set(df.columns) == set(expected_columns)
 
 
@@ -88,14 +115,14 @@ def test_encode_categorical():
 def test_get_features_targets(dataframe):
     dataframe = dataframe.clean_names()
     X, y = dataframe.get_features_targets(target_columns="bell_chart")
-    assert X.shape == (3, 2)
-    assert y.shape == (3,)
+    assert X.shape == (9, 4)
+    assert y.shape == (9,)
 
 
 def test_rename_column(dataframe):
     df = dataframe.clean_names().rename_column("a", "index")
     assert set(df.columns) == set(
-        ["index", "bell_chart", "decorated_elephant"]
+        ["index", "bell_chart", "decorated_elephant", "animals", "cities"]
     )  # noqa: E501
 
 
@@ -327,6 +354,18 @@ def test_deconcatenate_column(dataframe):
     )
     df = deconcatenate_column(
         df, column="index", new_column_names=["A", "B"], sep="-"
-    )  # noqa: E501
+    )
     assert "A" in df.columns
     assert "B" in df.columns
+
+
+def test_filter_string(dataframe):
+    df = filter_string(dataframe, column="animals", search_string="bbit")
+    assert len(df) == 3
+
+
+def test_filter_string_complement(dataframe):
+    df = filter_string(
+        dataframe, column="cities", search_string="hang", complement=True
+    )
+    assert len(df) == 6

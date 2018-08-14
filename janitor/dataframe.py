@@ -25,7 +25,6 @@ warnings.warn(msg)
 
 
 class JanitorSeries(Series):
-
     @property
     def _constructor(self):
         return JanitorSeries
@@ -36,7 +35,6 @@ class JanitorSeries(Series):
 
 
 class JanitorDataFrame(DataFrame):
-
     @property
     def _constructor(self):
         return JanitorDataFrame

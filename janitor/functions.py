@@ -200,9 +200,12 @@ def encode_categorical(df, columns):
         for col in columns:
             assert col in df.columns, JanitorError(
                 "{col} missing from dataframe columns!".format(col=col)
-            )  # noqa: E501
+            )
             df[col] = pd.Categorical(df[col])
     elif isinstance(columns, str):
+        assert columns in df.columns, JanitorError(
+            "{columns} missing from dataframe columns!".format(columns=columns)
+        )
         df[columns] = pd.Categorical(df[columns])
     else:
         raise JanitorError("kwarg `columns` must be a string or iterable!")
@@ -447,14 +450,19 @@ def fill_empty(df, columns, value):
     """
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
-            assert col in df.columns, JanitorError(
-                "{col} missing from dataframe columns!".format(col=col)
-            )  # noqa: E501
+            assert (
+                col in df.columns
+            ), "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
-    elif isinstance(columns, str):
-        df[columns] = df[columns].fillna(value)
     else:
-        raise JanitorError("kwarg `columns` must be a string or iterable!")
+        assert (
+            columns in df.columns
+        ), "{col} missing from dataframe columns!".format(
+            col=columns
+        )
+        df[columns] = df[columns].fillna(value)
 
     return df
 
@@ -581,3 +589,115 @@ def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     ), "number of new column names not correct."
     deconcat.columns = new_column_names
     return df.join(deconcat)
+
+
+@pf.register_dataframe_method
+def filter_string(
+    df, column: str, search_string: str, complement: bool = False
+):
+    """
+    Filter a string-based column according to whether it contains a substring.
+
+    This is super sugary syntax that builds on top of `filter_column` and
+    `pandas.Series.str.contains`.
+
+    Because this uses internally `pandas.Series.str.contains`, which allows a
+    regex string to be passed into it, thus `search_string` can also be a regex
+    pattern.
+
+    This function allows us to method chain filtering operations:
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...)
+              .filter_string('column', search_string='pattern', complement=False)  # noqa: E501
+              ...)  # chain on more data preprocessing.
+
+    This stands in contrast to the in-place syntax that is usually used:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        df = df[df['column'].str.contains('pattern')]]
+
+    As can be seen here, the API design allows for a more seamless flow in
+    expressing the filtering operations.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = filter_string(df,
+                           column='column',
+                           search_string='pattern'
+                           complement=False)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...)
+              .filter_string(column='column',
+                             search_string='pattern'
+                             complement=False)
+              ...)
+
+    :param df: A pandas DataFrame.
+    :param column: The column to filter. The column should contain strings.
+    :param search_string: A regex pattern or a (sub-)string to search.
+    :param complement: Whether to return the complement of the filter or not.
+    """
+    criteria = df[column].str.contains(search_string)
+    return filter_on(df, criteria, complement=complement)
+
+
+@pf.register_dataframe_method
+def filter_on(df, criteria, complement=False):
+    """
+    Return a dataframe filtered on a particular criteria.
+
+    This function allows us to method chain filtering operations:
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...)
+              .filter_column(df['value'] < 3, complement=False)
+              ...)  # chain on more data preprocessing.
+
+    This stands in contrast to the in-place syntax that is usually used:
+
+    .. code-block:: python
+        df = pd.DataFrame(...)
+        df = df[df['value'] < 3]
+
+    As with the `filter_string` function, a more seamless flow can be expressed
+    in the code.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = filter_column(df,
+                           df['value'] < 3,
+                           complement=False)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...)
+              .filter_string(df['value'] < 3
+                             complement=False)
+              ...)
+
+    Credit to Brant Peterson for the name.
+
+    :param df: A pandas DataFrame.
+    :param criteria: A filtering criteria that returns an array or Series of
+        booleans, on which pandas can filter on.
+    :param complement: Whether to return the complement of the filter or not.
+    """
+    if complement:
+        return df[~criteria]
+    else:
+        return df[criteria]

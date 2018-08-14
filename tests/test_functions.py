@@ -1,20 +1,34 @@
+"""Tests for pyjanitor."""
+
 import numpy as np
 import pandas as pd
 import pytest
 
 import janitor
-from janitor import (clean_names, coalesce, concatenate_columns,
-                     convert_excel_date, deconcatenate_column,
-                     encode_categorical, expand_column, get_dupes,
-                     remove_empty)
+from janitor import (
+    clean_names,
+    coalesce,
+    concatenate_columns,
+    convert_excel_date,
+    deconcatenate_column,
+    encode_categorical,
+    expand_column,
+    filter_on,
+    filter_string,
+    get_dupes,
+    remove_empty,
+)
+from janitor.errors import JanitorError
 
 
 @pytest.fixture
 def dataframe():
     data = {
-        "a": [1, 2, 3],
-        "Bell__Chart": [1, 2, 3],
-        "decorated-elephant": [1, 2, 3],
+        "a": [1, 2, 3] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
     return df
@@ -25,6 +39,7 @@ def null_df():
     np.random.seed([3, 1415])
     df = pd.DataFrame(np.random.choice((1, np.nan), (10, 2)))
     df["2"] = np.nan * 10
+    df["3"] = np.nan * 10
     return df
 
 
@@ -41,20 +56,37 @@ def multiindex_dataframe():
 
 def test_clean_names_functional(dataframe):
     df = clean_names(dataframe)
-    expected_columns = ["a", "bell_chart", "decorated_elephant"]
-
+    expected_columns = [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
+        "animals",
+        "cities",
+    ]
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_method_chain(dataframe):
     df = dataframe.clean_names()
-    expected_columns = ["a", "bell_chart", "decorated_elephant"]
+    expected_columns = [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
+        "animals",
+        "cities",
+    ]
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_pipe(dataframe):
     df = dataframe.pipe(clean_names)
-    expected_columns = ["a", "bell_chart", "decorated_elephant"]
+    expected_columns = [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
+        "animals",
+        "cities",
+    ]
     assert set(df.columns) == set(expected_columns)
 
 
@@ -85,17 +117,48 @@ def test_encode_categorical():
     assert df["class_label"].dtypes == "category"
 
 
+def test_encode_categorical_missing_column(dataframe):
+    with pytest.raises(AssertionError):
+        dataframe.encode_categorical("aloha")
+
+
+def test_encode_categorical_missing_columns(dataframe):
+    with pytest.raises(AssertionError):
+        dataframe.encode_categorical(["animals", "cities", "aloha"])
+
+
+def test_encode_categorical_invalid_input(dataframe):
+    with pytest.raises(JanitorError):
+        dataframe.encode_categorical(1)
+
+
 def test_get_features_targets(dataframe):
     dataframe = dataframe.clean_names()
     X, y = dataframe.get_features_targets(target_columns="bell_chart")
-    assert X.shape == (3, 2)
-    assert y.shape == (3,)
+    assert X.shape == (9, 4)
+    assert y.shape == (9,)
+
+
+def test_get_features_targets_multi_features(dataframe):
+    dataframe = dataframe.clean_names()
+    X, y = dataframe.get_features_targets(
+        feature_columns=["animals", "cities"], target_columns="bell_chart"
+    )
+    assert X.shape == (9, 2)
+    assert y.shape == (9,)
+
+
+def test_get_features_target_multi_columns(dataframe):
+    dataframe = dataframe.clean_names()
+    X, y = dataframe.get_features_targets(target_columns=["a", "bell_chart"])
+    assert X.shape == (9, 3)
+    assert y.shape == (9, 2)
 
 
 def test_rename_column(dataframe):
     df = dataframe.clean_names().rename_column("a", "index")
     assert set(df.columns) == set(
-        ["index", "bell_chart", "decorated_elephant"]
+        ["index", "bell_chart", "decorated_elephant", "animals", "cities"]
     )  # noqa: E501
 
 
@@ -121,6 +184,11 @@ def test_fill_empty(null_df):
     assert set(df.loc[:, "2"]) == set([3])
 
 
+def test_fill_empty_column_string(null_df):
+    df = null_df.fill_empty(columns="2", value=3)
+    assert set(df.loc[:, "2"]) == set([3])
+
+
 def test_single_column_label_encode():
     df = pd.DataFrame(
         {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
@@ -130,7 +198,7 @@ def test_single_column_label_encode():
 
 def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
-        df = pd.DataFrame(
+        df = pd.DataFrame(  # noqa: 841
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
         ).label_encode(columns="c")
 
@@ -145,6 +213,11 @@ def test_multicolumn_label_encode():
     ).label_encode(columns=["a", "c"])
     assert "a_enc" in df.columns
     assert "c_enc" in df.columns
+
+
+def test_label_encode_invalid_input(dataframe):
+    with pytest.raises(JanitorError):
+        dataframe.label_encode(1)
 
 
 def test_multiindex_clean_names_functional(multiindex_dataframe):
@@ -278,8 +351,10 @@ def test_clean_names_strip_underscores_l(multiindex_dataframe):
 
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
-    with pytest.raises(janitor.errors.JanitorError):
-        df = clean_names(multiindex_dataframe, strip_underscores="hello")
+    with pytest.raises(JanitorError):
+        df = clean_names(
+            multiindex_dataframe, strip_underscores="hello"
+        )  # noqa: E501, F841
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):
@@ -308,6 +383,16 @@ def test_expand_column():
     assert expanded.shape[1] == 6
 
 
+def test_expand_and_concat():
+    data = {
+        "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
+        "col2": [1, 2, 3, 4],
+    }
+
+    df = pd.DataFrame(data).expand_column("col1", sep=", ", concat=True)
+    assert df.shape[1] == 8
+
+
 def test_concatenate_columns(dataframe):
     df = concatenate_columns(
         dataframe,
@@ -327,6 +412,28 @@ def test_deconcatenate_column(dataframe):
     )
     df = deconcatenate_column(
         df, column="index", new_column_names=["A", "B"], sep="-"
-    )  # noqa: E501
+    )
     assert "A" in df.columns
     assert "B" in df.columns
+
+
+def test_filter_string(dataframe):
+    df = filter_string(dataframe, column="animals", search_string="bbit")
+    assert len(df) == 3
+
+
+def test_filter_string_complement(dataframe):
+    df = filter_string(
+        dataframe, column="cities", search_string="hang", complement=True
+    )
+    assert len(df) == 6
+
+
+def test_filter_on(dataframe):
+    df = filter_on(dataframe, dataframe["a"] == 3)
+    assert len(df) == 3
+
+
+def test_filter_on_complement(dataframe):
+    df = filter_on(dataframe, dataframe["a"] == 3, complement=True)
+    assert len(df) == 6

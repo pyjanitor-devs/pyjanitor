@@ -686,7 +686,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string(df['value'] < 3
+              .filter_column(df['value'] < 3
                              complement=False)
               ...)
 

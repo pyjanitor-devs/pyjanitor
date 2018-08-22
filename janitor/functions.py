@@ -707,3 +707,48 @@ def filter_on(df, criteria, complement=False):
         return df[~criteria]
     else:
         return df[criteria]
+
+
+@pf.register_dataframe_method
+def remove_columns(df: pd.DataFrame, cols: list):
+    """
+    Removes the set of columns specified in cols.
+
+    Intended to be the method-chaining alternative to `del df[col]`.
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).remove_column(cols=['col1', ['col2']])
+
+    :param df: A pandas DataFrame
+    :param cols: The columns to remove.
+    """
+    for col in cols:
+        del df[col]
+    return df
+
+
+@pf.register_dataframe_method
+def change_type(df, col: str, dtype):
+    """
+    Changes the type of a column.
+
+    Intended to be the method-chaining alternative to::
+
+        df[col] = df[col].astype(dtype)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).change_type('col1', str)
+
+    :param df: A pandas dataframe.
+    :param col: A column in the dataframe.
+    :param dtype: The datatype to convert to. Should be one of the standard
+        Python types, or a numpy datatype.
+    """
+    df[col] = df[col].astype(dtype)
+    return df

@@ -70,6 +70,13 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
         import janitor
         df = pd.DataFrame(...).clean_names()
 
+    Example of transformation:
+
+    .. code-block::
+
+        Columns before: First Name, Last Name, Employee Status, Subject
+        Columns after: first_name, last_name, employee_status, subject
+
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
         column names. Default None keeps outer underscores. Values can be
@@ -236,9 +243,8 @@ def label_encode(df, columns):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        df = df.label_encode(columns=categorical_cols)
+        df = pd.DataFrame(...).label_encode(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)

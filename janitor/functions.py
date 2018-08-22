@@ -710,7 +710,7 @@ def filter_on(df, criteria, complement=False):
 
 
 @pf.register_dataframe_method
-def remove_columns(df: pd.DataFrame, cols: list):
+def remove_columns(df: pd.DataFrame, columns: list):
     """
     Removes the set of columns specified in cols.
 
@@ -725,13 +725,13 @@ def remove_columns(df: pd.DataFrame, cols: list):
     :param df: A pandas DataFrame
     :param cols: The columns to remove.
     """
-    for col in cols:
+    for col in columns:
         del df[col]
     return df
 
 
 @pf.register_dataframe_method
-def change_type(df, col: str, dtype):
+def change_type(df, column: str, dtype):
     """
     Changes the type of a column.
 
@@ -750,5 +750,5 @@ def change_type(df, col: str, dtype):
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
     """
-    df[col] = df[col].astype(dtype)
+    df[column] = df[column].astype(dtype)
     return df

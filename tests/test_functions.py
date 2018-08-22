@@ -17,6 +17,8 @@ from janitor import (
     filter_string,
     get_dupes,
     remove_empty,
+    remove_columns,
+    change_type,
 )
 from janitor.errors import JanitorError
 
@@ -437,3 +439,13 @@ def test_filter_on(dataframe):
 def test_filter_on_complement(dataframe):
     df = filter_on(dataframe, dataframe["a"] == 3, complement=True)
     assert len(df) == 6
+
+
+def test_remove_columns(dataframe):
+    df = remove_columns(dataframe, columns=["a"])
+    assert len(df.columns) == 4
+
+
+def test_change_type(dataframe):
+    df = change_type(dataframe, column="a", dtype=float)
+    assert df["a"].dtype == float

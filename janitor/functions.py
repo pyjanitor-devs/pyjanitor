@@ -70,6 +70,13 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
         import janitor
         df = pd.DataFrame(...).clean_names()
 
+    Example of transformation:
+
+    .. code-block::
+
+        Columns before: First Name, Last Name, Employee Status, Subject
+        Columns after: first_name, last_name, employee_status, subject
+
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
         column names. Default None keeps outer underscores. Values can be
@@ -236,9 +243,8 @@ def label_encode(df, columns):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        df = df.label_encode(columns=categorical_cols)
+        df = pd.DataFrame(...).label_encode(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)
@@ -701,3 +707,48 @@ def filter_on(df, criteria, complement=False):
         return df[~criteria]
     else:
         return df[criteria]
+
+
+@pf.register_dataframe_method
+def remove_columns(df: pd.DataFrame, columns: list):
+    """
+    Removes the set of columns specified in cols.
+
+    Intended to be the method-chaining alternative to `del df[col]`.
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).remove_column(cols=['col1', ['col2']])
+
+    :param df: A pandas DataFrame
+    :param cols: The columns to remove.
+    """
+    for col in columns:
+        del df[col]
+    return df
+
+
+@pf.register_dataframe_method
+def change_type(df, column: str, dtype):
+    """
+    Changes the type of a column.
+
+    Intended to be the method-chaining alternative to::
+
+        df[col] = df[col].astype(dtype)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).change_type('col1', str)
+
+    :param df: A pandas dataframe.
+    :param col: A column in the dataframe.
+    :param dtype: The datatype to convert to. Should be one of the standard
+        Python types, or a numpy datatype.
+    """
+    df[column] = df[column].astype(dtype)
+    return df

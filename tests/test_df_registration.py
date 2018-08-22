@@ -62,3 +62,27 @@ def test_fill_empty_registration(dataframe):
 
 def test_expand_column_registration(dataframe):
     assert dataframe.__getattr__("expand_column")
+
+
+def test_concatenate_columns_registration(dataframe):
+    assert dataframe.__getattr__("concatenate_columns")
+
+
+def test_deconcatenate_column_registration(dataframe):
+    assert dataframe.__getattr__("deconcatenate_column")
+
+
+def test_filter_string_registration(dataframe):
+    assert dataframe.__getattr__("filter_string")
+
+
+def test_filter_on_registration(dataframe):
+    assert dataframe.__getattr__("filter_on")
+
+
+def test_remove_columns_registration(dataframe):
+    assert dataframe.__getattr__("remove_columns")
+
+
+def test_change_type_registration(dataframe):
+    assert dataframe.__getattr__("change_type")

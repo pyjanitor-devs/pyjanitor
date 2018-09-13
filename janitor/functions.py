@@ -14,6 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 import pandas_flavor as pf
 
 from .errors import JanitorError
+from typing import List
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -751,4 +752,39 @@ def change_type(df, column: str, dtype):
         Python types, or a numpy datatype.
     """
     df[column] = df[column].astype(dtype)
+    return df
+
+
+@pf.register_dataframe_method
+def add_column(df, colname: str, value):
+    """
+    Adds a column to the dataframe.
+
+    Intended to be the method-chaining alternative to::
+
+        df[colname] = value
+
+    Method chaining example adding a column with only a single value:
+
+    .. code-block:: python
+
+        # This will add a column with only one value.
+        df = pd.DataFrame(...).add_column(colname="new_column", 2)
+
+    Method chaining example adding a column with more than one value:
+
+    .. code-block:: python
+
+        # This will add a column with an iterable of values.
+        vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
+        df = pd.DataFrame(...).add_column(colname="new_column", vals)
+
+    :param df: A pandas dataframe.
+    :param colname: Name of the new column. Should be a string, in order
+        for the column name to be compatible with the Feather binary
+        format (this is a useful thing to have).
+    :param value: Either a single value, or a list/tuple of values.
+    """
+    assert isinstance(colname, str), "`colname` must be a string!"
+    df[colname] = value
     return df

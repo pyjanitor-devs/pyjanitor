@@ -17,7 +17,9 @@ It's well-explained in the R package documentation, but the high level summary i
 
 - If all empty column names and rows were removed prior to data analysis, a lot of hurt w.r.t. checking shapes could be eliminated!
 
-What if instead we had standard data cleaning routines implemented? Even better, what if they were Pythonic, easy to use, and explicit about exactly what they did? Perhaps we'd have a much easier time doing data science!
+- I also hypothesize that expressing our data cleaning process as a series of method-chained verbs makes our code closer to the *actions* being taken on the data, which in turn makes it easier to make reasonable guesses as to why those actions are being taken.
+
+What if instead we had standard data cleaning routines implemented? Even better, what if they were Pythonic, easy to use, and explicit about exactly what they did? Perhaps we'd have a much easier time doing data science instead!
 
 installation
 ------------
@@ -28,6 +30,11 @@ installation
 
     pip install pyjanitor
 
+`pyjanitor` also can be installed by the conda package manager:
+
+..code-block:: bash
+
+    conda install pyjanitor -c conda-forge
 
 functionality
 -------------
@@ -39,10 +46,10 @@ Current functionality includes:
 - Identifying duplicate entries
 - Encoding columns as categorical
 - Splitting your data into features and targets (for machine learning)
-- Easily renaming individual columns
+- Adding, removing, and renaming columns
 - Coalesce multiple columns into a single column
-- Convert excel date (serial format) into a Python datetime format.
-- Expand a single column that has delimited, categorical values into dummy-encoded variables.
+- Convert excel date (serial format) into a Python datetime format
+- Expand a single column that has delimited, categorical values into dummy-encoded variables
 
 apis
 ----
@@ -50,7 +57,7 @@ apis
 The idea behind the API is two-fold:
 
 - Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
-- Add other utility functions that make it easy to do data cleaning in `pandas`.
+- Add other utility functions that make it easy to do data cleaning/preprocessing in `pandas`.
 
 As such, there are three ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.
 

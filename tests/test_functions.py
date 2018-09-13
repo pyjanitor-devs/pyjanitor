@@ -19,6 +19,7 @@ from janitor import (
     remove_empty,
     remove_columns,
     change_type,
+    add_column,
 )
 from janitor.errors import JanitorError
 
@@ -449,3 +450,11 @@ def test_remove_columns(dataframe):
 def test_change_type(dataframe):
     df = change_type(dataframe, column="a", dtype=float)
     assert df["a"].dtype == float
+
+
+def test_add_column(dataframe):
+    df = dataframe.add_column("fortytwo", 42)
+    assert "fortytwo" in df.columns
+    series = pd.Series([42] * len(dataframe))
+    series.name = "fortytwo"
+    pd.testing.assert_series_equal(df["fortytwo"], series)

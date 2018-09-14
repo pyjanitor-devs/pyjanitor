@@ -53,7 +53,6 @@ With ``pyjanitor``, we enable method chaining with method names that are *verbs*
 As such, the pyjanitor's etymology has a two-fold relationship to "cleanliness". Firstly, it's about extending Pandas with convenient data cleaning routines. Secondly, it's about providing a cleaner, method-chaining, verb-based API for common pandas routines.
 
 
-
 installation
 ------------
 

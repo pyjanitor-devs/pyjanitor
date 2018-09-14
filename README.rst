@@ -22,10 +22,10 @@ Inspired by the R statistical language ecosystem, where consistent and good API 
 To accomplish this, actions for which we would need to invoke imperative-style statements, can be replaced with method chains that allow one to read off the logical order of actions taken. Let us see the annotated example below. First, off, here's the textual description of a data cleaning pathway:
 
 1. Create dataframe.
-1. Delete one column.
-1. Drop rows with empty values in two particular columns.
-1. Rename another two columns.
-1. Add a new column.
+2. Delete one column.
+3. Drop rows with empty values in two particular columns.
+4. Rename another two columns.
+5. Add a new column.
 
 In ``pandas`` code, this would look as such:
 
@@ -56,15 +56,16 @@ As such, the pyjanitor's etymology has a two-fold relationship to "cleanliness".
 installation
 ------------
 
-`pyjanitor` is currently installable from PyPI:
+``pyjanitor`` is currently installable from PyPI:
 
 .. code-block:: bash
 
     pip install pyjanitor
 
-`pyjanitor` also can be installed by the conda package manager:
 
-..code-block:: bash
+``pyjanitor`` also can be installed by the conda package manager:
+
+.. code-block:: bash
 
     conda install pyjanitor -c conda-forge
 
@@ -155,7 +156,7 @@ add a test case
 Secondly, we ask that you contribute an test case, to ensure that it works as intended. This should go inside the ``tests/test_functions.py`` file.
 
 feature requests
-----------------
+~~~~~~~~~~~~~~~~
 
 If you have a feature request, please post it as an issue on the GitHub repository issue tracker. Even better, put in a PR for it! I am more than happy to guide you through the codebase so that you can put in a contribution to the codebase.
 

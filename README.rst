@@ -1,5 +1,5 @@
 pyjanitor
-===========
+=========
 
 .. image:: https://travis-ci.org/ericmjl/pyjanitor.svg?branch=master
     :target: https://travis-ci.org/ericmjl/pyjanitor
@@ -11,7 +11,7 @@ Python implementation of the R package `janitor`_, and more.
 why janitor?
 ------------
 
-Originally a port of the R package, ``pyjanitor`` has evolved from a set of convenient data cleaning routines into an experiment with the method chaining paradigm. 
+Originally a port of the R package, ``pyjanitor`` has evolved from a set of convenient data cleaning routines into an experiment with the method chaining paradigm.
 
 Data preprocessing is best expressed as a directed acyclic graph (DAG) of actions taken on data. We take a base data file as the starting point, and perform actions on it, such as removing null/empty rows, replacing them with other values, adding/renaming/removing columns of data, filtering rows and more.
 
@@ -150,7 +150,7 @@ First off, you will need to define the function that expresses the data processi
 
 We use ``pandas_flavor`` to register the function natively on a ``pandas.DataFrame``.
 
-add a test case 
+add a test case
 ^^^^^^^^^^^^^^^
 
 Secondly, we ask that you contribute an test case, to ensure that it works as intended. This should go inside the ``tests/test_functions.py`` file.

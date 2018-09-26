@@ -1,4 +1,4 @@
 release:
-		rm dist/*
-		python setup.py sdist bdist_wheel
-		twine upload dist/*
+	rm dist/*
+	python setup.py sdist bdist_wheel
+	twine upload dist/*

@@ -47,7 +47,7 @@ def dataframe_duplicate_columns():
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
-    df.columns = ['first', 'first', 'second', 'second', 'first']
+    df.columns = ["first", "first", "second", "second", "first"]
     return df
 
 
@@ -73,37 +73,19 @@ def multiindex_dataframe():
 
 def test_clean_names_functional(dataframe):
     df = clean_names(dataframe)
-    expected_columns = [
-        "a",
-        "bell_chart",
-        "decorated_elephant",
-        "animals",
-        "cities",
-    ]
+    expected_columns = ["a", "bell_chart", "decorated_elephant", "animals", "cities"]
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_method_chain(dataframe):
     df = dataframe.clean_names()
-    expected_columns = [
-        "a",
-        "bell_chart",
-        "decorated_elephant",
-        "animals",
-        "cities",
-    ]
+    expected_columns = ["a", "bell_chart", "decorated_elephant", "animals", "cities"]
     assert set(df.columns) == set(expected_columns)
 
 
 def test_clean_names_pipe(dataframe):
     df = dataframe.pipe(clean_names)
-    expected_columns = [
-        "a",
-        "bell_chart",
-        "decorated_elephant",
-        "animals",
-        "cities",
-    ]
+    expected_columns = ["a", "bell_chart", "decorated_elephant", "animals", "cities"]
     assert set(df.columns) == set(expected_columns)
 
 
@@ -180,9 +162,7 @@ def test_rename_column(dataframe):
 
 
 def test_coalesce():
-    df = pd.DataFrame(
-        {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]}
-    )
+    df = pd.DataFrame({"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]})
 
     df = coalesce(df, ["a", "b", "c"], "a")
     assert df.shape == (3, 1)
@@ -207,9 +187,9 @@ def test_fill_empty_column_string(null_df):
 
 
 def test_single_column_label_encode():
-    df = pd.DataFrame(
-        {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-    ).label_encode(columns="a")
+    df = pd.DataFrame({"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}).label_encode(
+        columns="a"
+    )
     assert "a_enc" in df.columns
 
 
@@ -390,10 +370,7 @@ def test_clean_names_preserve_case_true(multiindex_dataframe):
 
 
 def test_expand_column():
-    data = {
-        "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
-        "col2": [1, 2, 3, 4],
-    }
+    data = {"col1": ["A, B", "B, C, D", "E, F", "A, E, F"], "col2": [1, 2, 3, 4]}
 
     df = pd.DataFrame(data)
     expanded = expand_column(df, "col1", sep=", ", concat=False)
@@ -401,10 +378,7 @@ def test_expand_column():
 
 
 def test_expand_and_concat():
-    data = {
-        "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
-        "col2": [1, 2, 3, 4],
-    }
+    data = {"col1": ["A, B", "B, C, D", "E, F", "A, E, F"], "col2": [1, 2, 3, 4]}
 
     df = pd.DataFrame(data).expand_column("col1", sep=", ", concat=True)
     assert df.shape[1] == 8
@@ -412,24 +386,16 @@ def test_expand_and_concat():
 
 def test_concatenate_columns(dataframe):
     df = concatenate_columns(
-        dataframe,
-        columns=["a", "decorated-elephant"],
-        sep="-",
-        new_column_name="index",
+        dataframe, columns=["a", "decorated-elephant"], sep="-", new_column_name="index"
     )
     assert "index" in df.columns
 
 
 def test_deconcatenate_column(dataframe):
     df = concatenate_columns(
-        dataframe,
-        columns=["a", "decorated-elephant"],
-        sep="-",
-        new_column_name="index",
+        dataframe, columns=["a", "decorated-elephant"], sep="-", new_column_name="index"
     )
-    df = deconcatenate_column(
-        df, column="index", new_column_names=["A", "B"], sep="-"
-    )
+    df = deconcatenate_column(df, column="index", new_column_names=["A", "B"], sep="-")
     assert "A" in df.columns
     assert "B" in df.columns
 
@@ -476,26 +442,28 @@ def test_add_column(dataframe):
 
 def test_limit_column_characters(dataframe):
     df = dataframe.limit_column_characters(1)
-    assert df.columns[0] == 'a'
-    assert df.columns[1] == 'B'
-    assert df.columns[2] == 'd'
-    assert df.columns[3] == 'a_1'
-    assert df.columns[4] == 'c'
+    assert df.columns[0] == "a"
+    assert df.columns[1] == "B"
+    assert df.columns[2] == "d"
+    assert df.columns[3] == "a_1"
+    assert df.columns[4] == "c"
 
 
 def test_limit_column_characters_different_positions(dataframe_duplicate_columns):
     df = dataframe_duplicate_columns.limit_column_characters(3)
-    assert df.columns[0] == 'fir'
-    assert df.columns[1] == 'fir_1'
-    assert df.columns[2] == 'sec'
-    assert df.columns[3] == 'sec_1'
-    assert df.columns[4] == 'fir_2'
+    assert df.columns[0] == "fir"
+    assert df.columns[1] == "fir_1"
+    assert df.columns[2] == "sec"
+    assert df.columns[3] == "sec_1"
+    assert df.columns[4] == "fir_2"
 
 
-def test_limit_column_characters_different_positions_different_separator(dataframe_duplicate_columns):
-    df = dataframe_duplicate_columns.limit_column_characters(3, '.')
-    assert df.columns[0] == 'fir'
-    assert df.columns[1] == 'fir.1'
-    assert df.columns[2] == 'sec'
-    assert df.columns[3] == 'sec.1'
-    assert df.columns[4] == 'fir.2'
+def test_limit_column_characters_different_positions_different_separator(
+    dataframe_duplicate_columns
+):
+    df = dataframe_duplicate_columns.limit_column_characters(3, ".")
+    assert df.columns[0] == "fir"
+    assert df.columns[1] == "fir.1"
+    assert df.columns[2] == "sec"
+    assert df.columns[3] == "sec.1"
+    assert df.columns[4] == "fir.2"

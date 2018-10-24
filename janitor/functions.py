@@ -36,7 +36,9 @@ def _strip_underscores(df, strip_underscores=None):
     """
     underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
-        raise JanitorError(f"strip_underscores must be one of: {underscore_options}")
+        raise JanitorError(
+            f"strip_underscores must be one of: {underscore_options}"
+        )
 
     if strip_underscores in ["left", "l"]:
         df = df.rename(columns=lambda x: x.lstrip("_"))
@@ -455,14 +457,14 @@ def fill_empty(df, columns, value):
     """
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
-            assert col in df.columns, "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            assert (
+                col in df.columns
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
-        assert columns in df.columns, "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        assert (
+            columns in df.columns
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -506,7 +508,9 @@ def expand_column(df, column, sep, concat=True):
 
 
 @pf.register_dataframe_method
-def concatenate_columns(df, columns: list, new_column_name: str, sep: str = "-"):
+def concatenate_columns(
+    df, columns: list, new_column_name: str, sep: str = "-"
+):
     """
     Concatenates the set of columns into a single column.
 
@@ -591,7 +595,9 @@ def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
 
 
 @pf.register_dataframe_method
-def filter_string(df, column: str, search_string: str, complement: bool = False):
+def filter_string(
+    df, column: str, search_string: str, complement: bool = False
+):
     """
     Filter a string-based column according to whether it contains a substring.
 
@@ -801,7 +807,9 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 
     """
 
-    assert isinstance(column_length, int), "`column_length` must be an integer!"
+    assert isinstance(
+        column_length, int
+    ), "`column_length` must be an integer!"
     assert isinstance(col_separator, str), "`col_separator` must be a string!"
 
     col_names = df.columns
@@ -820,7 +828,9 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     final_col_names = []
     for idx, col_name in enumerate(col_names):
         if col_name_count[idx] > 0:
-            col_name_to_append = col_name + col_separator + str(col_name_count[idx])
+            col_name_to_append = (
+                col_name + col_separator + str(col_name_count[idx])
+            )
             final_col_names.append(col_name_to_append)
         else:
             final_col_names.append(col_name)

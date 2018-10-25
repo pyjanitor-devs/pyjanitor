@@ -512,3 +512,12 @@ def test_limit_column_characters_all_unique(dataframe):
     assert df.columns[2] == "de"
     assert df.columns[3] == "an"
     assert df.columns[4] == "ci"
+
+
+def test_naif_func(dataframe):
+    df = dataframe.na_if('animals', 0, 'rabbit')
+    assert df.loc[0, 'animals'] == 0
+    assert df.loc[3, 'animals'] == 0
+    assert df.loc[9, 'animals'] == 0
+    assert df.loc[1, 'animals'] != 0
+    assert df.loc[10, 'animals'] != 0

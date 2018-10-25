@@ -9,13 +9,14 @@ from functools import reduce
 from warnings import warn
 
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 import pandas_flavor as pf
 
 from .errors import JanitorError
 from typing import List
-
+coalesce
 
 def _strip_underscores(df, strip_underscores=None):
     """
@@ -752,7 +753,7 @@ def change_type(df, column: str, dtype):
 
 
 @pf.register_dataframe_method
-def add_column(df, colname: str, value):
+def add_column(df, colname: str, value, fill_remaining=False):
     """
     Adds a column to the dataframe.
 
@@ -782,7 +783,20 @@ def add_column(df, colname: str, value):
     :param value: Either a single value, or a list/tuple of values.
     """
     assert isinstance(colname, str), "`colname` must be a string!"
-    df[colname] = value
+    assert colname not in df.columns, "columns %s already exists!" % colname
+
+    if fill_remaining:
+        nrows = df.shape[0]
+
+        times_to_loop = int(np.ceil(nrows / len(value)))
+
+        fill_values = list(value) * times_to_loop
+
+        df[colname] = fill_values[:nrows]
+
+    else:
+        df[colname] = value
+
     return df
 
 
@@ -844,3 +858,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 
     df.columns = final_col_names
     return df
+
+
+
+add_column

@@ -788,3 +788,58 @@ def add_column(df, colname: str, value):
     assert isinstance(colname, str), "`colname` must be a string!"
     df[colname] = value
     return df
+
+
+@pf.register_dataframe_method
+def limit_column_characters(df, column_length: int, col_separator: str = "_"):
+    """
+    Truncates column sizes to a specific length.
+
+    Method chaining will truncate all columns to a given length and append
+    a given separator character with the index of duplicate columns, except
+    for the first distinct column name.
+
+    :param df: A pandas dataframe.
+    :param column_length: Character length for which to truncate all columns.
+        The column separator value and number for duplicate column name does
+        not contribute. Therefore, if all columns are truncated to 10
+        characters, the first distinct column will be 10 characters and the
+        remaining will be 12 characters (assuming a column separator of one
+        character).
+    :param col_separator: The separator to use for counting distinct column
+        values. I think an underscore looks nicest, however a period is a
+        common option as well. Supply an empty string (i.e. '') to remove the
+        separator.
+
+    """
+
+    assert isinstance(
+        column_length, int
+    ), "`column_length` must be an integer!"
+    assert isinstance(col_separator, str), "`col_separator` must be a string!"
+
+    col_names = df.columns
+    col_names = [col_name[:column_length] for col_name in col_names]
+
+    col_name_set = set(col_names)
+    col_name_count = dict()
+
+    for col_name_to_check in col_name_set:
+        count = 0
+        for idx, col_name in enumerate(col_names):
+            if col_name_to_check == col_name:
+                col_name_count[idx] = count
+                count += 1
+
+    final_col_names = []
+    for idx, col_name in enumerate(col_names):
+        if col_name_count[idx] > 0:
+            col_name_to_append = (
+                col_name + col_separator + str(col_name_count[idx])
+            )
+            final_col_names.append(col_name_to_append)
+        else:
+            final_col_names.append(col_name)
+
+    df.columns = final_col_names
+    return df

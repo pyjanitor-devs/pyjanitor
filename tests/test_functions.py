@@ -38,6 +38,20 @@ def dataframe():
 
 
 @pytest.fixture
+def dataframe_duplicate_columns():
+    data = {
+        "a": [1, 2, 3] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+    }
+    df = pd.DataFrame(data)
+    df.columns = ["first", "first", "second", "second", "first"]
+    return df
+
+
+@pytest.fixture
 def null_df():
     np.random.seed([3, 1415])
     df = pd.DataFrame(np.random.choice((1, np.nan), (10, 2)))
@@ -458,3 +472,34 @@ def test_add_column(dataframe):
     series = pd.Series([42] * len(dataframe))
     series.name = "fortytwo"
     pd.testing.assert_series_equal(df["fortytwo"], series)
+
+
+def test_limit_column_characters(dataframe):
+    df = dataframe.limit_column_characters(1)
+    assert df.columns[0] == "a"
+    assert df.columns[1] == "B"
+    assert df.columns[2] == "d"
+    assert df.columns[3] == "a_1"
+    assert df.columns[4] == "c"
+
+
+def test_limit_column_characters_different_positions(
+    dataframe_duplicate_columns
+):
+    df = dataframe_duplicate_columns.limit_column_characters(3)
+    assert df.columns[0] == "fir"
+    assert df.columns[1] == "fir_1"
+    assert df.columns[2] == "sec"
+    assert df.columns[3] == "sec_1"
+    assert df.columns[4] == "fir_2"
+
+
+def test_limit_column_characters_different_positions_different_separator(
+    dataframe_duplicate_columns
+):
+    df = dataframe_duplicate_columns.limit_column_characters(3, ".")
+    assert df.columns[0] == "fir"
+    assert df.columns[1] == "fir.1"
+    assert df.columns[2] == "sec"
+    assert df.columns[3] == "sec.1"
+    assert df.columns[4] == "fir.2"

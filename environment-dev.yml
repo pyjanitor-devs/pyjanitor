@@ -20,5 +20,6 @@ dependencies:
 - bumpversion
 - pytest-cov
 - pandas-flavor
+- conda
 - pip:
   - sphinxcontrib-fulltoc

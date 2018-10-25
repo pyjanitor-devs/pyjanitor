@@ -34,7 +34,8 @@ install:
   - conda env create -f environment-dev.yml
   # This guarantees that Python version is matrixed.
   - conda install python=$PYTHON_VERSION
-  - source activate pyjanitor-dev
+  - source $HOME/miniconda/etc/profile.d/conda.sh
+  - conda activate pyjanitor-dev
   - python setup.py install
 
 script:

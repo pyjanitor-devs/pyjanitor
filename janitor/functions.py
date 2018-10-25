@@ -824,6 +824,11 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     col_name_set = set(col_names)
     col_name_count = dict()
 
+    # If no columns are duplicates, we can skip the loops below.
+    if len(col_name_set) == len(col_names):
+        df.columns = col_names
+        return df
+
     for col_name_to_check in col_name_set:
         count = 0
         for idx, col_name in enumerate(col_names):

@@ -503,3 +503,17 @@ def test_limit_column_characters_different_positions_different_separator(
     assert df.columns[2] == "sec"
     assert df.columns[3] == "sec.1"
     assert df.columns[4] == "fir.2"
+
+
+def test_limit_column_characters_all_unique(dataframe):
+    df = dataframe.limit_column_characters(2)
+    assert df.columns[0] == 'a'
+    assert df.columns[1] == 'Be'
+    assert df.columns[2] == 'de'
+    assert df.columns[3] == 'an'
+    assert df.columns[4] == 'ci'
+
+
+
+
+

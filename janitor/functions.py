@@ -459,12 +459,16 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            ), "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
+        ), "{col} missing from dataframe columns!".format(
+            col=columns
+        )
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -797,13 +801,15 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 
     :param df: A pandas dataframe.
     :param column_length: Character length for which to truncate all columns.
-      The column separator value and number for duplicate column name does not
-      contribute. Therefore, if all columns are truncated to 10 characters, the
-      first distinct column will be 10 characters and the remaining will be 12
-      characters (assuming a column separator of one character)
-    :param col_separator: The separator to use for counting distinct column values.
-      I think an underscore looks nicest, however a period is a common option as well.
-      Supply an empty string (i.e. '') to remove the separator.
+        The column separator value and number for duplicate column name does
+        not contribute. Therefore, if all columns are truncated to 10
+        characters, the first distinct column will be 10 characters and the
+        remaining will be 12 characters (assuming a column separator of one
+        character).
+    :param col_separator: The separator to use for counting distinct column
+        values. I think an underscore looks nicest, however a period is a
+        common option as well. Supply an empty string (i.e. '') to remove the
+        separator.
 
     """
 

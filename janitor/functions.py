@@ -35,7 +35,15 @@ def _strip_underscores(df, strip_underscores=None):
         and True.
     :returns: A pandas DataFrame.
     """
-    underscore_options = [None, "left", "right", "both", "l", "r", True]
+    underscore_options = [
+        None,
+        "left",
+        "right",
+        "both",
+        "l",
+        "r",
+        True,
+    ]
     if strip_underscores not in underscore_options:
         raise JanitorError(
             f"strip_underscores must be one of: {underscore_options}"
@@ -208,16 +216,22 @@ def encode_categorical(df, columns):
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
             assert col in df.columns, JanitorError(
-                "{col} missing from dataframe columns!".format(col=col)
+                "{col} missing from dataframe columns!".format(
+                    col=col
+                )
             )
             df[col] = pd.Categorical(df[col])
     elif isinstance(columns, str):
         assert columns in df.columns, JanitorError(
-            "{columns} missing from dataframe columns!".format(columns=columns)
+            "{columns} missing from dataframe columns!".format(
+                columns=columns
+            )
         )
         df[columns] = pd.Categorical(df[columns])
     else:
-        raise JanitorError("kwarg `columns` must be a string or iterable!")
+        raise JanitorError(
+            "kwarg `columns` must be a string or iterable!"
+        )
     return df
 
 
@@ -266,7 +280,9 @@ def label_encode(df, columns):
         )  # noqa: E501
         df[f"{columns}_enc"] = le.fit_transform(df[columns])
     else:
-        raise JanitorError("kwarg `columns` must be a string or iterable!")
+        raise JanitorError(
+            "kwarg `columns` must be a string or iterable!"
+        )
     return df
 
 
@@ -423,7 +439,9 @@ def convert_excel_date(df, column):
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    df[column] = pd.TimedeltaIndex(df[column], unit="d") + dt.datetime(
+    df[column] = pd.TimedeltaIndex(
+        df[column], unit="d"
+    ) + dt.datetime(
         1899, 12, 30
     )  # noqa: W503
     return df
@@ -553,7 +571,9 @@ def concatenate_columns(
 
 
 @pf.register_dataframe_method
-def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
+def deconcatenate_column(
+    df, column: str, new_column_names: list, sep: str
+):
     """
     De-concatenates a single column into multiple columns.
 
@@ -786,7 +806,9 @@ def add_column(df, colname: str, value, fill_remaining=False):
         (R-style) to the end of the DataFrame.
     """
     assert isinstance(colname, str), "`colname` must be a string!"
-    assert colname not in df.columns, "columns %s already exists!" % colname
+    assert colname not in df.columns, (
+        "columns %s already exists!" % colname
+    )
 
     if fill_remaining:
         nrows = df.shape[0]
@@ -804,7 +826,9 @@ def add_column(df, colname: str, value, fill_remaining=False):
 
 
 @pf.register_dataframe_method
-def limit_column_characters(df, column_length: int, col_separator: str = "_"):
+def limit_column_characters(
+    df, column_length: int, col_separator: str = "_"
+):
     """
     Truncates column sizes to a specific length.
 
@@ -829,7 +853,9 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     assert isinstance(
         column_length, int
     ), "`column_length` must be an integer!"
-    assert isinstance(col_separator, str), "`col_separator` must be a string!"
+    assert isinstance(
+        col_separator, str
+    ), "`col_separator` must be a string!"
 
     col_names = df.columns
     col_names = [col_name[:column_length] for col_name in col_names]

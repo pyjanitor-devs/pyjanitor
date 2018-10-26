@@ -9,6 +9,7 @@ from functools import reduce
 from warnings import warn
 
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 import pandas_flavor as pf
@@ -752,7 +753,7 @@ def change_type(df, column: str, dtype):
 
 
 @pf.register_dataframe_method
-def add_column(df, colname: str, value):
+def add_column(df, colname: str, value, fill_remaining=False):
     """
     Adds a column to the dataframe.
 
@@ -780,9 +781,25 @@ def add_column(df, colname: str, value):
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param value: Either a single value, or a list/tuple of values.
+    : fill_remaining: If value is a tuple or list that is smaller than
+        the number of rows in the DataFrame, repeat the list or tuple
+        (R-style) to the end of the DataFrame.
     """
     assert isinstance(colname, str), "`colname` must be a string!"
-    df[colname] = value
+    assert colname not in df.columns, "columns %s already exists!" % colname
+
+    if fill_remaining:
+        nrows = df.shape[0]
+
+        times_to_loop = int(np.ceil(nrows / len(value)))
+
+        fill_values = list(value) * times_to_loop
+
+        df[colname] = fill_values[:nrows]
+
+    else:
+        df[colname] = value
+
     return df
 
 

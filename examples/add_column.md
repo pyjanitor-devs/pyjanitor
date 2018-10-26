@@ -7,16 +7,16 @@ Adds a column to the dataframe.
 Intended to be the method-chaining alternative to: `df[colname] = value`.
 
 ## Parameters
-###df
+### df
 A pandas dataframe.
 
-###colname
+### colname
 Name of the new column. Should be a string, in order for the column name to be compatible with the Feather binary format (this is a useful thing to have).
 
-###value
+### value
 Either a single value, or a list/tuple of values.
 
-###fill_remaining
+### fill_remaining
 If value is a tuple or list that is smaller than the number of rows in the DataFrame, repeat the list or tuple (R-style) to the end of the DataFrame.
 
 ## Setup
@@ -39,7 +39,7 @@ df = pd.DataFrame(data)
 ```
  
  
-##Example1: Create a new column with a single value
+## Example1: Create a new column with a single value
 
 ```python
 df.add_column("city_pop", 100000)
@@ -57,7 +57,7 @@ df.add_column("city_pop", 100000)
     7  2            2                   2  leopard   Shanghai    100000
     8  3            3                   3     lion      Basel    100000
 
-##Example2: Create a new column with an iterator which fills to the column size
+## Example2: Create a new column with an iterator which fills to the column size
 ```python
 df.add_column("city_pop", range(3), fill_remaining=True)
 ```
@@ -73,12 +73,12 @@ df.add_column("city_pop", range(3), fill_remaining=True)
     7  2            2                   2  leopard   Shanghai         1
     8  3            3                   3     lion      Basel         2 
 
-##Example3: Add new column based on mutation of other columns
+## Example3: Add new column based on mutation of other columns
 ```python
 df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
 ```
 
-##Output
+## Output
 
        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
     0  1            1                   1   rabbit  Cambridge        -1

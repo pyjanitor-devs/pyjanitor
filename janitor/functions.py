@@ -16,7 +16,7 @@ import pandas_flavor as pf
 
 from .errors import JanitorError
 from typing import List
-coalesce
+
 
 def _strip_underscores(df, strip_underscores=None):
     """
@@ -781,6 +781,9 @@ def add_column(df, colname: str, value, fill_remaining=False):
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param value: Either a single value, or a list/tuple of values.
+    : fill_remaining: If value is a tuple or list that is smaller than
+        the number of rows in the DataFrame, repeat the list or tuple
+        (R-style) to the end of the DataFrame.
     """
     assert isinstance(colname, str), "`colname` must be a string!"
     assert colname not in df.columns, "columns %s already exists!" % colname
@@ -858,7 +861,3 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 
     df.columns = final_col_names
     return df
-
-
-
-add_column

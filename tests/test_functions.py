@@ -514,10 +514,27 @@ def test_limit_column_characters_all_unique(dataframe):
     assert df.columns[4] == "ci"
 
 
-def test_naif_func(dataframe):
-    df = dataframe.na_if('animals', 0, 'rabbit')
-    assert df.loc[0, 'animals'] == 0
-    assert df.loc[3, 'animals'] == 0
-    assert df.loc[9, 'animals'] == 0
-    assert df.loc[1, 'animals'] != 0
-    assert df.loc[10, 'animals'] != 0
+def test_add_column_single_value(dataframe):
+    df = dataframe.add_column("city_pop", 100)
+    assert df.city_pop.mean() == 100
+
+
+def test_add_column_iterator_repeat(dataframe):
+    df = dataframe.add_column("city_pop", range(3), fill_remaining=True)
+    assert df.city_pop.iloc[0] == 0
+    assert df.city_pop.iloc[1] == 1
+    assert df.city_pop.iloc[2] == 2
+    assert df.city_pop.iloc[3] == 0
+    assert df.city_pop.iloc[4] == 1
+    assert df.city_pop.iloc[5] == 2
+
+
+def test_add_column_raise_error(dataframe):
+    with pytest.raises(Exception) as e_info:
+        df = dataframe.add_column("cities", 1)
+
+
+def test_add_column_iterator_repeat(dataframe):
+    df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
+    assert df.city_pop.sum() == 0
+    assert df.city_pop.iloc[0] == 0

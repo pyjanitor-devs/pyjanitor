@@ -18,7 +18,7 @@ Character length for which to truncate all columns. The column separator value a
 The separator to use for counting distinct column values. Default is "_". Supply an empty string (i.e. '') to remove the
     separator.
 
-## Example
+## Setup
 ```python
 import pandas as pd
 import janitor
@@ -29,7 +29,10 @@ data_dict = {
     "another_really_longer_name_for_a_column": list("lllongname"),
     "this_is_getting_out_of_hand": list("longername"),
 }
- 
+```
+
+## Example1: Standard truncation
+ ```python
 example_dataframe = pd.DataFrame(data_dict)
  
 example_dataframe.limit_column_characters(7)
@@ -49,7 +52,8 @@ example_dataframe.limit_column_characters(7)
     8        8       16         m       m
     9        9       18         e       e
 
-## Example 2
+## Example2: Standard truncation with different separator character
+
 ```python
 
 example_dataframe2 = pd.DataFrame(data_dict)

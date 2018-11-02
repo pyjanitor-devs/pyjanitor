@@ -159,8 +159,7 @@ def test_get_features_targets(dataframe):
 def test_get_features_targets_multi_features(dataframe):
     dataframe = dataframe.clean_names()
     X, y = dataframe.get_features_targets(
-        feature_columns=["animals", "cities"],
-        target_columns="bell_chart",
+        feature_columns=["animals", "cities"], target_columns="bell_chart"
     )
     assert X.shape == (9, 2)
     assert y.shape == (9,)
@@ -168,9 +167,7 @@ def test_get_features_targets_multi_features(dataframe):
 
 def test_get_features_target_multi_columns(dataframe):
     dataframe = dataframe.clean_names()
-    X, y = dataframe.get_features_targets(
-        target_columns=["a", "bell_chart"]
-    )
+    X, y = dataframe.get_features_targets(target_columns=["a", "bell_chart"])
     assert X.shape == (9, 3)
     assert y.shape == (9, 2)
 
@@ -178,13 +175,7 @@ def test_get_features_target_multi_columns(dataframe):
 def test_rename_column(dataframe):
     df = dataframe.clean_names().rename_column("a", "index")
     assert set(df.columns) == set(
-        [
-            "index",
-            "bell_chart",
-            "decorated_elephant",
-            "animals",
-            "cities",
-        ]
+        ["index", "bell_chart", "decorated_elephant", "animals", "cities"]
     )  # noqa: E501
 
 
@@ -415,9 +406,7 @@ def test_expand_and_concat():
         "col2": [1, 2, 3, 4],
     }
 
-    df = pd.DataFrame(data).expand_column(
-        "col1", sep=", ", concat=True
-    )
+    df = pd.DataFrame(data).expand_column("col1", sep=", ", concat=True)
     assert df.shape[1] == 8
 
 
@@ -446,18 +435,13 @@ def test_deconcatenate_column(dataframe):
 
 
 def test_filter_string(dataframe):
-    df = filter_string(
-        dataframe, column="animals", search_string="bbit"
-    )
+    df = filter_string(dataframe, column="animals", search_string="bbit")
     assert len(df) == 3
 
 
 def test_filter_string_complement(dataframe):
     df = filter_string(
-        dataframe,
-        column="cities",
-        search_string="hang",
-        complement=True,
+        dataframe, column="cities", search_string="hang", complement=True
     )
     assert len(df) == 6
 
@@ -536,9 +520,7 @@ def test_add_column_single_value(dataframe):
 
 
 def test_add_column_iterator_repeat(dataframe):
-    df = dataframe.add_column(
-        "city_pop", range(3), fill_remaining=True
-    )
+    df = dataframe.add_column("city_pop", range(3), fill_remaining=True)
     assert df.city_pop.iloc[0] == 0
     assert df.city_pop.iloc[1] == 1
     assert df.city_pop.iloc[2] == 2
@@ -556,3 +538,30 @@ def test_add_column_iterator_repeat(dataframe):
     df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
     assert df.city_pop.sum() == 0
     assert df.city_pop.iloc[0] == 0
+
+
+def test_row_to_names(dataframe):
+    df = dataframe.row_to_names(2)
+    assert df.columns[0] == 3
+    assert df.columns[1] == 3
+    assert df.columns[2] == 3
+    assert df.columns[3] == 'lion'
+    assert df.columns[4] == 'Basel'
+
+
+def test_row_to_names_delete_this_row(dataframe):
+    df = dataframe.row_to_names(2, remove_row=True)
+    assert df.iloc[2, 0] == 1
+    assert df.iloc[2, 1] == 1
+    assert df.iloc[2, 2] == 1
+    assert df.iloc[2, 3] == 'rabbit'
+    assert df.iloc[2, 4] == 'Cambridge'
+
+
+def test_row_to_names_delete_above(dataframe):
+    df = dataframe.row_to_names(2, remove_rows_above=True)
+    assert df.iloc[0, 0] == 3
+    assert df.iloc[0, 1] == 3
+    assert df.iloc[0, 2] == 3
+    assert df.iloc[0, 3] == 'lion'
+    assert df.iloc[0, 4] == 'Basel'

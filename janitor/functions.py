@@ -35,15 +35,7 @@ def _strip_underscores(df, strip_underscores=None):
         and True.
     :returns: A pandas DataFrame.
     """
-    underscore_options = [
-        None,
-        "left",
-        "right",
-        "both",
-        "l",
-        "r",
-        True,
-    ]
+    underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
         raise JanitorError(
             f"strip_underscores must be one of: {underscore_options}"
@@ -216,22 +208,16 @@ def encode_categorical(df, columns):
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
             assert col in df.columns, JanitorError(
-                "{col} missing from dataframe columns!".format(
-                    col=col
-                )
+                "{col} missing from dataframe columns!".format(col=col)
             )
             df[col] = pd.Categorical(df[col])
     elif isinstance(columns, str):
         assert columns in df.columns, JanitorError(
-            "{columns} missing from dataframe columns!".format(
-                columns=columns
-            )
+            "{columns} missing from dataframe columns!".format(columns=columns)
         )
         df[columns] = pd.Categorical(df[columns])
     else:
-        raise JanitorError(
-            "kwarg `columns` must be a string or iterable!"
-        )
+        raise JanitorError("kwarg `columns` must be a string or iterable!")
     return df
 
 
@@ -280,9 +266,7 @@ def label_encode(df, columns):
         )  # noqa: E501
         df[f"{columns}_enc"] = le.fit_transform(df[columns])
     else:
-        raise JanitorError(
-            "kwarg `columns` must be a string or iterable!"
-        )
+        raise JanitorError("kwarg `columns` must be a string or iterable!")
     return df
 
 
@@ -439,9 +423,7 @@ def convert_excel_date(df, column):
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    df[column] = pd.TimedeltaIndex(
-        df[column], unit="d"
-    ) + dt.datetime(
+    df[column] = pd.TimedeltaIndex(df[column], unit="d") + dt.datetime(
         1899, 12, 30
     )  # noqa: W503
     return df
@@ -571,9 +553,7 @@ def concatenate_columns(
 
 
 @pf.register_dataframe_method
-def deconcatenate_column(
-    df, column: str, new_column_names: list, sep: str
-):
+def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
     """
     De-concatenates a single column into multiple columns.
 
@@ -806,9 +786,7 @@ def add_column(df, colname: str, value, fill_remaining=False):
         (R-style) to the end of the DataFrame.
     """
     assert isinstance(colname, str), "`colname` must be a string!"
-    assert colname not in df.columns, (
-        "columns %s already exists!" % colname
-    )
+    assert colname not in df.columns, "columns %s already exists!" % colname
 
     if fill_remaining:
         nrows = df.shape[0]
@@ -826,9 +804,7 @@ def add_column(df, colname: str, value, fill_remaining=False):
 
 
 @pf.register_dataframe_method
-def limit_column_characters(
-    df, column_length: int, col_separator: str = "_"
-):
+def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     """
     Truncates column sizes to a specific length.
 
@@ -853,9 +829,7 @@ def limit_column_characters(
     assert isinstance(
         column_length, int
     ), "`column_length` must be an integer!"
-    assert isinstance(
-        col_separator, str
-    ), "`col_separator` must be a string!"
+    assert isinstance(col_separator, str), "`col_separator` must be a string!"
 
     col_names = df.columns
     col_names = [col_name[:column_length] for col_name in col_names]
@@ -886,4 +860,35 @@ def limit_column_characters(
             final_col_names.append(col_name)
 
     df.columns = final_col_names
+    return df
+
+
+@pf.register_dataframe_method
+def row_to_names(
+    df,
+    row_number: int = None,
+    remove_row: bool = False,
+    remove_rows_above: bool = False,
+):
+    """
+    Elevates a row to be the column names of a DataFrame. Contains options to remove the elevated row from the DataFrame along with removing the rows above the selected row.
+
+    :param df: A pandas DataFrame.
+    :param row_number: The row containing the variable names
+    :param remove_row: Should the row be removed from the DataFrame?
+    :param remove_rows_above: Should the rows above row_number be removed from the resulting DataFrame?
+
+    """
+
+    assert isinstance(row_number, int), "`row_number` must be an integer!"
+
+    df.columns = df.iloc[row_number, :]
+    df.columns.name = None
+
+    if remove_row:
+        df.drop(df.index[row_number], inplace=True)
+
+    if remove_rows_above:
+        df.drop(df.index[range(row_number)], inplace=True)
+
     return df

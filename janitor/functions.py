@@ -781,7 +781,7 @@ def add_column(df, colname: str, value, fill_remaining=False):
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param value: Either a single value, or a list/tuple of values.
-    : fill_remaining: If value is a tuple or list that is smaller than
+    :fill_remaining: If value is a tuple or list that is smaller than
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     """

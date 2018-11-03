@@ -43,7 +43,7 @@ With ``pyjanitor``, we enable method chaining with method names that are *verbs*
 
     df = (
         pd.DataFrame(...)
-        .remove_column('column1')
+        .remove_columns(['column1'])
         .dropna(subset=['column2', 'column3'])
         .rename_column('column2', 'unicorns')
         .rename_column('column3', 'dragons')

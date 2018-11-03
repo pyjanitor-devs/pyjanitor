@@ -557,7 +557,7 @@ def expand_column(df, column, sep, concat=True):
 
 @pf.register_dataframe_method
 def concatenate_columns(
-    df, columns: list, new_column_name: str, sep: str = "-"
+    df, columns: List, new_column_name: str, sep: str = "-"
 ):
     """
     Concatenates the set of columns into a single column.
@@ -600,7 +600,7 @@ def concatenate_columns(
 
 
 @pf.register_dataframe_method
-def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
+def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
     """
     De-concatenates a single column into multiple columns.
 
@@ -649,7 +649,7 @@ def filter_string(
     """
     Filter a string-based column according to whether it contains a substring.
 
-    This is super sugary syntax that builds on top of `filter_column` and
+    This is super sugary syntax that builds on top of `filter_on` and
     `pandas.Series.str.contains`.
 
     Because this uses internally `pandas.Series.str.contains`, which allows a
@@ -712,7 +712,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_column(df['value'] < 3, complement=False)
+              .filter_on(df['value'] < 3, complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -728,7 +728,7 @@ def filter_on(df, criteria, complement=False):
 
     .. code-block:: python
 
-        df = filter_column(df,
+        df = filter_on(df,
                            df['value'] < 3,
                            complement=False)
 
@@ -737,7 +737,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_column(df['value'] < 3
+              .filter_on(df['value'] < 3
                              complement=False)
               ...)
 
@@ -755,7 +755,7 @@ def filter_on(df, criteria, complement=False):
 
 
 @pf.register_dataframe_method
-def remove_columns(df: pd.DataFrame, columns: list):
+def remove_columns(df: pd.DataFrame, columns: List):
     """
     Removes the set of columns specified in cols.
 
@@ -765,10 +765,10 @@ def remove_columns(df: pd.DataFrame, columns: list):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).remove_column(cols=['col1', ['col2']])
+        df = pd.DataFrame(...).remove_columns(cols=['col1', ['col2']])
 
     :param df: A pandas DataFrame
-    :param cols: The columns to remove.
+    :param columns: The columns to remove.
     """
     for col in columns:
         del df[col]
@@ -791,7 +791,7 @@ def change_type(df, column: str, dtype):
         df = pd.DataFrame(...).change_type('col1', str)
 
     :param df: A pandas dataframe.
-    :param col: A column in the dataframe.
+    :param column: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
     """

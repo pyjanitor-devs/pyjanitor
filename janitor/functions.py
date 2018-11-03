@@ -14,7 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 import pandas_flavor as pf
 
 from .errors import JanitorError
-from typing import List
+from typing import List, Union
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -350,6 +350,50 @@ def rename_column(df, old, new):
     :returns: A pandas DataFrame.
     """
     return df.rename(columns={old: new})
+
+
+@pf.register_dataframe_method
+def reorder_columns(df: pd.DataFrame, column_order: Union[List, pd.Index]) -> pd.DataFrame:
+    """
+    Reorder DataFrame columns by specifying desired order as list of column names.
+    Columns not specified retain their order and follow after specified columns.
+    Validates column_order to ensure columns are all present in DataFrame.
+
+    Functional usage example:
+
+    Given `DataFrame` with column names `col1`, `col2`, `col3`:
+
+    .. code-block:: python
+
+        df = reorder_columns(df, ['col2', 'col3'])
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).reorder_columns(['col2', 'col3'])
+
+    The column order of `df` is now `col2`, `col3`, `col1`.
+
+    Internally, this function uses `DataFrame.reindex` with `copy=False` to avoid unnecessary data duplication.
+
+    :param df: `DataFrame` to reorder
+    :param column_order: A list of column names or Pandas `Index` specifying their order in the returned `DataFrame`.
+    :returns: A pandas DataFrame.
+    """
+
+    if not isinstance(column_order, (list, pd.Index)):
+        raise TypeError('column_order must be a list of column names.')
+
+    if any(col not in df.columns for col in column_order):
+        raise IndexError('A column in column_order was not found in the DataFrame.')
+
+    # if column_order is a Pandas index, needs conversion to list:
+    column_order = list(column_order)
+
+    return df.reindex(columns=(column_order + [col for col in df.columns if col not in column_order]), copy=False)
 
 
 @pf.register_dataframe_method

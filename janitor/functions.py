@@ -385,7 +385,7 @@ def reorder_columns(df: pd.DataFrame, column_order: Union[List, pd.Index]) -> pd
     """
 
     if not isinstance(column_order, (list, pd.Index)):
-        raise TypeError('column_order must be a list of column names.')
+        raise TypeError('column_order must be a list of column names or Pandas Index.')
 
     if any(col not in df.columns for col in column_order):
         raise IndexError('A column in column_order was not found in the DataFrame.')

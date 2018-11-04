@@ -353,10 +353,12 @@ def rename_column(df, old, new):
 
 
 @pf.register_dataframe_method
-def reorder_columns(df: pd.DataFrame, column_order: Union[List, pd.Index]) -> pd.DataFrame:
+def reorder_columns(
+    df: pd.DataFrame, column_order: Union[List, pd.Index]
+) -> pd.DataFrame:
     """
-    Reorder DataFrame columns by specifying desired order as list of column names.
-    Columns not specified retain their order and follow after specified columns.
+    Reorder DataFrame columns by specifying desired order as list of col names
+    Columns not specified retain their order and follow after specified cols
     Validates column_order to ensure columns are all present in DataFrame.
 
     Functional usage example:
@@ -377,23 +379,35 @@ def reorder_columns(df: pd.DataFrame, column_order: Union[List, pd.Index]) -> pd
 
     The column order of `df` is now `col2`, `col3`, `col1`.
 
-    Internally, this function uses `DataFrame.reindex` with `copy=False` to avoid unnecessary data duplication.
+    Internally, this function uses `DataFrame.reindex` with `copy=False`
+    to avoid unnecessary data duplication.
 
     :param df: `DataFrame` to reorder
-    :param column_order: A list of column names or Pandas `Index` specifying their order in the returned `DataFrame`.
+    :param column_order: A list of column names or Pandas `Index`
+        specifying their order in the returned `DataFrame`.
     :returns: A pandas DataFrame.
     """
 
     if not isinstance(column_order, (list, pd.Index)):
-        raise TypeError('column_order must be a list of column names or Pandas Index.')
+        raise TypeError(
+            "column_order must be a list of column names or Pandas Index."
+        )
 
     if any(col not in df.columns for col in column_order):
-        raise IndexError('A column in column_order was not found in the DataFrame.')
+        raise IndexError(
+            "A column in column_order was not found in the DataFrame."
+        )
 
     # if column_order is a Pandas index, needs conversion to list:
     column_order = list(column_order)
 
-    return df.reindex(columns=(column_order + [col for col in df.columns if col not in column_order]), copy=False)
+    return df.reindex(
+        columns=(
+            column_order
+            + [col for col in df.columns if col not in column_order]
+        ),
+        copy=False,
+    )
 
 
 @pf.register_dataframe_method
@@ -503,16 +517,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df

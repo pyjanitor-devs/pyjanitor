@@ -192,14 +192,17 @@ def test_reorder_columns(dataframe):
 
     # reordering functionality
 
-    # sanity check that function is non-destructive when desired order matches current order
+    # sanity check when desired order matches current order
     # this also tests whether the function can take Pandas Index objects
-    assert all(dataframe.reorder_columns(dataframe.columns).columns == dataframe.columns)
+    assert all(
+        dataframe.reorder_columns(dataframe.columns).columns
+        == dataframe.columns
+    )
 
-    # when columns are supplied as a list & not all columns of DataFrame are included
-    assert (
-        all(dataframe.reorder_columns(['animals', 'Bell__Chart']).columns ==
-            ['animals', 'Bell__Chart', 'a', 'decorated-elephant', 'cities'])
+    # when columns are list & not all columns of DataFrame are included
+    assert all(
+        dataframe.reorder_columns(["animals", "Bell__Chart"]).columns
+        == ["animals", "Bell__Chart", "a", "decorated-elephant", "cities"]
     )
 
 

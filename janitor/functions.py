@@ -6,6 +6,7 @@ New data cleaning functions should be implemented here.
 import datetime as dt
 import re
 from functools import reduce
+from functools import partial
 from warnings import warn
 
 import pandas as pd
@@ -893,5 +894,38 @@ def row_to_names(
 
     if remove_rows_above:
         df.drop(df.index[range(row_number)], inplace=True)
+
+    return df
+
+
+@pf.register_dataframe_method
+def round_to_fraction(
+    df, colname: str = None, denominator: int = None, digits: float = np.inf
+):
+    """
+    Round all values in a column to a fraction.
+    Also, optionally round to a specified number of digits.
+
+    :param number: The number to round
+    :param denominator: The denominator of the fraction for rounding
+    :param digits: The number of digits for rounding after rounding to the
+        fraction. Default is np.inf (i.e. no subsequent rounding)
+
+    Taken from https://github.com/sfirke/janitor/issues/235
+    """
+
+    assert isinstance(colname, str), "`colname` must be a string!"
+
+    def _round_to_fraction(number, denominator, digits=np.inf):
+        num = round(number * denominator, 0) / denominator
+        if not np.isinf(digits):
+            num = round(num, digits)
+        return num
+
+    _round_to_fraction_partial = partial(
+        _round_to_fraction, denominator=denominator, digits=digits
+    )
+
+    df[colname] = df[colname].apply(_round_to_fraction_partial)
 
     return df

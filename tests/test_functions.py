@@ -38,6 +38,19 @@ def dataframe():
 
 
 @pytest.fixture
+def dataframe_floats():
+    data = {
+        "a": [1.23452345, 2.456234, 3.2346125] * 3,
+        "Bell__Chart": [1 / 3, 2 / 7, 3 / 2] * 3,
+        "decorated-elephant": [1 / 234, 2 / 13, 3 / 167] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
 def dataframe_duplicate_columns():
     data = {
         "a": [1, 2, 3] * 3,
@@ -565,3 +578,16 @@ def test_row_to_names_delete_above(dataframe):
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
+
+
+def test_round_to_nearest_half(dataframe_floats):
+    df = dataframe_floats.round_to_fraction("a", 2)
+    assert df.iloc[0, 0] == 1.0
+    assert df.iloc[1, 0] == 2.5
+    assert df.iloc[2, 0] == 3.0
+    assert df.iloc[3, 0] == 1.0
+    assert df.iloc[4, 0] == 2.5
+    assert df.iloc[5, 0] == 3.0
+    assert df.iloc[6, 0] == 1.0
+    assert df.iloc[7, 0] == 2.5
+    assert df.iloc[8, 0] == 3.0

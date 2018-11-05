@@ -871,13 +871,16 @@ def row_to_names(
     remove_rows_above: bool = False,
 ):
     """
-    Elevates a row to be the column names of a DataFrame. Contains options to remove the elevated row from the DataFrame along with removing the rows above the selected row.
+    Elevates a row to be the column names of a DataFrame. Contains options to
+    remove the elevated row from the DataFrame along with removing the rows
+    above the selected row.
 
     :param df: A pandas DataFrame.
     :param row_number: The row containing the variable names
-    :param remove_row: Should the row be removed from the DataFrame?
-    :param remove_rows_above: Should the rows above row_number be removed from the resulting DataFrame?
-
+    :param remove_row: Whether the row should be removed from the DataFrame.
+        Defaults to False.
+    :param remove_rows_above: Whether the rows above the selected row should
+        be removed from the DataFrame. Defaults to False.
     """
 
     assert isinstance(row_number, int), "`row_number` must be an integer!"

@@ -9,6 +9,7 @@ from functools import reduce
 from warnings import warn
 
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 import pandas_flavor as pf
@@ -810,7 +811,7 @@ def change_type(df, column: str, dtype):
 
 
 @pf.register_dataframe_method
-def add_column(df, colname: str, value):
+def add_column(df, colname: str, value, fill_remaining=False):
     """
     Adds a column to the dataframe.
 
@@ -838,9 +839,25 @@ def add_column(df, colname: str, value):
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param value: Either a single value, or a list/tuple of values.
+    :param fill_remaining: If value is a tuple or list that is smaller than
+        the number of rows in the DataFrame, repeat the list or tuple
+        (R-style) to the end of the DataFrame.
     """
     assert isinstance(colname, str), "`colname` must be a string!"
-    df[colname] = value
+    assert colname not in df.columns, "columns %s already exists!" % colname
+
+    if fill_remaining:
+        nrows = df.shape[0]
+
+        times_to_loop = int(np.ceil(nrows / len(value)))
+
+        fill_values = list(value) * times_to_loop
+
+        df[colname] = fill_values[:nrows]
+
+    else:
+        df[colname] = value
+
     return df
 
 
@@ -878,6 +895,11 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     col_name_set = set(col_names)
     col_name_count = dict()
 
+    # If no columns are duplicates, we can skip the loops below.
+    if len(col_name_set) == len(col_names):
+        df.columns = col_names
+        return df
+
     for col_name_to_check in col_name_set:
         count = 0
         for idx, col_name in enumerate(col_names):
@@ -896,4 +918,38 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
             final_col_names.append(col_name)
 
     df.columns = final_col_names
+    return df
+
+
+@pf.register_dataframe_method
+def row_to_names(
+    df,
+    row_number: int = None,
+    remove_row: bool = False,
+    remove_rows_above: bool = False,
+):
+    """
+    Elevates a row to be the column names of a DataFrame. Contains options to
+    remove the elevated row from the DataFrame along with removing the rows
+    above the selected row.
+
+    :param df: A pandas DataFrame.
+    :param row_number: The row containing the variable names
+    :param remove_row: Whether the row should be removed from the DataFrame.
+        Defaults to False.
+    :param remove_rows_above: Whether the rows above the selected row should
+        be removed from the DataFrame. Defaults to False.
+    """
+
+    assert isinstance(row_number, int), "`row_number` must be an integer!"
+
+    df.columns = df.iloc[row_number, :]
+    df.columns.name = None
+
+    if remove_row:
+        df.drop(df.index[row_number], inplace=True)
+
+    if remove_rows_above:
+        df.drop(df.index[range(row_number)], inplace=True)
+
     return df

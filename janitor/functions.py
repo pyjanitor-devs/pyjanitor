@@ -876,7 +876,7 @@ def row_to_names(
     :param df: A pandas DataFrame.
     :param row_number: The row containing the variable names
     :param remove_row: Should the row be removed from the DataFrame?
-    :param remove_rows_above: Should the rows above row_number be removed from the resulting DataFrame?
+    :param remove_rows_above: Whether the rows above `row_number` should be removed from the resulting DataFrame. Defaults to False.
 
     """
 

@@ -900,7 +900,7 @@ def row_to_names(
 
 @pf.register_dataframe_method
 def round_to_fraction(
-    df, colname: str = None, denominator: int = None, digits: float = np.inf
+    df, colname: str = None, denominator: float = None, digits: float = np.inf
 ):
     """
     Round all values in a column to a fraction.
@@ -915,6 +915,16 @@ def round_to_fraction(
     """
 
     assert isinstance(colname, str), "`colname` must be a string!"
+
+    if denominator:
+        assert isinstance(denominator, float) or isinstance(
+            denominator, int
+        ), "`denominator` must be a float or int!"
+
+    if digits:
+        assert isinstance(digits, float) or isinstance(
+            digits, int
+        ), "`digits` must be a float or int!"
 
     def _round_to_fraction(number, denominator, digits=np.inf):
         num = round(number * denominator, 0) / denominator

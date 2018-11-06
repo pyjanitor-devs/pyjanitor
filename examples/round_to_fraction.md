@@ -69,7 +69,7 @@ example_dataframe2.limit_column_characters('a', 3)
     7  2.333333     0.285714            0.153846  leopard   Shanghai
     8  3.333333     1.500000            0.017964     lion      Basel
 
-## Example3: Rounding the first column to the nearest third and rounding each value to the 10,000th place 
+## Example 3: Rounding the first column to the nearest third and rounding each value to the 10,000th place 
 
 ```python
 

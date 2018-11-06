@@ -28,39 +28,12 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1, 2, 3] * 3,
+        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
-    return df
-
-
-@pytest.fixture
-def dataframe_floats():
-    data = {
-        "a": [1.23452345, 2.456234, 3.2346125] * 3,
-        "Bell__Chart": [1 / 3, 2 / 7, 3 / 2] * 3,
-        "decorated-elephant": [1 / 234, 2 / 13, 3 / 167] * 3,
-        "animals": ["rabbit", "leopard", "lion"] * 3,
-        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-    }
-    df = pd.DataFrame(data)
-    return df
-
-
-@pytest.fixture
-def dataframe_duplicate_columns():
-    data = {
-        "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1, 2, 3] * 3,
-        "decorated-elephant": [1, 2, 3] * 3,
-        "animals": ["rabbit", "leopard", "lion"] * 3,
-        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-    }
-    df = pd.DataFrame(data)
-    df.columns = ["first", "first", "second", "second", "first"]
     return df
 
 
@@ -496,10 +469,11 @@ def test_limit_column_characters(dataframe):
     assert df.columns[4] == "c"
 
 
-def test_limit_column_characters_different_positions(
-    dataframe_duplicate_columns
-):
-    df = dataframe_duplicate_columns.limit_column_characters(3)
+def test_limit_column_characters_different_positions(dataframe):
+    df = dataframe
+    df.columns = ["first", "first", "second", "second", "first"]
+    df.limit_column_characters(3)
+
     assert df.columns[0] == "fir"
     assert df.columns[1] == "fir_1"
     assert df.columns[2] == "sec"
@@ -508,9 +482,12 @@ def test_limit_column_characters_different_positions(
 
 
 def test_limit_column_characters_different_positions_different_separator(
-    dataframe_duplicate_columns
+    dataframe
 ):
-    df = dataframe_duplicate_columns.limit_column_characters(3, ".")
+    df = dataframe
+    df.columns = ["first", "first", "second", "second", "first"]
+    df.limit_column_characters(3, ".")
+
     assert df.columns[0] == "fir"
     assert df.columns[1] == "fir.1"
     assert df.columns[2] == "sec"
@@ -556,7 +533,7 @@ def test_add_column_iterator_repeat(dataframe):
 def test_row_to_names(dataframe):
     df = dataframe.row_to_names(2)
     assert df.columns[0] == 3
-    assert df.columns[1] == 3
+    assert df.columns[1] == 3.2346125
     assert df.columns[2] == 3
     assert df.columns[3] == "lion"
     assert df.columns[4] == "Basel"
@@ -565,7 +542,7 @@ def test_row_to_names(dataframe):
 def test_row_to_names_delete_this_row(dataframe):
     df = dataframe.row_to_names(2, remove_row=True)
     assert df.iloc[2, 0] == 1
-    assert df.iloc[2, 1] == 1
+    assert df.iloc[2, 1] == 1.23452345
     assert df.iloc[2, 2] == 1
     assert df.iloc[2, 3] == "rabbit"
     assert df.iloc[2, 4] == "Cambridge"
@@ -574,20 +551,20 @@ def test_row_to_names_delete_this_row(dataframe):
 def test_row_to_names_delete_above(dataframe):
     df = dataframe.row_to_names(2, remove_rows_above=True)
     assert df.iloc[0, 0] == 3
-    assert df.iloc[0, 1] == 3
+    assert df.iloc[0, 1] == 3.2346125
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
 
 
-def test_round_to_nearest_half(dataframe_floats):
-    df = dataframe_floats.round_to_fraction("a", 2)
-    assert df.iloc[0, 0] == 1.0
-    assert df.iloc[1, 0] == 2.5
-    assert df.iloc[2, 0] == 3.0
-    assert df.iloc[3, 0] == 1.0
-    assert df.iloc[4, 0] == 2.5
-    assert df.iloc[5, 0] == 3.0
-    assert df.iloc[6, 0] == 1.0
-    assert df.iloc[7, 0] == 2.5
-    assert df.iloc[8, 0] == 3.0
+def test_round_to_nearest_half(dataframe):
+    df = dataframe.round_to_fraction("Bell__Chart", 2)
+    assert df.iloc[0, 1] == 1.0
+    assert df.iloc[1, 1] == 2.5
+    assert df.iloc[2, 1] == 3.0
+    assert df.iloc[3, 1] == 1.0
+    assert df.iloc[4, 1] == 2.5
+    assert df.iloc[5, 1] == 3.0
+    assert df.iloc[6, 1] == 1.0
+    assert df.iloc[7, 1] == 2.5
+    assert df.iloc[8, 1] == 3.0

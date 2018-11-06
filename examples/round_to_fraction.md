@@ -47,7 +47,7 @@ example_dataframe.round_to_fraction('a', 2)
     7  2.5     0.285714            0.153846  leopard   Shanghai
     8  3.0     1.500000            0.017964     lion      Basel
 
-## Example2: Rounding the first column to nearest third
+## Example 2: Rounding the first column to nearest third
 
 ```python
 

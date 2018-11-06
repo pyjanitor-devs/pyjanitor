@@ -27,7 +27,7 @@ data_dict = {
 }
 ```
 
-## Example1: Rounding the first column to the nearest half
+## Example 1: Rounding the first column to the nearest half
  ```python
 example_dataframe = pd.DataFrame(data_dict)
   

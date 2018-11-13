@@ -27,7 +27,7 @@ from janitor.errors import JanitorError
 @pytest.fixture
 def dataframe():
     data = {
-        "a": [1, 2, 3] * 3,
+        "%a#": [1, 2, 3] * 3,
         "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals": ["rabbit", "leopard", "lion"] * 3,

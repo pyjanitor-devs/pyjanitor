@@ -52,7 +52,12 @@ def _strip_underscores(df, strip_underscores=None):
 
 
 @pf.register_dataframe_method
-def clean_names(df, strip_underscores=None, preserve_case=False):
+def clean_names(
+    df,
+    strip_underscores: str = None,
+    case_type: str = "lower",
+    remove_special: bool = False,
+):
     """
     Clean column names.
 
@@ -85,13 +90,26 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
         column names. Default None keeps outer underscores. Values can be
         either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
         and True.
-    :param preserve_case: (optional) Allows you to choose whether to make all
-        column names lowercase, or to preserve current cases. Default False
+    :param case_type: (optional) Whether to make columns lower or uppercase.
+    Current case may be preserved with 'preserve'. Default 'lower'
         makes all characters lowercase.
+    :param remove_special: (optional) Remove special characters from columns.
+        Only letters, numbers and underscores are preserved.
     :returns: A pandas DataFrame.
     """
-    if preserve_case is False:
-        df = df.rename(columns=lambda x: x.lower())
+
+    assert case_type.lower() in {
+        "preserve",
+        "upper",
+        "lower",
+    }, "case_type argument must be one of ('preserve', 'upper', 'lower')"
+
+    if case_type.lower() != "preserve":
+        if case_type.lower() == "upper":
+            df = df.rename(columns=lambda x: x.upper())
+
+        elif case_type.lower() == "lower":
+            df = df.rename(columns=lambda x: x.lower())
 
     df = df.rename(
         columns=lambda x: x.replace(" ", "_")
@@ -106,6 +124,12 @@ def clean_names(df, strip_underscores=None, preserve_case=False):
         .replace(")", "_")
         .replace(".", "_")
     )
+
+    def _remove_special(col):
+        return "".join(item for item in col if item.isalnum() or "_" in item)
+
+    if remove_special:
+        df = df.rename(columns=_remove_special)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)

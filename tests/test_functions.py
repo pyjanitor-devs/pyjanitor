@@ -30,7 +30,7 @@ def dataframe():
         "a": [1, 2, 3] * 3,
         "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
-        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
@@ -63,7 +63,7 @@ def test_clean_names_functional(dataframe):
         "a",
         "bell_chart",
         "decorated_elephant",
-        "animals",
+        "animals@#$%^",
         "cities",
     ]
     assert set(df.columns) == set(expected_columns)
@@ -75,7 +75,7 @@ def test_clean_names_method_chain(dataframe):
         "a",
         "bell_chart",
         "decorated_elephant",
-        "animals",
+        "animals@#$%^",
         "cities",
     ]
     assert set(df.columns) == set(expected_columns)
@@ -87,8 +87,32 @@ def test_clean_names_pipe(dataframe):
         "a",
         "bell_chart",
         "decorated_elephant",
+        "animals@#$%^",
+        "cities",
+    ]
+    assert set(df.columns) == set(expected_columns)
+
+
+def test_clean_names_special_characters(dataframe):
+    df = dataframe.clean_names(remove_special=True)
+    expected_columns = [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
         "animals",
         "cities",
+    ]
+    assert set(df.columns) == set(expected_columns)
+
+
+def test_clean_names_uppercase(dataframe):
+    df = dataframe.clean_names(case_type="upper", remove_special=True)
+    expected_columns = [
+        "A",
+        "BELL_CHART",
+        "DECORATED_ELEPHANT",
+        "ANIMALS",
+        "CITIES",
     ]
     assert set(df.columns) == set(expected_columns)
 
@@ -127,7 +151,7 @@ def test_encode_categorical_missing_column(dataframe):
 
 def test_encode_categorical_missing_columns(dataframe):
     with pytest.raises(AssertionError):
-        dataframe.encode_categorical(["animals", "cities", "aloha"])
+        dataframe.encode_categorical(["animals@#$%^", "cities", "aloha"])
 
 
 def test_encode_categorical_invalid_input(dataframe):
@@ -145,7 +169,7 @@ def test_get_features_targets(dataframe):
 def test_get_features_targets_multi_features(dataframe):
     dataframe = dataframe.clean_names()
     X, y = dataframe.get_features_targets(
-        feature_columns=["animals", "cities"], target_columns="bell_chart"
+        feature_columns=["animals@#$%^", "cities"], target_columns="bell_chart"
     )
     assert X.shape == (9, 2)
     assert y.shape == (9,)
@@ -161,7 +185,7 @@ def test_get_features_target_multi_columns(dataframe):
 def test_rename_column(dataframe):
     df = dataframe.clean_names().rename_column("a", "index")
     assert set(df.columns) == set(
-        ["index", "bell_chart", "decorated_elephant", "animals", "cities"]
+        ["index", "bell_chart", "decorated_elephant", "animals@#$%^", "cities"]
     )  # noqa: E501
 
 
@@ -362,7 +386,7 @@ def test_incorrect_strip_underscores(multiindex_dataframe):
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):
     df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
-    df = clean_names(multiindex_dataframe, preserve_case=True)
+    df = clean_names(multiindex_dataframe, case_type="preserve")
 
     levels = [
         ["a", "Bell_Chart", "decorated_elephant"],
@@ -421,7 +445,7 @@ def test_deconcatenate_column(dataframe):
 
 
 def test_filter_string(dataframe):
-    df = filter_string(dataframe, column="animals", search_string="bbit")
+    df = filter_string(dataframe, column="animals@#$%^", search_string="bbit")
     assert len(df) == 3
 
 

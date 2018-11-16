@@ -619,3 +619,20 @@ def test_round_to_nearest_half(dataframe):
     assert df.iloc[6, 1] == 1.0
     assert df.iloc[7, 1] == 2.5
     assert df.iloc[8, 1] == 3.0
+
+
+def test_make_currency_api_request(dataframe):
+    """This test assumes that the GBP will always be more than the USD."""
+
+    df = dataframe.convert_currency("a", "USD", "GBP")
+
+    assert df.iloc[0, 0] < 1
+
+
+def test_currency_makes_column_decrease(dataframe):
+    """This test assumes that the GBP will always be more than the USD."""
+
+    df1 = dataframe.copy()
+    df = dataframe.convert_currency("a", "USD", "GBP")
+
+    assert df.iloc[0, 0] < df1.iloc[0, 0]

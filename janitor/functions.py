@@ -16,7 +16,7 @@ from sklearn.preprocessing import LabelEncoder
 import pandas_flavor as pf
 
 from .errors import JanitorError
-from typing import List
+from typing import List, Union
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -379,6 +379,64 @@ def rename_column(df, old, new):
 
 
 @pf.register_dataframe_method
+def reorder_columns(
+    df: pd.DataFrame, column_order: Union[List, pd.Index]
+) -> pd.DataFrame:
+    """
+    Reorder DataFrame columns by specifying desired order as list of col names
+    Columns not specified retain their order and follow after specified cols
+    Validates column_order to ensure columns are all present in DataFrame.
+
+    Functional usage example:
+
+    Given `DataFrame` with column names `col1`, `col2`, `col3`:
+
+    .. code-block:: python
+
+        df = reorder_columns(df, ['col2', 'col3'])
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).reorder_columns(['col2', 'col3'])
+
+    The column order of `df` is now `col2`, `col3`, `col1`.
+
+    Internally, this function uses `DataFrame.reindex` with `copy=False`
+    to avoid unnecessary data duplication.
+
+    :param df: `DataFrame` to reorder
+    :param column_order: A list of column names or Pandas `Index`
+        specifying their order in the returned `DataFrame`.
+    :returns: A pandas DataFrame.
+    """
+
+    if not isinstance(column_order, (list, pd.Index)):
+        raise TypeError(
+            "column_order must be a list of column names or Pandas Index."
+        )
+
+    if any(col not in df.columns for col in column_order):
+        raise IndexError(
+            "A column in column_order was not found in the DataFrame."
+        )
+
+    # if column_order is a Pandas index, needs conversion to list:
+    column_order = list(column_order)
+
+    return df.reindex(
+        columns=(
+            column_order
+            + [col for col in df.columns if col not in column_order]
+        ),
+        copy=False,
+    )
+
+
+@pf.register_dataframe_method
 def coalesce(df, columns, new_column_name):
     """
     Coalesces two or more columns of data in order of column names provided.
@@ -535,7 +593,7 @@ def expand_column(df, column, sep, concat=True):
 
 @pf.register_dataframe_method
 def concatenate_columns(
-    df, columns: list, new_column_name: str, sep: str = "-"
+    df, columns: List, new_column_name: str, sep: str = "-"
 ):
     """
     Concatenates the set of columns into a single column.
@@ -578,7 +636,7 @@ def concatenate_columns(
 
 
 @pf.register_dataframe_method
-def deconcatenate_column(df, column: str, new_column_names: list, sep: str):
+def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
     """
     De-concatenates a single column into multiple columns.
 
@@ -627,7 +685,7 @@ def filter_string(
     """
     Filter a string-based column according to whether it contains a substring.
 
-    This is super sugary syntax that builds on top of `filter_column` and
+    This is super sugary syntax that builds on top of `filter_on` and
     `pandas.Series.str.contains`.
 
     Because this uses internally `pandas.Series.str.contains`, which allows a
@@ -690,7 +748,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_column(df['value'] < 3, complement=False)
+              .filter_on(df['value'] < 3, complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -706,7 +764,7 @@ def filter_on(df, criteria, complement=False):
 
     .. code-block:: python
 
-        df = filter_column(df,
+        df = filter_on(df,
                            df['value'] < 3,
                            complement=False)
 
@@ -715,7 +773,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_column(df['value'] < 3
+              .filter_on(df['value'] < 3
                              complement=False)
               ...)
 
@@ -733,7 +791,7 @@ def filter_on(df, criteria, complement=False):
 
 
 @pf.register_dataframe_method
-def remove_columns(df: pd.DataFrame, columns: list):
+def remove_columns(df: pd.DataFrame, columns: List):
     """
     Removes the set of columns specified in cols.
 
@@ -743,10 +801,10 @@ def remove_columns(df: pd.DataFrame, columns: list):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).remove_column(cols=['col1', ['col2']])
+        df = pd.DataFrame(...).remove_columns(cols=['col1', ['col2']])
 
     :param df: A pandas DataFrame
-    :param cols: The columns to remove.
+    :param columns: The columns to remove.
     """
     for col in columns:
         del df[col]
@@ -769,7 +827,7 @@ def change_type(df, column: str, dtype):
         df = pd.DataFrame(...).change_type('col1', str)
 
     :param df: A pandas dataframe.
-    :param col: A column in the dataframe.
+    :param column: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
     """

@@ -189,6 +189,33 @@ def test_rename_column(dataframe):
     )  # noqa: E501
 
 
+def test_reorder_columns(dataframe):
+    # sanity checking of inputs
+
+    # input is not a list or pd.Index
+    with pytest.raises(TypeError):
+        dataframe.reorder_columns("a")
+
+    # one of the columns is not present in the DataFrame
+    with pytest.raises(IndexError):
+        dataframe.reorder_columns(["notpresent"])
+
+    # reordering functionality
+
+    # sanity check when desired order matches current order
+    # this also tests whether the function can take Pandas Index objects
+    assert all(
+        dataframe.reorder_columns(dataframe.columns).columns
+        == dataframe.columns
+    )
+
+    # when columns are list & not all columns of DataFrame are included
+    assert all(
+        dataframe.reorder_columns(["animals", "Bell__Chart"]).columns
+        == ["animals", "Bell__Chart", "a", "decorated-elephant", "cities"]
+    )
+
+
 def test_coalesce():
     df = pd.DataFrame(
         {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]}

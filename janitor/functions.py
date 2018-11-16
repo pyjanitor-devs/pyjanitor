@@ -8,10 +8,13 @@ import re
 from functools import reduce
 from functools import partial
 from warnings import warn
+import json
+from datetime import date, datetime
 
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
+import requests
 
 import pandas_flavor as pf
 
@@ -1019,5 +1022,106 @@ def round_to_fraction(
     )
 
     df[colname] = df[colname].apply(_round_to_fraction_partial)
+
+    return df
+
+
+def _convert_currency(
+    from_currency: str = None,
+    to_currency: str = None,
+    historical_date: date = None,
+):
+    """
+    Currency conversion for Pandas DataFrame column.
+    The API used is: https://exchangeratesapi.io/
+    """
+
+    url = "https://api.exchangeratesapi.io"
+
+    if historical_date:
+        assert isinstance(historical_date, date) | isinstance(
+            historical_date, datetime
+        ), "historical_date must be a date or datetime object!"
+        if isinstance(historical_date, datetime):
+            assert historical_date >= datetime(
+                1999, 1, 4
+            ), "datetime must be later than 1999-01-04!"
+            string_date = str(historical_date)[:10]
+        else:
+            assert historical_date >= date(
+                1999, 1, 4
+            ), "date must be later than 1999-01-04!"
+            string_date = str(historical_date)
+        url = url + "/%s" % string_date
+    else:
+        url = url + "/latest"
+
+    currency_set = {
+        "AUD",
+        "BGN",
+        "BRL",
+        "CAD",
+        "CHF",
+        "CNY",
+        "CZK",
+        "DKK",
+        "EUR",
+        "GBP",
+        "HKD",
+        "HRK",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "ISK",
+        "JPY",
+        "KRW",
+        "MXN",
+        "MYR",
+        "NOK",
+        "NZD",
+        "PHP",
+        "PLN",
+        "RON",
+        "RUB",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "USD",
+        "ZAR",
+    }
+
+    assert (
+        from_currency in currency_set
+    ), f"from_currency must be one of {currency_set}"
+    assert (
+        to_currency in currency_set
+    ), f"to_currency must be one of {currency_set}"
+
+    payload = {"base": from_currency, "symbols": to_currency}
+
+    result = requests.get(url, params=payload)
+
+    assert result.status_code == 200, (
+        "Exchange Rate API failed to receive a 200 response from the server. "
+        "Please try again later."
+    )
+
+    currency_dict = json.loads(result.text)
+    rate = currency_dict["rates"][to_currency]
+    return rate
+
+
+@pf.register_dataframe_method
+def convert_currency(
+    df,
+    colname: str = None,
+    from_currency: str = None,
+    to_currency: str = None,
+    historical_date: date = None,
+):
+    rate = _convert_currency(from_currency, to_currency, historical_date)
+    df[colname] = df[colname] * rate
 
     return df

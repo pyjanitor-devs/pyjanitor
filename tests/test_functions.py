@@ -211,8 +211,8 @@ def test_reorder_columns(dataframe):
 
     # when columns are list & not all columns of DataFrame are included
     assert all(
-        dataframe.reorder_columns(["animals", "Bell__Chart"]).columns
-        == ["animals", "Bell__Chart", "a", "decorated-elephant", "cities"]
+        dataframe.reorder_columns(["animals@#$%^", "Bell__Chart"]).columns
+        == ["animals@#$%^", "Bell__Chart", "a", "decorated-elephant", "cities"]
     )
 
 

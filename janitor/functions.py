@@ -565,7 +565,7 @@ def expand_column(df, column, sep, concat=True):
 
     .. code-block:: python
 
-        df = expand_column(df, column='colname',
+        df = expand_column(df, column='col_name',
                            sep=', ')  # note space in sep
 
     Method chaining example:
@@ -574,7 +574,7 @@ def expand_column(df, column, sep, concat=True):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).expand_column(df, column='colname', sep=', ')
+        df = pd.DataFrame(...).expand_column(df, column='col_name', sep=', ')
 
     :param df: A pandas DataFrame.
     :param column: A `str` indicating which column to expand.
@@ -836,20 +836,20 @@ def change_type(df, column: str, dtype):
 
 
 @pf.register_dataframe_method
-def add_column(df, colname: str, value, fill_remaining=False):
+def add_column(df, col_name: str, value, fill_remaining=False):
     """
     Adds a column to the dataframe.
 
     Intended to be the method-chaining alternative to::
 
-        df[colname] = value
+        df[col_name] = value
 
     Method chaining example adding a column with only a single value:
 
     .. code-block:: python
 
         # This will add a column with only one value.
-        df = pd.DataFrame(...).add_column(colname="new_column", 2)
+        df = pd.DataFrame(...).add_column(col_name="new_column", 2)
 
     Method chaining example adding a column with more than one value:
 
@@ -857,10 +857,10 @@ def add_column(df, colname: str, value, fill_remaining=False):
 
         # This will add a column with an iterable of values.
         vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
-        df = pd.DataFrame(...).add_column(colname="new_column", vals)
+        df = pd.DataFrame(...).add_column(col_name="new_column", vals)
 
     :param df: A pandas dataframe.
-    :param colname: Name of the new column. Should be a string, in order
+    :param col_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param value: Either a single value, or a list/tuple of values.
@@ -868,8 +868,8 @@ def add_column(df, colname: str, value, fill_remaining=False):
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     """
-    assert isinstance(colname, str), "`colname` must be a string!"
-    assert colname not in df.columns, "columns %s already exists!" % colname
+    assert isinstance(col_name, str), "`col_name` must be a string!"
+    assert col_name not in df.columns, "columns %s already exists!" % col_name
 
     if fill_remaining:
         nrows = df.shape[0]
@@ -878,10 +878,10 @@ def add_column(df, colname: str, value, fill_remaining=False):
 
         fill_values = list(value) * times_to_loop
 
-        df[colname] = fill_values[:nrows]
+        df[col_name] = fill_values[:nrows]
 
     else:
-        df[colname] = value
+        df[col_name] = value
 
     return df
 
@@ -982,7 +982,7 @@ def row_to_names(
 
 @pf.register_dataframe_method
 def round_to_fraction(
-    df, colname: str = None, denominator: float = None, digits: float = np.inf
+    df, col_name: str = None, denominator: float = None, digits: float = np.inf
 ):
     """
     Round all values in a column to a fraction.
@@ -996,7 +996,7 @@ def round_to_fraction(
     Taken from https://github.com/sfirke/janitor/issues/235
     """
 
-    assert isinstance(colname, str), "`colname` must be a string!"
+    assert isinstance(col_name, str), "`col_name` must be a string!"
 
     if denominator:
         assert isinstance(denominator, float) or isinstance(
@@ -1018,6 +1018,6 @@ def round_to_fraction(
         _round_to_fraction, denominator=denominator, digits=digits
     )
 
-    df[colname] = df[colname].apply(_round_to_fraction_partial)
+    df[col_name] = df[col_name].apply(_round_to_fraction_partial)
 
     return df

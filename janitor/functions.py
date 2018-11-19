@@ -227,9 +227,6 @@ def encode_categorical(df, columns):
         of column names.
     :returns: A pandas DataFrame
     """
-    msg = """If you are looking to encode categorical to use with scikit-learn,
-    please use the label_encode method instead."""
-    warn(msg)
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
             assert col in df.columns, JanitorError(
@@ -414,10 +411,7 @@ def reorder_columns(
     :returns: A pandas DataFrame.
     """
 
-    if not isinstance(column_order, (list, pd.Index)):
-        raise TypeError(
-            "column_order must be a list of column names or Pandas Index."
-        )
+    check("column_order", column_order, [list, pd.Index])
 
     if any(col not in df.columns for col in column_order):
         raise IndexError(
@@ -543,12 +537,16 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            ), "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
+        ), "{col} missing from dataframe columns!".format(
+            col=columns
+        )
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -868,8 +866,12 @@ def add_column(df, col_name: str, value, fill_remaining=False):
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     """
-    assert isinstance(col_name, str), "`col_name` must be a string!"
-    assert col_name not in df.columns, "columns %s already exists!" % col_name
+    check("col_name", col_name, [str])
+    assert (
+        col_name not in df.columns
+    ), "columns {col_name} already exists!".format(
+        col_name=col_name
+    )
 
     if fill_remaining:
         nrows = df.shape[0]
@@ -909,10 +911,8 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 
     """
 
-    assert isinstance(
-        column_length, int
-    ), "`column_length` must be an integer!"
-    assert isinstance(col_separator, str), "`col_separator` must be a string!"
+    check("column_length", column_length, [int])
+    check("col_separator", col_separator, [str])
 
     col_names = df.columns
     col_names = [col_name[:column_length] for col_name in col_names]
@@ -966,7 +966,7 @@ def row_to_names(
         be removed from the DataFrame. Defaults to False.
     """
 
-    assert isinstance(row_number, int), "`row_number` must be an integer!"
+    check("row_number", row_number, [int])
 
     df.columns = df.iloc[row_number, :]
     df.columns.name = None
@@ -996,17 +996,13 @@ def round_to_fraction(
     Taken from https://github.com/sfirke/janitor/issues/235
     """
 
-    assert isinstance(col_name, str), "`col_name` must be a string!"
+    check("col_name", col_name, [str])
 
     if denominator:
-        assert isinstance(denominator, float) or isinstance(
-            denominator, int
-        ), "`denominator` must be a float or int!"
+        check("denominator", denominator, [float, int])
 
     if digits:
-        assert isinstance(digits, float) or isinstance(
-            digits, int
-        ), "`digits` must be a float or int!"
+        check("digits", digits, [float, int])
 
     def _round_to_fraction(number, denominator, digits=np.inf):
         num = round(number * denominator, 0) / denominator
@@ -1021,3 +1017,29 @@ def round_to_fraction(
     df[col_name] = df[col_name].apply(_round_to_fraction_partial)
 
     return df
+
+
+def check(varname: str, value: str, expected_types: list):
+    """
+    One-liner syntactic sugar for checking types.
+
+    Should be used like this:
+
+        check('x', x, [int, float])
+
+    :param varname: The name of the variable.
+    :param value: The value of the varname.
+    :param expected_types: The types we expect the item to be.
+    """
+    is_expected_type = False
+    for t in expected_types:
+        if isinstance(value, t):
+            is_expected_type = True
+            break
+
+    if not is_expected_type:
+        raise TypeError(
+            "{varname} should be one of {expected_types}".format(
+                varname=varname, expected_types=expected_types
+            )
+        )

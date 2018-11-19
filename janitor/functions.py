@@ -1019,7 +1019,7 @@ def round_to_fraction(
     return df
 
 
-def check(varname: str, value: str, expected_types: list):
+def check(varname: str, value, expected_types: list):
     """
     One-liner syntactic sugar for checking types.
 

@@ -834,8 +834,7 @@ def change_type(df, column: str, dtype):
 
 
 @pf.register_dataframe_method
-def add_column(df, col_name: str, value,
-               fill_remaining= False):
+def add_column(df, col_name: str, value, fill_remaining: bool = False):
     """
     Adds a column to the dataframe.
 

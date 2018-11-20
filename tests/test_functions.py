@@ -504,11 +504,72 @@ def test_change_type(dataframe):
 
 
 def test_add_column(dataframe):
-    df = dataframe.add_column("fortytwo", 42)
-    assert "fortytwo" in df.columns
+
+    # sanity checking of inputs
+
+    # col_name wasn't a string
+    with pytest.raises(TypeError):
+        dataframe.add_column(col_name=42, value=42)
+
+    # column already exists
+    with pytest.raises(ValueError):
+        dataframe.add_column('a', 42)
+
+    # too many values for dataframe num rows:
+    with pytest.raises(ValueError):
+        dataframe.add_column('toomany', np.ones(100))
+
+    # functionality testing
+
+    # column appears in DataFrame
+    df = dataframe.add_column('fortytwo', 42)
+    assert 'fortytwo' in df.columns
+
+    # values are correct in dataframe for scalar
     series = pd.Series([42] * len(dataframe))
-    series.name = "fortytwo"
-    pd.testing.assert_series_equal(df["fortytwo"], series)
+    series.name = 'fortytwo'
+    pd.testing.assert_series_equal(df['fortytwo'], series)
+
+    # values are correct in dataframe for iterable
+    vals = np.linspace(0, 43, len(dataframe))
+    df = dataframe.add_column('fortythree', vals)
+    series = pd.Series(vals)
+    series.name = 'fortythree'
+    pd.testing.assert_series_equal(df['fortythree'], series)
+
+    # fill_remaining works - iterable shorter than DataFrame
+    vals = [0, 42]
+    target = [0, 42] * 4 + [0]
+    df = dataframe.add_column('fill_in_iterable', vals, fill_remaining=True)
+    series = pd.Series(target)
+    series.name = 'fill_in_iterable'
+    pd.testing.assert_series_equal(df['fill_in_iterable'], series)
+
+    # fill_remaining works - value is scalar
+    vals = 42
+    df = dataframe.add_column('fill_in_scalar', vals, fill_remaining=True)
+    series = pd.Series([42] * len(df))
+    series.name = 'fill_in_scalar'
+    pd.testing.assert_series_equal(df['fill_in_scalar'], series)
+
+
+def test_add_columns(dataframe):
+    # sanity checking is pretty much handled in test_add_column
+
+    # multiple column addition with scalar and iterable
+
+    x_vals = 42
+    y_vals = np.linspace(0, 42, len(dataframe))
+
+    df = dataframe.add_columns(x=x_vals, y=y_vals)
+
+    series = pd.Series([x_vals] * len(dataframe))
+    series.name = 'x'
+    pd.testing.assert_series_equal(df['x'], series)
+
+    series = pd.Series(y_vals)
+    series.name = 'y'
+    pd.testing.assert_series_equal(df['y'], series)
 
 
 def test_limit_column_characters(dataframe):
@@ -571,8 +632,8 @@ def test_add_column_iterator_repeat(dataframe):
 
 
 def test_add_column_raise_error(dataframe):
-    with pytest.raises(Exception) as e_info:
-        df = dataframe.add_column("cities", 1)
+    with pytest.raises(Exception):
+        dataframe.add_column("cities", 1)
 
 
 def test_add_column_iterator_repeat(dataframe):

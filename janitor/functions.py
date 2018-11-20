@@ -834,7 +834,7 @@ def change_type(df, column: str, dtype):
 
 
 @pf.register_dataframe_method
-def add_column(df, col_name: str, value, fill_remaining=False):
+def add_column(df, col_name: str, value, fill_remaining: bool = False):
     """
     Adds a column to the dataframe.
 
@@ -866,24 +866,80 @@ def add_column(df, col_name: str, value, fill_remaining=False):
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     """
+
     check("col_name", col_name, [str])
-    assert (
-        col_name not in df.columns
-    ), "columns {col_name} already exists!".format(
-        col_name=col_name
-    )
+
+    if col_name in df.columns:
+        raise ValueError(
+            f"Attempted to add column that already exists: " f"{col_name}."
+        )
+
+    nrows = df.shape[0]
+
+    if hasattr(value, "__len__"):
+        # if `value` is a list, ndarray, etc.
+        if len(value) > nrows:
+            raise ValueError(
+                f"`values` has more elements than number of rows "
+                f"in your `DataFrame`. vals: {len(value)}, "
+                f"df: {nrows}"
+            )
+        if len(value) != nrows and not fill_remaining:
+            raise ValueError(
+                f"Attempted to add iterable of values with length"
+                f" not equal to number of DataFrame rows"
+            )
+        len_value = len(value)
+    elif fill_remaining:
+        # relevant if a scalar val was passed, yet fill_remaining == True
+        len_value = 1
+        value = [value]
+
+    nrows = df.shape[0]
 
     if fill_remaining:
-        nrows = df.shape[0]
-
-        times_to_loop = int(np.ceil(nrows / len(value)))
+        times_to_loop = int(np.ceil(nrows / len_value))
 
         fill_values = list(value) * times_to_loop
 
         df[col_name] = fill_values[:nrows]
-
     else:
         df[col_name] = value
+
+    return df
+
+
+@pf.register_dataframe_method
+def add_columns(df: pd.DataFrame, fill_remaining: bool = False, **kwargs):
+    """
+    Method to augment `add_column` with ability to add multiple columns in
+    one go. This replaces the need for multiple `add_column` calls.
+
+    Usage is through supplying kwargs where the key is the col name and the
+    values correspond to the values of the new DataFrame column.
+
+    Values passed can be scalar or iterable (list, ndarray, etc.)
+
+    Usage example:
+
+    .. code-black:: python
+        x = 3
+        y = np.arange(0, 10)
+
+        df = pd.DataFrame(...).add_columns(x=x, y=y)
+
+    :param df: A pandas dataframe.
+    :param fill_remaining: If value is a tuple or list that is smaller than
+        the number of rows in the DataFrame, repeat the list or tuple
+        (R-style) to the end of the DataFrame. (Passed to `add_column`)
+    :param kwargs: column, value pairs which are looped through in
+        `add_column` calls.
+    """
+
+    # Note: error checking can pretty much be handled in `add_column`
+
+    for col_name, values in kwargs.items():
+        df = df.add_column(col_name, values, fill_remaining=fill_remaining)
 
     return df
 

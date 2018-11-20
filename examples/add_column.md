@@ -22,7 +22,6 @@ If value is a tuple or list that is smaller than the number of rows in the DataF
 ## Setup
 
 ```python
-
 import pandas as pd
 import janitor
  
@@ -39,7 +38,7 @@ df = pd.DataFrame(data)
 ```
  
  
-## Example1: Create a new column with a single value
+## Example 1: Create a new column with a single value
 
 ```python
 df.add_column("city_pop", 100000)

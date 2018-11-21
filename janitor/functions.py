@@ -78,9 +78,9 @@ def clean_names(
         import janitor
         df = pd.DataFrame(...).clean_names()
 
-    Example of transformation:
+    :Example of transformation:
 
-    .. code-block::
+    .. code-block:: python
 
         Columns before: First Name, Last Name, Employee Status, Subject
         Columns after: first_name, last_name, employee_status, subject
@@ -91,7 +91,7 @@ def clean_names(
         either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
         and True.
     :param case_type: (optional) Whether to make columns lower or uppercase.
-    Current case may be preserved with 'preserve'. Default 'lower'
+        Current case may be preserved with 'preserve'. Default 'lower'
         makes all characters lowercase.
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
@@ -752,6 +752,7 @@ def filter_on(df, criteria, complement=False):
     This stands in contrast to the in-place syntax that is usually used:
 
     .. code-block:: python
+
         df = pd.DataFrame(...)
         df = df[df['value'] < 3]
 
@@ -865,6 +866,93 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
     :param fill_remaining: If value is a tuple or list that is smaller than
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
+
+
+    :Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+
+        data = {
+            "a": [1, 2, 3] * 3,
+            "Bell__Chart": [1, 2, 3] * 3,
+            "decorated-elephant": [1, 2, 3] * 3,
+            "animals": ["rabbit", "leopard", "lion"] * 3,
+            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+
+        df = pd.DataFrame(data)
+
+
+    :Example 1: Create a new column with a single value:
+
+
+    .. code-block:: python
+
+        df.add_column("city_pop", 100000)
+
+
+    :Output:
+
+    .. code-block:: python
+
+           a  Bell__Chart  decorated-elephant  animals     cities  city_pop
+        0  1            1                   1   rabbit  Cambridge    100000
+        1  2            2                   2  leopard   Shanghai    100000
+        2  3            3                   3     lion      Basel    100000
+        3  1            1                   1   rabbit  Cambridge    100000
+        4  2            2                   2  leopard   Shanghai    100000
+        5  3            3                   3     lion      Basel    100000
+        6  1            1                   1   rabbit  Cambridge    100000
+        7  2            2                   2  leopard   Shanghai    100000
+        8  3            3                   3     lion      Basel    100000
+
+    :Example 2: Create a new column with an iterator \
+    which fills to the column size:
+
+    .. code-block:: python
+
+        df.add_column("city_pop", range(3), fill_remaining=True)
+
+    :Output:
+
+    .. code-block:: python
+
+           a  Bell__Chart  decorated-elephant  animals     cities  city_pop
+        0  1            1                   1   rabbit  Cambridge         0
+        1  2            2                   2  leopard   Shanghai         1
+        2  3            3                   3     lion      Basel         2
+        3  1            1                   1   rabbit  Cambridge         0
+        4  2            2                   2  leopard   Shanghai         1
+        5  3            3                   3     lion      Basel         2
+        6  1            1                   1   rabbit  Cambridge         0
+        7  2            2                   2  leopard   Shanghai         1
+        8  3            3                   3     lion      Basel         2
+
+    :Example 3: Add new column based on mutation of other columns:
+
+    .. code-block:: python
+
+        df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
+
+    :Output:
+
+    .. code-block:: python
+
+           a  Bell__Chart  decorated-elephant  animals     cities  city_pop
+        0  1            1                   1   rabbit  Cambridge        -1
+        1  2            2                   2  leopard   Shanghai        -2
+        2  3            3                   3     lion      Basel        -3
+        3  1            1                   1   rabbit  Cambridge        -1
+        4  2            2                   2  leopard   Shanghai        -2
+        5  3            3                   3     lion      Basel        -3
+        6  1            1                   1   rabbit  Cambridge        -1
+        7  2            2                   2  leopard   Shanghai        -2
+        8  3            3                   3     lion      Basel        -3
+
     """
 
     check("col_name", col_name, [str])
@@ -965,6 +1053,65 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         common option as well. Supply an empty string (i.e. '') to remove the
         separator.
 
+    :Example Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        data_dict = {
+            "really_long_name_for_a_column": range(10),
+            "another_really_long_name_for_a_column": \
+[2 * item for item in range(10)],
+            "another_really_longer_name_for_a_column": list("lllongname"),
+            "this_is_getting_out_of_hand": list("longername"),
+        }
+
+    :Example 1: Standard truncation:
+
+    .. code-block:: python
+
+        example_dataframe = pd.DataFrame(data_dict)
+        example_dataframe.limit_column_characters(7)
+
+    :Output:
+
+    .. code-block:: python
+
+               really_  another another_1 this_is
+        0        0        0         l       l
+        1        1        2         l       o
+        2        2        4         l       n
+        3        3        6         o       g
+        4        4        8         n       e
+        5        5       10         g       r
+        6        6       12         n       n
+        7        7       14         a       a
+        8        8       16         m       m
+        9        9       18         e       e
+
+    :Example 2: Standard truncation with different separator character:
+
+    .. code-block:: python
+
+        example_dataframe2 = pd.DataFrame(data_dict)
+        example_dataframe2.limit_column_characters(7, ".")
+
+    .. code-block:: python
+
+               really_  another another.1 this_is
+        0        0        0         l       l
+        1        1        2         l       o
+        2        2        4         l       n
+        3        3        6         o       g
+        4        4        8         n       e
+        5        5       10         g       r
+        6        6       12         n       n
+        7        7       14         a       a
+        8        8       16         m       m
+        9        9       18         e       e
+
     """
 
     check("column_length", column_length, [int])
@@ -1020,6 +1167,86 @@ def row_to_names(
         Defaults to False.
     :param remove_rows_above: Whether the rows above the selected row should
         be removed from the DataFrame. Defaults to False.
+
+    :Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        data_dict = {
+            "a": [1, 2, 3] * 3,
+            "Bell__Chart": [1, 2, 3] * 3,
+            "decorated-elephant": [1, 2, 3] * 3,
+            "animals": ["rabbit", "leopard", "lion"] * 3,
+            "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+        }
+
+    :Example 1: Move first row to column names:
+
+    .. code-block:: python
+
+        example_dataframe = pd.DataFrame(data_dict)
+        example_dataframe.row_to_names(0)
+
+    :Output:
+
+    .. code-block:: python
+
+           1  1  1   rabbit  Cambridge
+        0  1  1  1   rabbit  Cambridge
+        1  2  2  2  leopard   Shanghai
+        2  3  3  3     lion      Basel
+        3  1  1  1   rabbit  Cambridge
+        4  2  2  2  leopard   Shanghai
+        5  3  3  3     lion      Basel
+        6  1  1  1   rabbit  Cambridge
+        7  2  2  2  leopard   Shanghai
+
+    :Example 2: Move first row to column names and remove row:
+
+    .. code-block:: python
+
+        example_dataframe = pd.DataFrame(data_dict)
+        example_dataframe.row_to_names(0, remove_row=True)
+
+    :Output:
+
+    .. code-block:: python
+
+           1  1  1   rabbit  Cambridge
+        1  2  2  2  leopard   Shanghai
+        2  3  3  3     lion      Basel
+        3  1  1  1   rabbit  Cambridge
+        4  2  2  2  leopard   Shanghai
+        5  3  3  3     lion      Basel
+        6  1  1  1   rabbit  Cambridge
+        7  2  2  2  leopard   Shanghai
+        8  3  3  3     lion      Basel
+
+    :Example 3: Move first row to column names, remove row, \
+    and remove rows above selected row:
+
+    .. code-block:: python
+
+        example_dataframe = pd.DataFrame(data_dict)
+        example_dataframe.row_to_names(2, remove_row=True, \
+remove_rows_above=True)
+
+    :Output:
+
+    .. code-block:: python
+
+           3  3  3     lion      Basel
+        3  1  1  1   rabbit  Cambridge
+        4  2  2  2  leopard   Shanghai
+        5  3  3  3     lion      Basel
+        6  1  1  1   rabbit  Cambridge
+        7  2  2  2  leopard   Shanghai
+        8  3  3  3     lion      Basel
+
+
     """
 
     check("row_number", row_number, [int])
@@ -1050,6 +1277,91 @@ def round_to_fraction(
         fraction. Default is np.inf (i.e. no subsequent rounding)
 
     Taken from https://github.com/sfirke/janitor/issues/235
+
+    :Example Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        data_dict = {
+            "a": [1.23452345, 2.456234, 3.2346125] * 3,
+            "Bell__Chart": [1/3, 2/7, 3/2] * 3,
+            "decorated-elephant": [1/234, 2/13, 3/167] * 3,
+            "animals": ["rabbit", "leopard", "lion"] * 3,
+            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+
+
+    :Example 1: Rounding the first column to the nearest half:
+
+    .. code-block:: python
+
+        example_dataframe = pd.DataFrame(data_dict)
+        example_dataframe.round_to_fraction('a', 2)
+
+    :Output:
+
+    .. code-block:: python
+
+             a  Bell__Chart  decorated-elephant  animals     cities
+        0  1.0     0.333333            0.004274   rabbit  Cambridge
+        1  2.5     0.285714            0.153846  leopard   Shanghai
+        2  3.0     1.500000            0.017964     lion      Basel
+        3  1.0     0.333333            0.004274   rabbit  Cambridge
+        4  2.5     0.285714            0.153846  leopard   Shanghai
+        5  3.0     1.500000            0.017964     lion      Basel
+        6  1.0     0.333333            0.004274   rabbit  Cambridge
+        7  2.5     0.285714            0.153846  leopard   Shanghai
+        8  3.0     1.500000            0.017964     lion      Basel
+
+    :Example 2: Rounding the first column to nearest third:
+
+    .. code-block:: python
+
+        example_dataframe2 = pd.DataFrame(data_dict)
+        example_dataframe2.limit_column_characters('a', 3)
+
+    :Output:
+
+    .. code-block:: python
+
+                  a  Bell__Chart  decorated-elephant  animals     cities
+        0  1.333333     0.333333            0.004274   rabbit  Cambridge
+        1  2.333333     0.285714            0.153846  leopard   Shanghai
+        2  3.333333     1.500000            0.017964     lion      Basel
+        3  1.333333     0.333333            0.004274   rabbit  Cambridge
+        4  2.333333     0.285714            0.153846  leopard   Shanghai
+        5  3.333333     1.500000            0.017964     lion      Basel
+        6  1.333333     0.333333            0.004274   rabbit  Cambridge
+        7  2.333333     0.285714            0.153846  leopard   Shanghai
+        8  3.333333     1.500000            0.017964     lion      Basel
+
+    :Example 3: Rounding the first column to the nearest third and rounding \
+    each value to the 10,000th place:
+
+    .. code-block:: python
+
+        example_dataframe2 = pd.DataFrame(data_dict)
+        example_dataframe2.limit_column_characters('a', 3, 4)
+
+    :Output:
+
+    .. code-block:: python
+
+                a  Bell__Chart  decorated-elephant  animals     cities
+        0  1.3333     0.333333            0.004274   rabbit  Cambridge
+        1  2.3333     0.285714            0.153846  leopard   Shanghai
+        2  3.3333     1.500000            0.017964     lion      Basel
+        3  1.3333     0.333333            0.004274   rabbit  Cambridge
+        4  2.3333     0.285714            0.153846  leopard   Shanghai
+        5  3.3333     1.500000            0.017964     lion      Basel
+        6  1.3333     0.333333            0.004274   rabbit  Cambridge
+        7  2.3333     0.285714            0.153846  leopard   Shanghai
+        8  3.3333     1.500000            0.017964     lion      Basel
+
+
     """
 
     check("col_name", col_name, [str])

@@ -13,3 +13,4 @@ df = (
 )
 
 print(df)
+print (df.original_names)

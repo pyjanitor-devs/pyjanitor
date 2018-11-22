@@ -97,6 +97,7 @@ def clean_names(
         Only letters, numbers and underscores are preserved.
     :returns: A pandas DataFrame.
     """
+    mylist = df.columns
 
     assert case_type.lower() in {
         "preserve",
@@ -133,6 +134,7 @@ def clean_names(
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
+    df.original_names = mylist
     return df
 
 

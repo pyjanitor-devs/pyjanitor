@@ -137,7 +137,7 @@ def clean_names(
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
     if original_columns:
-        df.original_names = mylist
+        df.original_columns = mylist
     return df
 
 

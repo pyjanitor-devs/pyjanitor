@@ -117,18 +117,6 @@ def test_clean_names_uppercase(dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-def test_clean_names_original_columns(dataframe):
-    df = dataframe.clean_names(original_columns=True)
-    expected_columns = [
-        "a",
-        "Bell__Chart",
-        "decorated-elephant",
-        "animals@#$%^",
-        "cities",
-    ]
-    assert set(df.original_columns) == set(expected_columns)
-
-
 def test_remove_empty(null_df):
     df = remove_empty(null_df)
     assert df.shape == (8, 2)

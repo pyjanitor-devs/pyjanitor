@@ -57,6 +57,7 @@ def clean_names(
     strip_underscores: str = None,
     case_type: str = "lower",
     remove_special: bool = False,
+    original_columns: bool = True,
 ):
     """
     Clean column names.
@@ -96,6 +97,7 @@ def clean_names(
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
     :returns: A pandas DataFrame.
+    :param original_columns: (optional) Preserve original column names. Default True
     """
     mylist = list(df.columns)
 
@@ -134,7 +136,8 @@ def clean_names(
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
-    df.original_names = mylist
+    if original_columns:
+        df.original_names = mylist
     return df
 
 

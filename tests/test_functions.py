@@ -118,7 +118,7 @@ def test_clean_names_uppercase(dataframe):
 
 
 def test_clean_names_original_columns(dataframe):
-    df = dataframe.clean_names(original_columns=True)
+    df = dataframe.clean_names(preserve_original_columns=True)
     expected_columns = [
         "a",
         "Bell__Chart",

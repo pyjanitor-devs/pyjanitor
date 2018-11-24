@@ -97,7 +97,7 @@ def clean_names(
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
     :returns: A pandas DataFrame.
-    :param preserve_original_columns: (optional) Preserve original column names.
+    :param preserve_original_columns: (optional) Preserve original names.
         This is later retrievable using `df.original_columns`.
     """
     original_column_names = list(df.columns)

@@ -12,3 +12,5 @@ With thanks to the following contributors:
 - `@HectorM14 <https://github.com/HectorM14>`_
 - `@cduvallet <https://github.com/cduvallet>`_
 - `@zbarry <https://github.com/zbarry>`_
+- `@shantanuo <https://github.com/shantanuo>`_
+

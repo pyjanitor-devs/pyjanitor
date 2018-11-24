@@ -57,6 +57,7 @@ def clean_names(
     strip_underscores: str = None,
     case_type: str = "lower",
     remove_special: bool = False,
+    preserve_original_columns: bool = True,
 ):
     """
     Clean column names.
@@ -96,7 +97,10 @@ def clean_names(
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
     :returns: A pandas DataFrame.
+    :param preserve_original_columns: (optional) Preserve original names.
+        This is later retrievable using `df.original_columns`.
     """
+    original_column_names = list(df.columns)
 
     assert case_type.lower() in {
         "preserve",
@@ -133,6 +137,10 @@ def clean_names(
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
+
+    # Store the original column names, if enabled by user
+    if preserve_original_columns:
+        df.original_columns = original_column_names
     return df
 
 
@@ -537,16 +545,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df

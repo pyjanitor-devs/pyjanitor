@@ -692,3 +692,10 @@ def test_round_to_nearest_half(dataframe):
     assert df.iloc[6, 1] == 1.0
     assert df.iloc[7, 1] == 2.5
     assert df.iloc[8, 1] == 3.0
+
+
+def test_transform_column(dataframe):
+    df = dataframe.transform_column("a", np.log10)
+    expected = pd.Series(np.log10([1, 2, 3] * 3))
+    expected.name = "a"
+    pd.testing.assert_series_equal(df["a"], expected)

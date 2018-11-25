@@ -7,6 +7,16 @@ Please ensure that you have done the following:
 1. [ ] PR in from a fork off your branch. Do not PR from <your_username>:master, but rather from <your_username>:<branch_name>.
 2. [ ] If you're not on the contributors list, add yourself to `AUTHORS.rst`.
 
+## Quick Check
+
+To do a very quick check that everything is correct, follow these steps below:
+
+- [ ] Run the command `make check` from pyjanitor's top-level directory. This will automatically run:
+    - black formatting
+    - pycodestyle checkin
+    - running the test suite
+    - docs build
+
 ## Code Changes
 
 If you are adding code changes, please ensure the following:

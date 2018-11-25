@@ -1019,6 +1019,7 @@ def add_columns(df: pd.DataFrame, fill_remaining: bool = False, **kwargs):
     Usage example:
 
     .. code-block:: python
+
         x = 3
         y = np.arange(0, 10)
 

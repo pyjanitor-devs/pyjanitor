@@ -545,12 +545,16 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            ), "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
+        ), "{col} missing from dataframe columns!".format(
+            col=columns
+        )
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -1388,6 +1392,44 @@ def round_to_fraction(
 
     df[col_name] = df[col_name].apply(_round_to_fraction_partial)
 
+    return df
+
+
+@pf.register_dataframe_method
+def transform_column(df, col_name: str, function):
+    """
+    Transforms the given column in-place using the provided function.
+
+    Let's say we wanted to apply a log10 transform a column of data. 
+    Originally one would write code like this:
+
+    .. code-block:: python
+
+        # YOU NO LONGER NEED TO WRITE THIS!
+        df[col_name] = df[col_name].apply(function)
+
+    With the method chaining syntax, we can do the following instead:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .transform(col_name, function)
+        )
+
+    With the functional syntax:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        df = transform(df, col_name, function)
+
+    :param df: A pandas DataFrame.
+    :param col_name: The column to transform.
+    :param function: A function to apply on the column.
+    """
+
+    df[col_name] = df[col_name].apply(function)
     return df
 
 

@@ -2,7 +2,7 @@
 Author: Eric J. Ma
 Date: 18 July 2018
 
-The intent of these tests is to test that dataframe registration works.
+The intent of these tests is to test that dataframe method registration works.
 """
 import pandas as pd
 import pytest

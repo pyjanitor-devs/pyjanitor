@@ -1400,7 +1400,7 @@ def transform_column(df, col_name: str, function):
     """
     Transforms the given column in-place using the provided function.
 
-    Let's say we wanted to apply a log10 transform a column of data. 
+    Let's say we wanted to apply a log10 transform a column of data.
     Originally one would write code like this:
 
     .. code-block:: python

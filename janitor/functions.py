@@ -231,9 +231,6 @@ def encode_categorical(df, columns):
         of column names.
     :returns: A pandas DataFrame
     """
-    msg = """If you are looking to encode categorical to use with scikit-learn,
-    please use the label_encode method instead."""
-    warn(msg)
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
             assert col in df.columns, JanitorError(
@@ -418,10 +415,7 @@ def reorder_columns(
     :returns: A pandas DataFrame.
     """
 
-    if not isinstance(column_order, (list, pd.Index)):
-        raise TypeError(
-            "column_order must be a list of column names or Pandas Index."
-        )
+    check("column_order", column_order, [list, pd.Index])
 
     if any(col not in df.columns for col in column_order):
         raise IndexError(
@@ -569,7 +563,7 @@ def expand_column(df, column, sep, concat=True):
 
     .. code-block:: python
 
-        df = expand_column(df, column='colname',
+        df = expand_column(df, column='col_name',
                            sep=', ')  # note space in sep
 
     Method chaining example:
@@ -578,7 +572,7 @@ def expand_column(df, column, sep, concat=True):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).expand_column(df, column='colname', sep=', ')
+        df = pd.DataFrame(...).expand_column(df, column='col_name', sep=', ')
 
     :param df: A pandas DataFrame.
     :param column: A `str` indicating which column to expand.
@@ -841,16 +835,31 @@ def change_type(df, column: str, dtype):
 
 
 @pf.register_dataframe_method
-def add_column(df, colname: str, value, fill_remaining=False):
+def add_column(df, col_name: str, value, fill_remaining: bool = False):
     """
     Adds a column to the dataframe.
 
     Intended to be the method-chaining alternative to::
 
-        df[colname] = value
+        df[col_name] = value
+
+    Method chaining example adding a column with only a single value:
+
+    .. code-block:: python
+
+        # This will add a column with only one value.
+        df = pd.DataFrame(...).add_column(col_name="new_column", 2)
+
+    Method chaining example adding a column with more than one value:
+
+    .. code-block:: python
+
+        # This will add a column with an iterable of values.
+        vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
+        df = pd.DataFrame(...).add_column(col_name="new_column", vals)
 
     :param df: A pandas dataframe.
-    :param colname: Name of the new column. Should be a string, in order
+    :param col_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param value: Either a single value, or a list/tuple of values.
@@ -946,20 +955,79 @@ def add_column(df, colname: str, value, fill_remaining=False):
 
     """
 
-    assert isinstance(colname, str), "`colname` must be a string!"
-    assert colname not in df.columns, "columns %s already exists!" % colname
+    check("col_name", col_name, [str])
+
+    if col_name in df.columns:
+        raise ValueError(
+            f"Attempted to add column that already exists: " f"{col_name}."
+        )
+
+    nrows = df.shape[0]
+
+    if hasattr(value, "__len__"):
+        # if `value` is a list, ndarray, etc.
+        if len(value) > nrows:
+            raise ValueError(
+                f"`values` has more elements than number of rows "
+                f"in your `DataFrame`. vals: {len(value)}, "
+                f"df: {nrows}"
+            )
+        if len(value) != nrows and not fill_remaining:
+            raise ValueError(
+                f"Attempted to add iterable of values with length"
+                f" not equal to number of DataFrame rows"
+            )
+        len_value = len(value)
+    elif fill_remaining:
+        # relevant if a scalar val was passed, yet fill_remaining == True
+        len_value = 1
+        value = [value]
+
+    nrows = df.shape[0]
 
     if fill_remaining:
-        nrows = df.shape[0]
-
-        times_to_loop = int(np.ceil(nrows / len(value)))
+        times_to_loop = int(np.ceil(nrows / len_value))
 
         fill_values = list(value) * times_to_loop
 
-        df[colname] = fill_values[:nrows]
-
+        df[col_name] = fill_values[:nrows]
     else:
-        df[colname] = value
+        df[col_name] = value
+
+    return df
+
+
+@pf.register_dataframe_method
+def add_columns(df: pd.DataFrame, fill_remaining: bool = False, **kwargs):
+    """
+    Method to augment `add_column` with ability to add multiple columns in
+    one go. This replaces the need for multiple `add_column` calls.
+
+    Usage is through supplying kwargs where the key is the col name and the
+    values correspond to the values of the new DataFrame column.
+
+    Values passed can be scalar or iterable (list, ndarray, etc.)
+
+    Usage example:
+
+    .. code-black:: python
+        x = 3
+        y = np.arange(0, 10)
+
+        df = pd.DataFrame(...).add_columns(x=x, y=y)
+
+    :param df: A pandas dataframe.
+    :param fill_remaining: If value is a tuple or list that is smaller than
+        the number of rows in the DataFrame, repeat the list or tuple
+        (R-style) to the end of the DataFrame. (Passed to `add_column`)
+    :param kwargs: column, value pairs which are looped through in
+        `add_column` calls.
+    """
+
+    # Note: error checking can pretty much be handled in `add_column`
+
+    for col_name, values in kwargs.items():
+        df = df.add_column(col_name, values, fill_remaining=fill_remaining)
 
     return df
 
@@ -1046,10 +1114,8 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 
     """
 
-    assert isinstance(
-        column_length, int
-    ), "`column_length` must be an integer!"
-    assert isinstance(col_separator, str), "`col_separator` must be a string!"
+    check("column_length", column_length, [int])
+    check("col_separator", col_separator, [str])
 
     col_names = df.columns
     col_names = [col_name[:column_length] for col_name in col_names]
@@ -1183,7 +1249,7 @@ remove_rows_above=True)
 
     """
 
-    assert isinstance(row_number, int), "`row_number` must be an integer!"
+    check("row_number", row_number, [int])
 
     df.columns = df.iloc[row_number, :]
     df.columns.name = None
@@ -1199,7 +1265,7 @@ remove_rows_above=True)
 
 @pf.register_dataframe_method
 def round_to_fraction(
-    df, colname: str = None, denominator: float = None, digits: float = np.inf
+    df, col_name: str = None, denominator: float = None, digits: float = np.inf
 ):
     """
     Round all values in a column to a fraction.
@@ -1298,17 +1364,13 @@ def round_to_fraction(
 
     """
 
-    assert isinstance(colname, str), "`colname` must be a string!"
+    check("col_name", col_name, [str])
 
     if denominator:
-        assert isinstance(denominator, float) or isinstance(
-            denominator, int
-        ), "`denominator` must be a float or int!"
+        check("denominator", denominator, [float, int])
 
     if digits:
-        assert isinstance(digits, float) or isinstance(
-            digits, int
-        ), "`digits` must be a float or int!"
+        check("digits", digits, [float, int])
 
     def _round_to_fraction(number, denominator, digits=np.inf):
         num = round(number * denominator, 0) / denominator
@@ -1320,7 +1382,7 @@ def round_to_fraction(
         _round_to_fraction, denominator=denominator, digits=digits
     )
 
-    df[colname] = df[colname].apply(_round_to_fraction_partial)
+    df[col_name] = df[col_name].apply(_round_to_fraction_partial)
 
     return df
 
@@ -1491,3 +1553,29 @@ def convert_currency(
     df[colname] = df[colname] * rate
 
     return df
+
+
+def check(varname: str, value, expected_types: list):
+    """
+    One-liner syntactic sugar for checking types.
+
+    Should be used like this:
+
+        check('x', x, [int, float])
+
+    :param varname: The name of the variable.
+    :param value: The value of the varname.
+    :param expected_types: The types we expect the item to be.
+    """
+    is_expected_type = False
+    for t in expected_types:
+        if isinstance(value, t):
+            is_expected_type = True
+            break
+
+    if not is_expected_type:
+        raise TypeError(
+            "{varname} should be one of {expected_types}".format(
+                varname=varname, expected_types=expected_types
+            )
+        )

@@ -542,6 +542,14 @@ def test_add_column(dataframe):
     series.name = "fortytwo"
     pd.testing.assert_series_equal(df["fortytwo"], series)
 
+    # scalar values are correct for strings
+    # also, verify sanity check excludes strings, which have a length:
+
+    df = dataframe.add_column("fortythousand", "test string")
+    series = pd.Series(["test string"] * len(dataframe))
+    series.name = "fortythousand"
+    pd.testing.assert_series_equal(df["fortythousand"], series)
+
     # values are correct in dataframe for iterable
     vals = np.linspace(0, 43, len(dataframe))
     df = dataframe.add_column("fortythree", vals)

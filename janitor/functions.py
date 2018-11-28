@@ -964,7 +964,9 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
 
     nrows = df.shape[0]
 
-    if hasattr(value, "__len__"):
+    if hasattr(value, "__len__") and not isinstance(
+        value, (str, bytes, bytearray)
+    ):
         # if `value` is a list, ndarray, etc.
         if len(value) > nrows:
             raise ValueError(

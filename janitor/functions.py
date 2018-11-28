@@ -1074,7 +1074,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         data_dict = {
             "really_long_name_for_a_column": range(10),
             "another_really_long_name_for_a_column": \
-[2 * item for item in range(10)],
+            [2 * item for item in range(10)],
             "another_really_longer_name_for_a_column": list("lllongname"),
             "this_is_getting_out_of_hand": list("longername"),
         }
@@ -1243,7 +1243,7 @@ def row_to_names(
 
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.row_to_names(2, remove_row=True, \
-remove_rows_above=True)
+            remove_rows_above=True)
 
     :Output:
 
@@ -1433,6 +1433,39 @@ def transform_column(df, col_name: str, function):
     """
 
     df[col_name] = df[col_name].apply(function)
+    return df
+
+
+@pf.register_dataframe_method
+def min_max_scale(df, minimum=None, maximum=None, col_name=None):
+    """
+    Scales data to between a minimum and maximum value.
+
+    If minimum and maximum are provided, then the data are linearly scaled to
+    be between the two values. Otherwise, they are scaled to be between the
+    minimum and maximum of the value.
+
+    If a particular column name is psecified, then only that column of data
+    are scaled. Otherwise, the entire dataframe is scaled.
+
+    :param df: A pandas DataFrame.
+    :param minimum, maximum (optional): The minimum and maxium value to scale
+        to.
+    :param col_name (optional): The column on which to perform scaling.
+    :returns: df
+    """
+    if col_name:
+        if minimum is None:
+            minimum = df[col_name].min()
+        if maximum is None:
+            maximum = df[col_name].max()
+        df[col_name] = df[col_name] - minimum
+    else:
+        if minimum is None:
+            minimum = df.min().min()
+        if maximum is None:
+            maximum = df.max().max()
+        df = (df - minimum) / maximum
     return df
 
 

@@ -1074,7 +1074,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         data_dict = {
             "really_long_name_for_a_column": range(10),
             "another_really_long_name_for_a_column": \
-[2 * item for item in range(10)],
+            [2 * item for item in range(10)],
             "another_really_longer_name_for_a_column": list("lllongname"),
             "this_is_getting_out_of_hand": list("longername"),
         }
@@ -1243,7 +1243,7 @@ def row_to_names(
 
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.row_to_names(2, remove_row=True, \
-remove_rows_above=True)
+            remove_rows_above=True)
 
     :Output:
 
@@ -1433,6 +1433,103 @@ def transform_column(df, col_name: str, function):
     """
 
     df[col_name] = df[col_name].apply(function)
+    return df
+
+
+@pf.register_dataframe_method
+def min_max_scale(
+    df, old_min=None, old_max=None, col_name=None, new_min=0, new_max=1
+):
+    """
+    Scales data to between a minimum and maximum value.
+
+    If `minimum` and `maximum` are provided, the true min/max of the
+    `DataFrame` or column is ignored in the scaling process and replaced with
+    these values, instead.
+
+    One can optionally set a new target minimum and maximum value using the
+    `new_min` and `new_max` keyword arguments. This will result in the
+    transformed data being bounded between `new_min` and `new_max`.
+    If a particular column name is specified, then only that column of data
+    are scaled. Otherwise, the entire dataframe is scaled.
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).min_max_scale(col_name="a")
+
+    Setting custom minimum and maximum:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .min_max_scale(
+                col_name="a",
+                new_min=2,
+                new_max=10
+            )
+        )
+
+    Setting a min and max that is not based on the data, while applying to
+    entire dataframe:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .min_max_scale(
+                minimum=0,
+                maximum=14,
+                new_min=0,
+                new_max=1,
+            )
+        )
+
+    The aforementioned example might be applied to something like scaling the
+    isoelectric points of amino acids. While technically they range from
+    approx 3-10, we can also think of them on the pH scale which ranges from
+    1 to 14. Hence, 3 gets scaled not to 0 but approx. 0.15 instead, while 10
+    gets scaled to approx. 0.69 instead.
+
+    :param df: A pandas DataFrame.
+    :param old_min, old_max (optional): Overrides for the current minimum and
+        maximum values of the data to be transformed.
+    :param new_min, new_max (optional): The minimum and maximum values of the
+        data after it has been scaled.
+    :param col_name (optional): The column on which to perform scaling.
+    :returns: df
+
+    """
+    if (
+        (old_min is not None)
+        and (old_max is not None)
+        and (old_max <= old_min)
+    ):
+        raise ValueError("`old_max` should be greater than `old_max`")
+
+    if new_max <= new_min:
+        raise ValueError("`new_max` should be greater than `new_min`")
+
+    new_range = new_max - new_min
+
+    if col_name:
+        if old_min is None:
+            old_min = df[col_name].min()
+        if old_max is None:
+            old_max = df[col_name].max()
+        old_range = old_max - old_min
+        df[col_name] = (
+            df[col_name] - old_min
+        ) * new_range / old_range + new_min
+    else:
+        if old_min is None:
+            old_min = df.min().min()
+        if old_max is None:
+            old_max = df.max().max()
+        old_range = old_max - old_min
+        df = (df - old_min) * new_range / old_range + new_min
     return df
 
 

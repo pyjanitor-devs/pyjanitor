@@ -1437,13 +1437,16 @@ def transform_column(df, col_name: str, function):
 
 
 @pf.register_dataframe_method
-def min_max_scale(df, minimum=None, maximum=None, col_name=None):
+def min_max_scale(df, minimum=None, maximum=None, col_name=None, new_minimum=0, new_maximum=1):
     """
     Scales data to between a minimum and maximum value.
 
     If minimum and maximum are provided, then the data are linearly scaled to
     be between the two values. Otherwise, they are scaled to be between the
     minimum and maximum of the value.
+
+    One can optionally set a new minimum and maximum value using the
+    `new_minimum` and `new_maximum` keyword arguments.
 
     If a particular column name is psecified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
@@ -1454,18 +1457,22 @@ def min_max_scale(df, minimum=None, maximum=None, col_name=None):
     :param col_name (optional): The column on which to perform scaling.
     :returns: df
     """
+    new_range = new_maximum - new_minimum
+
     if col_name:
         if minimum is None:
             minimum = df[col_name].min()
         if maximum is None:
             maximum = df[col_name].max()
-        df[col_name] = df[col_name] - minimum
+        old_range = maximum - minimum
+        df[col_name] = (df[col_name] - minimum) * new_range / old_range + new_minimum
     else:
         if minimum is None:
             minimum = df.min().min()
         if maximum is None:
             maximum = df.max().max()
-        df = (df - minimum) / maximum
+        old_range = maximum - minimum
+        df = (df - minimum) * new_range / old_range + new_minimum
     return df
 
 

@@ -1469,7 +1469,7 @@ def min_max_scale(
                 col_name="a",
                 new_minimum=2,
                 new_maximum=10
-                )
+            )
         )
 
     Setting a min and max that is not based on the data, while applying to

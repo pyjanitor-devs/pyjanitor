@@ -1448,8 +1448,8 @@ def min_max_scale(
     instead.
 
     One can optionally set a new target minimum and maximum value using the
-    `new_minimum` and `new_maximum` keyword arguments. This will result in the
-    transformed data being bounded between `new_minimum` and `new_maximum`.
+    `new_min` and `new_max` keyword arguments. This will result in the
+    transformed data being bounded between `new_min` and `new_max`.
     If a particular column name is specified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
 
@@ -1467,8 +1467,8 @@ def min_max_scale(
             pd.DataFrame(...)
             .min_max_scale(
                 col_name="a",
-                new_minimum=2,
-                new_maximum=10
+                new_min=2,
+                new_max=10
             )
         )
 
@@ -1482,8 +1482,8 @@ def min_max_scale(
             .min_max_scale(
                 minimum=0,
                 maximum=14,
-                new_minimum=0,
-                new_maximum=1,
+                new_min=0,
+                new_max=1,
             )
         )
 

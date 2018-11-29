@@ -1480,8 +1480,8 @@ def min_max_scale(
         df = (
             pd.DataFrame(...)
             .min_max_scale(
-                minimum=0,
-                maximum=14,
+                old_min=0,
+                old_max=14,
                 new_min=0,
                 new_max=1,
             )

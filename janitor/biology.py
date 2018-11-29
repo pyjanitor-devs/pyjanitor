@@ -8,9 +8,7 @@ from Bio import SeqIO
 
 
 @pf.register_dataframe_method
-def join_fasta(
-    df: pd.DataFrame, filename: str, id_col: str, col_name: str
-):
+def join_fasta(df: pd.DataFrame, filename: str, id_col: str, col_name: str):
     """
     Convenience method to join in a FASTA file as a column.
 

@@ -1,4 +1,4 @@
-This PR resolves issue #_______.
+This PR resolves #(put issue number here).
 
 # PR Checklist
 

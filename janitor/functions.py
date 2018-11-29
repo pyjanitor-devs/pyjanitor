@@ -1453,6 +1453,44 @@ def min_max_scale(
     If a particular column name is psecified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
 
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).min_max_scale(col_name="a")
+
+    Setting custom minimum and maximum:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .min_max_scale(
+                col_name="a",
+                new_minimum=2,
+                new_maximum=10
+                )
+        )
+
+    Setting a min and max that is not based on the data, while applying to
+    entire dataframe:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .min_max_scale(
+                minimum=0,
+                maximum=14,
+                new_minimum=0,
+                new_maximum=1,
+            )
+        )
+
+    The aforementioned example might be applied to something like scaling the
+    isoelectric points of amino acids. While technically they range from
+    approx 3-10, we think of them on the pH scale which ranges from 1 to 14.
+
     :param df: A pandas DataFrame.
     :param minimum, maximum (optional): The minimum and maxium value to scale
         to.

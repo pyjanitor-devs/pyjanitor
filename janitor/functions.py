@@ -1443,12 +1443,12 @@ def min_max_scale(
     """
     Scales data to between a minimum and maximum value.
 
-    If minimum and maximum are provided, then the data are linearly scaled to
-    be between the two values. Otherwise, they are scaled to be between the
-    minimum and maximum of the value.
+    If minimum and maximum are provided, then they will be treated as the upper
+    and lower bounds for transforming the data to be bound between 0 and 1.
 
     One can optionally set a new minimum and maximum value using the
-    `new_minimum` and `new_maximum` keyword arguments.
+    `new_minimum` and `new_maximum` keyword arguments. This will result in the
+    transformed column being bounded between `new_minimum` and `new_maximum`.
 
     If a particular column name is psecified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
@@ -1489,7 +1489,8 @@ def min_max_scale(
 
     The aforementioned example might be applied to something like scaling the
     isoelectric points of amino acids. While technically they range from
-    approx 3-10, we think of them on the pH scale which ranges from 1 to 14.
+    approx 3-10, we can also think of them on the pH scale which ranges from
+    1 to 14.
 
     :param df: A pandas DataFrame.
     :param minimum, maximum (optional): The minimum and maxium value to scale

@@ -1443,9 +1443,9 @@ def min_max_scale(
     """
     Scales data to between a minimum and maximum value.
 
-    If `minimum` and `maximum` are provided, the true min/max of the `DataFrame`
-    or column is ignored in the scaling process and replaced with these values,
-    instead.
+    If `minimum` and `maximum` are provided, the true min/max of the
+    `DataFrame` or column is ignored in the scaling process and replaced with
+    these values, instead.
 
     One can optionally set a new target minimum and maximum value using the
     `new_min` and `new_max` keyword arguments. This will result in the
@@ -1502,6 +1502,16 @@ def min_max_scale(
     :returns: df
 
     """
+    if (
+        (old_min is not None)
+        and (old_max is not None)
+        and (old_max <= old_min)
+    ):
+        raise ValueError("`old_max` should be greater than `old_max`")
+
+    if new_max <= new_min:
+        raise ValueError("`new_max` should be greater than `new_min`")
+
     new_range = new_max - new_min
 
     if col_name:

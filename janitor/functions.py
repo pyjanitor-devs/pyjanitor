@@ -1437,7 +1437,9 @@ def transform_column(df, col_name: str, function):
 
 
 @pf.register_dataframe_method
-def min_max_scale(df, minimum=None, maximum=None, col_name=None, new_minimum=0, new_maximum=1):
+def min_max_scale(
+    df, minimum=None, maximum=None, col_name=None, new_minimum=0, new_maximum=1
+):
     """
     Scales data to between a minimum and maximum value.
 
@@ -1465,7 +1467,9 @@ def min_max_scale(df, minimum=None, maximum=None, col_name=None, new_minimum=0, 
         if maximum is None:
             maximum = df[col_name].max()
         old_range = maximum - minimum
-        df[col_name] = (df[col_name] - minimum) * new_range / old_range + new_minimum
+        df[col_name] = (
+            df[col_name] - minimum
+        ) * new_range / old_range + new_minimum
     else:
         if minimum is None:
             minimum = df.min().min()

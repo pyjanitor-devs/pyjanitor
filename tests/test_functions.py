@@ -710,12 +710,12 @@ def test_transform_column(dataframe):
 
 
 def test_min_max_scale(dataframe):
-    df = dataframe.min_max_scale(col_name='a')
-    assert df['a'].min() == 0
-    assert df['a'].max() == 1
+    df = dataframe.min_max_scale(col_name="a")
+    assert df["a"].min() == 0
+    assert df["a"].max() == 1
 
 
 def test_min_max_scale_custom_min_max(dataframe):
     df = dataframe.min_max_scale(col_name="a", new_minimum=1, new_maximum=2)
-    assert df['a'].min() == 1
-    assert df['a'].max() == 2
+    assert df["a"].min() == 1
+    assert df["a"].max() == 2

@@ -148,7 +148,9 @@ First off, you will need to define the function that expresses the data processi
         # Put data processing function here.
         return df
 
-We use ``pandas_flavor`` to register the function natively on a ``pandas.DataFrame``.
+We use `pandas_flavor`_ to register the function natively on a ``pandas.DataFrame``.
+
+.. _pandas_flavor: https://github.com/Zsailer/pandas_flavor
 
 add a test case
 ^^^^^^^^^^^^^^^

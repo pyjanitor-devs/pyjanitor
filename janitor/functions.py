@@ -545,16 +545,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -1399,7 +1395,7 @@ def round_to_fraction(
 
 
 @pf.register_dataframe_method
-def transform_column(df, col_name: str, function):
+def transform_column(df, col_name: str, function, dest_col_name: str = None):
     """
     Transforms the given column in-place using the provided function.
 
@@ -1430,9 +1426,14 @@ def transform_column(df, col_name: str, function):
     :param df: A pandas DataFrame.
     :param col_name: The column to transform.
     :param function: A function to apply on the column.
+    :param dest_col_name: The column name to store the transformation result
+        in. By default, replaces contents of original column.
     """
 
-    df[col_name] = df[col_name].apply(function)
+    if dest_col_name is None:
+        dest_col_name = col_name
+
+    df[dest_col_name] = df[col_name].apply(function)
     return df
 
 

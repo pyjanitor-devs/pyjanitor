@@ -28,7 +28,7 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
+        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
@@ -73,7 +73,11 @@ def multiindex_with_missing_3level_dataframe():
     data = {
         ("a", "", ""): [1, 2, 3],
         ("", "Normal  Distribution", "Hypercuboid (???)"): [1, 2, 3],
-        ("decorated-elephant", "r.i.p-rhino :'(", "deadly__flamingo"): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino :'(", "deadly__flamingo"): [
+            1,
+            2,
+            3,
+        ],
     }
     df = pd.DataFrame(data)
     return df
@@ -687,7 +691,7 @@ def test_add_column_iterator_repeat(dataframe):
 def test_row_to_names(dataframe):
     df = dataframe.row_to_names(2)
     assert df.columns[0] == 3
-    assert df.columns[1] == 3.2346125
+    assert df.columns[1] == 3.234_612_5
     assert df.columns[2] == 3
     assert df.columns[3] == "lion"
     assert df.columns[4] == "Basel"
@@ -696,7 +700,7 @@ def test_row_to_names(dataframe):
 def test_row_to_names_delete_this_row(dataframe):
     df = dataframe.row_to_names(2, remove_row=True)
     assert df.iloc[2, 0] == 1
-    assert df.iloc[2, 1] == 1.23452345
+    assert df.iloc[2, 1] == 1.234_523_45
     assert df.iloc[2, 2] == 1
     assert df.iloc[2, 3] == "rabbit"
     assert df.iloc[2, 4] == "Cambridge"
@@ -705,7 +709,7 @@ def test_row_to_names_delete_this_row(dataframe):
 def test_row_to_names_delete_above(dataframe):
     df = dataframe.row_to_names(2, remove_rows_above=True)
     assert df.iloc[0, 0] == 3
-    assert df.iloc[0, 1] == 3.2346125
+    assert df.iloc[0, 1] == 3.234_612_5
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
@@ -753,8 +757,9 @@ def test_min_max_new_min_max_errors(dataframe):
         df = dataframe.min_max_scale(col_name="a", new_min=10, new_max=0)
 
 
-def test_collapse_levels(multiindex_with_missing_dataframe,
-                         multiindex_with_missing_3level_dataframe):
+def test_collapse_levels(
+    multiindex_with_missing_dataframe, multiindex_with_missing_3level_dataframe
+):
     # print(multiindex_with_missing_dataframe.columns.values)
 
     # sanity checking of inputs
@@ -765,29 +770,44 @@ def test_collapse_levels(multiindex_with_missing_dataframe,
     pd.testing.assert_frame_equal(
         multiindex_with_missing_dataframe.copy().collapse_levels(),
         multiindex_with_missing_dataframe.copy()
-        .collapse_levels().collapse_levels()
+        .collapse_levels()
+        .collapse_levels(),
     )
 
     # collapse_levels functionality works on 2-level and 3-level DataFrames
     assert all(
         multiindex_with_missing_dataframe.copy()
-        .collapse_levels().columns.values
+        .collapse_levels()
+        .columns.values
         == ["a", "Normal  Distribution", "decorated-elephant_r.i.p-rhino :'("]
     )
     assert all(
         multiindex_with_missing_dataframe.copy()
-        .collapse_levels(sep='AsDf').columns.values
-        == ["a", "Normal  Distribution", "decorated-elephantAsDfr.i.p-rhino :'("]
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution",
+            "decorated-elephantAsDfr.i.p-rhino :'(",
+        ]
     )
     assert all(
         multiindex_with_missing_3level_dataframe.copy()
-        .collapse_levels().columns.values
-        == ["a", "Normal  Distribution_Hypercuboid (???)",
-            "decorated-elephant_r.i.p-rhino :'(_deadly__flamingo"]
+        .collapse_levels()
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution_Hypercuboid (???)",
+            "decorated-elephant_r.i.p-rhino :'(_deadly__flamingo",
+        ]
     )
     assert all(
         multiindex_with_missing_3level_dataframe.copy()
-        .collapse_levels(sep='AsDf').columns.values
-        == ["a", "Normal  DistributionAsDfHypercuboid (???)",
-            "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo"]
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  DistributionAsDfHypercuboid (???)",
+            "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo",
+        ]
     )

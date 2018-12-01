@@ -140,7 +140,7 @@ def clean_names(
 
     # Store the original column names, if enabled by user
     if preserve_original_columns:
-        df.__dict__['original_columns'] = original_column_names
+        df.__dict__["original_columns"] = original_column_names
     return df
 
 
@@ -545,16 +545,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -1534,7 +1530,7 @@ def min_max_scale(
 
 
 @pf.register_dataframe_method
-def collapse_levels(df: pd.DataFrame, sep: str = '_'):
+def collapse_levels(df: pd.DataFrame, sep: str = "_"):
     """
     Given a `DataFrame` containing multi-level columns, flatten to single-
     level by string-joining the column labels in each level.
@@ -1573,14 +1569,14 @@ def collapse_levels(df: pd.DataFrame, sep: str = '_'):
     :returns: df
     """
 
-    check('sep', sep, [str])
+    check("sep", sep, [str])
 
     # if already single-level, just return the DataFrame
     if not isinstance(df.columns.values[0], tuple):
         return df
 
     df.columns = [
-        sep.join([str(el) for el in tup if el != ''])
+        sep.join([str(el) for el in tup if el != ""])
         for tup in df.columns.values
     ]
     return df

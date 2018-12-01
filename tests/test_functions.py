@@ -28,7 +28,7 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
+        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
@@ -665,7 +665,7 @@ def test_add_column_iterator_repeat(dataframe):
 def test_row_to_names(dataframe):
     df = dataframe.row_to_names(2)
     assert df.columns[0] == 3
-    assert df.columns[1] == 3.2346125
+    assert df.columns[1] == 3.234_612_5
     assert df.columns[2] == 3
     assert df.columns[3] == "lion"
     assert df.columns[4] == "Basel"
@@ -674,7 +674,7 @@ def test_row_to_names(dataframe):
 def test_row_to_names_delete_this_row(dataframe):
     df = dataframe.row_to_names(2, remove_row=True)
     assert df.iloc[2, 0] == 1
-    assert df.iloc[2, 1] == 1.23452345
+    assert df.iloc[2, 1] == 1.234_523_45
     assert df.iloc[2, 2] == 1
     assert df.iloc[2, 3] == "rabbit"
     assert df.iloc[2, 4] == "Cambridge"
@@ -683,7 +683,7 @@ def test_row_to_names_delete_this_row(dataframe):
 def test_row_to_names_delete_above(dataframe):
     df = dataframe.row_to_names(2, remove_rows_above=True)
     assert df.iloc[0, 0] == 3
-    assert df.iloc[0, 1] == 3.2346125
+    assert df.iloc[0, 1] == 3.234_612_5
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"

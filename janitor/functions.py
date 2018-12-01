@@ -140,7 +140,7 @@ def clean_names(
 
     # Store the original column names, if enabled by user
     if preserve_original_columns:
-        df.__dict__['original_columns'] = original_column_names
+        df.__dict__["original_columns"] = original_column_names
     return df
 
 

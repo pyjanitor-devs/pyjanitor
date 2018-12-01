@@ -1576,7 +1576,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
         return df
 
     df.columns = [
-        sep.join([str(el) for el in tup if el != ""])
+        sep.join([str(el) for el in tup if str(el) != ""])
         for tup in df.columns.values
     ]
     return df

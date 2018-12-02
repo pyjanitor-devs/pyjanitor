@@ -28,7 +28,7 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,

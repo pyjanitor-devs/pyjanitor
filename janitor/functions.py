@@ -1534,6 +1534,59 @@ def min_max_scale(
     return df
 
 
+@pf.register_dataframe_method
+def collapse_levels(df: pd.DataFrame, sep: str = "_"):
+    """
+    Given a `DataFrame` containing multi-level columns, flatten to single-
+    level by string-joining the column labels in each level.
+
+    After a `groupby` / `aggregate` operation where `.agg()` is passed a
+    list of multiple aggregation functions, a multi-level `DataFrame` is
+    returned with the name of the function applied in the second level.
+    It is sometimes convenient for later indexing to flatten out this
+    multi-level configuration back into a single level. This function does
+    this through a simple string-joining of all the names across different
+    levels in a single column.
+
+    Method chaining example given two value columns `['var1', 'var2']`:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .groupby('mygroup')
+            .agg(['mean', 'median'])
+            .collapse_levels(sep='_')
+        )
+
+    Before applying `.collapse_levels`, the `.agg` operation returns a
+    multi-level column `DataFrame` whose columns are (level 1, level 2):
+
+    `[('mygroup', ''), ('var1', 'mean'), ('var1', 'median'), ('var2', 'mean'),
+    ('var2', 'median')]`
+
+    `.collapse_levels` then flattens the column names to:
+
+    `['mygroup', 'var1_mean', 'var1_median', 'var2_mean', 'var2_median']`
+
+    :param df: A pandas DataFrame.
+    :param sep: String separator used to join the column level names
+    :returns: df
+    """
+
+    check("sep", sep, [str])
+
+    # if already single-level, just return the DataFrame
+    if not isinstance(df.columns.values[0], tuple):
+        return df
+
+    df.columns = [
+        sep.join([str(el) for el in tup if str(el) != ""])
+        for tup in df.columns.values
+    ]
+    return df
+
+
 def check(varname: str, value, expected_types: list):
     """
     One-liner syntactic sugar for checking types.

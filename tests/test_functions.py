@@ -57,6 +57,32 @@ def multiindex_dataframe():
     return df
 
 
+@pytest.fixture
+def multiindex_with_missing_dataframe():
+    data = {
+        ("a", ""): [1, 2, 3],
+        ("", "Normal  Distribution"): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino :'("): [1, 2, 3],
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def multiindex_with_missing_3level_dataframe():
+    data = {
+        ("a", "", ""): [1, 2, 3],
+        ("", "Normal  Distribution", "Hypercuboid (???)"): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino :'(", "deadly__flamingo"): [
+            1,
+            2,
+            3,
+        ],
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
 def test_clean_names_functional(dataframe):
     df = clean_names(dataframe)
     expected_columns = [
@@ -656,7 +682,7 @@ def test_add_column_raise_error(dataframe):
         dataframe.add_column("cities", 1)
 
 
-def test_add_column_iterator_repeat(dataframe):
+def test_add_column_iterator_repeat_subtraction(dataframe):
     df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
     assert df.city_pop.sum() == 0
     assert df.city_pop.iloc[0] == 0
@@ -743,3 +769,63 @@ def test_min_max_old_min_max_errors(dataframe):
 def test_min_max_new_min_max_errors(dataframe):
     with pytest.raises(ValueError):
         df = dataframe.min_max_scale(col_name="a", new_min=10, new_max=0)
+
+
+def test_collapse_levels_sanity(multiindex_with_missing_dataframe):
+    with pytest.raises(TypeError):
+        multiindex_with_missing_dataframe.collapse_levels(sep=3)
+
+
+def test_collapse_levels_non_multilevel(multiindex_with_missing_dataframe):
+    # an already single-level DataFrame is not distorted
+    pd.testing.assert_frame_equal(
+        multiindex_with_missing_dataframe.copy().collapse_levels(),
+        multiindex_with_missing_dataframe.collapse_levels().collapse_levels(),
+    )
+
+
+def test_collapse_levels_functionality_2level(
+    multiindex_with_missing_dataframe
+):
+
+    assert all(
+        multiindex_with_missing_dataframe.copy()
+        .collapse_levels()
+        .columns.values
+        == ["a", "Normal  Distribution", "decorated-elephant_r.i.p-rhino :'("]
+    )
+    assert all(
+        multiindex_with_missing_dataframe.copy()
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution",
+            "decorated-elephantAsDfr.i.p-rhino :'(",
+        ]
+    )
+
+
+def test_collapse_levels_functionality_3level(
+    multiindex_with_missing_3level_dataframe
+):
+    assert all(
+        multiindex_with_missing_3level_dataframe.copy()
+        .collapse_levels()
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution_Hypercuboid (???)",
+            "decorated-elephant_r.i.p-rhino :'(_deadly__flamingo",
+        ]
+    )
+    assert all(
+        multiindex_with_missing_3level_dataframe.copy()
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  DistributionAsDfHypercuboid (???)",
+            "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo",
+        ]
+    )

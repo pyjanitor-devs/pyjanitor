@@ -28,7 +28,7 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
@@ -682,7 +682,7 @@ def test_add_column_raise_error(dataframe):
         dataframe.add_column("cities", 1)
 
 
-def test_add_column_iterator_repeat(dataframe):
+def test_add_column_iterator_repeat_subtraction(dataframe):
     df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
     assert df.city_pop.sum() == 0
     assert df.city_pop.iloc[0] == 0
@@ -757,24 +757,23 @@ def test_min_max_new_min_max_errors(dataframe):
         df = dataframe.min_max_scale(col_name="a", new_min=10, new_max=0)
 
 
-def test_collapse_levels(
-    multiindex_with_missing_dataframe, multiindex_with_missing_3level_dataframe
-):
-    # print(multiindex_with_missing_dataframe.columns.values)
-
-    # sanity checking of inputs
+def test_collapse_levels_sanity(multiindex_with_missing_dataframe):
     with pytest.raises(TypeError):
         multiindex_with_missing_dataframe.collapse_levels(sep=3)
 
+
+def test_collapse_levels_non_multilevel(multiindex_with_missing_dataframe):
     # an already single-level DataFrame is not distorted
     pd.testing.assert_frame_equal(
         multiindex_with_missing_dataframe.copy().collapse_levels(),
-        multiindex_with_missing_dataframe.copy()
-        .collapse_levels()
-        .collapse_levels(),
+        multiindex_with_missing_dataframe.collapse_levels().collapse_levels(),
     )
 
-    # collapse_levels functionality works on 2-level and 3-level DataFrames
+
+def test_collapse_levels_functionality_2level(
+    multiindex_with_missing_dataframe
+):
+
     assert all(
         multiindex_with_missing_dataframe.copy()
         .collapse_levels()
@@ -791,6 +790,11 @@ def test_collapse_levels(
             "decorated-elephantAsDfr.i.p-rhino :'(",
         ]
     )
+
+
+def test_collapse_levels_functionality_3level(
+    multiindex_with_missing_3level_dataframe
+):
     assert all(
         multiindex_with_missing_3level_dataframe.copy()
         .collapse_levels()

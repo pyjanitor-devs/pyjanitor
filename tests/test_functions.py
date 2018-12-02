@@ -665,7 +665,7 @@ def test_add_column_iterator_repeat(dataframe):
 def test_row_to_names(dataframe):
     df = dataframe.row_to_names(2)
     assert df.columns[0] == 3
-    assert df.columns[1] == 3.2346125
+    assert df.columns[1] == 3.234_612_5
     assert df.columns[2] == 3
     assert df.columns[3] == "lion"
     assert df.columns[4] == "Basel"
@@ -674,7 +674,7 @@ def test_row_to_names(dataframe):
 def test_row_to_names_delete_this_row(dataframe):
     df = dataframe.row_to_names(2, remove_row=True)
     assert df.iloc[2, 0] == 1
-    assert df.iloc[2, 1] == 1.23452345
+    assert df.iloc[2, 1] == 1.234_523_45
     assert df.iloc[2, 2] == 1
     assert df.iloc[2, 3] == "rabbit"
     assert df.iloc[2, 4] == "Cambridge"
@@ -683,7 +683,7 @@ def test_row_to_names_delete_this_row(dataframe):
 def test_row_to_names_delete_above(dataframe):
     df = dataframe.row_to_names(2, remove_rows_above=True)
     assert df.iloc[0, 0] == 3
-    assert df.iloc[0, 1] == 3.2346125
+    assert df.iloc[0, 1] == 3.234_612_5
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
@@ -703,10 +703,24 @@ def test_round_to_nearest_half(dataframe):
 
 
 def test_transform_column(dataframe):
+    # replacing the data of the original column
+
     df = dataframe.transform_column("a", np.log10)
     expected = pd.Series(np.log10([1, 2, 3] * 3))
     expected.name = "a"
     pd.testing.assert_series_equal(df["a"], expected)
+
+
+def test_transform_column_with_dest(dataframe):
+    # creating a new destination column
+
+    expected_df = dataframe.assign(a_log10=np.log10(dataframe["a"]))
+
+    df = dataframe.copy().transform_column(
+        "a", np.log10, dest_col_name="a_log10"
+    )
+
+    pd.testing.assert_frame_equal(df, expected_df)
 
 
 def test_min_max_scale(dataframe):

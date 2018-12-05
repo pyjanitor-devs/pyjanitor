@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import requests
 
 import janitor
 from janitor import (
@@ -21,6 +22,8 @@ from janitor import (
     change_type,
     add_column,
 )
+
+from janitor.finance import convert_currency
 from janitor.errors import JanitorError
 
 
@@ -28,7 +31,7 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
+        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
@@ -52,6 +55,32 @@ def multiindex_dataframe():
         ("a", "b"): [1, 2, 3],
         ("Bell__Chart", "Normal  Distribution"): [1, 2, 3],
         ("decorated-elephant", "r.i.p-rhino :'("): [1, 2, 3],
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def multiindex_with_missing_dataframe():
+    data = {
+        ("a", ""): [1, 2, 3],
+        ("", "Normal  Distribution"): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino :'("): [1, 2, 3],
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def multiindex_with_missing_3level_dataframe():
+    data = {
+        ("a", "", ""): [1, 2, 3],
+        ("", "Normal  Distribution", "Hypercuboid (???)"): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino :'(", "deadly__flamingo"): [
+            1,
+            2,
+            3,
+        ],
     }
     df = pd.DataFrame(data)
     return df
@@ -115,6 +144,18 @@ def test_clean_names_uppercase(dataframe):
         "CITIES",
     ]
     assert set(df.columns) == set(expected_columns)
+
+
+def test_clean_names_original_columns(dataframe):
+    df = dataframe.clean_names(preserve_original_columns=True)
+    expected_columns = [
+        "a",
+        "Bell__Chart",
+        "decorated-elephant",
+        "animals@#$%^",
+        "cities",
+    ]
+    assert set(df.original_columns) == set(expected_columns)
 
 
 def test_remove_empty(null_df):
@@ -252,9 +293,11 @@ def test_single_column_label_encode():
 
 def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
-        df = pd.DataFrame(  # noqa: 841
+        df = pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).label_encode(columns="c")
+        ).label_encode(
+            columns="c"
+        )  # noqa: 841
 
 
 def test_multicolumn_label_encode():
@@ -530,6 +573,14 @@ def test_add_column(dataframe):
     series.name = "fortytwo"
     pd.testing.assert_series_equal(df["fortytwo"], series)
 
+    # scalar values are correct for strings
+    # also, verify sanity check excludes strings, which have a length:
+
+    df = dataframe.add_column("fortythousand", "test string")
+    series = pd.Series(["test string"] * len(dataframe))
+    series.name = "fortythousand"
+    pd.testing.assert_series_equal(df["fortythousand"], series)
+
     # values are correct in dataframe for iterable
     vals = np.linspace(0, 43, len(dataframe))
     df = dataframe.add_column("fortythree", vals)
@@ -636,7 +687,7 @@ def test_add_column_raise_error(dataframe):
         dataframe.add_column("cities", 1)
 
 
-def test_add_column_iterator_repeat(dataframe):
+def test_add_column_iterator_repeat_subtraction(dataframe):
     df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
     assert df.city_pop.sum() == 0
     assert df.city_pop.iloc[0] == 0
@@ -645,7 +696,7 @@ def test_add_column_iterator_repeat(dataframe):
 def test_row_to_names(dataframe):
     df = dataframe.row_to_names(2)
     assert df.columns[0] == 3
-    assert df.columns[1] == 3.2346125
+    assert df.columns[1] == 3.234_612_5
     assert df.columns[2] == 3
     assert df.columns[3] == "lion"
     assert df.columns[4] == "Basel"
@@ -654,7 +705,7 @@ def test_row_to_names(dataframe):
 def test_row_to_names_delete_this_row(dataframe):
     df = dataframe.row_to_names(2, remove_row=True)
     assert df.iloc[2, 0] == 1
-    assert df.iloc[2, 1] == 1.23452345
+    assert df.iloc[2, 1] == 1.234_523_45
     assert df.iloc[2, 2] == 1
     assert df.iloc[2, 3] == "rabbit"
     assert df.iloc[2, 4] == "Cambridge"
@@ -663,7 +714,7 @@ def test_row_to_names_delete_this_row(dataframe):
 def test_row_to_names_delete_above(dataframe):
     df = dataframe.row_to_names(2, remove_rows_above=True)
     assert df.iloc[0, 0] == 3
-    assert df.iloc[0, 1] == 3.2346125
+    assert df.iloc[0, 1] == 3.234_612_5
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
@@ -682,18 +733,114 @@ def test_round_to_nearest_half(dataframe):
     assert df.iloc[8, 1] == 3.0
 
 
-def test_make_currency_api_request(dataframe):
-    """This test assumes that the GBP will always be more than the USD."""
-
-    df = dataframe.convert_currency("a", "USD", "GBP")
-
-    assert df.iloc[0, 0] < 1
+def test_make_currency_api_request():
+    r = requests.get("https://api.exchangeratesapi.io")
+    assert r.status_code == 200
 
 
-def test_currency_makes_column_decrease(dataframe):
-    """This test assumes that the GBP will always be more than the USD."""
+def test_make_new_currency_col(dataframe):
+    df = dataframe.convert_currency("a", "USD", "USD", make_new_column=True)
+    assert all(df["a"] == df["a_USD"])
 
-    df1 = dataframe.copy()
-    df = dataframe.convert_currency("a", "USD", "GBP")
 
-    assert df.iloc[0, 0] < df1.iloc[0, 0]
+def test_transform_column(dataframe):
+    # replacing the data of the original column
+
+    df = dataframe.transform_column("a", np.log10)
+    expected = pd.Series(np.log10([1, 2, 3] * 3))
+    expected.name = "a"
+    pd.testing.assert_series_equal(df["a"], expected)
+
+
+def test_transform_column_with_dest(dataframe):
+    # creating a new destination column
+
+    expected_df = dataframe.assign(a_log10=np.log10(dataframe["a"]))
+
+    df = dataframe.copy().transform_column(
+        "a", np.log10, dest_col_name="a_log10"
+    )
+
+    pd.testing.assert_frame_equal(df, expected_df)
+
+
+def test_min_max_scale(dataframe):
+    df = dataframe.min_max_scale(col_name="a")
+    assert df["a"].min() == 0
+    assert df["a"].max() == 1
+
+
+def test_min_max_scale_custom_new_min_max(dataframe):
+    df = dataframe.min_max_scale(col_name="a", new_min=1, new_max=2)
+    assert df["a"].min() == 1
+    assert df["a"].max() == 2
+
+
+def test_min_max_old_min_max_errors(dataframe):
+    with pytest.raises(ValueError):
+        df = dataframe.min_max_scale(col_name="a", old_min=10, old_max=0)
+
+
+def test_min_max_new_min_max_errors(dataframe):
+    with pytest.raises(ValueError):
+        df = dataframe.min_max_scale(col_name="a", new_min=10, new_max=0)
+
+
+def test_collapse_levels_sanity(multiindex_with_missing_dataframe):
+    with pytest.raises(TypeError):
+        multiindex_with_missing_dataframe.collapse_levels(sep=3)
+
+
+def test_collapse_levels_non_multilevel(multiindex_with_missing_dataframe):
+    # an already single-level DataFrame is not distorted
+    pd.testing.assert_frame_equal(
+        multiindex_with_missing_dataframe.copy().collapse_levels(),
+        multiindex_with_missing_dataframe.collapse_levels().collapse_levels(),
+    )
+
+
+def test_collapse_levels_functionality_2level(
+    multiindex_with_missing_dataframe
+):
+
+    assert all(
+        multiindex_with_missing_dataframe.copy()
+        .collapse_levels()
+        .columns.values
+        == ["a", "Normal  Distribution", "decorated-elephant_r.i.p-rhino :'("]
+    )
+    assert all(
+        multiindex_with_missing_dataframe.copy()
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution",
+            "decorated-elephantAsDfr.i.p-rhino :'(",
+        ]
+    )
+
+
+def test_collapse_levels_functionality_3level(
+    multiindex_with_missing_3level_dataframe
+):
+    assert all(
+        multiindex_with_missing_3level_dataframe.copy()
+        .collapse_levels()
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution_Hypercuboid (???)",
+            "decorated-elephant_r.i.p-rhino :'(_deadly__flamingo",
+        ]
+    )
+    assert all(
+        multiindex_with_missing_3level_dataframe.copy()
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  DistributionAsDfHypercuboid (???)",
+            "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo",
+        ]
+    )

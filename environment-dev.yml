@@ -21,5 +21,7 @@ dependencies:
 - pytest-cov
 - pandas-flavor
 - conda
+- pylint
+- biopython
 - pip:
   - sphinxcontrib-fulltoc

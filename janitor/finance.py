@@ -1,4 +1,4 @@
-'''Finance Submodule for PyJanitor functions '''
+"""Finance Submodule for PyJanitor functions """
 
 from functools import lru_cache
 from datetime import datetime
@@ -6,7 +6,54 @@ from datetime import date
 import json
 import pandas_flavor as pf
 
+from janitor import check
+
 import requests
+
+currency_set = {
+    "AUD",
+    "BGN",
+    "BRL",
+    "CAD",
+    "CHF",
+    "CNY",
+    "CZK",
+    "DKK",
+    "EUR",
+    "GBP",
+    "HKD",
+    "HRK",
+    "HUF",
+    "IDR",
+    "ILS",
+    "INR",
+    "ISK",
+    "JPY",
+    "KRW",
+    "MXN",
+    "MYR",
+    "NOK",
+    "NZD",
+    "PHP",
+    "PLN",
+    "RON",
+    "RUB",
+    "SEK",
+    "SGD",
+    "THB",
+    "TRY",
+    "USD",
+    "ZAR",
+}
+
+
+def _check_currency(currency):
+    if currency not in currency_set:
+        raise ValueError(
+            f"currency {currency} not in supported currency set, "
+            f"{currency_set}"
+        )
+
 
 @lru_cache(maxsize=32)
 def _convert_currency(
@@ -23,74 +70,36 @@ def _convert_currency(
     url = "https://api.exchangeratesapi.io"
 
     if historical_date:
-        assert isinstance(historical_date, date) | isinstance(
-            historical_date, datetime
-        ), "historical_date must be a date or datetime object!"
+        check("historical_date", historical_date, [datetime, date])
         if isinstance(historical_date, datetime):
-            assert historical_date >= datetime(
-                1999, 1, 4
-            ), "datetime must be later than 1999-01-04!"
+            if historical_date < datetime(1999, 1, 4):
+                raise ValueError(
+                    "historical_date:datetime must be later than 1999-01-04!"
+                )
             string_date = str(historical_date)[:10]
         else:
-            assert historical_date >= date(
-                1999, 1, 4
-            ), "date must be later than 1999-01-04!"
+            if historical_date < date(1999, 1, 4):
+                raise ValueError(
+                    "historical_date:date must be later than 1999-01-04!"
+                )
             string_date = str(historical_date)
         url = url + "/%s" % string_date
     else:
         url = url + "/latest"
 
-    currency_set = {
-        "AUD",
-        "BGN",
-        "BRL",
-        "CAD",
-        "CHF",
-        "CNY",
-        "CZK",
-        "DKK",
-        "EUR",
-        "GBP",
-        "HKD",
-        "HRK",
-        "HUF",
-        "IDR",
-        "ILS",
-        "INR",
-        "ISK",
-        "JPY",
-        "KRW",
-        "MXN",
-        "MYR",
-        "NOK",
-        "NZD",
-        "PHP",
-        "PLN",
-        "RON",
-        "RUB",
-        "SEK",
-        "SGD",
-        "THB",
-        "TRY",
-        "USD",
-        "ZAR",
-    }
-
-    assert (
-        from_currency in currency_set
-    ), f"from_currency must be one of {currency_set}"
-    assert (
-        to_currency in currency_set
-    ), f"to_currency must be one of {currency_set}"
+    _check_currency(from_currency)
+    _check_currency(to_currency)
 
     payload = {"base": from_currency, "symbols": to_currency}
 
     result = requests.get(url, params=payload)
 
-    assert result.status_code == 200, (
-        "Exchange Rate API failed to receive a 200 response from the server. "
-        "Please try again later."
-    )
+    if result.status_code != 200:
+        raise ConnectionError(
+            "Exchange Rate API failed to receive a 200 "
+            "response from the server. "
+            "Please try again later."
+        )
 
     currency_dict = json.loads(result.text)
     rate = currency_dict["rates"][to_currency]
@@ -104,6 +113,7 @@ def convert_currency(
     from_currency: str = None,
     to_currency: str = None,
     historical_date: date = None,
+    make_new_column: bool = False,
 ):
     """
         Converts a column from one currency to another, with an option to
@@ -171,4 +181,12 @@ def convert_currency(
         """
 
     rate = _convert_currency(from_currency, to_currency, historical_date)
-    df[colname] = df[colname] * rate
+
+    if make_new_column:
+        new_col_name = colname + "_" + to_currency
+        df[new_col_name] = df[colname] * rate
+
+    else:
+        df[colname] = df[colname] * rate
+
+    return df

@@ -293,9 +293,11 @@ def test_single_column_label_encode():
 
 def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
-        df = pd.DataFrame(  # noqa: 841
+        df = pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).label_encode(columns="c")
+        ).label_encode(
+            columns="c"
+        )  # noqa: 841
 
 
 def test_multicolumn_label_encode():
@@ -732,8 +734,13 @@ def test_round_to_nearest_half(dataframe):
 
 
 def test_make_currency_api_request():
-    r = requests.get('https://api.exchangeratesapi.io')
+    r = requests.get("https://api.exchangeratesapi.io")
     assert r.status_code == 200
+
+
+def test_make_new_currency_col(dataframe):
+    df = dataframe.convert_currency("a", "USD", "USD", make_new_column=True)
+    assert all(df["a"] == df["a_USD"])
 
 
 def test_transform_column(dataframe):

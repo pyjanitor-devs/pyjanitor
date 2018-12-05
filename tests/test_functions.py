@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import requests
 
 import janitor
 from janitor import (
@@ -21,6 +22,8 @@ from janitor import (
     change_type,
     add_column,
 )
+
+from janitor.finance import convert_currency
 from janitor.errors import JanitorError
 
 
@@ -28,7 +31,7 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
+        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
@@ -290,9 +293,11 @@ def test_single_column_label_encode():
 
 def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
-        df = pd.DataFrame(  # noqa: 841
+        df = pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).label_encode(columns="c")
+        ).label_encode(
+            columns="c"
+        )  # noqa: 841
 
 
 def test_multicolumn_label_encode():
@@ -726,6 +731,16 @@ def test_round_to_nearest_half(dataframe):
     assert df.iloc[6, 1] == 1.0
     assert df.iloc[7, 1] == 2.5
     assert df.iloc[8, 1] == 3.0
+
+
+def test_make_currency_api_request():
+    r = requests.get("https://api.exchangeratesapi.io")
+    assert r.status_code == 200
+
+
+def test_make_new_currency_col(dataframe):
+    df = dataframe.convert_currency("a", "USD", "USD", make_new_column=True)
+    assert all(df["a"] == df["a_USD"])
 
 
 def test_transform_column(dataframe):

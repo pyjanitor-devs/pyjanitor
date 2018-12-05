@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+This PR resolves issue #_______.
+=======
 This PR resolves #(put issue number here).
+>>>>>>> f7fda72fd0ff11f592cc1f52b08caec3634708cf
 
 # PR Checklist
 

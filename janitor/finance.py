@@ -4,6 +4,7 @@ from functools import lru_cache
 from datetime import datetime
 from datetime import date
 import json
+import pandas_flavor as pf
 
 import requests
 

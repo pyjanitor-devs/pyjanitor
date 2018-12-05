@@ -22,6 +22,8 @@ from janitor import (
     change_type,
     add_column,
 )
+
+from janitor.finance import convert_currency
 from janitor.errors import JanitorError
 
 
@@ -53,6 +55,32 @@ def multiindex_dataframe():
         ("a", "b"): [1, 2, 3],
         ("Bell__Chart", "Normal  Distribution"): [1, 2, 3],
         ("decorated-elephant", "r.i.p-rhino :'("): [1, 2, 3],
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def multiindex_with_missing_dataframe():
+    data = {
+        ("a", ""): [1, 2, 3],
+        ("", "Normal  Distribution"): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino :'("): [1, 2, 3],
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def multiindex_with_missing_3level_dataframe():
+    data = {
+        ("a", "", ""): [1, 2, 3],
+        ("", "Normal  Distribution", "Hypercuboid (???)"): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino :'(", "deadly__flamingo"): [
+            1,
+            2,
+            3,
+        ],
     }
     df = pd.DataFrame(data)
     return df
@@ -517,11 +545,80 @@ def test_change_type(dataframe):
 
 
 def test_add_column(dataframe):
+
+    # sanity checking of inputs
+
+    # col_name wasn't a string
+    with pytest.raises(TypeError):
+        dataframe.add_column(col_name=42, value=42)
+
+    # column already exists
+    with pytest.raises(ValueError):
+        dataframe.add_column("a", 42)
+
+    # too many values for dataframe num rows:
+    with pytest.raises(ValueError):
+        dataframe.add_column("toomany", np.ones(100))
+
+    # functionality testing
+
+    # column appears in DataFrame
     df = dataframe.add_column("fortytwo", 42)
     assert "fortytwo" in df.columns
+
+    # values are correct in dataframe for scalar
     series = pd.Series([42] * len(dataframe))
     series.name = "fortytwo"
     pd.testing.assert_series_equal(df["fortytwo"], series)
+
+    # scalar values are correct for strings
+    # also, verify sanity check excludes strings, which have a length:
+
+    df = dataframe.add_column("fortythousand", "test string")
+    series = pd.Series(["test string"] * len(dataframe))
+    series.name = "fortythousand"
+    pd.testing.assert_series_equal(df["fortythousand"], series)
+
+    # values are correct in dataframe for iterable
+    vals = np.linspace(0, 43, len(dataframe))
+    df = dataframe.add_column("fortythree", vals)
+    series = pd.Series(vals)
+    series.name = "fortythree"
+    pd.testing.assert_series_equal(df["fortythree"], series)
+
+    # fill_remaining works - iterable shorter than DataFrame
+    vals = [0, 42]
+    target = [0, 42] * 4 + [0]
+    df = dataframe.add_column("fill_in_iterable", vals, fill_remaining=True)
+    series = pd.Series(target)
+    series.name = "fill_in_iterable"
+    pd.testing.assert_series_equal(df["fill_in_iterable"], series)
+
+    # fill_remaining works - value is scalar
+    vals = 42
+    df = dataframe.add_column("fill_in_scalar", vals, fill_remaining=True)
+    series = pd.Series([42] * len(df))
+    series.name = "fill_in_scalar"
+    pd.testing.assert_series_equal(df["fill_in_scalar"], series)
+
+
+def test_add_columns(dataframe):
+    # sanity checking is pretty much handled in test_add_column
+
+    # multiple column addition with scalar and iterable
+
+    x_vals = 42
+    y_vals = np.linspace(0, 42, len(dataframe))
+
+    df = dataframe.add_columns(x=x_vals, y=y_vals)
+
+    series = pd.Series([x_vals] * len(dataframe))
+    series.name = "x"
+    pd.testing.assert_series_equal(df["x"], series)
+
+    series = pd.Series(y_vals)
+    series.name = "y"
+    pd.testing.assert_series_equal(df["y"], series)
 
 
 def test_limit_column_characters(dataframe):
@@ -584,11 +681,11 @@ def test_add_column_iterator_repeat(dataframe):
 
 
 def test_add_column_raise_error(dataframe):
-    with pytest.raises(Exception) as e_info:
-        df = dataframe.add_column("cities", 1)
+    with pytest.raises(Exception):
+        dataframe.add_column("cities", 1)
 
 
-def test_add_column_iterator_repeat(dataframe):
+def test_add_column_iterator_repeat_subtraction(dataframe):
     df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
     assert df.city_pop.sum() == 0
     assert df.city_pop.iloc[0] == 0
@@ -640,7 +737,103 @@ def test_make_currency_api_request():
 
 
 def test_transform_column(dataframe):
+    # replacing the data of the original column
+
     df = dataframe.transform_column("a", np.log10)
     expected = pd.Series(np.log10([1, 2, 3] * 3))
     expected.name = "a"
     pd.testing.assert_series_equal(df["a"], expected)
+
+
+def test_transform_column_with_dest(dataframe):
+    # creating a new destination column
+
+    expected_df = dataframe.assign(a_log10=np.log10(dataframe["a"]))
+
+    df = dataframe.copy().transform_column(
+        "a", np.log10, dest_col_name="a_log10"
+    )
+
+    pd.testing.assert_frame_equal(df, expected_df)
+
+
+def test_min_max_scale(dataframe):
+    df = dataframe.min_max_scale(col_name="a")
+    assert df["a"].min() == 0
+    assert df["a"].max() == 1
+
+
+def test_min_max_scale_custom_new_min_max(dataframe):
+    df = dataframe.min_max_scale(col_name="a", new_min=1, new_max=2)
+    assert df["a"].min() == 1
+    assert df["a"].max() == 2
+
+
+def test_min_max_old_min_max_errors(dataframe):
+    with pytest.raises(ValueError):
+        df = dataframe.min_max_scale(col_name="a", old_min=10, old_max=0)
+
+
+def test_min_max_new_min_max_errors(dataframe):
+    with pytest.raises(ValueError):
+        df = dataframe.min_max_scale(col_name="a", new_min=10, new_max=0)
+
+
+def test_collapse_levels_sanity(multiindex_with_missing_dataframe):
+    with pytest.raises(TypeError):
+        multiindex_with_missing_dataframe.collapse_levels(sep=3)
+
+
+def test_collapse_levels_non_multilevel(multiindex_with_missing_dataframe):
+    # an already single-level DataFrame is not distorted
+    pd.testing.assert_frame_equal(
+        multiindex_with_missing_dataframe.copy().collapse_levels(),
+        multiindex_with_missing_dataframe.collapse_levels().collapse_levels(),
+    )
+
+
+def test_collapse_levels_functionality_2level(
+    multiindex_with_missing_dataframe
+):
+
+    assert all(
+        multiindex_with_missing_dataframe.copy()
+        .collapse_levels()
+        .columns.values
+        == ["a", "Normal  Distribution", "decorated-elephant_r.i.p-rhino :'("]
+    )
+    assert all(
+        multiindex_with_missing_dataframe.copy()
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution",
+            "decorated-elephantAsDfr.i.p-rhino :'(",
+        ]
+    )
+
+
+def test_collapse_levels_functionality_3level(
+    multiindex_with_missing_3level_dataframe
+):
+    assert all(
+        multiindex_with_missing_3level_dataframe.copy()
+        .collapse_levels()
+        .columns.values
+        == [
+            "a",
+            "Normal  Distribution_Hypercuboid (???)",
+            "decorated-elephant_r.i.p-rhino :'(_deadly__flamingo",
+        ]
+    )
+    assert all(
+        multiindex_with_missing_3level_dataframe.copy()
+        .collapse_levels(sep="AsDf")
+        .columns.values
+        == [
+            "a",
+            "Normal  DistributionAsDfHypercuboid (???)",
+            "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo",
+        ]
+    )

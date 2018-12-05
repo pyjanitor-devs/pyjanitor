@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import requests
 
 import janitor
 from janitor import (
@@ -28,7 +29,7 @@ from janitor.errors import JanitorError
 def dataframe():
     data = {
         "a": [1, 2, 3] * 3,
-        "Bell__Chart": [1.23452345, 2.456234, 3.2346125] * 3,
+        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
         "decorated-elephant": [1, 2, 3] * 3,
         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
@@ -115,6 +116,18 @@ def test_clean_names_uppercase(dataframe):
         "CITIES",
     ]
     assert set(df.columns) == set(expected_columns)
+
+
+def test_clean_names_original_columns(dataframe):
+    df = dataframe.clean_names(preserve_original_columns=True)
+    expected_columns = [
+        "a",
+        "Bell__Chart",
+        "decorated-elephant",
+        "animals@#$%^",
+        "cities",
+    ]
+    assert set(df.original_columns) == set(expected_columns)
 
 
 def test_remove_empty(null_df):
@@ -584,7 +597,7 @@ def test_add_column_iterator_repeat(dataframe):
 def test_row_to_names(dataframe):
     df = dataframe.row_to_names(2)
     assert df.columns[0] == 3
-    assert df.columns[1] == 3.2346125
+    assert df.columns[1] == 3.234_612_5
     assert df.columns[2] == 3
     assert df.columns[3] == "lion"
     assert df.columns[4] == "Basel"
@@ -593,7 +606,7 @@ def test_row_to_names(dataframe):
 def test_row_to_names_delete_this_row(dataframe):
     df = dataframe.row_to_names(2, remove_row=True)
     assert df.iloc[2, 0] == 1
-    assert df.iloc[2, 1] == 1.23452345
+    assert df.iloc[2, 1] == 1.234_523_45
     assert df.iloc[2, 2] == 1
     assert df.iloc[2, 3] == "rabbit"
     assert df.iloc[2, 4] == "Cambridge"
@@ -602,7 +615,7 @@ def test_row_to_names_delete_this_row(dataframe):
 def test_row_to_names_delete_above(dataframe):
     df = dataframe.row_to_names(2, remove_rows_above=True)
     assert df.iloc[0, 0] == 3
-    assert df.iloc[0, 1] == 3.2346125
+    assert df.iloc[0, 1] == 3.234_612_5
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
@@ -621,18 +634,13 @@ def test_round_to_nearest_half(dataframe):
     assert df.iloc[8, 1] == 3.0
 
 
-def test_make_currency_api_request(dataframe):
-    """This test assumes that the GBP will always be more than the USD."""
-
-    df = dataframe.convert_currency("a", "USD", "GBP")
-
-    assert df.iloc[0, 0] < 1
+def test_make_currency_api_request():
+    r = requests.get('https://api.exchangeratesapi.io')
+    assert r.status_code == 200
 
 
-def test_currency_makes_column_decrease(dataframe):
-    """This test assumes that the GBP will always be more than the USD."""
-
-    df1 = dataframe.copy()
-    df = dataframe.convert_currency("a", "USD", "GBP")
-
-    assert df.iloc[0, 0] < df1.iloc[0, 0]
+def test_transform_column(dataframe):
+    df = dataframe.transform_column("a", np.log10)
+    expected = pd.Series(np.log10([1, 2, 3] * 3))
+    expected.name = "a"
+    pd.testing.assert_series_equal(df["a"], expected)

@@ -1307,12 +1307,12 @@ def _clean_accounting_column(x):
     return float(y)
 
 
-def _make_currency_column_numeric(x, string_value=None):
+def _make_currency_column_numeric(x, non_numeric_strings=None):
     acceptable_currency_characters = {'-', '.', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
-    if string_value:
-        if x in string_value.keys():
-            check('{%r: %r}' % (x, str(string_value[x])), string_value[x], [int, float])
-            return string_value[x]
+    if non_numeric_strings:
+        if x in non_numeric_strings.keys():
+            check('{%r: %r}' % (x, str(non_numeric_strings[x])), non_numeric_strings[x], [int, float])
+            return non_numeric_strings[x]
         else:
             return ''.join(i for i in x if i in acceptable_currency_characters)
     else:
@@ -1323,7 +1323,6 @@ def _replace_empty_string_with_none(x):
     if len(x):
         return x
 
-non_numeric_strings={'REPAY': '0'}
 
 @pf.register_dataframe_method
 def make_currency_column_numeric(df, col_name: str, type:str=None, non_numeric_strings:dict=None, remove_string_rows:bool=False):
@@ -1336,7 +1335,7 @@ def make_currency_column_numeric(df, col_name: str, type:str=None, non_numeric_s
     if non_numeric_strings:
         check('non_numeric_strings', non_numeric_strings, [dict])
 
-    _make_currency_column_numeric_string_value=partial(_make_currency_column_numeric, string_value=non_numeric_strings)
+    _make_currency_column_numeric_string_value=partial(_make_currency_column_numeric, non_numeric_strings=non_numeric_strings)
     column_series = column_series.apply(_make_currency_column_numeric_string_value)
 
     if remove_string_rows:

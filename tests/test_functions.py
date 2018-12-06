@@ -308,7 +308,9 @@ def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
         df = pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).label_encode(columns="c")  # noqa: 841
+        ).label_encode(
+            columns="c"
+        )  # noqa: 841
 
 
 def test_multicolumn_label_encode():
@@ -857,8 +859,8 @@ def test_collapse_levels_functionality_3level(
     )
 
 
-def test_make_currency_column_numeric(currency_dataframe):
-    df = currency_dataframe.make_currency_column_numeric("a")
+def test_currency_column_to_numeric(currency_dataframe):
+    df = currency_dataframe.currency_column_to_numeric("a")
     assert df.loc[0, "a"] == -1.0
     assert np.isnan(df.loc[1, "a"])
     assert np.isnan(df.loc[2, "a"])
@@ -870,10 +872,10 @@ def test_make_currency_column_numeric(currency_dataframe):
     assert np.isnan(df.loc[8, "a"])
 
 
-def test_make_currency_column_numeric_with_cast(currency_dataframe):
+def test_currency_column_to_numeric_with_cast(currency_dataframe):
     cast_non_numeric = {"REPAY": 22}
 
-    df = currency_dataframe.make_currency_column_numeric(
+    df = currency_dataframe.currency_column_to_numeric(
         "a", cast_non_numeric=cast_non_numeric
     )
 
@@ -888,8 +890,8 @@ def test_make_currency_column_numeric_with_cast(currency_dataframe):
     assert np.isnan(df.loc[8, "a"])
 
 
-def test_make_currency_column_numeric_fill_non_numeric(currency_dataframe):
-    df = currency_dataframe.make_currency_column_numeric(
+def test_currency_column_to_numeric_fill_non_numeric(currency_dataframe):
+    df = currency_dataframe.currency_column_to_numeric(
         "a", fill_all_non_numeric=35
     )
 
@@ -904,12 +906,12 @@ def test_make_currency_column_numeric_fill_non_numeric(currency_dataframe):
     assert df.loc[8, "a"] == 35.0
 
 
-def test_make_currency_column_numeric_fill_non_numeric_and_cast(
+def test_currency_column_to_numeric_fill_non_numeric_and_cast(
     currency_dataframe
 ):
     cast_non_numeric = {"REPAY": 22}
 
-    df = currency_dataframe.make_currency_column_numeric(
+    df = currency_dataframe.currency_column_to_numeric(
         "a", cast_non_numeric=cast_non_numeric, fill_all_non_numeric=35
     )
 
@@ -924,8 +926,8 @@ def test_make_currency_column_numeric_fill_non_numeric_and_cast(
     assert df.loc[8, "a"] == 35.0
 
 
-def test_make_currency_column_numeric_remove_non_numeric(currency_dataframe):
-    df = currency_dataframe.make_currency_column_numeric(
+def test_currency_column_to_numeric_remove_non_numeric(currency_dataframe):
+    df = currency_dataframe.currency_column_to_numeric(
         "a", remove_non_numeric=True
     )
 
@@ -937,12 +939,12 @@ def test_make_currency_column_numeric_remove_non_numeric(currency_dataframe):
     assert np.isnan(df.loc[7, "a"])
 
 
-def test_make_currency_column_numeric_remove_non_numeric_and_cast(
+def test_currency_column_to_numeric_remove_non_numeric_and_cast(
     currency_dataframe
 ):
     cast_non_numeric = {"REPAY": 22}
 
-    df = currency_dataframe.make_currency_column_numeric(
+    df = currency_dataframe.currency_column_to_numeric(
         "a", cast_non_numeric=cast_non_numeric, remove_non_numeric=True
     )
 

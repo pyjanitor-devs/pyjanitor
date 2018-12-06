@@ -547,16 +547,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -1610,7 +1606,7 @@ def check(varname: str, value, expected_types: list):
 def _clean_accounting_column(x):
     """
     This function performs the logic for the `type == "accounting"`
-    attribute in make_currency_column_numeric.
+    attribute in currency_column_to_numeric.
 
     It is intended to be used in a pandas `apply` method.
     """
@@ -1624,10 +1620,10 @@ def _clean_accounting_column(x):
     return float(y)
 
 
-def _make_currency_column_numeric(x, cast_non_numeric=None):
+def _currency_column_to_numeric(x, cast_non_numeric=None):
     """
     This function performs the logic for the changing cell values in
-    the make_currency_column_numeric fucntion.
+    the currency_column_to_numeric function.
 
     It is intended to be used in a pandas `apply` method, after being passed
     through `partial`.
@@ -1680,7 +1676,7 @@ def _replace_original_empty_string_with_none(x):
 
 
 @pf.register_dataframe_method
-def make_currency_column_numeric(
+def currency_column_to_numeric(
     df,
     col_name: str,
     type: str = None,
@@ -1689,6 +1685,11 @@ def make_currency_column_numeric(
     remove_non_numeric: bool = False,
 ):
     """
+    This method allows one to take a column containing currency values,\
+    inadvertently imported as a string, and cast it as a float. This is\
+    usually the case when reading CSV files that were modified in Excel.\
+    Empty strings (i.e. `''`) are retained as `NaN` values.
+
     :param df: The DataFrame
     :param col_name: The column to modify
     :param type: What type of cleaning to perform. If None, standard cleaning
@@ -1722,7 +1723,7 @@ def make_currency_column_numeric(
 
     .. code-block:: python
 
-        df.make_currency_column_numeric("a")
+        df.currency_column_to_numeric("a")
 
     :Output:
 
@@ -1745,7 +1746,7 @@ def make_currency_column_numeric(
     .. code-block:: python
 
         cast_non_numeric = {"REPAY": 22}
-        df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric)
+        df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric)
 
     :Output:
 
@@ -1767,7 +1768,7 @@ def make_currency_column_numeric(
 
     .. code-block:: python
 
-        df.make_currency_column_numeric("a", fill_all_non_numeric=35)
+        df.currency_column_to_numeric("a", fill_all_non_numeric=35)
 
     :Output:
 
@@ -1791,7 +1792,7 @@ def make_currency_column_numeric(
 
     .. code-block:: python
 
-        df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric,
+        df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric,
         fill_all_non_numeric=35)
 
     :Output:
@@ -1815,7 +1816,7 @@ def make_currency_column_numeric(
 
     .. code-block:: python
 
-        df.make_currency_column_numeric("a", remove_non_numeric=True)
+        df.currency_column_to_numeric("a", remove_non_numeric=True)
 
     :Output:
 
@@ -1835,7 +1836,7 @@ def make_currency_column_numeric(
 
     .. code-block:: python
 
-        df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric,
+        df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric,
         remove_non_numeric=True)
 
     :Output:
@@ -1865,7 +1866,7 @@ def make_currency_column_numeric(
         check("cast_non_numeric", cast_non_numeric, [dict])
 
     _make_cc_patrial = partial(
-        _make_currency_column_numeric, cast_non_numeric=cast_non_numeric
+        _currency_column_to_numeric, cast_non_numeric=cast_non_numeric
     )
 
     column_series = column_series.apply(_make_cc_patrial)

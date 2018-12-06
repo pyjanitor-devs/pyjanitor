@@ -22,8 +22,11 @@ def _strip_underscores(df, strip_underscores=None):
     """
     Strip underscores from DataFrames column names.
     Underscores can be stripped from the beginning, end or both.
+
     .. code-block:: python
+
         df = _strip_underscores(df, strip_underscores='left')
+
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
         column names. Default None keeps outer underscores. Values can be
@@ -59,17 +62,26 @@ def clean_names(
     Takes all column names, converts them to lowercase, then replaces all
     spaces with underscores.
     Functional usage example:
+
     .. code-block:: python
+
         df = clean_names(df)
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).clean_names()
+
     :Example of transformation:
+
     .. code-block:: python
+
         Columns before: First Name, Last Name, Employee Status, Subject
         Columns after: first_name, last_name, employee_status, subject
+
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
         column names. Default None keeps outer underscores. Values can be
@@ -132,16 +144,25 @@ def clean_names(
 def remove_empty(df):
     """
     Drop all rows and columns that are completely null.
-    Implementation is shamelessly copied from `StackOverflow`_.
-    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
+    Implementation is shamelessly copied from StackOverflow_.
+
+    .. _StackOverflow: https://stackoverflow.com/questions/38884538/
+    python-pandas-find-all-rows-where-all-values-are-nan
+
     Functional usage example:
+
     .. code-block:: python
+
         df = remove_empty(df)
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).remove_empty()
+
     :param df: The pandas DataFrame object.
     :returns: A pandas DataFrame.
     """
@@ -159,13 +180,19 @@ def get_dupes(df, columns=None):
     """
     Return all duplicate rows.
     Functional usage example:
+
     .. code-block:: python
+
         get_dupes(df)
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).get_dupes()
+
     :param df: The pandas DataFrame object.
     :param str/iterable columns: (optional) A column name or an iterable (list
         or tuple) of column names. Following pandas API, this only considers
@@ -182,15 +209,21 @@ def encode_categorical(df, columns):
     """
     Encode the specified columns as categorical column in pandas.
     Functional usage example:
+
     .. code-block:: python
+
         encode_categorical(df, columns="my_categorical_column")  # one way
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
         df = df.encode_categorical(columns=categorical_cols)
+
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)
         of column names.
@@ -222,14 +255,20 @@ def label_encode(df, columns):
     creates a new column of numeric data. `encode_categorical` replaces the
     dtype of the original column with a "categorical" dtype.
     Functional usage example:
+
     .. code-block:: python
+
         label_encode(df, columns="my_categorical_column")  # one way
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         categorical_cols = ['col1', 'col2', 'col4']
         df = pd.DataFrame(...).label_encode(columns=categorical_cols)
+
     :param df: The pandas DataFrame object.
     :param str/iterable columns: A column name or an iterable (list or tuple)
         of column names.
@@ -257,29 +296,37 @@ def get_features_targets(df, target_columns, feature_columns=None):
     """
     Get the features and targets as separate DataFrames/Series.
     The behaviour is as such:
+
     - `target_columns` is mandatory.
     - If `feature_columns` is present, then we will respect the column names
       inside there.
     - If `feature_columns` is not passed in, then we will assume that the
       rest of the columns are feature columns, and return them.
+
     Functional usage example:
+
     .. code-block:: python
+
         X, y = get_features_targets(df, target_columns="measurement")
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...)
         target_cols = ['output1', 'output2']
         X, y = df.get_features_targets(target_columns=target_cols)  # noqa: E501
+
     :param df: The pandas DataFrame object.
-    :param str/iterable target_columns: Either a column name or an iterable
+    :param str/iterable target_columns: Either a column name or an iterable\
         (list or tuple) of column names that are the target(s) to be predicted.
-    :param str/iterable feature_columns: (optional) The column name or iterable
-        of column names that are the features (a.k.a. predictors) used to
-        predict the targets.
-    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both are
-        pandas DataFrames.
+    :param str/iterable feature_columns: (optional) The column name or \
+        iterable of column names that are the features (a.k.a. predictors) \
+        used to predict the targets.
+    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both \
+        are pandas DataFrames.
     """
     Y = df[target_columns]
 
@@ -301,13 +348,19 @@ def rename_column(df, old, new):
     """
     Rename a column in place.
     Functional usage example:
+
     .. code-block:: python
+
         df = rename_column("old_column_name", "new_column_name")
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")  # noqa: E501
+
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
@@ -328,16 +381,23 @@ def reorder_columns(
     Validates column_order to ensure columns are all present in DataFrame.
     Functional usage example:
     Given `DataFrame` with column names `col1`, `col2`, `col3`:
+
     .. code-block:: python
+
         df = reorder_columns(df, ['col2', 'col3'])
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).reorder_columns(['col2', 'col3'])
+
     The column order of `df` is now `col2`, `col3`, `col1`.
     Internally, this function uses `DataFrame.reindex` with `copy=False`
     to avoid unnecessary data duplication.
+
     :param df: `DataFrame` to reorder
     :param column_order: A list of column names or Pandas `Index`
         specifying their order in the returned `DataFrame`.
@@ -368,13 +428,19 @@ def coalesce(df, columns, new_column_name):
     """
     Coalesces two or more columns of data in order of column names provided.
     Functional usage example:
+
     .. code-block:: python
+
         df = coalesce(df, columns=['col1', 'col2'])
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).coalesce(['col1', 'col2'])
+
     The result of this function is that we take the first non-null value across
     rows.
     This is more syntactic diabetes! For R users, this should look familiar to
@@ -403,13 +469,19 @@ def convert_excel_date(df, column):
     Implementation is also from `Stack Overflow`.
     .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas  # noqa: E501
     Functional usage example:
+
     .. code-block:: python
+
         df = convert_excel_date(df, column='date')
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).convert_excel_date('date')
+
     :param df: A pandas DataFrame.
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
@@ -426,13 +498,19 @@ def fill_empty(df, columns, value):
     Fill `NaN` values in specified columns with a given value.
     Super sugary syntax that wraps :py:meth:`pandas.DataFrame.fillna`.
     Functional usage example:
+
     .. code-block:: python
+
         df = fill_empty(df, columns=['col1', 'col2'], value=0)
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).fill_empty(df, columns='col1', value=0)
+
     :param df: A pandas DataFrame.
     :param columns: Either a `str` or `list` or `tuple`. If a string is passed
         in, then only that column will be filled; if a list or tuple of strings
@@ -460,14 +538,20 @@ def expand_column(df, column, sep, concat=True):
     Expand a categorical column with multiple labels into dummy-coded columns.
     Super sugary syntax that wraps :py:meth:`pandas.Series.str.get_dummies`.
     Functional usage example:
+
     .. code-block:: python
+
         df = expand_column(df, column='col_name',
                            sep=', ')  # note space in sep
+
     Method chaining example:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).expand_column(df, column='col_name', sep=', ')
+
     :param df: A pandas DataFrame.
     :param column: A `str` indicating which column to expand.
     :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
@@ -491,17 +575,23 @@ def concatenate_columns(
     Concatenates the set of columns into a single column.
     Used to quickly generate an index based on a group of columns.
     Functional usage example:
+
     .. code-block:: python
+
         df = concatenate_columns(df,
                                  columns=['col1', 'col2'],
                                  new_column_name='id',
                                  sep='-')
+
     Method chaining example:
+
     .. code-block:: python
+
         df = (pd.DataFrame(...).
               concatenate_columns(columns=['col1', 'col2'],
                                   new_column_name='id',
                                   sep='-'))
+
     :param df: A pandas DataFrame.
     :param columns: A list of columns to concatenate together.
     :param new_column_name: The name of the new column.
@@ -526,17 +616,23 @@ def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
     This is the inverse of the `concatenate_columns` function.
     Used to quickly split columns out of a single column.
     Functional usage example:
+
     .. code-block:: python
+
         df = deconcatenate_columns(df,
                                    column='id',
                                    new_column_names=['col1', 'col2'],
                                    sep='-')
+
     Method chaining example:
+
     .. code-block:: python
+
         df = (pd.DataFrame(...).
               deconcatenate_columns(columns='id',
                                     new_column_name=['col1', 'col2'],
                                     sep='-'))
+
     :param df: A pandas DataFrame.
     :param column: The column to split.
     :param new_column_names: A list of new column names post-splitting.
@@ -565,29 +661,41 @@ def filter_string(
     regex string to be passed into it, thus `search_string` can also be a regex
     pattern.
     This function allows us to method chain filtering operations:
+
     .. code-block:: python
+
         df = (pd.DataFrame(...)
               .filter_string('column', search_string='pattern', complement=False)  # noqa: E501
               ...)  # chain on more data preprocessing.
+
     This stands in contrast to the in-place syntax that is usually used:
+
     .. code-block:: python
+
         df = pd.DataFrame(...)
         df = df[df['column'].str.contains('pattern')]]
+
     As can be seen here, the API design allows for a more seamless flow in
     expressing the filtering operations.
     Functional usage example:
+
     .. code-block:: python
+
         df = filter_string(df,
                            column='column',
                            search_string='pattern'
                            complement=False)
+
     Method chaining example:
+
     .. code-block:: python
+
         df = (pd.DataFrame(...)
               .filter_string(column='column',
                              search_string='pattern'
                              complement=False)
               ...)
+
     :param df: A pandas DataFrame.
     :param column: The column to filter. The column should contain strings.
     :param search_string: A regex pattern or a (sub-)string to search.
@@ -602,30 +710,43 @@ def filter_on(df, criteria, complement=False):
     """
     Return a dataframe filtered on a particular criteria.
     This function allows us to method chain filtering operations:
+
     .. code-block:: python
+
         df = (pd.DataFrame(...)
               .filter_on(df['value'] < 3, complement=False)
               ...)  # chain on more data preprocessing.
+
     This stands in contrast to the in-place syntax that is usually used:
+
     .. code-block:: python
+
         df = pd.DataFrame(...)
         df = df[df['value'] < 3]
+
     As with the `filter_string` function, a more seamless flow can be expressed
     in the code.
     Functional usage example:
+
     .. code-block:: python
+
         df = filter_on(df,
                            df['value'] < 3,
                            complement=False)
+
     Method chaining example:
+
     .. code-block:: python
+
         df = (pd.DataFrame(...)
               .filter_on(df['value'] < 3
                              complement=False)
               ...)
+
     Credit to Brant Peterson for the name.
+
     :param df: A pandas DataFrame.
-    :param criteria: A filtering criteria that returns an array or Series of
+    :param criteria: A filtering criteria that returns an array or Series of\
         booleans, on which pandas can filter on.
     :param complement: Whether to return the complement of the filter or not.
     """
@@ -641,8 +762,11 @@ def remove_columns(df: pd.DataFrame, columns: List):
     Removes the set of columns specified in cols.
     Intended to be the method-chaining alternative to `del df[col]`.
     Method chaining example:
+
     .. code-block:: python
+
         df = pd.DataFrame(...).remove_columns(cols=['col1', ['col2']])
+
     :param df: A pandas DataFrame
     :param columns: The columns to remove.
     """
@@ -656,10 +780,15 @@ def change_type(df, column: str, dtype):
     """
     Changes the type of a column.
     Intended to be the method-chaining alternative to::
+
         df[col] = df[col].astype(dtype)
+
     Method chaining example:
+
     .. code-block:: python
+
         df = pd.DataFrame(...).change_type('col1', str)
+
     :param df: A pandas dataframe.
     :param column: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
@@ -674,16 +803,24 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
     """
     Adds a column to the dataframe.
     Intended to be the method-chaining alternative to::
+
         df[col_name] = value
+
     Method chaining example adding a column with only a single value:
+
     .. code-block:: python
+
         # This will add a column with only one value.
         df = pd.DataFrame(...).add_column(col_name="new_column", 2)
+
     Method chaining example adding a column with more than one value:
+
     .. code-block:: python
+
         # This will add a column with an iterable of values.
         vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
         df = pd.DataFrame(...).add_column(col_name="new_column", vals)
+
     :param df: A pandas dataframe.
     :param col_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary
@@ -693,7 +830,9 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     :Setup:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         data = {
@@ -704,11 +843,17 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
             "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
         }
         df = pd.DataFrame(data)
+
     :Example 1: Create a new column with a single value:
+
     .. code-block:: python
+
         df.add_column("city_pop", 100000)
+
     :Output:
+
     .. code-block:: python
+
            a  Bell__Chart  decorated-elephant  animals     cities  city_pop
         0  1            1                   1   rabbit  Cambridge    100000
         1  2            2                   2  leopard   Shanghai    100000
@@ -719,12 +864,18 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
         6  1            1                   1   rabbit  Cambridge    100000
         7  2            2                   2  leopard   Shanghai    100000
         8  3            3                   3     lion      Basel    100000
+
     :Example 2: Create a new column with an iterator \
     which fills to the column size:
+
     .. code-block:: python
+
         df.add_column("city_pop", range(3), fill_remaining=True)
+
     :Output:
+
     .. code-block:: python
+
            a  Bell__Chart  decorated-elephant  animals     cities  city_pop
         0  1            1                   1   rabbit  Cambridge         0
         1  2            2                   2  leopard   Shanghai         1
@@ -735,11 +886,17 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
         6  1            1                   1   rabbit  Cambridge         0
         7  2            2                   2  leopard   Shanghai         1
         8  3            3                   3     lion      Basel         2
+
     :Example 3: Add new column based on mutation of other columns:
+
     .. code-block:: python
+
         df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
+
     :Output:
+
     .. code-block:: python
+
            a  Bell__Chart  decorated-elephant  animals     cities  city_pop
         0  1            1                   1   rabbit  Cambridge        -1
         1  2            2                   2  leopard   Shanghai        -2
@@ -750,6 +907,7 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
         6  1            1                   1   rabbit  Cambridge        -1
         7  2            2                   2  leopard   Shanghai        -2
         8  3            3                   3     lion      Basel        -3
+
     """
 
     check("col_name", col_name, [str])
@@ -805,10 +963,13 @@ def add_columns(df: pd.DataFrame, fill_remaining: bool = False, **kwargs):
     values correspond to the values of the new DataFrame column.
     Values passed can be scalar or iterable (list, ndarray, etc.)
     Usage example:
+
     .. code-block:: python
+
         x = 3
         y = np.arange(0, 10)
         df = pd.DataFrame(...).add_columns(x=x, y=y)
+
     :param df: A pandas dataframe.
     :param fill_remaining: If value is a tuple or list that is smaller than
         the number of rows in the DataFrame, repeat the list or tuple
@@ -832,6 +993,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     Method chaining will truncate all columns to a given length and append
     a given separator character with the index of duplicate columns, except
     for the first distinct column name.
+
     :param df: A pandas dataframe.
     :param column_length: Character length for which to truncate all columns.
         The column separator value and number for duplicate column name does
@@ -843,8 +1005,12 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         values. I think an underscore looks nicest, however a period is a
         common option as well. Supply an empty string (i.e. '') to remove the
         separator.
+
     :Example Setup:
+
     .. code-block:: python
+
+
         import pandas as pd
         import janitor
         data_dict = {
@@ -854,12 +1020,20 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
             "another_really_longer_name_for_a_column": list("lllongname"),
             "this_is_getting_out_of_hand": list("longername"),
         }
+
     :Example 1: Standard truncation:
+
     .. code-block:: python
+
+
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.limit_column_characters(7)
+
     :Output:
+
+
     .. code-block:: python
+
                really_  another another_1 this_is
         0        0        0         l       l
         1        1        2         l       o
@@ -871,11 +1045,16 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         7        7       14         a       a
         8        8       16         m       m
         9        9       18         e       e
+
     :Example 2: Standard truncation with different separator character:
+
     .. code-block:: python
+
         example_dataframe2 = pd.DataFrame(data_dict)
         example_dataframe2.limit_column_characters(7, ".")
+
     .. code-block:: python
+
                really_  another another.1 this_is
         0        0        0         l       l
         1        1        2         l       o
@@ -887,6 +1066,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         7        7       14         a       a
         8        8       16         m       m
         9        9       18         e       e
+
     """
 
     check("column_length", column_length, [int])
@@ -935,14 +1115,18 @@ def row_to_names(
     Elevates a row to be the column names of a DataFrame. Contains options to
     remove the elevated row from the DataFrame along with removing the rows
     above the selected row.
+
     :param df: A pandas DataFrame.
     :param row_number: The row containing the variable names
     :param remove_row: Whether the row should be removed from the DataFrame.
         Defaults to False.
     :param remove_rows_above: Whether the rows above the selected row should
         be removed from the DataFrame. Defaults to False.
+
     :Setup:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         data_dict = {
@@ -952,12 +1136,18 @@ def row_to_names(
             "animals": ["rabbit", "leopard", "lion"] * 3,
             "cities": ["Cambridge", "Shanghai", "Basel"] * 3
         }
+
     :Example 1: Move first row to column names:
+
     .. code-block:: python
+
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.row_to_names(0)
+
     :Output:
+
     .. code-block:: python
+
            1  1  1   rabbit  Cambridge
         0  1  1  1   rabbit  Cambridge
         1  2  2  2  leopard   Shanghai
@@ -967,12 +1157,19 @@ def row_to_names(
         5  3  3  3     lion      Basel
         6  1  1  1   rabbit  Cambridge
         7  2  2  2  leopard   Shanghai
+
     :Example 2: Move first row to column names and remove row:
+
     .. code-block:: python
+
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.row_to_names(0, remove_row=True)
+
     :Output:
+
     .. code-block:: python
+
+
            1  1  1   rabbit  Cambridge
         1  2  2  2  leopard   Shanghai
         2  3  3  3     lion      Basel
@@ -982,14 +1179,20 @@ def row_to_names(
         6  1  1  1   rabbit  Cambridge
         7  2  2  2  leopard   Shanghai
         8  3  3  3     lion      Basel
+
     :Example 3: Move first row to column names, remove row, \
     and remove rows above selected row:
+
     .. code-block:: python
+
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.row_to_names(2, remove_row=True, \
             remove_rows_above=True)
+
     :Output:
+
     .. code-block:: python
+
            3  3  3     lion      Basel
         3  1  1  1   rabbit  Cambridge
         4  2  2  2  leopard   Shanghai
@@ -997,6 +1200,7 @@ def row_to_names(
         6  1  1  1   rabbit  Cambridge
         7  2  2  2  leopard   Shanghai
         8  3  3  3     lion      Basel
+
     """
 
     check("row_number", row_number, [int])
@@ -1020,13 +1224,18 @@ def round_to_fraction(
     """
     Round all values in a column to a fraction.
     Also, optionally round to a specified number of digits.
+
     :param number: The number to round
     :param denominator: The denominator of the fraction for rounding
     :param digits: The number of digits for rounding after rounding to the
         fraction. Default is np.inf (i.e. no subsequent rounding)
+
     Taken from https://github.com/sfirke/janitor/issues/235
+
     :Example Setup:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor
         data_dict = {
@@ -1036,12 +1245,18 @@ def round_to_fraction(
             "animals": ["rabbit", "leopard", "lion"] * 3,
             "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
         }
+
     :Example 1: Rounding the first column to the nearest half:
+
     .. code-block:: python
+
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.round_to_fraction('a', 2)
+
     :Output:
+
     .. code-block:: python
+
              a  Bell__Chart  decorated-elephant  animals     cities
         0  1.0     0.333333            0.004274   rabbit  Cambridge
         1  2.5     0.285714            0.153846  leopard   Shanghai
@@ -1052,12 +1267,18 @@ def round_to_fraction(
         6  1.0     0.333333            0.004274   rabbit  Cambridge
         7  2.5     0.285714            0.153846  leopard   Shanghai
         8  3.0     1.500000            0.017964     lion      Basel
+
     :Example 2: Rounding the first column to nearest third:
+
     .. code-block:: python
+
         example_dataframe2 = pd.DataFrame(data_dict)
         example_dataframe2.limit_column_characters('a', 3)
+
     :Output:
+
     .. code-block:: python
+
                   a  Bell__Chart  decorated-elephant  animals     cities
         0  1.333333     0.333333            0.004274   rabbit  Cambridge
         1  2.333333     0.285714            0.153846  leopard   Shanghai
@@ -1068,13 +1289,19 @@ def round_to_fraction(
         6  1.333333     0.333333            0.004274   rabbit  Cambridge
         7  2.333333     0.285714            0.153846  leopard   Shanghai
         8  3.333333     1.500000            0.017964     lion      Basel
+
     :Example 3: Rounding the first column to the nearest third and rounding \
     each value to the 10,000th place:
+
     .. code-block:: python
+
         example_dataframe2 = pd.DataFrame(data_dict)
         example_dataframe2.limit_column_characters('a', 3, 4)
+
     :Output:
+
     .. code-block:: python
+
                 a  Bell__Chart  decorated-elephant  animals     cities
         0  1.3333     0.333333            0.004274   rabbit  Cambridge
         1  2.3333     0.285714            0.153846  leopard   Shanghai
@@ -1085,6 +1312,7 @@ def round_to_fraction(
         6  1.3333     0.333333            0.004274   rabbit  Cambridge
         7  2.3333     0.285714            0.153846  leopard   Shanghai
         8  3.3333     1.500000            0.017964     lion      Basel
+
     """
 
     check("col_name", col_name, [str])
@@ -1116,19 +1344,28 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     Transforms the given column in-place using the provided function.
     Let's say we wanted to apply a log10 transform a column of data.
     Originally one would write code like this:
+
     .. code-block:: python
+
         # YOU NO LONGER NEED TO WRITE THIS!
         df[col_name] = df[col_name].apply(function)
+
     With the method chaining syntax, we can do the following instead:
+
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .transform(col_name, function)
         )
+
     With the functional syntax:
+
     .. code-block:: python
+
         df = pd.DataFrame(...)
         df = transform(df, col_name, function)
+
     :param df: A pandas DataFrame.
     :param col_name: The column to transform.
     :param function: A function to apply on the column.
@@ -1158,10 +1395,15 @@ def min_max_scale(
     If a particular column name is specified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
     Method chaining example:
+
     .. code-block:: python
+
         df = pd.DataFrame(...).min_max_scale(col_name="a")
+
     Setting custom minimum and maximum:
+
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .min_max_scale(
@@ -1170,9 +1412,12 @@ def min_max_scale(
                 new_max=10
             )
         )
+
     Setting a min and max that is not based on the data, while applying to
     entire dataframe:
+
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .min_max_scale(
@@ -1182,11 +1427,13 @@ def min_max_scale(
                 new_max=1,
             )
         )
+
     The aforementioned example might be applied to something like scaling the
     isoelectric points of amino acids. While technically they range from
     approx 3-10, we can also think of them on the pH scale which ranges from
     1 to 14. Hence, 3 gets scaled not to 0 but approx. 0.15 instead, while 10
     gets scaled to approx. 0.69 instead.
+
     :param df: A pandas DataFrame.
     :param old_min, old_max (optional): Overrides for the current minimum and
         maximum values of the data to be transformed.
@@ -1239,13 +1486,16 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
     this through a simple string-joining of all the names across different
     levels in a single column.
     Method chaining example given two value columns `['var1', 'var2']`:
+
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .groupby('mygroup')
             .agg(['mean', 'median'])
             .collapse_levels(sep='_')
         )
+
     Before applying `.collapse_levels`, the `.agg` operation returns a
     multi-level column `DataFrame` whose columns are (level 1, level 2):
     `[('mygroup', ''), ('var1', 'mean'), ('var1', 'median'), ('var2', 'mean'),
@@ -1298,50 +1548,283 @@ def check(varname: str, value, expected_types: list):
 
 
 def _clean_accounting_column(x):
+    """
+    This function performs the logic for the `type == "accounting"`
+    attribute in make_currency_column_numeric.
+
+    It is intended to be used in a pandas `apply` method.
+    """
+
     y = x.strip()
-    y = y.replace(',', '')
-    y = y.replace(')', '')
-    y = y.replace('(', '-')
-    if y == '-':
+    y = y.replace(",", "")
+    y = y.replace(")", "")
+    y = y.replace("(", "-")
+    if y == "-":
         return 0.00
     return float(y)
 
 
-def _make_currency_column_numeric(x, non_numeric_strings=None):
-    acceptable_currency_characters = {'-', '.', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
-    if non_numeric_strings:
-        if x in non_numeric_strings.keys():
-            check('{%r: %r}' % (x, str(non_numeric_strings[x])), non_numeric_strings[x], [int, float])
-            return non_numeric_strings[x]
+def _make_currency_column_numeric(x, cast_non_numeric=None):
+    """
+    This function performs the logic for the changing cell values in
+    the make_currency_column_numeric fucntion.
+
+    It is intended to be used in a pandas `apply` method, after being passed
+    through `partial`.
+    """
+    acceptable_currency_characters = {
+        "-",
+        ".",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "0",
+    }
+    if len(x) == 0:
+        return "ORIGINAL_NA"
+
+    if cast_non_numeric:
+        if x in cast_non_numeric.keys():
+            check(
+                "{%r: %r}" % (x, str(cast_non_numeric[x])),
+                cast_non_numeric[x],
+                [int, float],
+            )
+            return cast_non_numeric[x]
         else:
-            return ''.join(i for i in x if i in acceptable_currency_characters)
+            return "".join(i for i in x if i in acceptable_currency_characters)
     else:
-        return ''.join(i for i in x if i in acceptable_currency_characters)
+        return "".join(i for i in x if i in acceptable_currency_characters)
 
 
 def _replace_empty_string_with_none(x):
-    if len(x):
+    if isinstance(x, int):
+        return x
+
+    elif isinstance(x, float):
+        return x
+
+    elif len(x):
+        return x
+
+
+def _replace_original_empty_string_with_none(x):
+    if x != "ORIGINAL_NA":
         return x
 
 
 @pf.register_dataframe_method
-def make_currency_column_numeric(df, col_name: str, type:str=None, non_numeric_strings:dict=None, remove_string_rows:bool=False):
+def make_currency_column_numeric(
+    df,
+    col_name: str,
+    type: str = None,
+    cast_non_numeric: dict = None,
+    fill_all_non_numeric: float = None,
+    remove_non_numeric: bool = False,
+):
+    """
+    :param df: The DataFrame
+    :param col_name: The column to modify
+    :param type: What type of cleaning to perform. If None, standard cleaning
+        is applied. Options are: 'accounting'.
+    :param cast_non_numeric: A dict of how to coerce certain strings. For
+        example, if there are values of 'REORDER' in the DataFrame,
+        {'REORDER': 0} will cast all instances of 'REORDER' to 0.
+    :param fill_all_non_numeric: Similar to `cast_non_numeric`, but fills all
+        strings to the same value. For example,  fill_all_non_numeric=1, will
+        make everything that doesn't coerce to a currency 1.
+    :param remove_non_numeric: Will remove rows of a DataFrame that contain
+        non-numeric values in the `col_name` column. Defaults to `False`.
+    :return: A mutated DataFrame
+
+    :Example Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        data = {
+            "a": ["-$1.00", "", "REPAY"] * 2 + ["$23.00", "", "Other Account"],
+            "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+            "decorated-elephant": [1, 2, 3] * 3,
+            "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
+            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+        df = pd.DataFrame(data)
+
+    :Example 1: Coerce numeric values in column to float:
+
+    .. code-block:: python
+
+        df.make_currency_column_numeric("a")
+
+    :Output:
+
+    .. code-block:: python
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2   NaN     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5   NaN     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8   NaN     3.234612                   3         lion      Basel
+
+    :Example 2: Coerce numeric values in column to float, and replace a string\
+    value with a specific value:
+
+    .. code-block:: python
+
+        cast_non_numeric = {"REPAY": 22}
+        df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric)
+
+    :Output:
+
+    .. code-block:: python
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  22.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  22.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8   NaN     3.234612                   3         lion      Basel
+
+    :Example 3: Coerce numeric values in column to float, and replace all\
+        string value with a specific value:
+
+    .. code-block:: python
+
+        df.make_currency_column_numeric("a", fill_all_non_numeric=35)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  35.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  35.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8  35.0     3.234612                   3         lion      Basel
+
+    :Example 4: Coerce numeric values in column to float, replace a string\
+        value with a specific value, and replace remaining string values with\
+        a specific value:
+
+    .. code-block:: python
+
+        df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric,
+        fill_all_non_numeric=35)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  22.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  22.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8  35.0     3.234612                   3         lion      Basel
+
+    :Example 5: Coerce numeric values in column to float, and remove string\
+        values:
+
+    .. code-block:: python
+
+        df.make_currency_column_numeric("a", remove_non_numeric=True)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+
+    :Example 6: Coerce numeric values in column to float, replace a string\
+        value with a specific value, and remove remaining string values:
+
+    .. code-block:: python
+
+        df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric,
+        remove_non_numeric=True)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  22.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  22.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        """
+
+    check("col_name", col_name, [str])
 
     column_series = df[col_name]
-    if type == 'accounting':
+    if type == "accounting":
         df.loc[:, col_name] = df[col_name].apply(_clean_accounting_column)
         return df
 
-    if non_numeric_strings:
-        check('non_numeric_strings', non_numeric_strings, [dict])
+    if cast_non_numeric:
+        check("cast_non_numeric", cast_non_numeric, [dict])
 
-    _make_currency_column_numeric_string_value=partial(_make_currency_column_numeric, non_numeric_strings=non_numeric_strings)
-    column_series = column_series.apply(_make_currency_column_numeric_string_value)
+    _make_cc_patrial = partial(
+        _make_currency_column_numeric, cast_non_numeric=cast_non_numeric
+    )
 
-    if remove_string_rows:
-        df = df.loc[column_series != '', :]
+    column_series = column_series.apply(_make_cc_patrial)
 
+    if remove_non_numeric:
+        df = df.loc[column_series != "", :]
+
+    # _replace_empty_string_with_none is applied here after the check on
+    # remove_non_numeric since "" is our indicator that a string was coerced
+    # in the original column
     column_series = column_series.apply(_replace_empty_string_with_none)
+
+    if fill_all_non_numeric is not None:
+        check("fill_all_non_numeric", fill_all_non_numeric, [int, float])
+        column_series = column_series.fillna(fill_all_non_numeric)
+
+    column_series = column_series.apply(
+        _replace_original_empty_string_with_none
+    )
 
     df = df.assign(**{col_name: pd.to_numeric(column_series)})
 
@@ -1350,9 +1833,9 @@ def make_currency_column_numeric(df, col_name: str, type:str=None, non_numeric_s
 
 @pf.register_dataframe_method
 def convert_float_column_to_int(df, col_name: str):
-    if df[col_name].dtype.name != 'float64':
+    if df[col_name].dtype.name != "float64":
         raise TypeError("%r column must be a 'float64'" % col_name)
 
-    df = df.assign(**{col_name: df[col_name].astype('int')})
+    df = df.assign(**{col_name: df[col_name].astype("int")})
 
     return df

@@ -41,6 +41,19 @@ def dataframe():
 
 
 @pytest.fixture
+def currency_dataframe():
+    data = {
+        "a": ["-$1.00", "", "REPAY"] * 2 + ["$23.00", "", "Other Account"],
+        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
 def null_df():
     np.random.seed([3, 1415])
     df = pd.DataFrame(np.random.choice((1, np.nan), (10, 2)))
@@ -844,3 +857,102 @@ def test_collapse_levels_functionality_3level(
             "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo",
         ]
     )
+
+
+def test_make_currency_column_numeric(currency_dataframe):
+    df = currency_dataframe.make_currency_column_numeric("a")
+    assert df.loc[0, "a"] == -1.0
+    assert np.isnan(df.loc[1, "a"])
+    assert np.isnan(df.loc[2, "a"])
+    assert df.loc[3, "a"] == -1.0
+    assert np.isnan(df.loc[4, "a"])
+    assert np.isnan(df.loc[5, "a"])
+    assert df.loc[6, "a"] == 23.0
+    assert np.isnan(df.loc[7, "a"])
+    assert np.isnan(df.loc[8, "a"])
+
+
+def test_make_currency_column_numeric_with_cast(currency_dataframe):
+    cast_non_numeric = {"REPAY": 22}
+
+    df = currency_dataframe.make_currency_column_numeric(
+        "a", cast_non_numeric=cast_non_numeric
+    )
+
+    assert df.loc[0, "a"] == -1.0
+    assert np.isnan(df.loc[1, "a"])
+    assert df.loc[2, "a"] == 22.0
+    assert df.loc[3, "a"] == -1.0
+    assert np.isnan(df.loc[4, "a"])
+    assert df.loc[5, "a"] == 22.0
+    assert df.loc[6, "a"] == 23.0
+    assert np.isnan(df.loc[7, "a"])
+    assert np.isnan(df.loc[8, "a"])
+
+
+def test_make_currency_column_numeric_fill_non_numeric(currency_dataframe):
+    df = currency_dataframe.make_currency_column_numeric(
+        "a", fill_all_non_numeric=35
+    )
+
+    assert df.loc[0, "a"] == -1.0
+    assert np.isnan(df.loc[1, "a"])
+    assert df.loc[2, "a"] == 35.0
+    assert df.loc[3, "a"] == -1.0
+    assert np.isnan(df.loc[4, "a"])
+    assert df.loc[5, "a"] == 35.0
+    assert df.loc[6, "a"] == 23.0
+    assert np.isnan(df.loc[7, "a"])
+    assert df.loc[8, "a"] == 35.0
+
+
+def test_make_currency_column_numeric_fill_non_numeric_and_cast(
+    currency_dataframe
+):
+    cast_non_numeric = {"REPAY": 22}
+
+    df = currency_dataframe.make_currency_column_numeric(
+        "a", cast_non_numeric=cast_non_numeric, fill_all_non_numeric=35
+    )
+
+    assert df.loc[0, "a"] == -1.0
+    assert np.isnan(df.loc[1, "a"])
+    assert df.loc[2, "a"] == 22.0
+    assert df.loc[3, "a"] == -1.0
+    assert np.isnan(df.loc[4, "a"])
+    assert df.loc[5, "a"] == 22.0
+    assert df.loc[6, "a"] == 23.0
+    assert np.isnan(df.loc[7, "a"])
+    assert df.loc[8, "a"] == 35.0
+
+
+def test_make_currency_column_numeric_remove_non_numeric(currency_dataframe):
+    df = currency_dataframe.make_currency_column_numeric(
+        "a", remove_non_numeric=True
+    )
+
+    assert df.loc[0, "a"] == -1.0
+    assert np.isnan(df.loc[1, "a"])
+    assert df.loc[3, "a"] == -1.0
+    assert np.isnan(df.loc[4, "a"])
+    assert df.loc[6, "a"] == 23.0
+    assert np.isnan(df.loc[7, "a"])
+
+
+def test_make_currency_column_numeric_remove_non_numeric_and_cast(
+    currency_dataframe
+):
+    cast_non_numeric = {"REPAY": 22}
+
+    df = currency_dataframe.make_currency_column_numeric(
+        "a", cast_non_numeric=cast_non_numeric, remove_non_numeric=True
+    )
+
+    assert df.loc[0, "a"] == -1.0
+    assert np.isnan(df.loc[1, "a"])
+    assert df.loc[2, "a"] == 22.0
+    assert df.loc[3, "a"] == -1.0
+    assert np.isnan(df.loc[4, "a"])
+    assert df.loc[5, "a"] == 22.0
+    assert df.loc[6, "a"] == 23.0
+    assert np.isnan(df.loc[7, "a"])

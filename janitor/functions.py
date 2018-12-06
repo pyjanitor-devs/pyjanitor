@@ -1295,3 +1295,65 @@ def check(varname: str, value, expected_types: list):
                 varname=varname, expected_types=expected_types
             )
         )
+
+
+def _clean_accounting_column(x):
+    y = x.strip()
+    y = y.replace(',', '')
+    y = y.replace(')', '')
+    y = y.replace('(', '-')
+    if y == '-':
+        return 0.00
+    return float(y)
+
+
+def _make_currency_column_numeric(x, string_value=None):
+    acceptable_currency_characters = {'-', '.', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
+    if string_value:
+        if x in string_value.keys():
+            check('{%r: %r}' % (x, str(string_value[x])), string_value[x], [int, float])
+            return string_value[x]
+        else:
+            return ''.join(i for i in x if i in acceptable_currency_characters)
+    else:
+        return ''.join(i for i in x if i in acceptable_currency_characters)
+
+
+def _replace_empty_string_with_none(x):
+    if len(x):
+        return x
+
+non_numeric_strings={'REPAY': '0'}
+
+@pf.register_dataframe_method
+def make_currency_column_numeric(df, col_name: str, type:str=None, non_numeric_strings:dict=None, remove_string_rows:bool=False):
+
+    column_series = df[col_name]
+    if type == 'accounting':
+        df.loc[:, col_name] = df[col_name].apply(_clean_accounting_column)
+        return df
+
+    if non_numeric_strings:
+        check('non_numeric_strings', non_numeric_strings, [dict])
+
+    _make_currency_column_numeric_string_value=partial(_make_currency_column_numeric, string_value=non_numeric_strings)
+    column_series = column_series.apply(_make_currency_column_numeric_string_value)
+
+    if remove_string_rows:
+        df = df.loc[column_series != '', :]
+
+    column_series = column_series.apply(_replace_empty_string_with_none)
+
+    df = df.assign(**{col_name: pd.to_numeric(column_series)})
+
+    return df
+
+
+@pf.register_dataframe_method
+def convert_float_column_to_int(df, col_name: str):
+    if df[col_name].dtype.name != 'float64':
+        raise TypeError("%r column must be a 'float64'" % col_name)
+
+    df = df.assign(**{col_name: df[col_name].astype('int')})
+
+    return df

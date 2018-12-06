@@ -59,8 +59,10 @@ def clean_names(
 ):
     """
     Clean column names.
+
     Takes all column names, converts them to lowercase, then replaces all
     spaces with underscores.
+
     Functional usage example:
 
     .. code-block:: python
@@ -144,10 +146,10 @@ def clean_names(
 def remove_empty(df):
     """
     Drop all rows and columns that are completely null.
-    Implementation is shamelessly copied from StackOverflow_.
 
-    .. _StackOverflow: https://stackoverflow.com/questions/38884538/
-    python-pandas-find-all-rows-where-all-values-are-nan
+    Implementation is shamelessly copied from `StackOverflow`_.
+
+    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
 
     Functional usage example:
 
@@ -164,6 +166,7 @@ def remove_empty(df):
         df = pd.DataFrame(...).remove_empty()
 
     :param df: The pandas DataFrame object.
+
     :returns: A pandas DataFrame.
     """
     nanrows = df.index[df.isnull().all(axis=1)]
@@ -179,11 +182,13 @@ def remove_empty(df):
 def get_dupes(df, columns=None):
     """
     Return all duplicate rows.
+
     Functional usage example:
 
     .. code-block:: python
 
-        get_dupes(df)
+        df = pd.DataFrame(...)
+        df = get_dupes(df)
 
     Method chaining example:
 
@@ -208,6 +213,7 @@ def get_dupes(df, columns=None):
 def encode_categorical(df, columns):
     """
     Encode the specified columns as categorical column in pandas.
+
     Functional usage example:
 
     .. code-block:: python
@@ -249,11 +255,14 @@ def encode_categorical(df, columns):
 def label_encode(df, columns):
     """
     Convert labels into numerical data.
+
     This function will create a new column with the string "_enc" appended
     after the original column's name. Consider this to be syntactic sugar.
+
     This function behaves differently from `encode_categorical`. This function
     creates a new column of numeric data. `encode_categorical` replaces the
     dtype of the original column with a "categorical" dtype.
+
     Functional usage example:
 
     .. code-block:: python
@@ -295,13 +304,14 @@ def label_encode(df, columns):
 def get_features_targets(df, target_columns, feature_columns=None):
     """
     Get the features and targets as separate DataFrames/Series.
+
     The behaviour is as such:
 
     - `target_columns` is mandatory.
     - If `feature_columns` is present, then we will respect the column names
-      inside there.
+    inside there.
     - If `feature_columns` is not passed in, then we will assume that the
-      rest of the columns are feature columns, and return them.
+    rest of the columns are feature columns, and return them.
 
     Functional usage example:
 
@@ -347,6 +357,7 @@ def get_features_targets(df, target_columns, feature_columns=None):
 def rename_column(df, old, new):
     """
     Rename a column in place.
+
     Functional usage example:
 
     .. code-block:: python
@@ -364,6 +375,7 @@ def rename_column(df, old, new):
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+
     :param str old: The old column name.
     :param str new: The new column name.
     :returns: A pandas DataFrame.
@@ -377,9 +389,13 @@ def reorder_columns(
 ) -> pd.DataFrame:
     """
     Reorder DataFrame columns by specifying desired order as list of col names
-    Columns not specified retain their order and follow after specified cols
+
+    Columns not specified retain their order and follow after specified cols.
+
     Validates column_order to ensure columns are all present in DataFrame.
+
     Functional usage example:
+
     Given `DataFrame` with column names `col1`, `col2`, `col3`:
 
     .. code-block:: python
@@ -395,6 +411,7 @@ def reorder_columns(
         df = pd.DataFrame(...).reorder_columns(['col2', 'col3'])
 
     The column order of `df` is now `col2`, `col3`, `col1`.
+
     Internally, this function uses `DataFrame.reindex` with `copy=False`
     to avoid unnecessary data duplication.
 
@@ -426,7 +443,9 @@ def reorder_columns(
 @pf.register_dataframe_method
 def coalesce(df, columns, new_column_name):
     """
+
     Coalesces two or more columns of data in order of column names provided.
+
     Functional usage example:
 
     .. code-block:: python
@@ -443,10 +462,12 @@ def coalesce(df, columns, new_column_name):
 
     The result of this function is that we take the first non-null value across
     rows.
+
     This is more syntactic diabetes! For R users, this should look familiar to
     `dplyr`'s `coalesce` function; for Python users, the interface
     should be more intuitive than the :py:meth:`pandas.Series.combine_first`
     method (which we're just using internally anyways).
+
     :param df: A pandas DataFrame.
     :param columns: A list of column names.
     :param str new_column_name: The new column name after combining.
@@ -466,8 +487,11 @@ def coalesce(df, columns, new_column_name):
 def convert_excel_date(df, column):
     """
     Convert Excel's serial date format into Python datetime format.
+
     Implementation is also from `Stack Overflow`.
+
     .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas  # noqa: E501
+
     Functional usage example:
 
     .. code-block:: python
@@ -496,7 +520,9 @@ def convert_excel_date(df, column):
 def fill_empty(df, columns, value):
     """
     Fill `NaN` values in specified columns with a given value.
+
     Super sugary syntax that wraps :py:meth:`pandas.DataFrame.fillna`.
+
     Functional usage example:
 
     .. code-block:: python
@@ -521,12 +547,16 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            ), "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
+        ), "{col} missing from dataframe columns!".format(
+            col=columns
+        )
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -536,7 +566,9 @@ def fill_empty(df, columns, value):
 def expand_column(df, column, sep, concat=True):
     """
     Expand a categorical column with multiple labels into dummy-coded columns.
+
     Super sugary syntax that wraps :py:meth:`pandas.Series.str.get_dummies`.
+
     Functional usage example:
 
     .. code-block:: python
@@ -573,7 +605,9 @@ def concatenate_columns(
 ):
     """
     Concatenates the set of columns into a single column.
+
     Used to quickly generate an index based on a group of columns.
+
     Functional usage example:
 
     .. code-block:: python
@@ -613,8 +647,11 @@ def concatenate_columns(
 def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
     """
     De-concatenates a single column into multiple columns.
+
     This is the inverse of the `concatenate_columns` function.
+
     Used to quickly split columns out of a single column.
+
     Functional usage example:
 
     .. code-block:: python
@@ -655,11 +692,14 @@ def filter_string(
 ):
     """
     Filter a string-based column according to whether it contains a substring.
+
     This is super sugary syntax that builds on top of `filter_on` and
     `pandas.Series.str.contains`.
+
     Because this uses internally `pandas.Series.str.contains`, which allows a
     regex string to be passed into it, thus `search_string` can also be a regex
     pattern.
+
     This function allows us to method chain filtering operations:
 
     .. code-block:: python
@@ -677,6 +717,7 @@ def filter_string(
 
     As can be seen here, the API design allows for a more seamless flow in
     expressing the filtering operations.
+
     Functional usage example:
 
     .. code-block:: python
@@ -709,6 +750,7 @@ def filter_string(
 def filter_on(df, criteria, complement=False):
     """
     Return a dataframe filtered on a particular criteria.
+
     This function allows us to method chain filtering operations:
 
     .. code-block:: python
@@ -726,13 +768,14 @@ def filter_on(df, criteria, complement=False):
 
     As with the `filter_string` function, a more seamless flow can be expressed
     in the code.
+
     Functional usage example:
 
     .. code-block:: python
 
         df = filter_on(df,
-                           df['value'] < 3,
-                           complement=False)
+                       df['value'] < 3,
+                       complement=False)
 
     Method chaining example:
 
@@ -760,7 +803,9 @@ def filter_on(df, criteria, complement=False):
 def remove_columns(df: pd.DataFrame, columns: List):
     """
     Removes the set of columns specified in cols.
+
     Intended to be the method-chaining alternative to `del df[col]`.
+
     Method chaining example:
 
     .. code-block:: python
@@ -779,6 +824,7 @@ def remove_columns(df: pd.DataFrame, columns: List):
 def change_type(df, column: str, dtype):
     """
     Changes the type of a column.
+
     Intended to be the method-chaining alternative to::
 
         df[col] = df[col].astype(dtype)
@@ -802,6 +848,7 @@ def change_type(df, column: str, dtype):
 def add_column(df, col_name: str, value, fill_remaining: bool = False):
     """
     Adds a column to the dataframe.
+
     Intended to be the method-chaining alternative to::
 
         df[col_name] = value
@@ -829,6 +876,7 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
     :param fill_remaining: If value is a tuple or list that is smaller than
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
+
     :Setup:
 
     .. code-block:: python
@@ -959,9 +1007,12 @@ def add_columns(df: pd.DataFrame, fill_remaining: bool = False, **kwargs):
     """
     Method to augment `add_column` with ability to add multiple columns in
     one go. This replaces the need for multiple `add_column` calls.
+
     Usage is through supplying kwargs where the key is the col name and the
     values correspond to the values of the new DataFrame column.
+
     Values passed can be scalar or iterable (list, ndarray, etc.)
+
     Usage example:
 
     .. code-block:: python
@@ -990,6 +1041,7 @@ def add_columns(df: pd.DataFrame, fill_remaining: bool = False, **kwargs):
 def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     """
     Truncates column sizes to a specific length.
+
     Method chaining will truncate all columns to a given length and append
     a given separator character with the index of duplicate columns, except
     for the first distinct column name.
@@ -1010,7 +1062,6 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 
     .. code-block:: python
 
-
         import pandas as pd
         import janitor
         data_dict = {
@@ -1021,16 +1072,14 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
             "this_is_getting_out_of_hand": list("longername"),
         }
 
-    :Example 1: Standard truncation:
+    :Example: Standard truncation:
 
     .. code-block:: python
-
 
         example_dataframe = pd.DataFrame(data_dict)
         example_dataframe.limit_column_characters(7)
 
     :Output:
-
 
     .. code-block:: python
 
@@ -1046,7 +1095,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         8        8       16         m       m
         9        9       18         e       e
 
-    :Example 2: Standard truncation with different separator character:
+    :Example: Standard truncation with different separator character:
 
     .. code-block:: python
 
@@ -1112,9 +1161,10 @@ def row_to_names(
     remove_rows_above: bool = False,
 ):
     """
-    Elevates a row to be the column names of a DataFrame. Contains options to
-    remove the elevated row from the DataFrame along with removing the rows
-    above the selected row.
+    Elevates a row to be the column names of a DataFrame.
+
+    Contains options to remove the elevated row from the DataFrame along with
+    removing the rows above the selected row.
 
     :param df: A pandas DataFrame.
     :param row_number: The row containing the variable names
@@ -1137,7 +1187,7 @@ def row_to_names(
             "cities": ["Cambridge", "Shanghai", "Basel"] * 3
         }
 
-    :Example 1: Move first row to column names:
+    :Example: Move first row to column names:
 
     .. code-block:: python
 
@@ -1158,7 +1208,7 @@ def row_to_names(
         6  1  1  1   rabbit  Cambridge
         7  2  2  2  leopard   Shanghai
 
-    :Example 2: Move first row to column names and remove row:
+    :Example: Move first row to column names and remove row:
 
     .. code-block:: python
 
@@ -1168,7 +1218,6 @@ def row_to_names(
     :Output:
 
     .. code-block:: python
-
 
            1  1  1   rabbit  Cambridge
         1  2  2  2  leopard   Shanghai
@@ -1180,7 +1229,7 @@ def row_to_names(
         7  2  2  2  leopard   Shanghai
         8  3  3  3     lion      Basel
 
-    :Example 3: Move first row to column names, remove row, \
+    :Example: Move first row to column names, remove row, \
     and remove rows above selected row:
 
     .. code-block:: python
@@ -1223,6 +1272,7 @@ def round_to_fraction(
 ):
     """
     Round all values in a column to a fraction.
+
     Also, optionally round to a specified number of digits.
 
     :param number: The number to round
@@ -1246,7 +1296,7 @@ def round_to_fraction(
             "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
         }
 
-    :Example 1: Rounding the first column to the nearest half:
+    :Example: Rounding the first column to the nearest half:
 
     .. code-block:: python
 
@@ -1268,7 +1318,7 @@ def round_to_fraction(
         7  2.5     0.285714            0.153846  leopard   Shanghai
         8  3.0     1.500000            0.017964     lion      Basel
 
-    :Example 2: Rounding the first column to nearest third:
+    :Example: Rounding the first column to nearest third:
 
     .. code-block:: python
 
@@ -1342,7 +1392,9 @@ def round_to_fraction(
 def transform_column(df, col_name: str, function, dest_col_name: str = None):
     """
     Transforms the given column in-place using the provided function.
+
     Let's say we wanted to apply a log10 transform a column of data.
+
     Originally one would write code like this:
 
     .. code-block:: python
@@ -1386,14 +1438,18 @@ def min_max_scale(
 ):
     """
     Scales data to between a minimum and maximum value.
+
     If `minimum` and `maximum` are provided, the true min/max of the
     `DataFrame` or column is ignored in the scaling process and replaced with
     these values, instead.
+
     One can optionally set a new target minimum and maximum value using the
     `new_min` and `new_max` keyword arguments. This will result in the
     transformed data being bounded between `new_min` and `new_max`.
+
     If a particular column name is specified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
+
     Method chaining example:
 
     .. code-block:: python
@@ -1478,13 +1534,16 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
     """
     Given a `DataFrame` containing multi-level columns, flatten to single-
     level by string-joining the column labels in each level.
+
     After a `groupby` / `aggregate` operation where `.agg()` is passed a
     list of multiple aggregation functions, a multi-level `DataFrame` is
     returned with the name of the function applied in the second level.
+
     It is sometimes convenient for later indexing to flatten out this
     multi-level configuration back into a single level. This function does
     this through a simple string-joining of all the names across different
     levels in a single column.
+
     Method chaining example given two value columns `['var1', 'var2']`:
 
     .. code-block:: python
@@ -1502,6 +1561,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
     ('var2', 'median')]`
     `.collapse_levels` then flattens the column names to:
     `['mygroup', 'var1_mean', 'var1_median', 'var2_mean', 'var2_median']`
+
     :param df: A pandas DataFrame.
     :param sep: String separator used to join the column level names
     :returns: df
@@ -1525,7 +1585,7 @@ def check(varname: str, value, expected_types: list):
     """
     One-liner syntactic sugar for checking types.
 
-    Should be used like this:
+    Should be used like this::
 
         check('x', x, [int, float])
 

@@ -308,9 +308,7 @@ def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
         df = pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).label_encode(
-            columns="c"
-        )  # noqa: 841
+        ).label_encode(columns="c")  # noqa: 841
 
 
 def test_multicolumn_label_encode():

@@ -546,16 +546,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -1572,6 +1568,50 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
         sep.join([str(el) for el in tup if str(el) != ""])
         for tup in df.columns.values
     ]
+    return df
+
+
+@pf.register_dataframe_method
+def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
+    """
+    In Pandas, `reset_index()`, when used in place, does not return a
+    `DataFrame`, preventing this option's usage in the function-chaining
+    scheme. `reset_index_inplace()` provides one the ability to save
+    computation time and memory while still being able to use the chaining
+    syntax core to pyjanitor. This function, therefore, is the chaining
+    equivalent of:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .operation1(...)
+            .operation2(...)
+        )
+        df.reset_index(inplace=True)
+
+    instead, being called simply as:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .operation1(...)
+            .operation2(...)
+            .reset_index_inplace()
+        )
+
+    All supplied parameters are sent directly to `DataFrame.reset_index()`.
+
+    :param df: A pandas DataFrame.
+    :param args: Arguments supplied to `DataFrame.reset_index()`
+    :param kwargs: Arguments supplied to `DataFrame.reset_index()`
+    :returns: df
+    """
+
+    kwargs.update(inplace=True)
+
+    df.reset_index(*args, **kwargs)
     return df
 
 

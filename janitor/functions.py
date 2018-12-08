@@ -1574,6 +1574,11 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
 @pf.register_dataframe_method
 def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
     """
+    Returns the dataframe with an inplace resetting of the index.
+    
+    Compared to non-inplace resetting, this avoids data copying, thus
+    providing a potential speedup.
+ 
     In Pandas, `reset_index()`, when used in place, does not return a
     `DataFrame`, preventing this option's usage in the function-chaining
     scheme. `reset_index_inplace()` provides one the ability to save

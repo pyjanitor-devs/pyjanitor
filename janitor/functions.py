@@ -1586,9 +1586,11 @@ def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
         df = (
             pd.DataFrame(...)
             .operation1(...)
-            .operation2(...)
         )
+
         df.reset_index(inplace=True)
+
+        df = df.operation2(...)
 
     instead, being called simply as:
 
@@ -1597,8 +1599,8 @@ def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
         df = (
             pd.DataFrame(...)
             .operation1(...)
-            .operation2(...)
             .reset_index_inplace()
+            .operation2(...)
         )
 
     All supplied parameters are sent directly to `DataFrame.reset_index()`.

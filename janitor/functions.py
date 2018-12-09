@@ -1399,7 +1399,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
 
         df = (
             pd.DataFrame(...)
-            .transform(col_name, function)
+            .transform_column(col_name, function)
         )
 
     With the functional syntax:
@@ -1407,7 +1407,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = transform(df, col_name, function)
+        df = transform_column(df, col_name, function)
 
     :param df: A pandas DataFrame.
     :param col_name: The column to transform.

@@ -295,7 +295,9 @@ def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
         df = pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).label_encode(columns="c")  # noqa: 841
+        ).label_encode(
+            columns="c"
+        )  # noqa: 841
 
 
 def test_multicolumn_label_encode():
@@ -841,4 +843,32 @@ def test_collapse_levels_functionality_3level(
             "Normal  DistributionAsDfHypercuboid (???)",
             "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo",
         ]
+    )
+
+
+def test_reset_index_inplace_obj_equivalence(dataframe):
+    """ Make sure operation is indeed in place. """
+
+    df_riip = dataframe.reset_index_inplace()
+
+    assert df_riip is dataframe
+
+
+def test_reset_index_inplace_after_group(dataframe):
+    """ Make sure equivalent output to non-in place. """
+
+    df_sum = dataframe.groupby(["animals@#$%^", "cities"]).sum()
+
+    df_sum_ri = df_sum.reset_index()
+    df_sum.reset_index_inplace()
+
+    pd.testing.assert_frame_equal(df_sum_ri, df_sum)
+
+
+def test_reset_index_inplace_drop(dataframe):
+    """ Test that correctly accepts `reset_index()` parameters. """
+
+    pd.testing.assert_frame_equal(
+        dataframe.reset_index(drop=True),
+        dataframe.reset_index_inplace(drop=True),
     )

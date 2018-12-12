@@ -738,7 +738,11 @@ def filter_string(
     :param complement: Whether to return the complement of the filter or not.
     """
     criteria = df[column].str.contains(search_string)
-    return filter_on(df, criteria, complement=complement)
+    # return filter_on(df, criteria, complement=complement)
+    if complement:
+        return df[~criteria]
+    else:
+        return df[criteria]
 
 
 @pf.register_dataframe_method
@@ -751,7 +755,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on(df['value'] < 3, complement=False)
+              .filter_on('value < 3', complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -769,7 +773,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = filter_on(df,
-                       df['value'] < 3,
+                       'value < 3',
                        complement=False)
 
     Method chaining example:
@@ -777,8 +781,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on(df['value'] < 3
-                             complement=False)
+              .filter_on('value < 3, complement=False)
               ...)
 
     Credit to Brant Peterson for the name.
@@ -789,9 +792,9 @@ def filter_on(df, criteria, complement=False):
     :param complement: Whether to return the complement of the filter or not.
     """
     if complement:
-        return df[~criteria]
+        return df.query('not ' + criteria)
     else:
-        return df[criteria]
+        return df.query(criteria)
 
 
 @pf.register_dataframe_method

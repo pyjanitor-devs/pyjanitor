@@ -527,12 +527,12 @@ def test_filter_string_complement(dataframe):
 
 
 def test_filter_on(dataframe):
-    df = filter_on(dataframe, dataframe["a"] == 3)
+    df = filter_on(dataframe, 'a == 3')
     assert len(df) == 3
 
 
 def test_filter_on_complement(dataframe):
-    df = filter_on(dataframe, dataframe["a"] == 3, complement=True)
+    df = filter_on(dataframe, 'a == 3', complement=True)
     assert len(df) == 6
 
 

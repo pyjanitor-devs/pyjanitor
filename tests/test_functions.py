@@ -956,3 +956,31 @@ def test_currency_column_to_numeric_remove_non_numeric_and_cast(
     assert df.loc[5, "a"] == 22.0
     assert df.loc[6, "a"] == 23.0
     assert np.isnan(df.loc[7, "a"])
+
+    
+def test_reset_index_inplace_obj_equivalence(dataframe):
+    """ Make sure operation is indeed in place. """
+
+    df_riip = dataframe.reset_index_inplace()
+
+    assert df_riip is dataframe
+
+
+def test_reset_index_inplace_after_group(dataframe):
+    """ Make sure equivalent output to non-in place. """
+
+    df_sum = dataframe.groupby(["animals@#$%^", "cities"]).sum()
+
+    df_sum_ri = df_sum.reset_index()
+    df_sum.reset_index_inplace()
+
+    pd.testing.assert_frame_equal(df_sum_ri, df_sum)
+
+
+def test_reset_index_inplace_drop(dataframe):
+    """ Test that correctly accepts `reset_index()` parameters. """
+
+    pd.testing.assert_frame_equal(
+        dataframe.reset_index(drop=True),
+        dataframe.reset_index_inplace(drop=True),
+    )

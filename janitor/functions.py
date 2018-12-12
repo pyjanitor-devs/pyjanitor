@@ -1404,7 +1404,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
 
         df = (
             pd.DataFrame(...)
-            .transform(col_name, function)
+            .transform_column(col_name, function)
         )
 
     With the functional syntax:
@@ -1412,7 +1412,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = transform(df, col_name, function)
+        df = transform_column(df, col_name, function)
 
     :param df: A pandas DataFrame.
     :param col_name: The column to transform.
@@ -1574,6 +1574,57 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
         for tup in df.columns.values
     ]
 
+    return df
+
+
+@pf.register_dataframe_method
+def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
+    """
+    Returns the dataframe with an inplace resetting of the index.
+
+    Compared to non-inplace resetting, this avoids data copying, thus
+    providing a potential speedup.
+
+    In Pandas, `reset_index()`, when used in place, does not return a
+    `DataFrame`, preventing this option's usage in the function-chaining
+    scheme. `reset_index_inplace()` provides one the ability to save
+    computation time and memory while still being able to use the chaining
+    syntax core to pyjanitor. This function, therefore, is the chaining
+    equivalent of:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .operation1(...)
+        )
+
+        df.reset_index(inplace=True)
+
+        df = df.operation2(...)
+
+    instead, being called simply as:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .operation1(...)
+            .reset_index_inplace()
+            .operation2(...)
+        )
+
+    All supplied parameters are sent directly to `DataFrame.reset_index()`.
+
+    :param df: A pandas DataFrame.
+    :param args: Arguments supplied to `DataFrame.reset_index()`
+    :param kwargs: Arguments supplied to `DataFrame.reset_index()`
+    :returns: df
+    """
+
+    kwargs.update(inplace=True)
+
+    df.reset_index(*args, **kwargs)
     return df
 
 

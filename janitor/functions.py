@@ -785,7 +785,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on('value < 3, complement=False)
+              .filter_on('value < 3', complement=False)
               ...)
 
     Credit to Brant Peterson for the name.

@@ -546,12 +546,16 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            ), "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
+        ), "{col} missing from dataframe columns!".format(
+            col=columns
+        )
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -792,7 +796,7 @@ def filter_on(df, criteria, complement=False):
     :param complement: Whether to return the complement of the filter or not.
     """
     if complement:
-        return df.query('not ' + criteria)
+        return df.query("not " + criteria)
     else:
         return df.query(criteria)
 

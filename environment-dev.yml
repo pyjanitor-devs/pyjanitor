@@ -23,5 +23,6 @@ dependencies:
 - conda
 - pylint
 - biopython
+- doc8
 - pip:
   - sphinxcontrib-fulltoc

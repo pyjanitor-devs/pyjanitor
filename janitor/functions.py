@@ -756,7 +756,7 @@ def filter_on(df, criteria, complement=False):
     This is super-sugary syntax that wraps the pandas `.query()` API, enabling
     users to use strings to quickly specify filters for filtering their
     dataframe. The intent is that `filter_on` as a verb better matches the
-    intent of a pandas user than the verb `query()`.
+    intent of a pandas user than the verb `query`.
 
     Let's say we wanted to filter students based on whether they failed an exam
     or not, which is defined as their score (in the "score" column) being less

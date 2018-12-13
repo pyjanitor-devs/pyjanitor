@@ -692,7 +692,7 @@ def filter_string(
     """
     Filter a string-based column according to whether it contains a substring.
 
-    This is super sugary syntax that builds on top of `filter_on` and
+    This is super sugary syntax that builds on top of
     `pandas.Series.str.contains`.
 
     Because this uses internally `pandas.Series.str.contains`, which allows a
@@ -742,7 +742,6 @@ def filter_string(
     :param complement: Whether to return the complement of the filter or not.
     """
     criteria = df[column].str.contains(search_string)
-    # return filter_on(df, criteria, complement=complement)
     if complement:
         return df[~criteria]
     else:
@@ -754,12 +753,19 @@ def filter_on(df, criteria, complement=False):
     """
     Return a dataframe filtered on a particular criteria.
 
-    This function allows us to method chain filtering operations:
+    This is super-sugary syntax that wraps the pandas `.query()` API, enabling
+    users to use strings to quickly specify filters for filtering their
+    dataframe. The intent is that `filter_on` as a verb better matches the
+    intent of a pandas user than the verb `query`.
+
+    Let's say we wanted to filter students based on whether they failed an exam
+    or not, which is defined as their score (in the "score" column) being less
+    than 50.
 
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on('value < 3', complement=False)
+              .filter_on('score < 50', complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -767,7 +773,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = df[df['value'] < 3]
+        df = df[df['score'] < 3]
 
     As with the `filter_string` function, a more seamless flow can be expressed
     in the code.
@@ -777,7 +783,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = filter_on(df,
-                       'value < 3',
+                       'score < 50',
                        complement=False)
 
     Method chaining example:
@@ -785,7 +791,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on('value < 3', complement=False)
+              .filter_on('score < 50', complement=False)
               ...)
 
     Credit to Brant Peterson for the name.

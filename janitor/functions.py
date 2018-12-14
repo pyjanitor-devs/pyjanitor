@@ -4,18 +4,17 @@ New data cleaning functions should be implemented here.
 """
 import datetime as dt
 import re
-from functools import reduce
-from functools import partial
+from functools import partial, reduce
+from typing import List, Union
 from warnings import warn
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 import pandas_flavor as pf
 
 from .errors import JanitorError
-from typing import List, Union
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -546,16 +545,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df

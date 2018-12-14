@@ -7,6 +7,8 @@ import requests
 
 import janitor
 from janitor import (
+    add_column,
+    change_type,
     clean_names,
     coalesce,
     concatenate_columns,
@@ -17,14 +19,11 @@ from janitor import (
     filter_on,
     filter_string,
     get_dupes,
-    remove_empty,
     remove_columns,
-    change_type,
-    add_column,
+    remove_empty,
 )
-
-from janitor.finance import convert_currency
 from janitor.errors import JanitorError
+from janitor.finance import convert_currency
 
 
 @pytest.fixture

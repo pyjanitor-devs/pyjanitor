@@ -1686,3 +1686,4 @@ def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
         return df.drop(columns=columns)
 
     else:
+        return df[columns]

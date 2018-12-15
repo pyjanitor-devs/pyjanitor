@@ -167,5 +167,8 @@ Because `pyjanitor` is currently maintained by volunteers and has no fiscal supp
 credits
 ~~~~~~~
 
-Test data for chemistry submodule can be found at `Predictive Toxicology`_ .
-.. _Predictive Toxicology: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt
+Test data for chemistry submodule can be found at `Predictive Toxicology`__ .
+
+.. _predtox: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt
+
+__ predtox_

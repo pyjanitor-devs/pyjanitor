@@ -4,18 +4,16 @@ New data cleaning functions should be implemented here.
 """
 import datetime as dt
 import re
-from functools import reduce
-from functools import partial
+from functools import partial, reduce
+from typing import List, Union
 from warnings import warn
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pandas_flavor as pf
 from sklearn.preprocessing import LabelEncoder
 
-import pandas_flavor as pf
-
 from .errors import JanitorError
-from typing import List, Union
 
 
 def _strip_underscores(df, strip_underscores=None):

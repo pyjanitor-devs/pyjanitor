@@ -1,11 +1,13 @@
 """
 Tests for biology-oriented functions.
 """
-import janitor.biology
-import pandas as pd
-import pytest
 import os
 from pathlib import Path
+
+import pandas as pd
+import pytest
+
+import janitor.biology
 
 test_data_dir = Path(os.path.dirname(os.path.abspath(__file__))) / "test_data"
 

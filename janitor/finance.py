@@ -1,14 +1,13 @@
 """Finance Submodule for PyJanitor functions """
 
-from functools import lru_cache
-from datetime import datetime
-from datetime import date
 import json
+from datetime import date, datetime
+from functools import lru_cache
+
 import pandas_flavor as pf
+import requests
 
 from janitor import check
-
-import requests
 
 currency_set = {
     "AUD",

@@ -164,3 +164,8 @@ If you have a feature request, please post it as an issue on the GitHub reposito
 
 Because `pyjanitor` is currently maintained by volunteers and has no fiscal support, any feature requests will be prioritized according to what maintainers encounter as a need in our day-to-day jobs. Please temper expectations accordingly.
 
+credits
+~~~~~~~
+
+Test data for chemistry submodule can be found at `Predictive Toxicology`_ .
+.. _Predictive Toxicology: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt

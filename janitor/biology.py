@@ -4,7 +4,15 @@ pyjanitor functions for biological data processing.
 
 import pandas as pd
 import pandas_flavor as pf
-from Bio import SeqIO
+
+from .utils import import_message
+
+try:
+    from Bio import SeqIO
+except ImportError:
+    import_message(
+        "biology", "biopython", "conda install -c conda-forge biopython"
+    )
 
 
 @pf.register_dataframe_method

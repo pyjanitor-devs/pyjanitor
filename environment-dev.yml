@@ -3,6 +3,7 @@ channels:
 - defaults
 - conda-forge
 - ericmjl
+- rdkit
 dependencies:
 - python=3.6
 - pandas
@@ -24,5 +25,6 @@ dependencies:
 - pylint
 - biopython
 - doc8
+- rdkit
 - pip:
   - sphinxcontrib-fulltoc

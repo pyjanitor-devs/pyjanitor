@@ -13,4 +13,4 @@ With thanks to the following contributors:
 - `@cduvallet <https://github.com/cduvallet>`_
 - `@zbarry <https://github.com/zbarry>`_
 - `@shantanuo <https://github.com/shantanuo>`_
-
+- `@jcvall <https://github.com/jcvall>`_

@@ -10,7 +10,7 @@ from janitor import (add_column, change_type, clean_names, coalesce,
                      concatenate_columns, convert_excel_date,
                      deconcatenate_column, encode_categorical, expand_column,
                      filter_on, filter_string, get_dupes, remove_columns,
-                     remove_empty)
+                     remove_empty,)
 from janitor.errors import JanitorError
 from janitor.finance import convert_currency
 

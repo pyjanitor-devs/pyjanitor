@@ -83,6 +83,9 @@ Current functionality includes:
 - Coalesce multiple columns into a single column
 - Convert excel date (serial format) into a Python datetime format
 - Expand a single column that has delimited, categorical values into dummy-encoded variables
+- Concatenating and deconcatenating columns, based on a delimiter
+- Syntactic sugar for filtering the dataframe based on queries on a column
+- Experimental submodules for finance and biology
 
 apis
 ----

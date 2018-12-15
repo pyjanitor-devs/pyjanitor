@@ -1,13 +1,19 @@
-import pytest
+import os
+from pathlib import Path
+
 import pandas as pd
-import janitor.chemistry
+import pytest
 from rdkit import Chem
+
+import janitor.chemistry
+
+test_data_dir = Path(os.path.dirname(os.path.abspath(__file__))) / "test_data"
 
 
 @pytest.fixture
 def chemdf():
     df = pd.read_csv(
-        "test_data/corrected_smiles.txt", sep="\t", header=None
+        test_data_dir / "corrected_smiles.txt", sep="\t", header=None
     ).head(10)
     df.columns = ["id", "smiles"]
     return df

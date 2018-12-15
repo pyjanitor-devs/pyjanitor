@@ -1,12 +1,12 @@
+from typing import Union
+
 import numpy as np
 import pandas as pd
-from tqdm import tqdm_notebook as tqdmn, tqdm
-
 import pandas_flavor as pf
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
-
-from typing import Union
+from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdmn
 
 
 @pf.register_dataframe_method
@@ -15,7 +15,7 @@ def smiles2mol(
     smiles_col: str,
     mols_col: str,
     drop_nulls: bool = True,
-    progressbar: Union[None, str]=None
+    progressbar: Union[None, str] = None,
 ):
     """
     Convert a column of SMILES strings into RDKit Mol objects.
@@ -37,22 +37,20 @@ def smiles2mol(
     :param drop_nulls: Whether to drop rows whose mols failed to be
         constructed.
     """
-    valid_progress = ['notebook', 'terminal', None]
+    valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:
-        raise ValueError(f'progressbar kwarg must be one of {valid_progress}')
+        raise ValueError(f"progressbar kwarg must be one of {valid_progress}")
 
     if progressbar is None:
-        df[mols_col] = df[smiles_col].apply(
-                    lambda x: Chem.MolFromSmiles(x)
-                )
+        df[mols_col] = df[smiles_col].apply(lambda x: Chem.MolFromSmiles(x))
     else:
-        if progressbar == 'notebook':
-            tqdmn().pandas(desc='mols')
-        elif progressbar == 'terminal':
-            tqdm.pandas(desc='mols')
+        if progressbar == "notebook":
+            tqdmn().pandas(desc="mols")
+        elif progressbar == "terminal":
+            tqdm.pandas(desc="mols")
         df[mols_col] = df[smiles_col].progress_apply(
-                lambda x: Chem.MolFromSmiles(x)
-            )
+            lambda x: Chem.MolFromSmiles(x)
+        )
 
     if drop_nulls:
         df.dropna(subset=[mols_col], inplace=True)

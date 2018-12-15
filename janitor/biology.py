@@ -3,9 +3,8 @@ pyjanitor functions for biological data processing.
 """
 
 import pandas as pd
-from Bio import SeqIO
-
 import pandas_flavor as pf
+from Bio import SeqIO
 
 
 @pf.register_dataframe_method

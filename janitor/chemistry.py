@@ -3,10 +3,20 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from rdkit import Chem, DataStructs
-from rdkit.Chem import AllChem
-from tqdm import tqdm
-from tqdm import tqdm_notebook as tqdmn
+
+from .utils import import_message
+
+try:
+    from rdkit import Chem, DataStructs
+    from rdkit.Chem import AllChem
+except ImportError:
+    import_message("chemistry", "rdkit", "conda install -c rdkit rdkit")
+
+try:
+    from tqdm import tqdm
+    from tqdm import tqdm_notebook as tqdmn
+except ImportError:
+    import_message("chemistry", "tqdm", "conda install -c conda-forge tqdm")
 
 
 @pf.register_dataframe_method

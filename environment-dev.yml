@@ -1,9 +1,9 @@
 name: pyjanitor-dev
 channels:
 - defaults
+- rdkit
 - conda-forge
 - ericmjl
-- rdkit
 dependencies:
 - python=3.6
 - pandas
@@ -26,5 +26,7 @@ dependencies:
 - biopython
 - doc8
 - rdkit
+- pandas-flavor
+- mypy
 - pip:
   - sphinxcontrib-fulltoc

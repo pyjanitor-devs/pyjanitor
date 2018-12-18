@@ -513,6 +513,39 @@ def convert_excel_date(df, column):
 
 
 @pf.register_dataframe_method
+def convert_matlab_date(df, column):
+    """
+    Convert Matlab's serial date number into Python datetime format.
+
+    Implementation is also from `Stack Overflow`.
+
+    .. _Stack Overflow: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python  # noqa: E501
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = convert_matlab_date(df, column='date')
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).convert_matlab_date('date')
+
+    :param df: A pandas DataFrame.
+    :param str column: A column name.
+    :returns: A pandas DataFrame with corrected dates.
+    """
+    days = pd.Series([dt.timedelta(v % 1) for v in df[column]])
+    df[column] = df[column].astype(int).apply(
+        dt.datetime.fromordinal) + days - dt.timedelta(days=366)
+    return df
+
+
+@pf.register_dataframe_method
 def fill_empty(df, columns, value):
     """
     Fill `NaN` values in specified columns with a given value.

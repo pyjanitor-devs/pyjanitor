@@ -13,6 +13,7 @@ from janitor import (
     coalesce,
     concatenate_columns,
     convert_excel_date,
+    convert_matlab_date,
     deconcatenate_column,
     encode_categorical,
     expand_column,
@@ -271,6 +272,18 @@ def test_convert_excel_date():
     df = convert_excel_date(df, "hire_date")
 
     assert df["hire_date"].dtype == "M8[ns]"
+
+
+def test_convert_matlab_date():
+    mlab = [733301.0,
+            729159.0,
+            734471.0,
+            737299.5632963565,
+            737300.0000000000]
+    df = pd.DataFrame(mlab, columns=["dates"])
+    df = convert_matlab_date(df, "dates")
+
+    assert df["dates"].dtype == "M8[ns]"
 
 
 def test_fill_empty(null_df):

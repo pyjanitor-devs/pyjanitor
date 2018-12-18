@@ -1,5 +1,5 @@
 """
-pyjanitor functions for biological data processing.
+Biology and bioinformatics-oriented data cleaning functions.
 """
 
 import pandas as pd

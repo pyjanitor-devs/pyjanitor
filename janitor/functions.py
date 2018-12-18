@@ -540,8 +540,11 @@ def convert_matlab_date(df, column):
     :returns: A pandas DataFrame with corrected dates.
     """
     days = pd.Series([dt.timedelta(v % 1) for v in df[column]])
-    df[column] = df[column].astype(int).apply(
-        dt.datetime.fromordinal) + days - dt.timedelta(days=366)
+    df[column] = (
+        df[column].astype(int).apply(dt.datetime.fromordinal)
+        + days
+        - dt.timedelta(days=366)
+    )
     return df
 
 

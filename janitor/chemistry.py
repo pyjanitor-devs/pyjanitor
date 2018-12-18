@@ -1,3 +1,7 @@
+"""
+Chemistry and cheminformatics-oriented data cleaning functions.
+"""
+
 from typing import Union
 
 import numpy as np
@@ -34,7 +38,7 @@ def smiles2mol(
 
     Method chaining usage:
 
-    ..code-block:: python
+    .. code-block:: python
 
         df = (
             pd.DataFrame(...)
@@ -81,7 +85,7 @@ def morganbits(
 
     Method chaining usage:
 
-    ..code-block:: python
+    .. code-block:: python
 
         df = pd.DataFrame(...)
         morgans = df.morganbits(mols_col='mols', radius=3, nbits=2048)

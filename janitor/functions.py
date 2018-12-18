@@ -1,6 +1,5 @@
 """
-pyjanitor functions.
-New data cleaning functions should be implemented here.
+General purpose data cleaning functions.
 """
 import datetime as dt
 import re

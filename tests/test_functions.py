@@ -874,7 +874,7 @@ def test_reset_index_inplace_drop(dataframe):
     )
 
         
-def test_select_columns(dataframe, columns):
+def test_select_columns(dataframe):
     df = dataframe.select_columns(columns= [
         "a",
         "Bell__Chart",
@@ -886,7 +886,7 @@ def test_select_columns(dataframe, columns):
         "cities"
     ]]
     
-def test_select_columns_invert(dataframe, columns):
+def test_select_columns_invert(dataframe):
     df = dataframe.select_columns(columns= [
         "a",
         "Bell__Chart",

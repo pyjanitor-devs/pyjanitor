@@ -1661,7 +1661,7 @@ def check(varname: str, value, expected_types: list):
         )
 
 
-
+@pf.register_dataframe_method
 def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
     """ 
     Method-chainable selection of columns.

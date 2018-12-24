@@ -146,7 +146,7 @@ First off, you will need to define the function that expresses the data processi
 
     import pandas_flavor as pf
 
-    @pf.register_dataframe_function
+    @pf.register_dataframe_method
     def my_data_cleaning_function(df, arg1, arg2, ...):
         # Put data processing function here.
         return df

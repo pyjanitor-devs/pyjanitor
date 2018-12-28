@@ -1688,3 +1688,31 @@ def check(varname: str, value, expected_types: list):
                 varname=varname, expected_types=expected_types
             )
         )
+
+
+@pf.register_dataframe_method
+def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
+    """
+    Method-chainable selection of columns.
+
+    Optional ability to invert selection of columns available as well.
+
+    Method-chaining example:
+
+    ..code-block:: python
+
+        df = pd.DataFrame(...).select_columns(['a', 'b', 'c'], invert=True)
+
+    :param df: A pandas DataFrame.
+    :param columns: A list of columns to select.
+    :param invert: Whether or not to invert the selection.
+        This will result in selection ofthe complement of the columns provided.
+    :returns: A pandas DataFrame with the columns selected.
+    """
+
+    if invert:
+
+        return df.drop(columns=columns)
+
+    else:
+        return df[columns]

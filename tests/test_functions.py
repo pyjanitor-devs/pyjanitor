@@ -873,23 +873,16 @@ def test_reset_index_inplace_drop(dataframe):
         dataframe.reset_index_inplace(drop=True),
     )
 
-        
+
 def test_select_columns(dataframe):
-    df = dataframe.select_columns(columns= [
-        "a",
-        "Bell__Chart",
-        "cities"
-    ])
-    assert df is dataframe[[
-        "a",
-        "Bell__Chart",
-        "cities"
-    ]]
-    
+    columns = ["a", "Bell__Chart", "cities"]
+    df = dataframe.select_columns(columns=columns)
+
+    pd.testing.assert_frame_equal(df, dataframe[columns])
+
+
 def test_select_columns_invert(dataframe):
-    df = dataframe.select_columns(columns= [
-        "a",
-        "Bell__Chart",
-        "cities"
-    ],invert=True)
-    assert df is dataframe[["decorated-elephant","animals@#$%^"]]
+    columns = ["a", "Bell__Chart", "cities"]
+    df = dataframe.select_columns(columns=columns, invert=True)
+    columns2 = ["decorated-elephant", "animals@#$%^"]
+    pd.testing.assert_frame_equal(df, dataframe[columns2])

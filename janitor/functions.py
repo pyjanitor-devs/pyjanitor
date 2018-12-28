@@ -546,16 +546,12 @@ def fill_empty(df, columns, value):
         for col in columns:
             assert (
                 col in df.columns
-            ), "{col} missing from dataframe columns!".format(
-                col=col
-            )
+            ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
             columns in df.columns
-        ), "{col} missing from dataframe columns!".format(
-            col=columns
-        )
+        ), "{col} missing from dataframe columns!".format(col=columns)
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -1663,7 +1659,7 @@ def check(varname: str, value, expected_types: list):
 
 @pf.register_dataframe_method
 def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
-    """ 
+    """
     Method-chainable selection of columns.
 
     Optional ability to invert selection of columns available as well.
@@ -1671,18 +1667,18 @@ def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
     Method-chaining example:
 
     ..code-block:: python
-        
+
         df = pd.DataFrame(...).select_columns(['a', 'b', 'c'], invert=True)
 
     :param df: A pandas DataFrame.
     :param columns: A list of columns to select.
-    :param invert: Whether or not to invert the selection. This will result in selection of
-        the complement of the columns provided.
+    :param invert: Whether or not to invert the selection.
+        This will result in selection ofthe complement of the columns provided.
     :returns: A pandas DataFrame with the columns selected.
     """
-   
+
     if invert:
-        
+
         return df.drop(columns=columns)
 
     else:

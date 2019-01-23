@@ -10,6 +10,7 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
@@ -1772,7 +1773,7 @@ def impute(df, column: str, value=None, statistic=None):
         'mean': np.mean,
         'average': np.mean,  # aliased
         'median': np.median,
-        'mode': np.mode,
+        'mode': mode,
         'minimum': np.minimum,
         'min': np.minimum,  # aliased
         'maximum': np.maximum,

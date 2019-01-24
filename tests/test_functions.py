@@ -918,12 +918,10 @@ def missingdata_df():
     return df
 
 
-@pytest.mark.test
 def test_imputation_single_value(missingdata_df):
     df = missingdata_df.impute("a", 5)
     assert set(df["a"]) == set([1, 2, 5])
 
-@pytest.mark.test
 @pytest.mark.parametrize("statistic,expected",
     [
         ('mean', set([1, 2, 1.5])),

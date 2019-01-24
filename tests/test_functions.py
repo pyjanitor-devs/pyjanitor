@@ -900,3 +900,40 @@ def test_select_columns_invert(dataframe):
     df = dataframe.select_columns(columns=columns, invert=True)
     columns2 = ["decorated-elephant", "animals@#$%^"]
     pd.testing.assert_frame_equal(df, dataframe[columns2])
+
+
+@pytest.fixture
+def missingdata_df():
+    np.random.seed(9)
+    data = {
+        "a": [1, 2, np.nan] * 3,
+        "Bell__Chart": [1.234_523_45, np.nan, 3.234_612_5] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
+def test_imputation_single_value(missingdata_df):
+    df = missingdata_df.impute("a", 5)
+    assert set(df["a"]) == set([1, 2, 5])
+
+
+@pytest.mark.parametrize(
+    "statistic,expected",
+    [
+        ("mean", set([1, 2, 1.5])),
+        ("average", set([1, 2, 1.5])),
+        ("median", set([1, 2, 1.5])),
+        ("mode", set([1, 2])),
+        ("min", set([1, 2])),
+        ("minimum", set([1, 2])),
+        ("max", set([1, 2])),
+        ("maximum", set([1, 2])),
+    ],
+)
+def test_imputation_statistical(missingdata_df, statistic, expected):
+    df = missingdata_df.impute("a", statistic=statistic)
+    assert set(df["a"]) == expected

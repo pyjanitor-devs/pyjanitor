@@ -10,6 +10,7 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
@@ -1716,3 +1717,82 @@ def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
 
     else:
         return df[columns]
+
+
+@pf.register_dataframe_method
+def impute(df, column: str, value=None, statistic=None):
+    """
+    Method-chainable imputation of values in a column.
+
+    Underneath the hood, this function calls the `.fillna()` method available
+    to every pandas.Series object.
+
+    Method-chaining example:
+
+    ..code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            # Impute null values with 0
+            .impute(column='sales', value=0.0)
+            # Impute null values with median
+            .impute(column='score', statistic='median')
+        )
+
+    Either one of ``value`` or ``statistic`` should be provided.
+
+    If ``value`` is provided, then all null values in the selected column will
+        take on the value provided.
+
+    If ``statistic`` is provided, then all null values in the selected column
+    will take on the summary statistic value of other non-null values.
+
+    Currently supported ``statistic``s include:
+
+    - ``mean`` (also aliased by ``average``)
+    - ``median``
+    - ``mode``
+    - ``minimum`` (also aliased by ``min``)
+    - ``maximum`` (also aliased by ``max``)
+
+    :param df: A pandas DataFrame
+    :param column: The name of the column on which to impute values.
+    :param value: (optional) The value to impute.
+    :param statistic: (optional) The column statistic to impute.
+    """
+
+    # Firstly, we check that only one of `value` or `statistic` are provided.
+    if value is not None and statistic is not None:
+        raise ValueError(
+            "Only one of `value` or `statistic` should be provided"
+        )
+
+    # If statistic is provided, then we compute the relevant summary statistic
+    # from the other data.
+    funcs = {
+        "mean": np.mean,
+        "average": np.mean,  # aliased
+        "median": np.median,
+        "mode": mode,
+        "minimum": np.min,
+        "min": np.min,  # aliased
+        "maximum": np.max,
+        "max": np.max,  # aliased
+    }
+    if statistic is not None:
+        # Check that the statistic keyword argument is one of the approved.
+        if statistic not in funcs.keys():
+            raise KeyError(f"`statistic` must be one of {funcs.keys()}")
+
+        value = funcs[statistic](df[column].dropna().values)
+        # special treatment for mode, because scipy stats mode returns a
+        # moderesult object.
+        if statistic is "mode":
+            value = value.mode[0]
+
+    # The code is architected this way - if `value` is not provided but
+    # statistic is, we then overwrite the None value taken on by `value`, and
+    # use it to set the imputation column.
+    if value is not None:
+        df[column] = df[column].fillna(value)
+    return df

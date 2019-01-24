@@ -1774,16 +1774,22 @@ def impute(df, column: str, value=None, statistic=None):
         'average': np.mean,  # aliased
         'median': np.median,
         'mode': mode,
-        'minimum': np.minimum,
-        'min': np.minimum,  # aliased
-        'maximum': np.maximum,
-        'max': np.maximum,  # aliased
+        'minimum': np.min,
+        'min': np.min,  # aliased
+        'maximum': np.max,
+        'max': np.max,  # aliased
     }
     if statistic is not None:
         # Check that the statistic keyword argument is one of the approved.
         if statistic not in funcs.keys():
             raise KeyError(f'`statistic` must be one of {funcs.keys()}')
-        value = funcs[statistic](df[column].dropna())
+
+        value = funcs[statistic](df[column].dropna().values)
+        # special treatment for mode, because scipy stats mode returns a
+        # moderesult object.
+        if statistic is 'mode':
+            value = value.mode[0]
+
 
     # The code is architected this way - if `value` is not provided but
     # statistic is, we then overwrite the None value taken on by `value`, and

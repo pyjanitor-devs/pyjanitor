@@ -772,18 +772,18 @@ def test_reset_index_inplace_drop(dataframe):
     )
 
 
-def test_select_columns(dataframe):
+@pytest.mark.parametrize(
+    "invert,expected",
+    [
+        (False, ["a", "Bell__Chart", "cities"]),
+        (True, ["decorated-elephant", "animals@#$%^"]),
+    ],
+)
+def test_select_columns(dataframe, invert, expected):
     columns = ["a", "Bell__Chart", "cities"]
-    df = dataframe.select_columns(columns=columns)
+    df = dataframe.select_columns(columns=columns, invert=invert)
 
-    pd.testing.assert_frame_equal(df, dataframe[columns])
-
-
-def test_select_columns_invert(dataframe):
-    columns = ["a", "Bell__Chart", "cities"]
-    df = dataframe.select_columns(columns=columns, invert=True)
-    columns2 = ["decorated-elephant", "animals@#$%^"]
-    pd.testing.assert_frame_equal(df, dataframe[columns2])
+    pd.testing.assert_frame_equal(df, dataframe[expected])
 
 
 @pytest.fixture

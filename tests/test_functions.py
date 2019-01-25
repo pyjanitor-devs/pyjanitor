@@ -7,15 +7,12 @@ import requests
 
 import janitor
 from janitor import (
-    # change_type,
-    # clean_names,
     coalesce,
     concatenate_columns,
     convert_excel_date,
     convert_matlab_date,
     deconcatenate_column,
     encode_categorical,
-    expand_column,
     filter_on,
     filter_string,
     get_dupes,
@@ -379,7 +376,6 @@ def test_incorrect_strip_underscores(multiindex_dataframe):
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):
-    # df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
     df = multiindex_dataframe.clean_names(case_type="preserve")
 
     levels = [
@@ -400,7 +396,7 @@ def test_expand_column():
     }
 
     df = pd.DataFrame(data)
-    expanded = expand_column(df, "col1", sep=", ", concat=False)
+    expanded = df.expand_column("col1", sep=", ", concat=False)
     assert expanded.shape[1] == 6
 
 

@@ -30,6 +30,7 @@ dependencies:
 - mypy
 - pyflakes
 - black
+- hypothesis>=4.4.0
 - pip:
   - sphinxcontrib-fulltoc
   - python-language-server[all]

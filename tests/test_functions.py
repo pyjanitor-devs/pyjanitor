@@ -6,21 +6,8 @@ import pytest
 import requests
 
 import janitor
-from janitor import (
-    coalesce,
-    concatenate_columns,
-    convert_excel_date,
-    convert_matlab_date,
-    deconcatenate_column,
-    encode_categorical,
-    filter_on,
-    filter_string,
-    get_dupes,
-    remove_columns,
-    remove_empty,
-)
 from janitor.errors import JanitorError
-import janitor.finance
+import janitor.finance  # noqa: F401
 
 
 @pytest.fixture
@@ -156,7 +143,7 @@ def test_clean_names_original_columns(dataframe):
 
 
 def test_remove_empty(null_df):
-    df = remove_empty(null_df)
+    df = null_df.remove_empty()
     assert df.shape == (8, 2)
 
 
@@ -164,13 +151,13 @@ def test_get_dupes():
     df = pd.DataFrame()
     df["a"] = [1, 2, 1]
     df["b"] = [1, 2, 1]
-    df_dupes = get_dupes(df)
+    df_dupes = df.get_dupes()
     assert df_dupes.shape == (2, 2)
 
     df2 = pd.DataFrame()
     df2["a"] = [1, 2, 3]
     df2["b"] = [1, 2, 3]
-    df2_dupes = get_dupes(df2)
+    df2_dupes = df2.get_dupes()
     assert df2_dupes.shape == (0, 2)
 
 
@@ -178,7 +165,7 @@ def test_encode_categorical():
     df = pd.DataFrame()
     df["class_label"] = ["test1", "test2", "test1", "test2"]
     df["numbers"] = [1, 2, 3, 2]
-    df = encode_categorical(df, "class_label")
+    df = df.encode_categorical("class_label")
     assert df["class_label"].dtypes == "category"
 
 
@@ -257,16 +244,17 @@ def test_reorder_columns(dataframe):
 def test_coalesce():
     df = pd.DataFrame(
         {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]}
-    )
-
-    df = coalesce(df, ["a", "b", "c"], "a")
+    ).coalesce(["a", "b", "c"], "a")
     assert df.shape == (3, 1)
     assert pd.isnull(df).sum().sum() == 0
 
 
 def test_convert_excel_date():
-    df = pd.read_excel("examples/dirty_data.xlsx").clean_names()
-    df = convert_excel_date(df, "hire_date")
+    df = (
+        pd.read_excel("examples/dirty_data.xlsx")
+        .clean_names()
+        .convert_excel_date("hire_date")
+    )
 
     assert df["hire_date"].dtype == "M8[ns]"
 
@@ -279,8 +267,7 @@ def test_convert_matlab_date():
         737_299.563_296_356_5,
         737_300.000_000_000_0,
     ]
-    df = pd.DataFrame(mlab, columns=["dates"])
-    df = convert_matlab_date(df, "dates")
+    df = pd.DataFrame(mlab, columns=["dates"]).convert_matlab_date("dates")
 
     assert df["dates"].dtype == "M8[ns]"
 
@@ -304,7 +291,7 @@ def test_single_column_label_encode():
 
 def test_single_column_fail_label_encode():
     with pytest.raises(AssertionError):
-        df = pd.DataFrame(
+        pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
         ).label_encode(
             columns="c"
@@ -370,7 +357,7 @@ def test_clean_names_strip_underscores(
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
-        df = multiindex_dataframe.clean_names(
+        multiindex_dataframe.clean_names(
             strip_underscores="hello"
         )  # noqa: E501, F841
 
@@ -411,53 +398,44 @@ def test_expand_and_concat():
 
 
 def test_concatenate_columns(dataframe):
-    df = concatenate_columns(
-        dataframe,
-        columns=["a", "decorated-elephant"],
-        sep="-",
-        new_column_name="index",
+    df = dataframe.concatenate_columns(
+        columns=["a", "decorated-elephant"], sep="-", new_column_name="index"
     )
     assert "index" in df.columns
 
 
 def test_deconcatenate_column(dataframe):
-    df = concatenate_columns(
-        dataframe,
-        columns=["a", "decorated-elephant"],
-        sep="-",
-        new_column_name="index",
+    df = dataframe.concatenate_columns(
+        columns=["a", "decorated-elephant"], sep="-", new_column_name="index"
     )
-    df = deconcatenate_column(
-        df, column="index", new_column_names=["A", "B"], sep="-"
+    df = df.deconcatenate_column(
+        column="index", new_column_names=["A", "B"], sep="-"
     )
     assert "A" in df.columns
     assert "B" in df.columns
 
 
 def test_filter_string(dataframe):
-    df = filter_string(dataframe, column="animals@#$%^", search_string="bbit")
+    df = dataframe.filter_string(column="animals@#$%^", search_string="bbit")
     assert len(df) == 3
 
 
 def test_filter_string_complement(dataframe):
-    df = filter_string(
-        dataframe, column="cities", search_string="hang", complement=True
+    df = dataframe.filter_string(
+        column="cities", search_string="hang", complement=True
     )
     assert len(df) == 6
 
 
-def test_filter_on(dataframe):
-    df = filter_on(dataframe, "a == 3")
-    assert len(df) == 3
-
-
-def test_filter_on_complement(dataframe):
-    df = filter_on(dataframe, "a == 3", complement=True)
-    assert len(df) == 6
+@pytest.mark.filter
+@pytest.mark.parametrize("complement,expected", [(True, 6), (False, 3)])
+def test_filter_on(dataframe, complement, expected):
+    df = dataframe.filter_on("a == 3", complement=complement)
+    assert len(df) == expected
 
 
 def test_remove_columns(dataframe):
-    df = remove_columns(dataframe, columns=["a"])
+    df = dataframe.remove_columns(columns=["a"])
     assert len(df.columns) == 4
 
 
@@ -698,12 +676,12 @@ def test_min_max_scale_custom_new_min_max(dataframe):
 
 def test_min_max_old_min_max_errors(dataframe):
     with pytest.raises(ValueError):
-        df = dataframe.min_max_scale(col_name="a", old_min=10, old_max=0)
+        dataframe.min_max_scale(col_name="a", old_min=10, old_max=0)
 
 
 def test_min_max_new_min_max_errors(dataframe):
     with pytest.raises(ValueError):
-        df = dataframe.min_max_scale(col_name="a", new_min=10, new_max=0)
+        dataframe.min_max_scale(col_name="a", new_min=10, new_max=0)
 
 
 def test_collapse_levels_sanity(multiindex_with_missing_dataframe):

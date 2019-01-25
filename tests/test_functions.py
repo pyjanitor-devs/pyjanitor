@@ -331,20 +331,6 @@ def test_label_encode_invalid_input(dataframe):
         dataframe.label_encode(1)
 
 
-# def test_multiindex_clean_names_functional(multiindex_dataframe):
-#     df = multiindex_dataframe.clean_names()
-
-#     levels = [
-#         ["a", "bell_chart", "decorated_elephant"],
-#         ["b", "normal_distribution", "r_i_p_rhino_"],
-#     ]
-
-#     labels = [[1, 0, 2], [1, 0, 2]]
-
-#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-#     assert set(df.columns) == set(expected_columns)
-
-
 def test_multiindex_clean_names(multiindex_dataframe):
     df = multiindex_dataframe.clean_names()
 

@@ -28,5 +28,7 @@ dependencies:
 - rdkit
 - pandas-flavor
 - mypy
+- pyflakes
 - pip:
   - sphinxcontrib-fulltoc
+  - python-language-server[all]

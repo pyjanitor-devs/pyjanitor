@@ -29,6 +29,7 @@ dependencies:
 - pandas-flavor
 - mypy
 - pyflakes
+- black
 - pip:
   - sphinxcontrib-fulltoc
   - python-language-server[all]

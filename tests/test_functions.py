@@ -121,6 +121,7 @@ def test_clean_names_method_chain(dataframe):
 #     assert set(df.columns) == set(expected_columns)
 #
 
+
 def test_clean_names_special_characters(dataframe):
     df = dataframe.clean_names(remove_special=True)
     expected_columns = [
@@ -349,7 +350,7 @@ def test_multiindex_clean_names(multiindex_dataframe):
 
     levels = [
         ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino_"],
+        ["b", "normal_distribution", "r_i_p_rhino"],
     ]
 
     labels = [[0, 1, 2], [0, 1, 2]]
@@ -373,17 +374,12 @@ def test_multiindex_clean_names(multiindex_dataframe):
 
 
 @pytest.mark.test
-@pytest.mark.parametrize('strip_underscores',
-    [
-        'both',
-        True,
-        "right",
-        "r",
-        "left",
-        "l",
-    ]
+@pytest.mark.parametrize(
+    "strip_underscores", ["both", True, "right", "r", "left", "l"]
 )
-def test_clean_names_strip_underscores(multiindex_dataframe, strip_underscores):
+def test_clean_names_strip_underscores(
+    multiindex_dataframe, strip_underscores
+):
     if strip_underscores in ["right", "r"]:
         df = multiindex_dataframe.rename(columns=lambda x: x + "_")
     elif strip_underscores in ["left", "l"]:
@@ -405,7 +401,8 @@ def test_clean_names_strip_underscores(multiindex_dataframe, strip_underscores):
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
-        df = multiindex_dataframe.clean_names(strip_underscores="hello"
+        df = multiindex_dataframe.clean_names(
+            strip_underscores="hello"
         )  # noqa: E501, F841
 
 
@@ -415,7 +412,7 @@ def test_clean_names_preserve_case_true(multiindex_dataframe):
 
     levels = [
         ["a", "Bell_Chart", "decorated_elephant"],
-        ["b", "Normal_Distribution", "r_i_p_rhino_"],
+        ["b", "Normal_Distribution", "r_i_p_rhino"],
     ]
 
     labels = [[1, 0, 2], [1, 0, 2]]

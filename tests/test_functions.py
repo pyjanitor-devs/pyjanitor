@@ -7,9 +7,8 @@ import requests
 
 import janitor
 from janitor import (
-    add_column,
-    change_type,
-    clean_names,
+    # change_type,
+    # clean_names,
     coalesce,
     concatenate_columns,
     convert_excel_date,
@@ -24,7 +23,7 @@ from janitor import (
     remove_empty,
 )
 from janitor.errors import JanitorError
-from janitor.finance import convert_currency
+import janitor.finance
 
 
 @pytest.fixture
@@ -54,7 +53,7 @@ def multiindex_dataframe():
     data = {
         ("a", "b"): [1, 2, 3],
         ("Bell__Chart", "Normal  Distribution"): [1, 2, 3],
-        ("decorated-elephant", "r.i.p-rhino :'("): [1, 2, 3],
+        ("decorated-elephant", "r.i.p-rhino"): [1, 2, 3],
     }
     df = pd.DataFrame(data)
     return df
@@ -87,7 +86,7 @@ def multiindex_with_missing_3level_dataframe():
 
 
 def test_clean_names_functional(dataframe):
-    df = clean_names(dataframe)
+    df = dataframe.clean_names()
     expected_columns = [
         "a",
         "bell_chart",
@@ -110,17 +109,17 @@ def test_clean_names_method_chain(dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-def test_clean_names_pipe(dataframe):
-    df = dataframe.pipe(clean_names)
-    expected_columns = [
-        "a",
-        "bell_chart",
-        "decorated_elephant",
-        "animals@#$%^",
-        "cities",
-    ]
-    assert set(df.columns) == set(expected_columns)
-
+# def test_clean_names_pipe(dataframe):
+#     df = dataframe.pipe(clean_names)
+#     expected_columns = [
+#         "a",
+#         "bell_chart",
+#         "decorated_elephant",
+#         "animals@#$%^",
+#         "cities",
+#     ]
+#     assert set(df.columns) == set(expected_columns)
+#
 
 def test_clean_names_special_characters(dataframe):
     df = dataframe.clean_names(remove_special=True)
@@ -331,21 +330,21 @@ def test_label_encode_invalid_input(dataframe):
         dataframe.label_encode(1)
 
 
-def test_multiindex_clean_names_functional(multiindex_dataframe):
-    df = clean_names(multiindex_dataframe)
+# def test_multiindex_clean_names_functional(multiindex_dataframe):
+#     df = multiindex_dataframe.clean_names()
 
-    levels = [
-        ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino_"],
-    ]
+#     levels = [
+#         ["a", "bell_chart", "decorated_elephant"],
+#         ["b", "normal_distribution", "r_i_p_rhino_"],
+#     ]
 
-    labels = [[1, 0, 2], [1, 0, 2]]
+#     labels = [[1, 0, 2], [1, 0, 2]]
 
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-    assert set(df.columns) == set(expected_columns)
+#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+#     assert set(df.columns) == set(expected_columns)
 
 
-def test_multiindex_clean_names_method_chain(multiindex_dataframe):
+def test_multiindex_clean_names(multiindex_dataframe):
     df = multiindex_dataframe.clean_names()
 
     levels = [
@@ -359,52 +358,39 @@ def test_multiindex_clean_names_method_chain(multiindex_dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-def test_multiindex_clean_names_pipe(multiindex_dataframe):
-    df = multiindex_dataframe.pipe(clean_names)
+# def test_multiindex_clean_names_pipe(multiindex_dataframe):
+#     df = multiindex_dataframe.pipe(clean_names)
+#
+#     levels = [
+#         ["a", "bell_chart", "decorated_elephant"],
+#         ["b", "normal_distribution", "r_i_p_rhino_"],
+#     ]
+#
+#     labels = [[0, 1, 2], [0, 1, 2]]
+#
+#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+#     assert set(df.columns) == set(expected_columns)
 
-    levels = [
-        ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino_"],
+
+@pytest.mark.test
+@pytest.mark.parametrize('strip_underscores',
+    [
+        'both',
+        True,
+        "right",
+        "r",
+        "left",
+        "l",
     ]
-
-    labels = [[0, 1, 2], [0, 1, 2]]
-
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-    assert set(df.columns) == set(expected_columns)
-
-
-def test_clean_names_strip_underscores_both(multiindex_dataframe):
-    df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
-    df = clean_names(multiindex_dataframe, strip_underscores="both")
-
-    levels = [
-        ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino"],
-    ]
-
-    labels = [[1, 0, 2], [1, 0, 2]]
-
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-    assert set(df.columns) == set(expected_columns)
-
-
-def test_clean_names_strip_underscores_true(multiindex_dataframe):
-    df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
-    df = clean_names(multiindex_dataframe, strip_underscores=True)
-
-    levels = [
-        ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino"],
-    ]
-
-    labels = [[1, 0, 2], [1, 0, 2]]
-
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-    assert set(df.columns) == set(expected_columns)
-
-
-def test_clean_names_strip_underscores_right(multiindex_dataframe):
-    df = clean_names(multiindex_dataframe, strip_underscores="right")
+)
+def test_clean_names_strip_underscores(multiindex_dataframe, strip_underscores):
+    if strip_underscores in ["right", "r"]:
+        df = multiindex_dataframe.rename(columns=lambda x: x + "_")
+    elif strip_underscores in ["left", "l"]:
+        df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
+    else:
+        df = multiindex_dataframe
+    df = df.clean_names(strip_underscores=strip_underscores)
 
     levels = [
         ["a", "bell_chart", "decorated_elephant"],
@@ -417,60 +403,88 @@ def test_clean_names_strip_underscores_right(multiindex_dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-def test_clean_names_strip_underscores_r(multiindex_dataframe):
-    df = clean_names(multiindex_dataframe, strip_underscores="r")
+# @pytest.mark.test
+# def test_clean_names_strip_underscores_true(multiindex_dataframe):
+#     df = multiindex_dataframe.rename(columns=lambda x: "_" + x).clean_names(strip_underscores=True)
 
-    levels = [
-        ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino"],
-    ]
+#     levels = [
+#         ["a", "bell_chart", "decorated_elephant"],
+#         ["b", "normal_distribution", "r_i_p_rhino"],
+#     ]
 
-    labels = [[1, 0, 2], [1, 0, 2]]
+#     labels = [[1, 0, 2], [1, 0, 2]]
 
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-    assert set(df.columns) == set(expected_columns)
-
-
-def test_clean_names_strip_underscores_left(multiindex_dataframe):
-    df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
-    df = clean_names(multiindex_dataframe, strip_underscores="left")
-
-    levels = [
-        ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino_"],
-    ]
-
-    labels = [[1, 0, 2], [1, 0, 2]]
-
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-    assert set(df.columns) == set(expected_columns)
+#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+#     assert set(df.columns) == set(expected_columns)
 
 
-def test_clean_names_strip_underscores_l(multiindex_dataframe):
-    df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
-    df = clean_names(multiindex_dataframe, strip_underscores="l")
+# def test_clean_names_strip_underscores_right(multiindex_dataframe):
+#     df = multiindex_dataframe.clean_names(strip_underscores="right")
 
-    levels = [
-        ["a", "bell_chart", "decorated_elephant"],
-        ["b", "normal_distribution", "r_i_p_rhino_"],
-    ]
+#     levels = [
+#         ["a", "bell_chart", "decorated_elephant"],
+#         ["b", "normal_distribution", "r_i_p_rhino"],
+#     ]
 
-    labels = [[1, 0, 2], [1, 0, 2]]
+#     labels = [[1, 0, 2], [1, 0, 2]]
 
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-    assert set(df.columns) == set(expected_columns)
+#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+#     assert set(df.columns) == set(expected_columns)
+
+
+# def test_clean_names_strip_underscores_r(multiindex_dataframe):
+#     df = multiindex_dataframe.clean_names(strip_underscores="r")
+
+#     levels = [
+#         ["a", "bell_chart", "decorated_elephant"],
+#         ["b", "normal_distribution", "r_i_p_rhino"],
+#     ]
+
+#     labels = [[1, 0, 2], [1, 0, 2]]
+
+#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+#     assert set(df.columns) == set(expected_columns)
+
+
+# def test_clean_names_strip_underscores_left(multiindex_dataframe):
+#     # df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
+#     df = multiindex_dataframe.clean_names(strip_underscores="left")
+
+#     levels = [
+#         ["a", "bell_chart", "decorated_elephant"],
+#         ["b", "normal_distribution", "r_i_p_rhino_"],
+#     ]
+
+#     labels = [[1, 0, 2], [1, 0, 2]]
+
+#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+#     assert set(df.columns) == set(expected_columns)
+
+
+# @pytest.mark.test
+# def test_clean_names_strip_underscores_l(multiindex_dataframe):
+#     df = multiindex_dataframe.rename(columns=lambda x: "_" + x).clean_names(strip_underscores="l")
+
+#     levels = [
+#         ["a", "bell_chart", "decorated_elephant"],
+#         ["b", "normal_distribution", "r_i_p_rhino_"],
+#     ]
+
+#     labels = [[1, 0, 2], [1, 0, 2]]
+
+#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+#     assert set(df.columns) == set(expected_columns)
 
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
-        df = clean_names(
-            multiindex_dataframe, strip_underscores="hello"
+        df = multiindex_dataframe.clean_names(strip_underscores="hello"
         )  # noqa: E501, F841
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):
-    df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
-    df = clean_names(multiindex_dataframe, case_type="preserve")
+    # df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
+    df = multiindex_dataframe.clean_names(case_type="preserve")
 
     levels = [
         ["a", "Bell_Chart", "decorated_elephant"],
@@ -556,7 +570,7 @@ def test_remove_columns(dataframe):
 
 
 def test_change_type(dataframe):
-    df = change_type(dataframe, column="a", dtype=float)
+    df = dataframe.change_type(column="a", dtype=float)
     assert df["a"].dtype == float
 
 

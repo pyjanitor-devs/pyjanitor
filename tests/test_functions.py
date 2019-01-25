@@ -359,20 +359,6 @@ def test_multiindex_clean_names(multiindex_dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-# def test_multiindex_clean_names_pipe(multiindex_dataframe):
-#     df = multiindex_dataframe.pipe(clean_names)
-#
-#     levels = [
-#         ["a", "bell_chart", "decorated_elephant"],
-#         ["b", "normal_distribution", "r_i_p_rhino_"],
-#     ]
-#
-#     labels = [[0, 1, 2], [0, 1, 2]]
-#
-#     expected_columns = pd.MultiIndex(levels=levels, labels=labels)
-#     assert set(df.columns) == set(expected_columns)
-
-
 @pytest.mark.test
 @pytest.mark.parametrize(
     "strip_underscores", ["both", True, "right", "r", "left", "l"]

@@ -8,6 +8,9 @@ import requests
 import janitor
 from janitor.errors import JanitorError
 import janitor.finance  # noqa: F401
+from hypothesis.extra.pandas import column, data_frames
+import hypothesis.strategies as st
+from hypothesis import given
 
 
 @pytest.fixture
@@ -69,8 +72,30 @@ def multiindex_with_missing_3level_dataframe():
     return df
 
 
-def test_clean_names_functional(dataframe):
-    df = dataframe.clean_names()
+def dfstrategy():
+    """
+    A convenience function for generating a dataframe as a hypothesis strategy.
+
+    Should be treated like a fixture, but should not be passed as a fixture
+    into a test function. Instead::
+
+        @given(dataframe())
+        def test_function(df):
+            # test goes here
+    """
+    return data_frames([
+            column("a", elements=st.integers()),
+            column("Bell__Chart", elements=st.floats()),
+            column("decorated-elephant", elements=st.integers()),
+            column("animals@#$%^", elements=st.text()),
+            column("cities", st.text())
+    ])
+
+
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_clean_names_method_chain(df):
+    df = df.clean_names()
     expected_columns = [
         "a",
         "bell_chart",
@@ -81,33 +106,10 @@ def test_clean_names_functional(dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-def test_clean_names_method_chain(dataframe):
-    df = dataframe.clean_names()
-    expected_columns = [
-        "a",
-        "bell_chart",
-        "decorated_elephant",
-        "animals@#$%^",
-        "cities",
-    ]
-    assert set(df.columns) == set(expected_columns)
-
-
-# def test_clean_names_pipe(dataframe):
-#     df = dataframe.pipe(clean_names)
-#     expected_columns = [
-#         "a",
-#         "bell_chart",
-#         "decorated_elephant",
-#         "animals@#$%^",
-#         "cities",
-#     ]
-#     assert set(df.columns) == set(expected_columns)
-#
-
-
-def test_clean_names_special_characters(dataframe):
-    df = dataframe.clean_names(remove_special=True)
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_clean_names_special_characters(df):
+    df = df.clean_names(remove_special=True)
     expected_columns = [
         "a",
         "bell_chart",

@@ -237,6 +237,9 @@ def test_rename_column(df):
 
 
 def test_reorder_columns(dataframe):
+    # NOTE: This test essentially has four different tests underneath it.
+    # WE should be able to refactor this using pytest.mark.parametrize.
+
     # sanity checking of inputs
 
     # input is not a list or pd.Index

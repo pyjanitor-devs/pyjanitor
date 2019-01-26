@@ -8,7 +8,7 @@ import requests
 import janitor
 from janitor.errors import JanitorError
 import janitor.finance  # noqa: F401
-from hypothesis.extra.pandas import column, data_frames
+from hypothesis.extra.pandas import column, data_frames, range_indexes
 import hypothesis.strategies as st
 from hypothesis import given
 
@@ -83,13 +83,16 @@ def dfstrategy():
         def test_function(df):
             # test goes here
     """
-    return data_frames([
+    return data_frames(
+        columns=[
             column("a", elements=st.integers()),
             column("Bell__Chart", elements=st.floats()),
             column("decorated-elephant", elements=st.integers()),
             column("animals@#$%^", elements=st.text()),
-            column("cities", st.text())
-    ])
+            column("cities", st.text()),
+        ],
+        index=range_indexes(min_size=1, max_size=20),
+    )
 
 
 @pytest.mark.hyp
@@ -120,8 +123,10 @@ def test_clean_names_special_characters(df):
     assert set(df.columns) == set(expected_columns)
 
 
-def test_clean_names_uppercase(dataframe):
-    df = dataframe.clean_names(case_type="upper", remove_special=True)
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_clean_names_uppercase(df):
+    df = df.clean_names(case_type="upper", remove_special=True)
     expected_columns = [
         "A",
         "BELL_CHART",
@@ -132,8 +137,10 @@ def test_clean_names_uppercase(dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-def test_clean_names_original_columns(dataframe):
-    df = dataframe.clean_names(preserve_original_columns=True)
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_clean_names_original_columns(df):
+    df = df.clean_names(preserve_original_columns=True)
     expected_columns = [
         "a",
         "Bell__Chart",
@@ -171,49 +178,62 @@ def test_encode_categorical():
     assert df["class_label"].dtypes == "category"
 
 
-def test_encode_categorical_missing_column(dataframe):
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_encode_categorical_missing_column(df):
     with pytest.raises(AssertionError):
-        dataframe.encode_categorical("aloha")
+        df.encode_categorical("aloha")
 
 
-def test_encode_categorical_missing_columns(dataframe):
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_encode_categorical_missing_columns(df):
     with pytest.raises(AssertionError):
-        dataframe.encode_categorical(["animals@#$%^", "cities", "aloha"])
+        df.encode_categorical(["animals@#$%^", "cities", "aloha"])
 
 
-def test_encode_categorical_invalid_input(dataframe):
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_encode_categorical_invalid_input(df):
     with pytest.raises(JanitorError):
-        dataframe.encode_categorical(1)
+        df.encode_categorical(1)
 
 
-def test_get_features_targets(dataframe):
-    dataframe = dataframe.clean_names()
-    X, y = dataframe.get_features_targets(target_columns="bell_chart")
-    assert X.shape == (9, 4)
-    assert y.shape == (9,)
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_get_features_targets(df):
+    X, y = df.clean_names().get_features_targets(target_columns="bell_chart")
+    assert X.shape[1] == 4
+    assert len(y.shape) == 1
 
 
-def test_get_features_targets_multi_features(dataframe):
-    dataframe = dataframe.clean_names()
-    X, y = dataframe.get_features_targets(
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_get_features_targets_multi_features(df):
+    X, y = df.clean_names().get_features_targets(
         feature_columns=["animals@#$%^", "cities"], target_columns="bell_chart"
     )
-    assert X.shape == (9, 2)
-    assert y.shape == (9,)
+    assert X.shape[1] == 2
+    assert len(y.shape) == 1
 
 
-def test_get_features_target_multi_columns(dataframe):
-    dataframe = dataframe.clean_names()
-    X, y = dataframe.get_features_targets(target_columns=["a", "bell_chart"])
-    assert X.shape == (9, 3)
-    assert y.shape == (9, 2)
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_get_features_target_multi_columns(df):
+    X, y = df.clean_names().get_features_targets(
+        target_columns=["a", "bell_chart"]
+    )
+    assert X.shape[1] == 3
+    assert y.shape[1] == 2
 
 
-def test_rename_column(dataframe):
-    df = dataframe.clean_names().rename_column("a", "index")
+@pytest.mark.hyp
+@given(dfstrategy())
+def test_rename_column(df):
+    df = df.clean_names().rename_column("a", "index")
     assert set(df.columns) == set(
         ["index", "bell_chart", "decorated_elephant", "animals@#$%^", "cities"]
-    )  # noqa: E501
+    )
 
 
 def test_reorder_columns(dataframe):

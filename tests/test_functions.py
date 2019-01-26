@@ -72,7 +72,7 @@ def multiindex_with_missing_3level_dataframe():
     return df
 
 
-def dfstrategy():
+def df_strategy():
     """
     A convenience function for generating a dataframe as a hypothesis strategy.
 
@@ -96,7 +96,7 @@ def dfstrategy():
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_clean_names_method_chain(df):
     df = df.clean_names()
     expected_columns = [
@@ -110,7 +110,7 @@ def test_clean_names_method_chain(df):
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_clean_names_special_characters(df):
     df = df.clean_names(remove_special=True)
     expected_columns = [
@@ -124,7 +124,7 @@ def test_clean_names_special_characters(df):
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_clean_names_uppercase(df):
     df = df.clean_names(case_type="upper", remove_special=True)
     expected_columns = [
@@ -138,7 +138,7 @@ def test_clean_names_uppercase(df):
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_clean_names_original_columns(df):
     df = df.clean_names(preserve_original_columns=True)
     expected_columns = [
@@ -179,28 +179,28 @@ def test_encode_categorical():
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_encode_categorical_missing_column(df):
     with pytest.raises(AssertionError):
         df.encode_categorical("aloha")
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_encode_categorical_missing_columns(df):
     with pytest.raises(AssertionError):
         df.encode_categorical(["animals@#$%^", "cities", "aloha"])
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_encode_categorical_invalid_input(df):
     with pytest.raises(JanitorError):
         df.encode_categorical(1)
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_get_features_targets(df):
     X, y = df.clean_names().get_features_targets(target_columns="bell_chart")
     assert X.shape[1] == 4
@@ -208,7 +208,7 @@ def test_get_features_targets(df):
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_get_features_targets_multi_features(df):
     X, y = df.clean_names().get_features_targets(
         feature_columns=["animals@#$%^", "cities"], target_columns="bell_chart"
@@ -218,7 +218,7 @@ def test_get_features_targets_multi_features(df):
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_get_features_target_multi_columns(df):
     X, y = df.clean_names().get_features_targets(
         target_columns=["a", "bell_chart"]
@@ -228,7 +228,7 @@ def test_get_features_target_multi_columns(df):
 
 
 @pytest.mark.hyp
-@given(dfstrategy())
+@given(df_strategy())
 def test_rename_column(df):
     df = df.clean_names().rename_column("a", "index")
     assert set(df.columns) == set(

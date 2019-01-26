@@ -170,10 +170,19 @@ def test_get_dupes():
     assert df2_dupes.shape == (0, 2)
 
 
-def test_encode_categorical():
-    df = pd.DataFrame()
-    df["class_label"] = ["test1", "test2", "test1", "test2"]
-    df["numbers"] = [1, 2, 3, 2]
+def categoricaldf_strategy():
+    return data_frames(
+        columns=[
+            column("class_label", st.sampled_from(["test1", "test2"])),
+            column("numbers", st.sampled_from([1, 2, 3])),
+        ],
+        index=range_indexes(min_size=1, max_size=20),
+    )
+
+
+@pytest.mark.hyp
+@given(categoricaldf_strategy())
+def test_encode_categorical(df):
     df = df.encode_categorical("class_label")
     assert df["class_label"].dtypes == "category"
 

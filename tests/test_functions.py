@@ -35,6 +35,17 @@ def null_df():
     return df
 
 
+def nulldf_strategy():
+    return data_frames(
+        columns=[
+            column("1", st.floats(allow_nan=True)),
+            column("2", st.sampled_from([np.nan])),
+            column("3", st.sampled_from([np.nan])),
+        ],
+        index=range_indexes(min_size=3, max_size=20),
+    )
+
+
 @pytest.fixture
 def multiindex_dataframe():
     data = {
@@ -151,9 +162,15 @@ def test_clean_names_original_columns(df):
     assert set(df.original_columns) == set(expected_columns)
 
 
-def test_remove_empty(null_df):
-    df = null_df.remove_empty()
-    assert df.shape == (8, 2)
+@pytest.mark.tmp
+@given(df=nulldf_strategy())
+def test_remove_empty(df):
+    df = df.remove_empty()
+    # assert len(df.columns) == 1
+    for col in df.columns:
+        assert not pd.isnull(df[col]).all()
+    for r ,d in df.iterrows():
+        assert not pd.isnull(d).all()
 
 
 def test_get_dupes():

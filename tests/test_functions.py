@@ -357,9 +357,9 @@ def test_multiindex_clean_names(multiindex_dataframe):
         ["b", "normal_distribution", "r_i_p_rhino"],
     ]
 
-    labels = [[0, 1, 2], [0, 1, 2]]
+    codes = [[0, 1, 2], [0, 1, 2]]
 
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    expected_columns = pd.MultiIndex(levels=levels, codes=codes)
     assert set(df.columns) == set(expected_columns)
 
 
@@ -383,9 +383,9 @@ def test_clean_names_strip_underscores(
         ["b", "normal_distribution", "r_i_p_rhino"],
     ]
 
-    labels = [[1, 0, 2], [1, 0, 2]]
+    codes = [[1, 0, 2], [1, 0, 2]]
 
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    expected_columns = pd.MultiIndex(levels=levels, codes=codes)
     assert set(df.columns) == set(expected_columns)
 
 
@@ -404,9 +404,9 @@ def test_clean_names_preserve_case_true(multiindex_dataframe):
         ["b", "Normal_Distribution", "r_i_p_rhino"],
     ]
 
-    labels = [[1, 0, 2], [1, 0, 2]]
+    codes = [[1, 0, 2], [1, 0, 2]]
 
-    expected_columns = pd.MultiIndex(levels=levels, labels=labels)
+    expected_columns = pd.MultiIndex(levels=levels, codes=codes)
     assert set(df.columns) == set(expected_columns)
 
 

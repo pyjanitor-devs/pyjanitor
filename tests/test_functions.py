@@ -393,7 +393,7 @@ def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
         multiindex_dataframe.clean_names(
             strip_underscores="hello"
-        )  # noqa: E501, F841
+        )
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):

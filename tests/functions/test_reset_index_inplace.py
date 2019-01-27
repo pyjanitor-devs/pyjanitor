@@ -1,5 +1,6 @@
-from janitor.testing_utils.fixtures import dataframe
 import pandas as pd
+
+from janitor.testing_utils.fixtures import dataframe
 
 
 def test_reset_index_inplace_obj_equivalence(dataframe):

@@ -1,4 +1,5 @@
 import requests
+
 import janitor.finance
 from janitor.testing_utils.fixtures import dataframe
 

@@ -1,5 +1,7 @@
-from janitor.testing_utils.fixtures import missingdata_df
 import pytest
+
+from janitor.testing_utils.fixtures import missingdata_df
+
 
 def test_impute_single_value(missingdata_df):
     df = missingdata_df.impute("a", 5)

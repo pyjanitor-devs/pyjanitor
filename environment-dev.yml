@@ -6,7 +6,7 @@ channels:
 - ericmjl
 dependencies:
 - python=3.6
-- pandas
+- pandas >= 0.24.0
 - pytest
 - ipython
 - ipykernel

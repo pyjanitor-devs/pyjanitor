@@ -169,7 +169,7 @@ def test_remove_empty(df):
     # assert len(df.columns) == 1
     for col in df.columns:
         assert not pd.isnull(df[col]).all()
-    for r ,d in df.iterrows():
+    for r, d in df.iterrows():
         assert not pd.isnull(d).all()
 
 

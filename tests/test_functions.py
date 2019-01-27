@@ -38,7 +38,7 @@ def null_df():
 def nulldf_strategy():
     return data_frames(
         columns=[
-            column("1", st.floats(allow_nan=True)),
+            column("1", st.floats(allow_nan=True, allow_infinity=True)),
             column("2", st.sampled_from([np.nan])),
             column("3", st.sampled_from([np.nan])),
         ],
@@ -163,10 +163,10 @@ def test_clean_names_original_columns(df):
 
 
 @pytest.mark.tmp
-@given(df=nulldf_strategy())
+@given(df=df_strategy())
 def test_remove_empty(df):
+    # This test ensures that there are no columns that are completely null.
     df = df.remove_empty()
-    # assert len(df.columns) == 1
     for col in df.columns:
         assert not pd.isnull(df[col]).all()
     for r, d in df.iterrows():
@@ -282,10 +282,7 @@ def test_reorder_columns(df):
 
     # sanity check when desired order matches current order
     # this also tests whether the function can take Pandas Index objects
-    assert all(
-        df.reorder_columns(df.columns).columns
-        == df.columns
-    )
+    assert all(df.reorder_columns(df.columns).columns == df.columns)
 
     # when columns are list & not all columns of DataFrame are included
     assert all(
@@ -410,9 +407,7 @@ def test_clean_names_strip_underscores(
 
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
-        multiindex_dataframe.clean_names(
-            strip_underscores="hello"
-        )
+        multiindex_dataframe.clean_names(strip_underscores="hello")
 
 
 def test_clean_names_preserve_case_true(multiindex_dataframe):

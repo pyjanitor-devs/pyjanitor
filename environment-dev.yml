@@ -6,7 +6,7 @@ channels:
 - ericmjl
 dependencies:
 - python=3.6
-- pandas
+- pandas >= 0.24.0
 - pytest
 - ipython
 - ipykernel
@@ -28,5 +28,9 @@ dependencies:
 - rdkit
 - pandas-flavor
 - mypy
+- pyflakes
+- black
+- hypothesis>=4.4.0
 - pip:
   - sphinxcontrib-fulltoc
+  - python-language-server[all]

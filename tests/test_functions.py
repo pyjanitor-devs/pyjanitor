@@ -79,7 +79,7 @@ def df_strategy():
     Should be treated like a fixture, but should not be passed as a fixture
     into a test function. Instead::
 
-        @given(dataframe())
+        @given(df=dataframe())
         def test_function(df):
             # test goes here
     """
@@ -96,7 +96,7 @@ def df_strategy():
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_clean_names_method_chain(df):
     df = df.clean_names()
     expected_columns = [
@@ -110,7 +110,7 @@ def test_clean_names_method_chain(df):
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_clean_names_special_characters(df):
     df = df.clean_names(remove_special=True)
     expected_columns = [
@@ -124,7 +124,7 @@ def test_clean_names_special_characters(df):
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_clean_names_uppercase(df):
     df = df.clean_names(case_type="upper", remove_special=True)
     expected_columns = [
@@ -138,7 +138,7 @@ def test_clean_names_uppercase(df):
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_clean_names_original_columns(df):
     df = df.clean_names(preserve_original_columns=True)
     expected_columns = [
@@ -181,35 +181,35 @@ def categoricaldf_strategy():
 
 
 @pytest.mark.hyp
-@given(categoricaldf_strategy())
+@given(df=categoricaldf_strategy())
 def test_encode_categorical(df):
     df = df.encode_categorical("class_label")
     assert df["class_label"].dtypes == "category"
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_encode_categorical_missing_column(df):
     with pytest.raises(AssertionError):
         df.encode_categorical("aloha")
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_encode_categorical_missing_columns(df):
     with pytest.raises(AssertionError):
         df.encode_categorical(["animals@#$%^", "cities", "aloha"])
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_encode_categorical_invalid_input(df):
     with pytest.raises(JanitorError):
         df.encode_categorical(1)
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_get_features_targets(df):
     X, y = df.clean_names().get_features_targets(target_columns="bell_chart")
     assert X.shape[1] == 4
@@ -217,7 +217,7 @@ def test_get_features_targets(df):
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_get_features_targets_multi_features(df):
     X, y = df.clean_names().get_features_targets(
         feature_columns=["animals@#$%^", "cities"], target_columns="bell_chart"
@@ -227,7 +227,7 @@ def test_get_features_targets_multi_features(df):
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_get_features_target_multi_columns(df):
     X, y = df.clean_names().get_features_targets(
         target_columns=["a", "bell_chart"]
@@ -237,7 +237,7 @@ def test_get_features_target_multi_columns(df):
 
 
 @pytest.mark.hyp
-@given(df_strategy())
+@given(df=df_strategy())
 def test_rename_column(df):
     df = df.clean_names().rename_column("a", "index")
     assert set(df.columns) == set(
@@ -245,7 +245,9 @@ def test_rename_column(df):
     )
 
 
-def test_reorder_columns(dataframe):
+@pytest.mark.tmp
+@given(df=df_strategy())
+def test_reorder_columns(df):
     # NOTE: This test essentially has four different tests underneath it.
     # WE should be able to refactor this using pytest.mark.parametrize.
 
@@ -253,24 +255,24 @@ def test_reorder_columns(dataframe):
 
     # input is not a list or pd.Index
     with pytest.raises(TypeError):
-        dataframe.reorder_columns("a")
+        df.reorder_columns("a")
 
     # one of the columns is not present in the DataFrame
     with pytest.raises(IndexError):
-        dataframe.reorder_columns(["notpresent"])
+        df.reorder_columns(["notpresent"])
 
     # reordering functionality
 
     # sanity check when desired order matches current order
     # this also tests whether the function can take Pandas Index objects
     assert all(
-        dataframe.reorder_columns(dataframe.columns).columns
-        == dataframe.columns
+        df.reorder_columns(df.columns).columns
+        == df.columns
     )
 
     # when columns are list & not all columns of DataFrame are included
     assert all(
-        dataframe.reorder_columns(["animals@#$%^", "Bell__Chart"]).columns
+        df.reorder_columns(["animals@#$%^", "Bell__Chart"]).columns
         == ["animals@#$%^", "Bell__Chart", "a", "decorated-elephant", "cities"]
     )
 

@@ -1,5 +1,6 @@
 from janitor.testing_utils.fixtures import dataframe
 
+
 def test_row_to_names(dataframe):
     df = dataframe.row_to_names(2)
     assert df.columns[0] == 3

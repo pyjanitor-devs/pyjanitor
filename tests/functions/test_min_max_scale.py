@@ -1,5 +1,7 @@
-from janitor.testing_utils.fixtures import dataframe
 import pytest
+
+from janitor.testing_utils.fixtures import dataframe
+
 
 def test_min_max_scale(dataframe):
     df = dataframe.min_max_scale(col_name="a")

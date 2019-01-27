@@ -1,5 +1,7 @@
 import requests
+
 from janitor.testing_utils.fixtures import dataframe
+
 
 def test_make_currency_api_request():
     r = requests.get("https://api.exchangeratesapi.io")

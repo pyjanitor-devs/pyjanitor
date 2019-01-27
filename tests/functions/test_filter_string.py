@@ -1,5 +1,6 @@
 from janitor.testing_utils.fixtures import dataframe
 
+
 def test_filter_string(dataframe):
     df = dataframe.filter_string(column="animals@#$%^", search_string="bbit")
     assert len(df) == 3

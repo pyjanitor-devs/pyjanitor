@@ -1,7 +1,12 @@
 import pytest
 from hypothesis import given
-from janitor.testing_utils.strategies import categoricaldf_strategy, df_strategy
+
 from janitor.errors import JanitorError
+from janitor.testing_utils.strategies import (
+    categoricaldf_strategy,
+    df_strategy,
+)
+
 
 @pytest.mark.hyp
 @given(df=categoricaldf_strategy())

@@ -1,6 +1,7 @@
-from janitor.testing_utils.fixtures import dataframe
-import pandas as pd
 import numpy as np
+import pandas as pd
+
+from janitor.testing_utils.fixtures import dataframe
 
 
 def test_add_columns(dataframe):

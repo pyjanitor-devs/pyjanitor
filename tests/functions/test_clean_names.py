@@ -1,6 +1,6 @@
+import pandas as pd
 import pytest
 from hypothesis import given
-import pandas as pd
 
 from janitor.testing_utils.strategies import df_strategy
 
@@ -59,6 +59,7 @@ def test_clean_names_original_columns(df):
         "cities",
     ]
     assert set(df.original_columns) == set(expected_columns)
+
 
 def test_multiindex_clean_names(multiindex_dataframe):
     df = multiindex_dataframe.clean_names()

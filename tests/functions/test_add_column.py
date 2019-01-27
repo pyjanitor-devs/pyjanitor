@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 from janitor.testing_utils.fixtures import dataframe

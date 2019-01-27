@@ -3,7 +3,8 @@ import pytest
 from hypothesis import given
 
 from janitor.testing_utils.strategies import df_strategy
-
+from janitor.testing_utils.fixtures import multiindex_dataframe
+from janitor.errors import JanitorError
 
 @pytest.mark.hyp
 @given(df=df_strategy())

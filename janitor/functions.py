@@ -5,7 +5,6 @@ import datetime as dt
 import re
 from functools import partial, reduce
 from typing import List, Union
-from warnings import warn
 
 import numpy as np
 import pandas as pd

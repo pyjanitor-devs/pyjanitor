@@ -2,7 +2,8 @@ from janitor.testing_utils.fixtures import (
     multiindex_with_missing_3level_dataframe,
     multiindex_with_missing_dataframe,
 )
-
+import pandas as pd
+import pytest
 
 def test_collapse_levels_sanity(multiindex_with_missing_dataframe):
     with pytest.raises(TypeError):

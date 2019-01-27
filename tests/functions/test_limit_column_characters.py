@@ -1,3 +1,6 @@
+from janitor.testing_utils.fixtures import dataframe
+
+
 def test_limit_column_characters(dataframe):
     df = dataframe.limit_column_characters(1)
     assert df.columns[0] == "a"

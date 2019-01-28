@@ -5,7 +5,7 @@ from hypothesis import given
 from janitor.testing_utils.strategies import df_strategy
 
 
-@pytest.mark.tmp
+@pytest.mark.hyp
 @given(df=df_strategy())
 def test_remove_empty(df):
     # This test ensures that there are no columns that are completely null.

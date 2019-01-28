@@ -1018,6 +1018,11 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
                 f"Attempted to add iterable of values with length"
                 f" not equal to number of DataFrame rows"
             )
+
+        if len(value) == 0:
+            raise ValueError(
+                f"Values has to be an iterable of minimum length 1"
+            )
         len_value = len(value)
     elif fill_remaining:
         # relevant if a scalar val was passed, yet fill_remaining == True

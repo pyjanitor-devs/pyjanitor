@@ -1,60 +1,80 @@
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from janitor.testing_utils.fixtures import dataframe
+from janitor.testing_utils.strategies import df_strategy
 
 
-def test_add_column(dataframe):
+@given(df=df_strategy())
+def test_add_column_add_integer(df):
     # col_name wasn't a string
     with pytest.raises(TypeError):
-        dataframe.add_column(col_name=42, value=42)
+        df.add_column(col_name=42, value=42)
 
+
+@given(df=df_strategy())
+def test_add_column_already_exists(df):
     # column already exists
     with pytest.raises(ValueError):
-        dataframe.add_column("a", 42)
+        df.add_column("a", 42)
 
+
+@given(df=df_strategy())
+def test_add_column_too_many(df):
     # too many values for dataframe num rows:
     with pytest.raises(ValueError):
-        dataframe.add_column("toomany", np.ones(100))
+        df.add_column("toomany", np.ones(100))
 
-    # functionality testing
 
+@given(df=df_strategy())
+def test_add_column_scalar(df):
     # column appears in DataFrame
-    df = dataframe.add_column("fortytwo", 42)
+    df = df.add_column("fortytwo", 42)
     assert "fortytwo" in df.columns
 
     # values are correct in dataframe for scalar
-    series = pd.Series([42] * len(dataframe))
+    series = pd.Series([42] * len(df))
     series.name = "fortytwo"
     pd.testing.assert_series_equal(df["fortytwo"], series)
 
     # scalar values are correct for strings
     # also, verify sanity check excludes strings, which have a length:
 
-    df = dataframe.add_column("fortythousand", "test string")
-    series = pd.Series(["test string"] * len(dataframe))
+
+@given(df=df_strategy())
+def test_add_column_string(df):
+    df = df.add_column("fortythousand", "test string")
+    series = pd.Series(["test string"] * len(df))
     series.name = "fortythousand"
     pd.testing.assert_series_equal(df["fortythousand"], series)
 
     # values are correct in dataframe for iterable
-    vals = np.linspace(0, 43, len(dataframe))
-    df = dataframe.add_column("fortythree", vals)
+    vals = np.linspace(0, 43, len(df))
+    df = df.add_column("fortythree", vals)
     series = pd.Series(vals)
     series.name = "fortythree"
     pd.testing.assert_series_equal(df["fortythree"], series)
 
-    # fill_remaining works - iterable shorter than DataFrame
-    vals = [0, 42]
-    target = [0, 42] * 4 + [0]
-    df = dataframe.add_column("fill_in_iterable", vals, fill_remaining=True)
-    series = pd.Series(target)
-    series.name = "fill_in_iterable"
-    pd.testing.assert_series_equal(df["fill_in_iterable"], series)
 
+@pytest.mark.tmp
+@given(df=df_strategy(), vals=st.lists(elements=st.integers()))
+def test_add_column_fill_remaining_iterable(df, vals):
+    if len(vals) > len(df) or len(vals) == 0:
+        with pytest.raises(ValueError):
+            df = df.add_column("fill_in_iterable", vals, fill_remaining=True)
+    else:
+        df = df.add_column("fill_in_iterable", vals, fill_remaining=True)
+        assert not pd.isnull(df["fill_in_iterable"]).any()
+
+
+@given(df=df_strategy())
+def test_add_column_fill_scalar(df):
     # fill_remaining works - value is scalar
     vals = 42
-    df = dataframe.add_column("fill_in_scalar", vals, fill_remaining=True)
+    df = df.add_column("fill_in_scalar", vals, fill_remaining=True)
     series = pd.Series([42] * len(df))
     series.name = "fill_in_scalar"
     pd.testing.assert_series_equal(df["fill_in_scalar"], series)

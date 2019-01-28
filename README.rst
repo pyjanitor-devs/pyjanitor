@@ -83,6 +83,9 @@ Current functionality includes:
 - Coalesce multiple columns into a single column
 - Convert excel date (serial format) into a Python datetime format
 - Expand a single column that has delimited, categorical values into dummy-encoded variables
+- Concatenating and deconcatenating columns, based on a delimiter
+- Syntactic sugar for filtering the dataframe based on queries on a column
+- Experimental submodules for finance and biology
 
 apis
 ----
@@ -143,7 +146,7 @@ First off, you will need to define the function that expresses the data processi
 
     import pandas_flavor as pf
 
-    @pf.register_dataframe_function
+    @pf.register_dataframe_method
     def my_data_cleaning_function(df, arg1, arg2, ...):
         # Put data processing function here.
         return df
@@ -164,3 +167,11 @@ If you have a feature request, please post it as an issue on the GitHub reposito
 
 Because `pyjanitor` is currently maintained by volunteers and has no fiscal support, any feature requests will be prioritized according to what maintainers encounter as a need in our day-to-day jobs. Please temper expectations accordingly.
 
+credits
+~~~~~~~
+
+Test data for chemistry submodule can be found at `Predictive Toxicology`__ .
+
+.. _predtox: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt
+
+__ predtox_

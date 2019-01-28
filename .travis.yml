@@ -8,9 +8,6 @@ language: python
 matrix:
   include:
     - python: 3.5  # we don't actually use this
-      env: PYTHON_VERSION=3.5
-
-    - python: 3.5  # we don't actually use this
       env: PYTHON_VERSION=3.6
 
     - python: 3.5  # we don't actually use this
@@ -36,7 +33,7 @@ install:
   - conda install python=$PYTHON_VERSION
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - conda activate pyjanitor-dev
-  - python setup.py install
+  - pip install -e .
 
 script:
   # Your test script goes here

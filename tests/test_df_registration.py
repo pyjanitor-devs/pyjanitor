@@ -6,6 +6,7 @@ The intent of these tests is to test that dataframe method registration works.
 """
 import pandas as pd
 import pytest
+
 import janitor
 
 
@@ -54,6 +55,10 @@ def test_coalesce_registration(dataframe):
 
 def test_convert_excel_date_registration(dataframe):
     assert dataframe.__getattr__("convert_excel_date")
+
+
+def test_convert_matlab_date_registration(dataframe):
+    assert dataframe.__getattr__("convert_matlab_date")
 
 
 def test_fill_empty_registration(dataframe):

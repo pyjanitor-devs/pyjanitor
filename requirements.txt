@@ -1,10 +1,9 @@
 pytest>=3.4.2
-pandas>=0.23.1
+pandas>=0.24.0
 numpy>=1.14.1
 setuptools>=38.5.2
 sphinxcontrib-fulltoc==1.2.0
 scikit-learn>=0.19.1
 xlrd>=0.9.0
 pandas-flavor==0.1.2
-scipy>=1.0.0
 biopython

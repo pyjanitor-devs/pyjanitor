@@ -35,7 +35,8 @@ Implement Features
 Look through the GitHub issues for features. Anything tagged with "enhancement"
 and "help wanted" is open to whoever wants to implement it.
 
-Implementing a feature generally means writing a function that has the following form:
+Implementing a feature generally means writing a function that has the
+following form:
 
 .. code-block:: python
 
@@ -44,16 +45,29 @@ Implementing a feature generally means writing a function that has the following
         # stuff done here
         return df
 
-The function signature should take a pandas dataframe as the input, and return a pandas dataframe as the output. Any manipulation to the dataframe should be implemented inside the function.
+The function signature should take a pandas dataframe as the input, and return
+a pandas dataframe as the output. Any manipulation to the dataframe should be
+implemented inside the function.
 
-This function should be implemented in `functions.py`, and should have a test accompanying it in `tests/test_functions.py`.
+This function should be implemented in `functions.py`, and should have a test
+accompanying it in `tests/functions/test_<function_name_here>.py`.
 
-If you're wondering why we don't have to implement the method chaining portion, it's because we use pandas-flavor's `register_dataframe_method`, which registers the function as a pandas dataframe method.
+When writing a test, the minimum acceptable test is an "example-based test".
+Under ``janitor.testing_utils.fixtures``, you will find a suite of example
+dataframes that can be imported and used in the test.
+
+If you are more experienced with testing, you can use Hypothesis to
+automatically generate example dataframes. We provide a number of
+dataframe-generating strategies in ``janitor.testing_utils.strategies``.
+
+If you're wondering why we don't have to implement the method chaining
+portion, it's because we use pandas-flavor's `register_dataframe_method`,
+which registers the function as a pandas dataframe method.
 
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-pyjanitor could always use more documentation, whether as part of the
+``pyjanitor`` could always use more documentation, whether as part of the
 official pyjanitor docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 

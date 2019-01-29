@@ -549,6 +549,41 @@ def convert_matlab_date(df, column):
 
 
 @pf.register_dataframe_method
+def convert_unix_date(df, column):
+    """
+    Convert unix epoch time into Python datetime format.
+    Note that this ignores local tz and convert all
+    timestamps to naive datetime based on UTC!
+
+    Functional usage example:
+
+    .. code-block:: python
+        df = convert_unix_date(df, column='date')
+
+    Method chaining example:
+
+    .. code-block:: python
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).convert_unix_date('date')
+
+    :param df: A pandas DataFrame.
+    :param str column: A column name.
+    :returns: A pandas DataFrame with corrected dates.
+    """
+
+    def _conv(value):
+        try:
+            date = dt.datetime.utcfromtimestamp(value)
+        except ValueError:  # year of of rang means milliseconds.
+            date = dt.datetime.utcfromtimestamp(value / 1000)
+        return date
+
+    df[column] = df[column].astype(int).apply(_conv)
+    return df
+
+
+@pf.register_dataframe_method
 def fill_empty(df, columns, value):
     """
     Fill `NaN` values in specified columns with a given value.

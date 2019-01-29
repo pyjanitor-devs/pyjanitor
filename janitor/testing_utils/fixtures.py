@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
-from pathlib import Path
 
-
-TEST_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "tests" / "test_data"
+TEST_DATA_DIR = (
+    Path(__file__).resolve().parent.parent.parent / "tests" / "test_data"
+)
 
 
 @pytest.fixture

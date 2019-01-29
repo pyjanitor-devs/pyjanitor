@@ -1,6 +1,6 @@
-import janitor.biology
 import pytest
 
+import janitor.biology
 from janitor.testing_utils.fixtures import TEST_DATA_DIR, biodf
 
 

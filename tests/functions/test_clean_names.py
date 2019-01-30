@@ -7,7 +7,7 @@ from janitor.testing_utils.fixtures import multiindex_dataframe
 from janitor.testing_utils.strategies import df_strategy
 
 
-@pytest.mark.hyp
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_clean_names_method_chain(df):
     df = df.clean_names()
@@ -21,7 +21,7 @@ def test_clean_names_method_chain(df):
     assert set(df.columns) == set(expected_columns)
 
 
-@pytest.mark.hyp
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_clean_names_special_characters(df):
     df = df.clean_names(remove_special=True)
@@ -35,7 +35,7 @@ def test_clean_names_special_characters(df):
     assert set(df.columns) == set(expected_columns)
 
 
-@pytest.mark.hyp
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_clean_names_uppercase(df):
     df = df.clean_names(case_type="upper", remove_special=True)
@@ -49,7 +49,7 @@ def test_clean_names_uppercase(df):
     assert set(df.columns) == set(expected_columns)
 
 
-@pytest.mark.hyp
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_clean_names_original_columns(df):
     df = df.clean_names(preserve_original_columns=True)
@@ -63,6 +63,7 @@ def test_clean_names_original_columns(df):
     assert set(df.original_columns) == set(expected_columns)
 
 
+@pytest.mark.functions
 def test_multiindex_clean_names(multiindex_dataframe):
     df = multiindex_dataframe.clean_names()
 
@@ -77,7 +78,8 @@ def test_multiindex_clean_names(multiindex_dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-@pytest.mark.test
+@pytest.mark.functions
+@pytest.mark.WIP
 @pytest.mark.parametrize(
     "strip_underscores", ["both", True, "right", "r", "left", "l"]
 )
@@ -103,11 +105,13 @@ def test_clean_names_strip_underscores(
     assert set(df.columns) == set(expected_columns)
 
 
+@pytest.mark.functions
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
         multiindex_dataframe.clean_names(strip_underscores="hello")
 
 
+@pytest.mark.functions
 def test_clean_names_preserve_case_true(multiindex_dataframe):
     df = multiindex_dataframe.clean_names(case_type="preserve")
 

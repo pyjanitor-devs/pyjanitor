@@ -8,6 +8,7 @@ from janitor.testing_utils.fixtures import dataframe
 from janitor.testing_utils.strategies import df_strategy
 
 
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_add_integer(df):
     # col_name wasn't a string
@@ -15,6 +16,7 @@ def test_add_column_add_integer(df):
         df.add_column(col_name=42, value=42)
 
 
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_already_exists(df):
     # column already exists
@@ -22,6 +24,7 @@ def test_add_column_already_exists(df):
         df.add_column("a", 42)
 
 
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_too_many(df):
     # too many values for dataframe num rows:
@@ -29,6 +32,7 @@ def test_add_column_too_many(df):
         df.add_column("toomany", np.ones(100))
 
 
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_scalar(df):
     # column appears in DataFrame
@@ -44,6 +48,7 @@ def test_add_column_scalar(df):
     # also, verify sanity check excludes strings, which have a length:
 
 
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_string(df):
     df = df.add_column("fortythousand", "test string")
@@ -59,7 +64,7 @@ def test_add_column_string(df):
     pd.testing.assert_series_equal(df["fortythree"], series)
 
 
-@pytest.mark.tmp
+@pytest.mark.functions
 @given(df=df_strategy(), vals=st.lists(elements=st.integers()))
 def test_add_column_fill_remaining_iterable(df, vals):
     if len(vals) > len(df) or len(vals) == 0:
@@ -70,6 +75,7 @@ def test_add_column_fill_remaining_iterable(df, vals):
         assert not pd.isnull(df["fill_in_iterable"]).any()
 
 
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_fill_scalar(df):
     # fill_remaining works - value is scalar
@@ -80,11 +86,13 @@ def test_add_column_fill_scalar(df):
     pd.testing.assert_series_equal(df["fill_in_scalar"], series)
 
 
+@pytest.mark.functions
 def test_add_column_single_value(dataframe):
     df = dataframe.add_column("city_pop", 100)
     assert df.city_pop.mean() == 100
 
 
+@pytest.mark.functions
 def test_add_column_iterator_repeat(dataframe):
     df = dataframe.add_column("city_pop", range(3), fill_remaining=True)
     assert df.city_pop.iloc[0] == 0
@@ -95,11 +103,13 @@ def test_add_column_iterator_repeat(dataframe):
     assert df.city_pop.iloc[5] == 2
 
 
+@pytest.mark.functions
 def test_add_column_raise_error(dataframe):
     with pytest.raises(Exception):
         dataframe.add_column("cities", 1)
 
 
+@pytest.mark.functions
 def test_add_column_iterator_repeat_subtraction(dataframe):
     df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
     assert df.city_pop.sum() == 0

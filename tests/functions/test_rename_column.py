@@ -4,7 +4,7 @@ from hypothesis import given
 from janitor.testing_utils.strategies import df_strategy
 
 
-@pytest.mark.hyp
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_rename_column(df):
     df = df.clean_names().rename_column("a", "index")

@@ -4,7 +4,7 @@ from hypothesis import given
 from janitor.testing_utils.strategies import df_strategy
 
 
-@pytest.mark.hyp
+@pytest.mark.functions
 @given(df=df_strategy())
 def test_reorder_columns(df):
     # NOTE: This test essentially has four different tests underneath it.

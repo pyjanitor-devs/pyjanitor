@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from janitor.testing_utils import date_data
 
 
 @pytest.fixture
@@ -13,6 +14,12 @@ def dataframe():
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def date_dataframe():
+    df = pd.DataFrame(date_data.date_list, columns=["AMOUNT", "DATE"])
     return df
 
 

@@ -91,3 +91,7 @@ def test_remove_columns_registration(dataframe):
 
 def test_change_type_registration(dataframe):
     assert dataframe.__getattr__("change_type")
+
+
+def test_change_type_registration(dataframe):
+    assert dataframe.__getattr__("filter_date")

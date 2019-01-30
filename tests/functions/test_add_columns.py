@@ -4,6 +4,7 @@ import pandas as pd
 from janitor.testing_utils.fixtures import dataframe
 
 
+@pytest.mark.functions
 def test_add_columns(dataframe):
     # sanity checking is pretty much handled in test_add_column
 

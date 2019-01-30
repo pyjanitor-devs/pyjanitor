@@ -3,11 +3,13 @@ import pytest
 from janitor.testing_utils.fixtures import missingdata_df
 
 
+@pytest.mark.functions
 def test_impute_single_value(missingdata_df):
     df = missingdata_df.impute("a", 5)
     assert set(df["a"]) == set([1, 2, 5])
 
 
+@pytest.mark.functions
 @pytest.mark.parametrize(
     "statistic,expected",
     [

@@ -1,6 +1,7 @@
 from janitor.testing_utils.fixtures import dataframe
 
 
+@pytest.mark.functions
 def test_limit_column_characters(dataframe):
     df = dataframe.limit_column_characters(1)
     assert df.columns[0] == "a"
@@ -10,6 +11,7 @@ def test_limit_column_characters(dataframe):
     assert df.columns[4] == "c"
 
 
+@pytest.mark.functions
 def test_limit_column_characters_different_positions(dataframe):
     df = dataframe
     df.columns = ["first", "first", "second", "second", "first"]
@@ -22,6 +24,7 @@ def test_limit_column_characters_different_positions(dataframe):
     assert df.columns[4] == "fir_2"
 
 
+@pytest.mark.functions
 def test_limit_column_characters_different_positions_different_separator(
     dataframe
 ):
@@ -36,6 +39,7 @@ def test_limit_column_characters_different_positions_different_separator(
     assert df.columns[4] == "fir.2"
 
 
+@pytest.mark.functions
 def test_limit_column_characters_all_unique(dataframe):
     df = dataframe.limit_column_characters(2)
     assert df.columns[0] == "a"

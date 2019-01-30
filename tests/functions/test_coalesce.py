@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 
+@pytest.mark.functions
 def test_coalesce():
     df = pd.DataFrame(
         {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]}

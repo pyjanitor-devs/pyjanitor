@@ -1,6 +1,6 @@
 import pandas as pd
 
-
+@pytest.mark.functions
 def test_get_dupes():
     df = pd.DataFrame()
     df["a"] = [1, 2, 1]

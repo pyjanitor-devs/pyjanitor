@@ -1,6 +1,7 @@
 import pandas as pd
 
 
+@pytest.mark.functions
 def test_convert_matlab_date():
     mlab = [
         733_301.0,

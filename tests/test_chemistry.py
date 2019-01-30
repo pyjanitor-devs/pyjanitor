@@ -20,7 +20,7 @@ def chemdf():
 
 
 @pytest.mark.parametrize("progressbar", [None, "terminal"])
-@pytest.mark.chem
+@pytest.mark.chemistry
 def test_smiles2mol(chemdf, progressbar):
     chemdf = chemdf.smiles2mol("smiles", "mol", progressbar)
     assert "mol" in chemdf.columns
@@ -28,7 +28,7 @@ def test_smiles2mol(chemdf, progressbar):
         assert isinstance(elem, Chem.rdchem.Mol)
 
 
-@pytest.mark.chem
+@pytest.mark.chemistry
 def test_morganbits(chemdf):
     morgans = chemdf.smiles2mol("smiles", "mol").morganbits("mol")
     assert morgans.shape == (10, 2048)

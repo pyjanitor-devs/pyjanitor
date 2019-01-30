@@ -1,3 +1,4 @@
+import pytest
 import requests
 
 import janitor.finance

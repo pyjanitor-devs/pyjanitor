@@ -1,4 +1,6 @@
 import pandas as pd
+import pytest
+
 
 @pytest.mark.functions
 def test_get_dupes():

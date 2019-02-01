@@ -1112,7 +1112,7 @@ def filter_column_isin(
     Assumes exact matching; fuzzy matching not implemented
 
     The below example syntax will filter the DataFrame such that we only get
-    rows for which the names are exactly "James" and "John".
+    rows for which the "names" are exactly "James" and "John".
 
     .. code-block:: python
 
@@ -1137,13 +1137,15 @@ def filter_column_isin(
         not.
     """
     if len(iterable) == 0:
-        raise ValueError('`iterable` kwarg must be given an iterable of length 1 or greater')
+        raise ValueError(
+            "`iterable` kwarg must be given an iterable of length 1 or greater"
+        )
     criteria = df[column].isin(iterable)
+
     if complement:
         return df[~criteria]
     else:
         return df[criteria]
-
 
 
 @pf.register_dataframe_method

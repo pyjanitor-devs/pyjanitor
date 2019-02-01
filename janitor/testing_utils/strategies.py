@@ -44,24 +44,26 @@ def df_strategy():
 def categoricaldf_strategy():
     return data_frames(
         columns=[
-            column("names", names()),
+            column("names", st.sampled_from(names)),
             column("numbers", st.sampled_from(range(3))),
         ],
         index=range_indexes(min_size=1, max_size=20),
     )
 
 
-def names():
-    names = [
-        "John",
-        "Mark",
-        "Luke",
-        "Matthew",
-        "Peter",
-        "Adam",
-        "Eve",
-        "Mary",
-        "Ruth",
-        "Esther",
-    ]
-    return st.lists(st.sampled_from(names))
+names = [
+    "John",
+    "Mark",
+    "Luke",
+    "Matthew",
+    "Peter",
+    "Adam",
+    "Eve",
+    "Mary",
+    "Ruth",
+    "Esther",
+]
+
+
+def names_strategy():
+    return st.lists(elements=st.sampled_from(names))

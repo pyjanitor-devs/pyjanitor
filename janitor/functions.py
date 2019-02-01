@@ -3,16 +3,15 @@ General purpose data cleaning functions.
 """
 import datetime as dt
 import re
+import warnings
 from functools import partial, reduce
-from typing import List, Union, Dict
+from typing import Dict, Iterable, List, Union
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from scipy.stats import mode
-import warnings
 from sklearn.preprocessing import LabelEncoder
-from typing import Iterable
 
 from .errors import JanitorError
 

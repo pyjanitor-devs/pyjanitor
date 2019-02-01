@@ -12,6 +12,7 @@ import pandas_flavor as pf
 from scipy.stats import mode
 import warnings
 from sklearn.preprocessing import LabelEncoder
+from typing import Iterable
 
 from .errors import JanitorError
 
@@ -1098,6 +1099,51 @@ def filter_date(
             )
 
     return df.loc[_date_filter_conditions(_filter_list), :]
+
+
+@pf.register_dataframe_method
+def filter_column_isin(
+    df: pd.DataFrame, column: str, iterable: Iterable, complement: bool = False
+):
+    """
+    Filters a dataframe based on whether the values of a given column are
+    present inside another iterable.
+
+    Assumes exact matching; fuzzy matching not implemented
+
+    The below example syntax will filter the DataFrame such that we only get
+    rows for which the names are exactly "James" and "John".
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .clean_names()
+            .filter_column_isin(column="names", iterable=["James", "John"]
+            )
+        )
+
+    This is the method chaining alternative to:
+
+    .. code-block:: python
+
+        df = df[df['names'].isin(['James', 'John'])]
+
+    :param df: A pandas DataFrame
+    :param column: The column on which to filter.
+    :param iterable: An iterable. Could be a list, tuple, another pandas
+        Series.
+    :param complement: Whether to return the complement of the selection or
+        not.
+    """
+    if len(iterable) == 0:
+        raise ValueError('`iterable` kwarg must be given an iterable of length 1 or greater')
+    criteria = df[column].isin(iterable)
+    if complement:
+        return df[~criteria]
+    else:
+        return df[criteria]
+
 
 
 @pf.register_dataframe_method

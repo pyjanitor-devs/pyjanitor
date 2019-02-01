@@ -4,7 +4,6 @@ from hypothesis import given, assume
 import pandas as pd
 
 
-@pytest.mark.test
 @pytest.mark.functions
 @given(df=categoricaldf_strategy(), iterable=names_strategy())
 def test_filter_column_isin(df, iterable):

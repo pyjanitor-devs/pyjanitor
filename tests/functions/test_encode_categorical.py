@@ -11,8 +11,8 @@ from janitor.testing_utils.strategies import (
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
 def test_encode_categorical(df):
-    df = df.encode_categorical("class_label")
-    assert df["class_label"].dtypes == "category"
+    df = df.encode_categorical("names")
+    assert df["names"].dtypes == "category"
 
 
 @pytest.mark.functions

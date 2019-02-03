@@ -45,13 +45,20 @@ def smiles2mol(
             .smiles2mol(smiles_col='smiles', mols_col='mols')
         )
 
+    A progressbar can be optionally used.
+
+    - Pass in "notebook" to show a tqdm notebook progressbar. (ipywidgets must
+      be enabled with your Jupyter installation.)
+    - Pass in "terminal" to show a tqdm progressbar. Better suited for use
+      with scripts.
+    - "none" is the default value - progress bar will be not be shown.
+
     :param df: pandas DataFrame.
     :param smiles_col: Name of column that holds the SMILES strings.
     :param mols_col: Name to be given to the new mols column.
     :param drop_nulls: Whether to drop rows whose mols failed to be
         constructed.
-    :param progressbar: Whether to show a progressbar or not. Accepted values
-        are "notebook" and "terminal".
+    :param progressbar: Whether to show a progressbar or not.
     """
     valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:

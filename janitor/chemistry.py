@@ -50,6 +50,8 @@ def smiles2mol(
     :param mols_col: Name to be given to the new mols column.
     :param drop_nulls: Whether to drop rows whose mols failed to be
         constructed.
+    :param progressbar: Whether to show a progressbar or not. Accepted values
+        are "notebook" and "terminal".
     """
     valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:

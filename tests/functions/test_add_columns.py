@@ -2,21 +2,26 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from janitor.testing_utils.fixtures import dataframe
+from janitor.testing_utils.strategies import df_strategy
+from hypothesis import given, strategies as st, assume
+from hypothesis.extra.numpy import arrays
 
 
 @pytest.mark.functions
-def test_add_columns(dataframe):
-    # sanity checking is pretty much handled in test_add_column
-
-    # multiple column addition with scalar and iterable
-
+@given(
+    df=df_strategy(),
+)
+def test_add_columns(df):
+    """
+    Test for adding multiple columns at the same time.
+    """
     x_vals = 42
-    y_vals = np.linspace(0, 42, len(dataframe))
+    y_vals = np.linspace(0, 42, len(df))
+    # assume(len(y_vals) == len(df))
 
-    df = dataframe.add_columns(x=x_vals, y=y_vals)
+    df = df.add_columns(x=x_vals, y=y_vals)
 
-    series = pd.Series([x_vals] * len(dataframe))
+    series = pd.Series([x_vals] * len(df))
     series.name = "x"
     pd.testing.assert_series_equal(df["x"], series)
 

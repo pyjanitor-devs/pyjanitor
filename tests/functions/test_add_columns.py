@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import assume, given
+from hypothesis import strategies as st
+from hypothesis.extra.numpy import arrays
 
 from janitor.testing_utils.strategies import df_strategy
-from hypothesis import given, strategies as st, assume
-from hypothesis.extra.numpy import arrays
 
 
 @pytest.mark.test
@@ -12,7 +13,7 @@ from hypothesis.extra.numpy import arrays
 @given(
     df=df_strategy(),
     x_vals=st.floats(),
-    n_yvals=st.integers(min_value=0, max_value=100)
+    n_yvals=st.integers(min_value=0, max_value=100),
 )
 def test_add_columns(df, x_vals, n_yvals):
     """

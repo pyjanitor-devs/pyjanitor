@@ -377,6 +377,8 @@ def rename_column(df, old, new):
     :param str new: The new column name.
     :returns: A pandas DataFrame.
     """
+    if old not in df.columns:
+        raise ValueError(f"{old} not present in dataframe columns!")
     return df.rename(columns={old: new})
 
 

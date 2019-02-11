@@ -1,6 +1,8 @@
 import pandas as pd
+import pytest
 
 
+@pytest.mark.functions
 def test_convert_excel_date():
     df = (
         pd.read_excel("examples/dirty_data.xlsx")

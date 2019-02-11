@@ -1,8 +1,10 @@
 import pandas as pd
+import pytest
 
 from janitor.testing_utils.fixtures import dataframe
 
 
+@pytest.mark.functions
 def test_reset_index_inplace_obj_equivalence(dataframe):
     """ Make sure operation is indeed in place. """
 
@@ -11,6 +13,7 @@ def test_reset_index_inplace_obj_equivalence(dataframe):
     assert df_riip is dataframe
 
 
+@pytest.mark.functions
 def test_reset_index_inplace_after_group(dataframe):
     """ Make sure equivalent output to non-in place. """
 
@@ -22,6 +25,7 @@ def test_reset_index_inplace_after_group(dataframe):
     pd.testing.assert_frame_equal(df_sum_ri, df_sum)
 
 
+@pytest.mark.functions
 def test_reset_index_inplace_drop(dataframe):
     """ Test that correctly accepts `reset_index()` parameters. """
 

@@ -1,6 +1,8 @@
 import pandas as pd
+import pytest
 
 
+@pytest.mark.functions
 def test_expand_column():
     data = {
         "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
@@ -12,6 +14,7 @@ def test_expand_column():
     assert expanded.shape[1] == 6
 
 
+@pytest.mark.functions
 def test_expand_and_concat():
     data = {
         "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],

@@ -1,6 +1,14 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
+
+from janitor.testing_utils import date_data
+
+TEST_DATA_DIR = (
+    Path(__file__).resolve().parent.parent.parent / "tests" / "test_data"
+)
 
 
 @pytest.fixture
@@ -13,6 +21,12 @@ def dataframe():
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def date_dataframe():
+    df = pd.DataFrame(date_data.date_list, columns=["AMOUNT", "DATE"])
     return df
 
 
@@ -73,4 +87,10 @@ def missingdata_df():
         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
     }
     df = pd.DataFrame(data)
+    return df
+
+
+@pytest.fixture
+def biodf():
+    df = pd.read_csv(TEST_DATA_DIR / "sequences.tsv", sep="\t").clean_names()
     return df

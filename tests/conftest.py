@@ -1,15 +1,15 @@
-from pathlib import Path
 
 import numpy as np
+import os
+
 import pandas as pd
 import pytest
 
 from janitor.testing_utils import date_data
 
-TEST_DATA_DIR = (
-    Path(__file__).resolve().parent.parent.parent / "tests" / "test_data"
-)
 
+TEST_DATA_DIR = 'tests/test_data'
+EXAMPLES_DIR = 'examples/'
 
 @pytest.fixture
 def dataframe():
@@ -92,5 +92,19 @@ def missingdata_df():
 
 @pytest.fixture
 def biodf():
-    df = pd.read_csv(TEST_DATA_DIR / "sequences.tsv", sep="\t").clean_names()
+    filename=os.path.join(TEST_DATA_DIR, "sequences.tsv")
+    df = pd.read_csv(filename, sep="\t").clean_names()
     return df
+
+
+@pytest.fixture
+def chemdf():
+    filename=os.path.join(TEST_DATA_DIR, "corrected_smiles.txt")
+    df = pd.read_csv(filename, sep="\t", header=None).head(10)
+    df.columns = ["id", "smiles"]
+    return df
+
+
+def pytest_configure():
+    pytest.TEST_DATA_DIR = TEST_DATA_DIR
+    pytest.EXAMPLES_DIR = EXAMPLES_DIR

@@ -1,7 +1,5 @@
 import pytest
 
-from janitor.testing_utils.fixtures import null_df
-
 
 @pytest.mark.functions
 def test_fill_empty(null_df):

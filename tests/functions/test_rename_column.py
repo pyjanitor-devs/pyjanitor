@@ -1,8 +1,6 @@
 import pytest
 from hypothesis import given
 
-from janitor.testing_utils.fixtures import dataframe
-
 
 @pytest.mark.functions
 def test_rename_column(dataframe):

@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import pytest
 
@@ -5,7 +7,7 @@ import pytest
 @pytest.mark.functions
 def test_convert_excel_date():
     df = (
-        pd.read_excel("examples/dirty_data.xlsx")
+        pd.read_excel(os.path.join(pytest.EXAMPLES_DIR, "dirty_data.xlsx"))
         .clean_names()
         .convert_excel_date("hire_date")
     )

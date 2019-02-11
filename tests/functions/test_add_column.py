@@ -4,7 +4,6 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from janitor.testing_utils.fixtures import dataframe
 from janitor.testing_utils.strategies import df_strategy
 
 

@@ -1,8 +1,6 @@
 import pandas as pd
 import pytest
 
-from janitor.testing_utils.fixtures import dataframe
-
 
 @pytest.mark.functions
 def test_reset_index_inplace_obj_equivalence(dataframe):

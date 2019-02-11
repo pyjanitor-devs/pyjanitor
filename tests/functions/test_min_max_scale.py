@@ -1,7 +1,5 @@
 import pytest
 
-from janitor.testing_utils.fixtures import dataframe
-
 
 @pytest.mark.functions
 def test_min_max_scale(dataframe):

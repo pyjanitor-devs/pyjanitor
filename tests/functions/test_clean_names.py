@@ -3,7 +3,6 @@ import pytest
 from hypothesis import given
 
 from janitor.errors import JanitorError
-from janitor.testing_utils.fixtures import multiindex_dataframe
 from janitor.testing_utils.strategies import df_strategy
 
 

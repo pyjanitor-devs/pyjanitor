@@ -1,8 +1,6 @@
 import pandas as pd
 import pytest
 
-from janitor.testing_utils.fixtures import dataframe
-
 
 @pytest.mark.functions
 @pytest.mark.parametrize(

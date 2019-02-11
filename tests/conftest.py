@@ -1,4 +1,3 @@
-
 import numpy as np
 import os
 
@@ -8,8 +7,9 @@ import pytest
 from janitor.testing_utils import date_data
 
 
-TEST_DATA_DIR = 'tests/test_data'
-EXAMPLES_DIR = 'examples/'
+TEST_DATA_DIR = "tests/test_data"
+EXAMPLES_DIR = "examples/"
+
 
 @pytest.fixture
 def dataframe():
@@ -92,14 +92,14 @@ def missingdata_df():
 
 @pytest.fixture
 def biodf():
-    filename=os.path.join(TEST_DATA_DIR, "sequences.tsv")
+    filename = os.path.join(TEST_DATA_DIR, "sequences.tsv")
     df = pd.read_csv(filename, sep="\t").clean_names()
     return df
 
 
 @pytest.fixture
 def chemdf():
-    filename=os.path.join(TEST_DATA_DIR, "corrected_smiles.txt")
+    filename = os.path.join(TEST_DATA_DIR, "corrected_smiles.txt")
     df = pd.read_csv(filename, sep="\t", header=None).head(10)
     df.columns = ["id", "smiles"]
     return df

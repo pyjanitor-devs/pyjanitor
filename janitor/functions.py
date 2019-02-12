@@ -304,6 +304,7 @@ def get_features_targets(df, target_columns, feature_columns=None):
     Get the features and targets as separate DataFrames/Series.
 
     The behaviour is as such:
+
     - `target_columns` is mandatory.
     - If `feature_columns` is present, then we will respect the column names
     inside there.
@@ -327,13 +328,13 @@ def get_features_targets(df, target_columns, feature_columns=None):
         X, y = df.get_features_targets(target_columns=target_cols)  # noqa: E501
 
     :param df: The pandas DataFrame object.
-    :param str/iterable target_columns: Either a column name or an iterable
+    :param str/iterable target_columns: Either a column name or an iterable\
         (list or tuple) of column names that are the target(s) to be predicted.
-    :param str/iterable feature_columns: (optional) The column name or iterable
-        of column names that are the features (a.k.a. predictors) used to
-        predict the targets.
-    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both are
-        pandas DataFrames.
+    :param str/iterable feature_columns: (optional) The column name or \
+        iterable of column names that are the features (a.k.a. predictors) \
+        used to predict the targets.
+    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both \
+        are pandas DataFrames.
     """
     Y = df[target_columns]
 
@@ -864,7 +865,7 @@ def filter_on(df, criteria, complement=False):
     Credit to Brant Peterson for the name.
 
     :param df: A pandas DataFrame.
-    :param criteria: A filtering criteria that returns an array or Series of
+    :param criteria: A filtering criteria that returns an array or Series of\
         booleans, on which pandas can filter on.
     :param complement: Whether to return the complement of the filter or not.
     """
@@ -1305,6 +1306,7 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
         6  1            1                   1   rabbit  Cambridge        -1
         7  2            2                   2  leopard   Shanghai        -2
         8  3            3                   3     lion      Basel        -3
+
     """
 
     check("col_name", col_name, [str])
@@ -1469,6 +1471,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
         7        7       14         a       a
         8        8       16         m       m
         9        9       18         e       e
+
     """
 
     check("column_length", column_length, [int])
@@ -1602,6 +1605,7 @@ def row_to_names(
         6  1  1  1   rabbit  Cambridge
         7  2  2  2  leopard   Shanghai
         8  3  3  3     lion      Basel
+
     """
 
     check("row_number", row_number, [int])
@@ -1714,6 +1718,7 @@ def round_to_fraction(
         6  1.3333     0.333333            0.004274   rabbit  Cambridge
         7  2.3333     0.285714            0.153846  leopard   Shanghai
         8  3.3333     1.500000            0.017964     lion      Basel
+
     """
 
     check("col_name", col_name, [str])
@@ -2007,6 +2012,295 @@ def check(varname: str, value, expected_types: list):
                 varname=varname, expected_types=expected_types
             )
         )
+
+
+def _clean_accounting_column(x):
+    """
+    This function performs the logic for the `type == "accounting"`
+    attribute in currency_column_to_numeric.
+
+    It is intended to be used in a pandas `apply` method.
+    """
+
+    y = x.strip()
+    y = y.replace(",", "")
+    y = y.replace(")", "")
+    y = y.replace("(", "-")
+    if y == "-":
+        return 0.00
+    return float(y)
+
+
+def _currency_column_to_numeric(x, cast_non_numeric=None):
+    """
+    This function performs the logic for the changing cell values in
+    the currency_column_to_numeric function.
+
+    It is intended to be used in a pandas `apply` method, after being passed
+    through `partial`.
+    """
+    acceptable_currency_characters = {
+        "-",
+        ".",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "0",
+    }
+    if len(x) == 0:
+        return "ORIGINAL_NA"
+
+    if cast_non_numeric:
+        if x in cast_non_numeric.keys():
+            check(
+                "{%r: %r}" % (x, str(cast_non_numeric[x])),
+                cast_non_numeric[x],
+                [int, float],
+            )
+            return cast_non_numeric[x]
+        else:
+            return "".join(i for i in x if i in acceptable_currency_characters)
+    else:
+        return "".join(i for i in x if i in acceptable_currency_characters)
+
+
+def _replace_empty_string_with_none(x):
+    if isinstance(x, int):
+        return x
+
+    elif isinstance(x, float):
+        return x
+
+    elif len(x):
+        return x
+
+
+def _replace_original_empty_string_with_none(x):
+    if x != "ORIGINAL_NA":
+        return x
+
+
+@pf.register_dataframe_method
+def currency_column_to_numeric(
+    df,
+    col_name: str,
+    type: str = None,
+    cast_non_numeric: dict = None,
+    fill_all_non_numeric: float = None,
+    remove_non_numeric: bool = False,
+):
+    """
+    This method allows one to take a column containing currency values,\
+    inadvertently imported as a string, and cast it as a float. This is\
+    usually the case when reading CSV files that were modified in Excel.\
+    Empty strings (i.e. `''`) are retained as `NaN` values.
+
+    :param df: The DataFrame
+    :param col_name: The column to modify
+    :param type: What type of cleaning to perform. If None, standard cleaning
+        is applied. Options are: 'accounting'.
+    :param cast_non_numeric: A dict of how to coerce certain strings. For
+        example, if there are values of 'REORDER' in the DataFrame,
+        {'REORDER': 0} will cast all instances of 'REORDER' to 0.
+    :param fill_all_non_numeric: Similar to `cast_non_numeric`, but fills all
+        strings to the same value. For example,  fill_all_non_numeric=1, will
+        make everything that doesn't coerce to a currency 1.
+    :param remove_non_numeric: Will remove rows of a DataFrame that contain
+        non-numeric values in the `col_name` column. Defaults to `False`.
+    :return: A mutated DataFrame
+
+    :Example Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        data = {
+            "a": ["-$1.00", "", "REPAY"] * 2 + ["$23.00", "", "Other Account"],
+            "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+            "decorated-elephant": [1, 2, 3] * 3,
+            "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
+            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+        df = pd.DataFrame(data)
+
+    :Example 1: Coerce numeric values in column to float:
+
+    .. code-block:: python
+
+        df.currency_column_to_numeric("a")
+
+    :Output:
+
+    .. code-block:: python
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2   NaN     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5   NaN     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8   NaN     3.234612                   3         lion      Basel
+
+    :Example 2: Coerce numeric values in column to float, and replace a string\
+    value with a specific value:
+
+    .. code-block:: python
+
+        cast_non_numeric = {"REPAY": 22}
+        df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric)
+
+    :Output:
+
+    .. code-block:: python
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  22.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  22.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8   NaN     3.234612                   3         lion      Basel
+
+    :Example 3: Coerce numeric values in column to float, and replace all\
+        string value with a specific value:
+
+    .. code-block:: python
+
+        df.currency_column_to_numeric("a", fill_all_non_numeric=35)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  35.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  35.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8  35.0     3.234612                   3         lion      Basel
+
+    :Example 4: Coerce numeric values in column to float, replace a string\
+        value with a specific value, and replace remaining string values with\
+        a specific value:
+
+    .. code-block:: python
+
+        df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric,
+        fill_all_non_numeric=35)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  22.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  22.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        8  35.0     3.234612                   3         lion      Basel
+
+    :Example 5: Coerce numeric values in column to float, and remove string\
+        values:
+
+    .. code-block:: python
+
+        df.currency_column_to_numeric("a", remove_non_numeric=True)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+
+    :Example 6: Coerce numeric values in column to float, replace a string\
+        value with a specific value, and remove remaining string values:
+
+    .. code-block:: python
+
+        df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric,
+        remove_non_numeric=True)
+
+    :Output:
+
+    .. code-block:: python
+
+
+              a  Bell__Chart  decorated-elephant animals@#$%^     cities
+        0  -1.0     1.234523                   1       rabbit  Cambridge
+        1   NaN     2.456234                   2      leopard   Shanghai
+        2  22.0     3.234612                   3         lion      Basel
+        3  -1.0     1.234523                   1       rabbit  Cambridge
+        4   NaN     2.456234                   2      leopard   Shanghai
+        5  22.0     3.234612                   3         lion      Basel
+        6  23.0     1.234523                   1       rabbit  Cambridge
+        7   NaN     2.456234                   2      leopard   Shanghai
+        """
+
+    check("col_name", col_name, [str])
+
+    column_series = df[col_name]
+    if type == "accounting":
+        df.loc[:, col_name] = df[col_name].apply(_clean_accounting_column)
+        return df
+
+    if cast_non_numeric:
+        check("cast_non_numeric", cast_non_numeric, [dict])
+
+    _make_cc_patrial = partial(
+        _currency_column_to_numeric, cast_non_numeric=cast_non_numeric
+    )
+
+    column_series = column_series.apply(_make_cc_patrial)
+
+    if remove_non_numeric:
+        df = df.loc[column_series != "", :]
+
+    # _replace_empty_string_with_none is applied here after the check on
+    # remove_non_numeric since "" is our indicator that a string was coerced
+    # in the original column
+    column_series = column_series.apply(_replace_empty_string_with_none)
+
+    if fill_all_non_numeric is not None:
+        check("fill_all_non_numeric", fill_all_non_numeric, [int, float])
+        column_series = column_series.fillna(fill_all_non_numeric)
+
+    column_series = column_series.apply(
+        _replace_original_empty_string_with_none
+    )
+
+    df = df.assign(**{col_name: pd.to_numeric(column_series)})
+
+    return df
 
 
 @pf.register_dataframe_method

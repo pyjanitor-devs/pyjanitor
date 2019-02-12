@@ -7,7 +7,25 @@ API Documentation
 functions
 ---------
 
-pyjanitor's dataframe cleaning functions are declared here.
-
 .. automodule:: janitor.functions
+   :members:
+
+
+biology
+-------
+
+.. automodule:: janitor.biology
+   :members:
+
+
+chemistry
+---------
+
+.. automodule:: janitor.chemistry
+   :members:
+
+finance
+-------
+
+.. automodule:: janitor.finance
    :members:

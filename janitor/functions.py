@@ -1,21 +1,19 @@
 """
-pyjanitor functions.
-New data cleaning functions should be implemented here.
+General purpose data cleaning functions.
 """
 import datetime as dt
 import re
-from functools import reduce
-from functools import partial
-from warnings import warn
+import warnings
+from functools import partial, reduce
+from typing import Dict, Iterable, List, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pandas_flavor as pf
+from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
-import pandas_flavor as pf
-
 from .errors import JanitorError
-from typing import List, Union
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -380,6 +378,8 @@ def rename_column(df, old, new):
     :param str new: The new column name.
     :returns: A pandas DataFrame.
     """
+    if old not in df.columns:
+        raise ValueError(f"{old} not present in dataframe columns!")
     return df.rename(columns={old: new})
 
 
@@ -513,6 +513,77 @@ def convert_excel_date(df, column):
     df[column] = pd.TimedeltaIndex(df[column], unit="d") + dt.datetime(
         1899, 12, 30
     )  # noqa: W503
+    return df
+
+
+@pf.register_dataframe_method
+def convert_matlab_date(df, column):
+    """
+    Convert Matlab's serial date number into Python datetime format.
+
+    Implementation is also from `Stack Overflow`.
+
+    .. _Stack Overflow: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python  # noqa: E501
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = convert_matlab_date(df, column='date')
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).convert_matlab_date('date')
+
+    :param df: A pandas DataFrame.
+    :param str column: A column name.
+    :returns: A pandas DataFrame with corrected dates.
+    """
+    days = pd.Series([dt.timedelta(v % 1) for v in df[column]])
+    df[column] = (
+        df[column].astype(int).apply(dt.datetime.fromordinal)
+        + days
+        - dt.timedelta(days=366)
+    )
+    return df
+
+
+@pf.register_dataframe_method
+def convert_unix_date(df, column):
+    """
+    Convert unix epoch time into Python datetime format.
+    Note that this ignores local tz and convert all
+    timestamps to naive datetime based on UTC!
+
+    Functional usage example:
+
+    .. code-block:: python
+        df = convert_unix_date(df, column='date')
+
+    Method chaining example:
+
+    .. code-block:: python
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).convert_unix_date('date')
+
+    :param df: A pandas DataFrame.
+    :param str column: A column name.
+    :returns: A pandas DataFrame with corrected dates.
+    """
+
+    def _conv(value):
+        try:
+            date = dt.datetime.utcfromtimestamp(value)
+        except ValueError:  # year of of rang means milliseconds.
+            date = dt.datetime.utcfromtimestamp(value / 1000)
+        return date
+
+    df[column] = df[column].astype(int).apply(_conv)
     return df
 
 
@@ -689,7 +760,7 @@ def filter_string(
     """
     Filter a string-based column according to whether it contains a substring.
 
-    This is super sugary syntax that builds on top of `filter_on` and
+    This is super sugary syntax that builds on top of
     `pandas.Series.str.contains`.
 
     Because this uses internally `pandas.Series.str.contains`, which allows a
@@ -739,7 +810,10 @@ def filter_string(
     :param complement: Whether to return the complement of the filter or not.
     """
     criteria = df[column].str.contains(search_string)
-    return filter_on(df, criteria, complement=complement)
+    if complement:
+        return df[~criteria]
+    else:
+        return df[criteria]
 
 
 @pf.register_dataframe_method
@@ -747,12 +821,19 @@ def filter_on(df, criteria, complement=False):
     """
     Return a dataframe filtered on a particular criteria.
 
-    This function allows us to method chain filtering operations:
+    This is super-sugary syntax that wraps the pandas `.query()` API, enabling
+    users to use strings to quickly specify filters for filtering their
+    dataframe. The intent is that `filter_on` as a verb better matches the
+    intent of a pandas user than the verb `query`.
+
+    Let's say we wanted to filter students based on whether they failed an exam
+    or not, which is defined as their score (in the "score" column) being less
+    than 50.
 
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on(df['value'] < 3, complement=False)
+              .filter_on('score < 50', complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -760,7 +841,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = df[df['value'] < 3]
+        df = df[df['score'] < 3]
 
     As with the `filter_string` function, a more seamless flow can be expressed
     in the code.
@@ -770,7 +851,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = filter_on(df,
-                       df['value'] < 3,
+                       'score < 50',
                        complement=False)
 
     Method chaining example:
@@ -778,8 +859,7 @@ def filter_on(df, criteria, complement=False):
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on(df['value'] < 3
-                             complement=False)
+              .filter_on('score < 50', complement=False)
               ...)
 
     Credit to Brant Peterson for the name.
@@ -789,6 +869,281 @@ def filter_on(df, criteria, complement=False):
         booleans, on which pandas can filter on.
     :param complement: Whether to return the complement of the filter or not.
     """
+    if complement:
+        return df.query("not " + criteria)
+    else:
+        return df.query(criteria)
+
+
+@pf.register_dataframe_method
+def filter_date(
+    df: pd.DataFrame,
+    column: str,
+    start: dt.date = None,
+    end: dt.date = None,
+    years: List = None,
+    months: List = None,
+    days: List = None,
+    column_date_options: Dict = None,
+    format: str = None,
+):
+    """
+    :Description:
+
+    Filter a date-based column based on certain criteria
+
+    Dates may be finicky and this function builds on top of the "magic" from
+    the pandas `to_datetime` function that is able to parse dates well.
+
+    Additional options to parse the date type of your column may be found at
+    the official pandas documentation:
+
+    pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html
+
+    **Note:** This method will cast your column to a Timestamp!
+
+    :param df: A pandas dataframe.
+    :param column: The column which to apply the fraction transformation.
+    :param start: The beginning date to use to filter the DataFrame.
+    :param end: The end date to use to filter the DataFrame.
+    :param years: The years to use to filter the DataFrame.
+    :param months: The months to use to filter the DataFrame.
+    :param days: The days to use to filter the DataFrame.
+    :param column_date_options: 'Special options to use when parsing the date\
+    column in the original DataFrame. The options may be found at the official\
+    Pandas documentation.'
+    :param format: 'It you're using a format for start or end that is not\
+    recognized natively by pandas' to_datetime function, you may supply the\
+    format yourself. Python date and time formats may be found at\
+    http://strftime.org/.'
+
+    **Note:** This only affects the format of the `start` and `end` parameters.
+     If there's an issue with the format of the DataFrame being parsed, you
+     would pass `{'format': your_format}` to `column_date_options`.
+
+    :Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        date_list = [
+            [1, "01/28/19"], [2, "01/29/19"], [3, "01/30/19"],
+            [4, "01/31/19"], [5, "02/01/19"], [6, "02/02/19"],
+            [7, "02/03/19"], [8, "02/04/19"], [9, "02/05/19"],
+            [10, "02/06/19"], [11, "02/07/20"], [12, "02/08/20"],
+            [13, "02/09/20"], [14, "02/10/20"], [15, "02/11/20"],
+            [16, "02/12/20"], [17, "02/07/20"], [18, "02/08/20"],
+            [19, "02/09/20"], [20, "02/10/20"], [21, "02/11/20"],
+            [22, "02/12/20"], [23, "03/08/20"], [24, "03/09/20"],
+            [25, "03/10/20"], [26, "03/11/20"], [27, "03/12/20"]]
+
+        example_dataframe = pd.DataFrame(date_list,
+                                         columns = ['AMOUNT', 'DATE'])
+
+
+    :Example 1: Filter dataframe between two dates
+
+    .. code-block:: python
+
+        start = "01/29/19"
+        end = "01/30/19"
+
+        example_dataframe.filter_date('DATE', start=start, end=end)
+
+
+    :Output:
+
+    .. code-block:: python
+
+           AMOUNT       DATE
+        1       2 2019-01-29
+        2       3 2019-01-30
+
+    :Example 2: Using a different date format for filtering
+
+    .. code-block:: python
+
+        end = "01$$$30$$$19"
+        format = "%m$$$%d$$$%y"
+
+        example_dataframe.filter_date('DATE', end=end, format=format)
+
+
+    :Output:
+
+    .. code-block:: python
+
+           AMOUNT       DATE
+        0       1 2019-01-28
+        1       2 2019-01-29
+        2       3 2019-01-30
+
+    :Example 3: Filtering by year
+
+    .. code-block:: python
+
+        years = [2019]
+
+        example_dataframe.filter_date('DATE', years=years)
+
+
+    :Output:
+
+    .. code-block:: python
+
+
+           AMOUNT       DATE
+        0       1 2019-01-28
+        1       2 2019-01-29
+        2       3 2019-01-30
+        3       4 2019-01-31
+        4       5 2019-02-01
+        5       6 2019-02-02
+        6       7 2019-02-03
+        7       8 2019-02-04
+        8       9 2019-02-05
+        9      10 2019-02-06
+
+    :Example 4: Filtering by year and month
+
+    .. code-block:: python
+
+        years = [2020]
+        months = [3]
+
+        example_dataframe.filter_date('DATE', years=years, months=months)
+
+
+    :Output:
+
+    .. code-block:: python
+
+            AMOUNT       DATE
+        22      23 2020-03-08
+        23      24 2020-03-09
+        24      25 2020-03-10
+        25      26 2020-03-11
+        26      27 2020-03-12
+
+    :Example 5: Filtering by year and day
+
+    .. code-block:: python
+
+        years = [2020]
+        days = range(10,12)
+
+        example_dataframe.filter_date('DATE', years=years, days=days)
+
+
+    :Output:
+
+    .. code-block:: python
+
+            AMOUNT       DATE
+        13      14 2020-02-10
+        14      15 2020-02-11
+        19      20 2020-02-10
+        20      21 2020-02-11
+        24      25 2020-03-10
+        25      26 2020-03-11
+    """
+
+    check("column", column, [str])
+
+    def _date_filter_conditions(conditions):
+        """
+        Taken from: https://stackoverflow.com/a/13616382
+        """
+        return reduce(np.logical_and, conditions)
+
+    def _get_year(x):
+        return x.year
+
+    def _get_month(x):
+        return x.month
+
+    def _get_day(x):
+        return x.day
+
+    if column_date_options:
+        df.loc[:, column] = pd.to_datetime(
+            df.loc[:, column], **column_date_options
+        )
+    else:
+        df.loc[:, column] = pd.to_datetime(df.loc[:, column])
+
+    _filter_list = []
+
+    if start:
+        start_date = pd.to_datetime(start, format=format)
+        _filter_list.append(df.loc[:, column] >= start_date)
+
+    if end:
+        end_date = pd.to_datetime(end, format=format)
+        _filter_list.append(df.loc[:, column] <= end_date)
+
+    if years:
+        _filter_list.append(df.loc[:, column].apply(_get_year).isin(years))
+
+    if months:
+        _filter_list.append(df.loc[:, column].apply(_get_month).isin(months))
+
+    if days:
+        _filter_list.append(df.loc[:, column].apply(_get_day).isin(days))
+
+    if start and end:
+        if start_date > end_date:
+            warnings.warn(
+                f"Your start date of {start_date} is after your end date of "
+                f"{end_date}. Is this intended?"
+            )
+
+    return df.loc[_date_filter_conditions(_filter_list), :]
+
+
+@pf.register_dataframe_method
+def filter_column_isin(
+    df: pd.DataFrame, column: str, iterable: Iterable, complement: bool = False
+):
+    """
+    Filters a dataframe based on whether the values of a given column are
+    present inside another iterable.
+
+    Assumes exact matching; fuzzy matching not implemented
+
+    The below example syntax will filter the DataFrame such that we only get
+    rows for which the "names" are exactly "James" and "John".
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .clean_names()
+            .filter_column_isin(column="names", iterable=["James", "John"]
+            )
+        )
+
+    This is the method chaining alternative to:
+
+    .. code-block:: python
+
+        df = df[df['names'].isin(['James', 'John'])]
+
+    :param df: A pandas DataFrame
+    :param column: The column on which to filter.
+    :param iterable: An iterable. Could be a list, tuple, another pandas
+        Series.
+    :param complement: Whether to return the complement of the selection or
+        not.
+    """
+    if len(iterable) == 0:
+        raise ValueError(
+            "`iterable` kwarg must be given an iterable of length 1 or greater"
+        )
+    criteria = df[column].isin(iterable)
+
     if complement:
         return df[~criteria]
     else:
@@ -977,6 +1332,11 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
             raise ValueError(
                 f"Attempted to add iterable of values with length"
                 f" not equal to number of DataFrame rows"
+            )
+
+        if len(value) == 0:
+            raise ValueError(
+                f"Values has to be an iterable of minimum length 1"
             )
         len_value = len(value)
     elif fill_remaining:
@@ -1404,7 +1764,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
 
         df = (
             pd.DataFrame(...)
-            .transform(col_name, function)
+            .transform_column(col_name, function)
         )
 
     With the functional syntax:
@@ -1412,7 +1772,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = transform(df, col_name, function)
+        df = transform_column(df, col_name, function)
 
     :param df: A pandas DataFrame.
     :param col_name: The column to transform.
@@ -1574,6 +1934,57 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
         for tup in df.columns.values
     ]
 
+    return df
+
+
+@pf.register_dataframe_method
+def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
+    """
+    Returns the dataframe with an inplace resetting of the index.
+
+    Compared to non-inplace resetting, this avoids data copying, thus
+    providing a potential speedup.
+
+    In Pandas, `reset_index()`, when used in place, does not return a
+    `DataFrame`, preventing this option's usage in the function-chaining
+    scheme. `reset_index_inplace()` provides one the ability to save
+    computation time and memory while still being able to use the chaining
+    syntax core to pyjanitor. This function, therefore, is the chaining
+    equivalent of:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .operation1(...)
+        )
+
+        df.reset_index(inplace=True)
+
+        df = df.operation2(...)
+
+    instead, being called simply as:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .operation1(...)
+            .reset_index_inplace()
+            .operation2(...)
+        )
+
+    All supplied parameters are sent directly to `DataFrame.reset_index()`.
+
+    :param df: A pandas DataFrame.
+    :param args: Arguments supplied to `DataFrame.reset_index()`
+    :param kwargs: Arguments supplied to `DataFrame.reset_index()`
+    :returns: df
+    """
+
+    kwargs.update(inplace=True)
+
+    df.reset_index(*args, **kwargs)
     return df
 
 
@@ -1893,10 +2304,107 @@ def currency_column_to_numeric(
 
 
 @pf.register_dataframe_method
-def convert_float_column_to_int(df, col_name: str):
-    if df[col_name].dtype.name != "float64":
-        raise TypeError("%r column must be a 'float64'" % col_name)
+def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
+    """
+    Method-chainable selection of columns.
 
-    df = df.assign(**{col_name: df[col_name].astype("int")})
+    Optional ability to invert selection of columns available as well.
 
+    Method-chaining example:
+
+    ..code-block:: python
+
+        df = pd.DataFrame(...).select_columns(['a', 'b', 'c'], invert=True)
+
+    :param df: A pandas DataFrame.
+    :param columns: A list of columns to select.
+    :param invert: Whether or not to invert the selection.
+        This will result in selection ofthe complement of the columns provided.
+    :returns: A pandas DataFrame with the columns selected.
+    """
+
+    if invert:
+
+        return df.drop(columns=columns)
+
+    else:
+        return df[columns]
+
+
+@pf.register_dataframe_method
+def impute(df, column: str, value=None, statistic=None):
+    """
+    Method-chainable imputation of values in a column.
+
+    Underneath the hood, this function calls the `.fillna()` method available
+    to every pandas.Series object.
+
+    Method-chaining example:
+
+    ..code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            # Impute null values with 0
+            .impute(column='sales', value=0.0)
+            # Impute null values with median
+            .impute(column='score', statistic='median')
+        )
+
+    Either one of ``value`` or ``statistic`` should be provided.
+
+    If ``value`` is provided, then all null values in the selected column will
+        take on the value provided.
+
+    If ``statistic`` is provided, then all null values in the selected column
+    will take on the summary statistic value of other non-null values.
+
+    Currently supported ``statistic``s include:
+
+    - ``mean`` (also aliased by ``average``)
+    - ``median``
+    - ``mode``
+    - ``minimum`` (also aliased by ``min``)
+    - ``maximum`` (also aliased by ``max``)
+
+    :param df: A pandas DataFrame
+    :param column: The name of the column on which to impute values.
+    :param value: (optional) The value to impute.
+    :param statistic: (optional) The column statistic to impute.
+    """
+
+    # Firstly, we check that only one of `value` or `statistic` are provided.
+    if value is not None and statistic is not None:
+        raise ValueError(
+            "Only one of `value` or `statistic` should be provided"
+        )
+
+    # If statistic is provided, then we compute the relevant summary statistic
+    # from the other data.
+    funcs = {
+        "mean": np.mean,
+        "average": np.mean,  # aliased
+        "median": np.median,
+        "mode": mode,
+        "minimum": np.min,
+        "min": np.min,  # aliased
+        "maximum": np.max,
+        "max": np.max,  # aliased
+    }
+    if statistic is not None:
+        # Check that the statistic keyword argument is one of the approved.
+        if statistic not in funcs.keys():
+            raise KeyError(f"`statistic` must be one of {funcs.keys()}")
+
+        value = funcs[statistic](df[column].dropna().values)
+        # special treatment for mode, because scipy stats mode returns a
+        # moderesult object.
+        if statistic is "mode":
+            value = value.mode[0]
+
+    # The code is architected this way - if `value` is not provided but
+    # statistic is, we then overwrite the None value taken on by `value`, and
+    # use it to set the imputation column.
+    if value is not None:
+        df[column] = df[column].fillna(value)
     return df

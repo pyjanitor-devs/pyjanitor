@@ -6,6 +6,7 @@ The intent of these tests is to test that dataframe method registration works.
 """
 import pandas as pd
 import pytest
+
 import janitor
 
 
@@ -56,6 +57,14 @@ def test_convert_excel_date_registration(dataframe):
     assert dataframe.__getattr__("convert_excel_date")
 
 
+def test_convert_matlab_date_registration(dataframe):
+    assert dataframe.__getattr__("convert_matlab_date")
+
+
+def test_convert_unix_date_registration(dataframe):
+    assert dataframe.__getattr__("convert_unix_date")
+
+
 def test_fill_empty_registration(dataframe):
     assert dataframe.__getattr__("fill_empty")
 
@@ -86,3 +95,7 @@ def test_remove_columns_registration(dataframe):
 
 def test_change_type_registration(dataframe):
     assert dataframe.__getattr__("change_type")
+
+
+def test_change_type_registration(dataframe):
+    assert dataframe.__getattr__("filter_date")

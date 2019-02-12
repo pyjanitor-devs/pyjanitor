@@ -101,7 +101,11 @@ Ready to contribute? Here's how to set up `pyjanitor` for local development.
 
 4. Create a branch for local development::
 
-    $ git checkout -b name-of-your-bugfix-or-feature
+New features added to pyjanitor should be done in a new branch you have based off of the latest version of the `dev` branch. The protocol for pyjanitor branches for new development is that the `master` branch mirrors the current version of pyjanitor on PyPI, whereas `dev` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability / suitability for introducing a batch of changes into the official version, the `dev` branch is then merged into `master` and the PyPI package is subsequently updated.
+
+To base a branch directly off of `dev` instead of `master`, create a new one as follows:
+
+    $ git checkout -b name-of-your-bugfix-or-feature dev
 
    Now you can make your changes locally.
 
@@ -118,7 +122,7 @@ Ready to contribute? Here's how to set up `pyjanitor` for local development.
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website.
+7. Submit a pull request through the GitHub website where when you are picking out which branch to merge into, you select `dev` instead of `master`.
 
 Pull Request Guidelines
 -----------------------

@@ -8,7 +8,7 @@ def requirements():
 
 setup(
     name="pyjanitor",
-    version="0.16.2",
+    version="0.16.3",
     description="Tools for cleaning pandas DataFrames",
     author="Eric J. Ma",
     author_email="ericmajinglong@gmail.com",

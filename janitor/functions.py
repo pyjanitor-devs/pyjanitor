@@ -2408,3 +2408,21 @@ def impute(df, column: str, value=None, statistic=None):
     if value is not None:
         df[column] = df[column].fillna(value)
     return df
+
+
+@pf.register_dataframe_method
+def then(df: pd.DataFrame, func) -> pd.DataFrame:
+    """
+    :Description:
+
+    Add an arbitrary function to run in the pyJanitor method chain.
+
+    :param df: A pandas dataframe.
+    :param func: A function you would like to run in the method chain.\
+    It should take one parameter and return one parameter, each being the\
+    DataFrame object. After that, do whatever you want in the middle.\
+    Go crazy.
+    """
+
+    df = func(df)
+    return df

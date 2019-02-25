@@ -12,7 +12,7 @@ import pytest
 )
 def test_select_columns(dataframe, invert, expected):
     columns = ["a", "Bell__Chart", "cities"]
-    df = dataframe.select_columns(columns=columns, invert=invert)
+    df = dataframe.select_columns(search_cols=columns, invert=invert)
 
     pd.testing.assert_frame_equal(df, dataframe[expected])
 
@@ -27,6 +27,6 @@ def test_select_columns(dataframe, invert, expected):
 )
 def test_select_columns_glob_inputs(dataframe, invert, expected):
     columns = ["Bell__Chart", "a*"]
-    df = dataframe.select_columns(columns=columns, invert=invert)
+    df = dataframe.select_columns(search_cols=columns, invert=invert)
 
     pd.testing.assert_frame_equal(df, dataframe[expected])

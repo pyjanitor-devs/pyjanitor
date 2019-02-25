@@ -15,3 +15,18 @@ def test_select_columns(dataframe, invert, expected):
     df = dataframe.select_columns(columns=columns, invert=invert)
 
     pd.testing.assert_frame_equal(df, dataframe[expected])
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "invert,expected",
+    [
+        (False, ["Bell__Chart", "a", "animals@#$%^"]),
+        (True, ["decorated-elephant", "cities"]),
+    ],
+)
+def test_select_columns_glob_inputs(dataframe, invert, expected):
+    columns = ["Bell__Chart", "a*"]
+    df = dataframe.select_columns(columns=columns, invert=invert)
+
+    pd.testing.assert_frame_equal(df, dataframe[expected])

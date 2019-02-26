@@ -6,6 +6,7 @@ import re
 import warnings
 from functools import partial, reduce
 from typing import Dict, Iterable, List, Union
+from fnmatch import translate
 
 import numpy as np
 import pandas as pd
@@ -2304,7 +2305,7 @@ def currency_column_to_numeric(
 
 
 @pf.register_dataframe_method
-def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
+def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
     """
     Method-chainable selection of columns.
 
@@ -2314,21 +2315,29 @@ def select_columns(df: pd.DataFrame, columns: List, invert: bool = False):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).select_columns(['a', 'b', 'c'], invert=True)
+        df = pd.DataFrame(...).select_columns(['a', 'b', 'col_*'], invert=True)
 
     :param df: A pandas DataFrame.
-    :param columns: A list of columns to select.
+    :param search_cols: A list of column names or search strings to be used\
+        to select. Valid inputs include:
+        1) an exact column name to look for
+        2) a shell-style glob string (e.g., `*_thing_*`)
     :param invert: Whether or not to invert the selection.
-        This will result in selection ofthe complement of the columns provided.
+        This will result in selection of the complement of the columns\
+        provided.
     :returns: A pandas DataFrame with the columns selected.
     """
 
-    if invert:
+    full_column_list = []
 
-        return df.drop(columns=columns)
+    for col in search_cols:
+        search_string = translate(col)
+        columns = [col for col in df if re.match(search_string, col)]
+        full_column_list.extend(columns)
 
-    else:
-        return df[columns]
+    return (
+        df.drop(columns=full_column_list) if invert else df[full_column_list]
+    )
 
 
 @pf.register_dataframe_method

@@ -12,7 +12,10 @@ from .utils import import_message
 
 try:
     from rdkit import Chem, DataStructs
-    from rdkit.Chem import AllChem
+    from rdkit.Chem.rdMolDescriptors import (
+        GetHashedMorganFingerprint,
+        GetMorganFingerprintAsBitVect,
+    )
 except ImportError:
     import_message("chemistry", "rdkit", "conda install -c rdkit rdkit")
 
@@ -82,8 +85,12 @@ def smiles2mol(
 
 
 @pf.register_dataframe_method
-def morganbits(
-    df: pd.DataFrame, mols_col: str, radius: int = 3, nbits: int = 2048
+def morgan_fingerprint(
+    df: pd.DataFrame,
+    mols_col: str,
+    radius: int = 3,
+    nbits: int = 2048,
+    kind: str = "counts",
 ):
     """
     Convert a column of RDKIT Mol objects into Morgan Fingerprints.
@@ -97,7 +104,7 @@ def morganbits(
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        morgans = df.morganbits(mols_col='mols', radius=3, nbits=2048)
+        morgans = df.morgan_fingerprint(mols_col='mols', radius=3, nbits=2048)
 
     If you wish to join the Morgans back into the original dataframe, this
     can be accomplished by doing a `join`, becuase the indices are
@@ -111,11 +118,23 @@ def morganbits(
     :param mols_col: The name of the column that has the RDKIT mol objects
     :param radius: Radius of Morgan fingerprints. Defaults to 3.
     :param nbits: The length of the fingerprints. Defaults to 2048.
+    :param kind: Whether to return counts or bits. Defaults to counts.
+    :returns: A pandas DataFrame
     """
-    fps = [
-        AllChem.GetMorganFingerprintAsBitVect(m, radius, nbits)
-        for m in df[mols_col]
-    ]
+    acceptable_kinds = ["counts", "bits"]
+    if kind not in acceptable_kinds:
+        raise ValueError(f"`kind` must be one of {acceptable_kinds}")
+
+    if kind == "bits":
+        fps = [
+            GetMorganFingerprintAsBitVect(m, radius, nbits)
+            for m in df[mols_col]
+        ]
+    elif kind == "counts":
+        fps = [
+            GetHashedMorganFingerprint(m, radius, nbits) for m in df[mols_col]
+        ]
+
     np_fps = []
     for fp in fps:
         arr = np.zeros((1,))

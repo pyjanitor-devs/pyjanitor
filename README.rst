@@ -81,7 +81,7 @@ Current functionality includes:
 - Splitting your data into features and targets (for machine learning)
 - Adding, removing, and renaming columns
 - Coalesce multiple columns into a single column
-- Date conversions (from matlab, excel, unix) to Python datetime format.
+- Date conversions (from matlab, excel, unix) to Python datetime format
 - Expand a single column that has delimited, categorical values into dummy-encoded variables
 - Concatenating and deconcatenating columns, based on a delimiter
 - Syntactic sugar for filtering the dataframe based on queries on a column

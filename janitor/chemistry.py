@@ -12,7 +12,10 @@ from .utils import import_message
 
 try:
     from rdkit import Chem, DataStructs
-    from rdkit.Chem.rdMolDescriptors import GetHashedMorganFingerprint, GetMorganFingerprintAsBitVect
+    from rdkit.Chem.rdMolDescriptors import (
+        GetHashedMorganFingerprint,
+        GetMorganFingerprintAsBitVect,
+    )
 except ImportError:
     import_message("chemistry", "rdkit", "conda install -c rdkit rdkit")
 
@@ -83,8 +86,11 @@ def smiles2mol(
 
 @pf.register_dataframe_method
 def morgan_fingerprint(
-    df: pd.DataFrame, mols_col: str, radius: int = 3, nbits: int = 2048,
-    kind: str = 'counts'
+    df: pd.DataFrame,
+    mols_col: str,
+    radius: int = 3,
+    nbits: int = 2048,
+    kind: str = "counts",
 ):
     """
     Convert a column of RDKIT Mol objects into Morgan Fingerprints.
@@ -115,19 +121,18 @@ def morgan_fingerprint(
     :param kind: Whether to return counts or bits. Defaults to counts.
     :returns: A pandas DataFrame
     """
-    acceptable_kinds = ['counts', 'bits']
+    acceptable_kinds = ["counts", "bits"]
     if kind not in acceptable_kinds:
-        raise ValueError(f'`kind` must be one of {acceptable_kinds}')
+        raise ValueError(f"`kind` must be one of {acceptable_kinds}")
 
-    if kind == 'bits':
+    if kind == "bits":
         fps = [
             GetMorganFingerprintAsBitVect(m, radius, nbits)
             for m in df[mols_col]
         ]
-    elif kind == 'counts':
+    elif kind == "counts":
         fps = [
-            GetHashedMorganFingerprint(m, radius, nbits)
-            for m in df[mols_col]
+            GetHashedMorganFingerprint(m, radius, nbits) for m in df[mols_col]
         ]
 
     np_fps = []

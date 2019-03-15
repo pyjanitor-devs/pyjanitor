@@ -3,25 +3,15 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from rdkit import Chem
 
 import janitor.chemistry
-
-test_data_dir = Path(os.path.dirname(os.path.abspath(__file__))) / "test_data"
-
-
-@pytest.fixture
-def chemdf():
-    df = pd.read_csv(
-        test_data_dir / "corrected_smiles.txt", sep="\t", header=None
-    ).head(10)
-    df.columns = ["id", "smiles"]
-    return df
 
 
 @pytest.mark.parametrize("progressbar", [None, "terminal"])
 @pytest.mark.chemistry
 def test_smiles2mol(chemdf, progressbar):
+    from rdkit import Chem
+
     chemdf = chemdf.smiles2mol("smiles", "mol", progressbar)
     assert "mol" in chemdf.columns
     for elem in chemdf["mol"]:
@@ -29,6 +19,18 @@ def test_smiles2mol(chemdf, progressbar):
 
 
 @pytest.mark.chemistry
-def test_morganbits(chemdf):
-    morgans = chemdf.smiles2mol("smiles", "mol").morganbits("mol")
+def test_morgan_fingerprint_counts(chemdf):
+    morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
+        "mol", kind="counts"
+    )
     assert morgans.shape == (10, 2048)
+    assert (morgans.values >= 0).all()
+
+
+@pytest.mark.chemistry
+def test_morgan_fingerprint_bits(chemdf):
+    morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
+        "mol", kind="bits"
+    )
+    assert morgans.shape == (10, 2048)
+    assert set(morgans.values.flatten().tolist()) == set([0, 1])

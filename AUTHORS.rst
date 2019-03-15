@@ -14,3 +14,4 @@ With thanks to the following contributors:
 - `@zbarry <https://github.com/zbarry>`_
 - `@shantanuo <https://github.com/shantanuo>`_
 - `@jcvall <https://github.com/jcvall>`_
+- `@CWen001 <https://github.com/CWen001>`_

@@ -1,7 +1,5 @@
 import pytest
 
-from janitor.testing_utils.fixtures import missingdata_df
-
 
 @pytest.mark.functions
 def test_impute_single_value(missingdata_df):

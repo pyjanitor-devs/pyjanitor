@@ -4,9 +4,9 @@ General purpose data cleaning functions.
 import datetime as dt
 import re
 import warnings
+from fnmatch import translate
 from functools import partial, reduce
 from typing import Dict, Iterable, List, Union
-from fnmatch import translate
 
 import numpy as np
 import pandas as pd
@@ -1791,10 +1791,10 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
 
 @pf.register_dataframe_method
 def transform_columns(
-    df, 
-    columns: List[str], 
-    function, 
-    suffix: str = None, 
+    df,
+    columns: List[str],
+    function,
+    suffix: str = None,
     new_names: Dict[str, str] = None,
 ):
     """
@@ -1855,18 +1855,18 @@ def transform_columns(
     """
     dest_col_names = dict(zip(columns, columns))
 
-    check('columns', columns, [list, tuple])
+    check("columns", columns, [list, tuple])
 
     if suffix is not None and new_names is not None:
-        raise ValueError('only one of suffix or new_names should be specified')
+        raise ValueError("only one of suffix or new_names should be specified")
 
     if suffix:  # If suffix is specified...
-        check('suffix', suffix, [str])
+        check("suffix", suffix, [str])
         for col in columns:
             dest_col_names[col] = col + suffix
-    
+
     if new_names:  # If new_names is specified...
-        check('new_names', new_names, [dict])
+        check("new_names", new_names, [dict])
         dest_col_names = new_names
 
     # Now, transform columns.

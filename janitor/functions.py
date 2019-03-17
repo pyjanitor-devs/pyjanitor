@@ -1858,7 +1858,7 @@ def transform_columns(
     check('columns', columns, [list, tuple])
 
     if suffix is not None and new_names is not None:
-        raise TypeError('only one of suffix or new_names should be specified')
+        raise ValueError('only one of suffix or new_names should be specified')
 
     if suffix:  # If suffix is specified...
         check('suffix', suffix, [str])

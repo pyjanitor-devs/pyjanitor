@@ -56,7 +56,7 @@ def test_transform_column_with_new_names(dataframe):
 @pytest.mark.functions
 def test_suffix_newname_validation(dataframe):
     with pytest.raises(ValueError):
-        df = (
+        _ = (
             dataframe.add_column("another", 10)
             .add_column("column", 100)
             .transform_columns(

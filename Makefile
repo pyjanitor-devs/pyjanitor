@@ -24,7 +24,7 @@ docs:
 isort:
 	isort -r . -y -up -tc
 
-check: test docs isort format
+check: test docs isort format lint
 	echo "checks complete"
 
 style: isort format

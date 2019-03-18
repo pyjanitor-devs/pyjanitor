@@ -1808,7 +1808,7 @@ def transform_columns(
     with the specified suffix, or provide a dictionary mapping each original
     column name to its corresponding new column name.
 
-    A few examples below. Firstly, to just log10 transform a list of columns 
+    A few examples below. Firstly, to just log10 transform a list of columns
     without creating new columns to hold the transformed values:
 
     .. code-block:: python
@@ -1825,7 +1825,11 @@ def transform_columns(
 
         df = (
             pd.DataFrame(...)
-            .transform_columns(['col1', 'col2', 'col3'], np.log10, suffix="_log")
+            .transform_columns(
+                ['col1', 'col2', 'col3'],
+                np.log10,
+                suffix="_log"
+            )
         )
 
     Finally, to provide new names explicitly:
@@ -1835,7 +1839,7 @@ def transform_columns(
         df = (
             pd.DataFrame(...)
             .transform_column(
-                ['col1', 'col2', 'col3'], 
+                ['col1', 'col2', 'col3'],
                 np.log10,
                 new_names={
                     'col1': 'transform1',

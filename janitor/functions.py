@@ -4,9 +4,9 @@ General purpose data cleaning functions.
 import datetime as dt
 import re
 import warnings
+from fnmatch import translate
 from functools import partial, reduce
 from typing import Dict, Iterable, List, Union
-from fnmatch import translate
 
 import numpy as np
 import pandas as pd
@@ -1786,6 +1786,97 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
         dest_col_name = col_name
 
     df[dest_col_name] = df[col_name].apply(function)
+    return df
+
+
+@pf.register_dataframe_method
+def transform_columns(
+    df,
+    columns: List[str],
+    function,
+    suffix: str = None,
+    new_names: Dict[str, str] = None,
+):
+    """
+    Super syntactic sugar to transform a list of columns by the same
+    transformation.
+
+    Basically wraps `transform_column` and calls it repeatedly over all column
+    names provided.
+
+    User can optionally supply either a suffix to create a new set of columns
+    with the specified suffix, or provide a dictionary mapping each original
+    column name to its corresponding new column name.
+
+    A few examples below. Firstly, to just log10 transform a list of columns
+    without creating new columns to hold the transformed values:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .transform_columns(['col1', 'col2', 'col3'], np.log10)
+        )
+
+    Secondly, to add a '_log' suffix when creating a new column, which we think
+    is going to be the most common use case:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .transform_columns(
+                ['col1', 'col2', 'col3'],
+                np.log10,
+                suffix="_log"
+            )
+        )
+
+    Finally, to provide new names explicitly:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .transform_column(
+                ['col1', 'col2', 'col3'],
+                np.log10,
+                new_names={
+                    'col1': 'transform1',
+                    'col2': 'transform2',
+                    'col3': 'transform3',
+                    }
+                )
+        )
+
+    :param df: A pandas DataFrame.
+    :param columns: An iterable of columns to transform.
+    :param function: A function to apply on each column.
+    :param suffix: (optional) Suffix to use when creating new columns to hold
+        the transformed values.
+    :param new_names: (optional) An explicit mapping of old column names to
+        new column names.
+    """
+    dest_col_names = dict(zip(columns, columns))
+
+    check("columns", columns, [list, tuple])
+
+    if suffix is not None and new_names is not None:
+        raise ValueError("only one of suffix or new_names should be specified")
+
+    if suffix:  # If suffix is specified...
+        check("suffix", suffix, [str])
+        for col in columns:
+            dest_col_names[col] = col + suffix
+
+    if new_names:  # If new_names is specified...
+        check("new_names", new_names, [dict])
+        dest_col_names = new_names
+
+    # Now, transform columns.
+    for oldcol, newcol in dest_col_names.items():
+        df = transform_column(df, oldcol, function, newcol)
+
     return df
 
 

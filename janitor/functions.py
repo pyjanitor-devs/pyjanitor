@@ -4,9 +4,9 @@ General purpose data cleaning functions.
 import datetime as dt
 import re
 import warnings
+from fnmatch import translate
 from functools import partial, reduce
 from typing import Dict, Iterable, List, Union
-from fnmatch import translate
 
 import numpy as np
 import pandas as pd

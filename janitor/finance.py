@@ -6,9 +6,9 @@ import json
 from datetime import date, datetime
 from functools import lru_cache
 
-import pandas_flavor as pf
 import requests
 
+import pandas_flavor as pf
 from janitor import check
 
 currency_set = {

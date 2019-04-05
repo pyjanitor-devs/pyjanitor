@@ -3,6 +3,7 @@ Testing strategies are placed here.
 """
 
 import numpy as np
+
 from hypothesis import strategies as st
 from hypothesis.extra.pandas import column, data_frames, range_indexes
 

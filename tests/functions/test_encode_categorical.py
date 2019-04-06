@@ -1,6 +1,6 @@
 import pytest
-from hypothesis import given
 
+from hypothesis import given
 from janitor.errors import JanitorError
 from janitor.testing_utils.strategies import (
     categoricaldf_strategy,

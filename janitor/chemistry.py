@@ -55,6 +55,7 @@ try:
         CalcNumSpiroAtoms,
         CalcNumUnspecifiedAtomStereoCenters,
         CalcTPSA,
+        GetMACCSKeysFingerprint,
     )
 except ImportError:
     import_message("chemistry", "rdkit", "conda install -c rdkit rdkit")
@@ -243,3 +244,49 @@ def rd_molecular_descriptors(
     return pd.DataFrame(feats)
 
 
+@pf.register_dataframe_method
+def maccs_keys_fingerprint(
+    df: pd.DataFrame, 
+    mols_col: str,
+    ):
+    """    
+    Convert a column of RDKIT mol objects into MACCS Keys Fingeprints. 
+
+    Returns a new dataframe without any of the original data. This is intentional to 
+    leave the user with the data requested. 
+
+    Method chaining usage:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+        maccs = df.maccs_keys_fingerprint(mols_col='mols')
+
+    If you wish to join the molecular descriptors back into the original dataframe, this
+    can be accomplished by doing a `join`, becuase the indices are
+    preserved:
+
+    ..code-block:: python
+
+        joined = df.join(maccs_keys_fingerprint)
+
+
+    :param df: A pandas DataFrame.
+    :mols_col: The name of the column that has the RDKIT mol objects. 
+    :returns: A pandas DataFrame
+    """
+
+    maccs = [
+        GetMACCSKeysFingerprint(m) for m in df[mols_col]
+    ]
+    
+    np_maccs = []
+
+    for macc in maccs:
+        arr = np.zeros((1,))
+        DataStructs.ConvertToNumpyArray(macc, arr)
+        np_maccs.append(arr)
+    np_maccs = np.vstack(np_maccs)
+    fmaccs = pd.DataFrame(np_maccs)
+    fmaccs.index = df.index
+    return fmaccs

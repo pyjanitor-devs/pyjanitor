@@ -25,6 +25,8 @@ dependencies:
 - pylint
 - biopython
 - doc8
+- nox
+- cairo
 - rdkit
 - pandas-flavor
 - mypy
@@ -32,6 +34,8 @@ dependencies:
 - black
 - hypothesis>=4.4.0
 - jupyterlab
+- xorg-libxrender
+- pip
 - pip:
   - sphinxcontrib-fulltoc
   - python-language-server[all]

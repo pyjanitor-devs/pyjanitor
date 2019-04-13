@@ -31,6 +31,7 @@ dependencies:
 - pyflakes
 - black
 - hypothesis>=4.4.0
+- jupyterlab
 - pip:
   - sphinxcontrib-fulltoc
   - python-language-server[all]

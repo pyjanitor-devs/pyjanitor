@@ -5,7 +5,7 @@ channels:
 - conda-forge
 - ericmjl
 dependencies:
-- python=3.6
+- python >= 3.6
 - pandas >= 0.24.0
 - pytest
 - ipython

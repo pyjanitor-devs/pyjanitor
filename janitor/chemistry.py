@@ -6,7 +6,6 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-
 import pandas_flavor as pf
 
 from .utils import import_message

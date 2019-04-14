@@ -10,10 +10,9 @@ from typing import Dict, Iterable, List, Union
 
 import numpy as np
 import pandas as pd
+import pandas_flavor as pf
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-
-import pandas_flavor as pf
 
 from .errors import JanitorError
 

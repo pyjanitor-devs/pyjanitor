@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
-
 from hypothesis import given
+
 from janitor.testing_utils.strategies import df_strategy
 
 

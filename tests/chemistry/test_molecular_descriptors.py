@@ -1,5 +1,5 @@
 import pytest
-import janitor.chemistry # noqa: disable=unused-import
+import janitor.chemistry  # noqa: disable=unused-import
 
 
 @pytest.mark.chemistry

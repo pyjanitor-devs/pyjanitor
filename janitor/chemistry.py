@@ -188,7 +188,7 @@ def morgan_fingerprint(
 
 
 @pf.register_dataframe_method
-def rd_molecular_descriptors(
+def molecular_descriptors(
     df: pd.DataFrame,
     mols_col: str
     ):
@@ -213,7 +213,7 @@ def rd_molecular_descriptors(
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        mol_desc = df.rd_molecular_descriptors(mols_col='mols')
+        mol_desc = df.molecular_descriptors(mols_col='mols')
 
     If you wish to join the molecular descriptors back into the original dataframe, this
     can be accomplished by doing a `join`, becuase the indices are

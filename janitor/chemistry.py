@@ -28,7 +28,7 @@ try:
         CalcExactMolWt,
         CalcFractionCSP3,
         CalcHallKierAlpha,
-        CalcKappa1, 
+        CalcKappa1,
         CalcKappa2,
         CalcKappa3,
         CalcLabuteASA,
@@ -187,25 +187,25 @@ def morgan_fingerprint(
 
 
 @pf.register_dataframe_method
-def molecular_descriptors(
-    df: pd.DataFrame,
-    mols_col: str
-    ):
+def molecular_descriptors(df: pd.DataFrame, mols_col: str):
     """"
-    Convert a column of RDKIT mol objects into a Pandas DataFrame of molecular descriptors. 
+    Convert a column of RDKIT mol objects into a Pandas DataFrame
+    of molecular descriptors.
 
-    Returns a new dataframe without any of the original data. This is intentional to 
-    leave the user only with the data requested. 
-    
-    The molecular descriptors are gotten from the rdkit.Chem.rdMolDescriptors and are: 
-                                    Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v, 
-                                    Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,
-                                    Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles, 
-                                    NumAliphaticHeterocycles, NumAliphaticRings, NumAmideBonds, NumAromaticCarbocycles,
-                                    NumAromaticHeterocycles, NumAromaticRings, NumAtomStereoCenters, NumBridgeheadAtoms,
-                                    NumHBA, NumHBD, NumHeteroatoms, NumHeterocycles, NumLipinskiHBA, NumLipinskiHBD,
-                                    NumRings, NumSaturatedCarbocycles, NumSaturatedHeterocycles, NumSaturatedRings,
-                                    NumSpiroAtoms, NumUnspecifiedAtomStereoCenters, TPSA. 
+    Returns a new dataframe without any of the original data. This is
+    intentional to leave the user only with the data requested.
+
+    The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:
+        Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,
+        Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,
+        Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles,
+        NumAliphaticHeterocycles, NumAliphaticRings, NumAmideBonds,
+        NumAromaticCarbocycles, NumAromaticHeterocycles, NumAromaticRings,
+        NumAtomStereoCenters, NumBridgeheadAtoms, NumHBA, NumHBD,
+        NumHeteroatoms, NumHeterocycles, NumLipinskiHBA, NumLipinskiHBD,
+        NumRings, NumSaturatedCarbocycles, NumSaturatedHeterocycles,
+        NumSaturatedRings, NumSpiroAtoms, NumUnspecifiedAtomStereoCenters,
+        TPSA.
 
      Method chaining usage:
 
@@ -214,29 +214,61 @@ def molecular_descriptors(
         df = pd.DataFrame(...)
         mol_desc = df.molecular_descriptors(mols_col='mols')
 
-    If you wish to join the molecular descriptors back into the original dataframe, this
-    can be accomplished by doing a `join`, becuase the indices are
-    preserved:
+    If you wish to join the molecular descriptors back into the original
+    dataframe, this can be accomplished by doing a `join`,
+    because the indices are preserved:
 
     ..code-block:: python
 
         joined = df.join(mol_desc)
 
     :param df: A pandas DataFrame.
-    :mols_col: The name of the column that has the RDKIT mol objects. 
+    :mols_col: The name of the column that has the RDKIT mol objects.
     :returns: A pandas DataFrame
     """
-    descriptors = [CalcChi0n, CalcChi0v, CalcChi1n, CalcChi1v, CalcChi2n, CalcChi2v,
-                   CalcChi3n, CalcChi3v, CalcChi4n, CalcChi4v,
-                   CalcExactMolWt, CalcFractionCSP3, CalcHallKierAlpha, CalcKappa1,
-                   CalcKappa2, CalcKappa3, CalcLabuteASA, CalcNumAliphaticCarbocycles,
-                   CalcNumAliphaticHeterocycles, CalcNumAliphaticRings, CalcNumAmideBonds, CalcNumAromaticCarbocycles,
-                   CalcNumAromaticHeterocycles, CalcNumAromaticRings, CalcNumAtomStereoCenters, CalcNumBridgeheadAtoms,
-                   CalcNumHBA, CalcNumHBD, CalcNumHeteroatoms, CalcNumHeterocycles, CalcNumLipinskiHBA, CalcNumLipinskiHBD,
-                   CalcNumRings, CalcNumSaturatedCarbocycles, CalcNumSaturatedHeterocycles, CalcNumSaturatedRings,
-                   CalcNumSpiroAtoms, CalcNumUnspecifiedAtomStereoCenters, CalcTPSA]
-    descriptors = {f.__name__.strip("Calc"):f for f in descriptors}
-    
+    descriptors = [
+        CalcChi0n,
+        CalcChi0v,
+        CalcChi1n,
+        CalcChi1v,
+        CalcChi2n,
+        CalcChi2v,
+        CalcChi3n,
+        CalcChi3v,
+        CalcChi4n,
+        CalcChi4v,
+        CalcExactMolWt,
+        CalcFractionCSP3,
+        CalcHallKierAlpha,
+        CalcKappa1,
+        CalcKappa2,
+        CalcKappa3,
+        CalcLabuteASA,
+        CalcNumAliphaticCarbocycles,
+        CalcNumAliphaticHeterocycles,
+        CalcNumAliphaticRings,
+        CalcNumAmideBonds,
+        CalcNumAromaticCarbocycles,
+        CalcNumAromaticHeterocycles,
+        CalcNumAromaticRings,
+        CalcNumAtomStereoCenters,
+        CalcNumBridgeheadAtoms,
+        CalcNumHBA,
+        CalcNumHBD,
+        CalcNumHeteroatoms,
+        CalcNumHeterocycles,
+        CalcNumLipinskiHBA,
+        CalcNumLipinskiHBD,
+        CalcNumRings,
+        CalcNumSaturatedCarbocycles,
+        CalcNumSaturatedHeterocycles,
+        CalcNumSaturatedRings,
+        CalcNumSpiroAtoms,
+        CalcNumUnspecifiedAtomStereoCenters,
+        CalcTPSA,
+    ]
+    descriptors = {f.__name__.strip("Calc"): f for f in descriptors}
+
     feats = dict()
     for name, func in descriptors.items():
         feats[name] = [func(m) for m in df[mols_col]]
@@ -244,15 +276,12 @@ def molecular_descriptors(
 
 
 @pf.register_dataframe_method
-def maccs_keys_fingerprint(
-    df: pd.DataFrame, 
-    mols_col: str,
-    ):
-    """    
-    Convert a column of RDKIT mol objects into MACCS Keys Fingeprints. 
+def maccs_keys_fingerprint(df: pd.DataFrame, mols_col: str):
+    """
+    Convert a column of RDKIT mol objects into MACCS Keys Fingeprints.
 
-    Returns a new dataframe without any of the original data. This is intentional to 
-    leave the user with the data requested. 
+    Returns a new dataframe without any of the original data.
+    This is intentional to leave the user with the data requested.
 
     Method chaining usage:
 
@@ -261,9 +290,9 @@ def maccs_keys_fingerprint(
         df = pd.DataFrame(...)
         maccs = df.maccs_keys_fingerprint(mols_col='mols')
 
-    If you wish to join the molecular descriptors back into the original dataframe, this
-    can be accomplished by doing a `join`, becuase the indices are
-    preserved:
+    If you wish to join the molecular descriptors back into the
+    original dataframe, this can be accomplished by doing a `join`,
+    because the indices are preserved:
 
     ..code-block:: python
 
@@ -271,14 +300,12 @@ def maccs_keys_fingerprint(
 
 
     :param df: A pandas DataFrame.
-    :mols_col: The name of the column that has the RDKIT mol objects. 
+    :mols_col: The name of the column that has the RDKIT mol objects.
     :returns: A pandas DataFrame
     """
 
-    maccs = [
-        GetMACCSKeysFingerprint(m) for m in df[mols_col]
-    ]
-    
+    maccs = [GetMACCSKeysFingerprint(m) for m in df[mols_col]]
+
     np_maccs = []
 
     for macc in maccs:

@@ -15,3 +15,4 @@ With thanks to the following contributors:
 - `@shantanuo <https://github.com/shantanuo>`_
 - `@jcvall <https://github.com/jcvall>`_
 - `@CWen001 <https://github.com/CWen001>`_
+- `@bhallaY <https://github.com/bhallaY>`_

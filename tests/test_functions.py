@@ -872,3 +872,12 @@ def test_reset_index_inplace_drop(dataframe):
         dataframe.reset_index(drop=True),
         dataframe.reset_index_inplace(drop=True),
     )
+
+def test_case_when(dataframe):
+    """
+    Test that it accepts conditional parameters
+    """
+    pd.testing.assert_frame_equal(
+    dataframe.case_when((dataframe['decorated-elephant'] == 1) & (dataframe['animals@#$%^'] == 'rabbit'), 'cities', 'Durham')),
+    dataframe.str.replace('Cambridge', "Durham")
+    )

@@ -2442,20 +2442,20 @@ def dropnotnull(df, column: str):
     return df[pd.isnull(df[column])]
 
 @pf.register_dataframe_method
-def case_when(df, condition: dict , target: dict):
+def case_when(df, conditions, target_col, target_val):
     """
-    Add multiple conditions to update a column in the dataframe. To be read if this column has x and this column has y then update to this. Doesn't accept =,>,<,!= conditions.
+    Add multiple conditions to update a column in the dataframe.
     
     Example usage:
     
     .. code-block:: python
         
-        df = pd.DataFrame(...).case_when(condition = {'column A': [bird],'column B': [dog]}, target = {'column C': ['a bird dog']})
+        df = pd.DataFrame(...).case_when(conditions = (df['decorated-elephant'] == 1) & (df['animals@#$%^'] == 'rabbit'), target_col = 'cities', target_val = 'Durham')
     
-    :param condition: Use dictionary for 'columns' and [values] to set up the conditions to be matched in the dataframe: read.. if this and this and...
-    :param target: Use dictionary for column and value to set a target column to be updated: read.. then this... 
+    :param condition: conditions used as certia to update a target column and target value
+    :param target_col: Column set as target to be updated
+    :param target_val: Value set to be updated
+    
     """
-    x = condition.update(target)
-    y = pd.DataFrame(x)
-    df = df.merge(y, how = 'left')
+    df.loc[conditions,target_col] = target_val
     return df

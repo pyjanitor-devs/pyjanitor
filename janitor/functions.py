@@ -2570,3 +2570,22 @@ def find_replace(df: pd.DataFrame, column: str, mapper: dict):
     """
     df[column] = df[column].apply(lambda x: mapper.get(x, x))
     return df
+
+@pf.register_dataframe_method
+def case_when(df, conditions, target_col, target_val):
+    """
+    Add multiple conditions to update a column in the dataframe.
+    
+    Example usage:
+    
+    .. code-block:: python
+        
+        df = pd.DataFrame(...).case_when(condition = {'column A': [bird],'column B': [dog]}, target = {'column C': ['a bird dog']})
+    
+    :param condition: conditions used to update a target column and target value
+    :param target_col: Column to be updated
+    :param target_val: Value to be updated
+    
+    """
+    df.loc[conditions,target_col] = target_val
+    return df

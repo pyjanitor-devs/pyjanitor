@@ -2590,7 +2590,6 @@ def update_where(df: pd.DataFrame, conditions, target_col, target_val):
         and target value
     :param target_col: Column to be updated
     :param target_val: Value to be updated
-    
     """
     df.loc[conditions, target_col] = target_val
     return df

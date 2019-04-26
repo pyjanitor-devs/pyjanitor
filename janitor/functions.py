@@ -2582,9 +2582,11 @@ def update_where(df: pd.DataFrame, conditions, target_col, target_val):
         
         df = (
             pd.DataFrame(...)
-            .update_where(condition = {'column A': [bird],
-            target_col = 'column B': [dog]},
-            target_val = {'column C': ['a bird dog']})
+            .update_where(condition = (df['column A'] == 'x')
+            & (df['column B'] == 'y'),  
+            target_col = 'column C',
+            target_val = 'z')
+            )
     
     :param condition: conditions used to update a target column
         and target value

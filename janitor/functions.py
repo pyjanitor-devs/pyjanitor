@@ -2573,17 +2573,21 @@ def find_replace(df: pd.DataFrame, column: str, mapper: dict):
 
 
 @pf.register_dataframe_method
-def update_where(df, conditions, target_col, target_val):
+def update_where(df: pd.DataFrame, conditions, target_col, target_val):
     """
     Add multiple conditions to update a column in the dataframe.
-    
     Example usage:
     
     .. code-block:: python
         
-        df = pd.DataFrame(...).case_when(condition = {'column A': [bird],'column B': [dog]}, target = {'column C': ['a bird dog']})
+        df = (
+            pd.DataFrame(...)
+            .update_where(condition = {'column A': [bird],
+            target_col = 'column B': [dog]},
+            target_val = {'column C': ['a bird dog']})
     
-    :param condition: conditions used to update a target column and target value
+    :param condition: conditions used to update a target column
+        and target value
     :param target_col: Column to be updated
     :param target_val: Value to be updated
     

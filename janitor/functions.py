@@ -2571,8 +2571,9 @@ def find_replace(df: pd.DataFrame, column: str, mapper: dict):
     df[column] = df[column].apply(lambda x: mapper.get(x, x))
     return df
 
+
 @pf.register_dataframe_method
-def case_when(df, conditions, target_col, target_val):
+def update_where(df, conditions, target_col, target_val):
     """
     Add multiple conditions to update a column in the dataframe.
     
@@ -2587,5 +2588,5 @@ def case_when(df, conditions, target_col, target_val):
     :param target_val: Value to be updated
     
     """
-    df.loc[conditions,target_col] = target_val
+    df.loc[conditions, target_col] = target_val
     return df

@@ -2573,7 +2573,7 @@ def find_replace(df: pd.DataFrame, column: str, mapper: dict):
 
 
 @pf.register_dataframe_method
-def update_where(df: pd.DataFrame, conditions, target_col, target_val):
+def update_where(df: pd.DataFrame, conditions: None, target_col: None, target_val: None):
     """
     Add multiple conditions to update a column in the dataframe.
     Example usage:

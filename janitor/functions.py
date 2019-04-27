@@ -2582,7 +2582,14 @@ def update_where(df: pd.DataFrame, conditions: None, target_col: None, target_va
         
         df = (
             pd.DataFrame(...)
-            .update_where(condition = (df['column A'] == 'x')
+        df = pd.DataFrame(...)
+        df = (
+            df
+            .update_where(
+                condition=(df['column A'] == 'x') & (df['column B'] == 'y'),
+                target_col='column C',
+                target_val='z')
+            )
             & (df['column B'] == 'y'),  
             target_col = 'column C',
             target_val = 'z')

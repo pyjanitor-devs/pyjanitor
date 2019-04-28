@@ -2577,12 +2577,10 @@ def update_where(df: pd.DataFrame, conditions: None, target_col: None, target_va
     """
     Add multiple conditions to update a column in the dataframe.
     Example usage:
-    
+
     .. code-block:: python
-        
-        df = (
-            pd.DataFrame(...)
-        df = pd.DataFrame(...)
+
+        df = pd.DataFrame(...)  # The dataframe must be assigned to a variable first.
         df = (
             df
             .update_where(
@@ -2590,11 +2588,7 @@ def update_where(df: pd.DataFrame, conditions: None, target_col: None, target_va
                 target_col='column C',
                 target_val='z')
             )
-            & (df['column B'] == 'y'),  
-            target_col = 'column C',
-            target_val = 'z')
-            )
-    
+
     :param condition: conditions used to update a target column
         and target value
     :param target_col: Column to be updated

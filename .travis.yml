@@ -33,7 +33,7 @@ install:
   - conda install python=$PYTHON_VERSION
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - conda activate pyjanitor-dev
-  - pip install -e .
+  - python setup.py develop
 
 script:
   # Your test script goes here

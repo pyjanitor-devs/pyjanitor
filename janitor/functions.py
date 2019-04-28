@@ -2570,3 +2570,32 @@ def find_replace(df: pd.DataFrame, column: str, mapper: dict):
     """
     df[column] = df[column].apply(lambda x: mapper.get(x, x))
     return df
+
+
+@pf.register_dataframe_method
+def update_where(
+    df: pd.DataFrame, conditions: None, target_col: None, target_val: None
+):
+    """
+    Add multiple conditions to update a column in the dataframe.
+    Example usage:
+
+    .. code-block:: python
+
+        # The dataframe must be assigned to a variable first.
+        df = pd.DataFrame(...)
+        df = (
+            df
+            .update_where(
+                condition=(df['column A'] == 'x') & (df['column B'] == 'y'),
+                target_col='column C',
+                target_val='z')
+            )
+
+    :param condition: conditions used to update a target column
+        and target value
+    :param target_col: Column to be updated
+    :param target_val: Value to be updated
+    """
+    df.loc[conditions, target_col] = target_val
+    return df

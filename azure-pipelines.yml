@@ -24,8 +24,12 @@ steps:
 - script: |
     python -m pip install --upgrade pip
     pip install -r requirements.txt
-    python setup.py install 
+    python setup.py install
   displayName: 'Install package and dependencies'
+
+- script: |
+    python -c "import janitor"
+  displayName: 'Test that installation works.'
 
 - script: |
     pip install pytest pytest-azurepipelines

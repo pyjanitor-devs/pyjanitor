@@ -29,6 +29,7 @@ steps:
 
 - script: |
     python -c "import janitor"
+    python -c "import janitor.testing_utils"
   displayName: 'Test that installation works.'
 
 - script: |

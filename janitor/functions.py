@@ -2602,7 +2602,9 @@ def update_where(
 
 
 @pf.register_dataframe_method
-def bin_numeric(df: pd.DataFrame, from_column: str , to_column: str, bins = None ,labels= None):
+def bin_numeric(
+    df: pd.DataFrame, from_column: str, to_column: str, bins=None, labels=None
+):
     """
     Three ways users can bins numeric columns into categorical columns:
     1. provide number of bins, returns bins grouped into quartiles, leave labels blank
@@ -2628,7 +2630,7 @@ def bin_numeric(df: pd.DataFrame, from_column: str , to_column: str, bins = None
     :param labels: labels in new column
     """
     if labels == None:
-        df[to_column] = pd.cut(df[from_column], bins = bins)
+        df[to_column] = pd.cut(df[from_column], bins=bins)
     else:
-        df[to_column] = pd.cut(df[from_column], bins = bins, labels = labels)
+        df[to_column] = pd.cut(df[from_column], bins=bins, labels=labels)
     return df

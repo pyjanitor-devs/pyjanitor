@@ -28,11 +28,9 @@ steps:
   displayName: 'Install package and dependencies'
 
 - script: |
-    python -c "import janitor"
-    python -c "import janitor.testing_utils"
-  displayName: 'Test that installation works.'
+    pip install pytest pytest-azurepipelines hypothesis requests
+  displayName: 'Install testing tooling.'
 
 - script: |
-    pip install pytest pytest-azurepipelines
     pytest
-  displayName: 'pytest'
+  displayName: 'Run tests'

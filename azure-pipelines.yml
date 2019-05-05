@@ -1,35 +1,30 @@
-# Python package
-# Create and test a Python package on multiple Python versions.
-# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/python
-
 trigger:
 - master
 
-pool:
-  vmImage: 'ubuntu-latest'
+variables:
+  miniconda.url: https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
 strategy:
   matrix:
-    Python36:
-      python.version: '3.6'
-    Python37:
-      python.version: '3.7'
+    py37:
+      python.version: "3.7"
+    py36:
+      python.version: "3.6"
+
+pool:
+  vmImage: ubuntu-16.04
 
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+# Add conda to PATH.
+- bash: echo "##vso[task.prependpath]$CONDA/bin"
+  displayName: Add conda to PATH
 
 - script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
+    conda env create -f environment-dev.yml
+    conda install -y python=$(python.version)
+    source activate pyjanitor-dev
     python setup.py develop
   displayName: 'Install package and dependencies'
-
-- script: |
-    pip install pytest pytest-azurepipelines hypothesis requests
-  displayName: 'Install testing tooling.'
 
 - script: |
     pytest

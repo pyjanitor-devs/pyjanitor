@@ -68,7 +68,7 @@ Here's what the dirty dataframe looks like.
 Cleaning Column Names
 ---------------------
 
-There's a bunch of problems with this data. Firstly, the column names are not lowercase, and they have spaces. This will make it cumbersome to use in a programmatic function. To solve this, we can use the :py:meth:`clean_names` method. Firstly, we pass the dataframe to the :py:class:`janitor.DataFrame()` constructor (just a thin wrapper, really). Then, we call on the :py:meth:`clean_names()` class method.
+There's a bunch of problems with this data. Firstly, the column names are not lowercase, and they have spaces. This will make it cumbersome to use in a programmatic function. To solve this, we can use the :py:meth:`clean_names` method.
 
 .. code-block:: python
 

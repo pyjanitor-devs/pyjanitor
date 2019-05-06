@@ -6,7 +6,7 @@ import re
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Dict, Iterable, List, Union
+from typing import Callable, Dict, Iterable, List, Union
 
 import numpy as np
 import pandas as pd
@@ -2655,5 +2655,53 @@ def to_datetime(df: pd.DataFrame, column: str, **kwargs) -> pd.DataFrame:
     """
 
     df[column] = pd.to_datetime(df[column], **kwargs)
+
+    return df
+
+
+@pf.register_dataframe_method
+def groupby_agg(
+        df: pd.DataFrame,
+        by: str,
+        new_column: str,
+        agg_column: str,
+        agg: Union[Callable, str, List, Dict],
+        axis: int=0
+) -> pd.DataFrame:
+    """
+
+    Allow one to chain a groupby and a merge
+
+    Without this function, we would have to break out of method chaining:
+
+    .. code-block:: python
+        df_grp = df.groupby(...).agg(...)
+        df = df.merge(df_grp, ...)
+
+    Now, this function can be method-chained:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).groupby_agg(df, by='col1', agg='mean', new_column='col1_mean')
+
+    :param df: A pandas DataFrame.
+    :param by: Column to groupby on.
+    :param new_column: Name of the aggregation output column.
+    :param agg_column: Name of the column to aggregate over.
+    :param agg: How to aggregate.
+    :param axis: Split along rows (0) or columns (1).
+    :returns: A pandas DataFrame.
+    """
+
+    df_grp = (
+      df.groupby(by, axis=axis)
+        .agg(agg, axis=axis)
+        .reset_index()
+        .rename(columns={agg_column: new_column})
+    )[[by, new_column]]
+
+    df = df.merge(df_grp, on=by)
 
     return df

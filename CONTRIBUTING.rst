@@ -116,7 +116,7 @@ To base a branch directly off of `dev` instead of `master`, create a new one as 
 
    flake8 and pytest are installed when you create the development environment.
 
-   When you run the test locally, these test are expected to fail:
+   When you run the test locally, these test are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed:
         1. test_maccs_keys_fingerprint
         2. test_molecular_descriptors
         3. test_morgan_fingerprint_counts

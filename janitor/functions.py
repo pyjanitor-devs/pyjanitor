@@ -1195,9 +1195,9 @@ def change_type(df, column: str, dtype, ignore_exception = False):
     """
     if not ignore_exception:
         df[column] = df[column].astype(dtype)
-    elif ignore_exception == "Keep_values":
+    elif ignore_exception == "keep_values":
         df[column] = df[column].astype(dtype, errors="ignore" )
-    elif ignore_exception == "FillNaN":
+    elif ignore_exception == "fillna":
         # returns None when conversion 
         def convert(x, dtype):
             try: 

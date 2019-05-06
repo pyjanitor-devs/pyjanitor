@@ -8,7 +8,7 @@ Python implementation of the R package `janitor`_, and more.
 
 .. _janitor: https://github.com/sfirke/janitor
 
-why janitor?
+Why janitor?
 ------------
 
 Originally a port of the R package, ``pyjanitor`` has evolved from a set of convenient data cleaning routines into an experiment with the method chaining paradigm.
@@ -53,9 +53,11 @@ In ``pandas`` code, this would look as such:
     df = df.rename({'Company2': 'Amazon', 'Company3': 'Facebook'}, axis=1)  # rename 'Company2' to 'Amazon' and 'Company3' to 'Facebook'
     df['Google'] = [450.0, 550.0, 800.0]  # Let's add some data for another company. Say 'Google'
 
+
 With ``pyjanitor``, we enable method chaining with method names that are *verbs*, which describe the action taken.
 
 .. code-block:: python
+
 
     # The PyJanitor Way
     df = (
@@ -70,7 +72,7 @@ With ``pyjanitor``, we enable method chaining with method names that are *verbs*
 As such, the pyjanitor's etymology has a two-fold relationship to "cleanliness". Firstly, it's about extending Pandas with convenient data cleaning routines. Secondly, it's about providing a cleaner, method-chaining, verb-based API for common pandas routines.
 
 
-installation
+Installation
 ------------
 
 ``pyjanitor`` is currently installable from PyPI:
@@ -86,7 +88,7 @@ installation
 
     conda install pyjanitor -c conda-forge
 
-functionality
+Functionality
 -------------
 
 Current functionality includes:
@@ -104,7 +106,7 @@ Current functionality includes:
 - Syntactic sugar for filtering the dataframe based on queries on a column
 - Experimental submodules for finance and biology
 
-apis
+API
 ----
 
 The idea behind the API is two-fold:
@@ -146,15 +148,15 @@ The final way is to use the `pipe()` method.
      .pipe(...))
 
 
-contributing
+Contributing
 ------------
 
-adding new functionality
+Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Keeping in mind the etymology of pyjanitor, contributing a new function to pyjanitor is a task that is not difficult at all.
 
-define a function
+Define a function
 ^^^^^^^^^^^^^^^^^
 
 First off, you will need to define the function that expresses the data processing/cleaning routine, such that it accepts a dataframe as the first argument, and returns a modified dataframe:
@@ -172,19 +174,19 @@ We use `pandas_flavor`_ to register the function natively on a ``pandas.DataFram
 
 .. _pandas_flavor: https://github.com/Zsailer/pandas_flavor
 
-add a test case
+Add a test case
 ^^^^^^^^^^^^^^^
 
 Secondly, we ask that you contribute an test case, to ensure that it works as intended. This should go inside the ``tests/test_functions.py`` file.
 
-feature requests
+Feature requests
 ~~~~~~~~~~~~~~~~
 
 If you have a feature request, please post it as an issue on the GitHub repository issue tracker. Even better, put in a PR for it! I am more than happy to guide you through the codebase so that you can put in a contribution to the codebase.
 
 Because `pyjanitor` is currently maintained by volunteers and has no fiscal support, any feature requests will be prioritized according to what maintainers encounter as a need in our day-to-day jobs. Please temper expectations accordingly.
 
-credits
+Credits
 ~~~~~~~
 
 Test data for chemistry submodule can be found at `Predictive Toxicology`__ .

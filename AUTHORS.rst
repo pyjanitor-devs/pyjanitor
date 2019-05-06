@@ -20,3 +20,5 @@ With thanks to the following contributors:
 - `@kurtispinkney <https://github.com/kurtispinkney>`_
 - `@lphk92 <https://github.com/lphk92>`_
 - `@jonnybazookatone <https://github.com/jonnybazookatone>`_
+- `@SorenFrohlich <https://github.com/SorenFrohlich>`_
+- `@dsouzadaniel <https://github.com/dsouzadaniel>`_

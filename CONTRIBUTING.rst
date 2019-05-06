@@ -97,6 +97,7 @@ Ready to contribute? Here's how to set up `pyjanitor` for local development.
 
     $ cd pyjanitor/
     $ conda env create -f environment-dev.yml
+    $ conda activate pyjanitor-dev
     $ python setup.py develop
 
 4. Create a branch for local development::
@@ -114,7 +115,15 @@ To base a branch directly off of `dev` instead of `master`, create a new one as 
     $ flake8 janitor tests
     $ py.test
 
-   flake8 and pytest are instaled when you create the development environment.
+   flake8 and pytest are installed when you create the development environment.
+
+   When you run the test locally, the tests in ``chemistry.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
+        1. test_maccs_keys_fingerprint
+        2. test_molecular_descriptors
+        3. test_morgan_fingerprint_counts
+        4. test_morgan_fingerprint_bits
+        5. test_smiles2mol [None]
+        6. test_smiles2mol [terminal]
 
 6. Commit your changes and push your branch to GitHub::
 
@@ -123,6 +132,41 @@ To base a branch directly off of `dev` instead of `master`, create a new one as 
     $ git push origin name-of-your-bugfix-or-feature
 
 7. Submit a pull request through the GitHub website where when you are picking out which branch to merge into, you select `dev` instead of `master`.
+
+
+PyCharm Users
+~~~~~~~~~~~~~
+Currently, PyCharm doesn't support the generation of Conda environments via a
+YAML file as prescribed above. To get around this issue you would simply set up
+your environment as described above and within PyCharm point your interpreter
+to the predefined conda environment.
+
+1. Complete steps 1-3 under the Getting Started section.
+2. Determine the location of the newly created conda environment::
+
+    conda info --env
+
+3. Open up the location of the cloned pyjanitor directory in PyCharm.
+4. Navigate to the Preferences location.
+
+    .. image:: /images/preferences.png
+
+5. Navigate to the Project Interpreter tab.
+
+    .. image:: /images/project_interpreter.png
+
+6. Click the cog at the top right and select Add.
+
+    .. image:: /images/click_add.png
+
+7. Select Conda Environment on the left and select existing environment. Click
+on the three dots and copy the location of your newly created conda environment
+and append bin/python to the end of the path.
+
+    .. image:: /images/add_env.png
+
+Click Ok and you should be good to go!
+
 
 Pull Request Guidelines
 -----------------------

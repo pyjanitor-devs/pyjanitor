@@ -127,10 +127,9 @@ Continuing with the company_sales dataframe previously used:
 	#Create a dictionary
 	
 .. code-block:: python
-
-	import janitor  # upon import, functions are registered as part of pandas.
 	
-    df = pd.DataFrame.from_dict(company_sales)
+	import janitor  # upon import, functions are registered as part of pandas.
+	df = pd.DataFrame.from_dict(company_sales)
     df = df.clean_names().remove_empty()  # This cleans the column names as well as removes any duplicate rows
 
 The second is the functional API.

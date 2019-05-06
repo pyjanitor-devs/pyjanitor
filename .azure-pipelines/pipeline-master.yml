@@ -1,29 +1,30 @@
-trigger:
-- master
+jobs:
+  job: linux
 
-strategy:
-  matrix:
-    py37:
-      python.version: "3.7"
-    py36:
-      python.version: "3.6"
+  strategy:
+    matrix:
+      py37:
+        python.version: "3.7"
+      py36:
+        python.version: "3.6"
 
-pool:
-  vmImage: ubuntu-16.04
+  pool:
+    vmImage: ubuntu-16.04
 
-steps:
-# Add conda to PATH.
-- bash: echo "##vso[task.prependpath]$CONDA/bin"
-  displayName: Add conda to PATH
 
-- script: |
-    conda env create -f environment-dev.yml
-    conda install -y python=$(python.version)
-    source activate pyjanitor-dev
-    python setup.py develop
-  displayName: 'Install package and dependencies'
+  steps:
+  # Add conda to PATH.
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
 
-- script: |
-    source activate pyjanitor-dev
-    pytest
-  displayName: 'Run tests'
+  - script: |
+      conda env create -f environment-dev.yml
+      conda install -y python=$(python.version)
+      source activate pyjanitor-dev
+      python setup.py develop
+    displayName: 'Install package and dependencies'
+
+  - script: |
+      source activate pyjanitor-dev
+      pytest
+    displayName: 'Run tests'

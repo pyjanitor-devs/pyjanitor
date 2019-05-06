@@ -1,0 +1,5 @@
+steps:
+  - script: |
+      $(activate.command) pyjanitor-dev
+      pytest
+    displayName: 'Run tests'

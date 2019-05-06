@@ -1198,7 +1198,7 @@ def change_type(df, column: str, dtype, ignore_exception = False):
     :param df: A pandas dataframe.
     :param column: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
-    :param ignore_exception: {False, "FillNaN", "Keep_values"}.
+    :param ignore_exception: {False, "fillna", "keep_values"}.
         Python types, or a numpy datatype.
     """
     if not ignore_exception:

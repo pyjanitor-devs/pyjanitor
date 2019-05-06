@@ -21,8 +21,6 @@ With thanks to the following contributors:
 - `@lphk92 <https://github.com/lphk92>`_
 - `@jonnybazookatone <https://github.com/jonnybazookatone>`_
 - `@SorenFrohlich <https://github.com/SorenFrohlich>`_
-<<<<<<< HEAD
 - `@dave-frazzetto <https://github.com/dave-frazzetto>`_
-=======
 - `@dsouzadaniel <https://github.com/dsouzadaniel>`_
->>>>>>> upstream/dev
+- `@Eidhagen <https://github.com/Eidhagen>`_

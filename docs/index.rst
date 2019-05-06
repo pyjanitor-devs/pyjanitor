@@ -14,7 +14,6 @@ repetitive tasks.
 
    api
    contributing
-   example
    authors
    notebooks
 

@@ -24,4 +24,5 @@ With thanks to the following contributors:
 - `@dave-frazzetto <https://github.com/dave-frazzetto>`_
 - `@dsouzadaniel <https://github.com/dsouzadaniel>`_
 - `@Eidhagen <https://github.com/Eidhagen>`_
+- `@mdini <https://github.com/mdini>`_
 - `@kimt33 <https://github.com/kimt33>`_

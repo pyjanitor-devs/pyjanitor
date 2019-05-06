@@ -16,3 +16,4 @@ With thanks to the following contributors:
 - `@jcvall <https://github.com/jcvall>`_
 - `@CWen001 <https://github.com/CWen001>`_
 - `@bhallaY <https://github.com/bhallaY>`_
+- `@jekwatt <https://github.com/jekwatt>`_

@@ -27,5 +27,6 @@ steps:
   displayName: 'Install package and dependencies'
 
 - script: |
+    source activate pyjanitor-dev
     pytest
   displayName: 'Run tests'

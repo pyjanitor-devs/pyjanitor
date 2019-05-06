@@ -5,6 +5,8 @@
 
 Welcome to pyjanitor's documentation!
 =====================================
+Create verb-based API to extend Pandas with convenient data cleaning routine for
+repetitive tasks.
 
 .. toctree::
    :maxdepth: 2

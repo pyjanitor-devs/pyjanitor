@@ -97,6 +97,7 @@ Ready to contribute? Here's how to set up `pyjanitor` for local development.
 
     $ cd pyjanitor/
     $ conda env create -f environment-dev.yml
+    $ conda activate pyjanitor-dev
     $ python setup.py develop
 
 4. Create a branch for local development::
@@ -114,7 +115,7 @@ To base a branch directly off of `dev` instead of `master`, create a new one as 
     $ flake8 janitor tests
     $ py.test
 
-   flake8 and pytest are instaled when you create the development environment.
+   flake8 and pytest are installed when you create the development environment.
 
 6. Commit your changes and push your branch to GitHub::
 

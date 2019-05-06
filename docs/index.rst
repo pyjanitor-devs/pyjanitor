@@ -5,6 +5,8 @@
 
 Welcome to pyjanitor's documentation!
 =====================================
+pyjanitor is a project that extends Pandas with a verb-based API, providing convenient data cleaning routines for
+repetitive tasks.
 
 .. toctree::
    :maxdepth: 2

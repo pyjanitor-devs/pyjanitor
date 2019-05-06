@@ -2599,3 +2599,34 @@ def update_where(
     """
     df.loc[conditions, target_col] = target_val
     return df
+
+
+@pf.register_dataframe_method
+def to_datetime(df: pd.DataFrame, column: str, **kwargs) -> pd.DataFrame:
+    """
+
+    Makes the pandas to_datetime method work as a chainable method.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = to_datetime(df, 'col1', format='%Y%m%d')
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).to_datetime('col1', format='%Y%m%d')
+
+    :param df: A pandas DataFrame.
+    :param column: Column name.
+    :param kwargs: provide any kwargs that pd.to_datetime can take.
+    :returns: A pandas DataFrame.
+    """
+
+    df[column] = pd.to_datetime(df[column], **kwargs)
+
+    return df

@@ -173,7 +173,10 @@ texinfo_documents = [
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"https://docs.python.org/": None}
+intersphinx_mapping = {
+    "https://docs.python.org/": None,
+    "https://pandas.pydata.org/pandas-docs/stable": None,
+}
 
 # -- Options for todo extension ----------------------------------------------
 

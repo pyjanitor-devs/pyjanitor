@@ -1,23 +1,20 @@
 jobs:
-  job: linux
+  - job: linux
+    variables:
+      activate.command: "source activate"
+    strategy:
+      matrix:
+        py37:
+          python.version: "3.7"
+        py36:
+          python.version: "3.6"
 
-  variables:
-    activate.command: "source activate"
+    pool:
+      vmImage: ubuntu-16.04
 
-  strategy:
-    matrix:
-      py37:
-        python.version: "3.7"
-      py36:
-        python.version: "3.6"
-
-  pool:
-    vmImage: ubuntu-16.04
-
-
-  steps:
-  # Add conda to PATH.
-  - bash: echo "##vso[task.prependpath]$CONDA/bin"
-    displayName: Add conda to PATH
-  - template: templates/create-env.yml
-  - template: templates/run-tests.yml
+    steps:
+    # Add conda to PATH.
+    - bash: echo "##vso[task.prependpath]$CONDA/bin"
+      displayName: Add conda to PATH
+    - template: templates/create-env.yml
+    - template: templates/run-tests.yml

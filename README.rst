@@ -116,30 +116,31 @@ The idea behind the API is two-fold:
 
 As such, there are three ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.
 
-Continuing with the company_sales dataframe previously used
+Continuing with the company_sales dataframe previously used:
+
 .. code-block:: python
+
 	import pandas as pd
 	import numpy as np
-    
 	company_sales = {'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
 					 'Company1': [150.0, 200.0, 300.0, 400.0],
 					 'Company2': [180.0, 250.0, np.nan, 500.0],
 					 'Company3': [400.0, 500.0, 600.0, 675.0]}
+	#Create a dictionary
 	
-
 .. code-block:: python
+
 	import janitor  # upon import, functions are registered as part of pandas.
 	
     df = pd.DataFrame.from_dict(company_sales)
-    df = df.clean_names().remove_empty()  # further method chaining possible.
+    df = df.clean_names().remove_empty()  # This cleans the column names as well as removes any duplicate rows
 
 The second is the functional API.
 
 .. code-block:: python
 
     from janitor import clean_names, remove_empty
-    import pandas as pd
-
+    
     df = pd.DataFrame.from_dict(company_sales)
     df = clean_names(df)
     df = remove_empty(df)
@@ -149,13 +150,9 @@ The final way is to use the `pipe()` method.
 .. code-block:: python
 
   from janitor import clean_names, remove_empty
-  import pandas as pd
-
-  ddf = pd.DataFrame.from_dict(company_sales)
-  (df.pipe(clean_names)
-     .pipe(remove_empty)
-     .pipe(...))
-
+  
+  df = pd.DataFrame.from_dict(company_sales)
+  (df.pipe(clean_names).pipe(remove_empty))
 
 Contributing
 ------------

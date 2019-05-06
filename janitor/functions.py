@@ -1173,7 +1173,7 @@ def remove_columns(df: pd.DataFrame, columns: List):
 
 
 @pf.register_dataframe_method
-def change_type(df, column: str, dtype):
+def change_type(df, column: str, dtype, ignore_exception = False):
     """
     Changes the type of a column.
 
@@ -1190,9 +1190,23 @@ def change_type(df, column: str, dtype):
     :param df: A pandas dataframe.
     :param column: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
+    :param ignore_exception: The way to handle a conversion exception {False, "FillNaN", "Keep_values"}: default False, "FillNaN": replace non convertible values with None, "Keep_values": keep non convertible values.  
         Python types, or a numpy datatype.
     """
-    df[column] = df[column].astype(dtype)
+    if not ignore_exception:
+        df[column] = df[column].astype(dtype)
+    elif ignore_exception == "Keep_values":
+        df[column] = df[column].astype(dtype, errors="ignore" )
+    elif ignore_exception == "FillNaN":
+        # returns None when conversion 
+        def convert(x, dtype):
+            try: 
+                return(dtype(x))
+            except:
+                return(None)
+        df[column] = df[column].apply(lambda x: convert(x, dtype)) ###
+    else:
+        raise ValueError("unknown option for ignore_exception")  
     return df
 
 

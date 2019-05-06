@@ -22,3 +22,4 @@ With thanks to the following contributors:
 - `@jonnybazookatone <https://github.com/jonnybazookatone>`_
 - `@SorenFrohlich <https://github.com/SorenFrohlich>`_
 - `@dsouzadaniel <https://github.com/dsouzadaniel>`_
+- `@Eidhagen <https://github.com/Eidhagen>`_

@@ -631,7 +631,7 @@ def fill_empty(df, columns, value):
 
 
 @pf.register_dataframe_method
-def expand_column(df, column, sep, concat=True):
+def expand_column(df, sep, column_name=None, concat=True, **kwargs):
     """
     Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -641,7 +641,8 @@ def expand_column(df, column, sep, concat=True):
 
     .. code-block:: python
 
-        df = expand_column(df, column='col_name',
+        df = expand_column(df,
+                           column_name='col_name',
                            sep=', ')  # note space in sep
 
     Method chaining example:
@@ -650,21 +651,28 @@ def expand_column(df, column, sep, concat=True):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).expand_column(df, column='col_name', sep=', ')
+        df = pd.DataFrame(...).expand_column(df,
+                                             column_name='col_name',
+                                             sep=', ')
 
     :param df: A pandas DataFrame.
-    :param column: A `str` indicating which column to expand.
+    :param column_name: A `str` indicating which column to expand.
     :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
     :param bool concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).
     """
-    expanded = df[column].str.get_dummies(sep=sep)
+    if kwargs and column_name is not None:
+        raise TypeError("Mixed usage of column and column_name")
+    if column_name is None:
+        warnings.warn("column is deprecated. You should use column_name.")
+        column_name = kwargs["column"]
+    expanded_df = df[column_name].str.get_dummies(sep=sep)
     if concat:
-        df = df.join(expanded)
+        df = df.join(expanded_df)
         return df
     else:
-        return expanded
+        return expanded_df
 
 
 @pf.register_dataframe_method
@@ -1173,9 +1181,14 @@ def remove_columns(df: pd.DataFrame, columns: List):
 
 
 @pf.register_dataframe_method
-def change_type(df, column: str, dtype):
+def change_type(df, column: str, dtype, ignore_exception = False):
     """
     Changes the type of a column.
+    
+    Exceptions that are raised can be ignored. For example, if one has a mixed
+    dtype column that has non-integer strings and integers, and you want to coerce
+    everything to integers, you can optionally ignore the non-integer strings and 
+    replace them with ``NaN``s or keep the original value
 
     Intended to be the method-chaining alternative to::
 
@@ -1191,8 +1204,22 @@ def change_type(df, column: str, dtype):
     :param column: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
+    :param ignore_exception: one of {False, "fillna", "keep_values"}.
     """
-    df[column] = df[column].astype(dtype)
+    if not ignore_exception:
+        df[column] = df[column].astype(dtype)
+    elif ignore_exception == "keep_values":
+        df[column] = df[column].astype(dtype, errors="ignore" )
+    elif ignore_exception == "fillna":
+        # returns None when conversion 
+        def convert(x, dtype):
+            try: 
+                return dtype(x)
+            except:
+                return None
+        df[column] = df[column].apply(lambda x: convert(x, dtype)) ###
+    else:
+        raise ValueError("unknown option for ignore_exception")  
     return df
 
 
@@ -2598,4 +2625,35 @@ def update_where(
     :param target_val: Value to be updated
     """
     df.loc[conditions, target_col] = target_val
+    return df
+
+
+@pf.register_dataframe_method
+def to_datetime(df: pd.DataFrame, column: str, **kwargs) -> pd.DataFrame:
+    """
+
+    Makes the pandas to_datetime method work as a chainable method.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = to_datetime(df, 'col1', format='%Y%m%d')
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).to_datetime('col1', format='%Y%m%d')
+
+    :param df: A pandas DataFrame.
+    :param column: Column name.
+    :param kwargs: provide any kwargs that pd.to_datetime can take.
+    :returns: A pandas DataFrame.
+    """
+
+    df[column] = pd.to_datetime(df[column], **kwargs)
+
     return df

@@ -97,6 +97,7 @@ Ready to contribute? Here's how to set up `pyjanitor` for local development.
 
     $ cd pyjanitor/
     $ conda env create -f environment-dev.yml
+    $ conda activate pyjanitor-dev
     $ python setup.py develop
 
 4. Create a branch for local development::

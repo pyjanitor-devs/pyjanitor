@@ -124,11 +124,11 @@ Continuing with the company_sales dataframe previously used:
 					 'Company1': [150.0, 200.0, 300.0, 400.0],
 					 'Company2': [180.0, 250.0, np.nan, 500.0],
 					 'Company3': [400.0, 500.0, 600.0, 675.0]}
-	#Create a dictionary
+	
 	
 .. code-block:: python
-    
-	import janitor  # upon import, functions are registered as part of pandas.
+
+    import janitor  # upon import, functions are registered as part of pandas.
     df = pd.DataFrame.from_dict(company_sales).clean_names().remove_empty() # This cleans the column names as well as removes any duplicate rows 
 
 The second is the functional API.
@@ -141,9 +141,10 @@ The second is the functional API.
     df = clean_names(df)
     df = remove_empty(df)
 
-The final way is to use the `pipe()` method.
+The final way is to use the `pipe()` method:
 
 .. code-block:: python
+
     from janitor import clean_names, remove_empty
     df = pd.DataFrame.from_dict(company_sales).pipe(clean_names).pipe(remove_empty)
 

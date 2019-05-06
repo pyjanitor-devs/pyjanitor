@@ -5,7 +5,7 @@
 
 Welcome to pyjanitor's documentation!
 =====================================
-Create verb-based API to extend Pandas with convenient data cleaning routine for
+pyjanitor is a project that extends Pandas with a verb-based API, providing convenient data cleaning routines for
 repetitive tasks.
 
 .. toctree::

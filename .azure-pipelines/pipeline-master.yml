@@ -13,8 +13,51 @@ jobs:
       vmImage: ubuntu-16.04
 
     steps:
-    # Add conda to PATH.
     - bash: echo "##vso[task.prependpath]$CONDA/bin"
+      displayName: Add conda to PATH
+    - template: templates/create-env.yml
+    - template: templates/run-tests.yml
+
+  - job: macos
+    variables:
+      activate.command: "source activate"
+    strategy:
+      matrix:
+        py37:
+          python.version: "3.7"
+        py36:
+          python.version: "3.6"
+
+    pool:
+      vmImage: macOS-10.14
+
+    steps:
+    - bash: echo "##vso[task.prependpath]$CONDA/bin"
+      displayName: Add conda to PATH
+
+    # On Hosted macOS, the agent user doesn't have ownership of Miniconda's installation directory/
+    # We need to take ownership if we want to update conda or install packages globally
+    - bash: sudo chown -R $USER $CONDA
+      displayName: Take ownership of conda installation
+    - template: templates/create-env.yml
+    - template: templates/run-tests.yml
+
+
+  - job: windows
+    variables:
+      activate.command: "activate"
+    strategy:
+      matrix:
+        py37:
+          python.version: "3.7"
+        py36:
+          python.version: "3.6"
+
+    pool:
+      vmImage: vs2017-win2016
+
+    steps:
+    - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
       displayName: Add conda to PATH
     - template: templates/create-env.yml
     - template: templates/run-tests.yml

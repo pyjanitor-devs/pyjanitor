@@ -2672,7 +2672,13 @@ def groupby_agg(
 
     Allow one to chain a groupby and a merge
 
-    Example:
+    Without this function, we would have to break out of method chaining:
+
+    .. code-block:: python
+        df_grp = df.groupby(...).agg(...)
+        df = df.merge(df_grp, ...)
+
+    Now, this function can be method-chained:
 
     .. code-block:: python
 

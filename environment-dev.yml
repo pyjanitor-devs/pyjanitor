@@ -35,6 +35,7 @@ dependencies:
 - hypothesis>=4.4.0
 - jupyterlab
 - xorg-libxrender
+- nbsphinx
 - pip
 - pip:
   - sphinxcontrib-fulltoc

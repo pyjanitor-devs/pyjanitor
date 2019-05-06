@@ -169,7 +169,7 @@ def remove_empty(df):
     :returns: A pandas DataFrame.
     """
     nanrows = df.index[df.isnull().all(axis=1)]
-    df.drop(index=nanrows, inplace=True)
+    df = df.drop(index=nanrows).reset_index(drop=True)
 
     nancols = df.columns[df.isnull().all(axis=0)]
     df.drop(columns=nancols, inplace=True)

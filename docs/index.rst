@@ -16,6 +16,7 @@ repetitive tasks.
    contributing
    example
    authors
+   notebooks
 
 .. include:: ../README.rst
 

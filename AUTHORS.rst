@@ -17,6 +17,8 @@ With thanks to the following contributors:
 - `@CWen001 <https://github.com/CWen001>`_
 - `@bhallaY <https://github.com/bhallaY>`_
 - `@jekwatt <https://github.com/jekwatt>`_
-- `@SorenFrohlich <https://github.com/SorenFrohlich>`_
 - `@kurtispinkney <https://github.com/kurtispinkney>`_
 - `@lphk92 <https://github.com/lphk92>`_
+- `@jonnybazookatone <https://github.com/jonnybazookatone>`_
+- `@SorenFrohlich <https://github.com/SorenFrohlich>`_
+- `@dsouzadaniel <https://github.com/dsouzadaniel>`_

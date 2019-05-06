@@ -21,33 +21,50 @@ Inspired by the R statistical language ecosystem, where consistent and good API 
 
 To accomplish this, actions for which we would need to invoke imperative-style statements, can be replaced with method chains that allow one to read off the logical order of actions taken. Let us see the annotated example below. First, off, here's the textual description of a data cleaning pathway:
 
-1. Create dataframe.
+1. Create a dataframe.
 2. Delete one column.
 3. Drop rows with empty values in two particular columns.
 4. Rename another two columns.
 5. Add a new column.
 
+Let's import some libraries and begin with some sample data for this example :
+
+.. code-block:: python
+
+    # Libraries
+    import numpy as np
+    import pandas as pd
+    import janitor
+
+    # Sample Data curated for this example
+    company_sales = {'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
+                     'Company1': [150.0, 200.0, 300.0, 400.0],
+                     'Company2': [180.0, 250.0, np.nan, 500.0],
+                     'Company3': [400.0, 500.0, 600.0, 675.0]}
+
 In ``pandas`` code, this would look as such:
 
 .. code-block:: python
 
-    df = pd.DataFrame(...)  # create a pandas DataFrame somehow.
-    del df['column1']  # delete a column from the dataframe.
-    df = df.dropna(subset=['column2', 'column3'])  # drop rows that have empty values in column 2 and 3.
-    df = df.rename({'column2': 'unicorns', 'column3': 'dragons'})  # rename column2 and column3
-    df['newcolumn'] = ['iterable', 'of', 'items']  # add a new column.
+    # The Pandas Way
+    df = pd.DataFrame.from_dict(company_sales) # create a pandas DataFrame from the company_sales dictionary
+    del df['Company1']  # delete a column from the DataFrame. Say 'Company1'
+    df = df.dropna(subset=['Company2', 'Company3'])  # drop rows that have empty values in columns 'Company2' and 'Company3'
+    df = df.rename({'Company2': 'Amazon', 'Company3': 'Facebook'}, axis=1)  # rename 'Company2' to 'Amazon' and 'Company3' to 'Facebook'
+    df['Google'] = [450.0, 550.0, 800.0]  # Let's add some data for another company. Say 'Google'
 
 With ``pyjanitor``, we enable method chaining with method names that are *verbs*, which describe the action taken.
 
 .. code-block:: python
 
+    # The PyJanitor Way
     df = (
-        pd.DataFrame(...)
-        .remove_columns(['column1'])
-        .dropna(subset=['column2', 'column3'])
-        .rename_column('column2', 'unicorns')
-        .rename_column('column3', 'dragons')
-        .add_column('newcolumn', ['iterable', 'of', 'items'])
+        pd.DataFrame.from_dict(company_sales)
+        .remove_columns(['Company1'])
+        .dropna(subset=['Company2', 'Company3'])
+        .rename_column('Company2', 'Amazon')
+        .rename_column('Company3', 'Facebook')
+        .add_column('Google', [450.0, 550.0, 800.0])
     )
 
 As such, the pyjanitor's etymology has a two-fold relationship to "cleanliness". Firstly, it's about extending Pandas with convenient data cleaning routines. Secondly, it's about providing a cleaner, method-chaining, verb-based API for common pandas routines.

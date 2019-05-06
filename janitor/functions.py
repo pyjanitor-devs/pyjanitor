@@ -2672,13 +2672,7 @@ def groupby_agg(
 
     Allow one to chain a groupby and a merge
 
-    Functional usage example:
-
-    .. code-block:: python
-
-        df = groupby_agg(df, by='col1', agg='mean', new_column='col1_mean')
-
-    Method chaining example:
+    Example:
 
     .. code-block:: python
 

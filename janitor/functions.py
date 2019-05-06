@@ -2005,10 +2005,10 @@ def min_max_scale(
 
 
 @pf.register_dataframe_method
-def collapse_levels(df: pd.DataFrame, sep: str = "_"):
+def collapse_levels(df: pd.DataFrame, sep: str = "_", axis=1):
     """
-    Given a `DataFrame` containing multi-level columns, flatten to single-
-    level by string-joining the column labels in each level.
+    Given a `DataFrame` containing multi-level index/columns, flatten 
+    to single-level by string-joining the column labels in each level.
 
     After a `groupby` / `aggregate` operation where `.agg()` is passed a
     list of multiple aggregation functions, a multi-level `DataFrame` is
@@ -2017,7 +2017,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
     It is sometimes convenient for later indexing to flatten out this
     multi-level configuration back into a single level. This function does
     this through a simple string-joining of all the names across different
-    levels in a single column.
+    levels in a single column/ index level.
 
     Method chaining example given two value columns `['var1', 'var2']`:
 
@@ -2039,6 +2039,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
 
     :param df: A pandas DataFrame.
     :param sep: String separator used to join the column level names
+    :param axis: 0 for index and 1 for columns 
     :returns: df
     """
 

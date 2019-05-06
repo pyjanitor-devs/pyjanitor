@@ -114,8 +114,6 @@ The idea behind the API is two-fold:
 - Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
 - Add other utility functions that make it easy to do data cleaning/preprocessing in `pandas`.
 
-As such, there are three ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.
-
 Continuing with the company_sales dataframe previously used:
 
 .. code-block:: python
@@ -127,7 +125,8 @@ Continuing with the company_sales dataframe previously used:
 					 'Company2': [180.0, 250.0, np.nan, 500.0],
 					 'Company3': [400.0, 500.0, 600.0, 675.0]}
 	
-	
+As such, there are three ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.	
+
 .. code-block:: python
 
     import janitor  # upon import, functions are registered as part of pandas.

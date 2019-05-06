@@ -19,3 +19,4 @@ With thanks to the following contributors:
 - `@jekwatt <https://github.com/jekwatt>`_
 - `@kurtispinkney <https://github.com/kurtispinkney>`_
 - `@lphk92 <https://github.com/lphk92>`_
+- `@jonnybazookatone <https://github.com/jonnybazookatone>`_

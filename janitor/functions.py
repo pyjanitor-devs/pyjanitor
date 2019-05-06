@@ -1183,7 +1183,7 @@ def remove_columns(df: pd.DataFrame, columns: List):
 @pf.register_dataframe_method
 def change_type(df, column: str, dtype, ignore_exception = False):
     """
-   Changes the type of a column.
+    Changes the type of a column.
     
     Exceptions that are raised can be ignored. For example, if one has a mixed
     dtype column that has non-integer strings and integers, and you want to coerce

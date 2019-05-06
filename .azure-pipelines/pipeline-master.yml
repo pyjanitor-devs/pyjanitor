@@ -1,6 +1,9 @@
 jobs:
   job: linux
 
+  variables:
+    activate.command: "source activate"
+
   strategy:
     matrix:
       py37:
@@ -16,15 +19,5 @@ jobs:
   # Add conda to PATH.
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
-
-  - script: |
-      conda env create -f environment-dev.yml
-      conda install -y python=$(python.version)
-      source activate pyjanitor-dev
-      python setup.py develop
-    displayName: 'Install package and dependencies'
-
-  - script: |
-      source activate pyjanitor-dev
-      pytest
-    displayName: 'Run tests'
+  - template: templates/create-env.yml
+  - template: templates/run-tests.yml

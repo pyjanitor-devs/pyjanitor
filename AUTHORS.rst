@@ -18,3 +18,4 @@ With thanks to the following contributors:
 - `@bhallaY <https://github.com/bhallaY>`_
 - `@jekwatt <https://github.com/jekwatt>`_
 - `@SorenFrohlich <https://github.com/SorenFrohlich>`_
+- `@lphk92 <https://github.com/lphk92>`_

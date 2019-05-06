@@ -11,16 +11,16 @@ def test_change_type(dataframe):
     
 
 @pytest.mark.functions
-def test_change_type_Keep_values():
+def test_change_type_keep_values():
     df=pd.DataFrame(['a',1,True], columns=['col1'])
-    df = df.change_type(column="col1", dtype=float, ignore_exception="Keep_values")
+    df = df.change_type(column="col1", dtype=float, ignore_exception="keep_values")
     assert df.equals(pd.DataFrame(['a',1,True], columns=['col1']))
     
     
 @pytest.mark.functions
-def test_change_type_Fill_NaN():
+def test_change_type_fillna():
     df=pd.DataFrame(['a',1,True], columns=['col1'])
-    df = df.change_type(column="col1", dtype=float, ignore_exception="FillNaN")
+    df = df.change_type(column="col1", dtype=float, ignore_exception="fillna")
     assert np.isnan(df.col1[0])
 
     

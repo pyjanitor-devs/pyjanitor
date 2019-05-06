@@ -2602,7 +2602,7 @@ def update_where(
 
 
 @pf.register_dataframe_method
-def to_datetime(df: pd.DataFrame, column: str, format: str) -> pd.DataFrame:
+def to_datetime(df: pd.DataFrame, column: str, **kwargs) -> pd.DataFrame:
     """
 
     Makes the pandas to_datetime method work as a chainable method.
@@ -2623,10 +2623,10 @@ def to_datetime(df: pd.DataFrame, column: str, format: str) -> pd.DataFrame:
 
     :param df: A pandas DataFrame.
     :param column: Column name.
-    :param str format: time format to convert to.
+    :param kwargs: provide any kwargs that pd.to_datetime can take.
     :returns: A pandas DataFrame.
     """
 
-    df[column] = pd.to_datetime(df[column], format=format)
+    df[column] = pd.to_datetime(df[column], **kwargs)
 
     return df

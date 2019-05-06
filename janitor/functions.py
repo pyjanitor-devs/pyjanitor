@@ -1183,7 +1183,12 @@ def remove_columns(df: pd.DataFrame, columns: List):
 @pf.register_dataframe_method
 def change_type(df, column: str, dtype, ignore_exception = False):
     """
-    Changes the type of a column.
+   Changes the type of a column.
+    
+    Exceptions that are raised can be ignored. For example, if one has a mixed
+    dtype column that has non-integer strings and integers, and you want to coerce
+    everything to integers, you can optionally ignore the non-integer strings and 
+    replace them with ``NaN``s or keep the original value
 
     Intended to be the method-chaining alternative to::
 
@@ -1198,13 +1203,8 @@ def change_type(df, column: str, dtype, ignore_exception = False):
     :param df: A pandas dataframe.
     :param column: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
-    :param ignore_exception: 
-    Exceptions that are raised can be ignored. For example, if one has a mixed
-    dtype column that has non-integer strings and integers, and you want to coerce
-    everything to integers, you can optionally ignore the non-integer strings and 
-    replace them with ``NaN``s or keep the original value.
-    {False, "fillna", "keep_values"}.
         Python types, or a numpy datatype.
+    :param ignore_exception: one of {False, "fillna", "keep_values"}.
     """
     if not ignore_exception:
         df[column] = df[column].astype(dtype)

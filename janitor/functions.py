@@ -35,9 +35,7 @@ def _strip_underscores(df, strip_underscores=None):
     """
     underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
-        raise JanitorError(
-            f"strip_underscores must be one of: {underscore_options}"
-        )
+        raise JanitorError(f"strip_underscores must be one of: {underscore_options}")
 
     if strip_underscores in ["left", "l"]:
         df = df.rename(columns=lambda x: x.lstrip("_"))
@@ -425,18 +423,13 @@ def reorder_columns(
     check("column_order", column_order, [list, pd.Index])
 
     if any(col not in df.columns for col in column_order):
-        raise IndexError(
-            "A column in column_order was not found in the DataFrame."
-        )
+        raise IndexError("A column in column_order was not found in the DataFrame.")
 
     # if column_order is a Pandas index, needs conversion to list:
     column_order = list(column_order)
 
     return df.reindex(
-        columns=(
-            column_order
-            + [col for col in df.columns if col not in column_order]
-        ),
+        columns=(column_order + [col for col in df.columns if col not in column_order]),
         copy=False,
     )
 
@@ -617,14 +610,14 @@ def fill_empty(df, columns, value):
     """
     if isinstance(columns, list) or isinstance(columns, tuple):
         for col in columns:
-            assert (
-                col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            assert col in df.columns, "{col} missing from dataframe columns!".format(
+                col=col
+            )
             df[col] = df[col].fillna(value)
     else:
-        assert (
-            columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
+        assert columns in df.columns, "{col} missing from dataframe columns!".format(
+            col=columns
+        )
         df[columns] = df[columns].fillna(value)
 
     return df
@@ -668,9 +661,7 @@ def expand_column(df, column, sep, concat=True):
 
 
 @pf.register_dataframe_method
-def concatenate_columns(
-    df, columns: List, new_column_name: str, sep: str = "-"
-):
+def concatenate_columns(df, columns: List, new_column_name: str, sep: str = "-"):
     """
     Concatenates the set of columns into a single column.
 
@@ -755,9 +746,7 @@ def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
 
 
 @pf.register_dataframe_method
-def filter_string(
-    df, column: str, search_string: str, complement: bool = False
-):
+def filter_string(df, column: str, search_string: str, complement: bool = False):
     """
     Filter a string-based column according to whether it contains a substring.
 
@@ -1069,9 +1058,7 @@ def filter_date(
         return x.day
 
     if column_date_options:
-        df.loc[:, column] = pd.to_datetime(
-            df.loc[:, column], **column_date_options
-        )
+        df.loc[:, column] = pd.to_datetime(df.loc[:, column], **column_date_options)
     else:
         df.loc[:, column] = pd.to_datetime(df.loc[:, column])
 
@@ -1319,9 +1306,7 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
 
     nrows = df.shape[0]
 
-    if hasattr(value, "__len__") and not isinstance(
-        value, (str, bytes, bytearray)
-    ):
+    if hasattr(value, "__len__") and not isinstance(value, (str, bytes, bytearray)):
         # if `value` is a list, ndarray, etc.
         if len(value) > nrows:
             raise ValueError(
@@ -1336,9 +1321,7 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
             )
 
         if len(value) == 0:
-            raise ValueError(
-                f"Values has to be an iterable of minimum length 1"
-            )
+            raise ValueError(f"Values has to be an iterable of minimum length 1")
         len_value = len(value)
     elif fill_remaining:
         # relevant if a scalar val was passed, yet fill_remaining == True
@@ -1499,9 +1482,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
     final_col_names = []
     for idx, col_name in enumerate(col_names):
         if col_name_count[idx] > 0:
-            col_name_to_append = (
-                col_name + col_separator + str(col_name_count[idx])
-            )
+            col_name_to_append = col_name + col_separator + str(col_name_count[idx])
             final_col_names.append(col_name_to_append)
         else:
             final_col_names.append(col_name)
@@ -1881,9 +1862,7 @@ def transform_columns(
 
 
 @pf.register_dataframe_method
-def min_max_scale(
-    df, old_min=None, old_max=None, col_name=None, new_min=0, new_max=1
-):
+def min_max_scale(df, old_min=None, old_max=None, col_name=None, new_min=0, new_max=1):
     """
     Scales data to between a minimum and maximum value.
 
@@ -1946,11 +1925,7 @@ def min_max_scale(
     :param col_name (optional): The column on which to perform scaling.
     :returns: df
     """
-    if (
-        (old_min is not None)
-        and (old_max is not None)
-        and (old_max <= old_min)
-    ):
+    if (old_min is not None) and (old_max is not None) and (old_max <= old_min):
         raise ValueError("`old_max` should be greater than `old_max`")
 
     if new_max <= new_min:
@@ -1964,9 +1939,7 @@ def min_max_scale(
         if old_max is None:
             old_max = df[col_name].max()
         old_range = old_max - old_min
-        df[col_name] = (
-            df[col_name] - old_min
-        ) * new_range / old_range + new_min
+        df[col_name] = (df[col_name] - old_min) * new_range / old_range + new_min
     else:
         if old_min is None:
             old_min = df.min().min()
@@ -2022,8 +1995,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
         return df
 
     df.columns = [
-        sep.join([str(el) for el in tup if str(el) != ""])
-        for tup in df.columns.values
+        sep.join([str(el) for el in tup if str(el) != ""]) for tup in df.columns.values
     ]
 
     return df
@@ -2386,9 +2358,7 @@ def currency_column_to_numeric(
         check("fill_all_non_numeric", fill_all_non_numeric, [int, float])
         column_series = column_series.fillna(fill_all_non_numeric)
 
-    column_series = column_series.apply(
-        _replace_original_empty_string_with_none
-    )
+    column_series = column_series.apply(_replace_original_empty_string_with_none)
 
     df = df.assign(**{col_name: pd.to_numeric(column_series)})
 
@@ -2426,9 +2396,7 @@ def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
         columns = [col for col in df if re.match(search_string, col)]
         full_column_list.extend(columns)
 
-    return (
-        df.drop(columns=full_column_list) if invert else df[full_column_list]
-    )
+    return df.drop(columns=full_column_list) if invert else df[full_column_list]
 
 
 @pf.register_dataframe_method
@@ -2475,9 +2443,7 @@ def impute(df, column: str, value=None, statistic=None):
 
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if value is not None and statistic is not None:
-        raise ValueError(
-            "Only one of `value` or `statistic` should be provided"
-        )
+        raise ValueError("Only one of `value` or `statistic` should be provided")
 
     # If statistic is provided, then we compute the relevant summary statistic
     # from the other data.

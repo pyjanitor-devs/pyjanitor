@@ -114,7 +114,15 @@ To base a branch directly off of `dev` instead of `master`, create a new one as 
     $ flake8 janitor tests
     $ py.test
 
-   flake8 and pytest are instaled when you create the development environment.
+   flake8 and pytest are installed when you create the development environment.
+
+   When you run the test locally, the tests in ``chemistry.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
+        1. test_maccs_keys_fingerprint
+        2. test_molecular_descriptors
+        3. test_morgan_fingerprint_counts
+        4. test_morgan_fingerprint_bits
+        5. test_smiles2mol [None]
+        6. test_smiles2mol [terminal]
 
 6. Commit your changes and push your branch to GitHub::
 

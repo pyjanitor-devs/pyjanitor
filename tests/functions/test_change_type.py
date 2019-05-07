@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-import pytest
-import pandas as pd
-import numpy as np
-=======
 import numpy as np
 import pandas as pd
 import pytest
->>>>>>> upstream/dev
 
 
 @pytest.mark.functions

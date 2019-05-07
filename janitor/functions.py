@@ -2721,7 +2721,7 @@ def groupby_agg(
                                            new_column='col1_mean')
 
     :param df: A pandas DataFrame.
-    :param by: Column(s) to groupby on, either a `str` or 
+    :param by: Column(s) to groupby on, either a `str` or
                a `list` of `str`
     :param new_column: Name of the aggregation output column.
     :param agg_column: Name of the column to aggregate over.

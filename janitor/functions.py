@@ -1234,7 +1234,7 @@ def change_type(df, column: str, dtype, ignore_exception=False):
         def convert(x, dtype):
             try:
                 return dtype(x)
-            except:
+            except TypeError:
                 return None
 
         df[column] = df[column].apply(lambda x: convert(x, dtype))
@@ -2749,7 +2749,8 @@ def drop_duplicated_columns(
     """
     Removes a duplicated column specified in column_name and column_order.
 
-    Column order 0 is to remove the first column, order 1 is to remove the second column, and etc
+    Column order 0 is to remove the first column,
+           order 1 is to remove the second column, and etc
 
     Method chaining example:
 
@@ -2768,7 +2769,8 @@ def drop_duplicated_columns(
 
     :param df: A pandas DataFrame
     :param column_name: Column to be removed
-    :param column_order: Among the duplicated columns, select which column index to be removed
+    :param column_order: Among the duplicated columns,
+      select which column index to be removed
     :return: A pandas DataFrame
     """
     cols = df.columns.to_list()
@@ -2778,7 +2780,9 @@ def drop_duplicated_columns(
         if col_name == column_name
     ]
 
-    # given that a column could be duplicated, user could opt based on its order
+    # given that a column could be duplicated,
+    # :w
+    # user could opt based on its order
     removed_col_idx = col_indexes[column_order]
     # get the column indexes without column that is being removed
     filtered_cols = [

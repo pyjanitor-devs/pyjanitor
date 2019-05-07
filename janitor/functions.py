@@ -144,9 +144,11 @@ def clean_names(
 @pf.register_dataframe_method
 def remove_empty(df):
     """
-    Drop all rows and columns that are completely null.
+    Drop all rows and columns that are completely null. This method also
+    resets the index(by default) since it doesn't make sense to preserve
+    the index of a completely empty row.
 
-    Implementation is shamelessly copied from `StackOverflow`_.
+    Implementation is inspired from `StackOverflow`_.
 
     .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
 
@@ -169,7 +171,7 @@ def remove_empty(df):
     :returns: A pandas DataFrame.
     """
     nanrows = df.index[df.isnull().all(axis=1)]
-    df.drop(index=nanrows, inplace=True)
+    df = df.drop(index=nanrows).reset_index(drop=True)
 
     nancols = df.columns[df.isnull().all(axis=0)]
     df.drop(columns=nancols, inplace=True)
@@ -1189,9 +1191,7 @@ def remove_columns(df: pd.DataFrame, columns: List):
     :param df: A pandas DataFrame
     :param columns: The columns to remove.
     """
-    for col in columns:
-        del df[col]
-    return df
+    return df.drop(columns=columns)
 
 
 @pf.register_dataframe_method
@@ -1229,7 +1229,7 @@ def change_type(df, column: str, dtype, ignore_exception=False):
         def convert(x, dtype):
             try:
                 return dtype(x)
-            except:
+            except ValueError:
                 return None
 
         df[column] = df[column].apply(lambda x: convert(x, dtype))
@@ -2735,3 +2735,56 @@ def groupby_agg(
     df = df.merge(df_grp, on=by)
 
     return df
+
+
+@pf.register_dataframe_method
+def drop_duplicate_columns(
+    df: pd.DataFrame, column_name: str, nth_index: int = 0
+) -> pd.DataFrame:
+    """
+    Removes a duplicated column specified by column_name, its index
+
+    Column order 0 is to remove the first column,
+           order 1 is to remove the second column, and etc
+
+    The corresponding tidyverse R's library is:
+    `select(-<column_name>_<nth_index + 1>)`
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame({
+            "a": range(10),
+            "b": range(10),
+            "A": range(10, 20),
+            "a*": range(20, 30),
+        }).clean_names(remove_special=True)
+
+        # remove a duplicated second 'a' column
+        df.drop_duplicate_columns(column_name="a", nth_index=1)
+
+
+
+    :param df: A pandas DataFrame
+    :param column_name: Column to be removed
+    :param nth_index: Among the duplicated columns,
+      select the nth column to drop.
+    :return: A pandas DataFrame
+    """
+    cols = df.columns.to_list()
+    col_indexes = [
+        col_idx
+        for col_idx, col_name in enumerate(cols)
+        if col_name == column_name
+    ]
+
+    # given that a column could be duplicated,
+    # user could opt based on its order
+    removed_col_idx = col_indexes[nth_index]
+    # get the column indexes without column that is being removed
+    filtered_cols = [
+        c_i for c_i, c_v in enumerate(cols) if c_i != removed_col_idx
+    ]
+
+    return df.iloc[:, filtered_cols]

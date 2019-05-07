@@ -23,4 +23,3 @@ def idempotent(func, df, *args, **kwargs):
     assert func(df, *args, **kwargs) == func(
         func(df, *args, **kwargs), *args, **kwargs
     )
-

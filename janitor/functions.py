@@ -174,7 +174,7 @@ def remove_empty(df):
     df = df.drop(index=nanrows).reset_index(drop=True)
 
     nancols = df.columns[df.isnull().all(axis=0)]
-    df.drop(columns=nancols, inplace=True)
+    df = df.drop(columns=nancols)
 
     return df
 
@@ -1657,10 +1657,10 @@ def row_to_names(
     df.columns.name = None
 
     if remove_row:
-        df.drop(df.index[row_number], inplace=True)
+        df = df.drop(df.index[row_number])
 
     if remove_rows_above:
-        df.drop(df.index[range(row_number)], inplace=True)
+        df = df.drop(df.index[range(row_number)])
 
     return df
 
@@ -2728,6 +2728,57 @@ def groupby_agg(
     df = df.merge(df_grp, on=by)
 
     return df
+
+
+@pf.register_dataframe_accessor("data_description")
+class DataDescription:
+    """
+    Accessor that provides high-level description of data present
+    in this DataFrame.
+    """
+
+    def __init__(self, data):
+        self._data = data
+        self._desc = dict()
+
+    def _get_data_df(self):
+        df = self._data
+
+        data_dict = dict()
+        data_dict["column_name"] = df.columns.tolist()
+        data_dict["type"] = df.dtypes.tolist()
+        data_dict["count"] = df.count().tolist()
+        data_dict["pct_missing"] = (1 - (df.count() / len(df))).tolist()
+        data_dict["description"] = [self._desc.get(c, "") for c in df.columns]
+
+        return pd.DataFrame(data_dict).set_index("column_name")
+
+    @property
+    def df(self):
+        """
+        Get a table of descriptive information in a DataFrame format.
+        """
+        return self._get_data_df()
+
+    def display(self):
+        """
+        Print the table of descriptive information about this DataFrame.
+        """
+        print(self._get_data_df())
+
+    def set_description(self, desc: Union[List, Dict]):
+        """
+        Update the description for each of the columns in the DataFrame.
+
+        :param desc: The structure containing the descriptions to update
+        :type desc: list or dict
+        """
+        if isinstance(desc, list):
+            assert len(desc) == len(self._data.columns)
+            self._desc = dict(zip(self._data.columns, desc))
+
+        elif isinstance(desc, dict):
+            self._desc = desc
 
 
 @pf.register_dataframe_method

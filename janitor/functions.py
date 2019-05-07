@@ -2761,6 +2761,7 @@ def bin_numeric(
     return df
 
 
+@pf.register_dataframe_method
 def drop_duplicate_columns(
     df: pd.DataFrame, column_name: str, nth_index: int = 0
 ) -> pd.DataFrame:

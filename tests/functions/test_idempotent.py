@@ -1,6 +1,8 @@
-import pytest
-from janitor.utils import idempotent
 from math import fabs, floor
+
+import pytest
+
+from janitor.utils import idempotent
 
 
 @pytest.mark.functions

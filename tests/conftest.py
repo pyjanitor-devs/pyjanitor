@@ -118,6 +118,20 @@ def chemdf():
     return df
 
 
+@pytest.fixture
+def df_duplicated_columns():
+    data = {
+        "a": range(10),
+        "b": range(10),
+        "A": range(10, 20),
+        "a*": range(20, 30),
+    }
+    df = pd.DataFrame(data)
+    # containing three 'a' columns being duplicated
+    clean_df = df.clean_names(remove_special=True)
+    return clean_df
+
+
 def pytest_configure():
     pytest.TEST_DATA_DIR = TEST_DATA_DIR
     pytest.EXAMPLES_DIR = EXAMPLES_DIR

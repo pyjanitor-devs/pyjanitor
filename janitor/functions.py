@@ -2777,6 +2777,42 @@ class DataDescription:
 
 
 @pf.register_dataframe_method
+def bin_numeric(
+    df: pd.DataFrame,
+    from_column: str,
+    to_column: str,
+    num_bins: int = 5,
+    labels: str = None,
+):
+    """
+    Makes use of pandas cut() function to bin data of one column, generating a
+    new column with the results.
+
+
+    :param df: A pandas DataFrame.
+    :param from_column: The column whose data you want binned.
+    :param to_column: The new column to be created with the binned data.
+    :param num_bins: The number of bins to be utilized.
+    :param labels: Optionally rename numeric bin ranges with labels. Number of
+    label names must match number of bins specified.
+
+    :return: A pandas DataFrame.
+    """
+
+    if not labels:
+        df[str(to_column)] = pd.cut(df[str(from_column)], bins=num_bins)
+    else:
+        if not len(labels) == num_bins:
+            raise ValueError(f"Number of labels must match number of bins.")
+
+        df[str(to_column)] = pd.cut(
+            df[str(from_column)], bins=num_bins, labels=labels
+        )
+
+    return df
+
+
+@pf.register_dataframe_method
 def drop_duplicate_columns(
     df: pd.DataFrame, column_name: str, nth_index: int = 0
 ) -> pd.DataFrame:

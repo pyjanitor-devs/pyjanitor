@@ -15,15 +15,13 @@ def create_csv_file(number_of_files, col_names=None):
 
 
 def remove_csv_files():
-    # Get a list of all the file paths that ends with .txt from in specified directory
+    # Get a list of all the file paths that ends with .txt
+    # from in specified directory
     fileList = glob.glob(CSV_FILE_PATH.format("*"))
 
     # Iterate over the list of filepaths & remove each file.
     for filePath in fileList:
-        try:
-            os.remove(filePath)
-        except:
-            print("Error while deleting file : ", filePath)
+        os.remove(filePath)
 
 
 @pytest.mark.functions
@@ -115,7 +113,7 @@ def test_read_csvs_two_unmatching_csv_files():
         io.read_csvs(CSV_FILE_PATH.format("*"))
         # if read does read the unmatching files give an error
         raise ValueError
-    except:
+    except ValueError:
         # If the read raises an exception it is ok
         pass
     finally:

@@ -8,7 +8,7 @@ def import_message(submodule, package, installation):
     print()
     print(f"    {installation}")
 
-    
+
 def idempotent(func, df, *args, **kwargs):
     """
         Checks if a function is idempotence,

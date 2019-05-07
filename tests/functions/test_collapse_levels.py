@@ -40,7 +40,6 @@ def test_collapse_levels_functionality_2level(
     )
 
 
-    
 @pytest.mark.functions
 def test_collapse_levels_functionality_3level(
     multiindex_with_missing_3level_dataframe
@@ -65,15 +64,13 @@ def test_collapse_levels_functionality_3level(
             "decorated-elephantAsDfr.i.p-rhino :'(AsDfdeadly__flamingo",
         ]
     )
-    
+
 @pytest.mark.functions
 def test_collapse_levels_multilevel_index():
     df= pd.DataFrame([['a',1],['a',2],['b',3]], columns=['col1','col2'], index = pd.MultiIndex.from_tuples([(0,0),(0,1),(1,0)], names=['i1','i2'])) 
     df1= df.collapse_levels(sep='-', axis=0)
     df2= pd.DataFrame([['a',1],['a',2],['b',3]],index=['0-0','0-1','1-0'], columns=['col1','col2'])
     assert (df1.index==df2.index).all() and (df1==df2).all().all()
-    
-   
 
 
 

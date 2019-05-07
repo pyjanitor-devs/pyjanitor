@@ -11,8 +11,3 @@ def test_find_replace():
     df2= pd.DataFrame(
         {"a": [2, 5, 4], "b": [2, 3, np.nan], "c": [2, 5, 9]})
     assert (df1[["a","c"]]==df2[["a","c"]]).all().all()
-    
-    
-    
-    
-

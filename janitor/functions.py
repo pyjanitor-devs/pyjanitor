@@ -270,7 +270,7 @@ def encode_categorical(df, column_names=None, **kwargs):
 
 
 @pf.register_dataframe_method
-def label_encode(df, columns):
+def label_encode(df, column_names=None, **kwargs):
     """
     Convert labels into numerical data.
 
@@ -285,7 +285,7 @@ def label_encode(df, columns):
 
     .. code-block:: python
 
-        label_encode(df, columns="my_categorical_column")  # one way
+        label_encode(df, column_names="my_categorical_column")  # one way
 
     Method chaining example:
 
@@ -294,27 +294,34 @@ def label_encode(df, columns):
         import pandas as pd
         import janitor
         categorical_cols = ['col1', 'col2', 'col4']
-        df = pd.DataFrame(...).label_encode(columns=categorical_cols)
+        df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable columns: A column name or an iterable (list or tuple)
-        of column names.
+    :param str/iterable column_names: A column name or an iterable (list or
+        tuple) of column names.
     :returns: A pandas DataFrame
     """
+    if kwargs and column_names is not None:
+        raise TypeError("Mixed usage of columns and column_names")
+    if column_names is None:
+        warnings.warn("columns is deprecated. You should use column_names.")
+        column_names = kwargs["columns"]
     le = LabelEncoder()
-    if isinstance(columns, list) or isinstance(columns, tuple):
-        for col in columns:
+    if isinstance(column_names, list) or isinstance(column_names, tuple):
+        for col in column_names:
             assert col in df.columns, JanitorError(
-                f"{col} missing from columns"
+                f"{col} missing from column_names"
             )  # noqa: E501
             df[f"{col}_enc"] = le.fit_transform(df[col])
-    elif isinstance(columns, str):
-        assert columns in df.columns, JanitorError(
-            f"{columns} missing from columns"
+    elif isinstance(column_names, str):
+        assert column_names in df.columns, JanitorError(
+            f"{column_names} missing from column_names"
         )  # noqa: E501
-        df[f"{columns}_enc"] = le.fit_transform(df[columns])
+        df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
-        raise JanitorError("kwarg `columns` must be a string or iterable!")
+        raise JanitorError(
+            "kwarg `column_names` must be a string or iterable!"
+        )
     return df
 
 
@@ -504,7 +511,7 @@ def coalesce(df, columns, new_column_name):
 
 
 @pf.register_dataframe_method
-def convert_excel_date(df, column):
+def convert_excel_date(df, column_name=None, **kwargs):
     """
     Convert Excel's serial date format into Python datetime format.
 
@@ -516,7 +523,7 @@ def convert_excel_date(df, column):
 
     .. code-block:: python
 
-        df = convert_excel_date(df, column='date')
+        df = convert_excel_date(df, column_name='date')
 
     Method chaining example:
 
@@ -527,17 +534,24 @@ def convert_excel_date(df, column):
         df = pd.DataFrame(...).convert_excel_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column: A column name.
+    :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    df[column] = pd.TimedeltaIndex(df[column], unit="d") + dt.datetime(
+    if kwargs and column_name is not None:
+        raise TypeError("Mixed usage of column and column_name")
+    if column_name is None:
+        warnings.warn("column is deprecated. You should use column_name.")
+        column_name = kwargs["column"]
+    df[column_name] = pd.TimedeltaIndex(
+        df[column_name], unit="d"
+    ) + dt.datetime(
         1899, 12, 30
     )  # noqa: W503
     return df
 
 
 @pf.register_dataframe_method
-def convert_matlab_date(df, column):
+def convert_matlab_date(df, column_name=None, **kwargs):
     """
     Convert Matlab's serial date number into Python datetime format.
 
@@ -549,7 +563,7 @@ def convert_matlab_date(df, column):
 
     .. code-block:: python
 
-        df = convert_matlab_date(df, column='date')
+        df = convert_matlab_date(df, column_name='date')
 
     Method chaining example:
 
@@ -560,12 +574,17 @@ def convert_matlab_date(df, column):
         df = pd.DataFrame(...).convert_matlab_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column: A column name.
+    :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    days = pd.Series([dt.timedelta(v % 1) for v in df[column]])
-    df[column] = (
-        df[column].astype(int).apply(dt.datetime.fromordinal)
+    if kwargs and column_name is not None:
+        raise TypeError("Mixed usage of column and column_name")
+    if column_name is None:
+        warnings.warn("column is deprecated. You should use column_name.")
+        column_name = kwargs["column"]
+    days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
+    df[column_name] = (
+        df[column_name].astype(int).apply(dt.datetime.fromordinal)
         + days
         - dt.timedelta(days=366)
     )
@@ -573,7 +592,7 @@ def convert_matlab_date(df, column):
 
 
 @pf.register_dataframe_method
-def convert_unix_date(df, column):
+def convert_unix_date(df, column_name=None, **kwargs):
     """
     Convert unix epoch time into Python datetime format.
     Note that this ignores local tz and convert all
@@ -582,7 +601,7 @@ def convert_unix_date(df, column):
     Functional usage example:
 
     .. code-block:: python
-        df = convert_unix_date(df, column='date')
+        df = convert_unix_date(df, column_name='date')
 
     Method chaining example:
 
@@ -592,9 +611,14 @@ def convert_unix_date(df, column):
         df = pd.DataFrame(...).convert_unix_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column: A column name.
+    :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
+    if kwargs and column_name is not None:
+        raise TypeError("Mixed usage of column and column_name")
+    if column_name is None:
+        warnings.warn("column is deprecated. You should use column_name.")
+        column_name = kwargs["column"]
 
     def _conv(value):
         try:
@@ -603,7 +627,7 @@ def convert_unix_date(df, column):
             date = dt.datetime.utcfromtimestamp(value / 1000)
         return date
 
-    df[column] = df[column].astype(int).apply(_conv)
+    df[column_name] = df[column_name].astype(int).apply(_conv)
     return df
 
 

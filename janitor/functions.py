@@ -224,17 +224,16 @@ def encode_categorical(df, column_names=None, **kwargs):
 
     .. code-block:: python
 
-        encode_categorical(df, column_names="my_categorical_column")  # one way
+        categorical_cols = ['col1', 'col2', 'col4']
+        df = df.encode_categorical(columns=categorical_cols)  # one way
 
     Method chaining example:
 
     .. code-block:: python
-
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        df = df.encode_categorical(column_names=categorical_cols)
+        df = pd.DataFrame(...).encode_categorical(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
     :param str/iterable column_names: A column name or an iterable (list or

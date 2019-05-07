@@ -30,3 +30,5 @@ With thanks to the following contributors:
 - `@NapsterInBlue <https://github.com/NapsterInBlue>`_
 - `@jk3587 <https://github.com/jk3587>`_
 - `@ricky-lim<https://github.com/ricky-lim>`_
+- `@catherinedevlin <https://github.com/catherinedevlin>`_
+- `@StephenSchroed <https://github.com/StephenSchroeder>`_

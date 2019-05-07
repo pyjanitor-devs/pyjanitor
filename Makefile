@@ -9,6 +9,8 @@ release:
 #
 # ALSO, remove this comment once it's tested!!!!!!!!!!!
 
+.PHONY: format test lint docs isort check style
+
 format:
 	black -l 79 .
 

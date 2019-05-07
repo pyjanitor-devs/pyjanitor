@@ -55,6 +55,8 @@ def test_read_csvs_zero_csv_path():
         raise Exception
     except ValueError:
         pass
+    finally:
+        remove_csv_files()
 
 
 @pytest.mark.functions
@@ -97,7 +99,7 @@ def test_read_csvs_three_separated_csv_path():
 
 @pytest.mark.functions
 def test_read_csvs_two_unmatching_csv_files():
-    # Setup
+    # Setupmy
     # When two csv files do not have same column names 
     df = pd.DataFrame([[1, 2, 3], [1, 2, 3], [1, 2, 3]], columns=["a","b","c"])
     df.to_csv(CSV_FILE_PATH.format(0), index=False)
@@ -112,4 +114,6 @@ def test_read_csvs_two_unmatching_csv_files():
     except:
         # If the read raises an exception it is ok
         pass
+    finally:
+        remove_csv_files()
 

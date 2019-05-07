@@ -5,7 +5,7 @@ import pandas as pd
 
 def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     """
-    :param filespath: The string pattern matching the CSVs files.
+    :param filespath: The filepath pattern matching the CSVs files.
         Accepts regular expressions, with or without csv extension.
     :param seperate_df: If False (default) returns a single Dataframe 
         with the concatenation of the csv files.
@@ -17,9 +17,6 @@ def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     assert filespath is not None
     assert len(filespath) != 0
 
-    # Check if the original filespath contains .csv
-    if not filespath.endswith(".csv"):
-        filespath += ".csv"
     # Read the csv files
     dfs = {
         os.path.basename(f): pd.read_csv(f, **kwargs) for f in glob(filespath)

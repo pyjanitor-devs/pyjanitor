@@ -14,7 +14,7 @@ def test_bin_numeric_expected_columns(df):
         "decorated-elephant",
         "animals@#$%^",
         "cities",
-        "a_bin"
+        "a_bin",
     ]
 
     assert set(df.columns) == set(expected_columns)
@@ -26,7 +26,6 @@ def test_bin_numeric_num_labels(df):
 
     with pytest.raises(ValueError):
         labels = ["a", "b", "c", "d", "e"]
-        df.bin_numeric(from_column="a",
-                       to_column="a_bin",
-                       num_bins=6,
-                       labels=labels)
+        df.bin_numeric(
+            from_column="a", to_column="a_bin", num_bins=6, labels=labels
+        )

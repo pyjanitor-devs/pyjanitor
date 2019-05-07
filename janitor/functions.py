@@ -2726,11 +2726,13 @@ def groupby_agg(
 
 
 @pf.register_dataframe_method
-def bin_numeric(df: pd.DataFrame,
-                from_column: str,
-                to_column: str,
-                num_bins: int = 5,
-                labels: str = None):
+def bin_numeric(
+    df: pd.DataFrame,
+    from_column: str,
+    to_column: str,
+    num_bins: int = 5,
+    labels: str = None,
+):
     """
     Makes use of pandas cut() function to bin data of one column, generating a
     new column with the results.
@@ -2752,9 +2754,9 @@ def bin_numeric(df: pd.DataFrame,
         if not len(labels) == num_bins:
             raise ValueError(f"Number of labels must match number of bins.")
 
-        df[str(to_column)] = pd.cut(df[str(from_column)],
-                                    bins=num_bins,
-                                    labels=labels)
+        df[str(to_column)] = pd.cut(
+            df[str(from_column)], bins=num_bins, labels=labels
+        )
 
     return df
 

@@ -5,9 +5,12 @@ import pandas as pd
 
 def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     """
-    :param filespath: The string pattern matching the CSVs files. Accepts regular expressions, with or without csv extension
-    :param seperate_df: If False (default) returns a single Dataframe with the concatenation of the csv files-
-        If True, returns a dictionary of seperate dataframes for each CSV file.
+    :param filespath: The string pattern matching the CSVs files.
+        Accepts regular expressions, with or without csv extension.
+    :param seperate_df: If False (default) returns a single Dataframe 
+        with the concatenation of the csv files.
+        If True, returns a dictionary of seperate dataframes 
+        for each CSV file.
     :param kwargs: Keyword arguments to pass into the original pandas `read_csv`.
     """
     # Sanitize input
@@ -25,10 +28,11 @@ def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     if len(dfs) == 0:
         raise ValueError("No CSV files to read with the given filespath")
     # Concatenate the dataframes if requested (default)
-    if seperate_df:
-        return dfs
+    col_names = list(dfs.values())[0].columns
+    if not seperate_df:
+        # If columns do not match raise an error
+        for df in dfs.values():
+            assert all(df.columns == col_names)
+        return pd.concat(list(dfs.values()), ignore_index=True, sort=False)
     else:
-        try:
-            return pd.concat(list(dfs.values()), ignore_index=True, sort=False)
-        except:
-            raise ValueError("Input CSV files cannot be concatenated")
+        return dfs

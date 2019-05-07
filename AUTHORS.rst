@@ -26,3 +26,4 @@ With thanks to the following contributors:
 - `@Eidhagen <https://github.com/Eidhagen>`_
 - `@mdini <https://github.com/mdini>`_
 - `@kimt33 <https://github.com/kimt33>`_
+- `@catherinedevlin <https://github.com/catherinedevlin>`_

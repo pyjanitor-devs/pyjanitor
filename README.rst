@@ -4,6 +4,9 @@ pyjanitor
 .. image:: https://travis-ci.org/ericmjl/pyjanitor.svg?branch=master
     :target: https://travis-ci.org/ericmjl/pyjanitor
 
+.. image:: https://mybinder.org/badge_logo.svg
+ :target: https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev
+
 Python implementation of the R package `janitor`_, and more.
 
 .. _janitor: https://github.com/sfirke/janitor

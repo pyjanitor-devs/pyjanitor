@@ -178,7 +178,7 @@ def remove_empty(df):
 
 
 @pf.register_dataframe_method
-def get_dupes(df, columns=None):
+def get_dupes(df, column_names=None, **kwargs):
     """
     Return all duplicate rows.
 
@@ -198,18 +198,23 @@ def get_dupes(df, columns=None):
         df = pd.DataFrame(...).get_dupes()
 
     :param df: The pandas DataFrame object.
-    :param str/iterable columns: (optional) A column name or an iterable (list
-        or tuple) of column names. Following pandas API, this only considers
-        certain columns for identifying duplicates. Defaults to using all
-        columns.
+    :param str/iterable column_names: (optional) A column name or an iterable
+        (list or tuple) of column names. Following pandas API, this only
+        considers certain columns for identifying duplicates. Defaults to using
+        all columns.
     :returns: The duplicate rows, as a pandas DataFrame.
     """
-    dupes = df.duplicated(subset=columns, keep=False)
+    if kwargs and column_names is not None:
+        raise TypeError("Mixed usage of columns and column_names")
+    if column_names is None and "columns" in kwargs:
+        warnings.warn("columns is deprecated. You should use column_names.")
+        column_names = kwargs["columns"]
+    dupes = df.duplicated(subset=column_names, keep=False)
     return df[dupes == True]  # noqa: E712
 
 
 @pf.register_dataframe_method
-def encode_categorical(df, columns):
+def encode_categorical(df, column_names=None, **kwargs):
     """
     Encode the specified columns as categorical column in pandas.
 
@@ -217,7 +222,7 @@ def encode_categorical(df, columns):
 
     .. code-block:: python
 
-        encode_categorical(df, columns="my_categorical_column")  # one way
+        encode_categorical(df, column_names="my_categorical_column")  # one way
 
     Method chaining example:
 
@@ -227,26 +232,35 @@ def encode_categorical(df, columns):
         import janitor
         df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        df = df.encode_categorical(columns=categorical_cols)
+        df = df.encode_categorical(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable columns: A column name or an iterable (list or tuple)
-        of column names.
+    :param str/iterable column_names: A column name or an iterable (list or
+        tuple) of column names.
     :returns: A pandas DataFrame
     """
-    if isinstance(columns, list) or isinstance(columns, tuple):
-        for col in columns:
+    if kwargs and column_names is not None:
+        raise TypeError("Mixed usage of columns and column_names")
+    if column_names is None:
+        warnings.warn("columns is deprecated. You should use column_names.")
+        column_names = kwargs["columns"]
+    if isinstance(column_names, list) or isinstance(column_names, tuple):
+        for col in column_names:
             assert col in df.columns, JanitorError(
                 "{col} missing from dataframe columns!".format(col=col)
             )
             df[col] = pd.Categorical(df[col])
-    elif isinstance(columns, str):
-        assert columns in df.columns, JanitorError(
-            "{columns} missing from dataframe columns!".format(columns=columns)
+    elif isinstance(column_names, str):
+        assert column_names in df.columns, JanitorError(
+            "{column_names} missing from dataframe columns!".format(
+                column_names=column_names
+            )
         )
-        df[columns] = pd.Categorical(df[columns])
+        df[column_names] = pd.Categorical(df[column_names])
     else:
-        raise JanitorError("kwarg `columns` must be a string or iterable!")
+        raise JanitorError(
+            "kwarg `column_names` must be a string or iterable!"
+        )
     return df
 
 

@@ -110,8 +110,7 @@ To base a branch directly off of `dev` instead of `master`, create a new one as 
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes are properly
- formatted and that all tests still pass::
+5. When you're done making changes, check that your changes are properly formatted and that all tests still pass::
 
     $ make lint
     $ make format

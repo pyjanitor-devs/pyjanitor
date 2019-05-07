@@ -1,30 +1,34 @@
+from glob import glob
+import os
+import pandas as pd
 
-def read_csvs(
-    directory: Union[str, Path], 
-    pattern: str = pattern, 
-    seperate_df: bool = seperate_df,
-    **kwargs
-):
+
+def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     """
-    :param directory: The directory that contains the CSVs.
-    :param pattern: The pattern of CSVs to match.
-    :param seperate_df: Returns a dictionary of seperate dataframes for each CSV file read
-    :param kwargs: Keyword arguments to pass into pandas original `read_csv`.
+    :param filespath: The string pattern matching the CSVs files. Accepts regular expressions, with or without csv extension
+    :param seperate_df: If False (default) returns a single Dataframe with the concatenation of the csv files-
+        If True, returns a dictionary of seperate dataframes for each CSV file.
+    :param kwargs: Keyword arguments to pass into the original pandas `read_csv`.
     """
+    # Sanitize input
+    assert filespath is not None
+    assert len(filespath) != 0
+
+    # Check if the original filespath contains .csv
+    if not filespath.endswith(".csv"):
+        filespath += ".csv"
+    # Read the csv files
+    dfs = {
+        os.path.basename(f): pd.read_csv(f, **kwargs) for f in glob(filespath)
+    }
+    # Check if dataframes have been read
+    if len(dfs) == 0:
+        raise ValueError("No CSV files to read with the given filespath")
+    # Concatenate the dataframes if requested (default)
     if seperate_df:
-        dfs = {
-            os.path.basename(f): pd.read_csv(f, **kwargs) 
-            for f 
-            in glob.glob(os.path.join(path, "*.csv"))
-        }
         return dfs
-    else: 
-        df = pd.concat(
-            [
-                pd.read_csv(f, **kwargs).assign(filename = os.path.basename(f)) 
-                for f 
-                in glob.glob(os.path.join(path, pattern))
-            ]
-            ignore_index=True, 
-            sort=False)
-        return df
+    else:
+        try:
+            return pd.concat(list(dfs.values()), ignore_index=True, sort=False)
+        except:
+            raise ValueError("Input CSV files cannot be concatenated")

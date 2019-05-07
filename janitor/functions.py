@@ -2749,6 +2749,9 @@ class DataDescription:
 
     @property
     def df(self):
+        """
+        Get a table of descriptive information in a DataFrame format.
+        """
         return self._get_data_df()
 
     def display(self):

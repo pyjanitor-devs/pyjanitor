@@ -1,5 +1,7 @@
 steps:
   - script: |
       $(activate.command) pyjanitor-dev
-      pytest
-    displayName: 'Run tests'
+      pycodestyle .
+      black --check -l 79 .
+      pytest .
+    displayName: 'Code style + tests'

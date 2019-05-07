@@ -109,12 +109,14 @@ To base a branch directly off of `dev` instead of `master`, create a new one as 
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the tests::
+5. When you're done making changes, check that your changes are properly
+ formatted and that all tests still pass::
 
-    $ flake8 janitor tests
+    $ make lint
+    $ make format
     $ py.test
 
-   flake8 and pytest are installed when you create the development environment.
+   All of these commands are available when you create the development environment.
 
    When you run the test locally, the tests in ``chemistry.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
         1. test_maccs_keys_fingerprint

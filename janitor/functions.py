@@ -144,7 +144,9 @@ def clean_names(
 @pf.register_dataframe_method
 def remove_empty(df):
     """
-    Drop all rows and columns that are completely null. This method also resets the index(by default) since it doesn't make sense to preserve the index of a completely empty row.
+    Drop all rows and columns that are completely null. This method also
+    resets the index(by default) since it doesn't make sense to preserve
+    the index of a completely empty row.
 
     Implementation is inspired from `StackOverflow`_.
 

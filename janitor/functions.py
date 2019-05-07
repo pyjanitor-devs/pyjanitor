@@ -2616,6 +2616,8 @@ def find_replace(df: pd.DataFrame, columns: list, mapper: dict):
         replace".
     """
     df[columns] = df[columns].applymap(lambda x: mapper.get(x, x))
+    if np.nan in mapper.keys():
+         df[columns] = df[columns].fillna(mapper[np.nan])
     return df
 
 

@@ -8,15 +8,17 @@ Welcome to pyjanitor's documentation!
 pyjanitor is a project that extends Pandas with a verb-based API, providing convenient data cleaning routines for
 repetitive tasks.
 
-* :doc:`contributing`
-* :doc:`authors`
-* :doc:`notebooks`
-* :doc:`reference/index`
 
-  * :doc:`reference/api`
+.. toctree::
+   :maxdepth: 3
+   :hidden:
+
+   contributing
+   authors
+   notebooks
+   reference/index
 
 .. include:: ../README.rst
-
 
 Indices and tables
 ==================

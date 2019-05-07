@@ -2726,11 +2726,11 @@ def groupby_agg(
 
 
 @pf.register_dataframe_method
-def drop_duplicated_columns(
-    df: pd.DataFrame, column_name: str, column_order: int = 0
+def drop_duplicate_columns(
+    df: pd.DataFrame, column_name: str, nth_index: int = 0
 ) -> pd.DataFrame:
     """
-    Removes a duplicated column specified in column_name and column_order.
+    Removes a duplicated column specified by column_name.
 
     Column order 0 is to remove the first column,
            order 1 is to remove the second column, and etc
@@ -2752,8 +2752,8 @@ def drop_duplicated_columns(
 
     :param df: A pandas DataFrame
     :param column_name: Column to be removed
-    :param column_order: Among the duplicated columns,
-      select which column index to be removed
+    :param nth_index: Among the duplicated columns,
+      select the nth column to drop.
     :return: A pandas DataFrame
     """
     cols = df.columns.to_list()

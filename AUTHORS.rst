@@ -26,5 +26,6 @@ With thanks to the following contributors:
 - `@Eidhagen <https://github.com/Eidhagen>`_
 - `@mdini <https://github.com/mdini>`_
 - `@kimt33 <https://github.com/kimt33>`_
-- `@Rajat-181 <https://github.com/Rajat-181>`_
+- `@jack-kessler-88 <https://github.com/jack-kessler-88>`_
 - `@NapsterInBlue <https://github.com/NapsterInBlue>`_
+- `@Rajat-181 <https://github.com/Rajat-181>`_

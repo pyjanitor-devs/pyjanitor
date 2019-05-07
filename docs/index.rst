@@ -17,7 +17,7 @@ Contents:
 
    installation
    notebooks
-   api
+   reference/index
    contributing
    authors
 

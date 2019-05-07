@@ -2601,7 +2601,7 @@ def find_replace(df: pd.DataFrame, columns: list, mapper: dict):
 
         df = (
             pd.DataFrame(...)
-            .find_replace('column_name', {'a': 1, 'b': 2, 'c': 3})
+            .find_replace(['col1','col2'], {'a': 1, 'b': 2, 'c': 3})
         )
 
     This find-and-replace functionality does an exact match only. Hence,

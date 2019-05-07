@@ -6,7 +6,7 @@ import re
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Dict, Iterable, List, Union
+from typing import Callable, Dict, Iterable, List, Union
 
 import numpy as np
 import pandas as pd
@@ -178,7 +178,7 @@ def remove_empty(df):
 
 
 @pf.register_dataframe_method
-def get_dupes(df, columns=None):
+def get_dupes(df, column_names=None, **kwargs):
     """
     Return all duplicate rows.
 
@@ -198,18 +198,23 @@ def get_dupes(df, columns=None):
         df = pd.DataFrame(...).get_dupes()
 
     :param df: The pandas DataFrame object.
-    :param str/iterable columns: (optional) A column name or an iterable (list
-        or tuple) of column names. Following pandas API, this only considers
-        certain columns for identifying duplicates. Defaults to using all
-        columns.
+    :param str/iterable column_names: (optional) A column name or an iterable
+        (list or tuple) of column names. Following pandas API, this only
+        considers certain columns for identifying duplicates. Defaults to using
+        all columns.
     :returns: The duplicate rows, as a pandas DataFrame.
     """
-    dupes = df.duplicated(subset=columns, keep=False)
+    if kwargs and column_names is not None:
+        raise TypeError("Mixed usage of columns and column_names")
+    if column_names is None and "columns" in kwargs:
+        warnings.warn("columns is deprecated. You should use column_names.")
+        column_names = kwargs["columns"]
+    dupes = df.duplicated(subset=column_names, keep=False)
     return df[dupes == True]  # noqa: E712
 
 
 @pf.register_dataframe_method
-def encode_categorical(df, columns):
+def encode_categorical(df, column_names=None, **kwargs):
     """
     Encode the specified columns as categorical column in pandas.
 
@@ -217,7 +222,7 @@ def encode_categorical(df, columns):
 
     .. code-block:: python
 
-        encode_categorical(df, columns="my_categorical_column")  # one way
+        encode_categorical(df, column_names="my_categorical_column")  # one way
 
     Method chaining example:
 
@@ -227,26 +232,35 @@ def encode_categorical(df, columns):
         import janitor
         df = pd.DataFrame(...)
         categorical_cols = ['col1', 'col2', 'col4']
-        df = df.encode_categorical(columns=categorical_cols)
+        df = df.encode_categorical(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable columns: A column name or an iterable (list or tuple)
-        of column names.
+    :param str/iterable column_names: A column name or an iterable (list or
+        tuple) of column names.
     :returns: A pandas DataFrame
     """
-    if isinstance(columns, list) or isinstance(columns, tuple):
-        for col in columns:
+    if kwargs and column_names is not None:
+        raise TypeError("Mixed usage of columns and column_names")
+    if column_names is None:
+        warnings.warn("columns is deprecated. You should use column_names.")
+        column_names = kwargs["columns"]
+    if isinstance(column_names, list) or isinstance(column_names, tuple):
+        for col in column_names:
             assert col in df.columns, JanitorError(
                 "{col} missing from dataframe columns!".format(col=col)
             )
             df[col] = pd.Categorical(df[col])
-    elif isinstance(columns, str):
-        assert columns in df.columns, JanitorError(
-            "{columns} missing from dataframe columns!".format(columns=columns)
+    elif isinstance(column_names, str):
+        assert column_names in df.columns, JanitorError(
+            "{column_names} missing from dataframe columns!".format(
+                column_names=column_names
+            )
         )
-        df[columns] = pd.Categorical(df[columns])
+        df[column_names] = pd.Categorical(df[column_names])
     else:
-        raise JanitorError("kwarg `columns` must be a string or iterable!")
+        raise JanitorError(
+            "kwarg `column_names` must be a string or iterable!"
+        )
     return df
 
 
@@ -1181,14 +1195,14 @@ def remove_columns(df: pd.DataFrame, columns: List):
 
 
 @pf.register_dataframe_method
-def change_type(df, column: str, dtype, ignore_exception = False):
+def change_type(df, column: str, dtype, ignore_exception=False):
     """
     Changes the type of a column.
-    
+
     Exceptions that are raised can be ignored. For example, if one has a mixed
-    dtype column that has non-integer strings and integers, and you want to coerce
-    everything to integers, you can optionally ignore the non-integer strings and 
-    replace them with ``NaN``s or keep the original value
+    dtype column that has non-integer strings and integers, and you want to
+    coerce everything to integers, you can optionally ignore the non-integer
+    strings and replace them with ``NaN``s or keep the original value
 
     Intended to be the method-chaining alternative to::
 
@@ -1209,17 +1223,18 @@ def change_type(df, column: str, dtype, ignore_exception = False):
     if not ignore_exception:
         df[column] = df[column].astype(dtype)
     elif ignore_exception == "keep_values":
-        df[column] = df[column].astype(dtype, errors="ignore" )
+        df[column] = df[column].astype(dtype, errors="ignore")
     elif ignore_exception == "fillna":
-        # returns None when conversion 
+        # returns None when conversion
         def convert(x, dtype):
-            try: 
+            try:
                 return dtype(x)
             except:
                 return None
-        df[column] = df[column].apply(lambda x: convert(x, dtype)) ###
+
+        df[column] = df[column].apply(lambda x: convert(x, dtype))
     else:
-        raise ValueError("unknown option for ignore_exception")  
+        raise ValueError("unknown option for ignore_exception")
     return df
 
 
@@ -2655,5 +2670,56 @@ def to_datetime(df: pd.DataFrame, column: str, **kwargs) -> pd.DataFrame:
     """
 
     df[column] = pd.to_datetime(df[column], **kwargs)
+
+    return df
+
+
+@pf.register_dataframe_method
+def groupby_agg(
+    df: pd.DataFrame,
+    by: str,
+    new_column: str,
+    agg_column: str,
+    agg: Union[Callable, str, List, Dict],
+    axis: int = 0,
+) -> pd.DataFrame:
+    """
+
+    Allow one to chain a groupby and a merge
+
+    Without this function, we would have to break out of method chaining:
+
+    .. code-block:: python
+        df_grp = df.groupby(...).agg(...)
+        df = df.merge(df_grp, ...)
+
+    Now, this function can be method-chained:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).groupby_agg(df,
+                                           by='col1',
+                                           agg='mean',
+                                           new_column='col1_mean')
+
+    :param df: A pandas DataFrame.
+    :param by: Column to groupby on.
+    :param new_column: Name of the aggregation output column.
+    :param agg_column: Name of the column to aggregate over.
+    :param agg: How to aggregate.
+    :param axis: Split along rows (0) or columns (1).
+    :returns: A pandas DataFrame.
+    """
+
+    df_grp = (
+        df.groupby(by, axis=axis)
+        .agg(agg, axis=axis)
+        .reset_index()
+        .rename(columns={agg_column: new_column})
+    )[[by, new_column]]
+
+    df = df.merge(df_grp, on=by)
 
     return df

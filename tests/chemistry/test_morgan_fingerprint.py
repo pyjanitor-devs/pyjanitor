@@ -1,10 +1,14 @@
 import importlib
+
 import pytest
 
 import janitor.chemistry  # noqa: disable=unused-import
 
 
-@pytest.mark.skipif(importlib.util.find_spec('rdkit') is None, reason="rdkit tests only required for CI")
+@pytest.mark.skipif(
+    importlib.util.find_spec("rdkit") is None,
+    reason="rdkit tests only required for CI",
+)
 @pytest.mark.chemistry
 def test_morgan_fingerprint_counts(chemdf):
     morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
@@ -14,7 +18,10 @@ def test_morgan_fingerprint_counts(chemdf):
     assert (morgans.values >= 0).all()
 
 
-@pytest.mark.skipif(importlib.util.find_spec('rdkit') is None, reason="rdkit tests only required for CI")
+@pytest.mark.skipif(
+    importlib.util.find_spec("rdkit") is None,
+    reason="rdkit tests only required for CI",
+)
 @pytest.mark.chemistry
 def test_morgan_fingerprint_bits(chemdf):
     morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(

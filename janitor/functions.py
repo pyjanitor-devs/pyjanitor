@@ -2121,6 +2121,9 @@ df = (
     :returns: df
     """
 
+    # Deprecation Warning
+    warnings.warn("reset_index_inplace will be deprecated in the upcoming 0.18 release. Use .reset_index() instead")
+
     kwargs.update(inplace=True)
 
     df.reset_index(*args, **kwargs)

@@ -241,7 +241,7 @@ def encode_categorical(df, column_names=None, **kwargs):
         tuple) of column names.
     :returns: A pandas DataFrame
 
-    .. _category: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html 
+    .. _category: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html  # noqa: E501
 
     """
     if kwargs and column_names is not None:

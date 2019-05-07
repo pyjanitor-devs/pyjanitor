@@ -2587,9 +2587,9 @@ def dropnotnull(df, column: str):
 
 
 @pf.register_dataframe_method
-def find_replace(df: pd.DataFrame, column: str, mapper: dict):
+def find_replace(df: pd.DataFrame, columns: list, mapper: dict):
     """
-    Performs a find-and-replace action on a column of data.
+    Performs a find-and-replace action on a list of columns.
 
     For example, let's say we have a column for which we want to replace all
     of the values 'a' with 1, 'b' with 2, 'c' with 3. We would use the
@@ -2608,11 +2608,12 @@ def find_replace(df: pd.DataFrame, column: str, mapper: dict):
     happen and the original data will be left in-place.
 
     :param df: A pandas DataFrame.
-    :param column: The column on which the find/replace action is to be made.
+    :param columns: list of columns column on which the find/replace 
+     action is to be made.
     :param mapper: A dictionary that maps "thing to find" -> "thing to
         replace".
     """
-    df[column] = df[column].apply(lambda x: mapper.get(x, x))
+    df[columns] = df[columns].applymap(lambda x: mapper.get(x, x))
     return df
 
 

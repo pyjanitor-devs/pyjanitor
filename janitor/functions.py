@@ -2772,9 +2772,7 @@ def drop_duplicate_columns(
     removed_col_idx = col_indexes[nth_index]
     # get the column indexes without column that is being removed
     filtered_cols = [
-        c_i
-        for c_i, c_v in enumerate(cols)
-        if c_i != removed_col_idx
+        c_i for c_i, c_v in enumerate(cols) if c_i != removed_col_idx
     ]
 
     return df.iloc[:, filtered_cols]

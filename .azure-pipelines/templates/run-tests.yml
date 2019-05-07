@@ -4,5 +4,5 @@ steps:
       pytest .
       pycodestyle .
       black -l 79 --check .
-      jupyter nbconvert --config nbconvert_config.py --execute --template full
+      jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
     displayName: 'Run tests, check code style, programmatically execute notebooks'

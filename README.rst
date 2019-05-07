@@ -1,6 +1,9 @@
 pyjanitor
 =========
 
+.. image:: /_static/logo_title.svg
+    :width: 200
+
 .. image:: https://travis-ci.org/ericmjl/pyjanitor.svg?branch=master
     :target: https://travis-ci.org/ericmjl/pyjanitor
 
@@ -16,7 +19,7 @@ Why janitor?
 
 Originally a port of the R package, ``pyjanitor`` has evolved from a set of convenient data cleaning routines into an experiment with the method chaining paradigm.
 
-Data preprocessing is best expressed as a directed acyclic graph (DAG) of actions taken on data. We take a base data file as the starting point, and perform actions on it, such as removing null/empty rows, replacing them with other values, adding/renaming/removing columns of data, filtering rows and more.
+Data Preprocessing usually consists of a series of steps that involve transforming raw data into an understandable/usable format. These series of steps need to be run in a certain sequence to achieve success. We take a base data file as the starting point, and perform actions on it, such as removing null/empty rows, replacing them with other values, adding/renaming/removing columns of data, filtering rows and others. More formally, these steps along with their relationships and dependencies are commonly referred to as a Directed Acyclic Graph (DAG).
 
 The `pandas` API has been invaluable for the Python data science ecosystem, and implements method chaining of a subset of methods as part of the API. For example, resetting indexes (``.reset_index()``), dropping null values (``.dropna()``), and more, are accomplished via the appropriate ``pd.DataFrame`` method calls.
 

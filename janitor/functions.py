@@ -2034,23 +2034,27 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
     this through a simple string-joining of all the names across different
     levels in a single column.
 
-    Method chaining example given two value columns `['var1', 'var2']`:
+    Method chaining example given two value columns `['max_speed', 'type']`:
 
-    .. code-block:: python
+    data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
+            "max_speed": [389, 389, 24, 80, 21],
+            "type": ["falcon", "falcon", "parrot", "Lion", "Monkey"]}
 
-        df = (
-            pd.DataFrame(...)
-            .groupby('mygroup')
+
+    df = (
+        pd.DataFrame(data)
+            .groupby('class')
             .agg(['mean', 'median'])
             .collapse_levels(sep='_')
-        )
+    )
 
     Before applying `.collapse_levels`, the `.agg` operation returns a
     multi-level column `DataFrame` whose columns are (level 1, level 2):
-    `[('mygroup', ''), ('var1', 'mean'), ('var1', 'median'), ('var2', 'mean'),
-    ('var2', 'median')]`
+    `[('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
+    ('type', 'mean'), ('type', 'median')]`
     `.collapse_levels` then flattens the column names to:
-    `['mygroup', 'var1_mean', 'var1_median', 'var2_mean', 'var2_median']`
+    `['class', 'max_speed_mean', 'max_speed_median',
+    'type_mean', 'type_median']`
 
     :param df: A pandas DataFrame.
     :param sep: String separator used to join the column level names
@@ -2086,27 +2090,25 @@ def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
     syntax core to pyjanitor. This function, therefore, is the chaining
     equivalent of:
 
-    .. code-block:: python
 
-        df = (
-            pd.DataFrame(...)
-            .operation1(...)
-        )
+data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
+        "max_speed": [389, 389, 24, 80, 21],
+        "index": ["falcon", "falcon", "parrot", "Lion", "Monkey"]}
 
-        df.reset_index(inplace=True)
+df = (
+    pd.DataFrame(data).set_index("index")
+        .drop_duplicates()
+)
 
-        df = df.operation2(...)
+df.reset_index(inplace=True)
 
-    instead, being called simply as:
+instead, being called simply as:
 
-    .. code-block:: python
-
-        df = (
-            pd.DataFrame(...)
-            .operation1(...)
-            .reset_index_inplace()
-            .operation2(...)
-        )
+df = (
+    pd.DataFrame(data).set_index("index")
+        .drop_duplicates()
+        .reset_index_inplace()
+)
 
     All supplied parameters are sent directly to `DataFrame.reset_index()`.
 
@@ -2489,15 +2491,19 @@ def impute(df, column: str, value=None, statistic=None):
 
     Method-chaining example:
 
-    .. code-block:: python
+    import numpy as np
 
-        df = (
-            pd.DataFrame(...)
+    data = {
+        "a": [1, 2, 3],
+        "sales": np.nan,
+        "score": [np.nan, 3, 2]}
+    df = (
+        pd.DataFrame(data)
             # Impute null values with 0
             .impute(column='sales', value=0.0)
             # Impute null values with median
             .impute(column='score', statistic='median')
-        )
+    )
 
     Either one of ``value`` or ``statistic`` should be provided.
 
@@ -2631,7 +2637,14 @@ def update_where(
     .. code-block:: python
 
         # The dataframe must be assigned to a variable first.
-        df = pd.DataFrame(...)
+        data = {
+        "a": [1, 2, 3] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+        df = pd.DataFrame(data)
         df = (
             df
             .update_where(
@@ -2780,6 +2793,42 @@ class DataDescription:
 
         elif isinstance(desc, dict):
             self._desc = desc
+
+
+@pf.register_dataframe_method
+def bin_numeric(
+    df: pd.DataFrame,
+    from_column: str,
+    to_column: str,
+    num_bins: int = 5,
+    labels: str = None,
+):
+    """
+    Makes use of pandas cut() function to bin data of one column, generating a
+    new column with the results.
+
+
+    :param df: A pandas DataFrame.
+    :param from_column: The column whose data you want binned.
+    :param to_column: The new column to be created with the binned data.
+    :param num_bins: The number of bins to be utilized.
+    :param labels: Optionally rename numeric bin ranges with labels. Number of
+    label names must match number of bins specified.
+
+    :return: A pandas DataFrame.
+    """
+
+    if not labels:
+        df[str(to_column)] = pd.cut(df[str(from_column)], bins=num_bins)
+    else:
+        if not len(labels) == num_bins:
+            raise ValueError(f"Number of labels must match number of bins.")
+
+        df[str(to_column)] = pd.cut(
+            df[str(from_column)], bins=num_bins, labels=labels
+        )
+
+    return df
 
 
 @pf.register_dataframe_method

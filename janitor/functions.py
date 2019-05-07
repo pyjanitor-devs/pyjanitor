@@ -1231,7 +1231,7 @@ def change_type(df, column: str, dtype, ignore_exception=False):
         def convert(x, dtype):
             try:
                 return dtype(x)
-            except:
+            except ValueError:
                 return None
 
         df[column] = df[column].apply(lambda x: convert(x, dtype))

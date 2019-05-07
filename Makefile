@@ -16,7 +16,7 @@ test:
 	pytest
 
 lint:
-	pycodestyle .
+	pycodestyle . --exclude ./nbconvert_config.py
 
 docs:
 	cd docs && make html

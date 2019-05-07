@@ -5,7 +5,7 @@ import pytest
 
 @pytest.mark.functions
 def test_no_descriptions(dataframe):
-    df = dataframe.data_dictionary.df
+    df = dataframe.data_description.df
     assert df.index.name == "column_name"
     assert (df["description"].str.len() == 0).all()
     assert (df["count"] == len(dataframe)).all()
@@ -16,16 +16,16 @@ def test_no_descriptions(dataframe):
 def test_description_list(dataframe):
     desc = ["A", "B", "C", "D", "E"]
 
-    dataframe.data_dictionary.set_description(desc)
-    df = dataframe.data_dictionary.df
+    dataframe.data_description.set_description(desc)
+    df = dataframe.data_description.df
 
     assert (df["description"] == desc).all()
 
     with pytest.raises(AssertionError):
-        dataframe.data_dictionary.set_description([])
+        dataframe.data_description.set_description([])
 
     with pytest.raises(AssertionError):
-        dataframe.data_dictionary.set_description(desc[0:3])
+        dataframe.data_description.set_description(desc[0:3])
 
 
 @pytest.mark.functions
@@ -38,8 +38,8 @@ def test_description_full_dict(dataframe):
         "cities": "Fifth",
     }
 
-    dataframe.data_dictionary.set_description(desc)
-    df = dataframe.data_dictionary.df
+    dataframe.data_description.set_description(desc)
+    df = dataframe.data_description.df
 
     assert not (df["description"].str.len() == 0).any()
 
@@ -51,8 +51,8 @@ def test_description_full_dict(dataframe):
 def test_description_partial_dict(dataframe):
     desc = {"a": "First", "decorated-elephant": "Third", "cities": "Fifth"}
 
-    dataframe.data_dictionary.set_description(desc)
-    df = dataframe.data_dictionary.df
+    dataframe.data_description.set_description(desc)
+    df = dataframe.data_description.df
 
     assert len(df[df["description"].apply(lambda x: len(x) == 0)]) == 2
 
@@ -67,7 +67,7 @@ def test_null_rows(dataframe):
     dataframe.loc[4] = None
     dataframe.loc[6] = None
 
-    df = dataframe.data_dictionary.df
+    df = dataframe.data_description.df
     assert (df["count"] == 6).all()
     assert np.isclose(df["pct_missing"], (3 / 9)).all()
 
@@ -81,7 +81,7 @@ def test_null_values(dataframe):
     dataframe.loc[3, "Bell__Chart"] = None
     dataframe.loc[6, "decorated-elephant"] = None
 
-    df = dataframe.data_dictionary.df
+    df = dataframe.data_description.df
     assert df.loc["a", "count"] == 7
     assert np.isclose(df.loc["a", "pct_missing"], 2 / 9)
 
@@ -97,4 +97,4 @@ def test_null_values(dataframe):
 
 @pytest.mark.functions
 def test_display(dataframe):
-    dataframe.data_dictionary.display()
+    dataframe.data_description.display()

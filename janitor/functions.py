@@ -2725,7 +2725,7 @@ def groupby_agg(
     return df
 
 
-@pf.register_dataframe_accessor("data_dictionary")
+@pf.register_dataframe_accessor("data_description")
 class DataDescription:
     """
     Accessor that provides high-level description of data present

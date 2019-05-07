@@ -1,9 +1,6 @@
 pyjanitor
 =========
 
-.. image:: /_static/logo_title.svg
-    :width: 200
-
 .. image:: https://travis-ci.org/ericmjl/pyjanitor.svg?branch=master
     :target: https://travis-ci.org/ericmjl/pyjanitor
 

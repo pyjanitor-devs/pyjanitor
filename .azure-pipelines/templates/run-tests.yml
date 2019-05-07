@@ -1,8 +1,8 @@
 steps:
   - script: |
       $(activate.command) pyjanitor-dev
-      pytest .
       pycodestyle .
-      black -l 79 --check .
+      black --check -l 79 .
+      pytest .
       jupyter nbconvert --config nbconvert_config.py --execute --template full
     displayName: 'Run tests, check code style, programmatically execute notebooks'

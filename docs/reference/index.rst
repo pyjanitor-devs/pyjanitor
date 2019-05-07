@@ -1,6 +1,6 @@
-=============
-API Reference
-=============
+=================
+API Documentation
+=================
 
 This page gives an overview of all public pyjanitor objects, functions and
 methods. All classes and functions exposed in ``pyjanitor.*`` namespace are public.
@@ -11,4 +11,7 @@ methods. All classes and functions exposed in ``pyjanitor.*`` namespace are publ
 .. toctree::
    :maxdepth: 2
 
-   api
+   biology
+   chemistry
+   finance
+   functions

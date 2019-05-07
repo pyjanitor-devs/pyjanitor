@@ -1,7 +1,7 @@
 steps:
   - script: |
       $(activate.command) pyjanitor-dev
-      pycodestyle .
+      make lint
     displayName: 'Code style check: pycodestyle'
   - script: |
       $(activate.command) pyjanitor-dev
@@ -9,7 +9,7 @@ steps:
     displayName: 'Code style check: black'
   - script: |
       $(activate.command) pyjanitor-dev
-      pytest .
+      make test
     displayName: 'Tests.'
   - script: |
       $(activate.command) pyjanitor-dev

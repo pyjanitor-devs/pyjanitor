@@ -2060,7 +2060,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_", axis=1):
 
     check("sep", sep, [str])
     # if already single-level, just return the DataFrame
-    df= df.transpose() if axis==0 else df
+    df = df.transpose() if axis==0 else df
     if not isinstance(df.columns.values[0], tuple):
         return df
 

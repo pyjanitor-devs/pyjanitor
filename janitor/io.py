@@ -7,11 +7,12 @@ def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     """
     :param filespath: The filepath pattern matching the CSVs files.
         Accepts regular expressions, with or without csv extension.
-    :param seperate_df: If False (default) returns a single Dataframe 
+    :param seperate_df: If False (default) returns a single Dataframe
         with the concatenation of the csv files.
-        If True, returns a dictionary of seperate dataframes 
+        If True, returns a dictionary of seperate dataframes
         for each CSV file.
-    :param kwargs: Keyword arguments to pass into the original pandas `read_csv`.
+    :param kwargs: Keyword arguments to pass into the
+        original pandas `read_csv`.
     """
     # Sanitize input
     assert filespath is not None
@@ -29,7 +30,11 @@ def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     if not seperate_df:
         # If columns do not match raise an error
         for df in dfs.values():
-            assert all(df.columns == col_names)
+            if not all(df.columns == col_names):
+                raise ValueError(
+                    "Columns in input CSV files do not match."
+                    "Files cannot be concatenated"
+                )
         return pd.concat(list(dfs.values()), ignore_index=True, sort=False)
     else:
         return dfs

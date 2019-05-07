@@ -2725,12 +2725,13 @@ def groupby_agg(
     return df
 
 
-@pf.register_dataframe_accessor('data_dictionary')
+@pf.register_dataframe_accessor("data_dictionary")
 class DataDescription:
     """
     Accessor that provides high-level description of data present
     in this DataFrame.
     """
+
     def __init__(self, data):
         self._data = data
         self._desc = dict()
@@ -2739,13 +2740,13 @@ class DataDescription:
         df = self._data
 
         data_dict = dict()
-        data_dict['column_name'] = df.columns.tolist()
-        data_dict['type'] = df.dtypes.tolist()
-        data_dict['count'] = df.count().tolist()
-        data_dict['pct_missing'] = (1 - (df.count() / len(df))).tolist()
-        data_dict['description'] = [self._desc.get(c, '') for c in df.columns]
+        data_dict["column_name"] = df.columns.tolist()
+        data_dict["type"] = df.dtypes.tolist()
+        data_dict["count"] = df.count().tolist()
+        data_dict["pct_missing"] = (1 - (df.count() / len(df))).tolist()
+        data_dict["description"] = [self._desc.get(c, "") for c in df.columns]
 
-        return pd.DataFrame(data_dict).set_index('column_name')
+        return pd.DataFrame(data_dict).set_index("column_name")
 
     @property
     def df(self):

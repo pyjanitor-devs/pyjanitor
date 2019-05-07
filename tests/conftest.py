@@ -24,6 +24,20 @@ def dataframe():
 
 
 @pytest.fixture
+def multilevel_dataframe():
+    arrays = [
+        np.array(["bar", "bar", "baz", "baz", "foo", "foo", "qux", "qux"]),
+        np.array(["one", "two", "one", "two", "one", "two", "one", "two"]),
+    ]
+    tuples = list(zip(*arrays))
+    index = pd.MultiIndex.from_tuples(tuples, names=["first", "second"])
+    df = pd.DataFrame(
+        np.random.randn(3, 8), index=["A", "B", "C"], columns=index
+    )
+    return df
+
+
+@pytest.fixture
 def date_dataframe():
     df = pd.DataFrame(date_data.date_list, columns=["AMOUNT", "DATE"])
     return df

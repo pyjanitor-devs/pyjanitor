@@ -7,7 +7,7 @@ import glob
 CSV_FILE_PATH = "my_test_csv_for_read_csvs_{}.csv"
 
 
-def create_csv_file(number_of_files):
+def create_csv_file(number_of_files, col_names = None):
     for i in range(number_of_files):
         filename = CSV_FILE_PATH.format(i)
         df = pd.DataFrame([[1, 2, 3], [1, 2, 3], [1, 2, 3]])
@@ -93,3 +93,23 @@ def test_read_csvs_three_separated_csv_path():
     finally:
         # Cleanup
         remove_csv_files()
+
+
+@pytest.mark.functions
+def test_read_csvs_two_unmatching_csv_files():
+    # Setup
+    # When two csv files do not have same column names 
+    df = pd.DataFrame([[1, 2, 3], [1, 2, 3], [1, 2, 3]], columns=["a","b","c"])
+    df.to_csv(CSV_FILE_PATH.format(0), index=False)
+    df = pd.DataFrame([[1, 2, 3], [1, 2, 3], [1, 2, 3]], columns=["d","e","f"])
+    df.to_csv(CSV_FILE_PATH.format(1), index=False)    
+
+    # If the csv files are read into DataFrame
+    try:
+        io.read_csvs(CSV_FILE_PATH.format("*"))
+        # if read does read the unmatching files give an error
+        raise ValueError
+    except:
+        # If the read raises an exception it is ok
+        pass
+

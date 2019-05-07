@@ -1351,7 +1351,7 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
         8  3            3                   3     lion      Basel        -3
 
     """
-
+    df = df.copy()  #Copying the df so that changes are not made in-place
     check("col_name", col_name, [str])
 
     if col_name in df.columns:

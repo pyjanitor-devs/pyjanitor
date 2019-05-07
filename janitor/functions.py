@@ -2768,7 +2768,7 @@ def groupby_agg(
 
 @pf.register_dataframe_method
 def drop_duplicate_columns(
-    df: pd.DataFrame, column_name: str, column_order: int = 0
+    df: pd.DataFrame, column_name: str, nth_index: int = 0
 ) -> pd.DataFrame:
     """
     Removes a duplicated column specified by column_name.

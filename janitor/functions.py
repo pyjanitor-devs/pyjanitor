@@ -1191,9 +1191,7 @@ def remove_columns(df: pd.DataFrame, columns: List):
     :param df: A pandas DataFrame
     :param columns: The columns to remove.
     """
-    for col in columns:
-        del df[col]
-    return df
+    return df.drop(columns=columns)
 
 
 @pf.register_dataframe_method
@@ -1231,7 +1229,7 @@ def change_type(df, column: str, dtype, ignore_exception=False):
         def convert(x, dtype):
             try:
                 return dtype(x)
-            except:
+            except ValueError:
                 return None
 
         df[column] = df[column].apply(lambda x: convert(x, dtype))

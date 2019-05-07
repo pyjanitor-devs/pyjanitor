@@ -9,6 +9,8 @@ release:
 #
 # ALSO, remove this comment once it's tested!!!!!!!!!!!
 
+.PHONY: format test lint docs isort check style
+
 format:
 	black -l 79 .
 
@@ -16,13 +18,13 @@ test:
 	pytest
 
 lint:
-	pycodestyle .
+	pycodestyle . --exclude ./nbconvert_config.py
 
 docs:
 	cd docs && make html
 
 isort:
-	isort -r . -y -up -tc
+	isort -rc . -y -up -tc
 
 check: test docs isort format lint
 	echo "checks complete"

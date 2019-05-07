@@ -115,6 +115,7 @@ def test_add_column_iterator_repeat_subtraction(dataframe):
     assert df.city_pop.iloc[0] == 0
 
 @pytest.mark.functions
+@given(df=df_strategy())
 def test_add_column_checkequality(df):
     # column appears in DataFrame
     new_df = df.add_column("fortytwo", 42)

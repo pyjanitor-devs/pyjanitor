@@ -2,9 +2,7 @@
 
 ## Description
 
-Adds a column to the dataframe.
-
-Intended to be the method-chaining alternative to: `df[colname] = value`.
+This method adds a column to the dataframe. It is intended to be the method-chaining alternative to: `df[colname] = value`.
 
 ## Parameters
 ### df

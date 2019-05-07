@@ -174,7 +174,7 @@ def remove_empty(df):
     df = df.drop(index=nanrows).reset_index(drop=True)
 
     nancols = df.columns[df.isnull().all(axis=0)]
-    df.drop(columns=nancols, inplace=True)
+    df = df.drop(columns=nancols)
 
     return df
 
@@ -1686,10 +1686,10 @@ def row_to_names(
     df.columns.name = None
 
     if remove_row:
-        df.drop(df.index[row_number], inplace=True)
+        df = df.drop(df.index[row_number])
 
     if remove_rows_above:
-        df.drop(df.index[range(row_number)], inplace=True)
+        df = df.drop(df.index[range(row_number)])
 
     return df
 

@@ -12,9 +12,19 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("../examples"))
+
+# Make a symlink in our sphinx source directory to the top-level
+# examples/notebooks directory so we can include notebooks in the doc
+notebooks = Path("./notebooks")
+if not notebooks.exists():
+    print("Making symlink to ../examples/notebooks")
+    notebooks.symlink_to("../examples/notebooks")
 
 
 # -- Project information -----------------------------------------------------
@@ -47,6 +57,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinxcontrib.fulltoc",
+    "nbsphinx",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -56,7 +67,7 @@ templates_path = ["_templates"]
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = [".md", ".rst"]
+source_suffix = [".md", ".rst", ".ipynb"]
 
 # The master toctree document.
 master_doc = "index"
@@ -71,7 +82,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"

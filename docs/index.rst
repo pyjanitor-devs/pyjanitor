@@ -14,8 +14,8 @@ repetitive tasks.
 
    api
    contributing
-   example
    authors
+   notebooks
 
 .. include:: ../README.rst
 

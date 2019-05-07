@@ -9,4 +9,4 @@ pandas-flavor==0.1.2
 biopython
 requests
 hypothesis>=4.4.0
-
+nbsphinx

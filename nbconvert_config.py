@@ -54,9 +54,7 @@ import os
 
 ## List of notebooks to convert. Wildcards are supported. Filenames passed
 #  positionally will be added to the list.
-c.NbConvertApp.notebooks = [
-    "examples/notebooks/*.ipynb",
-]
+c.NbConvertApp.notebooks = ["examples/notebooks/*.ipynb"]
 
 ## overwrite base name use for output files. can only be used when converting one
 #  notebook at a time.

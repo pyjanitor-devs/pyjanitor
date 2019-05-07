@@ -15,8 +15,9 @@
 import os
 import sys
 from pathlib import Path
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../examples'))
+
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath("../examples"))
 
 # Make a symlink in our sphinx source directory to the top-level
 # examples/notebooks directory so we can include notebooks in the doc

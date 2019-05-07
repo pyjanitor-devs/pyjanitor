@@ -12,10 +12,11 @@ repetitive tasks.
    :maxdepth: 2
    :caption: Contents:
 
+   installation
+   notebooks
    api
    contributing
    authors
-   notebooks
 
 .. include:: ../README.rst
 

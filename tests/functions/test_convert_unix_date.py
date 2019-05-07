@@ -1,6 +1,12 @@
+import os
+
+import pytest
 import pandas as pd
 
 
+@pytest.mark.skipif(
+    os.name == "nt", reason="Skip *nix-specific tests on Windows"
+)
 def test_convert_unix_date():
     unix = [
         "1284101485",

@@ -2723,3 +2723,49 @@ def groupby_agg(
     df = df.merge(df_grp, on=by)
 
     return df
+
+
+@pf.register_dataframe_method
+def drop_duplicated_columns(
+    df: pd.DataFrame, column_name: str, column_order: int = 0
+) -> pd.DataFrame:
+    """
+    Removes a duplicated column specified in column_name and column_order.
+
+    Column order 0 is to remove the first column, order 1 is to remove the second column, and etc
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame({
+            "a": range(10),
+            "b": range(10),
+            "A": range(10, 20),
+            "a*": range(20, 30),
+        }).clean_names(remove_special=True)
+
+        # remove a duplicated second 'a' column
+        df.drop_duplicated_columns(column_name="a", column_order=1)
+
+
+    :param df: A pandas DataFrame
+    :param column_name: Column to be removed
+    :param column_order: Among the duplicated columns, select which column index to be removed
+    :return: A pandas DataFrame
+    """
+    cols = df.columns.to_list()
+    col_indexes = [
+        col_idx
+        for col_idx, col_name in enumerate(cols)
+        if col_name == column_name
+    ]
+
+    # given that a column could be duplicated, user could opt based on its order
+    removed_col_idx = col_indexes[column_order]
+    # get the column indexes without column that is being removed
+    filtered_cols = [
+        c_i for c_i, c_v in enumerate(cols) if c_i != removed_col_idx
+    ]
+
+    return df.iloc[:, filtered_cols]

@@ -2771,7 +2771,7 @@ def drop_duplicated_columns(
     df: pd.DataFrame, column_name: str, column_order: int = 0
 ) -> pd.DataFrame:
     """
-    Removes a duplicated column specified in column_name and column_order.
+    Removes a duplicated column specified by column_name.
 
     Column order 0 is to remove the first column,
            order 1 is to remove the second column, and etc

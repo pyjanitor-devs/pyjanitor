@@ -22,13 +22,18 @@ def dataframe():
     df = pd.DataFrame(data)
     return df
 
+
 @pytest.fixture
 def multilevel_dataframe():
-    arrays = [np.array(['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux']),
-              np.array(['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two'])]
+    arrays = [
+        np.array(["bar", "bar", "baz", "baz", "foo", "foo", "qux", "qux"]),
+        np.array(["one", "two", "one", "two", "one", "two", "one", "two"]),
+    ]
     tuples = list(zip(*arrays))
-    index = pd.MultiIndex.from_tuples(tuples, names=['first', 'second'])
-    df = pd.DataFrame(np.random.randn(3, 8), index=['A', 'B', 'C'], columns=index)
+    index = pd.MultiIndex.from_tuples(tuples, names=["first", "second"])
+    df = pd.DataFrame(
+        np.random.randn(3, 8), index=["A", "B", "C"], columns=index
+    )
     return df
 
 

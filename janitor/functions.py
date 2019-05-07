@@ -1175,11 +1175,11 @@ def remove_columns(df: pd.DataFrame, columns: List):
     :param df: A pandas DataFrame
     :param columns: The columns to remove.
     """
-    return df.drop(columns=columns  )
+    return df.drop(columns=columns)
 
 
 @pf.register_dataframe_method
-def change_type(df, column: str, dtype, ignore_exception = False):
+def change_type(df, column: str, dtype, ignore_exception=False):
     """
     Changes the type of a column.
     
@@ -1207,17 +1207,18 @@ def change_type(df, column: str, dtype, ignore_exception = False):
     if not ignore_exception:
         df[column] = df[column].astype(dtype)
     elif ignore_exception == "keep_values":
-        df[column] = df[column].astype(dtype, errors="ignore" )
+        df[column] = df[column].astype(dtype, errors="ignore")
     elif ignore_exception == "fillna":
-        # returns None when conversion 
+        # returns None when conversion
         def convert(x, dtype):
-            try: 
+            try:
                 return dtype(x)
             except:
                 return None
-        df[column] = df[column].apply(lambda x: convert(x, dtype)) ###
+
+        df[column] = df[column].apply(lambda x: convert(x, dtype))  ###
     else:
-        raise ValueError("unknown option for ignore_exception")  
+        raise ValueError("unknown option for ignore_exception")
     return df
 
 

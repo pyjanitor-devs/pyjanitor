@@ -2728,7 +2728,7 @@ def groupby_agg(
 
 
 @pf.register_dataframe_method
-def drop_duplicated_columns(
+def drop_duplicate_columns(
     df: pd.DataFrame, column_name: str, column_order: int = 0
 ) -> pd.DataFrame:
     """

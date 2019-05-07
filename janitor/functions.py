@@ -218,7 +218,7 @@ def get_dupes(df, column_names=None, **kwargs):
 @pf.register_dataframe_method
 def encode_categorical(df, column_names=None, **kwargs):
     """
-    Encode the specified columns as categorical column in pandas.
+    Encode the specified columns with Pandas' `category`_ dtype.
 
     Functional usage example:
 
@@ -240,6 +240,9 @@ def encode_categorical(df, column_names=None, **kwargs):
     :param str/iterable column_names: A column name or an iterable (list or
         tuple) of column names.
     :returns: A pandas DataFrame
+
+    .. _category: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html 
+
     """
     if kwargs and column_names is not None:
         raise TypeError("Mixed usage of columns and column_names")

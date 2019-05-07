@@ -27,3 +27,4 @@ With thanks to the following contributors:
 - `@mdini <https://github.com/mdini>`_
 - `@kimt33 <https://github.com/kimt33>`_
 - `@Rajat-181 <https://github.com/Rajat-181>`_
+- `@NapsterInBlue <https://github.com/NapsterInBlue>`_

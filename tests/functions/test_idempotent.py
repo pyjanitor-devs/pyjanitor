@@ -1,7 +1,6 @@
 import pytest
-from tests.utils import idempotent
+from janitor.utils import idempotent
 from math import fabs, floor
-import numpy as np
 
 
 @pytest.mark.functions

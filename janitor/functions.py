@@ -2753,7 +2753,8 @@ def groupby_agg(
                                            new_column='col1_mean')
 
     :param df: A pandas DataFrame.
-    :param by: Column to groupby on.
+    :param by: Column(s) to groupby on, either a `str` or 
+               a `list` of `str`
     :param new_column: Name of the aggregation output column.
     :param agg_column: Name of the column to aggregate over.
     :param agg: How to aggregate.
@@ -2766,7 +2767,12 @@ def groupby_agg(
         .agg(agg, axis=axis)
         .reset_index()
         .rename(columns={agg_column: new_column})
-    )[[by, new_column]]
+    )
+
+    if isinstance(by, list) or isinstance(by, tuple):
+        df_grp = df_grp[[*by, new_column]]
+    else:
+        df_grp = df_grp[[by, new_column]]
 
     df = df.merge(df_grp, on=by)
 

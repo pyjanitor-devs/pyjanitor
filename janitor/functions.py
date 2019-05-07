@@ -2738,6 +2738,57 @@ def groupby_agg(
     return df
 
 
+@pf.register_dataframe_accessor("data_description")
+class DataDescription:
+    """
+    Accessor that provides high-level description of data present
+    in this DataFrame.
+    """
+
+    def __init__(self, data):
+        self._data = data
+        self._desc = dict()
+
+    def _get_data_df(self):
+        df = self._data
+
+        data_dict = dict()
+        data_dict["column_name"] = df.columns.tolist()
+        data_dict["type"] = df.dtypes.tolist()
+        data_dict["count"] = df.count().tolist()
+        data_dict["pct_missing"] = (1 - (df.count() / len(df))).tolist()
+        data_dict["description"] = [self._desc.get(c, "") for c in df.columns]
+
+        return pd.DataFrame(data_dict).set_index("column_name")
+
+    @property
+    def df(self):
+        """
+        Get a table of descriptive information in a DataFrame format.
+        """
+        return self._get_data_df()
+
+    def display(self):
+        """
+        Print the table of descriptive information about this DataFrame.
+        """
+        print(self._get_data_df())
+
+    def set_description(self, desc: Union[List, Dict]):
+        """
+        Update the description for each of the columns in the DataFrame.
+
+        :param desc: The structure containing the descriptions to update
+        :type desc: list or dict
+        """
+        if isinstance(desc, list):
+            assert len(desc) == len(self._data.columns)
+            self._desc = dict(zip(self._data.columns, desc))
+
+        elif isinstance(desc, dict):
+            self._desc = desc
+
+
 @pf.register_dataframe_method
 def drop_duplicate_columns(
     df: pd.DataFrame, column_name: str, nth_index: int = 0

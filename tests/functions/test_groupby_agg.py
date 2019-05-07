@@ -53,9 +53,9 @@ def test_groupby_agg_multi():
         by=["date", "user_id"],
         new_column="date_average",
         agg_column="values",
-        agg=pd.np.mean,
+        agg=pd.np.count_nonzero,
     )
 
-    expected_agg = np.array([1, 2, 3, 4, 5, 6])
+    expected_agg = np.array([1, 1, 1, 1, 1, 1])
 
     np.testing.assert_equal(df_new["date_average"], expected_agg)

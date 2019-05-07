@@ -24,7 +24,7 @@ docs:
 	cd docs && make html
 
 isort:
-	isort -r . -y -up -tc
+	isort -rc . -y -up -tc
 
 check: test docs isort format lint
 	echo "checks complete"

@@ -1175,7 +1175,7 @@ def remove_columns(df: pd.DataFrame, columns: List):
     :param df: A pandas DataFrame
     :param columns: The columns to remove.
     """
-    return df.drop(columns=columns  )
+    return df.drop(columns=columns)
 
 
 @pf.register_dataframe_method

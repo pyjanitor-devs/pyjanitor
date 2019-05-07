@@ -12,10 +12,10 @@ repetitive tasks.
    :maxdepth: 2
    :caption: Contents:
 
-   api
    contributing
    authors
    notebooks
+   references/index
 
 .. include:: ../README.rst
 

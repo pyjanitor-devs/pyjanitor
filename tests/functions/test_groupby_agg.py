@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import pytest
 
 
@@ -28,3 +29,33 @@ def test_groupby_agg():
     assert df.shape[0] == df_new.shape[0]
     assert "date_average" in df_new.columns
     assert df_new["date_average"].iloc[0] == 1
+
+
+@pytest.mark.functions
+def test_groupby_agg_multi():
+
+    df = pd.DataFrame(
+        {
+            "date": [
+                "20190101",
+                "20190101",
+                "20190102",
+                "20190102",
+                "20190304",
+                "20190304",
+            ],
+            "user_id": [1, 2, 1, 2, 1, 2],
+            "values": [1, 2, 3, 4, 5, 6],
+        }
+    )
+
+    df_new = df.groupby_agg(
+        by=["date", "user_id"],
+        new_column="date_average",
+        agg_column="values",
+        agg=pd.np.count_nonzero,
+    )
+
+    expected_agg = np.array([1, 1, 1, 1, 1, 1])
+
+    np.testing.assert_equal(df_new["date_average"], expected_agg)

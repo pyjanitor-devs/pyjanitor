@@ -10,12 +10,11 @@ methods.
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
 
    biology
    chemistry
    finance
-   functions
+   general_functions
 
 .. autosummary:: janitor.biology
 .. autosummary:: janitor.chemistry

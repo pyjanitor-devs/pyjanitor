@@ -1,6 +1,7 @@
 def idempotent(func, df, *args, **kwargs):
     """
-        Checks if a function is idempotence, that is f(f(x))=f(x) is true for all x.
+        Checks if a function is idempotence,
+        that is f(f(x))=f(x) is true for all x.
 
     :param func: a python method
     :param df: a pandas dataframe

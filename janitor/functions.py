@@ -2079,10 +2079,11 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
 
     Before applying `.collapse_levels`, the `.agg` operation returns a
     multi-level column `DataFrame` whose columns are (level 1, level 2):
-    `[('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'), ('type', 'mean'),
-    ('type', 'median')]`
+    `[('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
+    ('type', 'mean'), ('type', 'median')]`
     `.collapse_levels` then flattens the column names to:
-    `['class', 'max_speed_mean', 'max_speed_median', 'type_mean', 'type_median']`
+    `['class', 'max_speed_mean', 'max_speed_median',
+    'type_mean', 'type_median']`
 
     :param df: A pandas DataFrame.
     :param sep: String separator used to join the column level names

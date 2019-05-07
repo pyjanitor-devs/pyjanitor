@@ -2730,10 +2730,13 @@ def drop_duplicate_columns(
     df: pd.DataFrame, column_name: str, nth_index: int = 0
 ) -> pd.DataFrame:
     """
-    Removes a duplicated column specified by column_name.
+    Removes a duplicated column specified by column_name, its index
 
     Column order 0 is to remove the first column,
            order 1 is to remove the second column, and etc
+
+    The corresponding tidyverse R's library is:
+    `select(-<column_name>_<nth_index + 1>)`
 
     Method chaining example:
 
@@ -2747,7 +2750,8 @@ def drop_duplicate_columns(
         }).clean_names(remove_special=True)
 
         # remove a duplicated second 'a' column
-        df.drop_duplicated_columns(column_name="a", column_order=1)
+        df.drop_duplicate_columns(column_name="a", nth_index=1)
+
 
 
     :param df: A pandas DataFrame
@@ -2764,9 +2768,8 @@ def drop_duplicate_columns(
     ]
 
     # given that a column could be duplicated,
-    # :w
     # user could opt based on its order
-    removed_col_idx = col_indexes[column_order]
+    removed_col_idx = col_indexes[nth_index]
     # get the column indexes without column that is being removed
     filtered_cols = [
         c_i for c_i, c_v in enumerate(cols) if c_i != removed_col_idx

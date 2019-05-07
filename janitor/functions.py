@@ -174,7 +174,7 @@ def remove_empty(df):
     df = df.drop(index=nanrows).reset_index(drop=True)
 
     nancols = df.columns[df.isnull().all(axis=0)]
-    df.drop(columns=nancols, inplace=True)
+    df = df.drop(columns=nancols)
 
     return df
 
@@ -218,7 +218,7 @@ def get_dupes(df, column_names=None, **kwargs):
 @pf.register_dataframe_method
 def encode_categorical(df, column_names=None, **kwargs):
     """
-    Encode the specified columns as categorical column in pandas.
+    Encode the specified columns with Pandas' `category`_ dtype.
 
     Functional usage example:
 
@@ -240,6 +240,9 @@ def encode_categorical(df, column_names=None, **kwargs):
     :param str/iterable column_names: A column name or an iterable (list or
         tuple) of column names.
     :returns: A pandas DataFrame
+
+    .. _category: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html  # noqa: E501
+
     """
     if kwargs and column_names is not None:
         raise TypeError("Mixed usage of columns and column_names")
@@ -1657,10 +1660,10 @@ def row_to_names(
     df.columns.name = None
 
     if remove_row:
-        df.drop(df.index[row_number], inplace=True)
+        df = df.drop(df.index[row_number])
 
     if remove_rows_above:
-        df.drop(df.index[range(row_number)], inplace=True)
+        df = df.drop(df.index[range(row_number)])
 
     return df
 
@@ -2034,23 +2037,27 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
     this through a simple string-joining of all the names across different
     levels in a single column.
 
-    Method chaining example given two value columns `['var1', 'var2']`:
+    Method chaining example given two value columns `['max_speed', 'type']`:
 
-    .. code-block:: python
+    data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
+            "max_speed": [389, 389, 24, 80, 21],
+            "type": ["falcon", "falcon", "parrot", "Lion", "Monkey"]}
 
-        df = (
-            pd.DataFrame(...)
-            .groupby('mygroup')
+
+    df = (
+        pd.DataFrame(data)
+            .groupby('class')
             .agg(['mean', 'median'])
             .collapse_levels(sep='_')
-        )
+    )
 
     Before applying `.collapse_levels`, the `.agg` operation returns a
     multi-level column `DataFrame` whose columns are (level 1, level 2):
-    `[('mygroup', ''), ('var1', 'mean'), ('var1', 'median'), ('var2', 'mean'),
-    ('var2', 'median')]`
+    `[('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
+    ('type', 'mean'), ('type', 'median')]`
     `.collapse_levels` then flattens the column names to:
-    `['mygroup', 'var1_mean', 'var1_median', 'var2_mean', 'var2_median']`
+    `['class', 'max_speed_mean', 'max_speed_median',
+    'type_mean', 'type_median']`
 
     :param df: A pandas DataFrame.
     :param sep: String separator used to join the column level names
@@ -2086,27 +2093,25 @@ def reset_index_inplace(df: pd.DataFrame, *args, **kwargs):
     syntax core to pyjanitor. This function, therefore, is the chaining
     equivalent of:
 
-    .. code-block:: python
 
-        df = (
-            pd.DataFrame(...)
-            .operation1(...)
-        )
+data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
+        "max_speed": [389, 389, 24, 80, 21],
+        "index": ["falcon", "falcon", "parrot", "Lion", "Monkey"]}
 
-        df.reset_index(inplace=True)
+df = (
+    pd.DataFrame(data).set_index("index")
+        .drop_duplicates()
+)
 
-        df = df.operation2(...)
+df.reset_index(inplace=True)
 
-    instead, being called simply as:
+instead, being called simply as:
 
-    .. code-block:: python
-
-        df = (
-            pd.DataFrame(...)
-            .operation1(...)
-            .reset_index_inplace()
-            .operation2(...)
-        )
+df = (
+    pd.DataFrame(data).set_index("index")
+        .drop_duplicates()
+        .reset_index_inplace()
+)
 
     All supplied parameters are sent directly to `DataFrame.reset_index()`.
 
@@ -2483,15 +2488,19 @@ def impute(df, column: str, value=None, statistic=None):
 
     Method-chaining example:
 
-    .. code-block:: python
+    import numpy as np
 
-        df = (
-            pd.DataFrame(...)
+    data = {
+        "a": [1, 2, 3],
+        "sales": np.nan,
+        "score": [np.nan, 3, 2]}
+    df = (
+        pd.DataFrame(data)
             # Impute null values with 0
             .impute(column='sales', value=0.0)
             # Impute null values with median
             .impute(column='score', statistic='median')
-        )
+    )
 
     Either one of ``value`` or ``statistic`` should be provided.
 
@@ -2625,7 +2634,14 @@ def update_where(
     .. code-block:: python
 
         # The dataframe must be assigned to a variable first.
-        df = pd.DataFrame(...)
+        data = {
+        "a": [1, 2, 3] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+        df = pd.DataFrame(data)
         df = (
             df
             .update_where(
@@ -2723,3 +2739,143 @@ def groupby_agg(
     df = df.merge(df_grp, on=by)
 
     return df
+
+
+@pf.register_dataframe_accessor("data_description")
+class DataDescription:
+    """
+    Accessor that provides high-level description of data present
+    in this DataFrame.
+    """
+
+    def __init__(self, data):
+        self._data = data
+        self._desc = dict()
+
+    def _get_data_df(self):
+        df = self._data
+
+        data_dict = dict()
+        data_dict["column_name"] = df.columns.tolist()
+        data_dict["type"] = df.dtypes.tolist()
+        data_dict["count"] = df.count().tolist()
+        data_dict["pct_missing"] = (1 - (df.count() / len(df))).tolist()
+        data_dict["description"] = [self._desc.get(c, "") for c in df.columns]
+
+        return pd.DataFrame(data_dict).set_index("column_name")
+
+    @property
+    def df(self):
+        """
+        Get a table of descriptive information in a DataFrame format.
+        """
+        return self._get_data_df()
+
+    def display(self):
+        """
+        Print the table of descriptive information about this DataFrame.
+        """
+        print(self._get_data_df())
+
+    def set_description(self, desc: Union[List, Dict]):
+        """
+        Update the description for each of the columns in the DataFrame.
+
+        :param desc: The structure containing the descriptions to update
+        :type desc: list or dict
+        """
+        if isinstance(desc, list):
+            assert len(desc) == len(self._data.columns)
+            self._desc = dict(zip(self._data.columns, desc))
+
+        elif isinstance(desc, dict):
+            self._desc = desc
+
+
+@pf.register_dataframe_method
+def bin_numeric(
+    df: pd.DataFrame,
+    from_column: str,
+    to_column: str,
+    num_bins: int = 5,
+    labels: str = None,
+):
+    """
+    Makes use of pandas cut() function to bin data of one column, generating a
+    new column with the results.
+
+
+    :param df: A pandas DataFrame.
+    :param from_column: The column whose data you want binned.
+    :param to_column: The new column to be created with the binned data.
+    :param num_bins: The number of bins to be utilized.
+    :param labels: Optionally rename numeric bin ranges with labels. Number of
+    label names must match number of bins specified.
+
+    :return: A pandas DataFrame.
+    """
+
+    if not labels:
+        df[str(to_column)] = pd.cut(df[str(from_column)], bins=num_bins)
+    else:
+        if not len(labels) == num_bins:
+            raise ValueError(f"Number of labels must match number of bins.")
+
+        df[str(to_column)] = pd.cut(
+            df[str(from_column)], bins=num_bins, labels=labels
+        )
+
+    return df
+
+
+@pf.register_dataframe_method
+def drop_duplicate_columns(
+    df: pd.DataFrame, column_name: str, nth_index: int = 0
+) -> pd.DataFrame:
+    """
+    Removes a duplicated column specified by column_name, its index
+
+    Column order 0 is to remove the first column,
+           order 1 is to remove the second column, and etc
+
+    The corresponding tidyverse R's library is:
+    `select(-<column_name>_<nth_index + 1>)`
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        df = pd.DataFrame({
+            "a": range(10),
+            "b": range(10),
+            "A": range(10, 20),
+            "a*": range(20, 30),
+        }).clean_names(remove_special=True)
+
+        # remove a duplicated second 'a' column
+        df.drop_duplicate_columns(column_name="a", nth_index=1)
+
+
+
+    :param df: A pandas DataFrame
+    :param column_name: Column to be removed
+    :param nth_index: Among the duplicated columns,
+      select the nth column to drop.
+    :return: A pandas DataFrame
+    """
+    cols = df.columns.to_list()
+    col_indexes = [
+        col_idx
+        for col_idx, col_name in enumerate(cols)
+        if col_name == column_name
+    ]
+
+    # given that a column could be duplicated,
+    # user could opt based on its order
+    removed_col_idx = col_indexes[nth_index]
+    # get the column indexes without column that is being removed
+    filtered_cols = [
+        c_i for c_i, c_v in enumerate(cols) if c_i != removed_col_idx
+    ]
+
+    return df.iloc[:, filtered_cols]

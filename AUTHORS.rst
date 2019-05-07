@@ -28,3 +28,5 @@ With thanks to the following contributors:
 - `@kimt33 <https://github.com/kimt33>`_
 - `@jack-kessler-88 <https://github.com/jack-kessler-88>`_
 - `@NapsterInBlue <https://github.com/NapsterInBlue>`_
+- `@jk3587 <https://github.com/jk3587>`_
+- `@catherinedevlin <https://github.com/catherinedevlin>`_

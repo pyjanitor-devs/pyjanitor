@@ -45,7 +45,8 @@ Preprocessing
 .. autosummary::
    :toctree: janitor.functions/
 
-    min_max_scale
+    bin_numeric
+    encode_categorical
     impute
     label_encode
-    encode_categorical
+    min_max_scale

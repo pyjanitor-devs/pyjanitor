@@ -15,6 +15,7 @@ from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
+from .utils import deprecated_alias
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -178,7 +179,8 @@ def remove_empty(df):
 
 
 @pf.register_dataframe_method
-def get_dupes(df, columns=None):
+@deprecated_alias(columns="column_names")
+def get_dupes(df, column_names=None):
     """
     Return all duplicate rows.
 
@@ -204,12 +206,13 @@ def get_dupes(df, columns=None):
         columns.
     :returns: The duplicate rows, as a pandas DataFrame.
     """
-    dupes = df.duplicated(subset=columns, keep=False)
+    dupes = df.duplicated(subset=column_names, keep=False)
     return df[dupes == True]  # noqa: E712
 
 
 @pf.register_dataframe_method
-def encode_categorical(df, columns):
+@deprecated_alias(columns="column_names")
+def encode_categorical(df, column_names):
     """
     Encode the specified columns as categorical column in pandas.
 
@@ -234,8 +237,8 @@ def encode_categorical(df, columns):
         of column names.
     :returns: A pandas DataFrame
     """
-    if isinstance(columns, list) or isinstance(columns, tuple):
-        for col in columns:
+    if isinstance(column_names, list) or isinstance(column_names, tuple):
+        for col in column_names:
             assert col in df.columns, JanitorError(
                 "{col} missing from dataframe columns!".format(col=col)
             )
@@ -251,7 +254,8 @@ def encode_categorical(df, columns):
 
 
 @pf.register_dataframe_method
-def label_encode(df, columns):
+@deprecated_alias(columns="column_names")
+def label_encode(df, column_names):
     """
     Convert labels into numerical data.
 
@@ -278,9 +282,9 @@ def label_encode(df, columns):
         df = pd.DataFrame(...).label_encode(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable columns: A column name or an iterable (list or tuple)
-        of column names.
-    :returns: A pandas DataFrame
+    :param str/iterable column_names: A column name or an iterable (list or
+        tuple) of column names.
+    :returns: A pandas DataFrame.
     """
     le = LabelEncoder()
     if isinstance(columns, list) or isinstance(columns, tuple):
@@ -485,7 +489,8 @@ def coalesce(df, columns, new_column_name):
 
 
 @pf.register_dataframe_method
-def convert_excel_date(df, column):
+@deprecated_alias(column="column_name")
+def convert_excel_date(df, column_name):
     """
     Convert Excel's serial date format into Python datetime format.
 
@@ -511,14 +516,17 @@ def convert_excel_date(df, column):
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    df[column] = pd.TimedeltaIndex(df[column], unit="d") + dt.datetime(
+    df[column_name] = pd.TimedeltaIndex(
+        df[column_name], unit="d"
+    ) + dt.datetime(
         1899, 12, 30
     )  # noqa: W503
     return df
 
 
 @pf.register_dataframe_method
-def convert_matlab_date(df, column):
+@deprecated_alias(column="column_name")
+def convert_matlab_date(df, column_name):
     """
     Convert Matlab's serial date number into Python datetime format.
 
@@ -544,9 +552,9 @@ def convert_matlab_date(df, column):
     :param str column: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    days = pd.Series([dt.timedelta(v % 1) for v in df[column]])
-    df[column] = (
-        df[column].astype(int).apply(dt.datetime.fromordinal)
+    days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
+    df[column_name] = (
+        df[column_name].astype(int).apply(dt.datetime.fromordinal)
         + days
         - dt.timedelta(days=366)
     )
@@ -554,7 +562,8 @@ def convert_matlab_date(df, column):
 
 
 @pf.register_dataframe_method
-def convert_unix_date(df, column):
+@deprecated_alias(column="column_name")
+def convert_unix_date(df, column_name):
     """
     Convert unix epoch time into Python datetime format.
     Note that this ignores local tz and convert all
@@ -631,7 +640,8 @@ def fill_empty(df, columns, value):
 
 
 @pf.register_dataframe_method
-def expand_column(df, column, sep, concat=True):
+@deprecated_alias(column="column_name")
+def expand_column(df, column_name, sep, concat=True):
     """
     Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -658,8 +668,9 @@ def expand_column(df, column, sep, concat=True):
     :param bool concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).
+    :returns: A pandas DataFrame with an expanded column.
     """
-    expanded = df[column].str.get_dummies(sep=sep)
+    expanded_df = df[column_name].str.get_dummies(sep=sep)
     if concat:
         df = df.join(expanded)
         return df

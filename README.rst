@@ -7,7 +7,7 @@ pyjanitor
 .. image:: https://mybinder.org/badge_logo.svg
  :target: https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev
 
-Python implementation of the R package `janitor`_, and more.
+``pyjanitor`` is a Python implementation of the R package `janitor`_, and provides a clean API for cleaning data.
 
 .. _janitor: https://github.com/sfirke/janitor
 

@@ -1,8 +1,10 @@
-from janitor import io
-import pandas as pd
-import os
-import pytest
 import glob
+import os
+
+import pandas as pd
+import pytest
+
+from janitor import io
 
 CSV_FILE_PATH = "my_test_csv_for_read_csvs_{}.csv"
 

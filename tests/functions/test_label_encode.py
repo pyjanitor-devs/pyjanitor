@@ -18,7 +18,7 @@ def test_single_column_fail_label_encode():
         pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
         ).label_encode(
-            columns="c"
+            column_names="c"
         )  # noqa: 841
 
 

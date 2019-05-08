@@ -9,6 +9,8 @@ The abbreviations can be:
 - [INF]: Infrastructure-related contributions.
 
 Also, do not forget to tag the relevant issue here as well.
+
+Finally, as commits come in, don't forget to regularly rebase!
 -->
 
 # PR Description

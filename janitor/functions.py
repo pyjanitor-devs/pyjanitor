@@ -369,7 +369,8 @@ def rename_column(df, old, new):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")  # noqa: E501
+        df = pd.DataFrame(...).rename_column("old_column_name",
+                                            "new_column_name")  # noqa: E501
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -491,7 +492,8 @@ def convert_excel_date(df, column):
 
     Implementation is also from `Stack Overflow`.
 
-    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas  # noqa: E501
+    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/\
+    convert-excel-style-date-with-pandas  # noqa: E501
 
     Functional usage example:
 
@@ -524,7 +526,8 @@ def convert_matlab_date(df, column):
 
     Implementation is also from `Stack Overflow`.
 
-    .. _Stack Overflow: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python  # noqa: E501
+    .. _Stack Overflow: https://stackoverflow.com/questions/13965740/\
+    converting-matlabs-datenum-format-to-python  # noqa: E501
 
     Functional usage example:
 
@@ -781,7 +784,8 @@ def filter_string(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string('column', search_string='pattern', complement=False)  # noqa: E501
+              .filter_string('column', search_string='pattern',
+                            complement=False)  # noqa: E501
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -1186,9 +1190,9 @@ def change_type(df, column: str, dtype, ignore_exception = False):
     Changes the type of a column.
     
     Exceptions that are raised can be ignored. For example, if one has a mixed
-    dtype column that has non-integer strings and integers, and you want to coerce
-    everything to integers, you can optionally ignore the non-integer strings and 
-    replace them with ``NaN``s or keep the original value
+    dtype column that has non-integer strings and integers, and you want to
+    coerce everything to integers, you can optionally ignore the non-integer
+    strings and replace them with ``NaN``s or keep the original value
 
     Intended to be the method-chaining alternative to::
 
@@ -2684,7 +2688,8 @@ def groupby_agg(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).groupby_agg(df, by='col1', agg='mean', new_column='col1_mean')
+        df = pd.DataFrame(...).groupby_agg(df, by='col1', agg='mean',
+                                            new_column='col1_mean')
 
     :param df: A pandas DataFrame.
     :param by: Column to groupby on.

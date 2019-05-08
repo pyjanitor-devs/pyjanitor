@@ -15,6 +15,7 @@ from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
+from .utils import deprecated_alias
 
 
 def _strip_underscores(df, strip_underscores=None):
@@ -180,7 +181,8 @@ def remove_empty(df):
 
 
 @pf.register_dataframe_method
-def get_dupes(df, column_names=None, **kwargs):
+@deprecated_alias(columns="column_names")
+def get_dupes(df, column_names=None):
     """
     Return all duplicate rows.
 
@@ -206,17 +208,13 @@ def get_dupes(df, column_names=None, **kwargs):
         all columns.
     :returns: The duplicate rows, as a pandas DataFrame.
     """
-    if kwargs and column_names is not None:
-        raise TypeError("Mixed usage of columns and column_names")
-    if column_names is None and "columns" in kwargs:
-        warnings.warn("columns is deprecated. You should use column_names.")
-        column_names = kwargs["columns"]
     dupes = df.duplicated(subset=column_names, keep=False)
     return df[dupes == True]  # noqa: E712
 
 
 @pf.register_dataframe_method
-def encode_categorical(df, column_names=None, **kwargs):
+@deprecated_alias(columns="column_names")
+def encode_categorical(df, column_names):
     """
     Encode the specified columns with Pandas' `category`_ dtype.
 
@@ -242,11 +240,6 @@ def encode_categorical(df, column_names=None, **kwargs):
 
     .. _category: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html  # noqa: E501
     """
-    if kwargs and column_names is not None:
-        raise TypeError("Mixed usage of columns and column_names")
-    if column_names is None:
-        warnings.warn("columns is deprecated. You should use column_names.")
-        column_names = kwargs["columns"]
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             assert col in df.columns, JanitorError(
@@ -268,7 +261,8 @@ def encode_categorical(df, column_names=None, **kwargs):
 
 
 @pf.register_dataframe_method
-def label_encode(df, column_names=None, **kwargs):
+@deprecated_alias(columns="column_names")
+def label_encode(df, column_names):
     """
     Convert labels into numerical data.
 
@@ -295,15 +289,10 @@ def label_encode(df, column_names=None, **kwargs):
         df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable columns: A column name or an iterable (list or tuple)
-        of column names.
+    :param str/iterable column_names: A column name or an iterable (list or
+        tuple) of column names.
     :returns: A pandas DataFrame.
     """
-    if kwargs and column_names is not None:
-        raise TypeError("Mixed usage of columns and column_names")
-    if column_names is None:
-        warnings.warn("columns is deprecated. You should use column_names.")
-        column_names = kwargs["columns"]
     le = LabelEncoder()
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
@@ -509,7 +498,8 @@ def coalesce(df, columns, new_column_name):
 
 
 @pf.register_dataframe_method
-def convert_excel_date(df, column_name=None, **kwargs):
+@deprecated_alias(column="column_name")
+def convert_excel_date(df, column_name):
     """
     Convert Excel's serial date format into Python datetime format.
 
@@ -535,11 +525,6 @@ def convert_excel_date(df, column_name=None, **kwargs):
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    if kwargs and column_name is not None:
-        raise TypeError("Mixed usage of column and column_name")
-    if column_name is None:
-        warnings.warn("column is deprecated. You should use column_name.")
-        column_name = kwargs["column"]
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"
     ) + dt.datetime(
@@ -549,7 +534,8 @@ def convert_excel_date(df, column_name=None, **kwargs):
 
 
 @pf.register_dataframe_method
-def convert_matlab_date(df, column_name=None, **kwargs):
+@deprecated_alias(column="column_name")
+def convert_matlab_date(df, column_name):
     """
     Convert Matlab's serial date number into Python datetime format.
 
@@ -575,11 +561,6 @@ def convert_matlab_date(df, column_name=None, **kwargs):
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    if kwargs and column_name is not None:
-        raise TypeError("Mixed usage of column and column_name")
-    if column_name is None:
-        warnings.warn("column is deprecated. You should use column_name.")
-        column_name = kwargs["column"]
     days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
     df[column_name] = (
         df[column_name].astype(int).apply(dt.datetime.fromordinal)
@@ -590,7 +571,8 @@ def convert_matlab_date(df, column_name=None, **kwargs):
 
 
 @pf.register_dataframe_method
-def convert_unix_date(df, column_name=None, **kwargs):
+@deprecated_alias(column="column_name")
+def convert_unix_date(df, column_name):
     """
     Convert unix epoch time into Python datetime format.
     Note that this ignores local tz and convert all
@@ -612,11 +594,6 @@ def convert_unix_date(df, column_name=None, **kwargs):
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-    if kwargs and column_name is not None:
-        raise TypeError("Mixed usage of column and column_name")
-    if column_name is None:
-        warnings.warn("column is deprecated. You should use column_name.")
-        column_name = kwargs["column"]
 
     def _conv(value):
         try:
@@ -673,7 +650,8 @@ def fill_empty(df, columns, value):
 
 
 @pf.register_dataframe_method
-def expand_column(df, sep, column_name=None, concat=True, **kwargs):
+@deprecated_alias(column="column_name")
+def expand_column(df, column_name, sep, concat=True):
     """
     Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -705,11 +683,6 @@ def expand_column(df, sep, column_name=None, concat=True, **kwargs):
         (`concat=False`).
     :returns: A pandas DataFrame with an expanded column.
     """
-    if kwargs and column_name is not None:
-        raise TypeError("Mixed usage of column and column_name")
-    if column_name is None:
-        warnings.warn("column is deprecated. You should use column_name.")
-        column_name = kwargs["column"]
     expanded_df = df[column_name].str.get_dummies(sep=sep)
     if concat:
         df = df.join(expanded_df)

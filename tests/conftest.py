@@ -24,6 +24,20 @@ def dataframe():
 
 
 @pytest.fixture
+def multilevel_dataframe():
+    arrays = [
+        np.array(["bar", "bar", "baz", "baz", "foo", "foo", "qux", "qux"]),
+        np.array(["one", "two", "one", "two", "one", "two", "one", "two"]),
+    ]
+    tuples = list(zip(*arrays))
+    index = pd.MultiIndex.from_tuples(tuples, names=["first", "second"])
+    df = pd.DataFrame(
+        np.random.randn(3, 8), index=["A", "B", "C"], columns=index
+    )
+    return df
+
+
+@pytest.fixture
 def date_dataframe():
     df = pd.DataFrame(date_data.date_list, columns=["AMOUNT", "DATE"])
     return df
@@ -102,6 +116,20 @@ def chemdf():
     df = pd.read_csv(filename, sep="\t", header=None).head(10)
     df.columns = ["id", "smiles"]
     return df
+
+
+@pytest.fixture
+def df_duplicated_columns():
+    data = {
+        "a": range(10),
+        "b": range(10),
+        "A": range(10, 20),
+        "a*": range(20, 30),
+    }
+    df = pd.DataFrame(data)
+    # containing three 'a' columns being duplicated
+    clean_df = df.clean_names(remove_special=True)
+    return clean_df
 
 
 def pytest_configure():

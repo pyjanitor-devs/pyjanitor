@@ -1,0 +1,7 @@
+pytest>=3.4.2
+setuptools>=38.5.2
+sphinxcontrib-fulltoc==1.2.0
+hypothesis>=4.4.0
+nbsphinx>=0.4.2
+isort>=4.3.18
+black>=19.3b0

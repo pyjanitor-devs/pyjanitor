@@ -8,7 +8,7 @@ from janitor.errors import JanitorError
 def test_single_column_label_encode():
     df = pd.DataFrame(
         {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-    ).label_encode(columns="a")
+    ).label_encode(column_names="a")
     assert "a_enc" in df.columns
 
 
@@ -18,7 +18,7 @@ def test_single_column_fail_label_encode():
         pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
         ).label_encode(
-            columns="c"
+            column_names="c"
         )  # noqa: 841
 
 
@@ -30,7 +30,7 @@ def test_multicolumn_label_encode():
             "b": [1, 2, 3],
             "c": ["aloha", "nihao", "nihao"],
         }
-    ).label_encode(columns=["a", "c"])
+    ).label_encode(column_names=["a", "c"])
     assert "a_enc" in df.columns
     assert "c_enc" in df.columns
 

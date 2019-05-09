@@ -702,8 +702,9 @@ def expand_column(df, column_name, sep, concat=True):
 
 
 @pf.register_dataframe_method
+@deprecated_alias(columns="column_names")
 def concatenate_columns(
-    df, columns: List, new_column_name: str, sep: str = "-"
+    df, column_names: List, new_column_name: str, sep: str = "-"
 ):
     """
     Concatenates the set of columns into a single column.
@@ -715,7 +716,7 @@ def concatenate_columns(
     .. code-block:: python
 
         df = concatenate_columns(df,
-                                 columns=['col1', 'col2'],
+                                 column_names=['col1', 'col2'],
                                  new_column_name='id',
                                  sep='-')
 
@@ -724,18 +725,18 @@ def concatenate_columns(
     .. code-block:: python
 
         df = (pd.DataFrame(...).
-              concatenate_columns(columns=['col1', 'col2'],
+              concatenate_columns(column_names=['col1', 'col2'],
                                   new_column_name='id',
                                   sep='-'))
 
     :param df: A pandas DataFrame.
-    :param columns: A list of columns to concatenate together.
+    :param column_names: A list of columns to concatenate together.
     :param new_column_name: The name of the new column.
     :param sep: The separator between each column's data.
     :returns: A pandas DataFrame with concatenated columns.
     """
-    assert len(columns) >= 2, "At least two columns must be specified"
-    for i, col in enumerate(columns):
+    assert len(column_names) >= 2, "At least two columns must be specified"
+    for i, col in enumerate(column_names):
         if i == 0:
             df[new_column_name] = df[col].astype(str)
         else:
@@ -747,7 +748,10 @@ def concatenate_columns(
 
 
 @pf.register_dataframe_method
-def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
+@deprecated_alias(column="column_name")
+def deconcatenate_column(
+    df, column_name: str, new_column_names: List, sep: str
+):
     """
     De-concatenates a single column into multiple columns.
 
@@ -760,7 +764,7 @@ def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
     .. code-block:: python
 
         df = deconcatenate_columns(df,
-                                   column='id',
+                                   column_name='id',
                                    new_column_names=['col1', 'col2'],
                                    sep='-')
 
@@ -769,20 +773,20 @@ def deconcatenate_column(df, column: str, new_column_names: List, sep: str):
     .. code-block:: python
 
         df = (pd.DataFrame(...).
-              deconcatenate_columns(columns='id',
-                                    new_column_name=['col1', 'col2'],
+              deconcatenate_columns(column_name='id',
+                                    new_column_names=['col1', 'col2'],
                                     sep='-'))
 
     :param df: A pandas DataFrame.
-    :param column: The column to split.
+    :param column_name: The column to split.
     :param new_column_names: A list of new column names post-splitting.
     :param sep: The separator delimiting the column's data.
     :returns: A pandas DataFrame with a deconcatenated column.
     """
     assert (
-        column in df.columns
-    ), f"column name {column} not present in dataframe"  # noqa: E501
-    deconcat = df[column].str.split(sep, expand=True)
+        column_name in df.columns
+    ), f"column name {column_name} not present in dataframe"  # noqa: E501
+    deconcat = df[column_name].str.split(sep, expand=True)
     assert (
         len(new_column_names) == deconcat.shape[1]
     ), "number of new column names not correct."

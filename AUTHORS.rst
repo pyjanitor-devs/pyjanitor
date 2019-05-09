@@ -26,9 +26,5 @@ With thanks to the following contributors:
 - `@Eidhagen <https://github.com/Eidhagen>`_
 - `@mdini <https://github.com/mdini>`_
 - `@kimt33 <https://github.com/kimt33>`_
-- `@jack-kessler-88 <https://github.com/jack-kessler-88>`_
 - `@NapsterInBlue <https://github.com/NapsterInBlue>`_
-- `@jk3587 <https://github.com/jk3587>`_
-- `@ricky-lim <https://github.com/ricky-lim>`_
-- `@catherinedevlin <https://github.com/catherinedevlin>`_
-- `@StephenSchroed <https://github.com/StephenSchroeder>`_
+- `@dendrondal <https://github.com/dendrondal>`_

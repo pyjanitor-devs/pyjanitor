@@ -795,8 +795,9 @@ def deconcatenate_column(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(column="column_name")
 def filter_string(
-    df, column: str, search_string: str, complement: bool = False
+    df, column_name: str, search_string: str, complement: bool = False
 ):
     """
     Filter a string-based column according to whether it contains a substring.
@@ -831,7 +832,7 @@ def filter_string(
     .. code-block:: python
 
         df = filter_string(df,
-                           column='column',
+                           column_name='column',
                            search_string='pattern'
                            complement=False)
 
@@ -840,18 +841,18 @@ def filter_string(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string(column='column',
+              .filter_string(column_name='column',
                              search_string='pattern'
                              complement=False)
               ...)
 
     :param df: A pandas DataFrame.
-    :param column: The column to filter. The column should contain strings.
+    :param column_name: The column to filter. The column should contain strings.
     :param search_string: A regex pattern or a (sub-)string to search.
     :param complement: Whether to return the complement of the filter or not.
     :returns: A filtered pandas DataFrame.
     """
-    criteria = df[column].str.contains(search_string)
+    criteria = df[column_name].str.contains(search_string)
     if complement:
         return df[~criteria]
     else:
@@ -1148,8 +1149,12 @@ def filter_date(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(column="column_name")
 def filter_column_isin(
-    df: pd.DataFrame, column: str, iterable: Iterable, complement: bool = False
+    df: pd.DataFrame,
+    column_name: str,
+    iterable: Iterable,
+    complement: bool = False,
 ):
     """
     Filters a dataframe based on whether the values of a given column are
@@ -1165,7 +1170,7 @@ def filter_column_isin(
         df = (
             pd.DataFrame(...)
             .clean_names()
-            .filter_column_isin(column="names", iterable=["James", "John"]
+            .filter_column_isin(column_name="names", iterable=["James", "John"]
             )
         )
 
@@ -1176,7 +1181,7 @@ def filter_column_isin(
         df = df[df['names'].isin(['James', 'John'])]
 
     :param df: A pandas DataFrame
-    :param column: The column on which to filter.
+    :param column_name: The column on which to filter.
     :param iterable: An iterable. Could be a list, tuple, another pandas
         Series.
     :param complement: Whether to return the complement of the selection or
@@ -1187,7 +1192,7 @@ def filter_column_isin(
         raise ValueError(
             "`iterable` kwarg must be given an iterable of length 1 or greater"
         )
-    criteria = df[column].isin(iterable)
+    criteria = df[column_name].isin(iterable)
 
     if complement:
         return df[~criteria]

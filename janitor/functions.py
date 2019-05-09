@@ -313,23 +313,27 @@ def label_encode(df, column_names):
 
 
 @pf.register_dataframe_method
-def get_features_targets(df, target_columns, feature_columns=None):
+@deprecated_alias(
+    target_columns="target_column_names",
+    feature_columns="feature_column_names",
+)
+def get_features_targets(df, target_column_names, feature_column_names=None):
     """
     Get the features and targets as separate DataFrames/Series.
 
     The behaviour is as such:
 
-    - `target_columns` is mandatory.
-    - If `feature_columns` is present, then we will respect the column names
+    - `target_column_names` is mandatory.
+    - If `feature_column_names` is present, then we will respect the column names
     inside there.
-    - If `feature_columns` is not passed in, then we will assume that the
+    - If `feature_column_names` is not passed in, then we will assume that the
     rest of the columns are feature columns, and return them.
 
     Functional usage example:
 
     .. code-block:: python
 
-        X, y = get_features_targets(df, target_columns="measurement")
+        X, y = get_features_targets(df, target_column_names="measurement")
 
     Method chaining example:
 
@@ -339,34 +343,35 @@ def get_features_targets(df, target_columns, feature_columns=None):
         import janitor
         df = pd.DataFrame(...)
         target_cols = ['output1', 'output2']
-        X, y = df.get_features_targets(target_columns=target_cols)  # noqa: E501
+        X, y = df.get_features_targets(target_column_names=target_cols)  # noqa: E501
 
     :param df: The pandas DataFrame object.
-    :param str/iterable target_columns: Either a column name or an iterable\
+    :param str/iterable target_column_names: Either a column name or an iterable\
         (list or tuple) of column names that are the target(s) to be predicted.
-    :param str/iterable feature_columns: (optional) The column name or \
+    :param str/iterable feature_column_names: (optional) The column name or \
         iterable of column names that are the features (a.k.a. predictors) \
         used to predict the targets.
     :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both \
         are pandas DataFrames.
     """
-    Y = df[target_columns]
+    Y = df[target_column_names]
 
-    if feature_columns:
-        X = df[feature_columns]
+    if feature_column_names:
+        X = df[feature_column_names]
     else:
-        if isinstance(target_columns, str):
-            xcols = [c for c in df.columns if target_columns != c]
-        elif isinstance(target_columns, list) or isinstance(
-            target_columns, tuple
+        if isinstance(target_column_names, str):
+            xcols = [c for c in df.columns if target_column_names != c]
+        elif isinstance(target_column_names, list) or isinstance(
+            target_column_names, tuple
         ):  # noqa: W503
-            xcols = [c for c in df.columns if c not in target_columns]
+            xcols = [c for c in df.columns if c not in target_column_names]
         X = df[xcols]
     return X, Y
 
 
 @pf.register_dataframe_method
-def rename_column(df, old, new):
+@deprecated_alias(old="old_column_name", new="new_column_name")
+def rename_column(df, old_column_name, new_column_name):
     """
     Rename a column in place.
 
@@ -388,13 +393,15 @@ def rename_column(df, old, new):
     at a time. If you are convinced that there are multiple columns in need of
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
 
-    :param str old: The old column name.
-    :param str new: The new column name.
+    :param str old_column_name: The old column name.
+    :param str new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
     """
-    if old not in df.columns:
-        raise ValueError(f"{old} not present in dataframe columns!")
-    return df.rename(columns={old: new})
+    if old_column_name not in df.columns:
+        raise ValueError(
+            f"{old_column_name} not present in dataframe columns!"
+        )
+    return df.rename(columns={old_column_name: new_column_name})
 
 
 @pf.register_dataframe_method
@@ -455,7 +462,8 @@ def reorder_columns(
 
 
 @pf.register_dataframe_method
-def coalesce(df, columns, new_column_name):
+@deprecated_alias(columns="column_names")
+def coalesce(df, column_names, new_column_name):
     """
 
     Coalesces two or more columns of data in order of column names provided.
@@ -464,7 +472,7 @@ def coalesce(df, columns, new_column_name):
 
     .. code-block:: python
 
-        df = coalesce(df, columns=['col1', 'col2'])
+        df = coalesce(df, column_names=['col1', 'col2'])
 
     Method chaining example:
 
@@ -483,16 +491,16 @@ def coalesce(df, columns, new_column_name):
     method (which we're just using internally anyways).
 
     :param df: A pandas DataFrame.
-    :param columns: A list of column names.
+    :param column_names: A list of column names.
     :param str new_column_name: The new column name after combining.
     :returns: A pandas DataFrame with coalesced columns.
     """
-    series = [df[c] for c in columns]
+    series = [df[c] for c in column_names]
 
     def _coalesce(series1, series2):
         return series1.combine_first(series2)
 
-    df = df.drop(columns=columns)
+    df = df.drop(columns=column_names)
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
     return df
 
@@ -607,7 +615,8 @@ def convert_unix_date(df, column_name):
 
 
 @pf.register_dataframe_method
-def fill_empty(df, columns, value):
+@deprecated_alias(columns="column_names")
+def fill_empty(df, column_names, value):
     """
     Fill `NaN` values in specified columns with a given value.
 
@@ -617,7 +626,7 @@ def fill_empty(df, columns, value):
 
     .. code-block:: python
 
-        df = fill_empty(df, columns=['col1', 'col2'], value=0)
+        df = fill_empty(df, column_names=['col1', 'col2'], value=0)
 
     Method chaining example:
 
@@ -625,26 +634,27 @@ def fill_empty(df, columns, value):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).fill_empty(df, columns='col1', value=0)
+        df = pd.DataFrame(...).fill_empty(df, column_names='col1', value=0)
 
     :param df: A pandas DataFrame.
-    :param columns: Either a `str` or `list` or `tuple`. If a string is passed
-        in, then only that column will be filled; if a list or tuple of strings
-        are passed in, then they will all be filled with the same value.
+    :param column_names: Either a `str` or `list` or `tuple`. If a string
+        is passed in, then only that column will be filled; if a list or tuple
+        of strings are passed in, then they will all be filled with the same
+        value.
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `Nan` values filled.
     """
-    if isinstance(columns, list) or isinstance(columns, tuple):
-        for col in columns:
+    if isinstance(column_names, list) or isinstance(column_names, tuple):
+        for col in column_names:
             assert (
                 col in df.columns
             ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
-            columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
-        df[columns] = df[columns].fillna(value)
+            column_names in df.columns
+        ), "{col} missing from dataframe columns!".format(col=column_names)
+        df[column_names] = df[column_names].fillna(value)
 
     return df
 

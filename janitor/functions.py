@@ -462,7 +462,8 @@ def reorder_columns(
 
 
 @pf.register_dataframe_method
-def coalesce(df, columns, new_column_name):
+@deprecated_alias(columns="column_names")
+def coalesce(df, column_names, new_column_name):
     """
 
     Coalesces two or more columns of data in order of column names provided.
@@ -471,7 +472,7 @@ def coalesce(df, columns, new_column_name):
 
     .. code-block:: python
 
-        df = coalesce(df, columns=['col1', 'col2'])
+        df = coalesce(df, column_names=['col1', 'col2'])
 
     Method chaining example:
 
@@ -490,16 +491,16 @@ def coalesce(df, columns, new_column_name):
     method (which we're just using internally anyways).
 
     :param df: A pandas DataFrame.
-    :param columns: A list of column names.
+    :param column_names: A list of column names.
     :param str new_column_name: The new column name after combining.
     :returns: A pandas DataFrame with coalesced columns.
     """
-    series = [df[c] for c in columns]
+    series = [df[c] for c in column_names]
 
     def _coalesce(series1, series2):
         return series1.combine_first(series2)
 
-    df = df.drop(columns=columns)
+    df = df.drop(columns=column_names)
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
     return df
 
@@ -614,7 +615,8 @@ def convert_unix_date(df, column_name):
 
 
 @pf.register_dataframe_method
-def fill_empty(df, columns, value):
+@deprecated_alias(columns="column_names")
+def fill_empty(df, column_names, value):
     """
     Fill `NaN` values in specified columns with a given value.
 
@@ -624,7 +626,7 @@ def fill_empty(df, columns, value):
 
     .. code-block:: python
 
-        df = fill_empty(df, columns=['col1', 'col2'], value=0)
+        df = fill_empty(df, column_names=['col1', 'col2'], value=0)
 
     Method chaining example:
 
@@ -632,26 +634,27 @@ def fill_empty(df, columns, value):
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).fill_empty(df, columns='col1', value=0)
+        df = pd.DataFrame(...).fill_empty(df, column_names='col1', value=0)
 
     :param df: A pandas DataFrame.
-    :param columns: Either a `str` or `list` or `tuple`. If a string is passed
-        in, then only that column will be filled; if a list or tuple of strings
-        are passed in, then they will all be filled with the same value.
+    :param column_names: Either a `str` or `list` or `tuple`. If a string
+        is passed in, then only that column will be filled; if a list or tuple
+        of strings are passed in, then they will all be filled with the same
+        value.
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `Nan` values filled.
     """
-    if isinstance(columns, list) or isinstance(columns, tuple):
-        for col in columns:
+    if isinstance(column_names, list) or isinstance(column_names, tuple):
+        for col in column_names:
             assert (
                 col in df.columns
             ), "{col} missing from dataframe columns!".format(col=col)
             df[col] = df[col].fillna(value)
     else:
         assert (
-            columns in df.columns
-        ), "{col} missing from dataframe columns!".format(col=columns)
-        df[columns] = df[columns].fillna(value)
+            column_names in df.columns
+        ), "{col} missing from dataframe columns!".format(col=column_names)
+        df[column_names] = df[column_names].fillna(value)
 
     return df
 

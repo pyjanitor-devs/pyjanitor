@@ -19,10 +19,10 @@ Please modify the example API below to illustrate your proposed API, and then de
 
 ```python
 # transform only one column, while creating a new column name for it.
-df.transform_columns(column_name=['col1'], function=np.abs, new_column_name=['col1_abs'])
+df.transform_columns(column_names=['col1'], function=np.abs, new_column_names=['col1_abs'])
 
 # transform multiple columns by the same function, without creating a new column name.
-df.transform_columns(column_name=['col1', 'col2'], function=np.abs)
+df.transform_columns(column_names=['col1', 'col2'], function=np.abs)
 
 # more examples below
 # ...

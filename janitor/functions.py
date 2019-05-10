@@ -1221,7 +1221,8 @@ def remove_columns(df: pd.DataFrame, columns: List):
 
 
 @pf.register_dataframe_method
-def change_type(df, column: str, dtype, ignore_exception=False):
+@deprecated_alias(column="column_name")
+def change_type(df, column_name: str, dtype, ignore_exception=False):
     """
     Changes the type of a column.
 
@@ -1241,16 +1242,16 @@ def change_type(df, column: str, dtype, ignore_exception=False):
         df = pd.DataFrame(...).change_type('col1', str)
 
     :param df: A pandas dataframe.
-    :param column: A column in the dataframe.
+    :param column_name: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
     :param ignore_exception: one of {False, "fillna", "keep_values"}.
     :returns: A pandas DataFrame with changed column types.
     """
     if not ignore_exception:
-        df[column] = df[column].astype(dtype)
+        df[column_name] = df[column_name].astype(dtype)
     elif ignore_exception == "keep_values":
-        df[column] = df[column].astype(dtype, errors="ignore")
+        df[column_name] = df[column_name].astype(dtype, errors="ignore")
     elif ignore_exception == "fillna":
         # returns None when conversion
         def convert(x, dtype):
@@ -1259,27 +1260,28 @@ def change_type(df, column: str, dtype, ignore_exception=False):
             except ValueError:
                 return None
 
-        df[column] = df[column].apply(lambda x: convert(x, dtype))
+        df[column_name] = df[column_name].apply(lambda x: convert(x, dtype))
     else:
         raise ValueError("unknown option for ignore_exception")
     return df
 
 
 @pf.register_dataframe_method
-def add_column(df, col_name: str, value, fill_remaining: bool = False):
+@deprecated_alias(col_name="column_name")
+def add_column(df, column_name: str, value, fill_remaining: bool = False):
     """
     Adds a column to the dataframe.
 
     Intended to be the method-chaining alternative to::
 
-        df[col_name] = value
+        df[column_name] = value
 
     Method chaining example adding a column with only a single value:
 
     .. code-block:: python
 
         # This will add a column with only one value.
-        df = pd.DataFrame(...).add_column(col_name="new_column", 2)
+        df = pd.DataFrame(...).add_column(column_name="new_column", 2)
 
     Method chaining example adding a column with more than one value:
 
@@ -1287,10 +1289,10 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
 
         # This will add a column with an iterable of values.
         vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
-        df = pd.DataFrame(...).add_column(col_name="new_column", vals)
+        df = pd.DataFrame(...).add_column(column_name="new_column", vals)
 
     :param df: A pandas dataframe.
-    :param col_name: Name of the new column. Should be a string, in order
+    :param column_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param value: Either a single value, or a list/tuple of values.
@@ -1380,11 +1382,11 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
 
     """
 
-    check("col_name", col_name, [str])
+    check("column_name", column_name, [str])
 
-    if col_name in df.columns:
+    if column_name in df.columns:
         raise ValueError(
-            f"Attempted to add column that already exists: " f"{col_name}."
+            f"Attempted to add column that already exists: " f"{column_name}."
         )
 
     nrows = df.shape[0]
@@ -1422,9 +1424,9 @@ def add_column(df, col_name: str, value, fill_remaining: bool = False):
 
         fill_values = list(value) * times_to_loop
 
-        df[col_name] = fill_values[:nrows]
+        df[column_name] = fill_values[:nrows]
     else:
-        df[col_name] = value
+        df[column_name] = value
 
     return df
 

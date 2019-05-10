@@ -12,7 +12,7 @@ from janitor.testing_utils.strategies import df_strategy
 def test_add_column_add_integer(df):
     # col_name wasn't a string
     with pytest.raises(TypeError):
-        df.add_column(col_name=42, value=42)
+        df.add_column(column_name=42, value=42)
 
 
 @pytest.mark.functions

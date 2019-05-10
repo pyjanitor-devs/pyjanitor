@@ -1700,15 +1700,19 @@ def row_to_names(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(col_name="column_name")
 def round_to_fraction(
-    df, col_name: str = None, denominator: float = None, digits: float = np.inf
+    df,
+    column_name: str = None,
+    denominator: float = None,
+    digits: float = np.inf,
 ):
     """
     Round all values in a column to a fraction.
 
     Also, optionally round to a specified number of digits.
-
-    :param number: The number to round
+    :param df: A pandas dataframe.
+    :param column_name: Name of column to round to fraction.
     :param denominator: The denominator of the fraction for rounding
     :param digits: The number of digits for rounding after rounding to the
         fraction. Default is np.inf (i.e. no subsequent rounding)
@@ -1799,7 +1803,7 @@ def round_to_fraction(
 
     """
 
-    check("col_name", col_name, [str])
+    check("column_name", column_name, [str])
 
     if denominator:
         check("denominator", denominator, [float, int])
@@ -1817,13 +1821,16 @@ def round_to_fraction(
         _round_to_fraction, denominator=denominator, digits=digits
     )
 
-    df[col_name] = df[col_name].apply(_round_to_fraction_partial)
+    df[column_name] = df[column_name].apply(_round_to_fraction_partial)
 
     return df
 
 
 @pf.register_dataframe_method
-def transform_column(df, col_name: str, function, dest_col_name: str = None):
+@deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
+def transform_column(
+    df, column_name: str, function, dest_column_name: str = None
+):
     """
     Transforms the given column in-place using the provided function.
 
@@ -1834,7 +1841,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     .. code-block:: python
 
         # YOU NO LONGER NEED TO WRITE THIS!
-        df[col_name] = df[col_name].apply(function)
+        df[column_name] = df[column_name].apply(function)
 
     With the method chaining syntax, we can do the following instead:
 
@@ -1842,7 +1849,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
 
         df = (
             pd.DataFrame(...)
-            .transform_column(col_name, function)
+            .transform_column(column_name, function)
         )
 
     With the functional syntax:
@@ -1850,30 +1857,31 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = transform_column(df, col_name, function)
+        df = transform_column(df, column_name, function)
 
     :param df: A pandas DataFrame.
-    :param col_name: The column to transform.
+    :param column_name: The column to transform.
     :param function: A function to apply on the column.
-    :param dest_col_name: The column name to store the transformation result
+    :param dest_column_name: The column name to store the transformation result
         in. By default, replaces contents of original column.
     :returns: A pandas DataFrame with a transformed column.
     """
 
-    if dest_col_name is None:
-        dest_col_name = col_name
+    if dest_column_name is None:
+        dest_column_name = column_name
 
-    df[dest_col_name] = df[col_name].apply(function)
+    df[dest_column_name] = df[column_name].apply(function)
     return df
 
 
 @pf.register_dataframe_method
+@deprecated_alias(columns="column_names", new_names="new_column_names")
 def transform_columns(
     df,
-    columns: List[str],
+    column_names: List[str],
     function,
     suffix: str = None,
-    new_names: Dict[str, str] = None,
+    new_column_names: Dict[str, str] = None,
 ):
     """
     Super syntactic sugar to transform a list of columns by the same
@@ -1919,7 +1927,7 @@ def transform_columns(
             .transform_column(
                 ['col1', 'col2', 'col3'],
                 np.log10,
-                new_names={
+                new_column_names={
                     'col1': 'transform1',
                     'col2': 'transform2',
                     'col3': 'transform3',
@@ -1928,33 +1936,35 @@ def transform_columns(
         )
 
     :param df: A pandas DataFrame.
-    :param columns: An iterable of columns to transform.
+    :param column_names: An iterable of columns to transform.
     :param function: A function to apply on each column.
     :param suffix: (optional) Suffix to use when creating new columns to hold
         the transformed values.
-    :param new_names: (optional) An explicit mapping of old column names to
-        new column names.
+    :param new_column_names: (optional) An explicit mapping of old column names
+        to new column names.
     :returns: A pandas DataFrame with transformed columns.
     """
-    dest_col_names = dict(zip(columns, columns))
+    dest_column_names = dict(zip(column_names, column_names))
 
-    check("columns", columns, [list, tuple])
+    check("column_names", column_names, [list, tuple])
 
-    if suffix is not None and new_names is not None:
-        raise ValueError("only one of suffix or new_names should be specified")
+    if suffix is not None and new_column_names is not None:
+        raise ValueError(
+            "only one of suffix or new_column_names should be specified"
+        )
 
     if suffix:  # If suffix is specified...
         check("suffix", suffix, [str])
-        for col in columns:
-            dest_col_names[col] = col + suffix
+        for col in column_names:
+            dest_column_names[col] = col + suffix
 
-    if new_names:  # If new_names is specified...
-        check("new_names", new_names, [dict])
-        dest_col_names = new_names
+    if new_column_names:  # If new_column_names is specified...
+        check("new_column_names", new_column_names, [dict])
+        dest_column_names = new_column_names
 
     # Now, transform columns.
-    for oldcol, newcol in dest_col_names.items():
-        df = transform_column(df, oldcol, function, newcol)
+    for old_col, new_col in dest_column_names.items():
+        df = transform_column(df, old_col, function, new_col)
 
     return df
 

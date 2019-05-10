@@ -1201,9 +1201,10 @@ def filter_column_isin(
 
 
 @pf.register_dataframe_method
-def remove_columns(df: pd.DataFrame, columns: List):
+@deprecated_alias(columns="column_names")
+def remove_columns(df: pd.DataFrame, column_names: List):
     """
-    Removes the set of columns specified in cols.
+    Removes the set of columns specified in `column_names`.
 
     Intended to be the method-chaining alternative to `del df[col]`.
 
@@ -1211,13 +1212,13 @@ def remove_columns(df: pd.DataFrame, columns: List):
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).remove_columns(cols=['col1', ['col2']])
+        df = pd.DataFrame(...).remove_columns(column_names=['col1', ['col2']])
 
     :param df: A pandas DataFrame
-    :param columns: The columns to remove.
+    :param column_names: The columns to remove.
     :returns: A pandas DataFrame.
     """
-    return df.drop(columns=columns)
+    return df.drop(columns=column_names)
 
 
 @pf.register_dataframe_method
@@ -1959,8 +1960,9 @@ def transform_columns(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(col_name="column_name")
 def min_max_scale(
-    df, old_min=None, old_max=None, col_name=None, new_min=0, new_max=1
+    df, old_min=None, old_max=None, column_name=None, new_min=0, new_max=1
 ):
     """
     Scales data to between a minimum and maximum value.
@@ -1980,7 +1982,7 @@ def min_max_scale(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).min_max_scale(col_name="a")
+        df = pd.DataFrame(...).min_max_scale(column_name="a")
 
     Setting custom minimum and maximum:
 
@@ -1989,7 +1991,7 @@ def min_max_scale(
         df = (
             pd.DataFrame(...)
             .min_max_scale(
-                col_name="a",
+                column_name="a",
                 new_min=2,
                 new_max=10
             )
@@ -2021,7 +2023,7 @@ def min_max_scale(
         maximum values of the data to be transformed.
     :param new_min, new_max (optional): The minimum and maximum values of the
         data after it has been scaled.
-    :param col_name (optional): The column on which to perform scaling.
+    :param column_name (optional): The column on which to perform scaling.
     :returns: A pandas DataFrame with scaled data.
     """
     if (
@@ -2036,14 +2038,14 @@ def min_max_scale(
 
     new_range = new_max - new_min
 
-    if col_name:
+    if column_name:
         if old_min is None:
-            old_min = df[col_name].min()
+            old_min = df[column_name].min()
         if old_max is None:
-            old_max = df[col_name].max()
+            old_max = df[column_name].max()
         old_range = old_max - old_min
-        df[col_name] = (
-            df[col_name] - old_min
+        df[column_name] = (
+            df[column_name] - old_min
         ) * new_range / old_range + new_min
     else:
         if old_min is None:

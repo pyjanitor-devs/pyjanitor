@@ -2280,10 +2280,11 @@ def _replace_original_empty_string_with_none(x):
 
 
 @pf.register_dataframe_method
+@deprecated_alias(col_name="column_name", type="cleaning_style")
 def currency_column_to_numeric(
     df,
-    col_name: str,
-    type: str = None,
+    column_name: str,
+    cleaning_style: str = None,
     cast_non_numeric: dict = None,
     fill_all_non_numeric: float = None,
     remove_non_numeric: bool = False,
@@ -2295,9 +2296,9 @@ def currency_column_to_numeric(
     Empty strings (i.e. `''`) are retained as `NaN` values.
 
     :param df: The DataFrame
-    :param col_name: The column to modify
-    :param type: What type of cleaning to perform. If None, standard cleaning
-        is applied. Options are: 'accounting'.
+    :param column_name: The column to modify
+    :param cleaning_style: What style of cleaning to perform. If None, standard
+        cleaning is applied. Options are: 'accounting'.
     :param cast_non_numeric: A dict of how to coerce certain strings. For
         example, if there are values of 'REORDER' in the DataFrame,
         {'REORDER': 0} will cast all instances of 'REORDER' to 0.
@@ -2305,7 +2306,7 @@ def currency_column_to_numeric(
         strings to the same value. For example,  fill_all_non_numeric=1, will
         make everything that doesn't coerce to a currency 1.
     :param remove_non_numeric: Will remove rows of a DataFrame that contain
-        non-numeric values in the `col_name` column. Defaults to `False`.
+        non-numeric values in the `column_name` column. Defaults to `False`.
     :returns: A mutated DataFrame.
 
     :Example Setup:
@@ -2459,11 +2460,13 @@ def currency_column_to_numeric(
         7   NaN     2.456234                   2      leopard   Shanghai
         """
 
-    check("col_name", col_name, [str])
+    check("column_name", column_name, [str])
 
-    column_series = df[col_name]
-    if type == "accounting":
-        df.loc[:, col_name] = df[col_name].apply(_clean_accounting_column)
+    column_series = df[column_name]
+    if cleaning_style == "accounting":
+        df.loc[:, column_name] = df[column_name].apply(
+            _clean_accounting_column
+        )
         return df
 
     if cast_non_numeric:
@@ -2491,13 +2494,16 @@ def currency_column_to_numeric(
         _replace_original_empty_string_with_none
     )
 
-    df = df.assign(**{col_name: pd.to_numeric(column_series)})
+    df = df.assign(**{column_name: pd.to_numeric(column_series)})
 
     return df
 
 
 @pf.register_dataframe_method
-def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
+@deprecated_alias(search_cols="search_column_names")
+def select_columns(
+    df: pd.DataFrame, search_column_names: List, invert: bool = False
+):
     """
     Method-chainable selection of columns.
 
@@ -2510,8 +2516,8 @@ def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
         df = pd.DataFrame(...).select_columns(['a', 'b', 'col_*'], invert=True)
 
     :param df: A pandas DataFrame.
-    :param search_cols: A list of column names or search strings to be used\
-        to select. Valid inputs include:
+    :param search_column_names: A list of column names or search strings to be
+        used to select. Valid inputs include:
         1) an exact column name to look for
         2) a shell-style glob string (e.g., `*_thing_*`)
     :param invert: Whether or not to invert the selection.
@@ -2522,7 +2528,7 @@ def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
 
     full_column_list = []
 
-    for col in search_cols:
+    for col in search_column_names:
         search_string = translate(col)
         columns = [col for col in df if re.match(search_string, col)]
         full_column_list.extend(columns)

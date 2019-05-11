@@ -603,6 +603,7 @@ def convert_unix_date(df, column_name):
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
+
     def _conv(value):
         try:
             date = dt.datetime.utcfromtimestamp(value)
@@ -986,7 +987,6 @@ def filter_date(
     #     example_dataframe = pd.DataFrame(date_list,
     #                                      columns = ['AMOUNT', 'DATE'])
 
-
     # :Example 1: Filter dataframe between two dates
 
     # .. code-block:: python
@@ -995,7 +995,6 @@ def filter_date(
     #     end = "01/30/19"
 
     #     example_dataframe.filter_date('DATE', start=start, end=end)
-
 
     # :Output:
 
@@ -1014,7 +1013,6 @@ def filter_date(
 
     #     example_dataframe.filter_date('DATE', end=end, format=format)
 
-
     # :Output:
 
     # .. code-block:: python
@@ -1032,11 +1030,9 @@ def filter_date(
 
     #     example_dataframe.filter_date('DATE', years=years)
 
-
     # :Output:
 
     # .. code-block:: python
-
 
     #        AMOUNT       DATE
     #     0       1 2019-01-28
@@ -1059,7 +1055,6 @@ def filter_date(
 
     #     example_dataframe.filter_date('DATE', years=years, months=months)
 
-
     # :Output:
 
     # .. code-block:: python
@@ -1079,7 +1074,6 @@ def filter_date(
     #     days = range(10,12)
 
     #     example_dataframe.filter_date('DATE', years=years, days=days)
-
 
     # :Output:
 
@@ -1688,8 +1682,6 @@ def row_to_names(
     #     7  2  2  2  leopard   Shanghai
     #     8  3  3  3     lion      Basel
 
-
-
     check("row_number", row_number, [int])
 
     df.columns = df.iloc[row_number, :]
@@ -1752,7 +1744,6 @@ def round_to_fraction(
 
     # .. code-block:: python
 
-
     # :Output:
 
     # .. code-block:: python
@@ -1812,7 +1803,6 @@ def round_to_fraction(
     #     6  1.3333     0.333333            0.004274   rabbit  Cambridge
     #     7  2.3333     0.285714            0.153846  leopard   Shanghai
     #     8  3.3333     1.500000            0.017964     lion      Basel
-
 
     check("column_name", column_name, [str])
 
@@ -2403,7 +2393,6 @@ def currency_column_to_numeric(
 
     # .. code-block:: python
 
-
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
     #     1   NaN     2.456234                   2      leopard   Shanghai
@@ -2428,7 +2417,6 @@ def currency_column_to_numeric(
 
     # .. code-block:: python
 
-
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
     #     1   NaN     2.456234                   2      leopard   Shanghai
@@ -2451,7 +2439,6 @@ def currency_column_to_numeric(
 
     # .. code-block:: python
 
-
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
     #     1   NaN     2.456234                   2      leopard   Shanghai
@@ -2471,7 +2458,6 @@ def currency_column_to_numeric(
     # :Output:
 
     # .. code-block:: python
-
 
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge

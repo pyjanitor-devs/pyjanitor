@@ -2822,10 +2822,16 @@ def groupby_agg(
 
 @pf.register_dataframe_accessor("data_description")
 class DataDescription:
-    """High-level description of data present in this DataFrame."""
+    """
+    High-level description of data present in this DataFrame.
+
+    This is a custom data accessor.
+    """
 
     def __init__(self, data):
-        """Initialize DataDescription class."""
+        """
+        Initialize DataDescription class.
+        """
         self._data = data
         self._desc = dict()
 

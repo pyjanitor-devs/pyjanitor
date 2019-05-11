@@ -2829,9 +2829,7 @@ class DataDescription:
     """
 
     def __init__(self, data):
-        """
-        Initialize DataDescription class.
-        """
+        """Initialize DataDescription class."""
         self._data = data
         self._desc = dict()
 

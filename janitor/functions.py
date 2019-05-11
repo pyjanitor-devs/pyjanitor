@@ -604,6 +604,7 @@ def convert_unix_date(df, column_name):
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
+
     def _conv(value):
         try:
             date = dt.datetime.utcfromtimestamp(value)

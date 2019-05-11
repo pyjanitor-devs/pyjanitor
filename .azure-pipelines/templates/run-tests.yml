@@ -15,7 +15,7 @@ steps:
       $(activate.command) pyjanitor-dev
       jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
     displayName: 'Test that all notebooks execute correctly.'
-    - script: |
+  - script: |
       $(activate.command) pyjanitor-dev
       cd docs
       sphinx-build . _build/html -b html -W

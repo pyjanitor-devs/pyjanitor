@@ -1,3 +1,5 @@
+"""Sphinx configuration."""
+
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -196,3 +198,8 @@ intersphinx_mapping = {
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+
+# -- Other options -----------------------------------------------------------
+
+autosummary_generate = True  # Make _autosummary files and include them

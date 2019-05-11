@@ -1327,7 +1327,8 @@ def add_column(df, column_name: str, value, fill_remaining: bool = False):
     #     7  2            2                   2  leopard   Shanghai    100000
     #     8  3            3                   3     lion      Basel    100000
 
-    # :Example 2: Create a new column with an iterator which fills to the column
+    # :Example 2: Create a new column with an iterator which fills to the
+    # column
     # size:
 
     # .. code-block:: python

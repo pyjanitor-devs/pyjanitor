@@ -12,7 +12,7 @@ from janitor.testing_utils.strategies import df_strategy
 def test_add_column_add_integer(df):
     # col_name wasn't a string
     with pytest.raises(TypeError):
-        df.add_column(col_name=42, value=42)
+        df.add_column(column_name=42, value=42)
 
 
 @pytest.mark.functions
@@ -113,3 +113,10 @@ def test_add_column_iterator_repeat_subtraction(dataframe):
     df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
     assert df.city_pop.sum() == 0
     assert df.city_pop.iloc[0] == 0
+
+
+@pytest.mark.functions
+@given(df=df_strategy())
+def test_add_column_checkequality(df):
+    new_df = df.add_column("fortytwo", 42)
+    assert new_df is not df

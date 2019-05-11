@@ -43,7 +43,7 @@ def test_transform_column_with_new_names(dataframe):
         .transform_columns(
             ["another", "column"],
             np.log10,
-            new_names={"another": "hello", "column": "world"},
+            new_column_names={"another": "hello", "column": "world"},
         )
     )
 
@@ -62,7 +62,7 @@ def test_suffix_newname_validation(dataframe):
             .transform_columns(
                 ["another", "column"],
                 np.log10,
-                new_names={"another": "hello", "column": "world"},
+                new_column_names={"another": "hello", "column": "world"},
                 suffix="_log",
             )
         )

@@ -32,4 +32,4 @@ With thanks to the following contributors:
 - `@ricky-lim <https://github.com/ricky-lim>`_
 - `@catherinedevlin <https://github.com/catherinedevlin>`_
 - `@StephenSchroed <https://github.com/StephenSchroeder>`_
-- `@jcvall <https://github.com/jcvall>`_
+- `@Rajat-181 <https://github.com/Rajat-181>`_

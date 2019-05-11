@@ -14,7 +14,7 @@ provides a clean API for cleaning data.
 .. _janitor: https://github.com/sfirke/janitor
 
 Why janitor?
-~~~~~~~~~~~~
+------------
 
 Originally a port of the R package, ``pyjanitor`` has evolved from a set of
 convenient data cleaning routines into an experiment with the method chaining
@@ -155,7 +155,7 @@ Current functionality includes:
 - Experimental submodules for finance and biology
 
 API
-----
+---
 
 The idea behind the API is two-fold:
 

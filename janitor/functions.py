@@ -1601,6 +1601,19 @@ def row_to_names(
     Contains options to remove the elevated row from the DataFrame along with
     removing the rows above the selected row.
 
+    Method chaining usage:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .row_to_names(
+                row_number=0,
+                remove_row=False,
+                remove_rows_above=False,
+            )
+        )
+
     :param df: A pandas DataFrame.
     :param row_number: The row containing the variable names
     :param remove_row: Whether the row should be removed from the DataFrame.
@@ -1608,85 +1621,86 @@ def row_to_names(
     :param remove_rows_above: Whether the rows above the selected row should
         be removed from the DataFrame. Defaults to False.
     :returns: A pandas DataFrame with set column names.
-
-    :Setup:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        data_dict = {
-            "a": [1, 2, 3] * 3,
-            "Bell__Chart": [1, 2, 3] * 3,
-            "decorated-elephant": [1, 2, 3] * 3,
-            "animals": ["rabbit", "leopard", "lion"] * 3,
-            "cities": ["Cambridge", "Shanghai", "Basel"] * 3
-        }
-
-    :Example: Move first row to column names:
-
-    .. code-block:: python
-
-        example_dataframe = pd.DataFrame(data_dict)
-        example_dataframe.row_to_names(0)
-
-    :Output:
-
-    .. code-block:: python
-
-           1  1  1   rabbit  Cambridge
-        0  1  1  1   rabbit  Cambridge
-        1  2  2  2  leopard   Shanghai
-        2  3  3  3     lion      Basel
-        3  1  1  1   rabbit  Cambridge
-        4  2  2  2  leopard   Shanghai
-        5  3  3  3     lion      Basel
-        6  1  1  1   rabbit  Cambridge
-        7  2  2  2  leopard   Shanghai
-
-    :Example: Move first row to column names and remove row:
-
-    .. code-block:: python
-
-        example_dataframe = pd.DataFrame(data_dict)
-        example_dataframe.row_to_names(0, remove_row=True)
-
-    :Output:
-
-    .. code-block:: python
-
-           1  1  1   rabbit  Cambridge
-        1  2  2  2  leopard   Shanghai
-        2  3  3  3     lion      Basel
-        3  1  1  1   rabbit  Cambridge
-        4  2  2  2  leopard   Shanghai
-        5  3  3  3     lion      Basel
-        6  1  1  1   rabbit  Cambridge
-        7  2  2  2  leopard   Shanghai
-        8  3  3  3     lion      Basel
-
-    :Example: Move first row to column names, remove row, \
-    and remove rows above selected row:
-
-    .. code-block:: python
-
-        example_dataframe = pd.DataFrame(data_dict)
-        example_dataframe.row_to_names(2, remove_row=True, \
-            remove_rows_above=True)
-
-    :Output:
-
-    .. code-block:: python
-
-           3  3  3     lion      Basel
-        3  1  1  1   rabbit  Cambridge
-        4  2  2  2  leopard   Shanghai
-        5  3  3  3     lion      Basel
-        6  1  1  1   rabbit  Cambridge
-        7  2  2  2  leopard   Shanghai
-        8  3  3  3     lion      Basel
-
     """
+
+    # :Setup:
+
+    # .. code-block:: python
+
+    #     import pandas as pd
+    #     import janitor
+    #     data_dict = {
+    #         "a": [1, 2, 3] * 3,
+    #         "Bell__Chart": [1, 2, 3] * 3,
+    #         "decorated-elephant": [1, 2, 3] * 3,
+    #         "animals": ["rabbit", "leopard", "lion"] * 3,
+    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+    #     }
+
+    # :Example: Move first row to column names:
+
+    # .. code-block:: python
+
+    #     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe.row_to_names(0)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #        1  1  1   rabbit  Cambridge
+    #     0  1  1  1   rabbit  Cambridge
+    #     1  2  2  2  leopard   Shanghai
+    #     2  3  3  3     lion      Basel
+    #     3  1  1  1   rabbit  Cambridge
+    #     4  2  2  2  leopard   Shanghai
+    #     5  3  3  3     lion      Basel
+    #     6  1  1  1   rabbit  Cambridge
+    #     7  2  2  2  leopard   Shanghai
+
+    # :Example: Move first row to column names and remove row:
+
+    # .. code-block:: python
+
+    #     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe.row_to_names(0, remove_row=True)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #        1  1  1   rabbit  Cambridge
+    #     1  2  2  2  leopard   Shanghai
+    #     2  3  3  3     lion      Basel
+    #     3  1  1  1   rabbit  Cambridge
+    #     4  2  2  2  leopard   Shanghai
+    #     5  3  3  3     lion      Basel
+    #     6  1  1  1   rabbit  Cambridge
+    #     7  2  2  2  leopard   Shanghai
+    #     8  3  3  3     lion      Basel
+
+    # :Example: Move first row to column names, remove row, \
+    # and remove rows above selected row:
+
+    # .. code-block:: python
+
+    #     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe.row_to_names(2, remove_row=True, \
+    #         remove_rows_above=True)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #        3  3  3     lion      Basel
+    #     3  1  1  1   rabbit  Cambridge
+    #     4  2  2  2  leopard   Shanghai
+    #     5  3  3  3     lion      Basel
+    #     6  1  1  1   rabbit  Cambridge
+    #     7  2  2  2  leopard   Shanghai
+    #     8  3  3  3     lion      Basel
+
+
 
     check("row_number", row_number, [int])
 

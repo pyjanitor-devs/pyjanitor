@@ -603,7 +603,6 @@ def convert_unix_date(df, column_name):
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-
     def _conv(value):
         try:
             date = dt.datetime.utcfromtimestamp(value)
@@ -862,7 +861,7 @@ def filter_string(
 
 @pf.register_dataframe_method
 def filter_on(df, criteria, complement=False):
-    r"""
+    """
     Return a dataframe filtered on a particular criteria.
 
     This is super-sugary syntax that wraps the pandas `.query()` API, enabling
@@ -909,7 +908,7 @@ def filter_on(df, criteria, complement=False):
     Credit to Brant Peterson for the name.
 
     :param df: A pandas DataFrame.
-    :param criteria: A filtering criteria that returns an array or Series of\
+    :param criteria: A filtering criteria that returns an array or Series of
         booleans, on which pandas can filter on.
     :param complement: Whether to return the complement of the filter or not.
     :returns: A filtered pandas DataFrame.
@@ -932,7 +931,7 @@ def filter_date(
     column_date_options: Dict = None,
     format: str = None,
 ):
-    r"""
+    """
     Filter a date-based column based on certain criteria.
 
     Dates may be finicky and this function builds on top of the "magic" from
@@ -952,13 +951,13 @@ def filter_date(
     :param years: The years to use to filter the DataFrame.
     :param months: The months to use to filter the DataFrame.
     :param days: The days to use to filter the DataFrame.
-    :param column_date_options: 'Special options to use when parsing the date\
-    column in the original DataFrame. The options may be found at the official\
-    Pandas documentation.'
-    :param format: 'It you're using a format for start or end that is not\
-    recognized natively by pandas' to_datetime function, you may supply the\
-    format yourself. Python date and time formats may be found at\
-    http://strftime.org/.'
+    :param column_date_options: 'Special options to use when parsing the date
+        column in the original DataFrame. The options may be found at the
+        official Pandas documentation.'
+    :param format: 'It you're using a format for start or end that is not
+        recognized natively by pandas' to_datetime function, you may supply
+        the format yourself. Python date and time formats may be found at
+        http://strftime.org/.'
     :returns: A filtered pandas DataFrame.
 
     **Note:** This only affects the format of the `start` and `end` parameters.
@@ -1258,7 +1257,7 @@ def change_type(df, column_name: str, dtype, ignore_exception=False):
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def add_column(df, column_name: str, value, fill_remaining: bool = False):
-    r"""
+    """
     Add a column to the dataframe.
 
     Intended to be the method-chaining alternative to::
@@ -1326,8 +1325,8 @@ def add_column(df, column_name: str, value, fill_remaining: bool = False):
         7  2            2                   2  leopard   Shanghai    100000
         8  3            3                   3     lion      Basel    100000
 
-    :Example 2: Create a new column with an iterator \
-    which fills to the column size:
+    :Example 2: Create a new column with an iterator which fills to the column
+    size:
 
     .. code-block:: python
 
@@ -2739,8 +2738,7 @@ def update_where(
 @pf.register_dataframe_method
 def to_datetime(df: pd.DataFrame, column: str, **kwargs) -> pd.DataFrame:
     """
-
-    Makes the pandas to_datetime method work as a chainable method.
+    Method-chainable to_datetime.
 
     Functional usage example:
 
@@ -2776,8 +2774,7 @@ def groupby_agg(
     axis: int = 0,
 ) -> pd.DataFrame:
     """
-
-    Allow one to chain a groupby and a merge
+    Method-chain a groupby and a merge in a single step.
 
     Without this function, we would have to break out of method chaining:
 
@@ -2806,7 +2803,6 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-
     df_grp = (
         df.groupby(by, axis=axis)
         .agg(agg, axis=axis)
@@ -2826,12 +2822,10 @@ def groupby_agg(
 
 @pf.register_dataframe_accessor("data_description")
 class DataDescription:
-    """
-    Accessor that provides high-level description of data present
-    in this DataFrame.
-    """
+    """High-level description of data present in this DataFrame."""
 
     def __init__(self, data):
+        """Initialize DataDescription class."""
         self._data = data
         self._desc = dict()
 
@@ -2849,15 +2843,11 @@ class DataDescription:
 
     @property
     def df(self):
-        """
-        Get a table of descriptive information in a DataFrame format.
-        """
+        """Get a table of descriptive information in a DataFrame format."""
         return self._get_data_df()
 
     def display(self):
-        """
-        Print the table of descriptive information about this DataFrame.
-        """
+        """Print the table of descriptive information about this DataFrame."""
         print(self._get_data_df())
 
     def set_description(self, desc: Union[List, Dict]):
@@ -2884,6 +2874,8 @@ def bin_numeric(
     labels: str = None,
 ):
     """
+    Generate a new column that labels bins for a specified numeric column.
+
     Makes use of pandas cut() function to bin data of one column, generating a
     new column with the results.
 
@@ -2909,7 +2901,6 @@ def bin_numeric(
         label names must match number of bins specified.
     :return: A pandas DataFrame.
     """
-
     if not labels:
         df[str(to_column)] = pd.cut(df[str(from_column)], bins=num_bins)
     else:
@@ -2928,7 +2919,7 @@ def drop_duplicate_columns(
     df: pd.DataFrame, column_name: str, nth_index: int = 0
 ) -> pd.DataFrame:
     """
-    Removes a duplicated column specified by column_name, its index
+    Remove a duplicated column specified by column_name, its index.
 
     Column order 0 is to remove the first column,
            order 1 is to remove the second column, and etc

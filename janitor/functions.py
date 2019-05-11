@@ -228,6 +228,7 @@ def encode_categorical(df, column_names):
     Method chaining example:
 
     .. code-block:: python
+
         import pandas as pd
         import janitor
         categorical_cols = ['col1', 'col2', 'col4']
@@ -589,11 +590,13 @@ def convert_unix_date(df, column_name):
     Functional usage example:
 
     .. code-block:: python
+
         df = convert_unix_date(df, column_name='date')
 
     Method chaining example:
 
     .. code-block:: python
+
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).convert_unix_date('date')
@@ -1710,98 +1713,105 @@ def round_to_fraction(
     """
     Round all values in a column to a fraction.
 
+    Taken from https://github.com/sfirke/janitor/issues/235.
+
     Also, optionally round to a specified number of digits.
+
+    Method-chaining usage:
+
+    .. code-block:: python
+
+        # Round to two decimal places
+        df = pd.DataFrame(...).round_to_fraction('a', 2)
+
     :param df: A pandas dataframe.
     :param column_name: Name of column to round to fraction.
     :param denominator: The denominator of the fraction for rounding
     :param digits: The number of digits for rounding after rounding to the
         fraction. Default is np.inf (i.e. no subsequent rounding)
     :returns: A pandas DataFrame with a column's values rounded.
-
-    Taken from https://github.com/sfirke/janitor/issues/235
-
-    :Example Setup:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        data_dict = {
-            "a": [1.23452345, 2.456234, 3.2346125] * 3,
-            "Bell__Chart": [1/3, 2/7, 3/2] * 3,
-            "decorated-elephant": [1/234, 2/13, 3/167] * 3,
-            "animals": ["rabbit", "leopard", "lion"] * 3,
-            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-        }
-
-    :Example: Rounding the first column to the nearest half:
-
-    .. code-block:: python
-
-        example_dataframe = pd.DataFrame(data_dict)
-        example_dataframe.round_to_fraction('a', 2)
-
-    :Output:
-
-    .. code-block:: python
-
-             a  Bell__Chart  decorated-elephant  animals     cities
-        0  1.0     0.333333            0.004274   rabbit  Cambridge
-        1  2.5     0.285714            0.153846  leopard   Shanghai
-        2  3.0     1.500000            0.017964     lion      Basel
-        3  1.0     0.333333            0.004274   rabbit  Cambridge
-        4  2.5     0.285714            0.153846  leopard   Shanghai
-        5  3.0     1.500000            0.017964     lion      Basel
-        6  1.0     0.333333            0.004274   rabbit  Cambridge
-        7  2.5     0.285714            0.153846  leopard   Shanghai
-        8  3.0     1.500000            0.017964     lion      Basel
-
-    :Example: Rounding the first column to nearest third:
-
-    .. code-block:: python
-
-        example_dataframe2 = pd.DataFrame(data_dict)
-        example_dataframe2.limit_column_characters('a', 3)
-
-    :Output:
-
-    .. code-block:: python
-
-                  a  Bell__Chart  decorated-elephant  animals     cities
-        0  1.333333     0.333333            0.004274   rabbit  Cambridge
-        1  2.333333     0.285714            0.153846  leopard   Shanghai
-        2  3.333333     1.500000            0.017964     lion      Basel
-        3  1.333333     0.333333            0.004274   rabbit  Cambridge
-        4  2.333333     0.285714            0.153846  leopard   Shanghai
-        5  3.333333     1.500000            0.017964     lion      Basel
-        6  1.333333     0.333333            0.004274   rabbit  Cambridge
-        7  2.333333     0.285714            0.153846  leopard   Shanghai
-        8  3.333333     1.500000            0.017964     lion      Basel
-
-    :Example 3: Rounding the first column to the nearest third and rounding \
-    each value to the 10,000th place:
-
-    .. code-block:: python
-
-        example_dataframe2 = pd.DataFrame(data_dict)
-        example_dataframe2.limit_column_characters('a', 3, 4)
-
-    :Output:
-
-    .. code-block:: python
-
-                a  Bell__Chart  decorated-elephant  animals     cities
-        0  1.3333     0.333333            0.004274   rabbit  Cambridge
-        1  2.3333     0.285714            0.153846  leopard   Shanghai
-        2  3.3333     1.500000            0.017964     lion      Basel
-        3  1.3333     0.333333            0.004274   rabbit  Cambridge
-        4  2.3333     0.285714            0.153846  leopard   Shanghai
-        5  3.3333     1.500000            0.017964     lion      Basel
-        6  1.3333     0.333333            0.004274   rabbit  Cambridge
-        7  2.3333     0.285714            0.153846  leopard   Shanghai
-        8  3.3333     1.500000            0.017964     lion      Basel
-
     """
+
+    # NOTE: THESE EXAMPLES SHOULD BE MOVED TO NOTEBOOKS.
+    #     :Example Setup:
+
+    # .. code-block:: python
+
+    #     import pandas as pd
+    #     import janitor
+    #     data_dict = {
+    #         "a": [1.23452345, 2.456234, 3.2346125] * 3,
+    #         "Bell__Chart": [1/3, 2/7, 3/2] * 3,
+    #         "decorated-elephant": [1/234, 2/13, 3/167] * 3,
+    #         "animals": ["rabbit", "leopard", "lion"] * 3,
+    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+    #     }
+
+    # :Example: Rounding the first column to the nearest half:
+
+    # .. code-block:: python
+
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #          a  Bell__Chart  decorated-elephant  animals     cities
+    #     0  1.0     0.333333            0.004274   rabbit  Cambridge
+    #     1  2.5     0.285714            0.153846  leopard   Shanghai
+    #     2  3.0     1.500000            0.017964     lion      Basel
+    #     3  1.0     0.333333            0.004274   rabbit  Cambridge
+    #     4  2.5     0.285714            0.153846  leopard   Shanghai
+    #     5  3.0     1.500000            0.017964     lion      Basel
+    #     6  1.0     0.333333            0.004274   rabbit  Cambridge
+    #     7  2.5     0.285714            0.153846  leopard   Shanghai
+    #     8  3.0     1.500000            0.017964     lion      Basel
+
+    # :Example: Rounding the first column to nearest third:
+
+    # .. code-block:: python
+
+    #     example_dataframe2 = pd.DataFrame(data_dict)
+    #     example_dataframe2.limit_column_characters('a', 3)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #               a  Bell__Chart  decorated-elephant  animals     cities
+    #     0  1.333333     0.333333            0.004274   rabbit  Cambridge
+    #     1  2.333333     0.285714            0.153846  leopard   Shanghai
+    #     2  3.333333     1.500000            0.017964     lion      Basel
+    #     3  1.333333     0.333333            0.004274   rabbit  Cambridge
+    #     4  2.333333     0.285714            0.153846  leopard   Shanghai
+    #     5  3.333333     1.500000            0.017964     lion      Basel
+    #     6  1.333333     0.333333            0.004274   rabbit  Cambridge
+    #     7  2.333333     0.285714            0.153846  leopard   Shanghai
+    #     8  3.333333     1.500000            0.017964     lion      Basel
+
+    # :Example 3: Rounding the first column to the nearest third and rounding \
+    # each value to the 10,000th place:
+
+    # .. code-block:: python
+
+    #     example_dataframe2 = pd.DataFrame(data_dict)
+    #     example_dataframe2.limit_column_characters('a', 3, 4)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #             a  Bell__Chart  decorated-elephant  animals     cities
+    #     0  1.3333     0.333333            0.004274   rabbit  Cambridge
+    #     1  2.3333     0.285714            0.153846  leopard   Shanghai
+    #     2  3.3333     1.500000            0.017964     lion      Basel
+    #     3  1.3333     0.333333            0.004274   rabbit  Cambridge
+    #     4  2.3333     0.285714            0.153846  leopard   Shanghai
+    #     5  3.3333     1.500000            0.017964     lion      Basel
+    #     6  1.3333     0.333333            0.004274   rabbit  Cambridge
+    #     7  2.3333     0.285714            0.153846  leopard   Shanghai
+    #     8  3.3333     1.500000            0.017964     lion      Basel
+
 
     check("column_name", column_name, [str])
 
@@ -2771,6 +2781,7 @@ def groupby_agg(
     Without this function, we would have to break out of method chaining:
 
     .. code-block:: python
+
         df_grp = df.groupby(...).agg(...)
         df = df.merge(df_grp, ...)
 
@@ -2874,6 +2885,20 @@ def bin_numeric(
     """
     Makes use of pandas cut() function to bin data of one column, generating a
     new column with the results.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = (
+            pd.DataFrame(...)
+            .bin_numeric(
+                from_column='col1',
+                to_column='col1_binned',
+                num_bins=3,
+                labels=['1-2', '3-4', '5-6']
+                )
+            )
 
 
     :param df: A pandas DataFrame.

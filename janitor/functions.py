@@ -1700,15 +1700,19 @@ def row_to_names(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(col_name="column_name")
 def round_to_fraction(
-    df, col_name: str = None, denominator: float = None, digits: float = np.inf
+    df,
+    column_name: str = None,
+    denominator: float = None,
+    digits: float = np.inf,
 ):
     """
     Round all values in a column to a fraction.
 
     Also, optionally round to a specified number of digits.
-
-    :param number: The number to round
+    :param df: A pandas dataframe.
+    :param column_name: Name of column to round to fraction.
     :param denominator: The denominator of the fraction for rounding
     :param digits: The number of digits for rounding after rounding to the
         fraction. Default is np.inf (i.e. no subsequent rounding)
@@ -1799,7 +1803,7 @@ def round_to_fraction(
 
     """
 
-    check("col_name", col_name, [str])
+    check("column_name", column_name, [str])
 
     if denominator:
         check("denominator", denominator, [float, int])
@@ -1817,13 +1821,16 @@ def round_to_fraction(
         _round_to_fraction, denominator=denominator, digits=digits
     )
 
-    df[col_name] = df[col_name].apply(_round_to_fraction_partial)
+    df[column_name] = df[column_name].apply(_round_to_fraction_partial)
 
     return df
 
 
 @pf.register_dataframe_method
-def transform_column(df, col_name: str, function, dest_col_name: str = None):
+@deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
+def transform_column(
+    df, column_name: str, function, dest_column_name: str = None
+):
     """
     Transforms the given column in-place using the provided function.
 
@@ -1834,7 +1841,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     .. code-block:: python
 
         # YOU NO LONGER NEED TO WRITE THIS!
-        df[col_name] = df[col_name].apply(function)
+        df[column_name] = df[column_name].apply(function)
 
     With the method chaining syntax, we can do the following instead:
 
@@ -1842,7 +1849,7 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
 
         df = (
             pd.DataFrame(...)
-            .transform_column(col_name, function)
+            .transform_column(column_name, function)
         )
 
     With the functional syntax:
@@ -1850,30 +1857,31 @@ def transform_column(df, col_name: str, function, dest_col_name: str = None):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = transform_column(df, col_name, function)
+        df = transform_column(df, column_name, function)
 
     :param df: A pandas DataFrame.
-    :param col_name: The column to transform.
+    :param column_name: The column to transform.
     :param function: A function to apply on the column.
-    :param dest_col_name: The column name to store the transformation result
+    :param dest_column_name: The column name to store the transformation result
         in. By default, replaces contents of original column.
     :returns: A pandas DataFrame with a transformed column.
     """
 
-    if dest_col_name is None:
-        dest_col_name = col_name
+    if dest_column_name is None:
+        dest_column_name = column_name
 
-    df[dest_col_name] = df[col_name].apply(function)
+    df[dest_column_name] = df[column_name].apply(function)
     return df
 
 
 @pf.register_dataframe_method
+@deprecated_alias(columns="column_names", new_names="new_column_names")
 def transform_columns(
     df,
-    columns: List[str],
+    column_names: List[str],
     function,
     suffix: str = None,
-    new_names: Dict[str, str] = None,
+    new_column_names: Dict[str, str] = None,
 ):
     """
     Super syntactic sugar to transform a list of columns by the same
@@ -1919,7 +1927,7 @@ def transform_columns(
             .transform_column(
                 ['col1', 'col2', 'col3'],
                 np.log10,
-                new_names={
+                new_column_names={
                     'col1': 'transform1',
                     'col2': 'transform2',
                     'col3': 'transform3',
@@ -1928,33 +1936,35 @@ def transform_columns(
         )
 
     :param df: A pandas DataFrame.
-    :param columns: An iterable of columns to transform.
+    :param column_names: An iterable of columns to transform.
     :param function: A function to apply on each column.
     :param suffix: (optional) Suffix to use when creating new columns to hold
         the transformed values.
-    :param new_names: (optional) An explicit mapping of old column names to
-        new column names.
+    :param new_column_names: (optional) An explicit mapping of old column names
+        to new column names.
     :returns: A pandas DataFrame with transformed columns.
     """
-    dest_col_names = dict(zip(columns, columns))
+    dest_column_names = dict(zip(column_names, column_names))
 
-    check("columns", columns, [list, tuple])
+    check("column_names", column_names, [list, tuple])
 
-    if suffix is not None and new_names is not None:
-        raise ValueError("only one of suffix or new_names should be specified")
+    if suffix is not None and new_column_names is not None:
+        raise ValueError(
+            "only one of suffix or new_column_names should be specified"
+        )
 
     if suffix:  # If suffix is specified...
         check("suffix", suffix, [str])
-        for col in columns:
-            dest_col_names[col] = col + suffix
+        for col in column_names:
+            dest_column_names[col] = col + suffix
 
-    if new_names:  # If new_names is specified...
-        check("new_names", new_names, [dict])
-        dest_col_names = new_names
+    if new_column_names:  # If new_column_names is specified...
+        check("new_column_names", new_column_names, [dict])
+        dest_column_names = new_column_names
 
     # Now, transform columns.
-    for oldcol, newcol in dest_col_names.items():
-        df = transform_column(df, oldcol, function, newcol)
+    for old_col, new_col in dest_column_names.items():
+        df = transform_column(df, old_col, function, new_col)
 
     return df
 
@@ -2270,10 +2280,11 @@ def _replace_original_empty_string_with_none(x):
 
 
 @pf.register_dataframe_method
+@deprecated_alias(col_name="column_name", type="cleaning_style")
 def currency_column_to_numeric(
     df,
-    col_name: str,
-    type: str = None,
+    column_name: str,
+    cleaning_style: str = None,
     cast_non_numeric: dict = None,
     fill_all_non_numeric: float = None,
     remove_non_numeric: bool = False,
@@ -2285,9 +2296,9 @@ def currency_column_to_numeric(
     Empty strings (i.e. `''`) are retained as `NaN` values.
 
     :param df: The DataFrame
-    :param col_name: The column to modify
-    :param type: What type of cleaning to perform. If None, standard cleaning
-        is applied. Options are: 'accounting'.
+    :param column_name: The column to modify
+    :param cleaning_style: What style of cleaning to perform. If None, standard
+        cleaning is applied. Options are: 'accounting'.
     :param cast_non_numeric: A dict of how to coerce certain strings. For
         example, if there are values of 'REORDER' in the DataFrame,
         {'REORDER': 0} will cast all instances of 'REORDER' to 0.
@@ -2295,7 +2306,7 @@ def currency_column_to_numeric(
         strings to the same value. For example,  fill_all_non_numeric=1, will
         make everything that doesn't coerce to a currency 1.
     :param remove_non_numeric: Will remove rows of a DataFrame that contain
-        non-numeric values in the `col_name` column. Defaults to `False`.
+        non-numeric values in the `column_name` column. Defaults to `False`.
     :returns: A mutated DataFrame.
 
     :Example Setup:
@@ -2449,11 +2460,13 @@ def currency_column_to_numeric(
         7   NaN     2.456234                   2      leopard   Shanghai
         """
 
-    check("col_name", col_name, [str])
+    check("column_name", column_name, [str])
 
-    column_series = df[col_name]
-    if type == "accounting":
-        df.loc[:, col_name] = df[col_name].apply(_clean_accounting_column)
+    column_series = df[column_name]
+    if cleaning_style == "accounting":
+        df.loc[:, column_name] = df[column_name].apply(
+            _clean_accounting_column
+        )
         return df
 
     if cast_non_numeric:
@@ -2481,13 +2494,16 @@ def currency_column_to_numeric(
         _replace_original_empty_string_with_none
     )
 
-    df = df.assign(**{col_name: pd.to_numeric(column_series)})
+    df = df.assign(**{column_name: pd.to_numeric(column_series)})
 
     return df
 
 
 @pf.register_dataframe_method
-def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
+@deprecated_alias(search_cols="search_column_names")
+def select_columns(
+    df: pd.DataFrame, search_column_names: List, invert: bool = False
+):
     """
     Method-chainable selection of columns.
 
@@ -2500,8 +2516,8 @@ def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
         df = pd.DataFrame(...).select_columns(['a', 'b', 'col_*'], invert=True)
 
     :param df: A pandas DataFrame.
-    :param search_cols: A list of column names or search strings to be used\
-        to select. Valid inputs include:
+    :param search_column_names: A list of column names or search strings to be
+        used to select. Valid inputs include:
         1) an exact column name to look for
         2) a shell-style glob string (e.g., `*_thing_*`)
     :param invert: Whether or not to invert the selection.
@@ -2512,7 +2528,7 @@ def select_columns(df: pd.DataFrame, search_cols: List, invert: bool = False):
 
     full_column_list = []
 
-    for col in search_cols:
+    for col in search_column_names:
         search_string = translate(col)
         columns = [col for col in df if re.match(search_string, col)]
         full_column_list.extend(columns)

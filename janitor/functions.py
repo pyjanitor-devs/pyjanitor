@@ -2329,7 +2329,8 @@ def currency_column_to_numeric(
     #     import pandas as pd
     #     import janitor
     #     data = {
-    #         "a": ["-$1.00", "", "REPAY"] * 2 + ["$23.00", "", "Other Account"],
+    #         "a": ["-$1.00", "", "REPAY"] * 2 + ["$23.00", "",
+    # "Other Account"],
     #         "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
     #         "decorated-elephant": [1, 2, 3] * 3,
     #         "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
@@ -2358,7 +2359,8 @@ def currency_column_to_numeric(
     #     7   NaN     2.456234                   2      leopard   Shanghai
     #     8   NaN     3.234612                   3         lion      Basel
 
-    # :Example 2: Coerce numeric values in column to float, and replace a string\
+    # :Example 2: Coerce numeric values in column to float, and replace a
+    # string\
     # value with a specific value:
 
     # .. code-block:: python
@@ -2404,7 +2406,8 @@ def currency_column_to_numeric(
     #     8  35.0     3.234612                   3         lion      Basel
 
     # :Example 4: Coerce numeric values in column to float, replace a string\
-    #     value with a specific value, and replace remaining string values with\
+    #     value with a specific value, and replace remaining string values
+    # with\
     #     a specific value:
 
     # .. code-block:: python

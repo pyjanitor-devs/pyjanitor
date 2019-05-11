@@ -13,10 +13,9 @@ steps:
     displayName: 'Run all pyjanitor tests.'
   - script: |
       $(activate.command) pyjanitor-dev
-      jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
+      make notebooks
     displayName: 'Test that all notebooks execute correctly.'
   - script: |
       $(activate.command) pyjanitor-dev
-      cd docs
-      sphinx-build . _build/html -b html -W
+      make docs
     displayName: 'Test that HTML docs all build correctly.'

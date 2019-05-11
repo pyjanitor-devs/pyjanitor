@@ -216,7 +216,9 @@ def get_dupes(df, column_names=None):
 @deprecated_alias(columns="column_names")
 def encode_categorical(df, column_names):
     """
-    Encode the specified columns with Pandas' `category`_ dtype.
+    Encode the specified columns with Pandas'
+    `category <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`  # noqa: E501
+    dtype.
 
     Functional usage example:
 
@@ -238,8 +240,6 @@ def encode_categorical(df, column_names):
     :param str/iterable column_names: A column name or an iterable (list or
         tuple) of column names.
     :returns: A pandas DataFrame
-
-    .. _category: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html  # noqa: E501
     """
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
@@ -319,15 +319,15 @@ def label_encode(df, column_names):
     feature_columns="feature_column_names",
 )
 def get_features_targets(df, target_column_names, feature_column_names=None):
-    r"""
+    """
     Get the features and targets as separate DataFrames/Series.
 
     The behaviour is as such:
 
-    - `target_column_names` is mandatory.
-    - If `feature_column_names` is present, then we will respect the column names
-    inside there.
-    - If `feature_column_names` is not passed in, then we will assume that the
+    - ``target_column_names`` is mandatory.
+    - If ``feature_column_names`` is present, then we will respect the column
+        names inside there.
+    - If ``feature_column_names`` is not passed in, then we will assume that the
     rest of the columns are feature columns, and return them.
 
     Functional usage example:
@@ -347,12 +347,13 @@ def get_features_targets(df, target_column_names, feature_column_names=None):
         X, y = df.get_features_targets(target_column_names=target_cols)  # noqa: E501
 
     :param df: The pandas DataFrame object.
-    :param str/iterable target_column_names: Either a column name or an iterable\
-        (list or tuple) of column names that are the target(s) to be predicted.
-    :param str/iterable feature_column_names: (optional) The column name or \
-        iterable of column names that are the features (a.k.a. predictors) \
+    :param str/iterable target_column_names: Either a column name or an
+        iterable (list or tuple) of column names that are the target(s) to be
+        predicted.
+    :param str/iterable feature_column_names: (optional) The column name or
+        iterable of column names that are the features (a.k.a. predictors)
         used to predict the targets.
-    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both \
+    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both
         are pandas DataFrames.
     """
     Y = df[target_column_names]
@@ -1217,7 +1218,7 @@ def change_type(df, column_name: str, dtype, ignore_exception=False):
     Exceptions that are raised can be ignored. For example, if one has a mixed
     dtype column that has non-integer strings and integers, and you want to
     coerce everything to integers, you can optionally ignore the non-integer
-    strings and replace them with ``NaN``s or keep the original value
+    strings and replace them with ``NaN`` or keep the original value
 
     Intended to be the method-chaining alternative to:
 
@@ -1233,7 +1234,7 @@ def change_type(df, column_name: str, dtype, ignore_exception=False):
     :param column_name: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
-    :param ignore_exception: one of {False, "fillna", "keep_values"}.
+    :param ignore_exception: one of ``{False, "fillna", "keep_values"}``.
     :returns: A pandas DataFrame with changed column types.
     """
     if not ignore_exception:
@@ -1288,87 +1289,87 @@ def add_column(df, column_name: str, value, fill_remaining: bool = False):
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     :returns: A pandas DataFrame with an added column.
-
-    :Setup:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        data = {
-            "a": [1, 2, 3] * 3,
-            "Bell__Chart": [1, 2, 3] * 3,
-            "decorated-elephant": [1, 2, 3] * 3,
-            "animals": ["rabbit", "leopard", "lion"] * 3,
-            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-        }
-        df = pd.DataFrame(data)
-
-    :Example 1: Create a new column with a single value:
-
-    .. code-block:: python
-
-        df.add_column("city_pop", 100000)
-
-    :Output:
-
-    .. code-block:: python
-
-           a  Bell__Chart  decorated-elephant  animals     cities  city_pop
-        0  1            1                   1   rabbit  Cambridge    100000
-        1  2            2                   2  leopard   Shanghai    100000
-        2  3            3                   3     lion      Basel    100000
-        3  1            1                   1   rabbit  Cambridge    100000
-        4  2            2                   2  leopard   Shanghai    100000
-        5  3            3                   3     lion      Basel    100000
-        6  1            1                   1   rabbit  Cambridge    100000
-        7  2            2                   2  leopard   Shanghai    100000
-        8  3            3                   3     lion      Basel    100000
-
-    :Example 2: Create a new column with an iterator which fills to the column
-    size:
-
-    .. code-block:: python
-
-        df.add_column("city_pop", range(3), fill_remaining=True)
-
-    :Output:
-
-    .. code-block:: python
-
-           a  Bell__Chart  decorated-elephant  animals     cities  city_pop
-        0  1            1                   1   rabbit  Cambridge         0
-        1  2            2                   2  leopard   Shanghai         1
-        2  3            3                   3     lion      Basel         2
-        3  1            1                   1   rabbit  Cambridge         0
-        4  2            2                   2  leopard   Shanghai         1
-        5  3            3                   3     lion      Basel         2
-        6  1            1                   1   rabbit  Cambridge         0
-        7  2            2                   2  leopard   Shanghai         1
-        8  3            3                   3     lion      Basel         2
-
-    :Example 3: Add new column based on mutation of other columns:
-
-    .. code-block:: python
-
-        df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
-
-    :Output:
-
-    .. code-block:: python
-
-           a  Bell__Chart  decorated-elephant  animals     cities  city_pop
-        0  1            1                   1   rabbit  Cambridge        -1
-        1  2            2                   2  leopard   Shanghai        -2
-        2  3            3                   3     lion      Basel        -3
-        3  1            1                   1   rabbit  Cambridge        -1
-        4  2            2                   2  leopard   Shanghai        -2
-        5  3            3                   3     lion      Basel        -3
-        6  1            1                   1   rabbit  Cambridge        -1
-        7  2            2                   2  leopard   Shanghai        -2
-        8  3            3                   3     lion      Basel        -3
-
     """
+    # TODO: Convert examples to notebook.
+    # :Setup:
+
+    # .. code-block:: python
+
+    #     import pandas as pd
+    #     import janitor
+    #     data = {
+    #         "a": [1, 2, 3] * 3,
+    #         "Bell__Chart": [1, 2, 3] * 3,
+    #         "decorated-elephant": [1, 2, 3] * 3,
+    #         "animals": ["rabbit", "leopard", "lion"] * 3,
+    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+    #     }
+    #     df = pd.DataFrame(data)
+
+    # :Example 1: Create a new column with a single value:
+
+    # .. code-block:: python
+
+    #     df.add_column("city_pop", 100000)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
+    #     0  1            1                   1   rabbit  Cambridge    100000
+    #     1  2            2                   2  leopard   Shanghai    100000
+    #     2  3            3                   3     lion      Basel    100000
+    #     3  1            1                   1   rabbit  Cambridge    100000
+    #     4  2            2                   2  leopard   Shanghai    100000
+    #     5  3            3                   3     lion      Basel    100000
+    #     6  1            1                   1   rabbit  Cambridge    100000
+    #     7  2            2                   2  leopard   Shanghai    100000
+    #     8  3            3                   3     lion      Basel    100000
+
+    # :Example 2: Create a new column with an iterator which fills to the column
+    # size:
+
+    # .. code-block:: python
+
+    #     df.add_column("city_pop", range(3), fill_remaining=True)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
+    #     0  1            1                   1   rabbit  Cambridge         0
+    #     1  2            2                   2  leopard   Shanghai         1
+    #     2  3            3                   3     lion      Basel         2
+    #     3  1            1                   1   rabbit  Cambridge         0
+    #     4  2            2                   2  leopard   Shanghai         1
+    #     5  3            3                   3     lion      Basel         2
+    #     6  1            1                   1   rabbit  Cambridge         0
+    #     7  2            2                   2  leopard   Shanghai         1
+    #     8  3            3                   3     lion      Basel         2
+
+    # :Example 3: Add new column based on mutation of other columns:
+
+    # .. code-block:: python
+
+    #     df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
+    #     0  1            1                   1   rabbit  Cambridge        -1
+    #     1  2            2                   2  leopard   Shanghai        -2
+    #     2  3            3                   3     lion      Basel        -3
+    #     3  1            1                   1   rabbit  Cambridge        -1
+    #     4  2            2                   2  leopard   Shanghai        -2
+    #     5  3            3                   3     lion      Basel        -3
+    #     6  1            1                   1   rabbit  Cambridge        -1
+    #     7  2            2                   2  leopard   Shanghai        -2
+    #     8  3            3                   3     lion      Basel        -3
+
     df = df.copy()
     check("column_name", column_name, [str])
 
@@ -2099,16 +2100,20 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_"):
                 .collapse_levels(sep='_')
         )
 
-    Before applying `.collapse_levels`, the `.agg` operation returns a
+    Before applying ``.collapse_levels``, the ``.agg`` operation returns a
     multi-level column `DataFrame` whose columns are (level 1, level 2):
 
     .. code-block:: python
 
-        `[('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
-        ('type', 'mean'), ('type', 'median')]`
-        `.collapse_levels` then flattens the column names to:
-        `['class', 'max_speed_mean', 'max_speed_median',
-        'type_mean', 'type_median']`
+        [('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
+        ('type', 'mean'), ('type', 'median')]
+
+    ``.collapse_levels`` then flattens the column names to:
+
+    .. code-block:: python
+
+        ['class', 'max_speed_mean', 'max_speed_median',
+        'type_mean', 'type_median']
 
     :param df: A pandas DataFrame.
     :param sep: String separator used to join the column level names
@@ -2584,7 +2589,7 @@ def impute(df, column: str, value=None, statistic=None):
     If ``statistic`` is provided, then all null values in the selected column
     will take on the summary statistic value of other non-null values.
 
-    Currently supported ``statistic``s include:
+    Currently supported statistics include:
 
     - ``mean`` (also aliased by ``average``)
     - ``median``

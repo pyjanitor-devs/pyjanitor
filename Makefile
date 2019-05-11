@@ -11,7 +11,7 @@ release:
 
 .PHONY: format test lint docs isort check style notebooks
 
-black:
+format:
 	black -l 79 .
 
 test:

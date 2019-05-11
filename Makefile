@@ -9,9 +9,9 @@ release:
 #
 # ALSO, remove this comment once it's tested!!!!!!!!!!!
 
-.PHONY: format test lint docs isort check style
+.PHONY: format test lint docs isort check style notebooks
 
-format:
+black:
 	black -l 79 .
 
 test:
@@ -26,7 +26,10 @@ docs:
 isort:
 	isort -rc . -y -up -tc
 
-check: test docs isort format lint
+notebooks:
+	jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
+
+check: test docs notebooks isort format lint
 	echo "checks complete"
 
 style: isort format

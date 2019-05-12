@@ -1628,7 +1628,7 @@ def limit_column_characters(
 
 @pf.register_dataframe_method
 def row_to_names(
-    df,
+    df: pd.DataFrame,
     row_number: int = 0,
     remove_row: bool = False,
     remove_rows_above: bool = False,

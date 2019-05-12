@@ -2894,8 +2894,6 @@ class DataDescription:
     High-level description of data present in this DataFrame.
 
     This is a custom data accessor.
-
-    TODO: add repr, fail on type error in desc
     """
 
     def __init__(self, data):
@@ -2921,7 +2919,7 @@ class DataDescription:
         return self._get_data_df()
 
     def __repr__(self):
-        """ Human-readable representation of the `DataDescription` object. """
+        """Human-readable representation of the `DataDescription` object."""
         return str(self._get_data_df())
 
     def display(self):
@@ -2935,7 +2933,13 @@ class DataDescription:
         :param desc: The structure containing the descriptions to update
         """
         if isinstance(desc, list):
-            assert len(desc) == len(self._data.columns)
+            if len(desc) != len(self._data.columns):
+                raise ValueError(
+                    f"Length of description list "
+                    f"({len(desc)}) does not match number of columns in "
+                    f"DataFrame ({len(self._data.columns)})"
+                )
+
             self._desc = dict(zip(self._data.columns, desc))
 
         elif isinstance(desc, dict):

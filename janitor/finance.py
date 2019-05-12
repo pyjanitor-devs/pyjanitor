@@ -10,12 +10,7 @@ import pandas as pd
 import pandas_flavor as pf
 import requests
 
-from datetime import date, datetime
-from functools import lru_cache
-
 from janitor import check
-from .utils import deprecated_alias
-
 
 from .utils import deprecated_alias
 

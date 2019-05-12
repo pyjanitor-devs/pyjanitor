@@ -7,11 +7,18 @@ from fnmatch import translate
 from functools import partial, reduce
 from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 
+import datetime as dt
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+import re
+import warnings
+
+from functools import partial, reduce
+from fnmatch import translate
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
+from typing import Callable, Dict, Iterable, List, Union, Any, Tuple
 
 from .errors import JanitorError
 from .utils import deprecated_alias
@@ -1180,7 +1187,7 @@ def filter_column_isin(
     column_name: str,
     iterable: Collection,
     complement: bool = False,
-):
+) -> pd.DataFrame:
     """
     Filter a dataframe for values in a column that exist in another iterable.
 

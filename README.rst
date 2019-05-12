@@ -46,7 +46,7 @@ statements, can be replaced with method chains that allow one to read off the
 logical order of actions taken. Let us see the annotated example below. First,
 off, here's the textual description of a data cleaning pathway:
 
-1. Create a dataframe.
+1. Create a ``DataFrame``.
 2. Delete one column.
 3. Drop rows with empty values in two particular columns.
 4. Rename another two columns.
@@ -210,6 +210,8 @@ The final way is to use the `pipe()` method:
 
 Contributing
 ------------
+
+See ``CONTRIBUTING.rst`` for a full description of the process of contributing to ``pyjanitor``.
 
 Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~

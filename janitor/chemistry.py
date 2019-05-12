@@ -2,13 +2,13 @@
 Chemistry and cheminformatics-oriented data cleaning functions.
 """
 
-from typing import Union
-
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 
-from .utils import import_message
+from typing import Union
+
+from .utils import import_message, deprecated_alias
 
 try:
     from rdkit import Chem, DataStructs
@@ -67,13 +67,14 @@ except ImportError:
 
 
 @pf.register_dataframe_method
+@deprecated_alias(smiles_col="smiles_column_name", mols_col="mols_column_name")
 def smiles2mol(
     df: pd.DataFrame,
-    smiles_col: str,
-    mols_col: str,
+    smiles_column_name,
+    mols_column_name,
     drop_nulls: bool = True,
     progressbar: Union[None, str] = None,
-):
+) -> pd.DataFrame:
     """
     Convert a column of SMILES strings into RDKit Mol objects.
 
@@ -85,7 +86,7 @@ def smiles2mol(
 
         df = (
             pd.DataFrame(...)
-            .smiles2mol(smiles_col='smiles', mols_col='mols')
+            .smiles2mol(smiles_column_name='smiles', mols_column_name='mols')
         )
 
     A progressbar can be optionally used.
@@ -97,8 +98,8 @@ def smiles2mol(
     - "none" is the default value - progress bar will be not be shown.
 
     :param df: pandas DataFrame.
-    :param smiles_col: Name of column that holds the SMILES strings.
-    :param mols_col: Name to be given to the new mols column.
+    :param smiles_column_name: Name of column that holds the SMILES strings.
+    :param mols_column_name: Name to be given to the new mols column.
     :param drop_nulls: Whether to drop rows whose mols failed to be
         constructed.
     :param progressbar: Whether to show a progressbar or not.
@@ -108,30 +109,33 @@ def smiles2mol(
         raise ValueError(f"progressbar kwarg must be one of {valid_progress}")
 
     if progressbar is None:
-        df[mols_col] = df[smiles_col].apply(lambda x: Chem.MolFromSmiles(x))
+        df[mols_column_name] = df[smiles_column_name].apply(
+            lambda x: Chem.MolFromSmiles(x)
+        )
     else:
         if progressbar == "notebook":
             tqdmn().pandas(desc="mols")
         elif progressbar == "terminal":
             tqdm.pandas(desc="mols")
-        df[mols_col] = df[smiles_col].progress_apply(
+        df[mols_column_name] = df[smiles_column_name].progress_apply(
             lambda x: Chem.MolFromSmiles(x)
         )
 
     if drop_nulls:
-        df.dropna(subset=[mols_col], inplace=True)
+        df.dropna(subset=[mols_column_name], inplace=True)
     df.reset_index(inplace=True, drop=True)
     return df
 
 
 @pf.register_dataframe_method
+@deprecated_alias(mols_col="mols_column_name")
 def morgan_fingerprint(
     df: pd.DataFrame,
-    mols_col: str,
+    mols_column_name,
     radius: int = 3,
     nbits: int = 2048,
     kind: str = "counts",
-):
+) -> pd.DataFrame:
     """
     Convert a column of RDKIT Mol objects into Morgan Fingerprints.
 
@@ -144,7 +148,8 @@ def morgan_fingerprint(
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        morgans = df.morgan_fingerprint(mols_col='mols', radius=3, nbits=2048)
+        morgans = df.morgan_fingerprint(mols_column_name='mols', radius=3,
+                                        nbits=2048)
 
     If you wish to join the Morgans back into the original dataframe, this
     can be accomplished by doing a `join`, becuase the indices are
@@ -155,7 +160,8 @@ def morgan_fingerprint(
         joined = df.join(morgans)
 
     :param df: A pandas DataFrame.
-    :param mols_col: The name of the column that has the RDKIT mol objects
+    :param mols_column_name: The name of the column that has the RDKIT
+        mol objects
     :param radius: Radius of Morgan fingerprints. Defaults to 3.
     :param nbits: The length of the fingerprints. Defaults to 2048.
     :param kind: Whether to return counts or bits. Defaults to counts.
@@ -168,11 +174,12 @@ def morgan_fingerprint(
     if kind == "bits":
         fps = [
             GetMorganFingerprintAsBitVect(m, radius, nbits)
-            for m in df[mols_col]
+            for m in df[mols_column_name]
         ]
     elif kind == "counts":
         fps = [
-            GetHashedMorganFingerprint(m, radius, nbits) for m in df[mols_col]
+            GetHashedMorganFingerprint(m, radius, nbits)
+            for m in df[mols_column_name]
         ]
 
     np_fps = []
@@ -187,7 +194,8 @@ def morgan_fingerprint(
 
 
 @pf.register_dataframe_method
-def molecular_descriptors(df: pd.DataFrame, mols_col: str):
+@deprecated_alias(mols_col="mols_column_name")
+def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     """"
     Convert a column of RDKIT mol objects into a Pandas DataFrame
     of molecular descriptors.
@@ -212,7 +220,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_col: str):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        mol_desc = df.molecular_descriptors(mols_col='mols')
+        mol_desc = df.molecular_descriptors(mols_column_name='mols')
 
     If you wish to join the molecular descriptors back into the original
     dataframe, this can be accomplished by doing a `join`,
@@ -223,7 +231,8 @@ def molecular_descriptors(df: pd.DataFrame, mols_col: str):
         joined = df.join(mol_desc)
 
     :param df: A pandas DataFrame.
-    :mols_col: The name of the column that has the RDKIT mol objects.
+    :param mols_column_name: The name of the column that has the RDKIT mol
+        objects.
     :returns: A pandas DataFrame
     """
     descriptors = [
@@ -267,16 +276,17 @@ def molecular_descriptors(df: pd.DataFrame, mols_col: str):
         CalcNumUnspecifiedAtomStereoCenters,
         CalcTPSA,
     ]
-    descriptors = {f.__name__.strip("Calc"): f for f in descriptors}
+    descriptors_mapping = {f.__name__.strip("Calc"): f for f in descriptors}
 
     feats = dict()
-    for name, func in descriptors.items():
-        feats[name] = [func(m) for m in df[mols_col]]
+    for name, func in descriptors_mapping.items():
+        feats[name] = [func(m) for m in df[mols_column_name]]
     return pd.DataFrame(feats)
 
 
 @pf.register_dataframe_method
-def maccs_keys_fingerprint(df: pd.DataFrame, mols_col: str):
+@deprecated_alias(mols_col="mols_column_name")
+def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     """
     Convert a column of RDKIT mol objects into MACCS Keys Fingeprints.
 
@@ -288,7 +298,7 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_col: str):
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        maccs = df.maccs_keys_fingerprint(mols_col='mols')
+        maccs = df.maccs_keys_fingerprint(mols_column_name='mols')
 
     If you wish to join the molecular descriptors back into the
     original dataframe, this can be accomplished by doing a `join`,
@@ -300,11 +310,12 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_col: str):
 
 
     :param df: A pandas DataFrame.
-    :mols_col: The name of the column that has the RDKIT mol objects.
+    :param mols_column_name: The name of the column that has the RDKIT mol
+        objects.
     :returns: A pandas DataFrame
     """
 
-    maccs = [GetMACCSKeysFingerprint(m) for m in df[mols_col]]
+    maccs = [GetMACCSKeysFingerprint(m) for m in df[mols_column_name]]
 
     np_maccs = []
 

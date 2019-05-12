@@ -3,13 +3,16 @@ Finance-specific data cleaning functions.
 """
 
 import json
-from datetime import date, datetime
-from functools import lru_cache
-
+import pandas as pd
 import pandas_flavor as pf
 import requests
 
+from datetime import date, datetime
+from functools import lru_cache
+
 from janitor import check
+from .utils import deprecated_alias
+
 
 currency_set = {
     "AUD",
@@ -48,7 +51,7 @@ currency_set = {
 }
 
 
-def _check_currency(currency):
+def _check_currency(currency: str):
     if currency not in currency_set:
         raise ValueError(
             f"currency {currency} not in supported currency set, "
@@ -110,20 +113,21 @@ def _convert_currency(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(colname="column_name")
 def convert_currency(
     df,
-    colname: str = None,
+    column_name: str = None,
     from_currency: str = "",
     to_currency: str = "",
     historical_date: date = None,
     make_new_column: bool = False,
-):
+) -> pd.DataFrame:
     """
     Converts a column from one currency to another, with an option to
     convert based on historical exchange values.
 
     :param df: A pandas dataframe.
-    :param colname: Name of the new column. Should be a string, in order
+    :param column_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
     :param from_currency: The base currency to convert from.
@@ -139,8 +143,10 @@ def convert_currency(
         "PHP", "PLN", "RON", "RUB", "SEK", "SGD", "THB", "TRY", "USD",
         "ZAR"}
     :param historical_date: If supplied, get exchange rate on a certain\
-    date. If not supplied, get the latest exchange rate. The exchange\
-    rates go back to Jan. 4, 1999.
+        date. If not supplied, get the latest exchange rate. The exchange\
+        rates go back to Jan. 4, 1999.
+    :param make_new_column: Generates new column for converted currency if
+        True, otherwise, converts currency in place.
 
     :Setup:
 
@@ -189,10 +195,10 @@ def convert_currency(
     rate = _convert_currency(from_currency, to_currency, historical_date)
 
     if make_new_column:
-        new_col_name = colname + "_" + to_currency
-        df[new_col_name] = df[colname] * rate
+        new_column_name = column_name + "_" + to_currency
+        df[new_column_name] = df[column_name] * rate
 
     else:
-        df[colname] = df[colname] * rate
+        df[column_name] = df[column_name] * rate
 
     return df

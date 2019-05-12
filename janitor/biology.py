@@ -5,7 +5,7 @@ Biology and bioinformatics-oriented data cleaning functions.
 import pandas as pd
 import pandas_flavor as pf
 
-from .utils import import_message
+from .utils import import_message, deprecated_alias
 
 try:
     from Bio import SeqIO
@@ -16,7 +16,10 @@ except ImportError:
 
 
 @pf.register_dataframe_method
-def join_fasta(df: pd.DataFrame, filename: str, id_col: str, col_name: str):
+@deprecated_alias(col_name="column_name")
+def join_fasta(
+    df: pd.DataFrame, filename: str, id_col: str, column_name
+) -> pd.DataFrame:
     """
     Convenience method to join in a FASTA file as a column.
 
@@ -34,11 +37,11 @@ def join_fasta(df: pd.DataFrame, filename: str, id_col: str, col_name: str):
     :param df: A pandas DataFrame.
     :param filename: Path to the FASTA file.
     :param id_col: The column in the DataFrame that houses sequence IDs.
-    :param col_name: The name of the new column.
+    :param column_name: The name of the new column.
     """
     seqrecords = {
         x.id: x.seq.__str__() for x in SeqIO.parse(filename, "fasta")
     }
     seq_col = [seqrecords[i] for i in df[id_col]]
-    df[col_name] = seq_col
+    df[column_name] = seq_col
     return df

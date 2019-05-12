@@ -22,16 +22,16 @@ import pandas_flavor as pf
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
+from .errors import JanitorError
 from .utils import (
-    deprecated_alias,
-    _strip_underscores,
-    check,
     _clean_accounting_column,
     _currency_column_to_numeric,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
+    _strip_underscores,
+    check,
+    deprecated_alias,
 )
-from .errors import JanitorError
 
 
 @pf.register_dataframe_method
@@ -606,6 +606,7 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
+
     def _conv(value):
         try:
             date = dt.datetime.utcfromtimestamp(value)

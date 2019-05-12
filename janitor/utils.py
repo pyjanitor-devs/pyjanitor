@@ -2,12 +2,11 @@
 
 import functools
 import warnings
-import pandas as pd
-
 from typing import Callable, Dict, Union
-from .errors import JanitorError
 
 import pandas as pd
+
+from .errors import JanitorError
 
 
 def check(varname: str, value, expected_types: list):
@@ -212,6 +211,7 @@ def deprecated_alias(**aliases) -> Callable:
     :return: Your original function wrapped with the kwarg redirection
         function.
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

@@ -194,9 +194,8 @@ def morgan_fingerprint(
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
-    """"
-    Convert a column of RDKIT mol objects into a Pandas DataFrame
-    of molecular descriptors.
+    """
+    Convert RDKIT mol objects into a Pandas DataFrame of molecular descriptors.
 
     Returns a new dataframe without any of the original data. This is
     intentional to leave the user only with the data requested.

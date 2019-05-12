@@ -232,9 +232,9 @@ def encode_categorical(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Any]
 ) -> pd.DataFrame:
     """
-    Encode the specified columns with Pandas'
-    `category <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`  # noqa: E501
-    dtype.
+    Encode the specified columns with Pandas' `category_` dtype.
+
+    .. _category : http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html  # noqa: E501
 
     Functional usage example:
 
@@ -632,7 +632,6 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
-
     def _conv(value):
         try:
             date = dt.datetime.utcfromtimestamp(value)

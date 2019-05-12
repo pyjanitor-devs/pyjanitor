@@ -1,4 +1,4 @@
-""" Miscellaneous internal PyJanitor helper functions. """
+"""Miscellaneous internal PyJanitor helper functions."""
 
 import functools
 import warnings
@@ -8,6 +8,7 @@ import pandas as pd
 
 
 def import_message(submodule, package, installation):
+    """Raise import missing message."""
     print(
         f"To use the janitor submodule {submodule}, you need to install \
         {package}."
@@ -20,8 +21,7 @@ def import_message(submodule, package, installation):
 
 def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
     """
-    Checks if a function is idempotent,
-    that is, f(f(x))=f(x) is true for all x.
+    Check if a function is idempotent, i.e., f(f(x))=f(x) is true for all x.
 
     :param func: a python method
     :param df: a pandas dataframe
@@ -36,6 +36,8 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
 
 def deprecated_alias(**aliases):
     """
+    Raise a warning when deprecating old function argument names.
+
     Used as a decorator when deprecating old function argument names, while
     keeping backwards compatibility.
 
@@ -54,7 +56,6 @@ def deprecated_alias(**aliases):
     :param aliases: dictionary of aliases for a function's arguments
     :return:
     """
-
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -68,8 +69,10 @@ def deprecated_alias(**aliases):
 
 def rename_kwargs(func_name, kwargs, aliases):
     """
-    Used to update deprecated argument names with new names. Throws a TypeError if
-    both arguments are provided, and warns if old alias is used.
+    Rename a keyeword argument with new names.
+
+    Used to update deprecated argument names with new names. Throws a TypeError
+    if both arguments are provided, and warns if old alias is used.
 
     Implementation is inspired from `StackOverflow`_.
 

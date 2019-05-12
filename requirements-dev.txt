@@ -8,3 +8,4 @@ black>=19.3b0
 jupyter_client
 ipykernel
 seaborn
+pytest-azurepipelines

@@ -37,6 +37,6 @@ dependencies:
 - xorg-libxrender
 - nbsphinx
 - pip
-- pip:
-  - sphinxcontrib-fulltoc
-  - python-language-server[all]
+- pytest-azurepipelines
+- python-language-server
+- sphinxcontrib-fulltoc

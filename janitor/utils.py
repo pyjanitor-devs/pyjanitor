@@ -1,5 +1,10 @@
+""" Miscellaneous internal PyJanitor helper functions. """
+
 import functools
 import warnings
+import pandas as pd
+
+from typing import Callable
 
 
 def import_message(submodule, package, installation):
@@ -13,10 +18,10 @@ def import_message(submodule, package, installation):
     print(f"    {installation}")
 
 
-def idempotent(func, df, *args, **kwargs):
+def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
     """
-        Checks if a function is idempotence,
-        that is f(f(x))=f(x) is true for all x.
+    Checks if a function is idempotent,
+    that is, f(f(x))=f(x) is true for all x.
 
     :param func: a python method
     :param df: a pandas dataframe

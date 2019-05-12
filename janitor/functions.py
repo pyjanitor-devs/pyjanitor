@@ -1744,7 +1744,7 @@ def row_to_names(
 @deprecated_alias(col_name="column_name")
 def round_to_fraction(
     df: pd.DataFrame,
-    column_name: str = None,
+    column_name=None,
     denominator: float = None,
     digits: float = np.inf,
 ) -> pd.DataFrame:
@@ -2605,7 +2605,7 @@ def select_columns(
 @deprecated_alias(column="column_name")
 @deprecated_alias(statistic="statistic_column_name")
 def impute(
-    df: pd.DataFrame, column_name: str, value=None, statistic_column_name=None
+    df: pd.DataFrame, column_name, value=None, statistic_column_name=None
 ) -> pd.DataFrame:
     """
     Method-chainable imputation of values in a column.
@@ -2836,8 +2836,8 @@ def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
 def groupby_agg(
     df: pd.DataFrame,
     by: str,
-    new_column_name: str,
-    agg_column_name: str,
+    new_column_name,
+    agg_column_name,
     agg: Union[Callable, str, List, Dict],
     axis: int = 0,
 ) -> pd.DataFrame:

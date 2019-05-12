@@ -28,23 +28,23 @@ documentation fix before contributing a code fix. Doing so has manyfold benefits
 5. You can choose between getting set up locally first (recommended), or instead directly making edits on the GitHub web UI (also not a problem).
 6. Every newcomer is equal in our eyes, and it's the most egalitarian way to get started, regardless of experience.
 
-Remote contributors outside of sprints, and prior contributors who are joining 
+Remote contributors outside of sprints, and prior contributors who are joining
 us at the sprints need not adhere to this rule, as a good prior
 assumption is that you are a motivated user of the library already. If you have
 made a prior PR to the library, we would like to encourage you to mentor newcomers
-in lieu of coding contributions. 
+in lieu of coding contributions.
 
 Documentation can come in many forms. For example, you might want to contribute:
 
-- fixes for a typographical, grammatical, or spelling error.
-- changes for a docstring that was unclear.
-- clarifications for installation/setup instructions that are unclear.
-- rephrasing of a sentence/phrase/word choice that didn't make sense.
-- new example/tutorial notebooks using the library.
-- reworking of existing tutorial notebooks with better code style.
+- Fixes for a typographical, grammatical, or spelling error.
+- Changes for a docstring that was unclear.
+- Clarifications for installation/setup instructions that are unclear.
+- Rephrasing of a sentence/phrase/word choice that didn't make sense.
+- New example/tutorial notebooks using the library.
+- Reworking of existing tutorial notebooks with better code style.
 
-In particular, contributing new tutorial notebooks, and improving the clarity of existing ones,
-is a great way to get familiar with the library and find pain points that you can
+In particular, contributing new tutorial notebooks and improving the clarity of existing ones
+are a great ways to get familiar with the library and find pain points that you can
 propose as fixes or enhancements to the library.
 
 Report Bugs
@@ -62,17 +62,17 @@ Fix Bugs
 ~~~~~~~~
 
 Look through the GitHub issues for bugs. Anything tagged with ``bug``
-and ``available to hack on`` is open to whoever wants to implement it. 
+and ``available to hack on`` is open to whoever wants to implement it.
 
 Do be sure to claim the issue for yourself by indicating, "I would like to
 work on this issue." If you would like to discuss it further before going forward,
-we are more than welcome to discuss on the GitHub issue tracker.
+you are more than welcome to discuss on the GitHub issue tracker.
 
 Implement Features
 ~~~~~~~~~~~~~~~~~~
 
 Look through the GitHub issues for features. Anything tagged with ``enhancement``
-and ``available to hack on`` is open to whoever wants to implement it.
+and ``available to hack on`` are open to whoever wants to implement it.
 
 Implementing a feature generally means writing a function that has the
 following form:
@@ -80,20 +80,22 @@ following form:
 .. code-block:: python
 
     @pf.register_dataframe_method
-    def function(df, *args, **kwargs):
-        """Very detailed docstring here."""
+    def function(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
+        """
+        Very detailed docstring here. Look to other functions for examples.
+        """
         # stuff done here
         return df
 
 The function signature should take a pandas dataframe as the input, and return
-a pandas dataframe as the output. Any manipulation to the dataframe should be
-implemented inside the function.
+a pandas ``DataFrame`` as the output. Any manipulation to the dataframe should be
+implemented inside the function. The standard functionality of ``pyjanitor`` methods that we're moving towards is to not modify the input ``DataFrame``.
 
 This function should be implemented in ``functions.py``, and should have a test
 accompanying it in ``tests/functions/test_<function_name_here>.py``.
 
 When writing a test, the minimum acceptable test is an "example-based test".
-Under ``tests/conf.py``, you will find a suite of example dataframes that can be 
+Under ``tests/conf.py``, you will find a suite of example dataframes that can be
 imported and used in the test.
 
 If you are more experienced with testing, you can use Hypothesis to
@@ -143,9 +145,9 @@ Ready to contribute? Here's how to set up `pyjanitor` for local development.
 
 4. Create a branch for local development:
 
-New features added to pyjanitor should be done in a new branch you have based off of the latest version of the `dev` branch. The protocol for pyjanitor branches for new development is that the `master` branch mirrors the current version of pyjanitor on PyPI, whereas `dev` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability / suitability for introducing a batch of changes into the official version, the `dev` branch is then merged into `master` and the PyPI package is subsequently updated.
+New features added to ``pyjanitor`` should be done in a new branch you have based off of the latest version of the `dev` branch. The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI, whereas ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability / suitability for introducing a batch of changes into the official version, the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.
 
-To base a branch directly off of `dev` instead of `master`, create a new one as follows:
+To base a branch directly off of ``dev`` instead of ``master``, create a new one as follows:
 
     $ git checkout -b name-of-your-bugfix-or-feature dev
 
@@ -153,13 +155,15 @@ Now you can make your changes locally.
 
 5. When you're done making changes, check that your changes are properly formatted and that all tests still pass::
 
-    $ make lint
     $ make format
+    $ make lint
     $ py.test
+
+``format`` will apply code style formatting, ``lint`` checks for styling problems (which must be resolved before the PR can be accepted), and ``py.test`` runs all of ``pyjanitor``'s unit tests to probe for whether changes to the source code have potentially introduced bugs. These tests must also pass before the PR is accepted.
 
 All of these commands are available when you create the development environment.
 
-When you run the test locally, the tests in ``chemistry.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
+When you run the test locally, the tests in ``chemistry.py`` & ``biology.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
 
 6. Commit your changes and push your branch to GitHub::
 
@@ -167,7 +171,7 @@ When you run the test locally, the tests in ``chemistry.py`` are automatically s
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website where when you are picking out which branch to merge into, you select `dev` instead of `master`.
+7. Submit a pull request through the GitHub website where when you are picking out which branch to merge into, you select ``dev`` instead of ``master``.
 
 
 PyCharm Users

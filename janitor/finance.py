@@ -139,8 +139,10 @@ def convert_currency(
         "PHP", "PLN", "RON", "RUB", "SEK", "SGD", "THB", "TRY", "USD",
         "ZAR"}
     :param historical_date: If supplied, get exchange rate on a certain\
-    date. If not supplied, get the latest exchange rate. The exchange\
-    rates go back to Jan. 4, 1999.
+        date. If not supplied, get the latest exchange rate. The exchange\
+        rates go back to Jan. 4, 1999.
+    :param make_new_column: Generates new column for converted currency if
+        True, otherwise, converts currency in place.
 
     :Setup:
 

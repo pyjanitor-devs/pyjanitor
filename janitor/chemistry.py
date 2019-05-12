@@ -223,7 +223,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_col: str):
         joined = df.join(mol_desc)
 
     :param df: A pandas DataFrame.
-    :mols_col: The name of the column that has the RDKIT mol objects.
+    :param mols_col: The name of the column that has the RDKIT mol objects.
     :returns: A pandas DataFrame
     """
     descriptors = [
@@ -300,7 +300,7 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_col: str):
 
 
     :param df: A pandas DataFrame.
-    :mols_col: The name of the column that has the RDKIT mol objects.
+    :param mols_col: The name of the column that has the RDKIT mol objects.
     :returns: A pandas DataFrame
     """
 

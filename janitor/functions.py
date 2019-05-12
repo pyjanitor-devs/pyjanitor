@@ -409,6 +409,7 @@ def rename_column(
     at a time. If you are convinced that there are multiple columns in need of
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
 
+    :param df: The pandas DataFrame object.
     :param str old_column_name: The old column name.
     :param str new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
@@ -2266,7 +2267,7 @@ def check(varname: str, value, expected_types: list):
 
 def _clean_accounting_column(x: str) -> float:
     """
-    Perform the logic for the `type == "accounting"` attribute.
+    Perform the logic for the `cleaning_style == "accounting"` attribute.
 
     This is a private function, not intended to be used outside of
     ``currency_column_to_numeric``.
@@ -2789,7 +2790,8 @@ def update_where(
                 target_val='z')
             )
 
-    :param condition: conditions used to update a target column
+    :param df: The pandas DataFrame object.
+    :param conditions: conditions used to update a target column
         and target value
     :param target_column_name: Column to be updated
     :param target_val: Value to be updated

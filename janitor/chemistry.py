@@ -233,7 +233,7 @@ def molecular_descriptors(
         joined = df.join(mol_desc)
 
     :param df: A pandas DataFrame.
-    :mols_column_name: The name of the column that has the RDKIT mol objects.
+    :param mols_column_name: The name of the column that has the RDKIT mol objects.
     :returns: A pandas DataFrame
     """
     descriptors = [
@@ -277,10 +277,10 @@ def molecular_descriptors(
         CalcNumUnspecifiedAtomStereoCenters,
         CalcTPSA,
     ]
-    descriptors = {f.__name__.strip("Calc"): f for f in descriptors}
+    descriptors_mapping = {f.__name__.strip("Calc"): f for f in descriptors}
 
     feats = dict()
-    for name, func in descriptors.items():
+    for name, func in descriptors_mapping.items():
         feats[name] = [func(m) for m in df[mols_column_name]]
     return pd.DataFrame(feats)
 
@@ -313,7 +313,7 @@ def maccs_keys_fingerprint(
 
 
     :param df: A pandas DataFrame.
-    :mols_column_name: The name of the column that has the RDKIT mol objects.
+    :param mols_column_name: The name of the column that has the RDKIT mol objects.
     :returns: A pandas DataFrame
     """
 

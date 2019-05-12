@@ -2862,9 +2862,13 @@ class DataDescription:
         """Get a table of descriptive information in a DataFrame format."""
         return self._get_data_df()
 
+    def __repr__(self):
+        """ Human-readable representation of the `DataDescription` object. """
+        return str(self._get_data_df())
+
     def display(self):
         """Print the table of descriptive information about this DataFrame."""
-        print(self._get_data_df())
+        print(self)
 
     def set_description(self, desc: Union[List, Dict]):
         """

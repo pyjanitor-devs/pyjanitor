@@ -22,42 +22,16 @@ import pandas_flavor as pf
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
+from .utils import (
+    deprecated_alias,
+    _strip_underscores,
+    check,
+    _clean_accounting_column,
+    _currency_column_to_numeric,
+    _replace_empty_string_with_none,
+    _replace_original_empty_string_with_none,
+)
 from .errors import JanitorError
-from .utils import deprecated_alias
-
-
-def _strip_underscores(
-    df: pd.DataFrame, strip_underscores: Union[str, bool] = None
-) -> pd.DataFrame:
-    """
-    Strip underscores from DataFrames column names.
-
-    Underscores can be stripped from the beginning, end or both.
-
-    .. code-block:: python
-
-        df = _strip_underscores(df, strip_underscores='left')
-
-    :param df: The pandas DataFrame object.
-    :param strip_underscores: (optional) Removes the outer underscores from all
-        column names. Default None keeps outer underscores. Values can be
-        either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
-        and True.
-    :returns: A pandas DataFrame with underscores removed.
-    """
-    underscore_options = [None, "left", "right", "both", "l", "r", True]
-    if strip_underscores not in underscore_options:
-        raise JanitorError(
-            f"strip_underscores must be one of: {underscore_options}"
-        )
-
-    if strip_underscores in ["left", "l"]:
-        df = df.rename(columns=lambda x: x.lstrip("_"))
-    elif strip_underscores in ["right", "r"]:
-        df = df.rename(columns=lambda x: x.rstrip("_"))
-    elif strip_underscores == "both" or strip_underscores is True:
-        df = df.rename(columns=lambda x: x.strip("_"))
-    return df
 
 
 @pf.register_dataframe_method
@@ -2249,110 +2223,6 @@ def reset_index_inplace(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     return df
 
 
-def check(varname: str, value, expected_types: list):
-    """
-    One-liner syntactic sugar for checking types.
-
-    Should be used like this::
-
-        check('x', x, [int, float])
-
-    :param varname: The name of the variable.
-    :param value: The value of the varname.
-    :param expected_types: The types we expect the item to be.
-    :returns: TypeError if data is not the expected type.
-    """
-    is_expected_type = False
-    for t in expected_types:
-        if isinstance(value, t):
-            is_expected_type = True
-            break
-
-    if not is_expected_type:
-        raise TypeError(
-            "{varname} should be one of {expected_types}".format(
-                varname=varname, expected_types=expected_types
-            )
-        )
-
-
-def _clean_accounting_column(x: str) -> float:
-    """
-    Perform the logic for the `cleaning_style == "accounting"` attribute.
-
-    This is a private function, not intended to be used outside of
-    ``currency_column_to_numeric``.
-
-    It is intended to be used in a pandas `apply` method.
-
-    :returns: An object with a cleaned column.
-    """
-    y = x.strip()
-    y = y.replace(",", "")
-    y = y.replace(")", "")
-    y = y.replace("(", "-")
-    if y == "-":
-        return 0.00
-    return float(y)
-
-
-def _currency_column_to_numeric(x, cast_non_numeric=None) -> str:
-    """
-    Perform logic for changing cell values.
-
-    This is a private function intended to be used only in
-    ``currency_column_to_numeric``.
-
-    It is intended to be used in a pandas `apply` method, after being passed
-    through `partial`.
-    """
-    acceptable_currency_characters = {
-        "-",
-        ".",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "0",
-    }
-    if len(x) == 0:
-        return "ORIGINAL_NA"
-
-    if cast_non_numeric:
-        if x in cast_non_numeric.keys():
-            check(
-                "{%r: %r}" % (x, str(cast_non_numeric[x])),
-                cast_non_numeric[x],
-                [int, float],
-            )
-            return cast_non_numeric[x]
-        else:
-            return "".join(i for i in x if i in acceptable_currency_characters)
-    else:
-        return "".join(i for i in x if i in acceptable_currency_characters)
-
-
-def _replace_empty_string_with_none(x):
-    if isinstance(x, int):
-        return x
-
-    elif isinstance(x, float):
-        return x
-
-    elif len(x):
-        return x
-
-
-def _replace_original_empty_string_with_none(x):
-    if x != "ORIGINAL_NA":
-        return x
-
-
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name", type="cleaning_style")
 def currency_column_to_numeric(
@@ -2905,8 +2775,6 @@ class DataDescription:
     High-level description of data present in this DataFrame.
 
     This is a custom data accessor.
-
-    TODO: add repr, fail on type error in desc
     """
 
     def __init__(self, data):
@@ -2931,9 +2799,13 @@ class DataDescription:
         """Get a table of descriptive information in a DataFrame format."""
         return self._get_data_df()
 
+    def __repr__(self):
+        """Human-readable representation of the `DataDescription` object."""
+        return str(self._get_data_df())
+
     def display(self):
         """Print the table of descriptive information about this DataFrame."""
-        print(self._get_data_df())
+        print(self)
 
     def set_description(self, desc: Union[List, Dict]):
         """
@@ -2942,7 +2814,13 @@ class DataDescription:
         :param desc: The structure containing the descriptions to update
         """
         if isinstance(desc, list):
-            assert len(desc) == len(self._data.columns)
+            if len(desc) != len(self._data.columns):
+                raise ValueError(
+                    f"Length of description list "
+                    f"({len(desc)}) does not match number of columns in "
+                    f"DataFrame ({len(self._data.columns)})"
+                )
+
             self._desc = dict(zip(self._data.columns, desc))
 
         elif isinstance(desc, dict):

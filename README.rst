@@ -1,8 +1,8 @@
 pyjanitor
 =========
 
-.. image:: https://travis-ci.org/ericmjl/pyjanitor.svg?branch=master
-    :target: https://travis-ci.org/ericmjl/pyjanitor
+.. image:: https://dev.azure.com/ericmjl/Open%20Source%20Packages/_apis/build/status/ericmjl.pyjanitor?branchName=dev
+    :target: https://dev.azure.com/ericmjl/Open%20Source%20Packages/_build/latest?definitionId=2&branchName=dev
 
 .. image:: https://mybinder.org/badge_logo.svg
  :target: https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev

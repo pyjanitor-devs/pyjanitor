@@ -2,6 +2,7 @@ from setuptools import setup
 
 
 def requirements():
+    """Read requirements.txt."""
     with open("requirements.txt", "r+") as f:
         return f.read()
 

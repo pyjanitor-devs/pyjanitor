@@ -4,7 +4,7 @@ import re
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Callable, Dict, Iterable, List, Union
+from typing import Callable, Dict, Collection, List, Union
 
 import numpy as np
 import pandas as pd
@@ -1143,7 +1143,7 @@ def filter_date(
 def filter_column_isin(
     df: pd.DataFrame,
     column_name: str,
-    iterable: Iterable,
+    iterable: Collection,
     complement: bool = False,
 ):
     """
@@ -1576,7 +1576,7 @@ def limit_column_characters(df, column_length: int, col_separator: str = "_"):
 @pf.register_dataframe_method
 def row_to_names(
     df,
-    row_number: int = None,
+    row_number: int = 0,
     remove_row: bool = False,
     remove_rows_above: bool = False,
 ):

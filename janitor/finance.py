@@ -113,8 +113,8 @@ def _convert_currency(
 def convert_currency(
     df,
     colname: str = None,
-    from_currency: str = None,
-    to_currency: str = None,
+    from_currency: str = "",
+    to_currency: str = "",
     historical_date: date = None,
     make_new_column: bool = False,
 ):

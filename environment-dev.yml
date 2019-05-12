@@ -40,3 +40,4 @@ dependencies:
 - pip:
   - sphinxcontrib-fulltoc
   - python-language-server[all]
+  - pytest-azurepipelines

@@ -1,17 +1,17 @@
 """ General purpose data cleaning functions. """
 
 import datetime as dt
+import re
+import warnings
+from fnmatch import translate
+from functools import partial, reduce
+from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-import re
-import warnings
-
-from functools import partial, reduce
-from fnmatch import translate
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-from typing import Callable, Dict, Iterable, List, Union, Any, Tuple
 
 from .errors import JanitorError
 from .utils import deprecated_alias

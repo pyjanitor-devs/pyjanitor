@@ -2,13 +2,13 @@
 Chemistry and cheminformatics-oriented data cleaning functions.
 """
 
+from typing import Union
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 
-from typing import Union
-
-from .utils import import_message, deprecated_alias
+from .utils import deprecated_alias, import_message
 
 try:
     from rdkit import Chem, DataStructs

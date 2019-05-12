@@ -2,9 +2,9 @@
 
 import functools
 import warnings
-import pandas as pd
-
 from typing import Callable
+
+import pandas as pd
 
 
 def import_message(submodule, package, installation):

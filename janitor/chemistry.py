@@ -267,10 +267,10 @@ def molecular_descriptors(df: pd.DataFrame, mols_col: str):
         CalcNumUnspecifiedAtomStereoCenters,
         CalcTPSA,
     ]
-    descriptors = {f.__name__.strip("Calc"): f for f in descriptors}
+    descriptors_mapping = {f.__name__.strip("Calc"): f for f in descriptors}
 
     feats = dict()
-    for name, func in descriptors.items():
+    for name, func in descriptors_mapping.items():
         feats[name] = [func(m) for m in df[mols_col]]
     return pd.DataFrame(feats)
 

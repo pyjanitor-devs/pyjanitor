@@ -2679,7 +2679,7 @@ def find_replace(df: pd.DataFrame, columns: list, mapper: dict):
     happen and the original data will be left in-place.
 
     :param df: A pandas DataFrame.
-    :param columns: list of columns column on which the find/replace 
+    :param columns: list of columns column on which the find/replace
      action is to be made.
     :param mapper: A dictionary that maps "thing to find" -> "thing to
         replace".

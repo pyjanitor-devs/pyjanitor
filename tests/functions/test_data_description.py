@@ -21,10 +21,10 @@ def test_description_list(dataframe):
 
     assert (df["description"] == desc).all()
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         dataframe.data_description.set_description([])
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         dataframe.data_description.set_description(desc[0:3])
 
 

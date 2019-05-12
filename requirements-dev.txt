@@ -5,3 +5,7 @@ hypothesis>=4.4.0
 nbsphinx>=0.4.2
 isort>=4.3.18
 black>=19.3b0
+jupyter_client
+ipykernel
+seaborn
+pytest-azurepipelines

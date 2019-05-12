@@ -20,7 +20,7 @@ def test_transform_column_with_dest(dataframe):
     expected_df = dataframe.assign(a_log10=np.log10(dataframe["a"]))
 
     df = dataframe.copy().transform_column(
-        "a", np.log10, dest_col_name="a_log10"
+        "a", np.log10, dest_column_name="a_log10"
     )
 
     pd.testing.assert_frame_equal(df, expected_df)

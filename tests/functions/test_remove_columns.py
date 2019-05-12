@@ -3,26 +3,26 @@ import pytest
 
 @pytest.mark.functions
 def test_remove_columns_one_col(dataframe):
-    df = dataframe.remove_columns(columns=["a"])
+    df = dataframe.remove_columns(column_names=["a"])
     assert len(df.columns) == 4
 
 
 @pytest.mark.functions
 def test_remove_columns_mult_cols(dataframe):
-    df = dataframe.remove_columns(columns=["a", "Bell__Chart"])
+    df = dataframe.remove_columns(column_names=["a", "Bell__Chart"])
     assert len(df.columns) == 3
 
 
 @pytest.mark.functions
 def test_remove_columns_no_cols(dataframe):
-    df = dataframe.remove_columns(columns=[])
+    df = dataframe.remove_columns(column_names=[])
     assert len(df.columns) == 5
 
 
 @pytest.mark.functions
 def test_remove_columns_all_cols(dataframe):
     df = dataframe.remove_columns(
-        columns=[
+        column_names=[
             "a",
             "Bell__Chart",
             "decorated-elephant",
@@ -36,7 +36,7 @@ def test_remove_columns_all_cols(dataframe):
 @pytest.mark.functions
 def test_remove_columns_strange_cols(dataframe):
     df = dataframe.remove_columns(
-        columns=[
+        column_names=[
             "a",
             ["Bell__Chart", "decorated-elephant", "animals@#$%^", "cities"],
         ]
@@ -52,7 +52,7 @@ def test_remove_columns_strange_cols(multilevel_dataframe):
 
     # If 2 columns (2 tuples = 4 codes) are removed
     df = multilevel_dataframe.remove_columns(
-        columns=[("bar", "one"), ("baz", "two")]
+        column_names=[("bar", "one"), ("baz", "two")]
     )
 
     # Then the total number of codes must be 12 (16-4)

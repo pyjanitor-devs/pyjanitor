@@ -1,6 +1,4 @@
-"""
-Biology and bioinformatics-oriented data cleaning functions.
-"""
+"""Biology and bioinformatics-oriented data cleaning functions."""
 
 import pandas as pd
 import pandas_flavor as pf
@@ -21,7 +19,9 @@ def join_fasta(
     df: pd.DataFrame, filename: str, id_col: str, column_name
 ) -> pd.DataFrame:
     """
-    Convenience method to join in a FASTA file as a column.
+    Join in a FASTA file as a column.
+
+    This is a convenience method.
 
     This allows us to add the string sequence of a FASTA file as a new column
     of data in the dataframe.

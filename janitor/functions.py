@@ -1,11 +1,20 @@
-""" General purpose data cleaning functions. """
+"""General purpose data cleaning functions."""
 
 import datetime as dt
 import re
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd

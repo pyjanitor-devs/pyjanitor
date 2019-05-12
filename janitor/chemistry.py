@@ -1,6 +1,6 @@
-"""
-Chemistry and cheminformatics-oriented data cleaning functions.
-"""
+"""Chemistry and cheminformatics-oriented data cleaning functions."""
+
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -312,7 +312,6 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
         objects.
     :returns: A pandas DataFrame
     """
-
     maccs = [GetMACCSKeysFingerprint(m) for m in df[mols_column_name]]
 
     np_maccs = []

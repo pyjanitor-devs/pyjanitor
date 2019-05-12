@@ -1,6 +1,4 @@
-"""
-Finance-specific data cleaning functions.
-"""
+"""Finance-specific data cleaning functions."""
 
 import json
 from datetime import date, datetime
@@ -72,7 +70,6 @@ def _convert_currency(
 
     The API used is: https://exchangeratesapi.io/
     """
-
     url = "https://api.exchangeratesapi.io"
 
     if historical_date:

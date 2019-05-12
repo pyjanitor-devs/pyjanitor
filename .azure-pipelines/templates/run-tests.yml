@@ -10,7 +10,7 @@ steps:
   - script: |
       $(activate.command) pyjanitor-dev
       make test
-      bash <(curl -s https://codecov.io/bash)
+      bash <(curl -s https://codecov.io/bash) -t c4aaeb6c-be8f-44b2-a529-6871f3537261
     displayName: 'Run all pyjanitor tests.'
   - script: |
       $(activate.command) pyjanitor-dev

@@ -195,9 +195,7 @@ def morgan_fingerprint(
 
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
-def molecular_descriptors(
-    df: pd.DataFrame, mols_column_name
-) -> pd.DataFrame:
+def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     """"
     Convert a column of RDKIT mol objects into a Pandas DataFrame
     of molecular descriptors.
@@ -233,7 +231,8 @@ def molecular_descriptors(
         joined = df.join(mol_desc)
 
     :param df: A pandas DataFrame.
-    :param mols_column_name: The name of the column that has the RDKIT mol objects.
+    :param mols_column_name: The name of the column that has the RDKIT mol
+        objects.
     :returns: A pandas DataFrame
     """
     descriptors = [
@@ -287,9 +286,7 @@ def molecular_descriptors(
 
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
-def maccs_keys_fingerprint(
-    df: pd.DataFrame, mols_column_name
-) -> pd.DataFrame:
+def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     """
     Convert a column of RDKIT mol objects into MACCS Keys Fingeprints.
 
@@ -313,7 +310,8 @@ def maccs_keys_fingerprint(
 
 
     :param df: A pandas DataFrame.
-    :param mols_column_name: The name of the column that has the RDKIT mol objects.
+    :param mols_column_name: The name of the column that has the RDKIT mol
+        objects.
     :returns: A pandas DataFrame
     """
 

@@ -1176,8 +1176,11 @@ def filter_date(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_column_isin(
-    df: pd.DataFrame, column_name, iterable: Iterable, complement: bool = False
-) -> pd.DataFrame:
+    df: pd.DataFrame,
+    column_name: str,
+    iterable: Collection,
+    complement: bool = False,
+):
     """
     Filter a dataframe for values in a column that exist in another iterable.
 
@@ -1617,8 +1620,8 @@ def limit_column_characters(
 
 @pf.register_dataframe_method
 def row_to_names(
-    df: pd.DataFrame,
-    row_number: int = None,
+    df,
+    row_number: int = 0,
     remove_row: bool = False,
     remove_rows_above: bool = False,
 ) -> pd.DataFrame:

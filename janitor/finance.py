@@ -116,9 +116,9 @@ def _convert_currency(
 @deprecated_alias(colname="column_name")
 def convert_currency(
     df: pd.DataFrame,
-    column_name: str = None,
-    from_currency: str = None,
-    to_currency: str = None,
+    column_name: str = "",
+    from_currency: str = "",
+    to_currency: str = "",
     historical_date: date = None,
     make_new_column: bool = False,
 ) -> pd.DataFrame:

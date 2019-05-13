@@ -1,3 +1,4 @@
+"""Top-level module for pyjanitor."""
 from .functions import *  # noqa: F403, F401
 
 # from .dataframe import JanitorDataFrame as DataFrame  # noqa: F401

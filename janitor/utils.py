@@ -149,6 +149,8 @@ def _strip_underscores(
 
 def import_message(submodule: str, package: str, installation: str):
     """
+    Indicate that a required module is not installed.
+
     Generic message for indicating to the user when a function relies on an
     optional module / package that is not currently installed. Includes
     installation instructions. Used in `chemistry.py` and `biology.py`.
@@ -158,7 +160,6 @@ def import_message(submodule: str, package: str, installation: str):
     :param installation: Command to execute in the environment to install
         the package.
     """
-
     print(
         f"To use the janitor submodule {submodule}, you need to install "
         f"{package}."

@@ -1,6 +1,4 @@
-"""
-Testing strategies are placed here.
-"""
+"""Testing strategies are placed here."""
 
 import numpy as np
 from hypothesis import strategies as st
@@ -8,6 +6,7 @@ from hypothesis.extra.pandas import column, data_frames, range_indexes
 
 
 def nulldf_strategy():
+    """Generate null dataframes for testing."""
     return data_frames(
         columns=[
             column("1", st.floats(allow_nan=True, allow_infinity=True)),
@@ -20,7 +19,7 @@ def nulldf_strategy():
 
 def df_strategy():
     """
-    A convenience function for generating a dataframe as a hypothesis strategy.
+    Generate a dataframe as a hypothesis strategy.
 
     Should be treated like a fixture, but should not be passed as a fixture
     into a test function. Instead::
@@ -42,6 +41,7 @@ def df_strategy():
 
 
 def categoricaldf_strategy():
+    """Generate dataframes for testing."""
     return data_frames(
         columns=[
             column("names", st.sampled_from(names)),
@@ -66,4 +66,5 @@ names = [
 
 
 def names_strategy():
+    """Generate names for testing."""
     return st.lists(elements=st.sampled_from(names))

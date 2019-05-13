@@ -1,3 +1,4 @@
+"""Convenience I/O functions."""
 import os
 from glob import glob
 
@@ -6,6 +7,8 @@ import pandas as pd
 
 def read_csvs(filespath: str, seperate_df: bool = False, **kwargs):
     """
+    Read multiple CSV files as a single DataFrame.
+
     :param filespath: The filepath pattern matching the CSVs files.
         Accepts regular expressions, with or without csv extension.
     :param seperate_df: If False (default) returns a single Dataframe

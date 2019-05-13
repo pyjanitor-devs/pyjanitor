@@ -5,13 +5,13 @@ import pytest
 
 def test_filter_date_column_name(date_dataframe):
     df = date_dataframe
-    # column wasn't a string
+    # `column_name` wasn't a string
     with pytest.raises(TypeError):
-        df.filter_date(column=42)
+        df.filter_date(column_name=42)
 
 
 def test_filter_date_year(date_dataframe):
-    df = date_dataframe.filter_date(column="DATE", years=[2020])
+    df = date_dataframe.filter_date(column_name="DATE", years=[2020])
 
     def _get_year(x):
         return x.year
@@ -20,7 +20,7 @@ def test_filter_date_year(date_dataframe):
 
 
 def test_filter_date_years(date_dataframe):
-    df = date_dataframe.filter_date(column="DATE", years=[2020, 2021])
+    df = date_dataframe.filter_date(column_name="DATE", years=[2020, 2021])
 
     def _get_year(x):
         return x.year
@@ -32,7 +32,7 @@ def test_filter_date_years(date_dataframe):
 
 
 def test_filter_date_month(date_dataframe):
-    df = date_dataframe.filter_date(column="DATE", months=range(10, 12))
+    df = date_dataframe.filter_date(column_name="DATE", months=range(10, 12))
 
     def _get_month(x):
         return x.month
@@ -44,9 +44,9 @@ def test_filter_date_month(date_dataframe):
 
 
 def test_filter_date_start(date_dataframe):
-    start = "02/01/19"
+    start_date = "02/01/19"
 
-    df = date_dataframe.filter_date(column="DATE", start=start)
+    df = date_dataframe.filter_date(column_name="DATE", start_date=start_date)
 
     test_date = pd.to_datetime("01/31/19")
     test_result = df[df.DATE <= test_date]
@@ -55,24 +55,28 @@ def test_filter_date_start(date_dataframe):
 
 
 def test_filter_date_start_and_end(date_dataframe):
-    start = "02/01/19"
-    end = "02/02/19"
+    start_date = "02/01/19"
+    end_date = "02/02/19"
 
-    df = date_dataframe.filter_date(column="DATE", start=start, end=end)
+    df = date_dataframe.filter_date(
+        column_name="DATE", start_date=start_date, end_date=end_date
+    )
 
     assert df.shape[0] == 2
 
 
 def test_filter_different_date_format(date_dataframe):
-    end = "01@@@@29@@@@19"
+    end_date = "01@@@@29@@@@19"
     format = "%m@@@@%d@@@@%y"
-    df = date_dataframe.filter_date(column="DATE", end=end, format=format)
+    df = date_dataframe.filter_date(
+        column_name="DATE", end_date=end_date, format=format
+    )
 
     assert df.shape[0] == 2
 
 
 def test_column_date_options(date_dataframe):
-    end = "01/29/19"
+    end_date = "01/29/19"
     column_date_options = {"dayfirst": True}
 
     # Parse the dates with the first value as the day. For our purposes this
@@ -81,6 +85,8 @@ def test_column_date_options(date_dataframe):
     # can be passed through to the filter_date function.
 
     df = date_dataframe.filter_date(
-        column="DATE", end=end, column_date_options=column_date_options
+        column_name="DATE",
+        end_date=end_date,
+        column_date_options=column_date_options,
     )
     assert df.shape[0] == 13

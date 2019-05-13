@@ -927,12 +927,12 @@ def filter_on(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(column="column_name")
+@deprecated_alias(column="column_name", start="start_date", end="end_date")
 def filter_date(
     df: pd.DataFrame,
     column_name,
-    start: dt.date = None,
-    end: dt.date = None,
+    start_date: dt.date = None,
+    end_date: dt.date = None,
     years: List = None,
     months: List = None,
     days: List = None,
@@ -954,23 +954,23 @@ def filter_date(
 
     :param df: A pandas dataframe.
     :param column_name: The column which to apply the fraction transformation.
-    :param start: The beginning date to use to filter the DataFrame.
-    :param end: The end date to use to filter the DataFrame.
+    :param start_date: The beginning date to use to filter the DataFrame.
+    :param end_date: The end date to use to filter the DataFrame.
     :param years: The years to use to filter the DataFrame.
     :param months: The months to use to filter the DataFrame.
     :param days: The days to use to filter the DataFrame.
     :param column_date_options: 'Special options to use when parsing the date
         column in the original DataFrame. The options may be found at the
         official Pandas documentation.'
-    :param format: 'It you're using a format for start or end that is not
-        recognized natively by pandas' to_datetime function, you may supply
-        the format yourself. Python date and time formats may be found at
-        http://strftime.org/.'
+    :param format: 'If you're using a format for `start_date` or `end_date`
+        that is not recognized natively by pandas' to_datetime function, you
+        may supply the format yourself. Python date and time formats may be
+        found at http://strftime.org/.'
     :returns: A filtered pandas DataFrame.
 
-    **Note:** This only affects the format of the `start` and `end` parameters.
-    If there's an issue with the format of the DataFrame being parsed, you
-    would pass `{'format': your_format}` to `column_date_options`.
+    **Note:** This only affects the format of the `start_date` and `end_date`
+    parameters. If there's an issue with the format of the DataFrame being
+    parsed, you would pass `{'format': your_format}` to `column_date_options`.
 
     """
     # TODO: need to convert this to notebook.
@@ -998,10 +998,12 @@ def filter_date(
 
     # .. code-block:: python
 
-    #     start = "01/29/19"
-    #     end = "01/30/19"
+    #     start_date = "01/29/19"
+    #     end_date = "01/30/19"
 
-    #     example_dataframe.filter_date('DATE', start=start, end=end)
+    #     example_dataframe.filter_date(
+    #         'DATE', start_date=start_date, end_date=end_date
+    #     )
 
     # :Output:
 
@@ -1015,10 +1017,12 @@ def filter_date(
 
     # .. code-block:: python
 
-    #     end = "01$$$30$$$19"
+    #     end_date = "01$$$30$$$19"
     #     format = "%m$$$%d$$$%y"
 
-    #     example_dataframe.filter_date('DATE', end=end, format=format)
+    #     example_dataframe.filter_date(
+    #         'DATE', end_date=end_date, format=format
+    #     )
 
     # :Output:
 
@@ -1116,12 +1120,12 @@ def filter_date(
 
     _filter_list = []
 
-    if start:
-        start_date = pd.to_datetime(start, format=format)
+    if start_date:
+        start_date = pd.to_datetime(start_date, format=format)
         _filter_list.append(df.loc[:, column_name] >= start_date)
 
-    if end:
-        end_date = pd.to_datetime(end, format=format)
+    if end_date:
+        end_date = pd.to_datetime(end_date, format=format)
         _filter_list.append(df.loc[:, column_name] <= end_date)
 
     if years:
@@ -1137,7 +1141,7 @@ def filter_date(
     if days:
         _filter_list.append(df.loc[:, column_name].apply(_get_day).isin(days))
 
-    if start and end:
+    if start_date and end_date:
         if start_date > end_date:
             warnings.warn(
                 f"Your start date of {start_date} is after your end date of "

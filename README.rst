@@ -243,7 +243,7 @@ We use `pandas_flavor`_ to register the function natively on a
 Add a test case
 ^^^^^^^^^^^^^^^
 
-Secondly, we ask that you contribute an test case, to ensure that it works as
+Secondly, we ask that you contribute a test case, to ensure that it works as
 intended. This should go inside the ``tests/test_functions.py`` file.
 
 Feature requests

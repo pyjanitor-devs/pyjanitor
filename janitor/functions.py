@@ -2956,3 +2956,39 @@ def take_first(
     )
 
     return result
+
+
+@pf.register_dataframe_method
+def apply_over(
+    df: pd.DataFrame, func: callable, col: str, by, name: str
+) -> pd.DataFrame:
+    """
+    Propagate the result of a grouped aggregation across the
+    rows of a DataFrame.
+
+    Example:
+
+    .. code-block:: python
+        import pandas as pd
+        import numpy as np
+
+        df = pd.DataFrame({
+            "a": ["dog", "dog", "cat", "cat"],
+            "b": [1, 2, 3, 4]
+        })
+
+        df.apply_over(
+            func=np.max,
+            col="b",
+            by="a",
+            name="max"
+        )
+
+    :param df: A pandas DataFrame.
+    :param func: Function to be applied, `callable`.
+    :param col: Column on which to apply func, `str`.
+    :param by: Column(s) used for grouping, `str` or list of `str`.
+    :param name: Name of the new column, `str`.
+    :return: A pandas DataFrame.
+    """
+    return df.assign(**{name: lambda d: d.groupby(by=by)[col].transform(func)})

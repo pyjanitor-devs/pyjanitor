@@ -1,7 +1,7 @@
 steps:
   - script: |
       $(activate.command) pyjanitor-dev
-      make lint
+      pycodestyle . --exclude ./nbconvert_config.py
     displayName: 'Code style check: pycodestyle'
   - script: |
       $(activate.command) pyjanitor-dev
@@ -9,14 +9,14 @@ steps:
     displayName: 'Code style check: black'
   - script: |
       $(activate.command) pyjanitor-dev
-      make test
+      pytest
       bash <(curl -s https://codecov.io/bash) -t c4aaeb6c-be8f-44b2-a529-6871f3537261
     displayName: 'Run all pyjanitor tests.'
   - script: |
       $(activate.command) pyjanitor-dev
-      make notebooks
+      jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
     displayName: 'Test that all notebooks execute correctly.'
   - script: |
       $(activate.command) pyjanitor-dev
-      make docs
+      cd docs && make html
     displayName: 'Test that HTML docs all build correctly.'

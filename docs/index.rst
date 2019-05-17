@@ -12,10 +12,11 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   contributing
-   authors
+   installation
    notebooks
    reference/index
+   contributing
+   authors
 
 ------------
 Why Janitor?

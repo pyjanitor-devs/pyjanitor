@@ -1,3 +1,4 @@
+=========
 pyjanitor
 =========
 
@@ -5,26 +6,47 @@ pyjanitor
     :target: https://dev.azure.com/ericmjl/Open%20Source%20Packages/_build/latest?definitionId=2&branchName=dev
 
 .. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev
+    :target: https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev
 
-``pyjanitor`` is a Python implementation of the R package `janitor`_, and provides a clean API for cleaning data.
+``pyjanitor`` is a Python implementation of the R package `janitor`_, and
+provides a clean API for cleaning data.
 
 .. _janitor: https://github.com/sfirke/janitor
 
-why janitor?
+Why janitor?
 ------------
 
-Originally a port of the R package, ``pyjanitor`` has evolved from a set of convenient data cleaning routines into an experiment with the method chaining paradigm.
+Originally a port of the R package, ``pyjanitor`` has evolved from a set of
+convenient data cleaning routines into an experiment with the method chaining
+paradigm.
 
-Data Preprocessing usually consists of a series of steps that involve transforming raw data into an understandable/usable format. These series of steps need to be run in a certain sequence to achieve success. We take a base data file as the starting point, and perform actions on it, such as removing null/empty rows, replacing them with other values, adding/renaming/removing columns of data, filtering rows and others. More formally, these steps along with their relationships and dependencies are commonly referred to as a Directed Acyclic Graph (DAG).
+Data preprocessing usually consists of a series of steps that involve
+transforming raw data into an understandable/usable format. These series of
+steps need to be run in a certain sequence to achieve success. We take a base
+data file as the starting point, and perform actions on it, such as removing
+null/empty rows, replacing them with other values, adding/renaming/removing
+columns of data, filtering rows and others. More formally, these steps along
+with their relationships and dependencies are commonly referred to as a
+Directed Acyclic Graph (DAG).
 
-The `pandas` API has been invaluable for the Python data science ecosystem, and implements method chaining of a subset of methods as part of the API. For example, resetting indexes (``.reset_index()``), dropping null values (``.dropna()``), and more, are accomplished via the appropriate ``pd.DataFrame`` method calls.
+The `pandas` API has been invaluable for the Python data science ecosystem,
+and implements method chaining of a subset of methods as part of the API. For
+example, resetting indexes (``.reset_index()``), dropping null values
+(``.dropna()``), and more, are accomplished via the appropriate
+``pd.DataFrame`` method calls.
 
-Inspired by the R statistical language ecosystem, where consistent and good API design in the ``dplyr`` package enables end-users, who are not necessarily developers, to concisely express data processing code, I have evolved ``pyjanitor`` into a language for expressing the data processing DAG for ``pandas`` users.
+Inspired by the R statistical language ecosystem, where consistent and good
+API design in the ``dplyr`` package enables end-users, who are not necessarily
+developers, to concisely express data processing code, I have evolved
+``pyjanitor`` into a language for expressing the data processing DAG for
+``pandas`` users.
 
-To accomplish this, actions for which we would need to invoke imperative-style statements, can be replaced with method chains that allow one to read off the logical order of actions taken. Let us see the annotated example below. First, off, here's the textual description of a data cleaning pathway:
+To accomplish this, actions for which we would need to invoke imperative-style
+statements, can be replaced with method chains that allow one to read off the
+logical order of actions taken. Let us see the annotated example below. First,
+off, here's the textual description of a data cleaning pathway:
 
-1. Create a dataframe.
+1. Create a ``DataFrame``.
 2. Delete one column.
 3. Drop rows with empty values in two particular columns.
 4. Rename another two columns.
@@ -40,25 +62,46 @@ Let's import some libraries and begin with some sample data for this example :
     import janitor
 
     # Sample Data curated for this example
-    company_sales = {'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
-                     'Company1': [150.0, 200.0, 300.0, 400.0],
-                     'Company2': [180.0, 250.0, np.nan, 500.0],
-                     'Company3': [400.0, 500.0, 600.0, 675.0]}
+    company_sales = {
+        'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
+        'Company1': [150.0, 200.0, 300.0, 400.0],
+        'Company2': [180.0, 250.0, np.nan, 500.0],
+        'Company3': [400.0, 500.0, 600.0, 675.0]
+    }
 
 In ``pandas`` code, this would look as such:
 
 .. code-block:: python
 
     # The Pandas Way
-    df = pd.DataFrame.from_dict(company_sales) # create a pandas DataFrame from the company_sales dictionary
-    del df['Company1']  # delete a column from the DataFrame. Say 'Company1'
-    df = df.dropna(subset=['Company2', 'Company3'])  # drop rows that have empty values in columns 'Company2' and 'Company3'
-    df = df.rename({'Company2': 'Amazon', 'Company3': 'Facebook'}, axis=1)  # rename 'Company2' to 'Amazon' and 'Company3' to 'Facebook'
-    df['Google'] = [450.0, 550.0, 800.0]  # Let's add some data for another company. Say 'Google'
 
-With ``pyjanitor``, we enable method chaining with method names that are *verbs*, which describe the action taken.
+    # 1. Create a pandas DataFrame from the company_sales dictionary
+    df = pd.DataFrame.from_dict(company_sales)
+
+    # 2. Delete a column from the DataFrame. Say 'Company1'
+    del df['Company1']
+
+    # 3. Drop rows that have empty values in columns 'Company2' and 'Company3'
+    df = df.dropna(subset=['Company2', 'Company3'])
+
+    # 4. Rename 'Company2' to 'Amazon' and 'Company3' to 'Facebook'
+    df = df.rename(
+        {
+            'Company2': 'Amazon',
+            'Company3': 'Facebook',
+        },
+        axis=1,
+    )
+
+    # 5. Let's add some data for another company. Say 'Google'
+    df['Google'] = [450.0, 550.0, 800.0]
+
+
+With ``pyjanitor``, we enable method chaining with method names that are
+*verbs*, which describe the action taken.
 
 .. code-block:: python
+
 
     # The PyJanitor Way
     df = (
@@ -70,10 +113,13 @@ With ``pyjanitor``, we enable method chaining with method names that are *verbs*
         .add_column('Google', [450.0, 550.0, 800.0])
     )
 
-As such, the pyjanitor's etymology has a two-fold relationship to "cleanliness". Firstly, it's about extending Pandas with convenient data cleaning routines. Secondly, it's about providing a cleaner, method-chaining, verb-based API for common pandas routines.
+As such, the pyjanitor's etymology has a two-fold relationship to
+"cleanliness". Firstly, it's about extending Pandas with convenient data
+cleaning routines. Secondly, it's about providing a cleaner, method-chaining,
+verb-based API for common pandas routines.
 
 
-installation
+Installation
 ------------
 
 ``pyjanitor`` is currently installable from PyPI:
@@ -89,7 +135,7 @@ installation
 
     conda install pyjanitor -c conda-forge
 
-functionality
+Functionality
 -------------
 
 Current functionality includes:
@@ -102,18 +148,21 @@ Current functionality includes:
 - Adding, removing, and renaming columns
 - Coalesce multiple columns into a single column
 - Date conversions (from matlab, excel, unix) to Python datetime format
-- Expand a single column that has delimited, categorical values into dummy-encoded variables
+- Expand a single column that has delimited, categorical values into
+  dummy-encoded variables
 - Concatenating and deconcatenating columns, based on a delimiter
 - Syntactic sugar for filtering the dataframe based on queries on a column
 - Experimental submodules for finance and biology
 
-apis
-----
+API
+---
 
 The idea behind the API is two-fold:
 
-- Copy the R package function names, but enable Pythonic use with method chaining or `pandas` piping.
-- Add other utility functions that make it easy to do data cleaning/preprocessing in `pandas`.
+- Copy the R package function names, but enable Pythonic use with method
+  chaining or `pandas` piping.
+- Add other utility functions that make it easy to do data
+  cleaning/preprocessing in `pandas`.
 
 Continuing with the company_sales dataframe previously used:
 
@@ -121,24 +170,29 @@ Continuing with the company_sales dataframe previously used:
 
     import pandas as pd
     import numpy as np
-    company_sales = {'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
-					 'Company1': [150.0, 200.0, 300.0, 400.0],
-					 'Company2': [180.0, 250.0, np.nan, 500.0],
-					 'Company3': [400.0, 500.0, 600.0, 675.0]}
-	
-As such, there are three ways to use the API. The first, and most strongly recommended one, is to use janitor's functions as if they were native to pandas.	
+    company_sales = {
+        'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
+        'Company1': [150.0, 200.0, 300.0, 400.0],
+        'Company2': [180.0, 250.0, np.nan, 500.0],
+        'Company3': [400.0, 500.0, 600.0, 675.0]
+    }
+
+As such, there are three ways to use the API. The first, and most strongly
+recommended one, is to use janitor's functions as if they were native to pandas.
 
 .. code-block:: python
 
     import janitor  # upon import, functions are registered as part of pandas.
-    df = pd.DataFrame.from_dict(company_sales).clean_names().remove_empty() # This cleans the column names as well as removes any duplicate rows 
+
+    # This cleans the column names as well as removes any duplicate rows
+    df = pd.DataFrame.from_dict(company_sales).clean_names().remove_empty()
 
 The second is the functional API.
 
 .. code-block:: python
 
     from janitor import clean_names, remove_empty
-    
+
     df = pd.DataFrame.from_dict(company_sales)
     df = clean_names(df)
     df = remove_empty(df)
@@ -148,20 +202,29 @@ The final way is to use the `pipe()` method:
 .. code-block:: python
 
     from janitor import clean_names, remove_empty
-    df = pd.DataFrame.from_dict(company_sales).pipe(clean_names).pipe(remove_empty)
+    df = (
+        pd.DataFrame.from_dict(company_sales)
+        .pipe(clean_names)
+        .pipe(remove_empty)
+    )
 
-contributing
+Contributing
 ------------
 
-adding new functionality
+See ``CONTRIBUTING.rst`` for a full description of the process of contributing to ``pyjanitor``.
+
+Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Keeping in mind the etymology of pyjanitor, contributing a new function to pyjanitor is a task that is not difficult at all.
+Keeping in mind the etymology of pyjanitor, contributing a new function to
+pyjanitor is a task that is not difficult at all.
 
-define a function
+Define a function
 ^^^^^^^^^^^^^^^^^
 
-First off, you will need to define the function that expresses the data processing/cleaning routine, such that it accepts a dataframe as the first argument, and returns a modified dataframe:
+First off, you will need to define the function that expresses the data
+processing/cleaning routine, such that it accepts a dataframe as the first
+argument, and returns a modified dataframe:
 
 .. code-block:: python
 
@@ -172,23 +235,31 @@ First off, you will need to define the function that expresses the data processi
         # Put data processing function here.
         return df
 
-We use `pandas_flavor`_ to register the function natively on a ``pandas.DataFrame``.
+We use `pandas_flavor`_ to register the function natively on a
+``pandas.DataFrame``.
 
 .. _pandas_flavor: https://github.com/Zsailer/pandas_flavor
 
-add a test case
+Add a test case
 ^^^^^^^^^^^^^^^
 
-Secondly, we ask that you contribute an test case, to ensure that it works as intended. This should go inside the ``tests/test_functions.py`` file.
+Secondly, we ask that you contribute a test case, to ensure that it works as
+intended. This should go inside the ``tests/test_functions.py`` file.
 
-feature requests
+Feature requests
 ~~~~~~~~~~~~~~~~
 
-If you have a feature request, please post it as an issue on the GitHub repository issue tracker. Even better, put in a PR for it! I am more than happy to guide you through the codebase so that you can put in a contribution to the codebase.
+If you have a feature request, please post it as an issue on the GitHub
+repository issue tracker. Even better, put in a PR for it! I am more than happy
+to guide you through the codebase so that you can put in a contribution to the
+codebase.
 
-Because `pyjanitor` is currently maintained by volunteers and has no fiscal support, any feature requests will be prioritized according to what maintainers encounter as a need in our day-to-day jobs. Please temper expectations accordingly.
+Because `pyjanitor` is currently maintained by volunteers and has no fiscal
+support, any feature requests will be prioritized according to what maintainers
+encounter as a need in our day-to-day jobs. Please temper expectations
+accordingly.
 
-credits
+Credits
 ~~~~~~~
 
 Test data for chemistry submodule can be found at `Predictive Toxicology`__ .

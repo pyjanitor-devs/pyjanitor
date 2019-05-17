@@ -701,7 +701,6 @@ def expand_column(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(columns="column_names")
 def concatenate_columns(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
@@ -750,7 +749,6 @@ def concatenate_columns(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(column="column_name")
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name,
@@ -800,7 +798,6 @@ def deconcatenate_column(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(column="column_name")
 def filter_string(
     df: pd.DataFrame, column_name, search_string: str, complement: bool = False
 ) -> pd.DataFrame:
@@ -1152,7 +1149,6 @@ def filter_date(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(column="column_name")
 def filter_column_isin(
     df: pd.DataFrame, column_name, iterable: Iterable, complement: bool = False
 ) -> pd.DataFrame:

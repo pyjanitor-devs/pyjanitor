@@ -9,4 +9,4 @@ def test_take_first():
     res = df.take_first(subset="a", by="b")
     exp = df.iloc[[0, 2], :]
 
-    assert pd.testing.assert_frame_equal(res, exp)
+    pd.testing.assert_frame_equal(res, exp)

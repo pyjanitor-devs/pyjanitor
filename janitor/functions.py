@@ -2923,3 +2923,36 @@ def drop_duplicate_columns(
     ]
 
     return df.iloc[:, filtered_cols]
+
+
+@pf.register_dataframe_method
+def take_first(
+    df: pd.DataFrame, subset, by, ascending: bool = True
+) -> pd.DataFrame:
+    """
+    Take the first row within each group specified by `subset`.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        data = {
+            "a": ["x", "x", "y", "y"],
+            "b": [0, 1, 2, 3]
+        }
+        df = pd.DataFrame(data)
+
+        df.take_first(subset="a", by="b")
+
+    :param df: A pandas DataFrame.
+    :param subset: Column(s) defining the groups, `str` or list of `str`.
+    :param by: Column to sort by, `str`.
+    :param ascending: Whether or not to sort in ascending order, `bool`.
+    :returns: A pandas DataFrame.
+    """
+    result = df.sort_values(by=by, ascending=ascending).drop_duplicates(
+        subset=subset, keep="first"
+    )
+
+    return result

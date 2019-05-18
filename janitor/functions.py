@@ -118,6 +118,12 @@ def clean_names(
     return df
 
 
+FIXES = [
+    (r"[ /:,?()\.-]", "_"),
+    (r"['’]", ""),
+]
+
+
 @pf.register_dataframe_method
 def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
     """

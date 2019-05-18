@@ -456,7 +456,7 @@ def reorder_columns(
 def coalesce(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
-    new_column_name,
+    new_column_name: str=None,
 ) -> pd.DataFrame:
     """
 
@@ -466,7 +466,7 @@ def coalesce(
 
     .. code-block:: python
 
-        df = coalesce(df, column_names=['col1', 'col2'])
+        df = coalesce(df, columns=['col1', 'col2'], 'col3'
 
     Method chaining example:
 
@@ -476,8 +476,9 @@ def coalesce(
         import janitor
         df = pd.DataFrame(...).coalesce(['col1', 'col2'])
 
-    The result of this function is that we take the first non-null value across
-    rows.
+    The first example will create a new column called 'col3' with values from
+    'col2' inserted where values from 'col1' are NaN, then delete the original
+    columns. The second example will keep the name 'col1' in the new column.
 
     This is more syntactic diabetes! For R users, this should look familiar to
     `dplyr`'s `coalesce` function; for Python users, the interface
@@ -495,6 +496,8 @@ def coalesce(
         return series1.combine_first(series2)
 
     df = df.drop(columns=column_names)
+    if not new_column_name:
+        new_column_name = column_names[0]
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
     return df
 

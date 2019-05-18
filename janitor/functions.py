@@ -331,7 +331,8 @@ def get_features_targets(
         import janitor
         df = pd.DataFrame(...)
         target_cols = ['output1', 'output2']
-        X, y = df.get_features_targets(target_column_names=target_cols)  # noqa: E501
+        X, y = df.get_features_targets(target_column_names=target_cols)
+        # noqa: E501
 
     :param df: The pandas DataFrame object.
     :param str/iterable target_column_names: Either a column name or an
@@ -377,7 +378,8 @@ def rename_column(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")  # noqa: E501
+        df = pd.DataFrame(...).rename_column("old_column_name",
+        "new_column_name")  # noqa: E501
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -456,7 +458,7 @@ def reorder_columns(
 def coalesce(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
-    new_column_name: str=None,
+    new_column_name: str = None,
 ) -> pd.DataFrame:
     """
 
@@ -822,7 +824,8 @@ def filter_string(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string('column', search_string='pattern', complement=False)  # noqa: E501
+              .filter_string('column', search_string='pattern', c
+                                omplement=False)  # noqa: E501
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:

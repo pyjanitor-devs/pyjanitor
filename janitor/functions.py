@@ -89,19 +89,7 @@ def clean_names(
         elif case_type.lower() == "lower":
             df = df.rename(columns=lambda x: x.lower())
 
-    df = df.rename(
-        columns=lambda x: x.replace(" ", "_")
-        .replace("/", "_")
-        .replace(":", "_")
-        .replace("'", "")
-        .replace("’", "")
-        .replace(",", "_")
-        .replace("?", "_")
-        .replace("-", "_")
-        .replace("(", "_")
-        .replace(")", "_")
-        .replace(".", "_")
-    )
+    df = df.rename(columns=_normalize_1)
 
     def _remove_special(col):
         return "".join(item for item in col if item.isalnum() or "_" in item)
@@ -122,6 +110,13 @@ FIXES = [
     (r"[ /:,?()\.-]", "_"),
     (r"['’]", ""),
 ]
+
+
+def _normalize_1(col_name):
+    result = col_name
+    for search, replace in FIXES:
+        result = re.sub(search, replace, result)
+    return result
 
 
 @pf.register_dataframe_method

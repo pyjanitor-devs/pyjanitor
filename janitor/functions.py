@@ -331,7 +331,8 @@ def get_features_targets(
         import janitor
         df = pd.DataFrame(...)
         target_cols = ['output1', 'output2']
-        X, y = df.get_features_targets(target_column_names=target_cols)  # noqa: E501
+        X, y = df.get_features_targets(target_column_names=target_cols)
+        # noqa: E501
 
     :param df: The pandas DataFrame object.
     :param str/iterable target_column_names: Either a column name or an
@@ -377,7 +378,8 @@ def rename_column(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")  # noqa: E501
+        df = pd.DataFrame(...).rename_column("old_column_name",
+        "new_column_name")  # noqa: E501
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -456,7 +458,7 @@ def reorder_columns(
 def coalesce(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
-    new_column_name,
+    new_column_name: str = None,
 ) -> pd.DataFrame:
     """
 
@@ -466,7 +468,7 @@ def coalesce(
 
     .. code-block:: python
 
-        df = coalesce(df, column_names=['col1', 'col2'])
+        df = coalesce(df, columns=['col1', 'col2'], 'col3'
 
     Method chaining example:
 
@@ -476,8 +478,9 @@ def coalesce(
         import janitor
         df = pd.DataFrame(...).coalesce(['col1', 'col2'])
 
-    The result of this function is that we take the first non-null value across
-    rows.
+    The first example will create a new column called 'col3' with values from
+    'col2' inserted where values from 'col1' are NaN, then delete the original
+    columns. The second example will keep the name 'col1' in the new column.
 
     This is more syntactic diabetes! For R users, this should look familiar to
     `dplyr`'s `coalesce` function; for Python users, the interface
@@ -495,6 +498,8 @@ def coalesce(
         return series1.combine_first(series2)
 
     df = df.drop(columns=column_names)
+    if not new_column_name:
+        new_column_name = column_names[0]
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
     return df
 
@@ -819,7 +824,8 @@ def filter_string(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string('column', search_string='pattern', complement=False)  # noqa: E501
+              .filter_string('column', search_string='pattern', c
+                                omplement=False)  # noqa: E501
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:

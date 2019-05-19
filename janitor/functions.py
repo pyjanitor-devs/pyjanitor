@@ -106,10 +106,7 @@ def clean_names(
     return df
 
 
-FIXES = [
-    (r"[ /:,?()\.-]", "_"),
-    (r"['’]", ""),
-]
+FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
 def _normalize_1(col_name):

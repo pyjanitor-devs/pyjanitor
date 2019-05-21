@@ -22,6 +22,15 @@ def test_filter_column_isin(df, iterable):
 
     All 3 cases can be caught by using subsets.
     """
-    assume(len(iterable) >= 1)
+    with pytest.raises(ValueError):
+        assert df.filter_column_isin("names", [])
     df = df.filter_column_isin("names", iterable)
     assert set(df["names"]).issubset(iterable)
+
+
+@pytest.mark.functions
+@given(df=categoricaldf_strategy(), iterable=names_strategy())
+def test_complement(df, iterable):
+    df = df.filter_column_isin("names", iterable, complement=True)
+    assert not set(df["names"]).issubset(iterable)
+

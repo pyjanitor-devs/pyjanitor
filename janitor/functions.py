@@ -1185,6 +1185,9 @@ def filter_column_isin(
 
         df = df[df['names'].isin(['James', 'John'])]
 
+    If "complement" is true, then we will only get rows for which the names
+    are not James or John.
+
     :param df: A pandas DataFrame
     :param column_name: The column on which to filter.
     :param iterable: An iterable. Could be a list, tuple, another pandas

@@ -6,7 +6,7 @@ General functions
 Modify columns
 ~~~~~~~~~~~~~~~~~~
 .. autosummary::
-   :toctree: janitor.functions/
+    :toctree: janitor.functions/
 
     expand_column
     concatenate_columns
@@ -30,7 +30,7 @@ Modify columns
 Modify values
 ~~~~~~~~~~~~~
 .. autosummary::
-   :toctree: janitor.functions/
+    :toctree: janitor.functions/
 
     fill_empty
     convert_excel_date
@@ -46,7 +46,7 @@ Modify values
 Filtering
 ~~~~~~~~~
 .. autosummary::
-   :toctree: janitor.functions/
+    :toctree: janitor.functions/
 
     take_first
     filter_string
@@ -72,4 +72,5 @@ Other
 .. autosummary::
    :toctree: janitor.functions/
 
-   then
+    then
+    shuffle

@@ -2574,7 +2574,7 @@ def impute(
 @pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """
-    Add an arbitrary function to run in the pyJanitor method chain.
+    Add an arbitrary function to run in the ``pyjanitor`` method chain.
 
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.

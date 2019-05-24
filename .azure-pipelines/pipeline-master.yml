@@ -1,7 +1,7 @@
-jobs:
-  pr:
-  - dev
+pr:
+- dev
 
+jobs:
   - job: linux
     variables:
       activate.command: "source activate"

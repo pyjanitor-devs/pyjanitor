@@ -2574,7 +2574,7 @@ def impute(
 @pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """
-    Add an arbitrary function to run in the pyJanitor method chain.
+    Add an arbitrary function to run in the ``pyjanitor`` method chain.
 
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.
@@ -2960,3 +2960,23 @@ def take_first(
     )
 
     return result
+
+
+@pf.register_dataframe_method
+def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
+    """
+    Shuffle the rows of the DataFrame.
+
+    Super-sugary syntax! Underneath the hood, we use ``df.sample(frac=1)``,
+    with the option to set the random state.
+
+    Example usage:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).shuffle()
+
+    :param df: A pandas DataFrame
+    :param random_state: (optional) A seed for the random number generator.
+    """
+    return df.sample(frac=1, random_state=random_state)

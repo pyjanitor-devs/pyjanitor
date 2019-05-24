@@ -1,5 +1,6 @@
 jobs:
-  - job: linux-pr
+  pr: dev
+  - job: linux
     variables:
       activate.command: "source activate"
     strategy:
@@ -8,8 +9,6 @@ jobs:
           python.version: "3.7"
         py36:
           python.version: "3.6"
-
-    pr: dev
 
     pool:
       vmImage: ubuntu-16.04
@@ -20,7 +19,7 @@ jobs:
     - template: templates/create-env.yml
     - template: templates/run-tests.yml
 
-  - job: macos-pr
+  - job: macos
     variables:
       activate.command: "source activate"
     strategy:
@@ -29,8 +28,6 @@ jobs:
           python.version: "3.7"
         py36:
           python.version: "3.6"
-
-    pr: dev
 
     pool:
       vmImage: macOS-10.14
@@ -46,8 +43,7 @@ jobs:
     - template: templates/create-env.yml
     - template: templates/run-tests.yml
 
-
-  - job: windows-pr
+  - job: windows
     variables:
       activate.command: "activate"
     strategy:
@@ -56,8 +52,6 @@ jobs:
           python.version: "3.7"
         py36:
           python.version: "3.6"
-
-    pr: dev
 
     pool:
       vmImage: vs2017-win2016

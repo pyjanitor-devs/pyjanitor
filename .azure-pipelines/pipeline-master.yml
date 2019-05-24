@@ -1,6 +1,7 @@
-pr: dev
 jobs:
   - job: linux
+    pr:
+      - dev
     variables:
       activate.command: "source activate"
     strategy:
@@ -20,6 +21,8 @@ jobs:
     - template: templates/run-tests.yml
 
   - job: macos
+    pr:
+      - dev
     variables:
       activate.command: "source activate"
     strategy:
@@ -44,6 +47,8 @@ jobs:
     - template: templates/run-tests.yml
 
   - job: windows
+    pr:
+      - dev
     variables:
       activate.command: "activate"
     strategy:

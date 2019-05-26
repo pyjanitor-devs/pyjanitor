@@ -1,5 +1,6 @@
 # Custom
 .vscode/*
+test*.xml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

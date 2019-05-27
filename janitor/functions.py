@@ -2244,7 +2244,9 @@ def currency_column_to_numeric(
     :param df: The DataFrame
     :param column_name: The column to modify
     :param cleaning_style: What style of cleaning to perform. If None, standard
-        cleaning is applied. Options are: 'accounting'.
+        cleaning is applied. Options are:
+            'accounting': Replaces numbers in parentheses with negative numbers
+                            and removes commas.
     :param cast_non_numeric: A dict of how to coerce certain strings. For
         example, if there are values of 'REORDER' in the DataFrame,
         {'REORDER': 0} will cast all instances of 'REORDER' to 0.

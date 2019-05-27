@@ -14,5 +14,5 @@ steps:
     displayName: 'Build artifacts to deploy.'
   - script: |
       $(activate.command) pyjanitor-dev
-      twine upload dist/* --ignore-existing --username $(pypi.username) --password $(pypi.password)
+      twine upload dist/* --skip-existing --username $(pypi.username) --password $(pypi.password)
     displayName: 'Upload built artifacts.'

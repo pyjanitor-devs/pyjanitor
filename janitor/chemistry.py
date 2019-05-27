@@ -196,7 +196,7 @@ def morgan_fingerprint(
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
-    """"
+    """
     Convert a column of RDKIT mol objects into a Pandas DataFrame
     of molecular descriptors.
 
@@ -204,6 +204,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     intentional to leave the user only with the data requested.
 
     The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:
+
         Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,
         Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,
         Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles,

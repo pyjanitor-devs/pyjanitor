@@ -6,10 +6,6 @@
 steps:
   - script: |
       $(activate.command) pyjanitor-dev
-      pycodestyle . --exclude ./nbconvert_config.py
-    displayName: 'Code style check: pycodestyle'
-  - script: |
-      $(activate.command) pyjanitor-dev
       conda install twine setuptools
     displayName: 'Install Twine and setuptools'
   - script: |

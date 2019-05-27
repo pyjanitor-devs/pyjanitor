@@ -3027,7 +3027,7 @@ def join_apply(df, func, new_column_name):
         df.copy()
         .join(
             df.apply(func, axis=1)
-            .rename(new_name)
+            .rename(new_column_name)
         )
     )
     return df

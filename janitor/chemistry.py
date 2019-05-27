@@ -155,7 +155,7 @@ def morgan_fingerprint(
     can be accomplished by doing a `join`, becuase the indices are
     preserved:
 
-    ..code-block:: python
+    .. code-block:: python
 
         joined = df.join(morgans)
 
@@ -196,7 +196,7 @@ def morgan_fingerprint(
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
-    """"
+    """
     Convert a column of RDKIT mol objects into a Pandas DataFrame
     of molecular descriptors.
 
@@ -204,6 +204,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     intentional to leave the user only with the data requested.
 
     The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:
+
         Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,
         Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,
         Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles,
@@ -226,7 +227,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    ..code-block:: python
+    .. code-block:: python
 
         joined = df.join(mol_desc)
 
@@ -304,7 +305,7 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     original dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    ..code-block:: python
+    .. code-block:: python
 
         joined = df.join(maccs_keys_fingerprint)
 

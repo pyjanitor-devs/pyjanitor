@@ -89,19 +89,7 @@ def clean_names(
         elif case_type.lower() == "lower":
             df = df.rename(columns=lambda x: x.lower())
 
-    df = df.rename(
-        columns=lambda x: x.replace(" ", "_")
-        .replace("/", "_")
-        .replace(":", "_")
-        .replace("'", "")
-        .replace("’", "")
-        .replace(",", "_")
-        .replace("?", "_")
-        .replace("-", "_")
-        .replace("(", "_")
-        .replace(")", "_")
-        .replace(".", "_")
-    )
+    df = df.rename(columns=_normalize_1)
 
     def _remove_special(col):
         return "".join(item for item in col if item.isalnum() or "_" in item)
@@ -116,6 +104,16 @@ def clean_names(
     if preserve_original_columns:
         df.__dict__["original_columns"] = original_column_names
     return df
+
+
+FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
+
+
+def _normalize_1(col_name):
+    result = col_name
+    for search, replace in FIXES:
+        result = re.sub(search, replace, result)
+    return result
 
 
 @pf.register_dataframe_method
@@ -2579,7 +2577,7 @@ def impute(
 @pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """
-    Add an arbitrary function to run in the pyJanitor method chain.
+    Add an arbitrary function to run in the ``pyjanitor`` method chain.
 
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.
@@ -2965,3 +2963,68 @@ def take_first(
     )
 
     return result
+
+
+@pf.register_dataframe_method
+def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
+    """
+    Shuffle the rows of the DataFrame.
+
+    Super-sugary syntax! Underneath the hood, we use ``df.sample(frac=1)``,
+    with the option to set the random state.
+
+    Example usage:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).shuffle()
+
+    :param df: A pandas DataFrame
+    :param random_state: (optional) A seed for the random number generator.
+    """
+    return df.sample(frac=1, random_state=random_state)
+
+
+@pf.register_dataframe_method
+def join_apply(df, func, new_column_name):
+    """
+    Join the result of applying a function across dataframe rows.
+
+    This is a convenience function that allows us to apply arbitrary functions
+    that take any combination of information from any of the columns. The only
+    requirement is that the function signature takes in a row from the
+    DataFrame.
+
+    The example below shows us how to sum the result of two columns into a new
+    column.
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame({'a':[1, 2, 3], 'b': [2, 3, 4]})
+            .join_apply(lambda x: 2 * x['a'] + x['b'], new_column_name="2a+b")
+        )
+
+    This following example shows us how to use conditionals in the same
+    function.
+
+    .. code-block:: python
+
+        def take_a_if_even(x):
+            if x['a'] % 2:
+                return x['a']
+            else:
+                return x['b']
+
+        df = (
+            pd.DataFrame({'a': [1, 2, 3], 'b': [2, 3, 4]})
+            .join_apply(take_a_if_even, 'a_if_even')
+        )
+
+    :param df: A pandas DataFrame
+    :param func: A function that is applied elementwise across all rows of the
+        DataFrame.
+    :param new_name: New column name.
+    """
+    df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
+    return df

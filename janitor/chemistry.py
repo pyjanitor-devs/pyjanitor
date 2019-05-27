@@ -155,7 +155,7 @@ def morgan_fingerprint(
     can be accomplished by doing a `join`, becuase the indices are
     preserved:
 
-    ..code-block:: python
+    .. code-block:: python
 
         joined = df.join(morgans)
 
@@ -226,7 +226,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    ..code-block:: python
+    .. code-block:: python
 
         joined = df.join(mol_desc)
 
@@ -304,7 +304,7 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     original dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    ..code-block:: python
+    .. code-block:: python
 
         joined = df.join(maccs_keys_fingerprint)
 

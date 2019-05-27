@@ -9,8 +9,6 @@ jobs:
       matrix:
         py37:
           python.version: "3.7"
-        py36:
-          python.version: "3.6"
 
     pool:
       vmImage: ubuntu-16.04
@@ -29,8 +27,6 @@ jobs:
       matrix:
         py37:
           python.version: "3.7"
-        py36:
-          python.version: "3.6"
 
     pool:
       vmImage: macOS-10.14
@@ -54,8 +50,6 @@ jobs:
       matrix:
         py37:
           python.version: "3.7"
-        py36:
-          python.version: "3.6"
 
     pool:
       vmImage: vs2017-win2016

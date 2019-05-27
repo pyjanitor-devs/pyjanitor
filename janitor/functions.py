@@ -3023,11 +3023,5 @@ def join_apply(df, func, new_column_name):
         DataFrame.
     :param new_name: New column name.
     """
-    df = (
-        df.copy()
-        .join(
-            df.apply(func, axis=1)
-            .rename(new_column_name)
-        )
-    )
+    df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df

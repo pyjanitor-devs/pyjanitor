@@ -4,7 +4,7 @@ General functions
 .. currentmodule:: janitor
 
 Modify columns
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: janitor.functions/
 
@@ -25,6 +25,7 @@ Modify columns
     clean_names
     currency_column_to_numeric
     groupby_agg
+    join_apply
     drop_duplicate_columns
 
 Modify values

@@ -2,7 +2,7 @@ import pytest
 import requests
 from datetime import date, datetime
 
-import janitor.finance
+from janitor.finance import convert_currency
 
 
 @pytest.mark.finance

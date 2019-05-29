@@ -109,7 +109,7 @@ def clean_names(
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
-def _normalize_1(col_name):
+def _normalize_1(col_name: str) -> str:
     result = col_name
     for search, replace in FIXES:
         result = re.sub(search, replace, result)
@@ -710,7 +710,7 @@ def concatenate_columns(
     column_names: Union[str, Iterable[str], Any],
     new_column_name,
     sep: str = "-",
-):
+) -> pd.DataFrame:
     """
     Concatenates the set of columns into a single column.
 
@@ -759,7 +759,7 @@ def deconcatenate_column(
     column_name,
     new_column_names: Union[str, Iterable[str], Any],
     sep: str,
-):
+) -> pd.DataFrame:
     """
     De-concatenates a single column into multiple columns.
 

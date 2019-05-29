@@ -22,8 +22,8 @@ def test_groupby_agg():
 
     df_new = df.groupby_agg(
         by="date",
-        new_column="date_average",
-        agg_column="values",
+        new_column_name="date_average",
+        agg_column_name="values",
         agg=pd.np.mean,
     )
     assert df.shape[0] == df_new.shape[0]
@@ -51,8 +51,8 @@ def test_groupby_agg_multi():
 
     df_new = df.groupby_agg(
         by=["date", "user_id"],
-        new_column="date_average",
-        agg_column="values",
+        new_column_name="date_average",
+        agg_column_name="values",
         agg=pd.np.count_nonzero,
     )
 

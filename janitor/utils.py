@@ -242,7 +242,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
                     f"{func_name} received both {old_alias} and {new_alias}"
                 )
             warnings.warn(
-                "{old_alias} is deprecated; use {new_alias}",
+                f"{old_alias} is deprecated; use {new_alias}",
                 DeprecationWarning,
             )
             kwargs[new_alias] = kwargs.pop(old_alias)

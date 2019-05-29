@@ -22,5 +22,5 @@ def test_impute_single_value(missingdata_df):
     ],
 )
 def test_impute_statistical(missingdata_df, statistic, expected):
-    df = missingdata_df.impute("a", statistic=statistic)
+    df = missingdata_df.impute("a", statistic_column_name=statistic)
     assert set(df["a"]) == expected

@@ -1183,6 +1183,9 @@ def filter_column_isin(
 
         df = df[df['names'].isin(['James', 'John'])]
 
+    If "complement" is true, then we will only get rows for which the names
+    are not James or John.
+
     :param df: A pandas DataFrame
     :param column_name: The column on which to filter.
     :param iterable: An iterable. Could be a list, tuple, another pandas
@@ -2241,7 +2244,11 @@ def currency_column_to_numeric(
     :param df: The DataFrame
     :param column_name: The column to modify
     :param cleaning_style: What style of cleaning to perform. If None, standard
-        cleaning is applied. Options are: 'accounting'.
+        cleaning is applied. Options are:
+
+            * 'accounting':
+            Replaces numbers in parentheses with negatives, removes commas.
+
     :param cast_non_numeric: A dict of how to coerce certain strings. For
         example, if there are values of 'REORDER' in the DataFrame,
         {'REORDER': 0} will cast all instances of 'REORDER' to 0.

@@ -29,3 +29,15 @@ def test_morgan_fingerprint_bits(chemdf):
     )
     assert morgans.shape == (10, 2048)
     assert set(morgans.values.flatten().tolist()) == set([0, 1])
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("rdkit") is None,
+    reason="rdkit tests only required for CI",
+)
+@pytest.mark.chemistry
+def test_morgan_fingerprint_kind_error(chemdf):
+    with pytest.raises(ValueError):
+        chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
+            "mol", kind="hdfs"
+        )

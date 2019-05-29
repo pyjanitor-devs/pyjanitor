@@ -33,3 +33,4 @@ With thanks to the following contributors:
 - `@catherinedevlin <https://github.com/catherinedevlin>`_
 - `@StephenSchroed <https://github.com/StephenSchroeder>`_
 - `@Rajat-181 <https://github.com/Rajat-181>`_
+- `@dendrondal <https://github.com/dendrondal>`_

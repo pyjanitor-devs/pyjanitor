@@ -1,7 +1,8 @@
 import pytest
 import requests
+from datetime import date, datetime
 
-import janitor.finance
+from janitor.finance import convert_currency
 
 
 @pytest.mark.finance
@@ -26,3 +27,33 @@ def test_make_currency_api_request():
 def test_make_new_currency_col(dataframe):
     df = dataframe.convert_currency("a", "USD", "USD", make_new_column=True)
     assert all(df["a"] == df["a_USD"])
+
+
+@pytest.mark.finance
+def test_historical_datetime(dataframe):
+    with pytest.raises(ValueError):
+        assert dataframe.convert_currency(
+            "a",
+            "USD",
+            "AUD",
+            make_new_column=True,
+            historical_date=datetime(1982, 10, 27),
+        )
+
+
+@pytest.mark.finance
+def test_historical_date(dataframe):
+    with pytest.raises(ValueError):
+        assert dataframe.convert_currency(
+            "a",
+            "USD",
+            "AUD",
+            make_new_column=True,
+            historical_date=date(1982, 10, 27),
+        )
+
+
+@pytest.mark.finance
+def test_currency_check(dataframe):
+    with pytest.raises(ValueError):
+        assert dataframe.convert_currency("a", "USD", "ASDF")

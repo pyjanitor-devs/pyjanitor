@@ -32,18 +32,25 @@ def test_make_new_currency_col(dataframe):
 @pytest.mark.finance
 def test_historical_datetime(dataframe):
     with pytest.raises(ValueError):
-        assert dataframe.convert_currency("a", "USD", "AUD",
-                                          make_new_column=True,
-                                          historical_date=datetime(
-                                              1982, 10, 27))
+        assert dataframe.convert_currency(
+            "a",
+            "USD",
+            "AUD",
+            make_new_column=True,
+            historical_date=datetime(1982, 10, 27),
+        )
 
 
 @pytest.mark.finance
 def test_historical_date(dataframe):
     with pytest.raises(ValueError):
-        assert dataframe.convert_currency("a", "USD", "AUD",
-                                          make_new_column=True,
-                                          historical_date=date(1982, 10, 27))
+        assert dataframe.convert_currency(
+            "a",
+            "USD",
+            "AUD",
+            make_new_column=True,
+            historical_date=date(1982, 10, 27),
+        )
 
 
 @pytest.mark.finance

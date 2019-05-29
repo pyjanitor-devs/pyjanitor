@@ -9,3 +9,4 @@ jupyter_client
 ipykernel
 seaborn
 pytest-azurepipelines
+pytest-cov

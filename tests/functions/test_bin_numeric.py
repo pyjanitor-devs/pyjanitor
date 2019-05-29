@@ -8,7 +8,7 @@ from janitor.testing_utils.strategies import df_strategy
 @given(df=df_strategy())
 def test_bin_numeric_expected_columns(df):
 
-    df = df.bin_numeric(from_column="a", to_column="a_bin")
+    df = df.bin_numeric(from_column_name="a", to_column_name="a_bin")
     expected_columns = [
         "a",
         "Bell__Chart",
@@ -28,5 +28,8 @@ def test_bin_numeric_num_labels(df):
     with pytest.raises(ValueError):
         labels = ["a", "b", "c", "d", "e"]
         df.bin_numeric(
-            from_column="a", to_column="a_bin", num_bins=6, labels=labels
+            from_column_name="a",
+            to_column_name="a_bin",
+            num_bins=6,
+            labels=labels,
         )

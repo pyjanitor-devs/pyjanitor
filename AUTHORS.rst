@@ -34,3 +34,4 @@ With thanks to the following contributors:
 - `@StephenSchroed <https://github.com/StephenSchroeder>`_
 - `@Rajat-181 <https://github.com/Rajat-181>`_
 - `@dendrondal <https://github.com/dendrondal>`_
+- `@uribe_convers <https://github.com/uribe-convers>`_

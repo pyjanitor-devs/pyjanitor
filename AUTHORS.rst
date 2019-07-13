@@ -34,6 +34,8 @@ With thanks to the following contributors:
 - `@StephenSchroed <https://github.com/StephenSchroeder>`_
 - `@Rajat-181 <https://github.com/Rajat-181>`_
 - `@dendrondal <https://github.com/dendrondal>`_
+- `@uribe_convers <https://github.com/uribe-convers>`_
 - `@rahosbach <https://github.com/rahosbach>`_
 - `@TomMonks <https://github.com/TomMonks>`_ 
 - `@benjaminjack <https://github.com/benjaminjack>`_
+- `@emnemnemnem <https://github.com/emnemnemnem>`_

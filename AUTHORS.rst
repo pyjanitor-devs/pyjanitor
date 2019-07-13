@@ -34,6 +34,6 @@ With thanks to the following contributors:
 - `@StephenSchroed <https://github.com/StephenSchroeder>`_
 - `@Rajat-181 <https://github.com/Rajat-181>`_
 - `@dendrondal <https://github.com/dendrondal>`_
+- `@rahosbach <https://github.com/rahosbach>`_
 - `@loganthomas <https://github.com/loganthomas>`_
 - `@kulni <https://github.com/kulini>`_
-

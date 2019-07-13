@@ -18,7 +18,7 @@ jobs:
       displayName: Add conda to PATH
     - template: templates/create-env.yml
     - template: templates/run-tests.yml
-    - template: templates/release.yml
+    # - template: templates/release.yml
 
   - job: macos
     variables:
@@ -41,7 +41,7 @@ jobs:
       displayName: Take ownership of conda installation
     - template: templates/create-env.yml
     - template: templates/run-tests.yml
-    - template: templates/release.yml
+    # - template: templates/release.yml
 
   - job: windows
     variables:
@@ -59,4 +59,4 @@ jobs:
       displayName: Add conda to PATH
     - template: templates/create-env.yml
     - template: templates/run-tests.yml
-    - template: templates/release.yml
+    # - template: templates/release.yml

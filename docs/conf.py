@@ -34,12 +34,10 @@ if not notebooks.exists():
 
 project = "pyjanitor"
 
-##copyright = "2018, Eric J. Ma"
-## modified copyright string to calculate current year
 
 now = datetime.datetime.now()
 CurrentYear = str(now.year)
-copyright = CurrentYear+", Eric J. Ma"
+copyright = CurrentYear+", PyJanitor devs"
 author = "Eric J. Ma"
 
 # The short X.Y version

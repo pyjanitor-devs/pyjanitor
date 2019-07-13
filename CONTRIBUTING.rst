@@ -144,11 +144,13 @@ Ready to contribute? Here's how to set up `pyjanitor` for local development.
     $ conda install -c conda-forge --yes --file requirements-dev.txt
 
 4. Build the documentation locally, from the main `pyjanitor` directory:
-    $ cd docs
+
+    $ cd docs/
     $ make html
 
-    **Note:** If you get an error when building docs for a Jupyter notebook saying that the module `janitor` is not available (the specific error is `ModuleNotFoundError: No module named 'janitor'`), install an `ipykernel` in the current environment with the following steps:
-        $ python3 -m ipykernel install --name pyjanitor-dev --user
+    **Note:** If you get an error when building docs for a Jupyter notebook saying that the module `janitor` is not available (the specific error is `ModuleNotFoundError: No module named 'janitor'`), install an `ipykernel` in the current environment with the following steps:  
+    
+        $ python3 -m ipykernel install --name pyjanitor-dev --user  
 
     This should allow Jupyter to run correctly inside the environment and you should be able to build the docs locally
 

@@ -1,9 +1,9 @@
 =================
-General functions
+General Functions
 =================
 .. currentmodule:: janitor
 
-Modify columns
+Modify Columns
 ~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: janitor.functions/
@@ -27,7 +27,7 @@ Modify columns
     groupby_agg
     drop_duplicate_columns
 
-Modify values
+Modify Values
 ~~~~~~~~~~~~~
 .. autosummary::
    :toctree: janitor.functions/

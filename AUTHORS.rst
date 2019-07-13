@@ -35,3 +35,4 @@ With thanks to the following contributors:
 - `@Rajat-181 <https://github.com/Rajat-181>`_
 - `@dendrondal <https://github.com/dendrondal>`_
 - `@rebeccawperry <https://github.com/rebeccawperry>`_
+- `@rahosbach <https://github.com/rahosbach>`_

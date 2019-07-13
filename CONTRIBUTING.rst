@@ -142,7 +142,19 @@ Ready to contribute? Here's how to setup `pyjanitor` for local development.
     $ python setup.py develop
     $ conda install -c conda-forge --yes --file requirements-dev.txt
 
-4. Create a branch for local development:
+4. Build the documentation locally, from the main `pyjanitor` directory::
+
+    $ cd docs/
+    $ make html
+
+**Note:** If you get an error when building docs for a Jupyter notebook saying that the module `janitor` is not available (the specific error is `ModuleNotFoundError: No module named 'janitor'`), install an `ipykernel` in the current environment with the following steps::  
+    
+    $ python -m ipykernel install --name pyjanitor-dev --user  
+
+This should allow Jupyter to run correctly inside the environment, make sure you select the correct kernel from the top right corner of Jupyter Lab! 
+You should also be able to build the docs locally.
+
+5. Create a branch for local development:
 
 New features added to ``pyjanitor`` should be done in a new branch you have based off of the latest version of the `dev` branch. The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI, whereas the ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability/suitability for introducing a batch of changes into the official version, the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.
 
@@ -152,7 +164,7 @@ To base a branch directly off of ``dev`` instead of ``master``, create a new one
 
 Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes are properly formatted and that all tests still pass::
+6. When you're done making changes, check that your changes are properly formatted and that all tests still pass::
 
     $ make format
     $ make lint
@@ -164,13 +176,13 @@ All of these commands are available when you create the development environment.
 
 When you run the test locally, the tests in ``chemistry.py`` & ``biology.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
 
-6. Commit your changes and push your branch to GitHub::
+7. Commit your changes and push your branch to GitHub::
 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website. When you are picking out which branch to merge into, be sure to select ``dev`` (not ``master``).
+8. Submit a pull request through the GitHub website. When you are picking out which branch to merge into, be sure to select ``dev`` (not ``master``).
 
 
 PyCharm Users

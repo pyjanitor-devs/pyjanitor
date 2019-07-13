@@ -36,3 +36,4 @@ With thanks to the following contributors:
 - `@dendrondal <https://github.com/dendrondal>`_
 - `@uribe_convers <https://github.com/uribe-convers>`_
 - `@rahosbach <https://github.com/rahosbach>`_
+- `@emnemnemnem <https://github.com/emnemnemnem>`_

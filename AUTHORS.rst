@@ -34,3 +34,5 @@ With thanks to the following contributors:
 - `@StephenSchroed <https://github.com/StephenSchroeder>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3AStephenSchroeder>`_
 - `@Rajat-181 <https://github.com/Rajat-181>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3ARajat-181>`_
 - `@dendrondal <https://github.com/dendrondal>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Adendrondal>`_
+- `@rahosbach <https://github.com/rahosbach>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Arahosbach>`_
+- `@asearfos <https://github.com/asearfos>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aasearfos>`_

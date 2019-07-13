@@ -16,6 +16,7 @@
 #
 import os
 import sys
+import datetime
 from pathlib import Path
 
 sys.path.insert(0, os.path.abspath("."))
@@ -32,7 +33,11 @@ if not notebooks.exists():
 # -- Project information -----------------------------------------------------
 
 project = "pyjanitor"
-copyright = "2018, Eric J. Ma"
+
+
+now = datetime.datetime.now()
+CurrentYear = str(now.year)
+copyright = CurrentYear+", PyJanitor devs"
 author = "Eric J. Ma"
 
 # The short X.Y version

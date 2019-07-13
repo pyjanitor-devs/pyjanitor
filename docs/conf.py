@@ -16,6 +16,7 @@
 #
 import os
 import sys
+import datetime
 from pathlib import Path
 
 sys.path.insert(0, os.path.abspath("."))
@@ -32,7 +33,11 @@ if not notebooks.exists():
 # -- Project information -----------------------------------------------------
 
 project = "pyjanitor"
-copyright = "2018, Eric J. Ma"
+
+##copyright = "2018, Eric J. Ma"
+## modified copyright string to calculate current year
+CurrentYear = str(datetime.datetime.now())
+copyright = CurrentYear+", Eric J. Ma"
 author = "Eric J. Ma"
 
 # The short X.Y version

@@ -54,7 +54,7 @@ df.add_column("city_pop", 100000)
     7  2            2                   2  leopard   Shanghai    100000
     8  3            3                   3     lion      Basel    100000
 
-## Example2: Create a new column with an iterator which fills to the column size
+## Example 2: Create a new column with an iterator which fills to the column size
 ```python
 df.add_column("city_pop", range(3), fill_remaining=True)
 ```
@@ -70,7 +70,7 @@ df.add_column("city_pop", range(3), fill_remaining=True)
     7  2            2                   2  leopard   Shanghai         1
     8  3            3                   3     lion      Basel         2 
 
-## Example3: Add new column based on mutation of other columns
+## Example 3: Add new column based on mutation of other columns
 ```python
 df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
 ```

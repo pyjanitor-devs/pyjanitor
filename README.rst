@@ -197,7 +197,9 @@ The second is the functional API.
     df = clean_names(df)
     df = remove_empty(df)
 
-The final way is to use the `pipe()` method:
+The final way is to use the `pipe()`_ method:
+
+.. _pipe(): https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.pipe.html
 
 .. code-block:: python
 

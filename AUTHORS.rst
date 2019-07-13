@@ -9,6 +9,7 @@ Leads:
 
 With thanks to the following contributors:
 
+
 - `@JoshuaC3 <https://github.com/JoshuaC3>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3AJoshuaC3>`_
 - `@HectorM14 <https://github.com/HectorM14>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3AHectorM14>`_
 - `@cduvallet <https://github.com/cduvallet>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Acduvallet>`_
@@ -46,3 +47,4 @@ With thanks to the following contributors:
 - `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
 - `@DSNortsev <https://github.com/DSNortqsev>` | _`contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3ADSNortsev>`_
 - `@qtson <https://github.com/qtson>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3qtson>`_
+- `@keoghdata <https://github.com/keoghdata>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3A+pr+author%3Akeoghdata+>`_

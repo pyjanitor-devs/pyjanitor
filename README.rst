@@ -16,24 +16,24 @@ provides a clean API for cleaning data.
 Why janitor?
 ------------
 
-Originally a port of the R package, ``pyjanitor`` has evolved from a set of
-convenient data cleaning routines into an experiment with the method chaining
-paradigm.
+Originally a port of the R package, 
+``pyjanitor`` has evolved from a set of convenient data cleaning routines 
+into an experiment with the **method chaining** paradigm.
 
-Data preprocessing usually consists of a series of steps that involve
-transforming raw data into an understandable/usable format. These series of
-steps need to be run in a certain sequence to achieve success. We take a base
-data file as the starting point, and perform actions on it, such as removing
-null/empty rows, replacing them with other values, adding/renaming/removing
-columns of data, filtering rows and others. More formally, these steps along
-with their relationships and dependencies are commonly referred to as a
-Directed Acyclic Graph (DAG).
+Data preprocessing usually consists of a series of steps that 
+involve transforming raw data into an understandable/usable format. 
+These series of steps need to be run in a certain sequence to achieve success. 
+We take a base data file as the starting point, and perform actions on it, 
+such as removing null/empty rows, replacing them with other values, 
+adding/renaming/removing columns of data, filtering rows and others. 
+More formally, these steps along with their relationships and dependencies 
+are commonly referred to as a Directed Acyclic Graph (DAG).
 
 The `pandas` API has been invaluable for the Python data science ecosystem,
-and implements method chaining of a subset of methods as part of the API. For
-example, resetting indexes (``.reset_index()``), dropping null values
-(``.dropna()``), and more, are accomplished via the appropriate
-``pd.DataFrame`` method calls.
+and implements method chaining of a subset of methods as part of the API. 
+For example, resetting indexes (``.reset_index()``), dropping null values
+(``.dropna()``), and more, 
+are accomplished via the appropriate ``pd.DataFrame`` method calls.
 
 Inspired by the R statistical language ecosystem, where consistent and good
 API design in the ``dplyr`` package enables end-users, who are not necessarily
@@ -43,7 +43,7 @@ developers, to concisely express data processing code, I have evolved
 
 To accomplish this, actions for which we would need to invoke imperative-style
 statements, can be replaced with method chains that allow one to read off the
-logical order of actions taken. Let us see the annotated example below. First,
+logical order of actions taken. Let us see the annotated example below. First 
 off, here's the textual description of a data cleaning pathway:
 
 1. Create a ``DataFrame``.
@@ -68,6 +68,7 @@ Let's import some libraries and begin with some sample data for this example :
         'Company2': [180.0, 250.0, np.nan, 500.0],
         'Company3': [400.0, 500.0, 600.0, 675.0]
     }
+
 
 In ``pandas`` code, this would look as such:
 

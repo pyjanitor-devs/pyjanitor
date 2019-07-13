@@ -36,3 +36,4 @@ With thanks to the following contributors:
 - `@dendrondal <https://github.com/dendrondal>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Adendrondal>`_
 - `@rahosbach <https://github.com/rahosbach>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Arahosbach>`_
 - `@asearfos <https://github.com/asearfos>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aasearfos>`_
+- `@emnemnemnem <https://github.com/emnemnemnem>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aemnemnemnem>`_

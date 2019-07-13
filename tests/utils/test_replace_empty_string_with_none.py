@@ -1,4 +1,5 @@
 import pytest
+
 from janitor.utils import (
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,

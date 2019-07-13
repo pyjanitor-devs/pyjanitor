@@ -1,6 +1,10 @@
 Contributors
 ============
 
+Please add your name using this markdown template:
+
+- `**authorname** <https://github.com/**authorname**>`_ | `contributors <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3A**authorname**>`_
+
 Leads:
 
 - `@ericmjl <https://github.com/ericmjl>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aericmjl>`_

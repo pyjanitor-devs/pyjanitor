@@ -5,7 +5,7 @@ Biology and bioinformatics-oriented data cleaning functions.
 import pandas as pd
 import pandas_flavor as pf
 
-from .utils import import_message, deprecated_alias
+from .utils import deprecated_alias, import_message
 
 try:
     from Bio import SeqIO

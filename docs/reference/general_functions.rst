@@ -1,5 +1,5 @@
 =================
-General functions
+General Functions
 =================
 .. currentmodule:: janitor
 

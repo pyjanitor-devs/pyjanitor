@@ -1,6 +1,7 @@
-import janitor
-import pytest
 import pandas as pd
+import pytest
+
+import janitor
 
 
 @pytest.mark.functions

@@ -36,7 +36,9 @@ project = "pyjanitor"
 
 ##copyright = "2018, Eric J. Ma"
 ## modified copyright string to calculate current year
-CurrentYear = str(datetime.datetime.now())
+
+now = datetime.datetime.now()
+CurrentYear = str(now.year)
 copyright = CurrentYear+", Eric J. Ma"
 author = "Eric J. Ma"
 

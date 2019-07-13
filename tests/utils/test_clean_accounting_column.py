@@ -1,4 +1,5 @@
 import pytest
+
 from janitor.utils import _clean_accounting_column
 
 

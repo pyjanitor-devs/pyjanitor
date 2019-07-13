@@ -1,7 +1,7 @@
+import importlib
 import os
 
 import pytest
-import importlib
 
 import janitor.biology
 

@@ -38,7 +38,7 @@ With thanks to the following contributors:
 - `@asearfos <https://github.com/asearfos>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aasearfos>`_
 - `@emnemnemnem <https://github.com/emnemnemnem>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aemnemnemnem>`_
 - `@TomMonks <https://github.com/TomMonks>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Atommonks>`_
-- `@benjaminjack <https://github.com/benjaminjack>` | _`contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Abenjaminjack>`_
+- `@benjaminjack <https://github.com/benjaminjack>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Abenjaminjack>`_
 - `@loganthomas <https://github.com/loganthomas>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aloganthomas>`_
 - `@kulini <https://github.com/kulini>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+kulini>`_
 - `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_

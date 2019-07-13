@@ -37,5 +37,7 @@ With thanks to the following contributors:
 - `@rahosbach <https://github.com/rahosbach>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Arahosbach>`_
 - `@asearfos <https://github.com/asearfos>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aasearfos>`_
 - `@emnemnemnem <https://github.com/emnemnemnem>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aemnemnemnem>`_
+- `@TomMonks <https://github.com/TomMonks>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Atommonks>`_
+- `@benjaminjack <https://github.com/benjaminjack>` | _`contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Abenjaminjack>`_
 - `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
 - `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_

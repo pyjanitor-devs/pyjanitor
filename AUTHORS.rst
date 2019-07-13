@@ -45,4 +45,4 @@ With thanks to the following contributors:
 - `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
 - `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
 - `@DSNortsev <https://github.com/DSNortqsev>` | _`contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3ADSNortsev>`_
-
+- `@qtson <https://github.com/qtson>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3qtson>`_

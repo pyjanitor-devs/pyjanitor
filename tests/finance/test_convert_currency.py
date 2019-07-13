@@ -1,6 +1,7 @@
+from datetime import date, datetime
+
 import pytest
 import requests
-from datetime import date, datetime
 
 from janitor.finance import convert_currency
 

@@ -16,35 +16,37 @@ provides a clean API for cleaning data.
 Why janitor?
 ------------
 
-Originally a port of the R package, ``pyjanitor`` has evolved from a set of
-convenient data cleaning routines into an experiment with the method chaining
-paradigm.
+Originally a port of the R package, 
+``pyjanitor`` has evolved from a set of convenient data cleaning routines 
+into an experiment with the **method chaining** paradigm.
 
-Data preprocessing usually consists of a series of steps that involve
-transforming raw data into an understandable/usable format. These series of
-steps need to be run in a certain sequence to achieve success. We take a base
-data file as the starting point, and perform actions on it, such as removing
-null/empty rows, replacing them with other values, adding/renaming/removing
-columns of data, filtering rows and others. More formally, these steps along
-with their relationships and dependencies are commonly referred to as a
-Directed Acyclic Graph (DAG).
+Data preprocessing usually consists of a series of steps 
+that involve transforming raw data into an understandable/usable format. 
+These series of steps need to be run in a certain sequence to achieve success. 
+We take a base data file as the starting point, 
+and perform actions on it, 
+such as removing null/empty rows, 
+replacing them with other values, 
+adding/renaming/removing columns of data, 
+filtering rows and others. 
+More formally, these steps along with their relationships 
+and dependencies are commonly referred to as a Directed Acyclic Graph (DAG).
 
 The `pandas` API has been invaluable for the Python data science ecosystem,
-and implements method chaining of a subset of methods as part of the API. For
-example, resetting indexes (``.reset_index()``), dropping null values
-(``.dropna()``), and more, are accomplished via the appropriate
-``pd.DataFrame`` method calls.
+and implements method chaining of a subset of methods as part of the API. 
+For example, resetting indexes (``.reset_index()``), 
+dropping null values (``.dropna()``), and more, 
+are accomplished via the appropriate ``pd.DataFrame`` method calls.
 
-Inspired by the R statistical language ecosystem, where consistent and good
-API design in the ``dplyr`` package enables end-users, who are not necessarily
-developers, to concisely express data processing code, I have evolved
-``pyjanitor`` into a language for expressing the data processing DAG for
-``pandas`` users.
+Inspired by the ease-of-use 
+and expressiveness of the ``dplyr`` package of the R statistical language ecosystem, 
+we have evolved ``pyjanitor`` into a language for expressing the data processing DAG for ``pandas`` users. 
 
-To accomplish this, actions for which we would need to invoke imperative-style
-statements, can be replaced with method chains that allow one to read off the
-logical order of actions taken. Let us see the annotated example below. First,
-off, here's the textual description of a data cleaning pathway:
+To accomplish this, actions for which we would need to invoke imperative-style statements, 
+can be replaced with method chains 
+that allow one to read off the logical order of actions taken. 
+Let us see the annotated example below. 
+First off, here is the textual description of a data cleaning pathway:
 
 1. Create a ``DataFrame``.
 2. Delete one column.
@@ -52,7 +54,8 @@ off, here's the textual description of a data cleaning pathway:
 4. Rename another two columns.
 5. Add a new column.
 
-Let's import some libraries and begin with some sample data for this example :
+Let's import some libraries 
+and begin with some sample data for this example :
 
 .. code-block:: python
 
@@ -68,6 +71,7 @@ Let's import some libraries and begin with some sample data for this example :
         'Company2': [180.0, 250.0, np.nan, 500.0],
         'Company3': [400.0, 500.0, 600.0, 675.0]
     }
+
 
 In ``pandas`` code, this would look as such:
 
@@ -97,8 +101,8 @@ In ``pandas`` code, this would look as such:
     df['Google'] = [450.0, 550.0, 800.0]
 
 
-With ``pyjanitor``, we enable method chaining with method names that are
-*verbs*, which describe the action taken.
+With ``pyjanitor``, we enable method chaining with method names 
+that are *verbs*, which describe the action taken.
 
 .. code-block:: python
 
@@ -113,10 +117,10 @@ With ``pyjanitor``, we enable method chaining with method names that are
         .add_column('Google', [450.0, 550.0, 800.0])
     )
 
-As such, the pyjanitor's etymology has a two-fold relationship to
-"cleanliness". Firstly, it's about extending Pandas with convenient data
-cleaning routines. Secondly, it's about providing a cleaner, method-chaining,
-verb-based API for common pandas routines.
+As such, the pyjanitor's etymology has a two-fold relationship to "cleanliness". 
+Firstly, it's about extending Pandas with convenient data cleaning routines. 
+Secondly, it's about providing a cleaner, method-chaining, verb-based API 
+for common pandas routines.
 
 
 Installation
@@ -148,8 +152,8 @@ Current functionality includes:
 - Adding, removing, and renaming columns
 - Coalesce multiple columns into a single column
 - Date conversions (from matlab, excel, unix) to Python datetime format
-- Expand a single column that has delimited, categorical values into
-  dummy-encoded variables
+- Expand a single column that has delimited, categorical values 
+  into dummy-encoded variables
 - Concatenating and deconcatenating columns, based on a delimiter
 - Syntactic sugar for filtering the dataframe based on queries on a column
 - Experimental submodules for finance and biology
@@ -159,10 +163,10 @@ API
 
 The idea behind the API is two-fold:
 
-- Copy the R package function names, but enable Pythonic use with method
-  chaining or `pandas` piping.
-- Add other utility functions that make it easy to do data
-  cleaning/preprocessing in `pandas`.
+- Copy the R package function names, 
+  but enable Pythonic use with method chaining or `pandas` piping.
+- Add other utility functions 
+  that make it easy to do data cleaning/preprocessing in `pandas`.
 
 Continuing with the company_sales dataframe previously used:
 
@@ -177,8 +181,9 @@ Continuing with the company_sales dataframe previously used:
         'Company3': [400.0, 500.0, 600.0, 675.0]
     }
 
-As such, there are three ways to use the API. The first, and most strongly
-recommended one, is to use janitor's functions as if they were native to pandas.
+As such, there are three ways to use the API. 
+The first, and most strongly recommended one, is to use ``pyjanitor``'s functions 
+as if they were native to pandas.
 
 .. code-block:: python
 
@@ -218,15 +223,16 @@ See ``CONTRIBUTING.rst`` for a full description of the process of contributing t
 Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Keeping in mind the etymology of pyjanitor, contributing a new function to
-pyjanitor is a task that is not difficult at all.
+Keeping in mind the etymology of pyjanitor, 
+contributing a new function to pyjanitor is a task that is not difficult at all.
 
 Define a function
 ^^^^^^^^^^^^^^^^^
 
-First off, you will need to define the function that expresses the data
-processing/cleaning routine, such that it accepts a dataframe as the first
-argument, and returns a modified dataframe:
+First off, you will need to define the function 
+that expresses the data processing/cleaning routine, 
+such that it accepts a dataframe as the first argument, 
+and returns a modified dataframe:
 
 .. code-block:: python
 
@@ -237,29 +243,31 @@ argument, and returns a modified dataframe:
         # Put data processing function here.
         return df
 
-We use `pandas_flavor`_ to register the function natively on a
-``pandas.DataFrame``.
+We use `pandas_flavor`_ to register the function natively on a ``pandas.DataFrame``.
 
 .. _pandas_flavor: https://github.com/Zsailer/pandas_flavor
 
 Add a test case
 ^^^^^^^^^^^^^^^
 
-Secondly, we ask that you contribute a test case, to ensure that it works as
-intended. This should go inside the ``tests/test_functions.py`` file.
+Secondly, we ask that you contribute a test case, 
+to ensure that it works as intended. 
+This should go inside the ``tests/test_functions.py`` file.
 
 Feature requests
 ~~~~~~~~~~~~~~~~
 
-If you have a feature request, please post it as an issue on the GitHub
-repository issue tracker. Even better, put in a PR for it! I am more than happy
-to guide you through the codebase so that you can put in a contribution to the
-codebase.
+If you have a feature request, 
+please post it as an issue on the GitHub repository issue tracker. 
+Even better, put in a PR for it! 
+We are more than happy to guide you through the codebase 
+so that you can put in a contribution to the codebase.
 
-Because `pyjanitor` is currently maintained by volunteers and has no fiscal
-support, any feature requests will be prioritized according to what maintainers
-encounter as a need in our day-to-day jobs. Please temper expectations
-accordingly.
+Because `pyjanitor` is currently maintained by volunteers 
+and has no fiscal support, 
+any feature requests will be prioritized according to 
+what maintainers encounter as a need in our day-to-day jobs. 
+Please temper expectations accordingly.
 
 Credits
 ~~~~~~~

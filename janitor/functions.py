@@ -34,13 +34,17 @@ def move(
     axis: int = 0,
 ) -> pd.DataFrame:
     """
-     Move column or row to a position adjacent to another column or row in dataframe.
+     Move column or row to a position adjacent to another column or row in
+     dataframe.
 
      :param df: The pandas Dataframe object.
      :param int or str source: column or row to move
      :param str target: column or row to move adjacent to
-     :param str position: Specifies whether the series is moved to before or after the adjacent series. Values can be either 'before' or 'after'; defaults to 'before'.
-     :param int axis: Axis along which the function is applied. 0 to move a row, 1 to move a column.
+     :param str position: Specifies whether the series is moved to before or
+     after the adjacent series. Values can be either 'before' or 'after';
+     defaults to 'before'.
+     :param int axis: Axis along which the function is applied. 0 to move a
+     row, 1 to move a column.
      :returns: The dataframe with the series moved.
 
     """

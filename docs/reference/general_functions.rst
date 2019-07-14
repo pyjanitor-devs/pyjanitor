@@ -17,6 +17,7 @@ Modify columns
     transform_column
     transform_columns
     rename_column
+    rename_columns
     reorder_columns
     collapse_levels
     change_type

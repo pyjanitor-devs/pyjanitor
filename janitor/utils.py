@@ -2,9 +2,9 @@
 
 import functools
 import warnings
-from typing import Callable, Dict, Union
-
 import pandas as pd
+
+from typing import Callable, Dict, Union, List
 
 from .errors import JanitorError
 
@@ -247,3 +247,11 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
                 DeprecationWarning,
             )
             kwargs[new_alias] = kwargs.pop(old_alias)
+
+
+def check_column(df: pd.DataFrame, old_column_names: List):
+    for column_name in old_column_names:
+        if column_name not in df.columns:
+            raise ValueError(
+                f"{column_name} not present in dataframe columns!"
+            )

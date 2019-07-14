@@ -2,13 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+
 @pytest.fixture()
 def df():
     return pd.DataFrame(
-        {"a": [1, np.nan, 3],
-         "b": [2, 3, 1],
-         "c": [2, np.nan, 2]
-         }
+        {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 2]}
     )
 
 

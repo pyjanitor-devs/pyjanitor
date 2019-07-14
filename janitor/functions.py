@@ -2719,7 +2719,9 @@ def find_replace(df: pd.DataFrame, column_name, mapper: Dict) -> pd.DataFrame:
     :returns: A pandas DataFrame.
     """
     if any(map(pd.isna, mapper.keys())):
-        raise ValueError("find_replace() does not support null replacement.  Use DataFrame.fillna() instead.")
+        raise ValueError(
+            "find_replace() does not support null replacement.  Use DataFrame.fillna() instead."
+        )
 
     df[column_name] = df[column_name].apply(lambda x: mapper.get(x, x))
     return df

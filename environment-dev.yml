@@ -23,12 +23,12 @@ dependencies:
 - pandas-flavor
 - conda
 - pylint
+- isort
 - biopython
 - doc8
 - nox
 - cairo
 - rdkit
-- pandas-flavor
 - mypy
 - pyflakes
 - black
@@ -40,3 +40,4 @@ dependencies:
 - pytest-azurepipelines
 - python-language-server
 - sphinxcontrib-fulltoc
+- seaborn

@@ -59,3 +59,4 @@ With thanks to the following contributors:
 - `@cjmayers <https://github.com/cjmayers>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Acjmayers>`_
 - `@gjlynx <https://github.com/gjlynx>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Agjlynx>`_
 - `@aopisco <https://github.com/aopisco>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aaopisco>`_
+- '@gaworecki5 <https://github.com/gaworecki5>'_ | 'contributions <https://github.com/ericmjl/pyjanitor/pulls?q=is%3Apr+author%3Agaworecki5>'_

@@ -18,7 +18,7 @@ Why janitor?
 
 Originally a port of the R package,
 ``pyjanitor`` has evolved from a set of convenient data cleaning routines
-into an experiment with the `chaining`_ paradigm.
+into an experiment with the `method chaining`_ paradigm.
 
 .. _chaining: https://towardsdatascience.com/the-unreasonable-effectiveness-of-method-chaining-in-pandas-15c2109e3c69
 

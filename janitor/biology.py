@@ -37,6 +37,7 @@ def join_fasta(
     For more advanced functions, please use phylopandas.
 
     Functional usage example:
+
     .. code-block:: python
 
         import janitor.biology
@@ -49,6 +50,7 @@ def join_fasta(
         )
 
     Method chaining example:
+
     .. code-block:: python
 
         import pandas as pd

@@ -1,6 +1,12 @@
 Contributors
 ============
 
+Please add your name using this markdown template:
+
+.. code-block:: 
+
+    `@githubname <https://github.com/githubname>`_ | `contributors <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Agithubname>`_
+
 Leads:
 
 - `@ericmjl <https://github.com/ericmjl>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aericmjl>`_
@@ -47,7 +53,7 @@ With thanks to the following contributors:
 - `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
 - `@samwalkow <https://github.com/samwalkow>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Asamwalkow>`_
 - `@portc13 <https://github.com/portc13>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3portc13>`_
-- `@DSNortsev <https://github.com/DSNortqsev>` | _`contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3ADSNortsev>`_
+- `@DSNortsev <https://github.com/DSNortqsev>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3ADSNortsev>`_
 - `@qtson <https://github.com/qtson>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3qtson>`_
 - `@keoghdata <https://github.com/keoghdata>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3A+pr+author%3Akeoghdata+>`_
 - `@cjmayers <https://github.com/cjmayers>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Acjmayers>`_

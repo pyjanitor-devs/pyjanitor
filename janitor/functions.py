@@ -37,7 +37,9 @@ def clean_names(
     Clean column names.
 
     Takes all column names, converts them to lowercase, then replaces all
-    spaces with underscores. This method does not mutate the original DataFrame.
+    spaces with underscores.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -122,8 +124,9 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
     Drop all rows and columns that are completely null.
 
     This method also resets the index(by default) since it doesn't make sense
-    to preserve the index of a completely empty row. This method mutates the
-    original DataFrame.
+    to preserve the index of a completely empty row.
+
+    This method mutates the original DataFrame.
 
     Implementation is inspired from `StackOverflow`_.
 
@@ -2320,7 +2323,7 @@ def currency_column_to_numeric(
         make everything that doesn't coerce to a currency 1.
     :param remove_non_numeric: Will remove rows of a DataFrame that contain
         non-numeric values in the `column_name` column. Defaults to `False`.
-    :returns: A mutated DataFrame.
+    :returns: A pandas DataFrame.
     """
     # TODO: Convert this to a notebook.
     # :Example Setup:

@@ -4,7 +4,7 @@ from hypothesis import given
 from janitor.utils import check_column
 
 
-@pytest.mark.functions
+@pytest.mark.utils
 def test_check_column(dataframe):
     """
     rename_column should return true if column exist
@@ -12,7 +12,7 @@ def test_check_column(dataframe):
     assert check_column(dataframe, ["a"]) is None
 
 
-@pytest.mark.functions
+@pytest.mark.utils
 def test_check_column_absent_column(dataframe):
     """
     rename_column should raise an error if the column is absent.

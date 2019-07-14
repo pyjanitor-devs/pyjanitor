@@ -10,13 +10,14 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import datetime
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
 import sys
-import datetime
 from pathlib import Path
 
 sys.path.insert(0, os.path.abspath("."))
@@ -37,7 +38,7 @@ project = "pyjanitor"
 
 now = datetime.datetime.now()
 CurrentYear = str(now.year)
-copyright = CurrentYear+", PyJanitor devs"
+copyright = CurrentYear + ", PyJanitor devs"
 author = "Eric J. Ma"
 
 # The short X.Y version

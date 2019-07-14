@@ -202,7 +202,7 @@ def encode_categorical(
 ) -> pd.DataFrame:
     """
     Encode the specified columns with Pandas'
-    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_.
+    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_. # noqa:E501
 
     This method mutates the original DataFrame.
 

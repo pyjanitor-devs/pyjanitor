@@ -147,11 +147,15 @@ Ready to contribute? Here's how to setup `pyjanitor` for local development.
     $ cd docs/
     $ make html
 
-**Note:** If you get an error when building docs for a Jupyter notebook saying that the module `janitor` is not available (the specific error is `ModuleNotFoundError: No module named 'janitor'`), install an `ipykernel` in the current environment with the following steps::  
-    
-    $ python -m ipykernel install --name pyjanitor-dev --user  
+The above commands allow you to view the documentation locally in your browser. `Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you, and you can find the html files by navigating to docs, then _build, and then you can find the correct html file. To see the main pyjanitor page, open the index.html file.
 
-This should allow Jupyter to run correctly inside the environment, make sure you select the correct kernel from the top right corner of Jupyter Lab! 
+Sphinx uses `rst files (restructured text) <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ as its markdown language. To edit documentation, go to the rst file that corresponds to the html file you would like to edit. Make the changes directly in the rst file with the correct markup. Save the file, and rebuild the html pages using the same commands as above to see what your changes look like in html.
+
+**Note:** If you get an error when building docs for a Jupyter notebook saying that the module `janitor` is not available (the specific error is `ModuleNotFoundError: No module named 'janitor'`), install an `ipykernel` in the current environment with the following steps::
+
+    $ python -m ipykernel install --name pyjanitor-dev --user
+
+This should allow Jupyter to run correctly inside the environment, make sure you select the correct kernel from the top right corner of Jupyter Lab!
 You should also be able to build the docs locally.
 
 5. Create a branch for local development:

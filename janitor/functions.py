@@ -21,6 +21,7 @@ from .utils import (
     _replace_original_empty_string_with_none,
     _strip_underscores,
     check,
+    check_column,
     deprecated_alias,
 )
 
@@ -370,7 +371,7 @@ def get_features_targets(
 @pf.register_dataframe_method
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
-    df: pd.DataFrame, old_column_name, new_column_name
+    df: pd.DataFrame, old_column_name: str, new_column_name: str
 ) -> pd.DataFrame:
     """
     Rename a column in place.
@@ -397,15 +398,46 @@ def rename_column(
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
 
     :param df: The pandas DataFrame object.
-    :param str old_column_name: The old column name.
-    :param str new_column_name: The new column name.
+    :param old_column_name: The old column name.
+    :param new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
     """
-    if old_column_name not in df.columns:
-        raise ValueError(
-            f"{old_column_name} not present in dataframe columns!"
-        )
+    check_column(df, [old_column_name])
+
     return df.rename(columns={old_column_name: new_column_name})
+
+
+@pf.register_dataframe_method
+def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
+    """
+    Rename columns in place.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = rename_columns({"old_column_name": "new_column_name"})
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).rename_columns({"old_column_name":
+        "new_column_name"})  # noqa: E501
+
+    This is just syntactic sugar/a convenience function for renaming one column
+    at a time. If you are convinced that there are multiple columns in need of
+    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+
+    :param df: The pandas DataFrame object.
+    :param new_column_names: A dictionary of old and new column names.
+    :returns: A pandas DataFrame with renamed columns.
+    """
+    check_column(df, list(new_column_names.keys()))
+
+    return df.rename(columns=new_column_names)
 
 
 @pf.register_dataframe_method

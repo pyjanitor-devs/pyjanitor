@@ -34,23 +34,38 @@ def move(
     axis: int = 0,
 ) -> pd.DataFrame:
     """
-     Move column or row to a position adjacent to another column or row in
-     dataframe. Must have unique column names or indices.
+    Move column or row to a position adjacent to another column or row in
+    dataframe. Must have unique column names or indices.
 
-     This operation does not reset the index of the dataframe. User must
-     explicitly do so.
+    This operation does not reset the index of the dataframe. User must
+    explicitly do so.
 
-     Does not apply to multilevel dataframes.
+    Does not apply to multilevel dataframes.
 
-     :param df: The pandas Dataframe object.
-     :param int or str source: column or row to move
-     :param str target: column or row to move adjacent to
-     :param str position: Specifies whether the Series is moved to before or
-     after the adjacent Series. Values can be either 'before' or 'after';
-     defaults to 'before'.
-     :param int axis: Axis along which the function is applied. 0 to move a
-     row, 1 to move a column.
-     :returns: The dataframe with the Series moved.
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = move(df, source=3, target=15, position='after', axis=0)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).move(source=3, target=15, position='after',
+        axis=0)
+
+    :param df: The pandas Dataframe object.
+    :param int or str source: column or row to move
+    :param str target: column or row to move adjacent to
+    :param str position: Specifies whether the Series is moved to before or
+        after the adjacent Series. Values can be either 'before' or 'after';
+        defaults to 'before'.
+    :param int axis: Axis along which the function is applied. 0 to move a
+        row, 1 to move a column.
+    :returns: The dataframe with the Series moved.
 
     """
     if axis not in [0, 1]:

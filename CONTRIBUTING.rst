@@ -154,6 +154,13 @@ Ready to contribute? Here's how to setup `pyjanitor` for local development.
 This should allow Jupyter to run correctly inside the environment, make sure you select the correct kernel from the top right corner of Jupyter Lab! 
 You should also be able to build the docs locally.
 
+**Note:** If you get a symbolic link error and you are on a Windows build (the specific error is `OSError: symbolic link privilege not held`), create a junction (shortcut) in the ../pyjanitor/docs directory with the following steps::
+
+    $ cd pyjanitor/docs
+    $ mklink /J notebooks ..\examples\notebooks
+
+This will allow `make html` to create the html files.
+
 5. Create a branch for local development:
 
 New features added to ``pyjanitor`` should be done in a new branch you have based off of the latest version of the `dev` branch. The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI, whereas the ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability/suitability for introducing a batch of changes into the official version, the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.

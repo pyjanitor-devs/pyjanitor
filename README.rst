@@ -18,9 +18,11 @@ Why janitor?
 
 Originally a port of the R package,
 ``pyjanitor`` has evolved from a set of convenient data cleaning routines
-into an experiment with the `method chaining`_ paradigm.
+into an experiment with the `method chaining`__ paradigm.
 
 .. _chaining: https://towardsdatascience.com/the-unreasonable-effectiveness-of-method-chaining-in-pandas-15c2109e3c69
+
+__ _chaining_
 
 Data preprocessing usually consists of a series of steps
 that involve transforming raw data into an understandable/usable format.

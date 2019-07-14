@@ -22,7 +22,7 @@ into an experiment with the `method chaining`__ paradigm.
 
 .. _chaining: https://towardsdatascience.com/the-unreasonable-effectiveness-of-method-chaining-in-pandas-15c2109e3c69
 
-__ _chaining_
+__ chaining_
 
 Data preprocessing usually consists of a series of steps
 that involve transforming raw data into an understandable/usable format.

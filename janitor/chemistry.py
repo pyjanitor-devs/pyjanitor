@@ -293,7 +293,9 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
-def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name: str) -> pd.DataFrame:
+def maccs_keys_fingerprint(
+    df: pd.DataFrame, mols_column_name: str
+) -> pd.DataFrame:
     """
     Convert a column of RDKIT mol objects into MACCS Keys Fingerprints.
 

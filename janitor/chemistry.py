@@ -80,6 +80,8 @@ def smiles2mol(
 
     Automatically drops invalid SMILES, as determined by RDKIT.
 
+    This method mutates the original DataFrame.
+
     Method chaining usage:
 
     .. code-block:: python
@@ -143,6 +145,8 @@ def morgan_fingerprint(
     intentional, as Morgan fingerprints are usually high-dimensional
     features.
 
+    This method does not mutate the original DataFrame.
+
     Method chaining usage:
 
     .. code-block:: python
@@ -202,6 +206,8 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
 
     Returns a new dataframe without any of the original data. This is
     intentional to leave the user only with the data requested.
+
+    This method does not mutate the original DataFrame.
 
     The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:
 
@@ -293,6 +299,8 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
 
     Returns a new dataframe without any of the original data.
     This is intentional to leave the user with the data requested.
+
+    This method does not mutate the original DataFrame.
 
     Method chaining usage:
 

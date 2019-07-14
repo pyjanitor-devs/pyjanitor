@@ -16,7 +16,8 @@ methods.
    finance
    general_functions
 
-.. autosummary:: janitor.biology
-.. autosummary:: janitor.chemistry
-.. autosummary:: janitor.finance
-.. autosummary:: janitor.functions
+.. autosummary::
+      janitor.biology
+      janitor.chemistry
+      janitor.finance
+      janitor.functions

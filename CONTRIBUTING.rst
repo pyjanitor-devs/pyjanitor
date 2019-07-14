@@ -127,9 +127,9 @@ If you are proposing a feature:
 Get Started!
 ------------
 
-Ready to contribute? Here's how to setup `pyjanitor` for local development.
+Ready to contribute? Here's how to setup ``pyjanitor`` for local development.
 
-1. Fork the `pyjanitor` repo on GitHub: https://github.com/ericmjl/pyjanitor.
+1. Fork the ``pyjanitor`` repo on GitHub: https://github.com/ericmjl/pyjanitor.
 2. Clone your fork locally::
 
     $ git clone git@github.com:your_name_here/pyjanitor.git
@@ -137,44 +137,49 @@ Ready to contribute? Here's how to setup `pyjanitor` for local development.
 3. Install your local copy into a conda environment. Assuming you have conda installed, this is how you set up your fork for local development::
 
     $ cd pyjanitor/
-    $ conda env create -f environment-dev.yml
-    $ conda activate pyjanitor-dev
-    $ python setup.py develop
-    $ conda install -c conda-forge --yes --file requirements-dev.txt
+    $ make install
 
-4. Build the documentation locally, from the main `pyjanitor` directory::
+This also installs your new conda environment as a Jupyter-accessible kernel. To run correctly inside the environment, make sure you select the correct kernel from the top right corner of JupyterLab!
 
-    $ cd docs/
-    $ make html
+If you are on Windows, you likely need to install ``make`` before you can run the install. You can get it from ``conda-forge``::
 
-The above commands allow you to view the documentation locally in your browser. `Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you, and you can find the html files by navigating to docs, then _build, and then you can find the correct html file. To see the main pyjanitor page, open the index.html file.
+    $ conda install -c defaults -c conda-forge make
+
+4. You should also be able to build the docs locally. To do this, from the main ``pyjanitor`` directory::
+
+    $ make docs
+
+The above command allows you to view the documentation locally in your browser. `Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you, and you can find the html files by navigating to ``pyjanitor/docs/_build``, and then you can find the correct html file. To see the main pyjanitor page, open the ``index.html`` file.
 
 Sphinx uses `rst files (restructured text) <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ as its markdown language. To edit documentation, go to the rst file that corresponds to the html file you would like to edit. Make the changes directly in the rst file with the correct markup. Save the file, and rebuild the html pages using the same commands as above to see what your changes look like in html.
 
-**Note:** If you get an error when building docs for a Jupyter notebook saying that the module `janitor` is not available (the specific error is `ModuleNotFoundError: No module named 'janitor'`), install an `ipykernel` in the current environment with the following steps::
+5. Submit an issue to the ``pyjanitor`` GitHub issue tracker describing your planned changes: https://github.com/ericmjl/pyjanitor/issues
 
-    $ python -m ipykernel install --name pyjanitor-dev --user
+This helps us keep track of who is working on what.
 
-This should allow Jupyter to run correctly inside the environment, make sure you select the correct kernel from the top right corner of Jupyter Lab!
-You should also be able to build the docs locally.
+6. Create a branch for local development:
 
-5. Create a branch for local development:
+New features added to ``pyjanitor`` should be done in a new branch you have based off of the latest version of the ``dev`` branch. The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI, whereas the ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability/suitability for introducing a batch of changes into the official version, the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.
 
-New features added to ``pyjanitor`` should be done in a new branch you have based off of the latest version of the `dev` branch. The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI, whereas the ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability/suitability for introducing a batch of changes into the official version, the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.
-
-To base a branch directly off of ``dev`` instead of ``master``, create a new one as follows:
+To base a branch directly off of ``dev`` instead of ``master``, create a new one as follows::
 
     $ git checkout -b name-of-your-bugfix-or-feature dev
 
 Now you can make your changes locally.
 
-6. When you're done making changes, check that your changes are properly formatted and that all tests still pass::
+7. When you're done making changes, check that your changes are properly formatted and that all tests still pass::
 
-    $ make format
-    $ make lint
-    $ py.test
+    $ make check
 
-``format`` will apply code style formatting, ``lint`` checks for styling problems (which must be resolved before the pull request can be accepted), and ``py.test`` runs all of ``pyjanitor``'s unit tests to probe for whether changes to the source code have potentially introduced bugs. These tests must also pass before the pull request is accepted.
+If any of the checks fail, you can apply any of them individually (to save time):
+
+* Automated code formatting: ``make style``
+* Code styling problems check: ``make lint``
+* Code unit testing: ``make test``
+
+Styling problems must be resolved before the pull request can be accepted.
+
+``make test`` runs all of ``pyjanitor``'s unit tests to probe for whether changes to the source code have potentially introduced bugs. These tests must also pass before the pull request is accepted.
 
 All of these commands are available when you create the development environment.
 

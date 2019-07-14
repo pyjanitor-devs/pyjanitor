@@ -126,6 +126,8 @@ def convert_currency(
     Converts a column from one currency to another, with an option to
     convert based on historical exchange values.
 
+    This method mutates the original DataFrame.
+
     :param df: A pandas dataframe.
     :param column_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary

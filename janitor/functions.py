@@ -21,8 +21,8 @@ from .utils import (
     _replace_original_empty_string_with_none,
     _strip_underscores,
     check,
-    deprecated_alias,
     check_column,
+    deprecated_alias,
 )
 
 
@@ -409,9 +409,7 @@ def rename_column(
 
 
 @pf.register_dataframe_method
-def rename_columns(
-    df: pd.DataFrame, new_column_names: Dict
-) -> pd.DataFrame:
+def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
     """
     Rename columns in place.
 

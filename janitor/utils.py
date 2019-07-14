@@ -2,9 +2,9 @@
 
 import functools
 import warnings
-import pandas as pd
+from typing import Callable, Dict, List, Union
 
-from typing import Callable, Dict, Union, List
+import pandas as pd
 
 from .errors import JanitorError
 

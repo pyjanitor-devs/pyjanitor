@@ -4,7 +4,9 @@ from hypothesis import given
 
 @pytest.mark.functions
 def test_rename_columns(dataframe):
-    df = dataframe.clean_names().rename_columns({"a": "index", "bell_chart": "chart"})
+    df = dataframe.clean_names().rename_columns(
+        {"a": "index", "bell_chart": "chart"}
+    )
     assert set(df.columns) == set(
         ["index", "chart", "decorated_elephant", "animals@#$%^", "cities"]
     )

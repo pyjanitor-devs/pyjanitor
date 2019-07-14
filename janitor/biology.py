@@ -38,6 +38,7 @@ def join_fasta(
 
     Functional usage example:
     .. code-block:: python
+
         import janitor.biology
 
         df = janitor.biology.join_fasta(
@@ -49,6 +50,7 @@ def join_fasta(
 
     Method chaining example:
     .. code-block:: python
+
         import pandas as pd
         import janitor.biology
 

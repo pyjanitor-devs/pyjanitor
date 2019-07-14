@@ -26,11 +26,13 @@ def join_fasta(
     This allows us to add the string sequence of a FASTA file as a new column
     of data in the dataframe.
 
-    This function only attaches the string representation of the SeqRecord.Seq
+    This method only attaches the string representation of the SeqRecord.Seq
     object from Biopython. Does not attach the full SeqRecord. Alphabet is
     also not stored, under the assumption that the data scientist has domain
     knowledge of what kind of sequence is being read in (nucleotide vs. amino
     acid.)
+
+    This method mutates the original DataFrame.
 
     For more advanced functions, please use phylopandas.
 

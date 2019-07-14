@@ -57,6 +57,7 @@ Filtering
     filter_column_isin
     select_columns
     dropnotnull
+    get_dupes
 
 Preprocessing
 ~~~~~~~~~~~~~
@@ -68,6 +69,7 @@ Preprocessing
     impute
     label_encode
     min_max_scale
+    get_features_targets
 
 Other
 ~~~~~

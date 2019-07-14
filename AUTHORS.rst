@@ -52,3 +52,4 @@ With thanks to the following contributors:
 - `@keoghdata <https://github.com/keoghdata>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3A+pr+author%3Akeoghdata+>`_
 - `@cjmayers <https://github.com/cjmayers>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Acjmayers>`_
 - `@gjlynx <https://github.com/gjlynx>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Agjlynx>`_
+- `@aopisco <https://github.com/aopisco>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aaopisco>`_

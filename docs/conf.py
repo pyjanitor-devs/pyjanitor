@@ -38,10 +38,6 @@ else:
     except FileExistsError as e:
         print(f"{notebooks} directory already exists. Not creating..")
 
-
-# except OSError:
-#     print(f'Directory {notebooks}')
-
 # -- Project information -----------------------------------------------------
 
 project = "pyjanitor"

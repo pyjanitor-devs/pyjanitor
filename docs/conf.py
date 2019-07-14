@@ -37,7 +37,7 @@ project = "pyjanitor"
 
 now = datetime.datetime.now()
 CurrentYear = str(now.year)
-copyright = CurrentYear+", PyJanitor devs"
+copyright = CurrentYear + ", PyJanitor devs"
 author = "Eric J. Ma"
 
 # The short X.Y version

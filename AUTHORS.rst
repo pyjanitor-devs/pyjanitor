@@ -49,7 +49,7 @@ With thanks to the following contributors:
 - `@benjaminjack <https://github.com/benjaminjack>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Abenjaminjack>`_
 - `@loganthomas <https://github.com/loganthomas>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Aloganthomas>`_
 - `@kulini <https://github.com/kulini>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+kulini>`_
-- `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
+- `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Adwgoltra>`_
 - `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
 - `@samwalkow <https://github.com/samwalkow>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Asamwalkow>`_
 - `@portc13 <https://github.com/portc13>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3portc13>`_

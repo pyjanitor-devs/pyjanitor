@@ -286,7 +286,7 @@ def molecular_descriptors(
             mols_column_name='mols'
         )
 
-     Method chaining usage:
+    Method chaining usage:
 
     .. code-block:: python
 

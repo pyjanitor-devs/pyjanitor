@@ -133,7 +133,7 @@ def smiles2mol(
 @deprecated_alias(mols_col="mols_column_name")
 def morgan_fingerprint(
     df: pd.DataFrame,
-    mols_column_name,
+    mols_column_name: str,
     radius: int = 3,
     nbits: int = 2048,
     kind: str = "counts",
@@ -147,16 +147,56 @@ def morgan_fingerprint(
 
     This method does not mutate the original DataFrame.
 
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        # For "counts" kind
+        morgans = janitor.chemistry.morgan_fingerprint(
+            df=df.smiles2mol('smiles', 'mols'),
+            mols_column_name='mols',
+            radius=3,      # Defaults to 3
+            nbits=2048,    # Defaults to 2048
+            kind='counts'  # Defaults to "counts"
+        )
+
+        # For "bits" kind
+        morgans = janitor.chemistry.morgan_fingerprint(
+            df=df.smiles2mol('smiles', 'mols'),
+            mols_column_name='mols',
+            radius=3,      # Defaults to 3
+            nbits=2048,    # Defaults to 2048
+            kind='bits'    # Defaults to "counts"
+        )
+
     Method chaining usage:
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        morgans = df.morgan_fingerprint(mols_column_name='mols', radius=3,
-                                        nbits=2048)
+        import pandas as pd
+        import janitor.chemistry
 
-    If you wish to join the Morgans back into the original dataframe, this
-    can be accomplished by doing a `join`, becuase the indices are
+        df = pd.DataFrame(...)
+
+        # For "counts" kind
+        morgans = (
+            df.smiles2mol('smiles', 'mols')
+              .morgan_fingerprint(mols_column_name='mols', radius=3, nbits=2048)
+        )
+
+        # For "bits" kind
+        morgans = (
+            df.smiles2mol('smiles', 'mols')
+              .morgan_fingerprint(mols_column_name='mols', radius=3, nbits=2048, kind='bits')
+        )
+
+    If you wish to join the morgan fingerprints back into the original dataframe, this
+    can be accomplished by doing a `join`, because the indices are
     preserved:
 
     .. code-block:: python
@@ -169,7 +209,7 @@ def morgan_fingerprint(
     :param radius: Radius of Morgan fingerprints. Defaults to 3.
     :param nbits: The length of the fingerprints. Defaults to 2048.
     :param kind: Whether to return counts or bits. Defaults to counts.
-    :returns: A pandas DataFrame
+    :returns: A new pandas DataFrame of Morgan fingerprints.
     """
     acceptable_kinds = ["counts", "bits"]
     if kind not in acceptable_kinds:

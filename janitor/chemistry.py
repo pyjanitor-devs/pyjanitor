@@ -70,8 +70,8 @@ except ImportError:
 @deprecated_alias(smiles_col="smiles_column_name", mols_col="mols_column_name")
 def smiles2mol(
     df: pd.DataFrame,
-    smiles_column_name,
-    mols_column_name,
+    smiles_column_name: str,
+    mols_column_name: str,
     drop_nulls: bool = True,
     progressbar: Union[None, str] = None,
 ) -> pd.DataFrame:
@@ -82,13 +82,33 @@ def smiles2mol(
 
     This method mutates the original DataFrame.
 
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        df = janitor.chemistry.smiles2mol(
+            df=df,
+            smiles_column_name='smiles',
+            mols_column_name='mols'
+        )
+
     Method chaining usage:
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
         df = (
-            pd.DataFrame(...)
-            .smiles2mol(smiles_column_name='smiles', mols_column_name='mols')
+            df.smiles2mol(smiles_column_name='smiles',
+                          mols_column_name='mols')
         )
 
     A progressbar can be optionally used.
@@ -105,6 +125,7 @@ def smiles2mol(
     :param drop_nulls: Whether to drop rows whose mols failed to be
         constructed.
     :param progressbar: Whether to show a progressbar or not.
+    :returns: A pandas DataFrame with new RDKIT Mol objects column.
     """
     valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:

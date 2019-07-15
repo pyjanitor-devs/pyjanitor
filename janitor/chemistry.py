@@ -187,17 +187,20 @@ def morgan_fingerprint(
         morgans = (
             df.smiles2mol('smiles', 'mols')
               .morgan_fingerprint(mols_column_name='mols',
-                                  radius=3,
-                                  nbits=2048)
+                                  radius=3,      # Defaults to 3
+                                  nbits=2048,    # Defaults to 2048
+                                  kind='counts'  # Defaults to "counts"
+              )
         )
 
         # For "bits" kind
         morgans = (
             df.smiles2mol('smiles', 'mols')
               .morgan_fingerprint(mols_column_name='mols',
-                                  radius=3,
-                                  nbits=2048,
-                                  kind='bits')
+                                  radius=3,    # Defaults to 3
+                                  nbits=2048,  # Defaults to 2048
+                                  kind='bits'  # Defaults to "counts"
+              )
         )
 
     If you wish to join the morgan fingerprints back into the original

@@ -195,9 +195,9 @@ def morgan_fingerprint(
               .morgan_fingerprint(mols_column_name='mols', radius=3, nbits=2048, kind='bits')
         )
 
-    If you wish to join the morgan fingerprints back into the original dataframe, this
-    can be accomplished by doing a `join`, because the indices are
-    preserved:
+    If you wish to join the morgan fingerprints back into the original
+    dataframe, this can be accomplished by doing a `join`,
+    because the indices are preserved:
 
     .. code-block:: python
 

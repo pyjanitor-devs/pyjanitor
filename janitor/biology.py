@@ -40,7 +40,10 @@ def join_fasta(
 
     .. code-block:: python
 
+        import pandas as pd
         import janitor.biology
+
+        df = pd.DataFrame(...)
 
         df = janitor.biology.join_fasta(
             df=df,
@@ -49,14 +52,16 @@ def join_fasta(
             column_name='sequence',
         )
 
-    Method chaining example:
+    Method chaining usage example:
 
     .. code-block:: python
 
         import pandas as pd
         import janitor.biology
 
-        df = pd.DataFrame(...).join_fasta(
+        df = pd.DataFrame(...)
+
+        df = df.join_fasta(
             filename='fasta_file.fasta',
             id_col='sequence_accession',
             column_name='sequence',

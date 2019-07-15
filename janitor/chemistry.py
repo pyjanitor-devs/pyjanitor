@@ -199,7 +199,7 @@ def morgan_fingerprint(
 
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
-def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
+def molecular_descriptors(df: pd.DataFrame, mols_column_name: str) -> pd.DataFrame:
     """
     Convert a column of RDKIT mol objects into a Pandas DataFrame
     of molecular descriptors.
@@ -222,12 +222,33 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
         NumSaturatedRings, NumSpiroAtoms, NumUnspecifiedAtomStereoCenters,
         TPSA.
 
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        mol_desc = janitor.chemistry.molecular_descriptors(
+            df=df.smiles2mol('smiles', 'mols'),
+            mols_column_name='mols'
+        )
+
      Method chaining usage:
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor.chemistry
+
         df = pd.DataFrame(...)
-        mol_desc = df.molecular_descriptors(mols_column_name='mols')
+
+        mol_desc = (
+            df.smiles2mol('smiles', 'mols')
+              .molecular_descriptors(mols_column_name='mols')
+        )
 
     If you wish to join the molecular descriptors back into the original
     dataframe, this can be accomplished by doing a `join`,

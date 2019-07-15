@@ -106,10 +106,8 @@ def smiles2mol(
 
         df = pd.DataFrame(...)
 
-        df = (
-            df.smiles2mol(smiles_column_name='smiles',
-                          mols_column_name='mols')
-        )
+        df = df.smiles2mol(smiles_column_name='smiles',
+                           mols_column_name='mols')
 
     A progressbar can be optionally used.
 

@@ -395,7 +395,7 @@ def maccs_keys_fingerprint(
               .maccs_keys_fingerprint(mols_column_name='mols')
         )
 
-    If you wish to join the molecular descriptors back into the
+    If you wish to join the maccs keys fingerprints back into the
     original dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 

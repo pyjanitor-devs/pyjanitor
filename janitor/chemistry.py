@@ -97,7 +97,7 @@ def smiles2mol(
             mols_column_name='mols'
         )
 
-    Method chaining usage:
+    Method chaining usage example:
 
     .. code-block:: python
 
@@ -195,7 +195,7 @@ def morgan_fingerprint(
             kind='bits'    # Defaults to "counts"
         )
 
-    Method chaining usage:
+    Method chaining usage example:
 
     .. code-block:: python
 
@@ -307,7 +307,7 @@ def molecular_descriptors(
             mols_column_name='mols'
         )
 
-    Method chaining usage:
+    Method chaining usage example:
 
     .. code-block:: python
 
@@ -410,7 +410,7 @@ def maccs_keys_fingerprint(
             mols_column_name='mols'
         )
 
-    Method chaining usage:
+    Method chaining usage example:
 
     .. code-block:: python
 

@@ -2,6 +2,7 @@
 .vscode/*
 test*.xml
 *.DS_Store
+docs/notebooks
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

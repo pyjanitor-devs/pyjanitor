@@ -261,7 +261,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name: str) -> pd.DataFra
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT mol
         objects.
-    :returns: A pandas DataFrame
+    :returns: A new pandas DataFrame of molecular descriptors.
     """
     descriptors = [
         CalcChi0n,

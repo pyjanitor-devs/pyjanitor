@@ -65,3 +65,4 @@ Contributors
 - `@gjlynx <https://github.com/gjlynx>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agjlynx>`_
 - `@aopisco <https://github.com/aopisco>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aaopisco>`_
 - `@gaworecki5 <https://github.com/gaworecki5>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?q=is%3Aclosed+mentions%3Agaworecki5>`_
+- `@puruckertom <https://github.com/puruckertom>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Apuruckertom>`_

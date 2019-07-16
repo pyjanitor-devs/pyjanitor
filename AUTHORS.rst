@@ -39,6 +39,7 @@ Contributors
 - `@Eidhagen <https://github.com/Eidhagen>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3AEidhagen>`_
 - `@mdini <https://github.com/mdini>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Amdini>`_
 - `@kimt33 <https://github.com/kimt33>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Akimt33>`_
+- @jack-kessler-88 | user no longer found
 - `@NapsterInBlue <https://github.com/NapsterInBlue>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ANapsterInBlue>`_
 - `@ricky-lim <https://github.com/ricky-lim>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aricky-lim>`_
 - `@catherinedevlin <https://github.com/catherinedevlin>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Acatherinedevlin>`_

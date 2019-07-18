@@ -14,16 +14,10 @@ from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
-from .utils import (
-    _clean_accounting_column,
-    _currency_column_to_numeric,
-    _replace_empty_string_with_none,
-    _replace_original_empty_string_with_none,
-    _strip_underscores,
-    check,
-    check_column,
-    deprecated_alias,
-)
+from .utils import (_clean_accounting_column, _currency_column_to_numeric,
+                    _replace_empty_string_with_none,
+                    _replace_original_empty_string_with_none,
+                    _strip_underscores, check, check_column, deprecated_alias,)
 
 
 @pf.register_dataframe_method
@@ -2963,7 +2957,7 @@ def groupby_agg(
     :returns: A pandas DataFrame.
     """
     new_col = df.groupby(by).transform(agg)
-    df_new = df.assign(**{new_column_name : new_col})
+    df_new = df.assign(**{new_column_name: new_col})
     return df_new
 
 

@@ -2933,16 +2933,15 @@ def groupby_agg(
     axis: int = 0,
 ) -> pd.DataFrame:
     """
-    Method-chain a groupby and a merge in a single step.
+    Shortcut for assigning a groupby-transform to a new column.
 
     This method does not mutate the original DataFrame.
 
-    Without this function, we would have to break out of method chaining:
+    Without this function, we would have to write a verbose line:
 
     .. code-block:: python
 
-        df_grp = df.groupby(...).agg(...)
-        df = df.merge(df_grp, ...)
+        df = df.assign(...=df.groupby(...)[...].tranform(...))
 
     Now, this function can be method-chained:
 
@@ -2964,21 +2963,8 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    df_grp = (
-        df.groupby(by, axis=axis)
-        .agg(agg, axis=axis)
-        .reset_index()
-        .rename(columns={agg_column_name: new_column_name})
-    )
-
-    if isinstance(by, list) or isinstance(by, tuple):
-        df_grp = df_grp[[*by, new_column_name]]
-    else:
-        df_grp = df_grp[[by, new_column_name]]
-
-    df = df.merge(df_grp, on=by)
-
-    return df
+    return df.assign(**{new_column_name :
+                     df.groupby(by, axis=axis).transform(agg, axis=axis)})
 
 
 @pf.register_dataframe_accessor("data_description")

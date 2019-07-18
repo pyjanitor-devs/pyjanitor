@@ -2930,7 +2930,6 @@ def groupby_agg(
     new_column_name,
     agg_column_name,
     agg: Union[Callable, str, List, Dict],
-    axis: int = 0,
 ) -> pd.DataFrame:
     """
     Shortcut for assigning a groupby-transform to a new column.
@@ -2963,8 +2962,9 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    return df.assign(**{new_column_name :
-                     df.groupby(by, axis=axis).transform(agg, axis=axis)})
+    new_col = df.groupby(by).transform(agg)
+    df_new = df.assign(**{new_column_name : new_col})
+    return df_new
 
 
 @pf.register_dataframe_accessor("data_description")

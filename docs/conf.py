@@ -10,13 +10,15 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import datetime
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import platform
 import sys
-import datetime
 from pathlib import Path
 
 sys.path.insert(0, os.path.abspath("."))
@@ -25,10 +27,16 @@ sys.path.insert(0, os.path.abspath("../examples"))
 # Make a symlink in our sphinx source directory to the top-level
 # examples/notebooks directory so we can include notebooks in the doc
 notebooks = Path("./notebooks")
-if not notebooks.exists():
-    print("Making symlink to ../examples/notebooks")
-    notebooks.symlink_to("../examples/notebooks")
 
+if platform.system() == "Windows":
+    # Only for windows
+    os.system("mklink /J notebooks ..\\examples\\notebooks")
+else:
+    try:
+        print("Making symlink to ../examples/notebooks")
+        notebooks.symlink_to("../examples/notebooks")
+    except FileExistsError as e:
+        print(f"{notebooks} directory already exists. Not creating..")
 
 # -- Project information -----------------------------------------------------
 
@@ -37,7 +45,7 @@ project = "pyjanitor"
 
 now = datetime.datetime.now()
 CurrentYear = str(now.year)
-copyright = CurrentYear+", PyJanitor devs"
+copyright = CurrentYear + ", PyJanitor devs"
 author = "Eric J. Ma"
 
 # The short X.Y version

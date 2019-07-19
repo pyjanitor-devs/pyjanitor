@@ -1,8 +1,8 @@
 name: pyjanitor-dev
 channels:
+- conda-forge
 - defaults
 - rdkit
-- conda-forge
 - ericmjl
 dependencies:
 - python >= 3.6
@@ -23,12 +23,12 @@ dependencies:
 - pandas-flavor
 - conda
 - pylint
+- isort
 - biopython
 - doc8
 - nox
 - cairo
 - rdkit
-- pandas-flavor
 - mypy
 - pyflakes
 - black
@@ -41,3 +41,5 @@ dependencies:
 - python-language-server
 - sphinxcontrib-fulltoc
 - lxml
+- seaborn
+- make

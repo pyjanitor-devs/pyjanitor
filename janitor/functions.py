@@ -21,8 +21,98 @@ from .utils import (
     _replace_original_empty_string_with_none,
     _strip_underscores,
     check,
+    check_column,
     deprecated_alias,
 )
+
+
+@pf.register_dataframe_method
+def move(
+    df: pd.DataFrame,
+    source: Union[int, str],
+    target: Union[int, str],
+    position: str = "before",
+    axis: int = 0,
+) -> pd.DataFrame:
+    """
+    Move column or row to a position adjacent to another column or row in
+    dataframe. Must have unique column names or indices.
+
+    This operation does not reset the index of the dataframe. User must
+    explicitly do so.
+
+    Does not apply to multilevel dataframes.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = move(df, source=3, target=15, position='after', axis=0)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).move(source=3, target=15, position='after',
+        axis=0)
+
+    :param df: The pandas Dataframe object.
+    :param int or str source: column or row to move
+    :param str target: column or row to move adjacent to
+    :param str position: Specifies whether the Series is moved to before or
+        after the adjacent Series. Values can be either 'before' or 'after';
+        defaults to 'before'.
+    :param int axis: Axis along which the function is applied. 0 to move a
+        row, 1 to move a column.
+    :returns: The dataframe with the Series moved.
+
+    """
+    if axis not in [0, 1]:
+        raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
+
+    if position not in ["before", "after"]:
+        raise ValueError(
+            f"Invalid position '{position}'. Can only be 'before' or 'after'."
+        )
+
+    if axis == 0:
+        names = list(df.index)
+
+        if source not in names:
+            raise ValueError(f"Source row '{source}' not in dataframe.")
+
+        if target not in names:
+            raise ValueError(f"Target row '{target}' not in dataframe.")
+
+        names.remove(source)
+        pos = names.index(target)
+
+        if position == "after":
+            pos += 1
+        names.insert(pos, source)
+
+        df = df.loc[names, :]
+    else:
+        names = list(df.columns)
+
+        if source not in names:
+            raise ValueError(f"Source column '{source}' not in dataframe.")
+
+        if target not in names:
+            raise ValueError(f"Target column '{target}' not in dataframe.")
+
+        names.remove(source)
+        pos = names.index(target)
+
+        if position == "after":
+            pos += 1
+        names.insert(pos, source)
+
+        df = df.loc[:, names]
+
+    return df
 
 
 @pf.register_dataframe_method
@@ -38,6 +128,8 @@ def clean_names(
 
     Takes all column names, converts them to lowercase, then replaces all
     spaces with underscores.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -124,6 +216,8 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
     This method also resets the index(by default) since it doesn't make sense
     to preserve the index of a completely empty row.
 
+    This method mutates the original DataFrame.
+
     Implementation is inspired from `StackOverflow`_.
 
     .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
@@ -163,6 +257,8 @@ def get_dupes(
     """
     Return all duplicate rows.
 
+    This method does not mutate the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -196,8 +292,9 @@ def encode_categorical(
 ) -> pd.DataFrame:
     """
     Encode the specified columns with Pandas'
-    `category <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`  # noqa: E501
-    dtype.
+    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_. # noqa:E501
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -248,12 +345,14 @@ def label_encode(
     """
     Convert labels into numerical data.
 
-    This function will create a new column with the string "_enc" appended
+    This method will create a new column with the string "_enc" appended
     after the original column's name. Consider this to be syntactic sugar.
 
-    This function behaves differently from `encode_categorical`. This function
+    This method behaves differently from `encode_categorical`. This method
     creates a new column of numeric data. `encode_categorical` replaces the
     dtype of the original column with a "categorical" dtype.
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -307,6 +406,8 @@ def get_features_targets(
     """
     Get the features and targets as separate DataFrames/Series.
 
+    This method does not mutate the original DataFrame.
+
     The behaviour is as such:
 
     - ``target_column_names`` is mandatory.
@@ -359,10 +460,12 @@ def get_features_targets(
 @pf.register_dataframe_method
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
-    df: pd.DataFrame, old_column_name, new_column_name
+    df: pd.DataFrame, old_column_name: str, new_column_name: str
 ) -> pd.DataFrame:
     """
     Rename a column in place.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -384,15 +487,46 @@ def rename_column(
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
 
     :param df: The pandas DataFrame object.
-    :param str old_column_name: The old column name.
-    :param str new_column_name: The new column name.
+    :param old_column_name: The old column name.
+    :param new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
     """
-    if old_column_name not in df.columns:
-        raise ValueError(
-            f"{old_column_name} not present in dataframe columns!"
-        )
+    check_column(df, [old_column_name])
+
     return df.rename(columns={old_column_name: new_column_name})
+
+
+@pf.register_dataframe_method
+def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
+    """
+    Rename columns in place.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = rename_columns({"old_column_name": "new_column_name"})
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).rename_columns({"old_column_name":
+        "new_column_name"})  # noqa: E501
+
+    This is just syntactic sugar/a convenience function for renaming one column
+    at a time. If you are convinced that there are multiple columns in need of
+    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+
+    :param df: The pandas DataFrame object.
+    :param new_column_names: A dictionary of old and new column names.
+    :returns: A pandas DataFrame with renamed columns.
+    """
+    check_column(df, list(new_column_names.keys()))
+
+    return df.rename(columns=new_column_names)
 
 
 @pf.register_dataframe_method
@@ -405,6 +539,8 @@ def reorder_columns(
     Columns not specified retain their order and follow after specified cols.
 
     Validates column_order to ensure columns are all present in DataFrame.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -462,6 +598,8 @@ def coalesce(
 
     Coalesces two or more columns of data in order of column names provided.
 
+    This method does not mutate the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -508,6 +646,8 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     """
     Convert Excel's serial date format into Python datetime format.
 
+    This method mutates the original DataFrame.
+
     Implementation is also from `Stack Overflow`.
 
     .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas  # noqa: E501
@@ -546,6 +686,8 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
     Implementation is also from `Stack Overflow <https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python>`.  # noqa: E501
 
+    This method mutates the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -581,6 +723,8 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
     Note that this ignores local tz and convert all timestamps to naive
     datetime based on UTC!
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -621,6 +765,8 @@ def fill_empty(
     Fill `NaN` values in specified columns with a given value.
 
     Super sugary syntax that wraps :py:meth:`pandas.DataFrame.fillna`.
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -669,6 +815,8 @@ def expand_column(
 
     Super sugary syntax that wraps :py:meth:`pandas.Series.str.get_dummies`.
 
+    This method does not mutate the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -716,6 +864,8 @@ def concatenate_columns(
 
     Used to quickly generate an index based on a group of columns.
 
+    This method mutates the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -740,7 +890,8 @@ def concatenate_columns(
     :param sep: The separator between each column's data.
     :returns: A pandas DataFrame with concatenated columns.
     """
-    assert len(column_names) >= 2, "At least two columns must be specified"
+    if len(column_names) < 2:
+        raise JanitorError("At least two columns must be specified")
     for i, col in enumerate(column_names):
         if i == 0:
             df[new_column_name] = df[col].astype(str)
@@ -766,6 +917,8 @@ def deconcatenate_column(
     This is the inverse of the `concatenate_columns` function.
 
     Used to quickly split columns out of a single column.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -816,6 +969,8 @@ def filter_string(
     Because this uses internally `pandas.Series.str.contains`, which allows a
     regex string to be passed into it, thus `search_string` can also be a regex
     pattern.
+
+    This method does not mutate the original DataFrame.
 
     This function allows us to method chain filtering operations:
 
@@ -874,6 +1029,8 @@ def filter_on(
 ) -> pd.DataFrame:
     """
     Return a dataframe filtered on a particular criteria.
+
+    This method does not mutate the original DataFrame.
 
     This is super-sugary syntax that wraps the pandas `.query()` API, enabling
     users to use strings to quickly specify filters for filtering their
@@ -945,6 +1102,8 @@ def filter_date(
 ) -> pd.DataFrame:
     """
     Filter a date-based column based on certain criteria.
+
+    This method does not mutate the original DataFrame.
 
     Dates may be finicky and this function builds on top of the "magic" from
     the pandas `to_datetime` function that is able to parse dates well.
@@ -1163,6 +1322,8 @@ def filter_column_isin(
     """
     Filter a dataframe for values in a column that exist in another iterable.
 
+    This method does not mutate the original DataFrame.
+
     Assumes exact matching; fuzzy matching not implemented.
 
     The below example syntax will filter the DataFrame such that we only get
@@ -1214,6 +1375,8 @@ def remove_columns(
     """
     Remove the set of columns specified in `column_names`.
 
+    This method does not mutate the original DataFrame.
+
     Intended to be the method-chaining alternative to `del df[col]`.
 
     Method chaining example:
@@ -1236,6 +1399,8 @@ def change_type(
 ) -> pd.DataFrame:
     """
     Change the type of a column.
+
+    This method mutates the original DataFrame.
 
     Exceptions that are raised can be ignored. For example, if one has a mixed
     dtype column that has non-integer strings and integers, and you want to
@@ -1284,6 +1449,8 @@ def add_column(
 ) -> pd.DataFrame:
     """
     Add a column to the dataframe.
+
+    This method does not mutate the original DataFrame.
 
     Intended to be the method-chaining alternative to::
 
@@ -1452,6 +1619,8 @@ def add_columns(
     """
     Add multiple columns to the dataframe.
 
+    This method does not mutate the original DataFrame.
+
     Method to augment `add_column` with ability to add multiple columns in
     one go. This replaces the need for multiple `add_column` calls.
 
@@ -1490,6 +1659,8 @@ def limit_column_characters(
 ) -> pd.DataFrame:
     """
     Truncate column sizes to a specific length.
+
+    This method mutates the original DataFrame.
 
     Method chaining will truncate all columns to a given length and append
     a given separator character with the index of duplicate columns, except
@@ -1609,6 +1780,8 @@ def row_to_names(
 ) -> pd.DataFrame:
     """
     Elevates a row to be the column names of a DataFrame.
+
+    This method mutates the original DataFrame.
 
     Contains options to remove the elevated row from the DataFrame along with
     removing the rows above the selected row.
@@ -1736,6 +1909,8 @@ def round_to_fraction(
     """
     Round all values in a column to a fraction.
 
+    This method mutates the original DataFrame.
+
     Taken from https://github.com/sfirke/janitor/issues/235.
 
     Also, optionally round to a specified number of digits.
@@ -1862,6 +2037,8 @@ def transform_column(
     """
     Transform the given column in-place using the provided function.
 
+    This method mutates the original DataFrame.
+
     Let's say we wanted to apply a log10 transform a column of data.
 
     Originally one would write code like this:
@@ -1912,6 +2089,8 @@ def transform_columns(
 ) -> pd.DataFrame:
     """
     Transform multiple columns through the same transformation.
+
+    This method mutates the original DataFrame.
 
     Super syntactic sugar!
 
@@ -2010,6 +2189,8 @@ def min_max_scale(
     """
     Scales data to between a minimum and maximum value.
 
+    This method mutates the original DataFrame.
+
     If `minimum` and `maximum` are provided, the true min/max of the
     `DataFrame` or column is ignored in the scaling process and replaced with
     these values, instead.
@@ -2105,6 +2286,8 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     """
     Flatten multi-level column dataframe to a single level.
 
+    This method mutates the original DataFrame.
+
     Given a `DataFrame` containing multi-level columns, flatten to single-
     level by string-joining the column labels in each level.
 
@@ -2169,6 +2352,8 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 def reset_index_inplace(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     Return the dataframe with an inplace resetting of the index.
+
+    This method mutates the original DataFrame.
 
     Compared to non-inplace resetting, this avoids data copying, thus
     providing a potential speedup.
@@ -2236,6 +2421,8 @@ def currency_column_to_numeric(
     """
     Convert currency column to numeric.
 
+    This method does not mutate the original DataFrame.
+
     This method allows one to take a column containing currency values,
     inadvertently imported as a string, and cast it as a float. This is
     usually the case when reading CSV files that were modified in Excel.
@@ -2257,7 +2444,7 @@ def currency_column_to_numeric(
         make everything that doesn't coerce to a currency 1.
     :param remove_non_numeric: Will remove rows of a DataFrame that contain
         non-numeric values in the `column_name` column. Defaults to `False`.
-    :returns: A mutated DataFrame.
+    :returns: A pandas DataFrame.
     """
     # TODO: Convert this to a notebook.
     # :Example Setup:
@@ -2456,6 +2643,8 @@ def select_columns(
     """
     Method-chainable selection of columns.
 
+    This method does not mutate the original DataFrame.
+
     Optional ability to invert selection of columns available as well.
 
     Method-chaining example:
@@ -2494,6 +2683,8 @@ def impute(
 ) -> pd.DataFrame:
     """
     Method-chainable imputation of values in a column.
+
+    This method mutates the original DataFrame.
 
     Underneath the hood, this function calls the ``.fillna()`` method available
     to every pandas.Series object.
@@ -2583,6 +2774,8 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """
     Add an arbitrary function to run in the ``pyjanitor`` method chain.
 
+    This method does not mutate the original DataFrame.
+
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.
         It should take one parameter and return one parameter, each being the
@@ -2599,6 +2792,8 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
     """
     Drop rows that do not have null values in the given column.
+
+    This method does not mutate the original DataFrame.
 
     Example usage:
 
@@ -2618,6 +2813,8 @@ def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
 def find_replace(df: pd.DataFrame, column_name, mapper: Dict) -> pd.DataFrame:
     """
     Perform a find-and-replace action on a column of data.
+
+    This method mutates the original DataFrame.
 
     For example, let's say we have a column for which we want to replace all
     of the values 'a' with 1, 'b' with 2, 'c' with 3. We would use the
@@ -2639,9 +2836,15 @@ def find_replace(df: pd.DataFrame, column_name, mapper: Dict) -> pd.DataFrame:
     :param column_name: The column on which the find/replace action is to be
         made.
     :param mapper: A dictionary that maps "thing to find" -> "thing to
-        replace".
+        replace".  Note: Does not support null-value replacement.
     :returns: A pandas DataFrame.
     """
+    if any(map(pd.isna, mapper.keys())):
+        raise ValueError(
+            "find_replace() does not support null replacement. "
+            "Use DataFrame.fillna() instead."
+        )
+
     df[column_name] = df[column_name].apply(lambda x: mapper.get(x, x))
     return df
 
@@ -2653,6 +2856,8 @@ def update_where(
 ) -> pd.DataFrame:
     """
     Add multiple conditions to update a column in the dataframe.
+
+    This method mutates the original DataFrame.
 
     Example usage:
 
@@ -2692,6 +2897,8 @@ def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
     """
     Method-chainable to_datetime.
 
+    This method mutates the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -2728,6 +2935,8 @@ def groupby_agg(
 ) -> pd.DataFrame:
     """
     Method-chain a groupby and a merge in a single step.
+
+    This method does not mutate the original DataFrame.
 
     Without this function, we would have to break out of method chaining:
 
@@ -2843,6 +3052,8 @@ def bin_numeric(
     """
     Generate a new column that labels bins for a specified numeric column.
 
+    This method mutates the original DataFrame.
+
     Makes use of pandas cut() function to bin data of one column, generating a
     new column with the results.
 
@@ -2889,6 +3100,8 @@ def drop_duplicate_columns(
 ) -> pd.DataFrame:
     """
     Remove a duplicated column specified by column_name, its index.
+
+    This method does not mutate the original DataFrame.
 
     Column order 0 is to remove the first column,
            order 1 is to remove the second column, and etc
@@ -2943,6 +3156,8 @@ def take_first(
     """
     Take the first row within each group specified by `subset`.
 
+    This method does not mutate the original DataFrame.
+
     .. code-block:: python
 
         import pandas as pd
@@ -2974,6 +3189,8 @@ def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
     """
     Shuffle the rows of the DataFrame.
 
+    This method does not mutate the original DataFrame.
+
     Super-sugary syntax! Underneath the hood, we use ``df.sample(frac=1)``,
     with the option to set the random state.
 
@@ -2993,6 +3210,8 @@ def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
 def join_apply(df, func, new_column_name):
     """
     Join the result of applying a function across dataframe rows.
+
+    This method does not mutate the original DataFrame.
 
     This is a convenience function that allows us to apply arbitrary functions
     that take any combination of information from any of the columns. The only

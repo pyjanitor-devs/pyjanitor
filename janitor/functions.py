@@ -910,6 +910,7 @@ def deconcatenate_column(
     column_name,
     new_column_names: Union[str, Iterable[str], Any],
     sep: str,
+    preserve_position: bool = False,
 ) -> pd.DataFrame:
     """
     De-concatenates a single column into multiple columns.
@@ -919,40 +920,58 @@ def deconcatenate_column(
     Used to quickly split columns out of a single column.
 
     This method does not mutate the original DataFrame.
+    
+    When `preserve_position=True`, `new_column_names` replaces original 
+    `column_name` and preserves the column order (`column_name` is dropped);
+    otherwise, `new_column_names` is appended to the right of the dataframe
 
     Functional usage example:
 
     .. code-block:: python
 
-        df = deconcatenate_columns(df,
-                                   column_name='id',
-                                   new_column_names=['col1', 'col2'],
-                                   sep='-')
+        df = deconcatenate_column(
+                df, column_name='id', new_column_names=['col1', 'col2'],
+                sep='-', preserve_position=True
+        )
 
     Method chaining example:
 
     .. code-block:: python
 
         df = (pd.DataFrame(...).
-              deconcatenate_columns(column_name='id',
-                                    new_column_names=['col1', 'col2'],
-                                    sep='-'))
+                deconcatenate_column(
+                    column_name='id', new_column_names=['col1', 'col2'],
+                    sep='-', preserve_position=True
+                ))
+        # When `preserve_position=True`
+        # df.columns change from [... id ...] into [... col1, col2, ...]
+        # When `preserve_position=False` (default)
+        # df.columns change from [... id ...] into [... id ... col1, col2]
 
     :param df: A pandas DataFrame.
     :param column_name: The column to split.
     :param new_column_names: A list of new column names post-splitting.
     :param sep: The separator delimiting the column's data.
+    :param preserve_position: Boolean for whether or not to preserve original
+        position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
     assert (
         column_name in df.columns
     ), f"column name {column_name} not present in dataframe"  # noqa: E501
+    cols = list(df.columns)
+    index_original = cols.index(column_name)
     deconcat = df[column_name].str.split(sep, expand=True)
     assert (
         len(new_column_names) == deconcat.shape[1]
     ), "number of new column names not correct."
     deconcat.columns = new_column_names
-    return df.join(deconcat)
+    df = pd.concat([df, deconcat], axis=1)
+    if preserve_position:
+        for i, col_new in enumerate(new_column_names):
+            cols.insert(index_original + i, col_new)
+        df = df[cols].drop(columns=column_name)
+    return df
 
 
 @pf.register_dataframe_method

@@ -327,6 +327,21 @@ def _check_currency(currency: str):
         )
 
 
+def _check_wb_country(country: str):
+    if (country not in wb_country_dict.keys()) & (
+        country not in wb_country_dict.values()
+    ):
+        raise ValueError(
+            f"country {country} not in supported World Bank country dict, "
+            f"{wb_country_dict}"
+        )
+
+
+def _check_wb_years(year: int):
+    if year < 1960:
+        raise ValueError(f"year value must be 1960 or later")
+
+
 @lru_cache(maxsize=32)
 def _convert_currency(
     from_currency: str = None,

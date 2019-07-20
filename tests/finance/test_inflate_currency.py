@@ -34,6 +34,22 @@ def test_make_new_inflated_currency_col(dataframe):
 
 
 @pytest.mark.finance
+def test_inflate_existing_currency_col(dataframe):
+    initialval = dataframe["a"].sum()
+    # Pulled raw values from API website for USA 2018 and 2015
+    inflator = _inflate_currency("USA", currency_year=2018, to_year=2015)
+    df = dataframe.inflate_currency(
+        "a",
+        country="USA",
+        currency_year=2018,
+        to_year=2015,
+        make_new_column=False,
+    )
+    updatedval = df["a"].sum()
+    assert (initialval * inflator) == pytest.approx(updatedval)
+
+
+@pytest.mark.finance
 def test_expected_result(dataframe):
     initialval = dataframe["a"].sum()
     # Pulled raw values from API website for USA 2018 and 2015
@@ -41,6 +57,24 @@ def test_expected_result(dataframe):
     df = dataframe.inflate_currency(
         "a",
         country="USA",
+        currency_year=2018,
+        to_year=2015,
+        make_new_column=True,
+    )
+    updatedval = dataframe["a_2015"].sum()
+    assert (initialval * inflator) == pytest.approx(updatedval)
+
+
+@pytest.mark.finance
+def test_expected_result_with_full_country_name(dataframe):
+    initialval = dataframe["a"].sum()
+    # Pulled raw values from API website for USA 2018 and 2015
+    inflator = _inflate_currency(
+        "United States", currency_year=2018, to_year=2015
+    )
+    df = dataframe.inflate_currency(
+        "a",
+        country="United States",
         currency_year=2018,
         to_year=2015,
         make_new_column=True,
@@ -88,8 +122,16 @@ def test_api_result_check(dataframe):
 
 
 @pytest.mark.finance
-def test_needed_years_available(dataframe):
+def test_to_year_available(dataframe):
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
             "a", country="USA", currency_year=2010, to_year=1962
+        )
+
+
+@pytest.mark.finance
+def test_currency_year_available(dataframe):
+    with pytest.raises(ValueError):
+        assert dataframe.inflate_currency(
+            "a", country="USA", currency_year=1962, to_year=2010
         )

@@ -12,10 +12,11 @@ def test_make_currency_inflator_api_request():
     Test for currency inflator API request.
     This test exists because we rely solely on the service by
     the World Bank's Indicator API:
-    https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation 
+    https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation
     """
     r = requests.get(
-        "https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL.ZG?date=2010:2018&format=json"
+        "https://api.worldbank.org/v2/country/USA/indicator/"
+        "FP.CPI.TOTL.ZG?date=2010:2018&format=json"
     )
     assert r.status_code == 200
 

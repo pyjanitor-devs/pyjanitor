@@ -965,18 +965,25 @@ def deconcatenate_column(
     assert (
         column_name in df.columns
     ), f"column name {column_name} not present in dataframe"  # noqa: E501
-    cols = list(df.columns)
-    index_original = cols.index(column_name)
     deconcat = df[column_name].str.split(sep, expand=True)
+    if preserve_position:
+        # Keep a copy of the original dataframe
+        df_original = df.copy()
     assert (
         len(new_column_names) == deconcat.shape[1]
     ), "number of new column names not correct."
     deconcat.columns = new_column_names
     df = pd.concat([df, deconcat], axis=1)
     if preserve_position:
+        cols = list(df_original.columns)
+        index_original = cols.index(column_name)
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
         df = df[cols].drop(columns=column_name)
+        assert (
+            len(df.columns) == len(df_original.columns) +
+                                len(new_column_names) - 1
+        ), "number of columns after deconcatenation is incorrect"
     return df
 
 

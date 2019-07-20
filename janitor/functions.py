@@ -918,12 +918,22 @@ def deconcatenate_column(
     This is the inverse of the `concatenate_columns` function.
 
     Used to quickly split columns out of a single column.
+    
+    The keyword argument `preserve_position` takes `True` or `False` boolean
+    that controls whether the `new_column_names` will take the original
+    position of the to-be-deconcatenated `column_name`:
+    
+    - When `preserve_position=False` (default), `df.columns` change from
+      `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
+      In other words, the deconcatenated new columns are appended to the right
+      of the original dataframe and the original `column_name` is NOT dropped. 
+    - When `preserve_position=True`, `df.column` change from
+      `[..., column_name, ...]` to `[..., new_column_names, ...]`.
+      In other words, the deconcatenated new column will REPLACE the original
+      `column_name` at its original position, and `column_name` itself
+      is dropped.
 
     This method does not mutate the original DataFrame.
-
-    When `preserve_position=True`, `new_column_names` replaces original
-     `column_name` and preserves the column order (`column_name` is dropped);
-    otherwise, `new_column_names` is appended to the right of the dataframe
 
     Functional usage example:
 
@@ -943,10 +953,6 @@ def deconcatenate_column(
                     column_name='id', new_column_names=['col1', 'col2'],
                     sep='-', preserve_position=True
                 ))
-        # When `preserve_position=True`
-        # df.columns change from [... id ...] into [... col1, col2, ...]
-        # When `preserve_position=False` (default)
-        # df.columns change from [... id ...] into [... id ... col1, col2]
 
     :param df: A pandas DataFrame.
     :param column_name: The column to split.

@@ -537,12 +537,6 @@ def _inflate_currency(
 
     inflation_dict = json.loads(result.text)
 
-    # Check that the inflation_dict is currently a list with two elements
-    # It's the second element we want
-    if len(inflation_dict) != 2:
-        raise ValueError(
-            "WB Indicator API did not return the expected result."
-        )
     inflation_dict = inflation_dict[1]
 
     # Error checking

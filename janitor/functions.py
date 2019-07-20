@@ -890,7 +890,8 @@ def concatenate_columns(
     :param sep: The separator between each column's data.
     :returns: A pandas DataFrame with concatenated columns.
     """
-    assert len(column_names) >= 2, "At least two columns must be specified"
+    if len(column_names) < 2:
+        raise JanitorError("At least two columns must be specified")
     for i, col in enumerate(column_names):
         if i == 0:
             df[new_column_name] = df[col].astype(str)

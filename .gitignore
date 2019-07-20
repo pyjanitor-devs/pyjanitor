@@ -112,3 +112,6 @@ ENV/
 
 # Custom
 .pytest_cache
+
+# Ingore docs' symbolic link to notebooks
+docs/notebooks

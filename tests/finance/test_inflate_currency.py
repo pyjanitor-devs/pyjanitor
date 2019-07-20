@@ -125,7 +125,7 @@ def test_api_result_check(dataframe):
 def test_to_year_available(dataframe):
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
-            "a", country="USA", currency_year=2010, to_year=1962
+            "a", country="GHA", currency_year=2010, to_year=1962
         )
 
 
@@ -133,5 +133,5 @@ def test_to_year_available(dataframe):
 def test_currency_year_available(dataframe):
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
-            "a", country="USA", currency_year=1962, to_year=2010
+            "a", country="GHA", currency_year=1962, to_year=2010
         )

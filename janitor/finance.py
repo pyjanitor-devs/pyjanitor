@@ -519,7 +519,7 @@ def _inflate_currency(
     url = (
         "https://api.worldbank.org/v2/country/"
         + country
-        + "/indicator/FP.CPI.TOTL.ZG?date="
+        + "/indicator/FP.CPI.TOTL?date="
         + str(min(currency_year, to_year))
         + ":"
         + str(max(currency_year, to_year))

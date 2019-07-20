@@ -26,9 +26,9 @@ def test_deconcatenate_column(dataframe):
         preserve_position=True,
     )
     assert "index" not in df.columns, "column_name not dropped"
-    assert list(df.columns).index("col1") == index_original, (
-        "Position not preserved"
-    )
-    assert list(df.columns).index("col2") == index_next, (
-        "Position not preserved"
-    )
+    assert (
+        list(df.columns).index("col1") == index_original
+    ), "Position not preserved"
+    assert (
+        list(df.columns).index("col2") == index_next
+    ), "Position not preserved"

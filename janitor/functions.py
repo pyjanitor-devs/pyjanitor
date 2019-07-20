@@ -920,9 +920,9 @@ def deconcatenate_column(
     Used to quickly split columns out of a single column.
 
     This method does not mutate the original DataFrame.
-    
-    When `preserve_position=True`, `new_column_names` replaces original 
-    `column_name` and preserves the column order (`column_name` is dropped);
+
+    When `preserve_position=True`, `new_column_names` replaces original
+     `column_name` and preserves the column order (`column_name` is dropped);
     otherwise, `new_column_names` is appended to the right of the dataframe
 
     Functional usage example:

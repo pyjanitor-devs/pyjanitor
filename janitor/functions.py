@@ -918,15 +918,15 @@ def deconcatenate_column(
     This is the inverse of the `concatenate_columns` function.
 
     Used to quickly split columns out of a single column.
-    
+
     The keyword argument `preserve_position` takes `True` or `False` boolean
     that controls whether the `new_column_names` will take the original
     position of the to-be-deconcatenated `column_name`:
-    
+
     - When `preserve_position=False` (default), `df.columns` change from
       `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
       In other words, the deconcatenated new columns are appended to the right
-      of the original dataframe and the original `column_name` is NOT dropped. 
+      of the original dataframe and the original `column_name` is NOT dropped.
     - When `preserve_position=True`, `df.column` change from
       `[..., column_name, ...]` to `[..., new_column_names, ...]`.
       In other words, the deconcatenated new column will REPLACE the original
@@ -981,8 +981,8 @@ def deconcatenate_column(
             cols.insert(index_original + i, col_new)
         df = df[cols].drop(columns=column_name)
         assert (
-            len(df.columns) == len(df_original.columns) +
-                                len(new_column_names) - 1
+            len(df.columns)
+            == len(df_original.columns) + len(new_column_names) - 1
         ), "number of columns after deconcatenation is incorrect"
     return df
 

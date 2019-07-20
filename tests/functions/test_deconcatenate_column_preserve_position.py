@@ -18,9 +18,9 @@ def test_deconcatenate_column_preserve_position(dataframe):
     assert "index" not in df.columns, "column_name not dropped"
     assert "col1" in df.columns, "new column not present"
     assert "col2" in df.columns, "new column not present"
-    assert (
-        len(df_original.columns) + 1 == len(df.columns)
-    ), 'Number of columns inconsistent'
+    assert len(df_original.columns) + 1 == len(
+        df.columns
+    ), "Number of columns inconsistent"
     assert (
         list(df.columns).index("col1") == index_original
     ), "Position not preserved"

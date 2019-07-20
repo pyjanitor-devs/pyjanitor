@@ -9,9 +9,7 @@ def test_deconcatenate_column(dataframe):
         new_column_name="index",
     )
     df = df_orig.deconcatenate_column(
-        column_name="index",
-        new_column_names=["A", "B"],
-        sep="-",
+        column_name="index", new_column_names=["A", "B"], sep="-"
     )
     assert "A" in df.columns
     assert "B" in df.columns

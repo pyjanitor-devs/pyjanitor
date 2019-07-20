@@ -535,9 +535,9 @@ def _inflate_currency(
             "Please try again later."
         )
 
-    inflation_dict = json.loads(result.text)
-
-    inflation_dict = inflation_dict[1]
+    # The API returns a list of two items;
+    # the second item in the list is what we want
+    inflation_dict = json.loads(result.text)[1]
 
     # Error checking
     if inflation_dict is None:
@@ -553,6 +553,7 @@ def _inflate_currency(
     inflation_dict_ready = {
         int(inflation_dict[i]["date"]): float(inflation_dict[i]["value"])
         for i in range(len(inflation_dict))
+        if inflation_dict[i]["value"] is not None
     }
 
     # Error catching

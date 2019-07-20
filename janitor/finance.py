@@ -488,6 +488,7 @@ def convert_currency(
 
     return df
 
+
 @lru_cache(maxsize=32)
 def _inflate_currency(
     country: str = None, currency_year: int = None, to_year: int = None

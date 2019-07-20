@@ -908,7 +908,7 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name,
-    new_column_names: Union[str, Iterable[str], Any],
+    new_column_names: Union[List(str), Tuple(str)],
     sep: str,
     preserve_position: bool = False,
 ) -> pd.DataFrame:

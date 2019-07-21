@@ -1,6 +1,8 @@
 v0.18.1 (on deck)
 =======
-- [ENH] add preserve_position kwarg to deconcatenate_column by @shandou
+- [ENH] add preserve_position kwarg to deconcatenate_column with tests by @shandou and @ericmjl
+- [DOC] add contributions that did not leave ``git`` traces by @ericmjl
+
 
 
 For changes that happened prior to v0.18.1,

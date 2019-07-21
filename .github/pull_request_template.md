@@ -40,6 +40,8 @@ Please ensure that you have done the following:
 <!-- Doing this helps us keep the commit history much cleaner than it would otherwise be. -->
 2. [ ] If you're not on the contributors list, add yourself to `AUTHORS.rst`.
 <!-- We'd like to acknowledge your contributions! -->
+3. [ ] Add a line to `CHANGELOG.rst` under the latest version header (i.e. the one that is "on deck") describing the contribution.
+    - Do use some discretion here; if there are multiple PRs that are related, keep them in a single line.
 
 ## Quick Check
 

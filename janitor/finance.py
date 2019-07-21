@@ -575,7 +575,6 @@ def _inflate_currency(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(colname="column_name")
 def inflate_currency(
     df: pd.DataFrame,
     column_name: str = None,

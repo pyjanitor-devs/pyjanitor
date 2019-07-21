@@ -228,6 +228,11 @@ and append bin/python to the end of the path.
 
 Click OK and you should be good to go!
 
+Code Compatibility
+------------------
+
+pyjanitor supports Python 3.6+, so all contributed code must maintain this compatibility.
+
 
 Pull Request Guidelines
 -----------------------

@@ -588,181 +588,58 @@ def inflate_currency(
     Inflates a column of monetary values from one year to another, based on
     the currency's country.
 
+    The provided country can be any economy name or code from the World Bank
+    list of economies:
+    https://databank.worldbank.org/data/download/site-content/CLASS.xls.
+
     This method mutates the original DataFrame.
 
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.finance
+
+        df = pd.DataFrame(...)
+
+        df = janitor.finance.inflate_currency(
+            df=df,
+            column_name='profit',
+            country='USA',
+            currency_year=2015,
+            to_year=2018,
+            make_new_column=True
+        )
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.finance
+
+        df = pd.DataFrame(...)
+        df = df.inflate_currency(
+            column_name='profit',
+            country='USA',
+            currency_year=2015,
+            to_year=2018,
+            make_new_column=True
+        )
+
     :param df: A pandas dataframe.
-    :param column_name: Name of the new column. Should be a string, in order
-        for the column name to be compatible with the Feather binary
-        format (this is a useful thing to have).
+    :param column_name: Name of the column containing monetary
+        values to inflate.
     :param country: The country associated with the currency being inflated.
-        May be any keys or values of: wb_country_dict = {'Aruba': 'ABW',
-        'Afghanistan': 'AFG', 'Angola': 'AGO', 'Albania': 'ALB',
-        'Andorra': 'AND', 'Arab World': 'ARB', 'United Arab Emirates': 'ARE',
-        'Argentina': 'ARG', 'Armenia': 'ARM', 'American Samoa': 'ASM',
-        'Antigua and Barbuda': 'ATG', 'Australia': 'AUS', 'Austria': 'AUT',
-        'Azerbaijan': 'AZE', 'Burundi': 'BDI', 'Belgium': 'BEL',
-        'Benin': 'BEN', 'Burkina Faso': 'BFA', 'Bangladesh': 'BGD',
-        'Bulgaria': 'BGR', 'Bahrain': 'BHR', 'Bahamas, The': 'BHS',
-        'Bosnia and Herzegovina': 'BIH', 'Belarus': 'BLR', 'Belize': 'BLZ',
-        'Bermuda': 'BMU', 'Bolivia': 'BOL', 'Brazil': 'BRA',
-        'Barbados': 'BRB', 'Brunei Darussalam': 'BRN', 'Bhutan': 'BTN',
-        'Botswana': 'BWA', 'Central African Republic': 'CAF',
-        'Canada': 'CAN', 'Central Europe and the Baltics': 'CEB',
-        'Switzerland': 'CHE', 'Channel Islands': 'CHI', 'Chile': 'CHL',
-        'China': 'CHN', "Cote d'Ivoire": 'CIV', 'Cameroon': 'CMR',
-        'Congo, Dem. Rep.': 'COD', 'Congo, Rep.': 'COG', 'Colombia': 'COL',
-        'Comoros': 'COM', 'Cabo Verde': 'CPV', 'Costa Rica': 'CRI',
-        'Caribbean small states': 'CSS', 'Cuba': 'CUB', 'Curacao': 'CUW',
-        'Cayman Islands': 'CYM', 'Cyprus': 'CYP', 'Czech Republic': 'CZE',
-        'Germany': 'DEU', 'Djibouti': 'DJI', 'Dominica': 'DMA',
-        'Denmark': 'DNK', 'Dominican Republic': 'DOM', 'Algeria': 'DZA',
-        'East Asia & Pacific (excluding high income)': 'EAP',
-        'Early-demographic dividend': 'EAR', 'East Asia & Pacific': 'EAS',
-        'Europe & Central Asia (excluding high income)': 'ECA',
-        'Europe & Central Asia': 'ECS', 'Ecuador': 'ECU',
-        'Egypt, Arab Rep.': 'EGY', 'Euro area': 'EMU', 'Eritrea': 'ERI',
-        'Spain': 'ESP', 'Estonia': 'EST', 'Ethiopia': 'ETH',
-        'European Union': 'EUU',
-        'Fragile and conflict affected situations': 'FCS',
-        'Finland': 'FIN', 'Fiji': 'FJI', 'France': 'FRA',
-        'Faroe Islands': 'FRO', 'Micronesia, Fed. Sts.': 'FSM',
-        'Gabon': 'GAB', 'United Kingdom': 'GBR', 'Georgia': 'GEO',
-        'Ghana': 'GHA', 'Gibraltar': 'GIB', 'Guinea': 'GIN',
-        'Gambia, The': 'GMB', 'Guinea-Bissau': 'GNB',
-        'Equatorial Guinea': 'GNQ', 'Greece': 'GRC', 'Grenada': 'GRD',
-        'Greenland': 'GRL', 'Guatemala': 'GTM', 'Guam': 'GUM',
-        'Guyana': 'GUY', 'High income': 'HIC',
-        'Hong Kong SAR, China': 'HKG', 'Honduras': 'HND',
-        'Heavily indebted poor countries (HIPC)': 'HPC',
-        'Croatia': 'HRV', 'Haiti': 'HTI', 'Hungary': 'HUN',
-        'IBRD only': 'IBD', 'IDA & IBRD total': 'IBT',
-        'IDA total': 'IDA', 'IDA blend': 'IDB', 'Indonesia': 'IDN',
-        'IDA only': 'IDX', 'Isle of Man': 'IMN', 'India': 'IND',
-        'Not classified': 'INX', 'Ireland': 'IRL',
-        'Iran, Islamic Rep.': 'IRN', 'Iraq': 'IRQ', 'Iceland': 'ISL',
-        'Israel': 'ISR', 'Italy': 'ITA', 'Jamaica': 'JAM',
-        'Jordan': 'JOR', 'Japan': 'JPN', 'Kazakhstan': 'KAZ',
-        'Kenya': 'KEN', 'Kyrgyz Republic': 'KGZ',
-        'Cambodia': 'KHM', 'Kiribati': 'KIR',
-        'St. Kitts and Nevis': 'KNA', 'Korea, Rep.': 'KOR',
-        'Kuwait': 'KWT',
-        'Latin America & Caribbean (excluding high income)': 'LAC',
-        'Lao PDR': 'LAO', 'Lebanon': 'LBN', 'Liberia': 'LBR',
-        'Libya': 'LBY', 'St. Lucia': 'LCA',
-        'Latin America & Caribbean': 'LCN',
-        'Least developed countries: UN classification': 'LDC',
-        'Low income': 'LIC', 'Liechtenstein': 'LIE',
-        'Sri Lanka': 'LKA', 'Lower middle income': 'LMC',
-        'Low & middle income': 'LMY', 'Lesotho': 'LSO',
-        'Late-demographic dividend': 'LTE', 'Lithuania': 'LTU',
-        'Luxembourg': 'LUX', 'Latvia': 'LVA',
-        'Macao SAR, China': 'MAC', 'St. Martin (French part)': 'MAF',
-        'Morocco': 'MAR', 'Monaco': 'MCO', 'Moldova': 'MDA',
-        'Madagascar': 'MDG', 'Maldives': 'MDV',
-        'Middle East & North Africa': 'MEA', 'Mexico': 'MEX',
-        'Marshall Islands': 'MHL', 'Middle income': 'MIC',
-        'North Macedonia': 'MKD', 'Mali': 'MLI', 'Malta': 'MLT',
-        'Myanmar': 'MMR',
-        'Middle East & North Africa (excluding high income)': 'MNA',
-        'Montenegro': 'MNE', 'Mongolia': 'MNG',
-        'Northern Mariana Islands': 'MNP', 'Mozambique': 'MOZ',
-        'Mauritania': 'MRT', 'Mauritius': 'MUS', 'Malawi': 'MWI',
-        'Malaysia': 'MYS', 'North America': 'NAC', 'Namibia': 'NAM',
-        'New Caledonia': 'NCL', 'Niger': 'NER', 'Nigeria': 'NGA',
-        'Nicaragua': 'NIC', 'Netherlands': 'NLD', 'Norway': 'NOR',
-        'Nepal': 'NPL', 'Nauru': 'NRU', 'New Zealand': 'NZL',
-        'OECD members': 'OED', 'Oman': 'OMN',
-        'Other small states': 'OSS', 'Pakistan': 'PAK',
-        'Panama': 'PAN', 'Peru': 'PER', 'Philippines': 'PHL',
-        'Palau': 'PLW', 'Papua New Guinea': 'PNG', 'Poland': 'POL',
-        'Pre-demographic dividend': 'PRE', 'Puerto Rico': 'PRI',
-        "Korea, Dem. People's Rep.": 'PRK', 'Portugal': 'PRT',
-        'Paraguay': 'PRY', 'West Bank and Gaza': 'PSE',
-        'Pacific island small states': 'PSS',
-        'Post-demographic dividend': 'PST',
-        'French Polynesia': 'PYF', 'Qatar': 'QAT',
-        'Romania': 'ROU', 'Russian Federation': 'RUS',
-        'Rwanda': 'RWA', 'South Asia': 'SAS',
-        'Saudi Arabia': 'SAU', 'Sudan': 'SDN', 'Senegal': 'SEN',
-        'Singapore': 'SGP', 'Solomon Islands': 'SLB',
-        'Sierra Leone': 'SLE', 'El Salvador': 'SLV',
-        'San Marino': 'SMR', 'Somalia': 'SOM', 'Serbia': 'SRB',
-        'Sub-Saharan Africa (excluding high income)': 'SSA',
-        'South Sudan': 'SSD', 'Sub-Saharan Africa': 'SSF',
-        'Small states': 'SST', 'Sao Tome and Principe': 'STP',
-        'Suriname': 'SUR', 'Slovak Republic': 'SVK',
-        'Slovenia': 'SVN', 'Sweden': 'SWE', 'Eswatini': 'SWZ',
-        'Sint Maarten (Dutch part)': 'SXM', 'Seychelles': 'SYC',
-        'Syrian Arab Republic': 'SYR',
-        'Turks and Caicos Islands': 'TCA', 'Chad': 'TCD',
-        'East Asia & Pacific (IDA & IBRD countries)': 'TEA',
-        'Europe & Central Asia (IDA & IBRD countries)': 'TEC',
-        'Togo': 'TGO', 'Thailand': 'THA', 'Tajikistan': 'TJK',
-        'Turkmenistan': 'TKM',
-        'Latin America & the Caribbean (IDA & IBRD countries)': 'TLA',
-        'Timor-Leste': 'TLS',
-        'Middle East & North Africa (IDA & IBRD countries)': 'TMN',
-        'Tonga': 'TON', 'South Asia (IDA & IBRD)': 'TSA',
-        'Sub-Saharan Africa (IDA & IBRD countries)': 'TSS',
-        'Trinidad and Tobago': 'TTO', 'Tunisia': 'TUN',
-        'Turkey': 'TUR', 'Tuvalu': 'TUV', 'Tanzania': 'TZA',
-        'Uganda': 'UGA', 'Ukraine': 'UKR',
-        'Upper middle income': 'UMC',
-        'Uruguay': 'URY', 'United States': 'USA',
-        'Uzbekistan': 'UZB', 'St. Vincent and the Grenadines': 'VCT',
-        'Venezuela, RB': 'VEN', 'British Virgin Islands': 'VGB',
-        'Virgin Islands (U.S.)': 'VIR', 'Vietnam': 'VNM',
-        'Vanuatu': 'VUT', 'World': 'WLD', 'Samoa': 'WSM',
-        'Kosovo': 'XKX', 'Yemen, Rep.': 'YEM', 'South Africa': 'ZAF',
-        'Zambia': 'ZMB', 'Zimbabwe': 'ZWE'}
+        May be any economy or code from the World Bank list of economies:
+        https://databank.worldbank.org/data/download/site-content/CLASS.xls.
     :param currency_year: The currency year to inflate from.
         The year should be 1960 or later.
     :param to_year: The currency year to inflate to.
         The year should be 1960 or later.
     :param make_new_column: Generates new column for inflated currency if
         True, otherwise, inflates currency in place.
-
-    :Setup:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-
-        data_dict = {
-            "a": [1.23452345, 2.456234, 3.2346125] * 3,
-            "Bell__Chart": [1/3, 2/7, 3/2] * 3,
-            "decorated-elephant": [1/234, 2/13, 3/167] * 3,
-            "animals": ["rabbit", "leopard", "lion"] * 3,
-            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-        }
-
-        example_dataframe = pd.DataFrame(data_dict)
-
-    :Example: Converting a column from 1990 USD to 2018 USD
-
-     (the conversion factor is approx. 2.44/5.40 = 0.45):
-
-    .. code-block:: python
-
-        example_dataframe.inflate_currency('a', country='USA',
-        currency_year=1990, to_year=2018)
-
-    :Output:
-
-    .. code-block:: python
-
-                   a  Bell__Chart  decorated-elephant  animals     cities
-        0  0.558624     0.333333            0.004274   rabbit  Cambridge
-        1  1.111450     0.285714            0.153846  leopard   Shanghai
-        2  1.463667     1.500000            0.017964     lion      Basel
-        3  0.558624     0.333333            0.004274   rabbit  Cambridge
-        4  1.111450     0.285714            0.153846  leopard   Shanghai
-        5  1.463667     1.500000            0.017964     lion      Basel
-        6  0.558624     0.333333            0.004274   rabbit  Cambridge
-        7  1.111450     0.285714            0.153846  leopard   Shanghai
-        8  1.463667     1.500000            0.017964     lion      Basel
-
     """
 
     inflator = _inflate_currency(country, currency_year, to_year)

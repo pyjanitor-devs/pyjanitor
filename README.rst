@@ -143,6 +143,8 @@ Installation
 
     conda install pyjanitor -c conda-forge
 
+``pyjanitor`` requires Python 3.6+.
+
 Functionality
 -------------
 

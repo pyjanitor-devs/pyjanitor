@@ -15,4 +15,5 @@ setup(
     url="https://github.com/ericmjl/pyjanitor",
     packages=["janitor"],
     install_requires=requirements(),
+    python_requires=">=3.6",
 )

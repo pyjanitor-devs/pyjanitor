@@ -20,7 +20,7 @@ Leads
 - `@szuckerman <https://github.com/szuckerman>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aszuckerman>`_
 - `@zbarry <https://github.com/zbarry>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Azbarry>`_
     - Co-led sprint at SciPy 2019.
-- `@HectorM14 <https://github.com/HectorM14>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3AHectorM14>`_
+- `@hectormz <https://github.com/hectormz>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ahectormz>`_
 - `@jk3587 <https://github.com/jk3587>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ajk3587>`_
     - Tagged issues at SciPy 2019.
 - `@sallyhong <https://github.com/sallyhong>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Asallyhong>`_
@@ -76,4 +76,3 @@ Contributors
 - `@puruckertom <https://github.com/puruckertom>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Apuruckertom>`_
 - `@thomasjpfan <https://github.com/thomasjpfan>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Athomasjpfan>`_
 - `@jiafengkevinchen <https://github.com/jiafengkevinchen>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pull/480#issue-298730562>`_
-

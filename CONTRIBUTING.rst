@@ -1,6 +1,3 @@
-.. highlight:: shell
-
-============
 Contributing
 ============
 

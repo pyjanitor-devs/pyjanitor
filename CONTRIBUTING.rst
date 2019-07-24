@@ -1,22 +1,25 @@
+============
 Contributing
 ============
 
-Contributions are welcome, and they are greatly appreciated! Every
-little bit helps, and credit will always be given.
+Contributions are welcome, and they are greatly appreciated! 
+Every little bit helps, and credit will always be given.
 
-The following sections detail a variety of ways to contribute, as well as how to get started.
+The following sections detail a variety of ways to contribute, 
+as well as how to get started.
 
 Types of Contributions
-----------------------
+=======================
 
 Write Documentation
-~~~~~~~~~~~~~~~~~~~
+--------------------
 
-``pyjanitor`` could always use more documentation, whether as part of the
-official pyjanitor docs, in docstrings, or the examples gallery.
+``pyjanitor`` could always use more documentation, 
+whether as part of the official pyjanitor docs, in docstrings, or the examples gallery.
 
-During sprints, we require newcomers to the project to first contribute a
-documentation fix before contributing a code fix. Doing so has numerous benefits:
+During sprints, we require newcomers to the project to 
+first contribute a documentation fix before contributing a code fix. 
+Doing so has numerous benefits:
 
 1. You become familiar with the project by first reading through the docs.
 2. Your documentation contribution will be a pain point that you have full context on.
@@ -25,11 +28,11 @@ documentation fix before contributing a code fix. Doing so has numerous benefits
 5. You can choose between getting set up locally first (recommended), or instead directly making edits on the GitHub web UI (also not a problem).
 6. Every newcomer is equal in our eyes, and it's the most egalitarian way to get started (regardless of experience).
 
-Remote contributors outside of sprints and prior contributors who are joining
-us at the sprints need not adhere to this rule, as a good prior
-assumption is that you are a motivated user of the library already. If you have
-made a prior pull request to the library, we would like to encourage you to mentor newcomers
-in lieu of coding contributions.
+Remote contributors outside of sprints and prior contributors 
+who are joining us at the sprints need not adhere to this rule, 
+as a good prior assumption is that you are a motivated user of the library already. 
+If you have made a prior pull request to the library, 
+we would like to encourage you to mentor newcomers in lieu of coding contributions.
 
 Documentation can come in many forms. For example, you might want to contribute:
 
@@ -40,12 +43,13 @@ Documentation can come in many forms. For example, you might want to contribute:
 - New example/tutorial notebooks using the library.
 - Edits to existing tutorial notebooks with better code style.
 
-In particular, contributing new tutorial notebooks and improving the clarity of existing ones
-are great ways to get familiar with the library and find pain points that you can
-propose as fixes or enhancements to the library.
+In particular, contributing new tutorial notebooks and 
+improving the clarity of existing ones are great ways to 
+get familiar with the library and find pain points that 
+you can propose as fixes or enhancements to the library.
 
 Report Bugs
-~~~~~~~~~~~
+------------
 
 Report bugs at https://github.com/ericmjl/pyjanitor/issues.
 
@@ -56,33 +60,168 @@ If you are reporting a bug, please include:
 * Detailed steps to reproduce the bug.
 
 Fix Bugs
-~~~~~~~~
+---------
 
-Look through the GitHub issues for bugs. Anything tagged with ``bug``
-and ``available to hack on`` is open to whoever wants to implement it.
+Look through the GitHub issues for bugs. 
+Anything tagged with ``bug`` and ``available to hack on`` is open to 
+whoever wants to implement it.
 
-Do be sure to claim the issue for yourself by indicating, "I would like to
-work on this issue." If you would like to discuss it further before going forward,
+Do be sure to claim the issue for yourself by indicating, 
+"I would like to work on this issue." 
+If you would like to discuss it further before going forward,
 you are more than welcome to discuss on the GitHub issue tracker.
 
 Implement Features
-~~~~~~~~~~~~~~~~~~
+-------------------
 
 Look through the GitHub issues for features. Anything tagged with ``enhancement``
 and ``available to hack on`` are open to whoever wants to implement it.
 
-Implementing a feature generally means writing a function that has the
-following form:
+To keep a consistent style and convention throughout ``pyjanitor``, 
+we ask contributors to adhere to a set of guidelines:
+
+Docstring Guidelines
+^^^^^^^^^^^^^^^^^^^^
+
+For a python function, its docstring is a string that 
+documents what the function does and what the inputs/outputs should be. 
+Docstring convensions have `many flavors <http://www.sphinx-doc.org/en/1.8/usage/extensions/napoleon.html#confval-napoleon_numpy_docstring>`_. 
+In ``pyjanitor``, we use the `Sphinx style docstring <https://thomas-cokelaer.info/tutorials/sphinx/docstring_python.html>`_ that 
+is built on top of the `reStructuredText (reST) markup <http://openalea.gforge.inria.fr/doc/openalea/doc/_build/html/source/sphinx/rest_syntax.html#headings>`_ language.
+
+reST syntax, like python itself, is sensitive to **indentation**, 
+and each text unit (e.g., heading, paragraph) must be separated by **blank lines**. 
+Proper rendering of the web-version docs you are browsing through right now 
+relies on contributors' adherence to these syntax rules.
+
+Below is a docstring example from ``pyjanitor``'s ``rename_columns`` function. 
+In this docstring, we also add annotations (wrapped in square brackets) to 
+mark all of the key structural elements.
+These annotations are for illustration purposes and are not part of the docstring.
 
 .. code-block:: python
 
     @pf.register_dataframe_method
-    def function(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
+    def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
         """
-        Very detailed docstring here. Look to other functions for examples.
+        [short summary]
+        Rename columns in place.
+
+        [examples]
+        Functional usage example:
+
+        .. code-block:: python
+
+            df = rename_columns({"old_column_name": "new_column_name"})
+
+        Method chaining example:
+
+        .. code-block:: python
+
+            import pandas as pd
+            import janitor
+            df = pd.DataFrame(...).rename_columns({"old_column_name":
+            "new_column_name"})
+
+        [notes]
+        This is just syntactic sugar/a convenience function for renaming one column
+        at a time. If you are convinced that there are multiple columns in need of
+        changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+
+        [parameters]
+        :param df: The pandas DataFrame object.
+        :param new_column_names: A dictionary of old and new column names.
+        [returns]
+        :returns: A pandas DataFrame with renamed columns.
         """
-        # stuff done here
-        return df
+        check_column(df, list(new_column_names.keys()))
+
+        return df.rename(columns=new_column_names) 
+
+Docstrings should always be surrounded by **triple double quotes**. i.e.,
+
+.. code-block:: python
+
+    """
+    I am a docstring
+
+    I can take up several lines
+    """
+
+The major sections of the docstring are:
+
+1. *short summary*: A concise one-line summary about what the function does. 
+It should NOT include variable names or function names.
+
+.. code-block:: python
+
+    """
+    Rename columns in place.
+
+    """
+
+2. *examples*: Examples play an important role in 
+ensuring user-friendliness of the API. 
+For ``pyjanitor``, ideal examples should demonstrate both functional and 
+method training usages.
+
+A usage example should start with a short text description and 
+followed by a code block (marked by the `.. code-block:: python` reST directive). 
+Again, a **blank line** must be present to 
+separate each of the element from one another. 
+
+.. code-block:: python
+
+    """
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = rename_columns({"old_column_name": "new_column_name"})
+
+    """
+
+3. *notes*: An optional section that provides additional information about 
+the function. e.g.,
+
+.. code-block:: python
+
+    """
+    This is just syntactic sugar/a convenience function for renaming one column 
+    at a time. If you are convinced that there are multiple columns in need of 
+    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+    """
+
+4. *parameters*: Itemized description of the function's arguments, 
+keyword arguments, and their types. Each item should follow 
+the format of 
+
+``:param <arg name>: <arg description>, default to <default value>``.
+
+.. code-block:: python
+
+    """
+    :param df: The pandas DataFrame object.
+    :param new_column_names: A dictionary of old and new column names.
+    """
+
+5. *returns*: Itemized description of returned values. 
+Each item should follow the format of
+
+``:returns: <arg description>.``
+
+For ``pyjanitor`` functions, 
+the returned values typically are pandas ``DataFrame``. e.g.,
+
+.. code-block:: python
+
+    """
+    :returns: A pandas DataFrame with renamed columns.
+    """
+
+
+Skeleton Function and tests
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The function signature should take a pandas ``DataFrame`` as the input and return
 a pandas ``DataFrame`` as the output. Any manipulation to the dataframe should be

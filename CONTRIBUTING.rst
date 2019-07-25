@@ -77,27 +77,45 @@ Implement Features
 Look through the GitHub issues for features. Anything tagged with ``enhancement``
 and ``available to hack on`` are open to whoever wants to implement it.
 
-To keep a consistent style and convention throughout ``pyjanitor``, 
-we ask contributors to adhere to a set of guidelines:
+
+Key Ingredients
+^^^^^^^^^^^^^^^^^
+
+To ensure ``pyjanitor``'s code quality and long-term maintainability 
+(both set up the ground for growing community engagement), 
+we ask our contributors to
+
+1. Include good documentation (:ref:`docstring_guidelines`)
+
+2. Set up and carry out unit test (:ref:`unit_test_guidelines`)
+
+3. Align code pattern with current ``pyjanitor`` API (:ref:`pattern_guidelines`)
+
+These three elements consitute the minimum requirement for feature contributions. 
+In the next three sections, we will dive deeper into each of these requirements.
+
+.. _docstring_guidelines:
 
 Docstring Guidelines
 ^^^^^^^^^^^^^^^^^^^^
 
 For a python function, its docstring is a string that 
 documents what the function does and what the inputs/outputs should be. 
-Docstring convensions have `many flavors <http://www.sphinx-doc.org/en/1.8/usage/extensions/napoleon.html#confval-napoleon_numpy_docstring>`_. 
+Docstring conventions have `many flavors <http://www.sphinx-doc.org/en/1.8/usage/extensions/napoleon.html#confval-napoleon_numpy_docstring>`_. 
 In ``pyjanitor``, we use the `Sphinx style docstring <https://thomas-cokelaer.info/tutorials/sphinx/docstring_python.html>`_ that 
 is built on top of the `reStructuredText (reST) markup <http://openalea.gforge.inria.fr/doc/openalea/doc/_build/html/source/sphinx/rest_syntax.html#headings>`_ language.
 
-reST syntax, like python itself, is sensitive to **indentation**, 
-and each text unit (e.g., heading, paragraph) must be separated by **blank lines**. 
+reST syntax, like python, is sensitive to **indentation**, 
+and each text unit (e.g., heading, paragraph, and code block) must be 
+separated by **blank lines**. 
 Proper rendering of the web-version docs you are browsing through right now 
-relies on contributors' adherence to these syntax rules.
+relies on our contributors' adherence to these syntax rules.
 
 Below is a docstring example from ``pyjanitor``'s ``rename_columns`` function. 
-In this docstring, we also add annotations (wrapped in square brackets) to 
-mark all of the key structural elements.
-These annotations are for illustration purposes and are not part of the docstring.
+For illustration purposes, 
+we also add annotations (surrounded by square brackets) to 
+highlight all of the key sections 
+(Note: These annotations are NOT part of the docstring).
 
 .. code-block:: python
 
@@ -138,6 +156,8 @@ These annotations are for illustration purposes and are not part of the docstrin
 
         return df.rename(columns=new_column_names) 
 
+Let's expand on this example:
+
 Docstrings should always be surrounded by **triple double quotes**. i.e.,
 
 .. code-block:: python
@@ -148,7 +168,7 @@ Docstrings should always be surrounded by **triple double quotes**. i.e.,
     I can take up several lines
     """
 
-The major sections of the docstring are:
+The key sections of a docstring are:
 
 1. *short summary*: A concise one-line summary about what the function does. 
 It should NOT include variable names or function names.
@@ -162,13 +182,15 @@ It should NOT include variable names or function names.
 
 2. *examples*: Examples play an important role in 
 ensuring user-friendliness of the API. 
-For ``pyjanitor``, ideal examples should demonstrate both functional and 
-method training usages.
+For ``pyjanitor``, ideal examples should demonstrate both the functional and 
+the method chaining usages of the function.
 
-A usage example should start with a short text description and 
-followed by a code block (marked by the `.. code-block:: python` reST directive). 
-Again, a **blank line** must be present to 
-separate each of the element from one another. 
+Each usage example should consist of a short text description and 
+a code block (marked by the `.. code-block:: python` `reST directive <http://docutils.sourceforge.net/docs/ref/rst/directives.html#code>`_). 
+The text description, the `.. code-block:: python` directive, and 
+the content of the code block must be separated by 
+**blank lines** from one another
+(see :ref:`docstring_guidelines`). 
 
 .. code-block:: python
 
@@ -181,8 +203,8 @@ separate each of the element from one another.
 
     """
 
-3. *notes*: An optional section that provides additional information about 
-the function. e.g.,
+3. *notes*: Notes should provide additional information that 
+users and maintainers should be aware of. e.g.,
 
 .. code-block:: python
 
@@ -192,9 +214,8 @@ the function. e.g.,
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
     """
 
-4. *parameters*: Itemized description of the function's arguments, 
-keyword arguments, and their types. Each item should follow 
-the format of 
+4. *parameters*: Itemized description of the function's arguments and  
+keyword arguments. Each item should follow the format of 
 
 ``:param <arg name>: <arg description>, default to <default value>``.
 
@@ -208,7 +229,7 @@ the format of
 5. *returns*: Itemized description of returned values. 
 Each item should follow the format of
 
-``:returns: <arg description>.``
+``:returns: <return description>.``
 
 For ``pyjanitor`` functions, 
 the returned values typically are pandas ``DataFrame``. e.g.,
@@ -219,10 +240,26 @@ the returned values typically are pandas ``DataFrame``. e.g.,
     :returns: A pandas DataFrame with renamed columns.
     """
 
+.. _docstring_notes:
 
-Skeleton Function and tests
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. note::
 
+   We may go back-and-forth a few times on the docstring. 
+   The docstring is a very important part of developer documentation; 
+   therefore, we may want much more detail than you are used to providing. 
+   This is for maintenance purposes: 
+   Contributions from new contributors frequently end up being maintained by 
+   the maintainers, and hence we would err on the side of 
+   providing more contextual information than less, 
+   especially regarding design choices.
+
+.. _unit_test_guidelines:
+
+Unit Test Guidelines
+^^^^^^^^^^^^^^^^^^^^^
+
+All features, regardless of being a brand new function or 
+an enhancement to existing functions, should contain tests.
 The function signature should take a pandas ``DataFrame`` as the input and return
 a pandas ``DataFrame`` as the output. Any manipulation to the dataframe should be
 implemented inside the function. The standard functionality of ``pyjanitor`` methods that we're moving towards is to not modify the input ``DataFrame``.
@@ -238,18 +275,12 @@ If you are more experienced with testing, you can use `Hypothesis <https://hypot
 automatically generate example dataframes. We provide a number of
 dataframe-generating strategies in ``janitor.testing_utils.strategies``.
 
-We may go back-and-forth a few times on the docstring. The docstring is a very
-important part of developer documentation; therefore, we may want much more detail than
-you are used to providing. This is for maintenance purposes: Contributions from new contributors
-frequently end up being maintained by the maintainers, and hence we would err on the side of
-providing more contextual information than less, especially regarding design choices.
-
 If you're wondering why we don't have to implement the method chaining
 portion, it's because we use the ``register_dataframe_method`` from ``pandas-flavor``,
 which registers the function as a pandas dataframe method.
 
 Submit Feedback
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 The best way to send feedback is to file an issue at https://github.com/ericmjl/pyjanitor/issues.
 

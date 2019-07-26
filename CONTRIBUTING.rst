@@ -85,11 +85,14 @@ To ensure ``pyjanitor``'s code quality and long-term maintainability
 (both set up the ground for growing community engagement), 
 we ask our contributors to
 
-1. Include good documentation (:ref:`docstring_guidelines`)
+1. Include good documentation 
+(:ref:`docstring_guidelines`)
 
-2. Set up and carry out unit test (:ref:`unit_test_guidelines`)
+2. Align code patterns with existing ``pyjanitor`` functions 
+(:ref:`code_pattern_guidelines`)
 
-3. Align code pattern with current ``pyjanitor`` API (:ref:`pattern_guidelines`)
+3. Set up and carry out unit test 
+(:ref:`unit_test_guidelines`)
 
 These three elements consitute the minimum requirement for feature contributions. 
 In the next three sections, we will dive deeper into each of these requirements.
@@ -153,7 +156,6 @@ highlight all of the key sections
         :returns: A pandas DataFrame with renamed columns.
         """
         check_column(df, list(new_column_names.keys()))
-
         return df.rename(columns=new_column_names) 
 
 Let's expand on this example:
@@ -253,16 +255,98 @@ the returned values typically are pandas ``DataFrame``. e.g.,
    providing more contextual information than less, 
    especially regarding design choices.
 
+.. _code_pattern_guidelines:
+
+Code Pattern Guidelines
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's continue using the same code example from above. 
+And now we focus on the code patterns:
+
+.. code-block:: python
+   :linenos:
+   :emphasize-lines: 1,2,7
+
+    @pf.register_dataframe_method
+    def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
+        """
+        Docstring as shown above; Omitted here
+        """
+        check_column(df, list(new_column_names.keys()))
+        return df.rename(columns=new_column_names) 
+
+The three highlighted lines (line 1, 2, and 7) here constitute 
+the code pattern used throughout the ``pyjanitor`` implementation:
+
+Line 1: ``@pf.register_dataframe_method``
+
+This `decorator <https://realpython.com/primer-on-python-decorators/>`_ comes from 
+`pandas-flavor <https://pypi.org/project/pandas-flavor/>`_. 
+It is the "magic" that allows ``pyjanitor`` code to 
+use just one set of implementations (like this `rename_columns` function) for 
+both the functional and the method chaining styles of its API. 
+In your new feature or feature enhancement, 
+you are very likely to start your function with this decorator line 
+(or see it in the function you are enhancing).
+
+Line 2 and 7: The *dataframe in, dataframe out* function signature
+
+.. code-block:: python
+
+    def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
+        ...
+        return df.rename(columns=new_column_names)
+
+The function signature should take a pandas ``DataFrame`` as 
+the input and return a pandas ``DataFrame`` as the output. 
+Any manipulation to the dataframe should be implemented inside the function. 
+The standard functionality of pyjanitor methods that 
+we are moving towards is to mutate the input ``DataFrame`` itself.
+
+.. note::
+
+   ``pyjanitor`` code uses `type hints <https://docs.python.org/3/library/typing.html>`_ 
+   in function definitions. 
+   Even though Python--a dynamic typing language--does not do 
+   any type checking at runtime, 
+   adding type hints helps simplify code documentation 
+   (otherwise we would need to use docstrings to 
+   document argument types and return types) and over time, 
+   could help build and maintain a clearner code architecture 
+   (forces us to think about types as we write the code). 
+   For these reasons, we ask our contributors to use type hints.
+
 .. _unit_test_guidelines:
 
 Unit Test Guidelines
 ^^^^^^^^^^^^^^^^^^^^^
 
 All features, regardless of being a brand new function or 
-an enhancement to existing functions, should contain tests.
-The function signature should take a pandas ``DataFrame`` as the input and return
-a pandas ``DataFrame`` as the output. Any manipulation to the dataframe should be
-implemented inside the function. The standard functionality of ``pyjanitor`` methods that we're moving towards is to not modify the input ``DataFrame``.
+an enhancement to existing functions, should have accompanying tests.
+
+``tests/<model_name>/test_<function_name>.py``.
+
+Test for the ``rename_columns`` method. 
+
+.. code-block:: python
+   :linenos:
+   :emphasize-lines: 1,5,6,10-13
+
+    import pytest
+    from hypothesis import given
+
+
+    @pytest.mark.functions
+    def test_rename_columns(dataframe):
+        df = dataframe.clean_names().rename_columns(
+            {"a": "index", "bell_chart": "chart"}
+        )
+        assert set(df.columns) == set(
+            ["index", "chart", "decorated_elephant", "animals@#$%^", "cities"]
+        )
+        assert "a" not in set(df.columns)
+
+The highlited lines denote the framework for testing. 
 
 This function should be implemented in ``functions.py``, and it should have a test
 accompanying it in ``tests/functions/test_<function_name_here>.py``.
@@ -274,10 +358,6 @@ imported and used in the test.
 If you are more experienced with testing, you can use `Hypothesis <https://hypothesis.readthedocs.io/en/latest/>`_ to
 automatically generate example dataframes. We provide a number of
 dataframe-generating strategies in ``janitor.testing_utils.strategies``.
-
-If you're wondering why we don't have to implement the method chaining
-portion, it's because we use the ``register_dataframe_method`` from ``pandas-flavor``,
-which registers the function as a pandas dataframe method.
 
 Submit Feedback
 ^^^^^^^^^^^^^^^^^

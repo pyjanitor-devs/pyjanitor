@@ -94,14 +94,34 @@ def convert_units(
         raise TypeError(f"{column_name} must be a numeric column.")
 
     # Check that existing_units and to_units are of the same type
-    existing_type = eval("unyt." + existing_units + ".dimensions")
-    to_type = eval("unyt." + to_units + ".dimensions")
-    if existing_type != to_type:
-        raise TypeError(
-            f"{existing_units} are not of the same type as {to_units}."
-            f"{existing_units} are of type {existing_type}."
-            f"{to_units} are of type {to_type}."
-        )
+    # Need to handle area and volume units differently
+    if ('**' in existing_units) & ('**' in to_units):
+        # Check for same exponent on units
+        if existing_units.split('**')[1] == to_units.split('**')[1]:
+            existing_type = eval("unyt." + existing_units.split('**')[0] + ".dimensions")
+            to_type = eval("unyt." + to_units.split('**')[0] + ".dimensions")
+
+            if existing_type != to_type:
+                raise TypeError(
+                    f"Base unit of {existing_units} are not of the same type as {to_units}."
+                    f"Base unit of {existing_units} are of type {existing_type}."
+                    f"Base unit of {to_units} are of type {to_type}."
+                )
+        else:
+            raise TypeError(
+                f"Exponent on {existing_units} is not the same type as 
+                f"the exponent on {to_units}."
+            )
+    else:
+        existing_type = eval("unyt." + existing_units + ".dimensions")
+        to_type = eval("unyt." + to_units + ".dimensions")
+
+        if existing_type != to_type:
+            raise TypeError(
+                f"{existing_units} are not of the same type as {to_units}."
+                f"{existing_units} are of type {existing_type}."
+                f"{to_units} are of type {to_type}."
+            )
 
     original_vals = df[column_name].values * eval("unyt." + existing_units)
     converted_vals = original_vals.to(to_units)

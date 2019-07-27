@@ -42,7 +42,7 @@ def test_unit_dimensions(dataframe):
         )
 
 
-@pytest.mark.finance
+@pytest.mark.engineering
 def test_no_conversion_equal(dataframe):
     df = dataframe.convert_units(
         "a", existing_units="cm", to_units="cm", dest_column_name="a_cm"
@@ -50,7 +50,7 @@ def test_no_conversion_equal(dataframe):
     assert all(df["a"] == df["a_cm"])
 
 
-@pytest.mark.finance
+@pytest.mark.engineering
 def test_length_conversion(dataframe):
     df = dataframe.convert_units(
         "a", existing_units="cm", to_units="m", dest_column_name="a_m"
@@ -58,7 +58,7 @@ def test_length_conversion(dataframe):
     assert df["a"].sum() == pytest.approx(df["a_m"].sum() * 100.0)
 
 
-@pytest.mark.finance
+@pytest.mark.engineering
 def test_mass_conversion(dataframe):
     df = dataframe.convert_units(
         "a", existing_units="g", to_units="kg", dest_column_name="a_kg"
@@ -66,7 +66,7 @@ def test_mass_conversion(dataframe):
     assert df["a"].sum() == pytest.approx(df["a_kg"].sum() * 1000.0)
 
 
-@pytest.mark.finance
+@pytest.mark.engineering
 def test_area_conversion(dataframe):
     df = dataframe.convert_units(
         "a", existing_units="cm**2", to_units="m**2", dest_column_name="a_m2"
@@ -74,7 +74,7 @@ def test_area_conversion(dataframe):
     assert df["a"].sum() == pytest.approx(df["a_m2"].sum() * (100.0 ** 2))
 
 
-@pytest.mark.finance
+@pytest.mark.engineering
 def test_volume_conversion(dataframe):
     df = dataframe.convert_units(
         "a", existing_units="cm**3", to_units="m**3", dest_column_name="a_m3"

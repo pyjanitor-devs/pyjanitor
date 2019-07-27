@@ -90,7 +90,7 @@ def convert_units(
 
     # Check that column_name is a numeric column
     if not np.issubdtype(df[column_name].dtype, np.number):
-        raise ValueError(
+        raise TypeError(
             f"{column_name} must be a numeric column."
         )
 
@@ -98,7 +98,7 @@ def convert_units(
     existing_type = eval('unyt.' + existing_units + '.dimensions')
     to_type = eval('unyt.' + to_units + '.dimensions')
     if existing_type != to_type:
-        raise ValueError(
+        raise TypeError(
             f"{existing_units} are not of the same type as {to_units}."
             f"{existing_units} are of type {existing_type}."
             f"{to_units} are of type {to_type}."

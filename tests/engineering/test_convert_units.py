@@ -24,7 +24,7 @@ def test_datatypes_check(dataframe):
 @pytest.mark.engineering
 def test_numeric_column(dataframe):
     # The animals column contains strings, not numeric values
-    dataframe['animals'] = 'llama'
+    dataframe["animals"] = "llama"
     with pytest.raises(TypeError):
         assert dataframe.convert_units(
             "animals",
@@ -44,11 +44,17 @@ def test_unit_dimensions(dataframe):
     # Attempts to convert area and volume units
     with pytest.raises(TypeError):
         assert dataframe.convert_units(
-            "a", existing_units="cm**2", to_units="cm**3", dest_column_name="a_cm3"
+            "a",
+            existing_units="cm**2",
+            to_units="cm**3",
+            dest_column_name="a_cm3",
         )
     with pytest.raises(TypeError):
         assert dataframe.convert_units(
-            "a", existing_units="cm**2", to_units="kg**2", dest_column_name="a_kg2"
+            "a",
+            existing_units="cm**2",
+            to_units="kg**2",
+            dest_column_name="a_kg2",
         )
 
 

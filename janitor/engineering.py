@@ -95,21 +95,25 @@ def convert_units(
 
     # Check that existing_units and to_units are of the same type
     # Need to handle area and volume units differently
-    if ('**' in existing_units) & ('**' in to_units):
+    if ("**" in existing_units) & ("**" in to_units):
         # Check for same exponent on units
-        if existing_units.split('**')[1] == to_units.split('**')[1]:
-            existing_type = eval("unyt." + existing_units.split('**')[0] + ".dimensions")
-            to_type = eval("unyt." + to_units.split('**')[0] + ".dimensions")
+        if existing_units.split("**")[1] == to_units.split("**")[1]:
+            existing_type = eval(
+                "unyt." + existing_units.split("**")[0] + ".dimensions"
+            )
+            to_type = eval("unyt." + to_units.split("**")[0] + ".dimensions")
 
             if existing_type != to_type:
                 raise TypeError(
-                    f"Base unit of {existing_units} are not of the same type as {to_units}."
-                    f"Base unit of {existing_units} are of type {existing_type}."
+                    f"Base unit of {existing_units} are "
+                    f"not the same type as {to_units}. "
+                    f"Base unit of {existing_units} are "
+                    f" of type {existing_type}. "
                     f"Base unit of {to_units} are of type {to_type}."
                 )
         else:
             raise TypeError(
-                f"Exponent on {existing_units} is not the same type as 
+                f"Exponent on {existing_units} is not the same type as"
                 f"the exponent on {to_units}."
             )
     else:

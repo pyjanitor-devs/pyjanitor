@@ -5,3 +5,4 @@ xlrd>=0.9.0
 pandas-flavor==0.1.2
 biopython
 requests
+unyt

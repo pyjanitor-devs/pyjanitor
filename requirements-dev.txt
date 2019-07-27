@@ -11,4 +11,5 @@ seaborn
 pytest-azurepipelines
 pytest-cov
 lxml
+unyt
 

@@ -15,6 +15,7 @@ except ImportError:
         "engineering", "unyt", "conda install -c conda-forge unyt"
     )
 
+
 @pf.register_dataframe_method
 def convert_units(
     df: pd.DataFrame,

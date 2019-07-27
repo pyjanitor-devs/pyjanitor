@@ -26,7 +26,8 @@ def test_numeric_column(dataframe):
     # The animals column contains strings, not numeric values
     with pytest.raises(TypeError):
         assert dataframe.convert_units(
-            'animals', existing_units='cm', to_units='m', dest_column_name='len_m'
+            'animals', existing_units='cm', to_units='m',
+            dest_column_name='len_m'
         )
 
 

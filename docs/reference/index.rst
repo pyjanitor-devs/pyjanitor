@@ -13,11 +13,13 @@ methods.
 
    biology
    chemistry
+   engineering
    finance
    general_functions
 
 .. autosummary::
       janitor.biology
       janitor.chemistry
+      janitor.engineering
       janitor.finance
       janitor.functions

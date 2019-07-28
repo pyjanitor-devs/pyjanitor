@@ -25,21 +25,7 @@ def convert_units(
     dest_column_name: str = None,
 ) -> pd.DataFrame:
     """
-    Uses the unyt package to convert a column of numeric values
-    from one unit to another.
-
-    Unit conversion can only take place if the existing_units and
-    to_units are of the same type (e.g., temperature or pressure).
-    The provided unit types can be any unit name or alternate name provided
-    in the unyt package's Listing of Units table:
-    https://unyt.readthedocs.io/en/stable/unit_listing.html#unit-listing.
-
-    Volume units are not provided natively in unyt.  However, exponents are
-    supported, and therefore some volume units can be converted.  For example,
-    a volume in cubic centimeters can be converted to cubic meters using
-    existing_units='cm**3' and to_units='m**3'.
-
-    This method mutates the original DataFrame.
+    Converts a column of numeric values from one unit to another.
 
     Functional usage example:
 
@@ -74,6 +60,19 @@ def convert_units(
             dest_column_name='temp_C'
         )
 
+    Unit conversion can only take place if the existing_units and
+    to_units are of the same type (e.g., temperature or pressure).
+    The provided unit types can be any unit name or alternate name provided
+    in the unyt package's Listing of Units table:
+    https://unyt.readthedocs.io/en/stable/unit_listing.html#unit-listing.
+
+    Volume units are not provided natively in unyt.  However, exponents are
+    supported, and therefore some volume units can be converted.  For example,
+    a volume in cubic centimeters can be converted to cubic meters using
+    existing_units='cm**3' and to_units='m**3'.
+
+    This method mutates the original DataFrame.
+
     :param df: A pandas dataframe.
     :param column_name: Name of the column containing numeric
         values that are to be converted from one set of units to another.
@@ -81,6 +80,8 @@ def convert_units(
     :param to_units: The unit type to convert to.
     :param dest_column_name: The name of the new column containing the
         converted values that will be created.
+
+    :returns: A pandas DataFrame with a new column of unit-converted values.
     """
 
     # Check all inputs are correct data type

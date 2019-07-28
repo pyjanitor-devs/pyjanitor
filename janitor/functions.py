@@ -2,6 +2,7 @@
 
 import datetime as dt
 import re
+import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
@@ -121,6 +122,7 @@ def clean_names(
     strip_underscores: str = None,
     case_type: str = "lower",
     remove_special: bool = False,
+    strip_accents: bool = True,
     preserve_original_columns: bool = True,
 ) -> pd.DataFrame:
     """
@@ -189,6 +191,9 @@ def clean_names(
     if remove_special:
         df = df.rename(columns=_remove_special)
 
+    if strip_accents:
+        df = df.rename(columns=_strip_accents)
+
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
 
@@ -206,6 +211,18 @@ def _normalize_1(col_name: str) -> str:
     for search, replace in FIXES:
         result = re.sub(search, replace, result)
     return result
+
+
+def _strip_accents(col_name: str) -> str:
+    """
+    Removes accents from a DataFrame column name.
+    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string # noqa: E501
+    """
+    return "".join(
+        l
+        for l in unicodedata.normalize("NFD", col_name)
+        if not unicodedata.combining(l)
+    )
 
 
 @pf.register_dataframe_method

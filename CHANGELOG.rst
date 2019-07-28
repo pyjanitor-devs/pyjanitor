@@ -3,7 +3,7 @@ v0.18.1 (on deck)
 - [ENH] add preserve_position kwarg to deconcatenate_column with tests by @shandou and @ericmjl
 - [DOC] add contributions that did not leave ``git`` traces by @ericmjl
 - [ENH] add inflation adjustment in finance submodule by @rahosbach
-
+- [ENH] add optional removal of accents on functions.clean_names, enabled by default by @mralbu
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,

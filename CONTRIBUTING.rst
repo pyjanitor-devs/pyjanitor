@@ -82,7 +82,7 @@ Key Ingredients
 ^^^^^^^^^^^^^^^^^
 
 To ensure ``pyjanitor``'s code quality and long-term maintainability 
-(both set up the ground for growing community engagement), 
+(both aspects lay the groundwork for growing community engagement), 
 we ask our contributors to
 
 1. Include good documentation 
@@ -91,11 +91,11 @@ we ask our contributors to
 2. Align code patterns with existing ``pyjanitor`` functions 
 (:ref:`code_pattern_guidelines`)
 
-3. Set up and carry out unit test 
+3. Set up and carry out unit tests 
 (:ref:`unit_test_guidelines`)
 
 These three elements consitute the minimum requirement for feature contributions. 
-In the next three sections, we will dive deeper into each of these requirements.
+In the next three sections, we will dive deeper into these requirements.
 
 .. _docstring_guidelines:
 
@@ -104,15 +104,15 @@ Docstring Guidelines
 
 For a python function, its docstring is a string that 
 documents what the function does and what the inputs/outputs should be. 
-Docstring conventions have `many flavors <http://www.sphinx-doc.org/en/1.8/usage/extensions/napoleon.html#confval-napoleon_numpy_docstring>`_. 
+Docstring conventions have `various flavors <http://www.sphinx-doc.org/en/1.8/usage/extensions/napoleon.html#confval-napoleon_numpy_docstring>`_. 
 In ``pyjanitor``, we use the `Sphinx style docstring <https://thomas-cokelaer.info/tutorials/sphinx/docstring_python.html>`_ that 
 is built on top of the `reStructuredText (reST) markup <http://openalea.gforge.inria.fr/doc/openalea/doc/_build/html/source/sphinx/rest_syntax.html#headings>`_ language.
 
 reST syntax, like python, is sensitive to **indentation**, 
-and each text unit (e.g., heading, paragraph, and code block) must be 
-separated by **blank lines**. 
-Proper rendering of the web-version docs you are browsing through right now 
-relies on our contributors' adherence to these syntax rules.
+and all of the text units (e.g., heading, paragraph, and code block) must be 
+separated by **blank lines** from each other. 
+Proper rendering of the web docs you are browsing through right now 
+relies on our contributors' adherence to these reST syntax rules.
 
 Below is a docstring example from ``pyjanitor``'s ``rename_columns`` function. 
 For illustration purposes, 
@@ -187,7 +187,7 @@ ensuring user-friendliness of the API.
 For ``pyjanitor``, ideal examples should demonstrate both the functional and 
 the method chaining usages of the function.
 
-Each usage example should consist of a short text description and 
+Each usage example should have a short text description and 
 a code block (marked by the `.. code-block:: python` `reST directive <http://docutils.sourceforge.net/docs/ref/rst/directives.html#code>`_). 
 The text description, the `.. code-block:: python` directive, and 
 the content of the code block must be separated by 
@@ -260,8 +260,8 @@ the returned values typically are pandas ``DataFrame``. e.g.,
 Code Pattern Guidelines
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Let's continue using the same code example from above. 
-And now we focus on the code patterns:
+Let's continue using the same code example and 
+shift our focus to the code patterns:
 
 .. code-block:: python
    :linenos:
@@ -275,21 +275,22 @@ And now we focus on the code patterns:
         check_column(df, list(new_column_names.keys()))
         return df.rename(columns=new_column_names) 
 
-The three highlighted lines (line 1, 2, and 7) here constitute 
-the code pattern used throughout the ``pyjanitor`` implementation:
+The three highlighted lines (line 1, 2, and 7) constitute 
+the code pattern that 
+is frequently used in ``pyjanitor`` implementations:
 
-Line 1: ``@pf.register_dataframe_method``
+* Line 1: ``@pf.register_dataframe_method``
 
 This `decorator <https://realpython.com/primer-on-python-decorators/>`_ comes from 
 `pandas-flavor <https://pypi.org/project/pandas-flavor/>`_. 
 It is the "magic" that allows ``pyjanitor`` code to 
 use just one set of implementations (like this `rename_columns` function) for 
-both the functional and the method chaining styles of its API. 
+both the functional and the method chaining usages of the API. 
 In your new feature or feature enhancement, 
 you are very likely to start your function with this decorator line 
-(or see it in the function you are enhancing).
+(or see it in the function that you are enhancing).
 
-Line 2 and 7: The *dataframe in, dataframe out* function signature
+* Line 2 and 7: The *dataframe in, dataframe out* function signature
 
 .. code-block:: python
 
@@ -299,7 +300,7 @@ Line 2 and 7: The *dataframe in, dataframe out* function signature
 
 The function signature should take a pandas ``DataFrame`` as 
 the input and return a pandas ``DataFrame`` as the output. 
-Any manipulation to the dataframe should be implemented inside the function. 
+Any manipulations to the dataframe should be implemented inside the function. 
 The standard functionality of pyjanitor methods that 
 we are moving towards is to mutate the input ``DataFrame`` itself.
 
@@ -307,13 +308,16 @@ we are moving towards is to mutate the input ``DataFrame`` itself.
 
    ``pyjanitor`` code uses `type hints <https://docs.python.org/3/library/typing.html>`_ 
    in function definitions. 
-   Even though Python--a dynamic typing language--does not do 
+   Even though Python--a dynamic typing language--by default does not do 
    any type checking at runtime, 
    adding type hints helps simplify code documentation 
    (otherwise we would need to use docstrings to 
    document argument types and return types) and over time, 
    could help build and maintain a clearner code architecture 
    (forces us to think about types as we write the code). 
+   Moreover, with type hints, 
+   type checkers such as `Mypy <http://mypy-lang.org/>`_ could be used as 
+   part of the code testing. 
    For these reasons, we ask our contributors to use type hints.
 
 .. _unit_test_guidelines:
@@ -321,19 +325,123 @@ we are moving towards is to mutate the input ``DataFrame`` itself.
 Unit Test Guidelines
 ^^^^^^^^^^^^^^^^^^^^^
 
-All features, regardless of being a brand new function or 
-an enhancement to existing functions, should have accompanying tests.
+Unit tests form the basic immune system for a code base. 
+For this reason, all ``pyjanitor`` features, 
+regardless of being a brand new function or an enhancement to an existing function, 
+should have accompanying tests.
 
-``tests/<model_name>/test_<function_name>.py``.
+``pyjanitor`` uses the `pytest <https://docs.pytest.org/en/latest/index.html>`_ framework 
+to carry out unit tests. 
+Any code contributions should at least have `example-based tests <https://www.freecodecamp.org/news/intro-to-property-based-testing-in-python-6321e0c2f8b/>`_. 
+Contributors who have experiences in `property-based tests <https://www.freecodecamp.org/news/intro-to-property-based-testing-in-python-6321e0c2f8b/>`_  
+can use the `Hypothesis <https://hypothesis.readthedocs.io/en/latest/>`_ framework to 
+automatically generate example dataframes 
+(We provide a number of dataframe-generating strategies in `janitor.testing_utils.strategies`).
 
-Test for the ``rename_columns`` method. 
+But *where should we put the tests?* To answer this question, 
+let's look at the structure of the current ``pyjanitor`` codes: 
+
+.. code-block:: bash
+   :emphasize-lines: 12
+
+    pyjanitor/janitor
+    ├── __init__.py
+    ├── biology.py
+    ├── chemistry.py
+    ├── errors.py
+    ├── finance.py
+    ├── functions.py
+    ├── io.py
+    ├── testing_utils
+    │   ├── __init__.py
+    │   ├── date_data.py
+    │   └── strategies.py  # contains dataframe-generating strategies
+    └── utils.py
+
+In this tree diagram, all of the top level ``*.py`` files are 
+the **modules** of the ``pyjanitor`` library. 
+The accompanying tests files are in the ``pyjanitor/tests`` directory and 
+has a structure as shown below:
+
+.. code-block:: bash
+   :emphasize-lines: 8
+
+    pyjanitor/tests
+    ├── biology
+    │   └── test_join_fasta.py
+    ├── chemistry
+    │   ├── test_maccs_keys_fingerprint.py
+    │   ├── test_molecular_descriptors.py
+    │   ├── ...
+    ├── conftest.py  # contains test dataframes
+    ├── finance
+    │   └── test_convert_currency.py
+    ├── functions
+    │   ├── test_add_column.py
+    │   ├── test_add_columns.py
+    │   ├── ...
+    ├── io
+    │   └── test_read_csvs.py
+    ├── test_data
+    │   ├── corrected_smiles.txt
+    │   ├── sequences.fasta
+    │   └── sequences.tsv
+    ├── test_df_registration.py
+    └── utils
+        ├── test_check_column.py
+        ├── test_clean_accounting_column.py
+        ├── ...
+
+You can see that the naming and organization convention for unit tests: 
+That is, unit tests for a **function** inside a **module** should be in
+
+.. code-block:: bash
+
+    tests/<module_name>/test_<function_name>.py 
+
+The highlighted ``conftest.py`` contains **test dataframes** that 
+are implemented as `pytest fixtures <http://doc.pytest.org/en/latest/fixture.html>`_.
+
+To make this more concrete, let's return to the ``rename_columns`` example.
+
+1. *Where is the test data?*
+
+The test ``dataframe`` in ``pyjanitor/tests/confest.py``:
+
+.. code-block:: python
+   :emphasize-lines: 5
+
+    import pandas as pd
+    import pytest
+
+
+    @pytest.fixture
+    def dataframe():
+        data = {
+            "a": [1, 2, 3] * 3,
+            "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+            "decorated-elephant": [1, 2, 3] * 3,
+            "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
+            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+        df = pd.DataFrame(data)
+        return df
+
+The highlighted pytest `decorator <https://realpython.com/primer-on-python-decorators/>`_ 
+``@pytest.fixture`` turns ``dataframe`` from a regular function to a pytest fixture. 
+This then allows us to 
+**inject** the ``dataframe`` into our test function as shown below.
+
+2. *How should the test look like?*
+
+Now let's look at the test for the ``rename_columns`` 
+(in ``pyjanitor/janitor/functions.py``) 
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 1,5,6,10-13
+   :emphasize-lines: 4,5,9-12
 
     import pytest
-    from hypothesis import given
 
 
     @pytest.mark.functions
@@ -346,21 +454,61 @@ Test for the ``rename_columns`` method.
         )
         assert "a" not in set(df.columns)
 
-The highlited lines denote the framework for testing. 
 
-This function should be implemented in ``functions.py``, and it should have a test
-accompanying it in ``tests/functions/test_<function_name_here>.py``.
+The highlighted lines denote the pattern for testing:
 
-When writing a test, the minimum acceptable test is an "example-based test."
-Under ``tests/conf.py`` you will find a suite of example dataframes that can be
-imported and used in the test.
+* Line 4: ``@pytest.mark.functions``
 
-If you are more experienced with testing, you can use `Hypothesis <https://hypothesis.readthedocs.io/en/latest/>`_ to
-automatically generate example dataframes. We provide a number of
-dataframe-generating strategies in ``janitor.testing_utils.strategies``.
+This decorator is a `custom pytest mark <http://doc.pytest.org/en/latest/example/markers.html>`_. 
+You will often see it at the top of each test function following the convention of 
+``@pytest.mark.<module_name>``. 
+This mark allows us to restrict a test run to only run tests marked with `<module_name>`. 
+For example, we can run all the test with the ``pytest.mark.functions`` mark:
+
+.. code-block:: bash
+
+    # run `pytest -h` in your terminal to check all available options
+    $ pytest -v -m functions --cov
+
+Or conversely, we can run all the tests *except* the ``pytest.mark.functions`` ones:
+
+.. code-block:: bash
+
+    # run `pytest -h` in your terminal to check all available options
+    $ pytest -v -m "not functions" --cov
+
+* Line 5: ``dataframe`` injection
+
+Upon test function definition, the test ``dataframe`` fixture is injected.
+
+* Line 9-12: assertions for example-based tests
+
+After using the function in the test (line 6-8), 
+we use ``assert`` statements to carry out example-based tests using fixed inputs 
+and fixed, expected outputs.
+
+3. *How do we run the test?*
+
+* To run only your test:
+
+.. code-block:: bash
+
+    # In `pyjanitor/tests/<module_name>`
+    $ pytest -v test_<function_name>.py --cov
+
+* To run all the tests:
+
+.. code-block:: bash
+
+    # Under `pyjanitor` top level directory (i.e., where `Makefile` is)
+    $ make test
+
+This is the basic structure of unit tests. 
+For your own tests, you can either use existing test data in ``conftest.py``, 
+or add your own test data to that file by following the same fixture pattern.
 
 Submit Feedback
-^^^^^^^^^^^^^^^^^
+-----------------
 
 The best way to send feedback is to file an issue at https://github.com/ericmjl/pyjanitor/issues.
 

@@ -105,6 +105,14 @@ def test_clean_names_strip_underscores(
 
 
 @pytest.mark.functions
+def test_clean_names_strip_accents():
+    df = pd.DataFrame({"João": [1, 2], "Лука́ся": [1, 2], "Käfer": [1, 2]})
+    df = df.clean_names(strip_accents=True)
+    expected_columns = ["joao", "лукася", "kafer"]
+    assert set(df.columns) == set(expected_columns)
+
+
+@pytest.mark.functions
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
         multiindex_dataframe.clean_names(strip_underscores="hello")

@@ -9,6 +9,7 @@ v0.18.1 (on deck)
   default by @mralbu
 - [ENH] add camelCase conversion to snake_case on ``clean_names`` by @ericmjl,
   h/t @jtaylor for sharing original
+- [DOC] add PyPI project description
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,

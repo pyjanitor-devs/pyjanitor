@@ -2,6 +2,7 @@
 
 import datetime as dt
 import re
+import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
@@ -121,6 +122,7 @@ def clean_names(
     strip_underscores: str = None,
     case_type: str = "lower",
     remove_special: bool = False,
+    strip_accents: bool = True,
     preserve_original_columns: bool = True,
 ) -> pd.DataFrame:
     """
@@ -158,8 +160,10 @@ def clean_names(
         either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
         and True.
     :param case_type: (optional) Whether to make columns lower or uppercase.
-        Current case may be preserved with 'preserve'. Default 'lower'
-        makes all characters lowercase.
+        Current case may be preserved with 'preserve',
+        while snake case conversion (from CamelCase or camelCase only)
+        can be turned on using "snake".
+        Default 'lower' makes all characters lowercase.
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
     :returns: A pandas DataFrame.
@@ -168,11 +172,11 @@ def clean_names(
     """
     original_column_names = list(df.columns)
 
-    assert case_type.lower() in {
-        "preserve",
-        "upper",
-        "lower",
-    }, "case_type argument must be one of ('preserve', 'upper', 'lower')"
+    case_types = {"preserve", "upper", "lower", "snake"}
+
+    assert (
+        case_type.lower() in case_types
+    ), f"case_type argument must be one of {case_types}"
 
     if case_type.lower() != "preserve":
         if case_type.lower() == "upper":
@@ -181,13 +185,16 @@ def clean_names(
         elif case_type.lower() == "lower":
             df = df.rename(columns=lambda x: x.lower())
 
-    df = df.rename(columns=_normalize_1)
+        elif case_type.lower() == "snake":
+            df = df.rename(columns=_camel2snake)
 
-    def _remove_special(col):
-        return "".join(item for item in col if item.isalnum() or "_" in item)
+    df = df.rename(columns=_normalize_1)
 
     if remove_special:
         df = df.rename(columns=_remove_special)
+
+    if strip_accents:
+        df = df.rename(columns=_strip_accents)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
@@ -198,6 +205,27 @@ def clean_names(
     return df
 
 
+def _remove_special(col_name):
+    """Remove special characters from column name."""
+    return "".join(item for item in col_name if item.isalnum() or "_" in item)
+
+
+_underscorer1 = re.compile(r"(.)([A-Z][a-z]+)")
+_underscorer2 = re.compile("([a-z0-9])([A-Z])")
+
+
+def _camel2snake(col_name: str) -> str:
+    """
+    Convert camelcase names to snake case.
+
+    Implementation taken from: https://gist.github.com/jaytaylor/3660565
+    by @jtaylor
+    """
+
+    subbed = _underscorer1.sub(r"\1_\2", col_name)
+    return _underscorer2.sub(r"\1_\2", subbed).lower()
+
+
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
@@ -206,6 +234,18 @@ def _normalize_1(col_name: str) -> str:
     for search, replace in FIXES:
         result = re.sub(search, replace, result)
     return result
+
+
+def _strip_accents(col_name: str) -> str:
+    """
+    Removes accents from a DataFrame column name.
+    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string # noqa: E501
+    """
+    return "".join(
+        l
+        for l in unicodedata.normalize("NFD", col_name)
+        if not unicodedata.combining(l)
+    )
 
 
 @pf.register_dataframe_method

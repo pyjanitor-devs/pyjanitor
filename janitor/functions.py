@@ -3286,3 +3286,74 @@ def join_apply(df, func, new_column_name):
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df
+
+
+@pf.register_dataframe_method
+def flag_nulls(
+    df: pd.DataFrame,
+    column_name: str = "null_flag",
+    columns: Union[Iterable[str], str, None] = None,
+) -> pd.DataFrame:
+    """
+    Creates a new column to indicate whether you have null values in a given
+    row. If the columns parameter is not set, looks across the entire
+    DataFrame, otherwise will look only in the columns you set.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        data = pd.DataFrame(
+            {'a': [1, 2, None, 4],
+             'b': [5.0, None, 7.0, 8.0]})
+
+        df.flag_nulls()
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   1
+        #   4  | 8.0  |   0
+
+        df.flag_nulls(columns=['b'])
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   0
+        #   4  | 8.0  |   0
+
+    :param df: A pandas dataframe.
+    :param column_name: Name for the output column. Defaults to 'null_flag'.
+    :param columns: List of columns to look at for finding null values. If you
+        only want to look at one column, you can simply give its name. If set
+        to None (default), all DataFrame columns are used.
+    """
+    # Sort out columns input
+    if isinstance(columns, str):
+        columns = [columns]
+    elif columns is None:
+        columns = df.columns
+
+    # Input sanitation checks
+    bad_columns = set(columns) - set(df.columns)
+    if bad_columns:
+        raise ValueError(
+            (
+                f"Bad arguments to columns field provided, the following "
+                f"columns are not in the DataFrame: {bad_columns}"
+            )
+        )
+
+    if column_name in df.columns:
+        raise ValueError(
+            "Bad input for column_name field - column already exists."
+        )
+
+    # This algorithm works best for n_rows >> n_cols. See issue #501
+    null_array = np.zeros(len(df))
+    for col in columns:
+        null_array = np.logical_or(null_array, pd.isnull(df[col]))
+
+    df = df.copy()
+    df[column_name] = null_array.astype(int)
+    return df

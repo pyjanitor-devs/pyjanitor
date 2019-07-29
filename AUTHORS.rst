@@ -77,3 +77,4 @@ Contributors
 - `@thomasjpfan <https://github.com/thomasjpfan>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Athomasjpfan>`_
 - `@jiafengkevinchen <https://github.com/jiafengkevinchen>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pull/480#issue-298730562>`_
 - `@mralbu <https://github.com/mralbu>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues/502>`_
+- `@anzelpwj <https://github.com/anzelpwj>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3anzelpwj>`_

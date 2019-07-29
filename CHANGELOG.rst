@@ -7,6 +7,8 @@ v0.18.1 (on deck)
 - [DOC] clarified how new functions should be implemented by @shandou
 - [ENH] add optional removal of accents on functions.clean_names, enabled by
   default by @mralbu
+- [ENH] add camelCase conversion to snake_case on ``clean_names`` by @ericmjl,
+  h/t @jtaylor for sharing original
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,

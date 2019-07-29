@@ -1,4 +1,5 @@
 import pytest
+from unyt.exceptions import UnitConversionError
 
 from janitor.engineering import convert_units
 
@@ -23,11 +24,9 @@ def test_datatypes_check(dataframe):
 
 @pytest.mark.engineering
 def test_numeric_column(dataframe):
-    # The animals column contains strings, not numeric values
-    dataframe["animals"] = "llama"
     with pytest.raises(TypeError):
         assert dataframe.convert_units(
-            "animals",
+            "cities",
             existing_units="cm",
             to_units="m",
             dest_column_name="len_m",
@@ -37,19 +36,19 @@ def test_numeric_column(dataframe):
 @pytest.mark.engineering
 def test_unit_dimensions(dataframe):
     # Attempts to convert length units to mass
-    with pytest.raises(TypeError):
+    with pytest.raises(UnitConversionError):
         assert dataframe.convert_units(
             "a", existing_units="cm", to_units="kg", dest_column_name="a_kg"
         )
     # Attempts to convert area and volume units
-    with pytest.raises(TypeError):
+    with pytest.raises(UnitConversionError):
         assert dataframe.convert_units(
             "a",
             existing_units="cm**2",
             to_units="cm**3",
             dest_column_name="a_cm3",
         )
-    with pytest.raises(TypeError):
+    with pytest.raises(UnitConversionError):
         assert dataframe.convert_units(
             "a",
             existing_units="cm**2",

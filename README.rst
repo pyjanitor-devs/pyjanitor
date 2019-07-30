@@ -8,6 +8,8 @@ pyjanitor
 .. image:: https://mybinder.org/badge_logo.svg
     :target: https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev
 
+.. pypi-doc
+
 ``pyjanitor`` is a Python implementation of the R package `janitor`_, and
 provides a clean API for cleaning data.
 
@@ -45,6 +47,8 @@ are accomplished via the appropriate ``pd.DataFrame`` method calls.
 Inspired by the ease-of-use
 and expressiveness of the ``dplyr`` package of the R statistical language ecosystem,
 we have evolved ``pyjanitor`` into a language for expressing the data processing DAG for ``pandas`` users.
+
+.. pypi-doc
 
 To accomplish this, actions for which we would need to invoke imperative-style statements,
 can be replaced with method chains
@@ -145,6 +149,8 @@ Installation
 
 ``pyjanitor`` requires Python 3.6+.
 
+.. pypi-doc
+
 Functionality
 -------------
 
@@ -163,6 +169,8 @@ Current functionality includes:
 - Concatenating and deconcatenating columns, based on a delimiter
 - Syntactic sugar for filtering the dataframe based on queries on a column
 - Experimental submodules for finance and biology
+
+.. pypi-doc
 
 API
 ---

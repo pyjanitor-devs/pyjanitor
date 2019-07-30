@@ -33,7 +33,9 @@ def generate_long_description() -> str:
     # Loop through pairs of comments and save text between pairs
     long_description = ""
     for i in range(0, len(indices), 2):
-        long_description += readme[(indices[i] + 11): (indices[i + 1])]
+        start_index = indices[i] + 11
+        end_index = indices[i + 1]
+        long_description += readme[start_index:end_index]
     return long_description
 
 

@@ -11,6 +11,7 @@ v0.18.1 (on deck)
   h/t @jtaylor for sharing original
 - [ENH] add engineering submodule with unit conversion method by @rahosbach
 - [DOC] add PyPI project description
+- [ENH] add example notebook with use of finance submodule methods by @rahosbach
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,

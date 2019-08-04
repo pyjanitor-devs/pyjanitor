@@ -266,7 +266,9 @@ Add a test case
 
 Secondly, we ask that you contribute a test case,
 to ensure that it works as intended.
-This should go inside the ``tests/test_functions.py`` file.
+Follow the `contribution`_ docs for further details.
+
+.. _contribution: https://pyjanitor.readthedocs.io/contributing.html#unit-test-guidelines
 
 Feature requests
 ~~~~~~~~~~~~~~~~

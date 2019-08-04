@@ -252,6 +252,21 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
 def check_column(
     df: pd.DataFrame, old_column_names: List, present: bool = True
 ):
+    """
+    One-liner syntactic sugar for checking the presence or absence of a column.
+
+    Should be used like this::
+
+        check(df, ['a', 'b'], present=True)
+
+    :param df: The name of the variable.
+    :param old_column_names: A list of column names we want to check to see if
+        present (or absent) in df.
+    :param present: If True (default), checks to see if all of old_column_names
+        are in df.columns. If False, checks that none of old_column_names are
+        in df.columns.
+    :returns: ValueError if data is not the expected type.
+    """
     for column_name in old_column_names:
         if present:
             if column_name not in df.columns:

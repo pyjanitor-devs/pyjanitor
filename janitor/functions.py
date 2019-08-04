@@ -3315,7 +3315,7 @@ def join_apply(df, func, new_column_name):
 def flag_nulls(
     df: pd.DataFrame,
     column_name: str = "null_flag",
-    columns: Union[Iterable[str], str, None] = None,
+    columns: Union[str, Iterable[str], Any] = None,
 ) -> pd.DataFrame:
     """
     Creates a new column to indicate whether you have null values in a given
@@ -3366,6 +3366,9 @@ def flag_nulls(
         columns = [columns]
     elif columns is None:
         columns = df.columns
+    elif not isinstance(columns, Iterable):
+        # Handle cases where we have an integer column or something
+        columns = [columns]
 
     # Input sanitation checks
     check_column(df, columns)

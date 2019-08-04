@@ -10,6 +10,9 @@ v0.18.1 (on deck)
 - [ENH] add camelCase conversion to snake_case on ``clean_names`` by @ericmjl,
   h/t @jtaylor for sharing original
 - [ENH] Added ``null_flag`` function which can mark null values in rows. Implemented by @anzelpwj
+- [ENH] add engineering submodule with unit conversion method by @rahosbach
+- [DOC] add PyPI project description
+- [ENH] add example notebook with use of finance submodule methods by @rahosbach
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,

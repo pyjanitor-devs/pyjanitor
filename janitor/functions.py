@@ -3325,13 +3325,20 @@ def flag_nulls(
     .. code-block:: python
 
         import pandas as pd
-        import janitor
+        import janitor as jn
 
         data = pd.DataFrame(
             {'a': [1, 2, None, 4],
              'b': [5.0, None, 7.0, 8.0]})
 
         df.flag_nulls()
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   1
+        #   4  | 8.0  |   0
+
+        jn.functions.flag_nulls(data)
         #  'a' | 'b'  | 'null_flag'
         #   1  | 5.0  |   0
         #   2  | None |   1
@@ -3345,11 +3352,14 @@ def flag_nulls(
         # None | 7.0  |   0
         #   4  | 8.0  |   0
 
-    :param df: A pandas dataframe.
+
+    :param df: Input Pandas dataframe.
     :param column_name: Name for the output column. Defaults to 'null_flag'.
     :param columns: List of columns to look at for finding null values. If you
         only want to look at one column, you can simply give its name. If set
         to None (default), all DataFrame columns are used.
+    :returns: Input dataframe with the null flag column.
+    :raises: ValueError
     """
     # Sort out columns input
     if isinstance(columns, str):

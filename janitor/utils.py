@@ -249,7 +249,9 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
             kwargs[new_alias] = kwargs.pop(old_alias)
 
 
-def check_column(df: pd.DataFrame, old_column_names: List, present: bool = True):
+def check_column(
+    df: pd.DataFrame, old_column_names: List, present: bool = True
+):
     for column_name in old_column_names:
         if present:
             if column_name not in df.columns:

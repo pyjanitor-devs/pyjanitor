@@ -3368,19 +3368,8 @@ def flag_nulls(
         columns = df.columns
 
     # Input sanitation checks
-    bad_columns = set(columns) - set(df.columns)
-    if bad_columns:
-        raise ValueError(
-            (
-                f"Bad arguments to columns field provided, the following "
-                f"columns are not in the DataFrame: {bad_columns}"
-            )
-        )
-
-    if column_name in df.columns:
-        raise ValueError(
-            "Bad input for column_name field - column already exists."
-        )
+    check_column(df, columns)
+    check_column(df, [column_name], present=False)
 
     # This algorithm works best for n_rows >> n_cols. See issue #501
     null_array = np.zeros(len(df))

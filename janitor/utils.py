@@ -249,9 +249,15 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
             kwargs[new_alias] = kwargs.pop(old_alias)
 
 
-def check_column(df: pd.DataFrame, old_column_names: List):
+def check_column(df: pd.DataFrame, old_column_names: List, present: bool = True):
     for column_name in old_column_names:
-        if column_name not in df.columns:
-            raise ValueError(
-                f"{column_name} not present in dataframe columns!"
-            )
+        if present:
+            if column_name not in df.columns:
+                raise ValueError(
+                    f"{column_name} not present in dataframe columns!"
+                )
+        else:  # Tests for exclusion
+            if column_name in df.columns:
+                raise ValueError(
+                    f"{column_name} already present in dataframe columns!"
+                )

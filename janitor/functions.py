@@ -1002,24 +1002,25 @@ def deconcatenate_column(
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
-    assert (
-        column_name in df.columns
-    ), f"column name {column_name} not present in dataframe"  # noqa: E501
+    if not column_name in df.columns:
+        raise ValueError(f"column name {column_name} not present in dataframe")
     deconcat = df[column_name].str.split(sep, expand=True)
     if preserve_position:
         # Keep a copy of the original dataframe
         df_original = df.copy()
-    assert (
-        len(new_column_names) == deconcat.shape[1]
-    ), "number of new column names not correct."
+    if not len(new_column_names) == deconcat.shape[1]:
+        raise JanitorError(f"you need to provide {len(new_column_names)} names to new_column_names")
+
     deconcat.columns = new_column_names
     df = pd.concat([df, deconcat], axis=1)
+
     if preserve_position:
         cols = list(df_original.columns)
         index_original = cols.index(column_name)
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
         df = df[cols].drop(columns=column_name)
+        # TODO: I suspect this should become a test instead of a defensive check?
         assert (
             len(df.columns)
             == len(df_original.columns) + len(new_column_names) - 1

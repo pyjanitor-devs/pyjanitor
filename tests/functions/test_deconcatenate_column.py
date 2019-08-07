@@ -41,3 +41,18 @@ def test_deconcatenate_column_preserve_position(dataframe):
     assert (
         list(df.columns).index("col2") == index_original + 1
     ), "Position not preserved"
+
+
+def test_deconcatenate_column_autoname(dataframe):
+    df_original = dataframe.concatenate_columns(
+        column_names=['a', 'decorated-elephant'],
+        sep="-",
+        new_column_name="index",
+    ).remove_columns(['a', 'decorated-elephant'])
+
+    df = df_original.deconcatenate_column("index", new_column_names=["a", "decorated-elephant"], autoname="col")
+
+    assert "col1" in df.columns
+    assert "col2" in df.columns
+    assert "a" not in df.columns
+    assert "decorated-elephant" not in df.columns

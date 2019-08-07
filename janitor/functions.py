@@ -1009,7 +1009,9 @@ def deconcatenate_column(
         # Keep a copy of the original dataframe
         df_original = df.copy()
     if not len(new_column_names) == deconcat.shape[1]:
-        raise JanitorError(f"you need to provide {len(new_column_names)} names to new_column_names")
+        raise JanitorError(
+            f"you need to provide {len(new_column_names)} names to new_column_names"
+        )
 
     deconcat.columns = new_column_names
     df = pd.concat([df, deconcat], axis=1)

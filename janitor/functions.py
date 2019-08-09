@@ -1018,7 +1018,7 @@ def deconcatenate_column(
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
-    if not column_name in df.columns:
+    if column_name not in df.columns:
         raise ValueError(f"column name {column_name} not present in dataframe")
     deconcat = df[column_name].str.split(sep, expand=True)
     if preserve_position:
@@ -1030,7 +1030,8 @@ def deconcatenate_column(
         ]
     if not len(new_column_names) == deconcat.shape[1]:
         raise JanitorError(
-            f"you need to provide {len(new_column_names)} names to new_column_names"
+            f"you need to provide {len(new_column_names)} names"
+            "to new_column_names"
         )
 
     deconcat.columns = new_column_names
@@ -1043,7 +1044,8 @@ def deconcatenate_column(
             cols.insert(index_original + i, col_new)
         df = df[cols].drop(columns=column_name)
 
-        # TODO: I suspect this should become a test instead of a defensive check?
+        # TODO: I suspect this should become a test
+        # instead of a defensive check?
         assert (
             len(df.columns)
             == len(df_original.columns) + len(new_column_names) - 1

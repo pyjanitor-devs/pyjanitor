@@ -948,20 +948,23 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name,
-    new_column_names: Union[List[str], Tuple[str]],
     sep: str,
+    new_column_names: Union[List[str], Tuple[str]] = None,
+    autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
     """
     De-concatenates a single column into multiple columns.
 
-    This is the inverse of the `concatenate_columns` function.
+    This is the inverse of the ``concatenate_columns`` function.
 
     Used to quickly split columns out of a single column.
 
-    The keyword argument `preserve_position` takes `True` or `False` boolean
-    that controls whether the `new_column_names` will take the original
-    position of the to-be-deconcatenated `column_name`:
+    The keyword argument ``preserve_position``
+    takes ``True`` or ``False`` boolean
+    that controls whether the ``new_column_names``
+    will take the original position
+    of the to-be-deconcatenated ``column_name``:
 
     - When `preserve_position=False` (default), `df.columns` change from
       `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
@@ -972,6 +975,17 @@ def deconcatenate_column(
       In other words, the deconcatenated new column will REPLACE the original
       `column_name` at its original position, and `column_name` itself
       is dropped.
+
+    The keyword argument ``autoname`` accepts a base string
+    and then automatically creates numbered column names
+    based off the base string.
+    For example, if ``col`` is passed in
+    as the argument to ``autoname``,
+    and 4 columns are created,
+    then the resulting columns will be named
+    ``col1, col2, col3, col4``.
+    Numbering is always 1-indexed, not 0-indexed,
+    in order to make the column names human-friendly.
 
     This method does not mutate the original DataFrame.
 
@@ -996,30 +1010,42 @@ def deconcatenate_column(
 
     :param df: A pandas DataFrame.
     :param column_name: The column to split.
-    :param new_column_names: A list of new column names post-splitting.
     :param sep: The separator delimiting the column's data.
+    :param new_column_names: A list of new column names post-splitting.
+    :param autoname: A base name for automatically naming the new columns.
+        Takes precedence over ``new_column_names`` if both are provided.
     :param preserve_position: Boolean for whether or not to preserve original
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
-    assert (
-        column_name in df.columns
-    ), f"column name {column_name} not present in dataframe"  # noqa: E501
+    if column_name not in df.columns:
+        raise ValueError(f"column name {column_name} not present in dataframe")
     deconcat = df[column_name].str.split(sep, expand=True)
     if preserve_position:
         # Keep a copy of the original dataframe
         df_original = df.copy()
-    assert (
-        len(new_column_names) == deconcat.shape[1]
-    ), "number of new column names not correct."
+    if autoname:
+        new_column_names = [
+            f"{autoname}{i}" for i in range(1, deconcat.shape[1] + 1)
+        ]
+    if not len(new_column_names) == deconcat.shape[1]:
+        raise JanitorError(
+            f"you need to provide {len(new_column_names)} names"
+            "to new_column_names"
+        )
+
     deconcat.columns = new_column_names
     df = pd.concat([df, deconcat], axis=1)
+
     if preserve_position:
         cols = list(df_original.columns)
         index_original = cols.index(column_name)
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
         df = df[cols].drop(columns=column_name)
+
+        # TODO: I suspect this should become a test
+        # instead of a defensive check?
         assert (
             len(df.columns)
             == len(df_original.columns) + len(new_column_names) - 1

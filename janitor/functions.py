@@ -1026,7 +1026,7 @@ def deconcatenate_column(
         df_original = df.copy()
     if autoname:
         new_column_names = [
-            f"{autoname}{i}" for i in range(1, deconcate.shape[1] + 1)
+            f"{autoname}{i}" for i in range(1, deconcat.shape[1] + 1)
         ]
     if not len(new_column_names) == deconcat.shape[1]:
         raise JanitorError(

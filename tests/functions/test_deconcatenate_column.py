@@ -51,7 +51,10 @@ def test_deconcatenate_column_autoname(dataframe):
     ).remove_columns(["a", "decorated-elephant"])
 
     df = df_original.deconcatenate_column(
-        "index", new_column_names=["a", "decorated-elephant"], autoname="col"
+        "index",
+        sep="-",
+        new_column_names=["a", "decorated-elephant"],
+        autoname="col",
     )
 
     assert "col1" in df.columns

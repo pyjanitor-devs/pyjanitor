@@ -3,7 +3,6 @@ import pandas as pd
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
-from hypothesis.extra.numpy import arrays
 
 from janitor.testing_utils.strategies import df_strategy
 

@@ -8,7 +8,6 @@ from hypothesis.extra.numpy import arrays
 from janitor.testing_utils.strategies import df_strategy
 
 
-@pytest.mark.test
 @pytest.mark.functions
 @given(
     df=df_strategy(),

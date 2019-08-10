@@ -10,7 +10,6 @@ def df():
     )
 
 
-@pytest.mark.test
 @pytest.mark.functions
 def test_find_replace_single(df):
     assert df["a"].iloc[2] == 3
@@ -24,7 +23,6 @@ def test_find_replace_single(df):
     assert sum(df["c"] == 5) == 2
 
 
-@pytest.mark.test
 @pytest.mark.functions
 def test_find_replace_null_raises_error(df):
     with pytest.raises(ValueError):

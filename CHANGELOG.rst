@@ -1,5 +1,9 @@
-v0.18.1 (on deck)
-=================
+release_number (on deck)
+========================
+
+
+v0.18.1
+=======
 - [ENH] add preserve_position kwarg to deconcatenate_column with tests
   by @shandou and @ericmjl
 - [DOC] add contributions that did not leave ``git`` traces by @ericmjl

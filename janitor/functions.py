@@ -2989,7 +2989,8 @@ def update_where(
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
-    :raises: IndexError if conditions does not have the same length as df
+    :raises: IndexError if **conditions** does not have the same length as
+        **df**.
     """
     df.loc[conditions, target_column_name] = target_val
     return df

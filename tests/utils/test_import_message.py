@@ -3,7 +3,7 @@ import pytest
 from janitor.utils import import_message
 
 
-@pytest.mark.function
+@pytest.mark.utils
 def test_import_message(capsys):
     message = (
         "To use the janitor submodule chemistry, you need to install "

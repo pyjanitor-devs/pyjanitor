@@ -1,6 +1,6 @@
 release_number (on deck)
 ========================
-
+- [DOC] fix example for ``update_where``, and provide a bit more details.
 
 v0.18.1
 =======
@@ -17,7 +17,6 @@ v0.18.1
 - [ENH] add engineering submodule with unit conversion method by @rahosbach
 - [DOC] add PyPI project description
 - [ENH] add example notebook with use of finance submodule methods by @rahosbach
-- [DOC] fix example for ``update_where``, and provide a bit more details.
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,

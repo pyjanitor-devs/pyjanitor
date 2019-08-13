@@ -2963,27 +2963,33 @@ def update_where(
 
         # The dataframe must be assigned to a variable first.
         data = {
-            "a": [1, 2, 3] * 3,
-            "Bell__Chart": [1, 2, 3] * 3,
-            "decorated-elephant": [1, 2, 3] * 3,
-            "animals": ["rabbit", "leopard", "lion"] * 3,
-            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+            "a": [1, 2, 3, 4],
+            "b": [5, 6, 7, 8],
+            "c": [0, 0, 0, 0]
         }
         df = pd.DataFrame(data)
         df = (
             df
             .update_where(
-                condition=(df['column A'] == 'x') & (df['column B'] == 'y'),
-                target_column_name='column C',
-                target_val='z')
+                condition=(df['a'] > 2) & (df['b'] < 8),
+                target_column_name='c',
+                target_val=10)
             )
+        # a b  c
+        # 1 5  0
+        # 2 6  0
+        # 3 7 10
+        # 4 8  0
 
     :param df: The pandas DataFrame object.
-    :param conditions: conditions used to update a target column
-        and target value
-    :param target_column_name: Column to be updated
+    :param conditions: conditions used to update a target column and target
+        value
+    :param target_column_name: Column to be updated. If column does not exist
+        in dataframe, a new column will be created; note that entries that do
+        not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
+    :raises: IndexError if conditions does not have the same length as df
     """
     df.loc[conditions, target_column_name] = target_val
     return df

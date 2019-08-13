@@ -1,6 +1,6 @@
 release_number (on deck)
 ========================
-- [DOC] fix example for ``update_where``, and provide a bit more details.
+- [DOC] fix example for ``update_where``, and provide a bit more details, by @anzelpwj.
 - [INF] Fix pytest marks by @ericmjl (issue #520)
 
 v0.18.1

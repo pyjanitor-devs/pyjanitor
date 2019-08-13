@@ -9,7 +9,7 @@ def simple_sum(alpha, beta):
     return gamma
 
 
-@pytest.mark.functions
+@pytest.mark.utils
 def test_old_aliases():
     """
     Using old aliases should  result in `DeprecationWarning`
@@ -18,7 +18,7 @@ def test_old_aliases():
         simple_sum(a=2, b=6)
 
 
-@pytest.mark.functions
+@pytest.mark.utils
 def test_new_aliases():
     """
     Using new aliases should not result in errors or warnings
@@ -30,7 +30,7 @@ def test_new_aliases():
     assert simple_sum(alpha=2, beta=6)
 
 
-@pytest.mark.functions
+@pytest.mark.utils
 def test_mixed_aliases():
     """
     Using mixed aliases should result in errors

@@ -1,14 +1,12 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import assume, given
+from hypothesis import given
 from hypothesis import strategies as st
-from hypothesis.extra.numpy import arrays
 
 from janitor.testing_utils.strategies import df_strategy
 
 
-@pytest.mark.test
 @pytest.mark.functions
 @given(
     df=df_strategy(),

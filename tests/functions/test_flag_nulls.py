@@ -8,6 +8,7 @@ from janitor.functions import flag_nulls
 def test_functional_on_all_columns(missingdata_df):
     expected = missingdata_df.copy()
     expected["null_flag"] = [0, 1, 1] * 3
+    expected = expected.astype({"null_flag": "int32"})
 
     df = missingdata_df.flag_nulls()
 
@@ -23,6 +24,7 @@ def test_functional_on_all_columns(missingdata_df):
 def test_non_method_functional(missingdata_df):
     expected = missingdata_df.copy()
     expected["null_flag"] = [0, 1, 1] * 3
+    expected = expected.astype({"null_flag": "int32"})
 
     df = flag_nulls(missingdata_df)
 
@@ -33,6 +35,7 @@ def test_non_method_functional(missingdata_df):
 def test_functional_on_some_columns(missingdata_df):
     expected = missingdata_df.copy()
     expected["null_flag"] = [0, 0, 1] * 3
+    expected = expected.astype({"null_flag": "int32"})
 
     df = missingdata_df.flag_nulls(columns=["a"])
 
@@ -48,6 +51,7 @@ def test_functional_on_some_columns(missingdata_df):
 def test_rename_output_column(missingdata_df):
     expected = missingdata_df.copy()
     expected["flag"] = [0, 1, 1] * 3
+    expected = expected.astype({"flag": "int32"})
 
     df = missingdata_df.flag_nulls(column_name="flag")
 

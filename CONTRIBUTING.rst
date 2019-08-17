@@ -549,7 +549,7 @@ This also installs your new conda environment as a Jupyter-accessible kernel. To
 
 The command above allows you to view the documentation locally in your browser. `Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you, and you can find the html files by navigating to ``pyjanitor/docs/_build``, and then you can find the correct html file. To see the main pyjanitor page, open the ``index.html`` file.
 
-.. note:: If you get any Importing related errors when running `make docs`, first activate the development environment::
+.. note:: If you get any errors related to Importing modules when running `make docs`, first activate the development environment::
 
     $ source activate pyjanitor-dev 
 

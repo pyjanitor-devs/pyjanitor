@@ -13,6 +13,8 @@ v0.18.1 (on deck)
 - [ENH] add engineering submodule with unit conversion method by @rahosbach
 - [DOC] add PyPI project description
 - [ENH] add example notebook with use of finance submodule methods by @rahosbach
+- [DOC] added a couple of admonitions for Windows users. h/t @anzelpwj for debugging 
+   help when a few tests failed for `win32`
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,

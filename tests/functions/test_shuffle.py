@@ -1,9 +1,7 @@
-import pandas as pd
 import pytest
 
 
 @pytest.mark.functions
-@pytest.mark.test
 def test_shuffle(dataframe):
     """
     Test the shuffle function.

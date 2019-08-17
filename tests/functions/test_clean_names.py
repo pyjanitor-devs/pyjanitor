@@ -78,7 +78,6 @@ def test_multiindex_clean_names(multiindex_dataframe):
 
 
 @pytest.mark.functions
-@pytest.mark.WIP
 @pytest.mark.parametrize(
     "strip_underscores", ["both", True, "right", "r", "left", "l"]
 )

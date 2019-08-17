@@ -2,6 +2,9 @@ release_number (on deck)
 ========================
 - [DOC] fix example for ``update_where``, provide a bit more detail, and expand the bad_values example notebook to demonstrate its use by @anzelpwj.
 - [INF] Fix pytest marks by @ericmjl (issue #520)
+- [ENH] add example notebook with use of finance submodule methods by @rahosbach
+- [DOC] added a couple of admonitions for Windows users. h/t @anzelpwj for debugging 
+   help when a few tests failed for `win32`
 
 v0.18.1
 =======

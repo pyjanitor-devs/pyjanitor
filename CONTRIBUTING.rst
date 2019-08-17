@@ -536,15 +536,27 @@ Ready to contribute? Here's how to setup ``pyjanitor`` for local development.
 
 This also installs your new conda environment as a Jupyter-accessible kernel. To run correctly inside the environment, make sure you select the correct kernel from the top right corner of JupyterLab!
 
-If you are on Windows, you likely need to install ``make`` before you can run the install. You can get it from ``conda-forge``::
+
+.. note :: If you are on Windows, you may need to install ``make`` before you can run the install. You can get it from ``conda-forge``::
 
     $ conda install -c defaults -c conda-forge make
+
+    You should be able to run `make` now. The command above installs `make` to the `~/Anaconda3/Library/bin` directory. 
 
 4. You should also be able to build the docs locally. To do this, from the main ``pyjanitor`` directory::
 
     $ make docs
 
-The above command allows you to view the documentation locally in your browser. `Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you, and you can find the html files by navigating to ``pyjanitor/docs/_build``, and then you can find the correct html file. To see the main pyjanitor page, open the ``index.html`` file.
+The command above allows you to view the documentation locally in your browser. `Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you, and you can find the html files by navigating to ``pyjanitor/docs/_build``, and then you can find the correct html file. To see the main pyjanitor page, open the ``index.html`` file.
+
+.. note:: If you get any errors related to Importing modules when running `make docs`, first activate the development environment::
+
+    $ source activate pyjanitor-dev 
+
+    or by typing::
+
+    $ conda activate pyjanitor-dev
+
 
 Sphinx uses `rst files (restructured text) <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ as its markdown language. To edit documentation, go to the rst file that corresponds to the html file you would like to edit. Make the changes directly in the rst file with the correct markup. Save the file, and rebuild the html pages using the same commands as above to see what your changes look like in html.
 
@@ -566,7 +578,7 @@ Now you can make your changes locally.
 
     $ make check
 
-If any of the checks fail, you can apply any of them individually (to save time):
+If any of the checks fail, you can apply the checks individually (to save time):
 
 * Automated code formatting: ``make style``
 * Code styling problems check: ``make lint``
@@ -580,13 +592,13 @@ All of these commands are available when you create the development environment.
 
 When you run the test locally, the tests in ``chemistry.py`` & ``biology.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
 
-7. Commit your changes and push your branch to GitHub::
+8. Commit your changes and push your branch to GitHub::
 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-8. Submit a pull request through the GitHub website. When you are picking out which branch to merge into, be sure to select ``dev`` (not ``master``).
+9. Submit a pull request through the GitHub website. When you are picking out which branch to merge into, be sure to select ``dev`` (not ``master``).
 
 
 PyCharm Users

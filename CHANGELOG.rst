@@ -8,6 +8,8 @@ release_number (on deck)
 
 v0.18.1
 =======
+- [ENH] extend find_replace functionality to allow both exact match and
+  regular-expression-based fuzzy match by @shandou
 - [ENH] add preserve_position kwarg to deconcatenate_column with tests
   by @shandou and @ericmjl
 - [DOC] add contributions that did not leave ``git`` traces by @ericmjl

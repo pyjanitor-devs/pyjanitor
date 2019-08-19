@@ -2880,7 +2880,7 @@ def find_replace(
         raise ValueError("`match` can only be 'exact' or 'regex'.")
 
     if match.lower() == 'exact':
-        df[column_name] = df[column_name].apply(lambda x: mapper[x])
+        df[column_name] = df[column_name].apply(lambda x: mapper.get(x, x))
     if match.lower() == 'regex':
         for k, v in mapper.items():
             condition = df[column_name].str.contains(k, regex=True)

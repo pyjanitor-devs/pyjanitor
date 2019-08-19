@@ -2811,7 +2811,7 @@ def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def find_replace(
-    df: pd.DataFrame, column_name, mapper: Dict, match: str = 'exact'
+    df: pd.DataFrame, column_name, mapper: Dict, match: str = "exact"
 ) -> pd.DataFrame:
     """
     Perform a find-and-replace action on a column of data.
@@ -2876,12 +2876,12 @@ def find_replace(
             "find_replace() does not support null replacement. "
             "Use DataFrame.fillna() instead."
         )
-    if match.lower() not in ('exact', 'regex'):
+    if match.lower() not in ("exact", "regex"):
         raise ValueError("`match` can only be 'exact' or 'regex'.")
 
-    if match.lower() == 'exact':
+    if match.lower() == "exact":
         df[column_name] = df[column_name].apply(lambda x: mapper.get(x, x))
-    if match.lower() == 'regex':
+    if match.lower() == "regex":
         for k, v in mapper.items():
             condition = df[column_name].str.contains(k, regex=True)
             df = df.update_where(condition, column_name, v)

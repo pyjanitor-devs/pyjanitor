@@ -78,7 +78,6 @@ def test_multiindex_clean_names(multiindex_dataframe):
 
 
 @pytest.mark.functions
-@pytest.mark.WIP
 @pytest.mark.parametrize(
     "strip_underscores", ["both", True, "right", "r", "left", "l"]
 )
@@ -105,6 +104,14 @@ def test_clean_names_strip_underscores(
 
 
 @pytest.mark.functions
+def test_clean_names_strip_accents():
+    df = pd.DataFrame({"João": [1, 2], "Лука́ся": [1, 2], "Käfer": [1, 2]})
+    df = df.clean_names(strip_accents=True)
+    expected_columns = ["joao", "лукася", "kafer"]
+    assert set(df.columns) == set(expected_columns)
+
+
+@pytest.mark.functions
 def test_incorrect_strip_underscores(multiindex_dataframe):
     with pytest.raises(JanitorError):
         multiindex_dataframe.clean_names(strip_underscores="hello")
@@ -123,3 +130,32 @@ def test_clean_names_preserve_case_true(multiindex_dataframe):
 
     expected_columns = pd.MultiIndex(levels=levels, codes=codes)
     assert set(df.columns) == set(expected_columns)
+
+
+@pytest.mark.functions
+@given(df=df_strategy())
+def test_clean_names_camelcase_to_snake(df):
+    df = (
+        df.select_columns(["a"])
+        .rename_column("a", "AColumnName")
+        .clean_names(case_type="snake")
+    )
+    assert list(df.columns) == ["a_column_name"]
+
+
+@pytest.mark.functions
+def test_clean_names_camelcase_to_snake(dataframe):
+    df = (
+        dataframe.select_columns(["a", "Bell__Chart", "decorated-elephant"])
+        .rename_column("a", "snakesOnAPlane")
+        .rename_column("Bell__Chart", "SnakesOnAPlane2")
+        .rename_column("decorated-elephant", "snakes_on_a_plane3")
+        .clean_names(
+            case_type="snake", strip_underscores=True, remove_special=True
+        )
+    )
+    assert list(df.columns) == [
+        "snakes_on_a_plane",
+        "snakes_on_a_plane2",
+        "snakes_on_a_plane3",
+    ]

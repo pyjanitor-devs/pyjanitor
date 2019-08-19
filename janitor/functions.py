@@ -2,6 +2,7 @@
 
 import datetime as dt
 import re
+import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
@@ -121,6 +122,7 @@ def clean_names(
     strip_underscores: str = None,
     case_type: str = "lower",
     remove_special: bool = False,
+    strip_accents: bool = True,
     preserve_original_columns: bool = True,
 ) -> pd.DataFrame:
     """
@@ -158,8 +160,10 @@ def clean_names(
         either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
         and True.
     :param case_type: (optional) Whether to make columns lower or uppercase.
-        Current case may be preserved with 'preserve'. Default 'lower'
-        makes all characters lowercase.
+        Current case may be preserved with 'preserve',
+        while snake case conversion (from CamelCase or camelCase only)
+        can be turned on using "snake".
+        Default 'lower' makes all characters lowercase.
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
     :returns: A pandas DataFrame.
@@ -168,11 +172,11 @@ def clean_names(
     """
     original_column_names = list(df.columns)
 
-    assert case_type.lower() in {
-        "preserve",
-        "upper",
-        "lower",
-    }, "case_type argument must be one of ('preserve', 'upper', 'lower')"
+    case_types = {"preserve", "upper", "lower", "snake"}
+
+    assert (
+        case_type.lower() in case_types
+    ), f"case_type argument must be one of {case_types}"
 
     if case_type.lower() != "preserve":
         if case_type.lower() == "upper":
@@ -181,13 +185,16 @@ def clean_names(
         elif case_type.lower() == "lower":
             df = df.rename(columns=lambda x: x.lower())
 
-    df = df.rename(columns=_normalize_1)
+        elif case_type.lower() == "snake":
+            df = df.rename(columns=_camel2snake)
 
-    def _remove_special(col):
-        return "".join(item for item in col if item.isalnum() or "_" in item)
+    df = df.rename(columns=_normalize_1)
 
     if remove_special:
         df = df.rename(columns=_remove_special)
+
+    if strip_accents:
+        df = df.rename(columns=_strip_accents)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
@@ -198,6 +205,27 @@ def clean_names(
     return df
 
 
+def _remove_special(col_name):
+    """Remove special characters from column name."""
+    return "".join(item for item in col_name if item.isalnum() or "_" in item)
+
+
+_underscorer1 = re.compile(r"(.)([A-Z][a-z]+)")
+_underscorer2 = re.compile("([a-z0-9])([A-Z])")
+
+
+def _camel2snake(col_name: str) -> str:
+    """
+    Convert camelcase names to snake case.
+
+    Implementation taken from: https://gist.github.com/jaytaylor/3660565
+    by @jtaylor
+    """
+
+    subbed = _underscorer1.sub(r"\1_\2", col_name)
+    return _underscorer2.sub(r"\1_\2", subbed).lower()
+
+
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
@@ -206,6 +234,18 @@ def _normalize_1(col_name: str) -> str:
     for search, replace in FIXES:
         result = re.sub(search, replace, result)
     return result
+
+
+def _strip_accents(col_name: str) -> str:
+    """
+    Removes accents from a DataFrame column name.
+    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string # noqa: E501
+    """
+    return "".join(
+        l
+        for l in unicodedata.normalize("NFD", col_name)
+        if not unicodedata.combining(l)
+    )
 
 
 @pf.register_dataframe_method
@@ -908,15 +948,44 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name,
-    new_column_names: Union[str, Iterable[str], Any],
     sep: str,
+    new_column_names: Union[List[str], Tuple[str]] = None,
+    autoname: str = None,
+    preserve_position: bool = False,
 ) -> pd.DataFrame:
     """
     De-concatenates a single column into multiple columns.
 
-    This is the inverse of the `concatenate_columns` function.
+    This is the inverse of the ``concatenate_columns`` function.
 
     Used to quickly split columns out of a single column.
+
+    The keyword argument ``preserve_position``
+    takes ``True`` or ``False`` boolean
+    that controls whether the ``new_column_names``
+    will take the original position
+    of the to-be-deconcatenated ``column_name``:
+
+    - When `preserve_position=False` (default), `df.columns` change from
+      `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
+      In other words, the deconcatenated new columns are appended to the right
+      of the original dataframe and the original `column_name` is NOT dropped.
+    - When `preserve_position=True`, `df.column` change from
+      `[..., column_name, ...]` to `[..., new_column_names, ...]`.
+      In other words, the deconcatenated new column will REPLACE the original
+      `column_name` at its original position, and `column_name` itself
+      is dropped.
+
+    The keyword argument ``autoname`` accepts a base string
+    and then automatically creates numbered column names
+    based off the base string.
+    For example, if ``col`` is passed in
+    as the argument to ``autoname``,
+    and 4 columns are created,
+    then the resulting columns will be named
+    ``col1, col2, col3, col4``.
+    Numbering is always 1-indexed, not 0-indexed,
+    in order to make the column names human-friendly.
 
     This method does not mutate the original DataFrame.
 
@@ -924,35 +993,64 @@ def deconcatenate_column(
 
     .. code-block:: python
 
-        df = deconcatenate_columns(df,
-                                   column_name='id',
-                                   new_column_names=['col1', 'col2'],
-                                   sep='-')
+        df = deconcatenate_column(
+                df, column_name='id', new_column_names=['col1', 'col2'],
+                sep='-', preserve_position=True
+        )
 
     Method chaining example:
 
     .. code-block:: python
 
         df = (pd.DataFrame(...).
-              deconcatenate_columns(column_name='id',
-                                    new_column_names=['col1', 'col2'],
-                                    sep='-'))
+                deconcatenate_column(
+                    column_name='id', new_column_names=['col1', 'col2'],
+                    sep='-', preserve_position=True
+                ))
 
     :param df: A pandas DataFrame.
     :param column_name: The column to split.
-    :param new_column_names: A list of new column names post-splitting.
     :param sep: The separator delimiting the column's data.
+    :param new_column_names: A list of new column names post-splitting.
+    :param autoname: A base name for automatically naming the new columns.
+        Takes precedence over ``new_column_names`` if both are provided.
+    :param preserve_position: Boolean for whether or not to preserve original
+        position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
-    assert (
-        column_name in df.columns
-    ), f"column name {column_name} not present in dataframe"  # noqa: E501
+    if column_name not in df.columns:
+        raise ValueError(f"column name {column_name} not present in dataframe")
     deconcat = df[column_name].str.split(sep, expand=True)
-    assert (
-        len(new_column_names) == deconcat.shape[1]
-    ), "number of new column names not correct."
+    if preserve_position:
+        # Keep a copy of the original dataframe
+        df_original = df.copy()
+    if autoname:
+        new_column_names = [
+            f"{autoname}{i}" for i in range(1, deconcat.shape[1] + 1)
+        ]
+    if not len(new_column_names) == deconcat.shape[1]:
+        raise JanitorError(
+            f"you need to provide {len(new_column_names)} names"
+            "to new_column_names"
+        )
+
     deconcat.columns = new_column_names
-    return df.join(deconcat)
+    df = pd.concat([df, deconcat], axis=1)
+
+    if preserve_position:
+        cols = list(df_original.columns)
+        index_original = cols.index(column_name)
+        for i, col_new in enumerate(new_column_names):
+            cols.insert(index_original + i, col_new)
+        df = df[cols].drop(columns=column_name)
+
+        # TODO: I suspect this should become a test
+        # instead of a defensive check?
+        assert (
+            len(df.columns)
+            == len(df_original.columns) + len(new_column_names) - 1
+        ), "number of columns after deconcatenation is incorrect"
+    return df
 
 
 @pf.register_dataframe_method
@@ -2904,27 +3002,34 @@ def update_where(
 
         # The dataframe must be assigned to a variable first.
         data = {
-            "a": [1, 2, 3] * 3,
-            "Bell__Chart": [1, 2, 3] * 3,
-            "decorated-elephant": [1, 2, 3] * 3,
-            "animals": ["rabbit", "leopard", "lion"] * 3,
-            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+            "a": [1, 2, 3, 4],
+            "b": [5, 6, 7, 8],
+            "c": [0, 0, 0, 0]
         }
         df = pd.DataFrame(data)
         df = (
             df
             .update_where(
-                condition=(df['column A'] == 'x') & (df['column B'] == 'y'),
-                target_column_name='column C',
-                target_val='z')
+                condition=(df['a'] > 2) & (df['b'] < 8),
+                target_column_name='c',
+                target_val=10)
             )
+        # a b  c
+        # 1 5  0
+        # 2 6  0
+        # 3 7 10
+        # 4 8  0
 
     :param df: The pandas DataFrame object.
-    :param conditions: conditions used to update a target column
-        and target value
-    :param target_column_name: Column to be updated
+    :param conditions: conditions used to update a target column and target
+        value
+    :param target_column_name: Column to be updated. If column does not exist
+        in dataframe, a new column will be created; note that entries that do
+        not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
+    :raises: IndexError if **conditions** does not have the same length as
+        **df**.
     """
     df.loc[conditions, target_column_name] = target_val
     return df
@@ -2970,19 +3075,17 @@ def groupby_agg(
     new_column_name,
     agg_column_name,
     agg: Union[Callable, str, List, Dict],
-    axis: int = 0,
 ) -> pd.DataFrame:
     """
-    Method-chain a groupby and a merge in a single step.
+    Shortcut for assigning a groupby-transform to a new column.
 
     This method does not mutate the original DataFrame.
 
-    Without this function, we would have to break out of method chaining:
+    Without this function, we would have to write a verbose line:
 
     .. code-block:: python
 
-        df_grp = df.groupby(...).agg(...)
-        df = df.merge(df_grp, ...)
+        df = df.assign(...=df.groupby(...)[...].tranform(...))
 
     Now, this function can be method-chained:
 
@@ -3004,21 +3107,9 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    df_grp = (
-        df.groupby(by, axis=axis)
-        .agg(agg, axis=axis)
-        .reset_index()
-        .rename(columns={agg_column_name: new_column_name})
-    )
-
-    if isinstance(by, list) or isinstance(by, tuple):
-        df_grp = df_grp[[*by, new_column_name]]
-    else:
-        df_grp = df_grp[[by, new_column_name]]
-
-    df = df.merge(df_grp, on=by)
-
-    return df
+    new_col = df.groupby(by).transform(agg)
+    df_new = df.assign(**{new_column_name: new_col})
+    return df_new
 
 
 @pf.register_dataframe_accessor("data_description")
@@ -3289,4 +3380,77 @@ def join_apply(df, func, new_column_name):
     :param new_name: New column name.
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
+    return df
+
+
+@pf.register_dataframe_method
+def flag_nulls(
+    df: pd.DataFrame,
+    column_name: str = "null_flag",
+    columns: Union[str, Iterable[str], Any] = None,
+) -> pd.DataFrame:
+    """
+    Creates a new column to indicate whether you have null values in a given
+    row. If the columns parameter is not set, looks across the entire
+    DataFrame, otherwise will look only in the columns you set.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        data = pd.DataFrame(
+            {'a': [1, 2, None, 4],
+             'b': [5.0, None, 7.0, 8.0]})
+
+        df.flag_nulls()
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   1
+        #   4  | 8.0  |   0
+
+        jn.functions.flag_nulls(data)
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   1
+        #   4  | 8.0  |   0
+
+        df.flag_nulls(columns=['b'])
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   0
+        #   4  | 8.0  |   0
+
+
+    :param df: Input Pandas dataframe.
+    :param column_name: Name for the output column. Defaults to 'null_flag'.
+    :param columns: List of columns to look at for finding null values. If you
+        only want to look at one column, you can simply give its name. If set
+        to None (default), all DataFrame columns are used.
+    :returns: Input dataframe with the null flag column.
+    :raises: ValueError
+    """
+    # Sort out columns input
+    if isinstance(columns, str):
+        columns = [columns]
+    elif columns is None:
+        columns = df.columns
+    elif not isinstance(columns, Iterable):
+        # Handle cases where we have an integer column or something
+        columns = [columns]
+
+    # Input sanitation checks
+    check_column(df, columns)
+    check_column(df, [column_name], present=False)
+
+    # This algorithm works best for n_rows >> n_cols. See issue #501
+    null_array = np.zeros(len(df))
+    for col in columns:
+        null_array = np.logical_or(null_array, pd.isnull(df[col]))
+
+    df = df.copy()
+    df[column_name] = null_array.astype(int)
     return df

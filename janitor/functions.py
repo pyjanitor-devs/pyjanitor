@@ -2810,33 +2810,65 @@ def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def find_replace(df: pd.DataFrame, column_name, mapper: Dict) -> pd.DataFrame:
+def find_replace(
+    df: pd.DataFrame, column_name, mapper: Dict, match: str = 'exact'
+) -> pd.DataFrame:
     """
     Perform a find-and-replace action on a column of data.
 
     This method mutates the original DataFrame.
 
-    For example, let's say we have a column for which we want to replace all
-    of the values 'a' with 1, 'b' with 2, 'c' with 3. We would use the
-    following function call:
+    Depending on use cases, users can choose either exact, full value matching
+    or regular-expression-based fuzzy matching (substring matching is allowed
+    in the latter case). For strings, the matching is always case sensitive.
+
+    For instance, given a dataframe containing orders at a coffee shop:
 
     .. code-block:: python
 
-        df = (
-            pd.DataFrame(...)
-            .find_replace('column_name', {'a': 1, 'b': 2, 'c': 3})
+        df = pd.DataFrame({
+            'customer': ['Mary', 'Tom', 'Lila'],
+            'order': ['ice coffee', 'lemonade', 'regular coffee']
+        })
+
+    Our task is to replace values `'ice coffee'` and `'regular coffee'`
+    of the `'order'` column into `'latte'`.
+
+    Example 1: Exact matching
+
+    .. code-block:: python
+
+        # Functional usage
+        df = find_replace(
+            df, 'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            match='exact'
         )
 
-    This find-and-replace functionality does an exact match only. Hence,
-    substring matches do not work. The value of a cell in the dataframe
-    must be exactly 'a', 'b', or 'c', otherwise the replacement will not
-    happen and the original data will be left in-place.
+        # Method chaining usage
+        df = df.find_replace(
+            'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            match='exact'
+        )
+
+
+    Example 2: Regular-expression-based matching
+
+    .. code-block:: python
+
+        # Functional usage
+        df = find_replace(df, 'order', {'coffee$': 'latte'}, match='regex')
+
+        # Method chaining usage
+        df = df.find_replace('order', {'coffee$': 'latte'}, match='regex')
+
 
     :param df: A pandas DataFrame.
     :param column_name: The column on which the find/replace action is to be
         made.
     :param mapper: A dictionary that maps "thing to find" -> "thing to
         replace".  Note: Does not support null-value replacement.
+    :param match: A string that dictates whether exact match or
+        regular-expression-based fuzzy match will be used for finding patterns
     :returns: A pandas DataFrame.
     """
     if any(map(pd.isna, mapper.keys())):
@@ -2844,8 +2876,15 @@ def find_replace(df: pd.DataFrame, column_name, mapper: Dict) -> pd.DataFrame:
             "find_replace() does not support null replacement. "
             "Use DataFrame.fillna() instead."
         )
+    if match.lower() not in ('exact', 'regex'):
+        raise ValueError("`match` can only be 'exact' or 'regex'.")
 
-    df[column_name] = df[column_name].apply(lambda x: mapper.get(x, x))
+    if match.lower() == 'exact':
+        df[column_name] = df[column_name].apply(lambda x: mapper[x])
+    if match.lower() == 'regex':
+        for k, v in mapper.items():
+            condition = df[column_name].str.contains(k, regex=True)
+            df = df.update_where(condition, column_name, v)
     return df
 
 

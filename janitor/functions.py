@@ -2920,6 +2920,8 @@ def find_replace(
     or regular-expression-based fuzzy matching (substring matching is allowed
     in the latter case). For strings, the matching is always case sensitive.
 
+    Note that default value for keyword argument `match` is "exact".
+
     For instance, given a dataframe containing orders at a coffee shop:
 
     .. code-block:: python
@@ -2966,8 +2968,10 @@ def find_replace(
     :param mapper: A dictionary that maps "thing to find" -> "thing to
         replace".  Note: Does not support null-value replacement.
     :param match: A string that dictates whether exact match or
-        regular-expression-based fuzzy match will be used for finding patterns
+        regular-expression-based fuzzy match will be used for finding patterns.
+        Default to "exact". Can only be "exact" or "regex".
     :returns: A pandas DataFrame.
+    :raises: ValueError
     """
     if any(map(pd.isna, mapper.keys())):
         raise ValueError(

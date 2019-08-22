@@ -1,14 +1,20 @@
-import pytest
 import pandas as pd
+import pytest
 from pyspark.sql import SparkSession
 from sklearn.datasets import load_iris
 
 import janitor.spark
 
 
-@pytest.fixture(scope="module")
-def df():
+@pytest.fixture(scope="session")
+def spark():
     spark = SparkSession.builder.getOrCreate()
+    yield spark
+    spark.stop()
+
+
+@pytest.fixture(scope="module")
+def df(spark):
     iris = load_iris()
     df = pd.DataFrame(iris.data, columns=iris.feature_names)
     return spark.createDataFrame(df)

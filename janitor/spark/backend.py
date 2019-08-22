@@ -1,7 +1,7 @@
 """ Backend functions for pyspark."""
 
-from functools import wraps
 import warnings
+from functools import wraps
 
 
 class CachedAccessor:
@@ -41,6 +41,7 @@ def _register_accessor(name, cls):
     ----
     Modified based on pandas.core.accessor.
     """
+
     def decorator(accessor):
         if hasattr(cls, name):
             warnings.warn(
@@ -74,10 +75,9 @@ def register_dataframe_method(method):
     ----
     Modified based on pandas_flavor.register.
     """
+
     def inner(*args, **kwargs):
-
         class AccessorMethod:
-
             def __init__(self, pyspark_obj):
                 self._obj = pyspark_obj
 

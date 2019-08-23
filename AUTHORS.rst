@@ -79,3 +79,4 @@ Contributors
 - `@mralbu <https://github.com/mralbu>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues/502>`_
 - `@anzelpwj <https://github.com/anzelpwj>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3anzelpwj>`_
 - `@Ram-N <https://github.com/Ram-N>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ARam-N>`_
+- `@zjpoh <https://github.com/zjpoh>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Azjpoh>`_

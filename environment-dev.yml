@@ -29,6 +29,7 @@ dependencies:
 - pipreqs
 - pyflakes
 - pylint
+- pyspark
 - pytest
 - pytest-azurepipelines
 - pytest-cov

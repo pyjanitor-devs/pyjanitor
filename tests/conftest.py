@@ -3,6 +3,14 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+from pyspark.sql import SparkSession
+from pyspark.sql.types import (
+    FloatType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType,
+)
 
 from janitor.testing_utils import date_data
 
@@ -130,6 +138,27 @@ def df_duplicated_columns():
     # containing three 'a' columns being duplicated
     clean_df = df.clean_names(remove_special=True)
     return clean_df
+
+
+@pytest.fixture(scope="session")
+def spark():
+    spark = SparkSession.builder.getOrCreate()
+    yield spark
+    spark.stop()
+
+
+@pytest.fixture
+def spark_df(spark):
+    schema = StructType(
+        [
+            StructField("a", IntegerType(), True),
+            StructField("Bell__Chart", FloatType(), True),
+            StructField("decorated-elephant", IntegerType(), True),
+            StructField("animals@#$%^", StringType(), True),
+            StructField("cities", StringType(), True),
+        ]
+    )
+    return spark.createDataFrame([], schema)
 
 
 def pytest_configure():

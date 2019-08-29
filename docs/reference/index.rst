@@ -16,6 +16,7 @@ methods.
    engineering
    finance
    general_functions
+   pyspark
 
 .. autosummary::
       janitor.biology
@@ -23,3 +24,4 @@ methods.
       janitor.engineering
       janitor.finance
       janitor.functions
+      janitor.spark.functions

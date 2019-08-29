@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
+
 import pandas_flavor as pf
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
@@ -166,27 +167,13 @@ def clean_names(
         Default 'lower' makes all characters lowercase.
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
-    :returns: A pandas DataFrame.
     :param preserve_original_columns: (optional) Preserve original names.
         This is later retrievable using `df.original_columns`.
+    :returns: A pandas DataFrame.
     """
     original_column_names = list(df.columns)
 
-    case_types = {"preserve", "upper", "lower", "snake"}
-
-    assert (
-        case_type.lower() in case_types
-    ), f"case_type argument must be one of {case_types}"
-
-    if case_type.lower() != "preserve":
-        if case_type.lower() == "upper":
-            df = df.rename(columns=lambda x: x.upper())
-
-        elif case_type.lower() == "lower":
-            df = df.rename(columns=lambda x: x.lower())
-
-        elif case_type.lower() == "snake":
-            df = df.rename(columns=_camel2snake)
+    df = df.rename(columns=lambda x: _change_case(x, case_type))
 
     df = df.rename(columns=_normalize_1)
 
@@ -203,6 +190,23 @@ def clean_names(
     if preserve_original_columns:
         df.__dict__["original_columns"] = original_column_names
     return df
+
+
+def _change_case(col: str, case_type: str) -> str:
+    """Change case of a column name."""
+    case_types = ["preserve", "upper", "lower", "snake"]
+    if case_type.lower() not in case_types:
+        raise JanitorError(f"case_type must be one of: {case_types}")
+
+    if case_type.lower() != "preserve":
+        if case_type.lower() == "upper":
+            col = col.upper()
+        elif case_type.lower() == "lower":
+            col = col.lower()
+        elif case_type.lower() == "snake":
+            col = _camel2snake(col)
+
+    return col
 
 
 def _remove_special(col_name):

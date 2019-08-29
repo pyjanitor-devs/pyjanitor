@@ -132,6 +132,17 @@ def _strip_underscores(
         and True.
     :returns: A pandas DataFrame with underscores removed.
     """
+
+    df = df.rename(
+        columns=lambda x: _strip_underscores_func(x, strip_underscores)
+    )
+    return df
+
+
+def _strip_underscores_func(
+    col: str, strip_underscores: Union[str, bool] = None
+) -> pd.DataFrame:
+    """Strip underscores from a string."""
     underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
         raise JanitorError(
@@ -139,12 +150,12 @@ def _strip_underscores(
         )
 
     if strip_underscores in ["left", "l"]:
-        df = df.rename(columns=lambda x: x.lstrip("_"))
+        col = col.lstrip("_")
     elif strip_underscores in ["right", "r"]:
-        df = df.rename(columns=lambda x: x.rstrip("_"))
+        col = col.rstrip("_")
     elif strip_underscores == "both" or strip_underscores is True:
-        df = df.rename(columns=lambda x: x.strip("_"))
-    return df
+        col = col.strip("_")
+    return col
 
 
 def import_message(submodule: str, package: str, installation: str):

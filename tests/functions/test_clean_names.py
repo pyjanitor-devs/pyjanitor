@@ -88,6 +88,8 @@ def test_clean_names_strip_underscores(
         df = multiindex_dataframe.rename(columns=lambda x: x + "_")
     elif strip_underscores in ["left", "l"]:
         df = multiindex_dataframe.rename(columns=lambda x: "_" + x)
+    elif strip_underscores in ["both", None]:
+        df = multiindex_dataframe.rename(columns=lambda x: "_" + x + "_")
     else:
         df = multiindex_dataframe
     df = df.clean_names(strip_underscores=strip_underscores)

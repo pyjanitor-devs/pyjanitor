@@ -168,7 +168,7 @@ Current functionality includes:
   into dummy-encoded variables
 - Concatenating and deconcatenating columns, based on a delimiter
 - Syntactic sugar for filtering the dataframe based on queries on a column
-- Experimental submodules for finance, biology, chemistry, and engineering
+- Experimental submodules for finance, biology, chemistry, engineering, and pyspark
 
 .. pypi-doc
 

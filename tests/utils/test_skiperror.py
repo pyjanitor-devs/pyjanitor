@@ -8,14 +8,13 @@ import pytest
 @pytest.mark.functions
 def test_skiperror():
     df = pd.DataFrame({"x": [1, 2, 3, "a"], "y": [1, 2, 3, "b"]})
-    func = lambda s: s + 1
+
+    def func(s):
+        return s + 1
 
     # Verify that applying function causes error
-    try:
+    with pytest.raises(Exception):
         df["x"].apply(func)
-        assert False
-    except:
-        pass
 
     result = df["x"].apply(skiperror(func))
     assert (result.values[:-1] == np.array([2, 3, 4])).all() and np.isnan(

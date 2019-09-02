@@ -347,7 +347,7 @@ def skiperror(
     def _wrapped(x, *args, **kwargs):
         try:
             return f(x, *args, **kwargs)
-        except:
+        except Exception:
             if return_x:
                 return x
             return return_val

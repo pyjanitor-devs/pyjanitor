@@ -8,14 +8,13 @@ import pytest
 @pytest.mark.functions
 def test_skipna():
     df = pd.DataFrame({"x": ["a", "b", "c", np.nan], "y": [1, 2, 3, np.nan]})
-    func = lambda s: s + "1"
+
+    def func(s):
+        return s + "1"
 
     # Verify that applying function causes error
-    try:
+    with pytest.raises(Exception):
         df["x"].apply(func)
-        assert False
-    except:
-        pass
 
     result = df["x"].apply(skipna(func))
     assert (

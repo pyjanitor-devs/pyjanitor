@@ -7,6 +7,7 @@ release_number (on deck)
    help when a few tests failed for `win32`
 - [ENH] Pyjanitor for PySpark @zjpoh
 - [ENH] Add pyspark clean_names @zjpoh
+- [DOC] Update README with functional ``pandas`` API example.
 
 v0.18.1
 =======

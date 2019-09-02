@@ -18,14 +18,14 @@ def test_encode_categorical(df):
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_encode_categorical_missing_column(df):
-    with pytest.raises(AssertionError):
+    with pytest.raises(JanitorError):
         df.encode_categorical("aloha")
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_encode_categorical_missing_columns(df):
-    with pytest.raises(AssertionError):
+    with pytest.raises(JanitorError):
         df.encode_categorical(["animals@#$%^", "cities", "aloha"])
 
 

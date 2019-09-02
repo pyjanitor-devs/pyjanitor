@@ -26,9 +26,8 @@ def generate_long_description() -> str:
 
     # Find pypi-doc comments in README
     indices = [m.start() for m in re.finditer(".. pypi-doc", readme)]
-    assert (
-        len(indices) % 2 == 0
-    ), "Odd number of `.. pypi-doc` comments in README"
+    if len(indices) % 2 != 0:
+        raise Exception("Odd number of `.. pypi-doc` comments in README")
 
     # Loop through pairs of comments and save text between pairs
     long_description = ""

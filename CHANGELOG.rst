@@ -7,6 +7,7 @@ release_number (on deck)
    help when a few tests failed for `win32`
 - [ENH] Pyjanitor for PySpark @zjpoh
 - [ENH] Add pyspark clean_names @zjpoh
+- [ENH] Add decorator functions for missing and error handling @jiafengkevinchen
 
 v0.18.1
 =======

@@ -4,6 +4,7 @@ from typing import Iterable, Union
 
 import pandas as pd
 
+from .errors import JanitorError
 from .utils import deprecated_alias
 
 
@@ -23,8 +24,10 @@ def read_csvs(
         original pandas `read_csv`.
     """
     # Sanitize input
-    assert files_path is not None
-    assert len(files_path) != 0
+    if files_path is None:
+        raise JanitorError("`None` provided for `files_path`")
+    if len(files_path) == 0:
+        raise JanitorError("0 length `files_path` provided")
 
     # Read the csv files
     # String to file/folder or file pattern provided

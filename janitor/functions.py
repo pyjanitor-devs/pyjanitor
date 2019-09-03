@@ -363,16 +363,14 @@ def encode_categorical(
     """
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
-            assert col in df.columns, JanitorError(
-                "{col} missing from dataframe columns!".format(col=col)
-            )
+            if col not in df.columns:
+                raise JanitorError(f"{col} missing from dataframe columns!")
             df[col] = pd.Categorical(df[col])
     elif isinstance(column_names, str):
-        assert column_names in df.columns, JanitorError(
-            "{column_names} missing from dataframe columns!".format(
-                column_names=column_names
+        if column_names not in df.columns:
+            raise JanitorError(
+                f"{column_names} missing from dataframe columns!"
             )
-        )
         df[column_names] = pd.Categorical(df[column_names])
     else:
         raise JanitorError(
@@ -421,14 +419,12 @@ def label_encode(
     le = LabelEncoder()
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
-            assert col in df.columns, JanitorError(
-                f"{col} missing from column_names"
-            )  # noqa: E501
+            if col not in df.columns:
+                raise JanitorError(f"{col} missing from column_names")
             df[f"{col}_enc"] = le.fit_transform(df[col])
     elif isinstance(column_names, str):
-        assert column_names in df.columns, JanitorError(
-            f"{column_names} missing from column_names"
-        )  # noqa: E501
+        if column_names not in df.columns:
+            raise JanitorError(f"{column_names} missing from column_names")
         df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
         raise JanitorError(
@@ -836,14 +832,14 @@ def fill_empty(
     """
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
-            assert (
-                col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            if col not in df.columns:
+                raise JanitorError(f"{col} missing from dataframe columns!")
             df[col] = df[col].fillna(value)
     else:
-        assert (
-            column_names in df.columns
-        ), "{col} missing from dataframe columns!".format(col=column_names)
+        if column_names not in df.columns:
+            raise JanitorError(
+                f"{column_names} missing from dataframe columns!"
+            )
         df[column_names] = df[column_names].fillna(value)
 
     return df
@@ -1050,10 +1046,12 @@ def deconcatenate_column(
 
         # TODO: I suspect this should become a test
         # instead of a defensive check?
-        assert (
-            len(df.columns)
-            == len(df_original.columns) + len(new_column_names) - 1
-        ), "number of columns after deconcatenation is incorrect"
+        if len(df.columns) != (
+            len(df_original.columns) + len(new_column_names) - 1
+        ):
+            raise JanitorError(
+                "number of columns after deconcatenation is incorrect"
+            )
     return df
 
 

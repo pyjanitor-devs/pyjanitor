@@ -270,8 +270,8 @@ The final way is to use the `pipe()`_ method:
 Contributing
 ------------
 
-See ``CONTRIBUTING.rst`` for a full description
-of the process of contributing to ``pyjanitor``.
+Follow `contribution docs 
+<https://pyjanitor.readthedocs.io/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
 
 Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~

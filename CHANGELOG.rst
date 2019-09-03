@@ -1,5 +1,6 @@
 release_number (on deck)
 ========================
+- [DOC] Added contribution page link to readme
 - [DOC] fix example for ``update_where``, provide a bit more detail, and expand the bad_values example notebook to demonstrate its use by @anzelpwj.
 - [INF] Fix pytest marks by @ericmjl (issue #520)
 - [ENH] add example notebook with use of finance submodule methods by @rahosbach
@@ -8,6 +9,7 @@ release_number (on deck)
 - [ENH] Pyjanitor for PySpark @zjpoh
 - [ENH] Add pyspark clean_names @zjpoh
 - [ENH] Convert asserts to raise exceptions by @hectormz
+- [ENH] Add decorator functions for missing and error handling @jiafengkevinchen
 - [DOC] Update README with functional ``pandas`` API example.
 
 v0.18.1

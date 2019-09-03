@@ -9,6 +9,7 @@ release_number (on deck)
 - [ENH] Pyjanitor for PySpark @zjpoh
 - [ENH] Add pyspark clean_names @zjpoh
 - [ENH] Convert asserts to raise exceptions by @hectormz
+- [ENH] Add decorator functions for missing and error handling @jiafengkevinchen
 
 v0.18.1
 =======

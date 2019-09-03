@@ -4,6 +4,7 @@ import functools
 import warnings
 from typing import Callable, Dict, List, Union
 
+import numpy as np
 import pandas as pd
 
 from .errors import JanitorError
@@ -289,3 +290,66 @@ def check_column(
                 raise ValueError(
                     f"{column_name} already present in dataframe columns!"
                 )
+
+
+def skipna(f: Callable) -> Callable:
+    """
+    Decorator for escaping np.nan and None in a function
+
+    Should be used like this::
+
+        df[column].apply(skipna(transform))
+
+    or::
+
+        @skipna
+        def transform(x):
+            pass
+
+    :param f: the function to be wrapped
+    :returns: _wrapped, the wrapped function
+    """
+
+    def _wrapped(x, *args, **kwargs):
+        if (type(x) is float and np.isnan(x)) or x is None:
+            return np.nan
+        else:
+            return f(x, *args, **kwargs)
+
+    return _wrapped
+
+
+def skiperror(
+    f: Callable, return_x: bool = False, return_val=np.nan
+) -> Callable:
+    """
+    Decorator for escaping errors in a function
+
+    Should be used like this::
+
+        df[column].apply(
+            skiperror(transform, return_val=3, return_x=False))
+
+    or::
+
+        @skiperror(return_val=3, return_x=False)
+        def transform(x):
+            pass
+
+    :param f: the function to be wrapped
+    :param return_x: whether or not the original value that caused error
+        should be returned
+    :param return_val: the value to be returned when an error hits.
+        Ignored if return_x is True
+    :returns: _wrapped, the wrapped function
+    """
+
+    def _wrapped(x, *args, **kwargs):
+        try:
+            return f(x, *args, **kwargs)
+        except Exception:
+            if return_x:
+                return x
+            return return_val
+
+    return _wrapped

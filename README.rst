@@ -45,12 +45,15 @@ dropping null values (``.dropna()``), and more,
 are accomplished via the appropriate ``pd.DataFrame`` method calls.
 
 Inspired by the ease-of-use
-and expressiveness of the ``dplyr`` package of the R statistical language ecosystem,
-we have evolved ``pyjanitor`` into a language for expressing the data processing DAG for ``pandas`` users.
+and expressiveness of the ``dplyr`` package
+of the R statistical language ecosystem,
+we have evolved ``pyjanitor`` into a language
+for expressing the data processing DAG for ``pandas`` users.
 
 .. pypi-doc
 
-To accomplish this, actions for which we would need to invoke imperative-style statements,
+To accomplish this,
+actions for which we would need to invoke imperative-style statements,
 can be replaced with method chains
 that allow one to read off the logical order of actions taken.
 Let us see the annotated example below.
@@ -81,7 +84,7 @@ and begin with some sample data for this example :
     }
 
 
-In ``pandas`` code, this would look as such:
+In ``pandas`` code, most users might type something like this:
 
 .. code-block:: python
 
@@ -108,6 +111,33 @@ In ``pandas`` code, this would look as such:
     # 5. Let's add some data for another company. Say 'Google'
     df['Google'] = [450.0, 550.0, 800.0]
 
+    # Output looks like this:
+    # Out[15]:
+    # SalesMonth  Amazon  Facebook  Google
+    # 0        Jan   180.0     400.0   450.0
+    # 1        Feb   250.0     500.0   550.0
+    # 3      April   500.0     675.0   800.0
+
+Slightly more advanced users might take advantage of the functional API:
+
+.. code-block:: python
+
+    df = (
+        pd.DataFrame(company_sales)
+        .drop(columns="Company1")
+        .dropna(subset=['Company2', 'Company3'])
+        .rename(columns={"Company2": "Amazon", "Company3": "Facebook"})
+        .assign(Google=[450.0, 550.0, 800.0])
+        )
+
+    # Output looks like this:
+    # Out[15]:
+    # SalesMonth  Amazon  Facebook  Google
+    # 0        Jan   180.0     400.0   450.0
+    # 1        Feb   250.0     500.0   550.0
+    # 3      April   500.0     675.0   800.0
+
+
 
 With ``pyjanitor``, we enable method chaining with method names
 that are *verbs*, which describe the action taken.
@@ -115,7 +145,6 @@ that are *verbs*, which describe the action taken.
 .. code-block:: python
 
 
-    # The PyJanitor Way
     df = (
         pd.DataFrame.from_dict(company_sales)
         .remove_columns(['Company1'])
@@ -125,7 +154,16 @@ that are *verbs*, which describe the action taken.
         .add_column('Google', [450.0, 550.0, 800.0])
     )
 
-As such, the pyjanitor's etymology has a two-fold relationship to "cleanliness".
+    # Output looks like this:
+    # Out[15]:
+    # SalesMonth  Amazon  Facebook  Google
+    # 0        Jan   180.0     400.0   450.0
+    # 1        Feb   250.0     500.0   550.0
+    # 3      April   500.0     675.0   800.0
+
+
+As such,
+pyjanitor's etymology has a two-fold relationship to "cleanliness".
 Firstly, it's about extending Pandas with convenient data cleaning routines.
 Secondly, it's about providing a cleaner, method-chaining, verb-based API
 for common pandas routines.
@@ -239,7 +277,8 @@ Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Keeping in mind the etymology of pyjanitor,
-contributing a new function to pyjanitor is a task that is not difficult at all.
+contributing a new function to pyjanitor
+is a task that is not difficult at all.
 
 Define a function
 ^^^^^^^^^^^^^^^^^

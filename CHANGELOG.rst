@@ -10,6 +10,7 @@ release_number (on deck)
 - [ENH] Add pyspark clean_names @zjpoh
 - [ENH] Convert asserts to raise exceptions by @hectormz
 - [ENH] Add decorator functions for missing and error handling @jiafengkevinchen
+- [DOC] Update README with functional ``pandas`` API example.
 
 v0.18.1
 =======

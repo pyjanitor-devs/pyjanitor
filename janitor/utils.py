@@ -234,6 +234,38 @@ def deprecated_alias(**aliases) -> Callable:
     return decorator
 
 
+def refactored_function(message: str) -> Callable:
+    """Used as a decorator when refactoring functions
+    
+    Implementation is inspired from `Hacker Noon`_.
+
+    .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987  # noqa: E501
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        @refactored_function(
+            message="simple_sum() has been refactored. Use hard_sum() instead."
+        )
+        def simple_sum(alpha, beta):
+            return alpha + beta
+
+    :param message: Message to use in warning user about refactoring.
+    :return: Your original function wrapped with the kwarg redirection
+        function.
+    """
+
+    def decorator(func):
+        def emit_warning(*args, **kwargs):
+            warnings.warn(message, FutureWarning)
+            return func(*args, **kwargs)
+
+        return emit_warning
+
+    return decorator
+
+
 def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     """
     Used to update deprecated argument names with new names. Throws a

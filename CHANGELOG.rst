@@ -11,6 +11,7 @@ release_number (on deck)
 - [ENH] Convert asserts to raise exceptions by @hectormz
 - [ENH] Add decorator functions for missing and error handling @jiafengkevinchen
 - [DOC] Update README with functional ``pandas`` API example.
+- [INF] Move ``get_features_targets()`` to new ``ml.py`` module by @hectormz
 
 v0.18.1
 =======

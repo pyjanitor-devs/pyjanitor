@@ -63,7 +63,10 @@ def register_dataframe_accessor(name):
     ----
     Modified based on pandas.core.accessor.
     """
-    from pyspark.sql import DataFrame
+    try:
+        from pyspark.sql import DataFrame
+    except ImportError:
+        import_message("pyspark", "conda install pyspark")
 
     return _register_accessor(name, DataFrame)
 

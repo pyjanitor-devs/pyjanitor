@@ -12,6 +12,7 @@ release_number (on deck)
 - [ENH] Add decorator functions for missing and error handling @jiafengkevinchen
 - [DOC] Update README with functional ``pandas`` API example.
 - [INF] Move ``get_features_targets()`` to new ``ml.py`` module by @hectormz
+- [ENH] Add chirality to morgan fingerprints in janitor.chemistry submodule by @Clayton-Springer
 
 v0.18.1
 =======

@@ -11,7 +11,7 @@ from . import backend
 try:
     from pyspark.sql import DataFrame
 except ImportError:
-    import_message("spark", "pyspark", "conda install pyspark")
+    import_message("spark", "pyspark", "conda install -c conda-forge pyspark")
 
 
 @backend.register_dataframe_method

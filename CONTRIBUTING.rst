@@ -598,7 +598,7 @@ Styling problems must be resolved before the pull request can be accepted.
 
 All of these commands are available when you create the development environment.
 
-When you run the test locally, the tests in ``chemistry.py`` & ``biology.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
+When you run the test locally, the tests in ``chemistry.py``, ``biology.py``, ``spark.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
 
 8. Commit your changes and push your branch to GitHub::
 

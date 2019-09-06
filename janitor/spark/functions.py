@@ -4,11 +4,14 @@ General purpose data cleaning functions for pyspark.
 
 import re
 
-from pyspark.sql import DataFrame
-
 from .. import functions as janitor_func
 from .. import utils as janitor_utils
 from . import backend
+
+try:
+    from pyspark.sql import DataFrame
+except ImportError:
+    import_message("spark", "pyspark", "conda install -c conda-forge pyspark")
 
 
 @backend.register_dataframe_method

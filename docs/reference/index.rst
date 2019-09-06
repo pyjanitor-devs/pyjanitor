@@ -15,6 +15,7 @@ methods.
    chemistry
    engineering
    finance
+   ml
    general_functions
    pyspark
 
@@ -23,5 +24,6 @@ methods.
       janitor.chemistry
       janitor.engineering
       janitor.finance
+      janitor.ml
       janitor.functions
       janitor.spark.functions

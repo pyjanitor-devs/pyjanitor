@@ -1,10 +1,11 @@
 import pytest
 from hypothesis import given
 
+import janitor.ml
 from janitor.testing_utils.strategies import df_strategy
 
 
-@pytest.mark.functions
+@pytest.mark.ml
 @given(df=df_strategy())
 def test_get_features_targets(df):
     X, y = df.clean_names().get_features_targets(
@@ -14,7 +15,7 @@ def test_get_features_targets(df):
     assert len(y.shape) == 1
 
 
-@pytest.mark.functions
+@pytest.mark.ml
 @given(df=df_strategy())
 def test_get_features_targets_multi_features(df):
     X, y = df.clean_names().get_features_targets(
@@ -25,7 +26,7 @@ def test_get_features_targets_multi_features(df):
     assert len(y.shape) == 1
 
 
-@pytest.mark.functions
+@pytest.mark.ml
 @given(df=df_strategy())
 def test_get_features_target_multi_columns(df):
     X, y = df.clean_names().get_features_targets(

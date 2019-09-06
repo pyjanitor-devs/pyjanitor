@@ -66,7 +66,9 @@ def register_dataframe_accessor(name):
     try:
         from pyspark.sql import DataFrame
     except ImportError:
-        import_message("spark", "pyspark", "conda install -c conda-forge pyspark")
+        import_message(
+            "spark", "pyspark", "conda install -c conda-forge pyspark"
+        )
 
     return _register_accessor(name, DataFrame)
 

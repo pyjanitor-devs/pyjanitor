@@ -244,12 +244,12 @@ def morgan_fingerprint(
 
     if kind == "bits":
         fps = [
-            GetMorganFingerprintAsBitVect(m, radius, nbits)
+            GetMorganFingerprintAsBitVect(m, radius, nbits, useChirality=True)
             for m in df[mols_column_name]
         ]
     elif kind == "counts":
         fps = [
-            GetHashedMorganFingerprint(m, radius, nbits)
+            GetHashedMorganFingerprint(m, radius, nbits, useChirality=True)
             for m in df[mols_column_name]
         ]
 

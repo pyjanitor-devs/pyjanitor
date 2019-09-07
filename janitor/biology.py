@@ -11,7 +11,10 @@ try:
     from Bio import SeqIO
 except ImportError:
     import_message(
-        "biology", "biopython", "conda install -c conda-forge biopython"
+        submodule="biology",
+        package="biopython",
+        conda_channel="conda-forge",
+        pip_install=True,
     )
 
 

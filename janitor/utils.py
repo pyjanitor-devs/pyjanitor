@@ -1,6 +1,8 @@
 """ Miscellaneous internal PyJanitor helper functions. """
 
 import functools
+import os
+import sys
 import warnings
 from typing import Callable, Dict, List, Union
 
@@ -159,7 +161,12 @@ def _strip_underscores_func(
     return col
 
 
-def import_message(submodule: str, package: str, installation: str):
+def import_message(
+    submodule: str,
+    package: str,
+    conda_channel: str = None,
+    pip_install: bool = False,
+):
     """
     Generic message for indicating to the user when a function relies on an
     optional module / package that is not currently installed. Includes
@@ -167,18 +174,37 @@ def import_message(submodule: str, package: str, installation: str):
 
     :param submodule: pyjanitor submodule that needs an external dependency.
     :param package: External package this submodule relies on.
-    :param installation: Command to execute in the environment to install
-        the package.
+    :param conda_channel: Conda channel package can be installed from,
+        if at all.
+    :param pip_install: Whether package can be installed via pip.
     """
+
+    is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
+    installable = True
+    if is_conda:
+        if conda_channel is None:
+            installable = False
+            installation = f"{package} cannot be installed via conda"
+        else:
+            installation = f"conda install -c {conda_channel} {package}"
+    else:
+        if pip_install:
+            installation = f"pip install {package}"
+        else:
+            installable = False
+            installation = f"{package} cannot be installed via pip"
 
     print(
         f"To use the janitor submodule {submodule}, you need to install "
         f"{package}."
     )
     print()
-    print(f"To do so, use the following command:")
-    print()
-    print(f"    {installation}")
+    if installable:
+        print(f"To do so, use the following command:")
+        print()
+        print(f"    {installation}")
+    else:
+        print(f"{installation}")
 
 
 def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):

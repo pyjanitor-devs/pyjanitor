@@ -60,7 +60,7 @@ except ImportError:
     import_message(
         submodule="chemistry",
         package="rdkit",
-        conda_channel="rdkit",
+        conda_channel="conda-forge",
         pip_install=False,
     )
 

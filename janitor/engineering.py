@@ -13,7 +13,12 @@ from .utils import import_message
 try:
     import unyt
 except ImportError:
-    import_message("engineering", "unyt", "conda install -c conda-forge unyt")
+    import_message(
+        submodule="engineering",
+        package="unyt",
+        conda_channel="conda-forge",
+        pip_install=True,
+    )
 
 
 @pf.register_dataframe_method

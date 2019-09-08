@@ -13,6 +13,7 @@ release_number (on deck)
 - [DOC] Update README with functional ``pandas`` API example.
 - [INF] Move ``get_features_targets()`` to new ``ml.py`` module by @hectormz
 - [ENH] Add chirality to morgan fingerprints in janitor.chemistry submodule by @Clayton-Springer
+- [INF] ``import_message`` suggests python dist. appropriate installs by @hectormz
 
 v0.18.1
 =======

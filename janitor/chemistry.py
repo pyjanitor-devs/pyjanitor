@@ -57,13 +57,23 @@ try:
         GetMACCSKeysFingerprint,
     )
 except ImportError:
-    import_message("chemistry", "rdkit", "conda install -c rdkit rdkit")
+    import_message(
+        submodule="chemistry",
+        package="rdkit",
+        conda_channel="conda-forge",
+        pip_install=False,
+    )
 
 try:
     from tqdm import tqdm
     from tqdm import tqdm_notebook as tqdmn
 except ImportError:
-    import_message("chemistry", "tqdm", "conda install -c conda-forge tqdm")
+    import_message(
+        submodule="chemistry",
+        package="tqdm",
+        conda_channel="conda-forge",
+        pip_install=True,
+    )
 
 
 @pf.register_dataframe_method

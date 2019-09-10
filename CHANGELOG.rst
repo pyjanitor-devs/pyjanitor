@@ -14,6 +14,7 @@ release_number (on deck)
 - [INF] Move ``get_features_targets()`` to new ``ml.py`` module by @hectormz
 - [ENH] Add chirality to morgan fingerprints in janitor.chemistry submodule by @Clayton-Springer
 - [INF] ``import_message`` suggests python dist. appropriate installs by @hectormz
+- [ENH] Add count_cumulative_unique() method to janitor.functions submodule by @rahosbach
 
 v0.18.1
 =======

@@ -3401,8 +3401,8 @@ def flag_nulls(
 @pf.register_dataframe_method
 def count_cumulative_unique(
     df: pd.DataFrame,
-    column_name: str = None,
-    dest_column_name: str = None,
+    column_name: str,
+    dest_column_name: str,
     case_sensitive: bool = True
 ) -> pd.DataFrame:
     """
@@ -3459,10 +3459,6 @@ def count_cumulative_unique(
     :returns: A pandas DataFrame with a new column containing a cumulative
         count of unique values from another column.
     """
-
-    # Check inputs are correct data type
-    check("column_name", column_name, [str])
-    check("dest_column_name", dest_column_name, [str])
 
     if not case_sensitive:
         # Make it so that the the same uppercase and lowercase

@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
-
 import pandas_flavor as pf
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
@@ -3403,7 +3402,7 @@ def count_cumulative_unique(
     df: pd.DataFrame,
     column_name: str,
     dest_column_name: str,
-    case_sensitive: bool = True
+    case_sensitive: bool = True,
 ) -> pd.DataFrame:
     """
     Generates a running total of cumulative unique values in a given column.
@@ -3465,10 +3464,16 @@ def count_cumulative_unique(
         # letter are treated as one unique value
         df[column_name] = df[column_name].astype(str).map(str.lower)
 
-    df[new_column_name] = (df[[column_name]]
-        .drop_duplicates()
-        .assign(dummyabcxyz = 1)
-        .dummyabcxyz
-        .cumsum()).reindex(df.index).ffill().astype(int)
+    df[new_column_name] = (
+        (
+            df[[column_name]]
+            .drop_duplicates()
+            .assign(dummyabcxyz=1)
+            .dummyabcxyz.cumsum()
+        )
+        .reindex(df.index)
+        .ffill()
+        .astype(int)
+    )
 
     return df

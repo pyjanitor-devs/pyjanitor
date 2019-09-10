@@ -78,3 +78,4 @@ Other
 
     then
     shuffle
+    count_cumulative_unique

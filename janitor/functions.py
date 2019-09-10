@@ -3464,7 +3464,7 @@ def count_cumulative_unique(
         # letter are treated as one unique value
         df[column_name] = df[column_name].astype(str).map(str.lower)
 
-    df[new_column_name] = (
+    df[dest_column_name] = (
         (
             df[[column_name]]
             .drop_duplicates()

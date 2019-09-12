@@ -3256,7 +3256,9 @@ def take_first(
 
 
 @pf.register_dataframe_method
-def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
+def shuffle(
+    df: pd.DataFrame, random_state=None, reset_index=True
+) -> pd.DataFrame:
     """
     Shuffle the rows of the DataFrame.
 
@@ -3274,7 +3276,10 @@ def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
     :param df: A pandas DataFrame
     :param random_state: (optional) A seed for the random number generator.
     """
-    return df.sample(frac=1, random_state=random_state)
+    result = df.sample(frac=1, random_state=random_state)
+    if reset_index:
+        result = result.reset_index(drop=True)
+    return result
 
 
 @pf.register_dataframe_method

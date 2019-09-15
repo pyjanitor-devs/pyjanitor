@@ -38,10 +38,11 @@ def generate_long_description() -> str:
     return long_description
 
 
+extra_spark = ["pyspark"]
 extra_biology = ["biopython"]
 extra_chemistry = ["rdkit"]
 extra_engineering = ["unyt"]
-extra_all = biology + chemistry + engineering
+extra_all = extra_biology + extra_engineering + extra_spark
 
 setup(
     name="pyjanitor",
@@ -53,10 +54,13 @@ setup(
     packages=["janitor"],
     install_requires=requirements(),
     extras_require={
-            'all': extra_all,
-            'biology': extra_biology,
-            'chemistry': extra_chemistry,
-            'engineering': extra_engineering}
+        "all": extra_all,
+        "biology": extra_biology,
+        # "chemistry": extra_chemistry, should be inserted once rdkit
+        # fixes https://github.com/rdkit/rdkit/issues/1812
+        "engineering": extra_engineering,
+        "spark": extra_spark,
+    },
     python_requires=">=3.6",
     long_description=generate_long_description(),
     long_description_content_type="text/x-rst",

@@ -4,6 +4,7 @@ new version (on deck)
 
 v0.18.2
 =======
+- [INF] Make requirements.txt smaller
 - [ENH] Add a reset_index parameter to shuffle
 - [DOC] Added contribution page link to readme
 - [DOC] fix example for ``update_where``, provide a bit more detail, and expand the bad_values example notebook to demonstrate its use by @anzelpwj.

@@ -38,6 +38,11 @@ def generate_long_description() -> str:
     return long_description
 
 
+extra_biology = ["biopython"]
+extra_chemistry = ["rdkit"]
+extra_engineering = ["unyt"]
+extra_all = biology + chemistry + engineering
+
 setup(
     name="pyjanitor",
     version="0.18.2",
@@ -47,6 +52,11 @@ setup(
     url="https://github.com/ericmjl/pyjanitor",
     packages=["janitor"],
     install_requires=requirements(),
+    extras_require={
+            'all': extra_all,
+            'biology': extra_biology,
+            'chemistry': extra_chemistry,
+            'engineering': extra_engineering}
     python_requires=">=3.6",
     long_description=generate_long_description(),
     long_description_content_type="text/x-rst",

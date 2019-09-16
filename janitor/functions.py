@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
-
 import pandas_flavor as pf
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
@@ -569,7 +568,7 @@ def coalesce(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
     new_column_name: str = None,
-    delete_columns: bool = True
+    delete_columns: bool = True,
 ) -> pd.DataFrame:
     """
 

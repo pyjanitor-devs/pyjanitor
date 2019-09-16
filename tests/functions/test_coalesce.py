@@ -23,6 +23,7 @@ def test_coalesce_without_title():
     assert df.shape == (3, 1)
     assert pd.isnull(df).sum().sum() == 0
 
+
 @pytest.mark.functions
 def test_coalesce_without_delete():
     df = pd.DataFrame(

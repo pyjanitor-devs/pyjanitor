@@ -1,5 +1,6 @@
 release_number (on deck)
 ========================
+- [ENH] Added option to coalesce function to not delete coalesced columns.
 - [DOC] Added contribution page link to readme
 - [DOC] fix example for ``update_where``, provide a bit more detail, and expand the bad_values example notebook to demonstrate its use by @anzelpwj.
 - [INF] Fix pytest marks by @ericmjl (issue #520)

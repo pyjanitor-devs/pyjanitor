@@ -2130,7 +2130,7 @@ def round_to_fraction(
     # .. code-block:: python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.limit_column_characters('a', 3)
+    #     example_dataframe2.round_to_fraction('a', 3)
 
     # :Output:
 
@@ -2153,7 +2153,7 @@ def round_to_fraction(
     # .. code-block:: python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.limit_column_characters('a', 3, 4)
+    #     example_dataframe2.round_to_fraction('a', 3, 4)
 
     # :Output:
 
@@ -2176,17 +2176,9 @@ def round_to_fraction(
     if digits:
         check("digits", digits, [float, int])
 
-    def _round_to_fraction(number, denominator, digits=np.inf):
-        num = round(number * denominator, 0) / denominator
-        if not np.isinf(digits):
-            num = round(num, digits)
-        return num
-
-    _round_to_fraction_partial = partial(
-        _round_to_fraction, denominator=denominator, digits=digits
-    )
-
-    df[column_name] = df[column_name].apply(_round_to_fraction_partial)
+    df[column_name] = round(df[column_name] * denominator, 0) / denominator
+    if not np.isinf(digits):
+        df[column_name] = round(df[column_name], digits)
 
     return df
 

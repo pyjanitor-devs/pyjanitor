@@ -100,15 +100,9 @@ def _currency_column_to_numeric(x, cast_non_numeric=None) -> str:
         return "".join(i for i in x if i in acceptable_currency_characters)
 
 
-def _replace_empty_string_with_none(x):
-    if isinstance(x, int):
-        return x
-
-    elif isinstance(x, float):
-        return x
-
-    elif len(x):
-        return x
+def _replace_empty_string_with_none(column_series):
+    column_series.loc[column_series == ""] = None
+    return column_series
 
 
 def _replace_original_empty_string_with_none(x):

@@ -2780,7 +2780,7 @@ def currency_column_to_numeric(
     # _replace_empty_string_with_none is applied here after the check on
     # remove_non_numeric since "" is our indicator that a string was coerced
     # in the original column
-    column_series = column_series.apply(_replace_empty_string_with_none)
+    column_series = _replace_empty_string_with_none(column_series)
 
     if fill_all_non_numeric is not None:
         check("fill_all_non_numeric", fill_all_non_numeric, [int, float])

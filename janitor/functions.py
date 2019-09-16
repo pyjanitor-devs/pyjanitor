@@ -1431,15 +1431,6 @@ def filter_date(
         """Taken from: https://stackoverflow.com/a/13616382."""
         return reduce(np.logical_and, conditions)
 
-    def _get_year(x):
-        return x.year
-
-    def _get_month(x):
-        return x.month
-
-    def _get_day(x):
-        return x.day
-
     if column_date_options:
         df.loc[:, column_name] = pd.to_datetime(
             df.loc[:, column_name], **column_date_options
@@ -1458,17 +1449,13 @@ def filter_date(
         _filter_list.append(df.loc[:, column_name] <= end_date)
 
     if years:
-        _filter_list.append(
-            df.loc[:, column_name].apply(_get_year).isin(years)
-        )
+        _filter_list.append(df.loc[:, column_name].dt.year.isin(years))
 
     if months:
-        _filter_list.append(
-            df.loc[:, column_name].apply(_get_month).isin(months)
-        )
+        _filter_list.append(df.loc[:, column_name].dt.month.isin(months))
 
     if days:
-        _filter_list.append(df.loc[:, column_name].apply(_get_day).isin(days))
+        _filter_list.append(df.loc[:, column_name].dt.day.isin(days))
 
     if start_date and end_date:
         if start_date > end_date:

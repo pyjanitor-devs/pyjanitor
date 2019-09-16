@@ -18,5 +18,8 @@ def test_replace_empty_string_with_none():
 
 @pytest.mark.utils
 def test_replace_original_empty_string_with_none():
-    assert _replace_original_empty_string_with_none("foo") == "foo"
-    assert _replace_original_empty_string_with_none("ORIGINAL_NA") is None
+    df = pd.DataFrame({"a": [1, 0.34, "6.5", None, "ORIGINAL_NA", "foo"]})
+    df_expected = pd.DataFrame({"a": [1, 0.34, "6.5", None, None, "foo"]})
+
+    df["a"] = _replace_original_empty_string_with_none(df["a"])
+    pd.testing.assert_series_equal(df["a"], df_expected["a"])

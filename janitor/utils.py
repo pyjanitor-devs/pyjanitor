@@ -105,9 +105,9 @@ def _replace_empty_string_with_none(column_series):
     return column_series
 
 
-def _replace_original_empty_string_with_none(x):
-    if x != "ORIGINAL_NA":
-        return x
+def _replace_original_empty_string_with_none(column_series):
+    column_series.loc[column_series == "ORIGINAL_NA"] = None
+    return column_series
 
 
 def _strip_underscores(

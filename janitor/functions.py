@@ -2786,9 +2786,7 @@ def currency_column_to_numeric(
         check("fill_all_non_numeric", fill_all_non_numeric, [int, float])
         column_series = column_series.fillna(fill_all_non_numeric)
 
-    column_series = column_series.apply(
-        _replace_original_empty_string_with_none
-    )
+    column_series = _replace_original_empty_string_with_none(column_series)
 
     df = df.assign(**{column_name: pd.to_numeric(column_series)})
 

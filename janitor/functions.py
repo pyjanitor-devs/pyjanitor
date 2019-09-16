@@ -20,6 +20,8 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from pandas.errors import OutOfBoundsDatetime
+
 import pandas_flavor as pf
 from pandas.api.types import union_categoricals
 from scipy.stats import mode
@@ -830,14 +832,10 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     :returns: A pandas DataFrame with corrected dates.
     """
 
-    def _conv(value):
-        try:
-            date = dt.datetime.utcfromtimestamp(value)
-        except ValueError:  # year of of rang means milliseconds.
-            date = dt.datetime.utcfromtimestamp(value / 1000)
-        return date
-
-    df[column_name] = df[column_name].astype(int).apply(_conv)
+    try:
+        df[column_name] = pd.to_datetime(df[column_name], unit="s")
+    except OutOfBoundsDatetime:  # Indicates time is in milliseconds.
+        df[column_name] = pd.to_datetime(df[column_name], unit="ms")
     return df
 
 

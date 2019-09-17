@@ -11,7 +11,7 @@ from . import backend
 try:
     from pyspark.sql import DataFrame
 except ImportError:
-    import_message(
+    janitor_utils.import_message(
         submodule="spark",
         package="pyspark",
         conda_channel="conda-forge",

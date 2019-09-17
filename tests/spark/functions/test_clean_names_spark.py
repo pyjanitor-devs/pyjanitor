@@ -4,6 +4,7 @@ from janitor.errors import JanitorError
 
 try:
     import pyspark
+    from pyspark.sql import SparkSession
 
     import janitor.spark
 except ImportError:

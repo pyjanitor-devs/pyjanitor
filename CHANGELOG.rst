@@ -1,6 +1,11 @@
-release_number (on deck)
-========================
+new version (on deck)
+=====================
+
+
+v0.18.2
+=======
 - [ENH] Added option to coalesce function to not delete coalesced columns.
+- [ENH] Add a reset_index parameter to shuffle
 - [DOC] Added contribution page link to readme
 - [DOC] fix example for ``update_where``, provide a bit more detail, and expand the bad_values example notebook to demonstrate its use by @anzelpwj.
 - [INF] Fix pytest marks by @ericmjl (issue #520)
@@ -15,6 +20,7 @@ release_number (on deck)
 - [INF] Move ``get_features_targets()`` to new ``ml.py`` module by @hectormz
 - [ENH] Add chirality to morgan fingerprints in janitor.chemistry submodule by @Clayton-Springer
 - [INF] ``import_message`` suggests python dist. appropriate installs by @hectormz
+- [ENH] Add count_cumulative_unique() method to janitor.functions submodule by @rahosbach
 
 v0.18.1
 =======

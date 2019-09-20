@@ -1,6 +1,6 @@
 new version (on deck)
 =====================
-
+- [ENH] Added option to coalesce function to not delete coalesced columns.
 
 v0.18.2
 =======

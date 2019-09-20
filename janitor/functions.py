@@ -3514,7 +3514,6 @@ def toset(series: pd.Series) -> Set:
         s = series.toset()
 
     :param series: A pandas series.
-
     :returns: A set of values.
     """
 

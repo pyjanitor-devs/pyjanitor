@@ -21,6 +21,7 @@ v0.18.2
 - [ENH] Add chirality to morgan fingerprints in janitor.chemistry submodule by @Clayton-Springer
 - [INF] ``import_message`` suggests python dist. appropriate installs by @hectormz
 - [ENH] Add count_cumulative_unique() method to janitor.functions submodule by @rahosbach
+- [ENH] Add ``update_where()`` method to ``janitor.spark.functions`` submodule by @zjpoh
 
 v0.18.1
 =======

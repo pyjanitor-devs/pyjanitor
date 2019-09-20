@@ -3,6 +3,7 @@ General purpose data cleaning functions for pyspark.
 """
 
 import re
+from typing import Union
 
 from .. import functions as janitor_func
 from .. import utils as janitor_utils
@@ -91,3 +92,91 @@ def clean_names(
     ]
 
     return df.selectExpr(*cols)
+
+
+@backend.register_dataframe_method
+def update_where(
+    df: DataFrame,
+    conditions: str,
+    target_column_name: str,
+    target_val: Union[str, int, float],
+) -> DataFrame:
+    """
+    Add multiple conditions to update a column in the dataframe.
+
+    This method does not mutate the original DataFrame.
+
+    Example usage:
+
+    .. code-block:: python
+
+        import pandas as pd
+        from pyspark.sql import SparkSession
+        import janitor.spark
+
+        spark = SparkSession.builder.getOrCreate()
+
+        data = {
+            "a": [1, 2, 3, 4],
+            "b": [5, 6, 7, 8],
+            "c": [0, 0, 0, 0]
+        }
+        df = spark.createDataFrame(pd.DataFrame(data))
+        df = (
+            df
+            .update_where(
+                conditions="a > 2 AND b < 8",
+                target_column_name='c',
+                target_val=10
+            )
+        )
+        df.show()
+        # +---+---+---+
+        # |  a|  b|  c|
+        # +---+---+---+
+        # |  1|  5|  0|
+        # |  2|  6|  0|
+        # |  3|  7| 10|
+        # |  4|  8|  0|
+        # +---+---+---+
+
+    :param df: Spark DataFrame object.
+    :param conditions: Spark SQL string condition used to update a target
+        column and target value
+    :param target_column_name: Column to be updated. If column does not exist
+        in dataframe, a new column will be created; note that entries that do
+        not get set in the new column will be null.
+    :param target_val: Value to be updated
+    :returns: An updated spark DataFrame.
+    """
+
+    # String without quotes are treated as column name
+    if isinstance(target_val, str):
+        target_val = f"'{target_val}'"
+
+    if target_column_name in df.columns:
+        # `{col]` is to enable non-standard column name,
+        # i.e. column name with special characters etc.
+        select_stmts = [
+            f"`{col}`" for col in df.columns if col != target_column_name
+        ] + [
+            f"""
+            CASE
+                WHEN {conditions} THEN {target_val}
+                ELSE `{target_column_name}`
+            END AS `{target_column_name}`
+            """
+        ]
+        # This is to retain the ordering
+        col_order = df.columns
+    else:
+        select_stmts = [f"`{col}`" for col in df.columns] + [
+            f"""
+            CASE
+                WHEN {conditions} THEN {target_val} ELSE NULL
+            END AS `{target_column_name}`
+            """
+        ]
+        col_order = df.columns + [target_column_name]
+
+    return df.selectExpr(*select_stmts).select(*col_order)

@@ -59,3 +59,32 @@ def test_groupby_agg_multi():
     expected_agg = np.array([1, 1, 1, 1, 1, 1])
 
     np.testing.assert_equal(df_new["date_average"], expected_agg)
+
+
+@pytest.mark.functions
+def test_groupby_agg_multi_column():
+
+    df = pd.DataFrame(
+        {
+            "date": [
+                "20190101",
+                "20190101",
+                "20190102",
+                "20190102",
+                "20190304",
+                "20190304",
+            ],
+            "user_id": [1, 2, 1, 2, 1, 2],
+            "values": [1, 2, 3, 4, 5, 6],
+        }
+    )
+
+    df_new = df.groupby_agg(
+        by=["date"],
+        new_column_name="values_avg",
+        agg_column_name="values",
+        agg="mean",
+    )
+
+    expected_agg = np.array([1.5, 1.5, 3.5, 3.5, 5.5, 5.5])
+    np.testing.assert_equal(df_new["values_avg"], expected_agg)

@@ -39,3 +39,11 @@ def spark_df(spark):
         ]
     )
     return spark.createDataFrame([], schema)
+
+
+@pytest.fixture
+@pytest.mark.skipif(
+    pyspark is None, reason="pyspark tests only required for CI"
+)
+def spark_dataframe(spark, dataframe):
+    return spark.createDataFrame(dataframe)

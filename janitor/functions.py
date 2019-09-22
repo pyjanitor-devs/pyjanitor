@@ -568,6 +568,7 @@ def coalesce(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
     new_column_name: str = None,
+    delete_columns: bool = True,
 ) -> pd.DataFrame:
     """
 
@@ -601,6 +602,7 @@ def coalesce(
     :param df: A pandas DataFrame.
     :param column_names: A list of column names.
     :param str new_column_name: The new column name after combining.
+    :param bool delete_columns: Whether to delete the columns being coalesced
     :returns: A pandas DataFrame with coalesced columns.
     """
     series = [df[c] for c in column_names]
@@ -608,7 +610,8 @@ def coalesce(
     def _coalesce(series1, series2):
         return series1.combine_first(series2)
 
-    df = df.drop(columns=column_names)
+    if delete_columns:
+        df = df.drop(columns=column_names)
     if not new_column_name:
         new_column_name = column_names[0]
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821

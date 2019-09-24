@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [ENH] Series toset() functionality #570
 - [ENH] Added option to coalesce function to not delete coalesced columns.
 
 v0.18.2

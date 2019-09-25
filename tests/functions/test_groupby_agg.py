@@ -63,6 +63,7 @@ def test_groupby_agg_multi():
 
 @pytest.mark.functions
 def test_groupby_agg_multi_column():
+    """Test for the case when we want to groupby one column and agg on another, while leaving out other columns."""
 
     df = pd.DataFrame(
         {

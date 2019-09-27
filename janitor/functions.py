@@ -3015,10 +3015,10 @@ def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
     df: pd.DataFrame,
-    by: str,
-    new_column_name,
-    agg_column_name,
-    agg: Union[Callable, str, List, Dict],
+    by: Union[List, str],
+    new_column_name: str,
+    agg_column_name: str,
+    agg: Union[Callable, str],
 ) -> pd.DataFrame:
     """
     Shortcut for assigning a groupby-transform to a new column.
@@ -3038,9 +3038,10 @@ def groupby_agg(
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).groupby_agg(df,
-                                           by='col1',
+                                           by='group',
                                            agg='mean',
-                                           new_column_name='col1_mean')
+                                           agg_column_name="col1"
+                                           new_column_name='col1_mean_by_group')
 
     :param df: A pandas DataFrame.
     :param by: Column(s) to groupby on, either a `str` or
@@ -3051,7 +3052,7 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    new_col = df.groupby(by).transform(agg)
+    new_col = df.groupby(by)[agg_column_name].transform(agg)
     df_new = df.assign(**{new_column_name: new_col})
     return df_new
 

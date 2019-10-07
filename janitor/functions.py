@@ -895,7 +895,16 @@ def deconcatenate_column(
     De-concatenates a single column into multiple columns. The column to
     de-concatenate can be either a collection (list, tuple, ...) which can be
     separated out with ``pd.Series.tolist()`` or a string to slice based on
-    ``sep``.
+    De-concatenates a single column into multiple columns. 
+    The column to de-concatenate can be either a collection (list, tuple, ...) 
+    which can be separated out with ``pd.Series.tolist()``,
+    or a string to slice based on ``sep``.
+    To determine this behaviour automatically,
+    the first element in the column specified is inspected.
+    If it is a string, then ``sep`` must be specified.
+    Else, the function assumes that it is an iterable type
+    (e.g. ``list`` or ``tuple``),
+    and will attempt to deconcatenate by splitting the list.
 
     Given a column with string values, this is the inverse of the
     ``concatenate_columns`` function.

@@ -1,8 +1,8 @@
-import pandas as pd
-from janitor.utils import skiperror
 import numpy as np
-
+import pandas as pd
 import pytest
+
+from janitor.utils import skiperror
 
 
 @pytest.mark.functions

@@ -6,7 +6,7 @@ import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Iterable, List, Tuple, Union, Set
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -886,15 +886,19 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name,
-    sep: str,
+    sep: str = None,
     new_column_names: Union[List[str], Tuple[str]] = None,
     autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
     """
-    De-concatenates a single column into multiple columns.
+    De-concatenates a single column into multiple columns. The column to
+    de-concatenate can be either a collection (list, tuple, ...) which can be
+    separated out with ``pd.Series.tolist()`` or a string to slice based on
+    ``sep``.
 
-    This is the inverse of the ``concatenate_columns`` function.
+    Given a column with string values, this is the inverse of the
+    ``concatenate_columns`` function.
 
     Used to quickly split columns out of a single column.
 
@@ -956,40 +960,54 @@ def deconcatenate_column(
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
+
     if column_name not in df.columns:
         raise ValueError(f"column name {column_name} not present in dataframe")
-    deconcat = df[column_name].str.split(sep, expand=True)
+
+    if isinstance(df[column_name].iloc[0], str):
+        if sep is None:
+            raise ValueError(
+                "`sep` must be specified if the column values are " "strings."
+            )
+        df_deconcat = df[column_name].str.split(sep, expand=True)
+    else:
+        df_deconcat = pd.DataFrame(
+            df[column_name].to_list(), columns=new_column_names, index=df.index
+        )
+
     if preserve_position:
         # Keep a copy of the original dataframe
         df_original = df.copy()
-    if autoname:
-        new_column_names = [
-            f"{autoname}{i}" for i in range(1, deconcat.shape[1] + 1)
-        ]
-    if not len(new_column_names) == deconcat.shape[1]:
-        raise JanitorError(
-            f"you need to provide {len(new_column_names)} names"
-            "to new_column_names"
+
+    if new_column_names is None and autoname is None:
+        raise ValueError(
+            "One of `new_column_names` or `autoname` must be " "suppled."
         )
 
-    deconcat.columns = new_column_names
-    df = pd.concat([df, deconcat], axis=1)
+    if autoname:
+        new_column_names = [
+            f"{autoname}{i}" for i in range(1, df_deconcat.shape[1] + 1)
+        ]
+
+    if not len(new_column_names) == df_deconcat.shape[1]:
+        raise JanitorError(
+            f"Number of supplied column names was not equal to the number of "
+            f"deconcatenated columns. You need to provide "
+            f"{len(new_column_names)} names to new_column_names."
+        )
+
+    df_deconcat.columns = new_column_names
+    df = pd.concat([df, df_deconcat], axis=1)
 
     if preserve_position:
         cols = list(df_original.columns)
         index_original = cols.index(column_name)
+
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
+
         df = df[cols].drop(columns=column_name)
 
-        # TODO: I suspect this should become a test
-        # instead of a defensive check?
-        if len(df.columns) != (
-            len(df_original.columns) + len(new_column_names) - 1
-        ):
-            raise JanitorError(
-                "number of columns after deconcatenation is incorrect"
-            )
     return df
 
 

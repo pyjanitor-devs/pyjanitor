@@ -990,7 +990,7 @@ def deconcatenate_column(
 
     if new_column_names is None and autoname is None:
         raise ValueError(
-            "One of `new_column_names` or `autoname` must be " "suppled."
+            "One of `new_column_names` or `autoname` must be supplied."
         )
 
     if autoname:

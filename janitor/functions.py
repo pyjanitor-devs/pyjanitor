@@ -968,7 +968,7 @@ def deconcatenate_column(
         ]
     if not len(new_column_names) == deconcat.shape[1]:
         raise JanitorError(
-            f"you need to provide {len(new_column_names)} names"
+            f"you need to provide {len(deconcat.shape[1])} names "
             "to new_column_names"
         )
 

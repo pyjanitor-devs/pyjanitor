@@ -2,6 +2,7 @@ new version (on deck)
 =====================
 - [ENH] Series toset() functionality #570
 - [ENH] Added option to coalesce function to not delete coalesced columns.
+- [ENH] Fix error message when length of new_column_names is wrong
 
 v0.18.2
 =======

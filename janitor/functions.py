@@ -892,9 +892,6 @@ def deconcatenate_column(
     preserve_position: bool = False,
 ) -> pd.DataFrame:
     """
-    De-concatenates a single column into multiple columns. The column to
-    de-concatenate can be either a collection (list, tuple, ...) which can be
-    separated out with ``pd.Series.tolist()`` or a string to slice based on
     De-concatenates a single column into multiple columns.
     The column to de-concatenate can be either a collection (list, tuple, ...)
     which can be separated out with ``pd.Series.tolist()``,

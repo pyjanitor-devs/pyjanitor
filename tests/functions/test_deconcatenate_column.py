@@ -1,8 +1,56 @@
+import pandas as pd
 import pytest
+
+import janitor
 
 
 @pytest.mark.functions
-def test_deconcatenate_column(dataframe):
+def test_deconcatenate_column_collection(dataframe: pd.DataFrame):
+
+    column_names = ["a", "decorated-elephant", "cities"]
+
+    lists = [dataframe[column_name] for column_name in column_names]
+
+    elements = tuple(zip(*lists))
+
+    concat_df = (
+        dataframe.copy()
+        .add_column("concatenated", elements)
+        .remove_columns(column_names)
+    )
+
+    deconcat_df = (
+        concat_df.deconcatenate_column(
+            "concatenated", new_column_names=column_names
+        )
+        .remove_columns("concatenated")
+        .reorder_columns(dataframe.columns)
+    )
+
+    pd.testing.assert_frame_equal(dataframe, deconcat_df)
+
+    deconcat_df = concat_df.deconcatenate_column(
+        "concatenated", new_column_names=column_names, preserve_position=True
+    ).reorder_columns(dataframe.columns)
+
+    pd.testing.assert_frame_equal(dataframe, deconcat_df)
+
+
+@pytest.mark.functions
+def test_deconcatenate_column_string_no_sep(dataframe):
+    with pytest.raises(ValueError):
+        df_orig = dataframe.concatenate_columns(
+            column_names=["a", "decorated-elephant"],
+            sep="-",
+            new_column_name="index",
+        )
+        df = df_orig.deconcatenate_column(
+            column_name="index", new_column_names=["A", "B"]
+        )
+
+
+@pytest.mark.functions
+def test_deconcatenate_column_string(dataframe):
     df_orig = dataframe.concatenate_columns(
         column_names=["a", "decorated-elephant"],
         sep="-",
@@ -16,16 +64,17 @@ def test_deconcatenate_column(dataframe):
 
 
 @pytest.mark.functions
-def test_deconcatenate_column_preserve_position(dataframe):
+def test_deconcatenate_column_preserve_position_string(dataframe):
     df_original = dataframe.concatenate_columns(
         column_names=["a", "decorated-elephant"],
         sep="-",
         new_column_name="index",
     )
     index_original = list(df_original.columns).index("index")
+    new_column_names = ["col1", "col2"]
     df = df_original.deconcatenate_column(
         column_name="index",
-        new_column_names=["col1", "col2"],
+        new_column_names=new_column_names,
         sep="-",
         preserve_position=True,
     )
@@ -41,6 +90,9 @@ def test_deconcatenate_column_preserve_position(dataframe):
     assert (
         list(df.columns).index("col2") == index_original + 1
     ), "Position not preserved"
+    assert len(df.columns) == (
+        len(df_original.columns) + len(new_column_names) - 1
+    ), "Number of columns after deconcatenation is incorrect"
 
 
 def test_deconcatenate_column_autoname(dataframe):

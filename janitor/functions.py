@@ -997,9 +997,8 @@ def deconcatenate_column(
 
     if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
-            f"Number of supplied column names was not equal to the number of "
-            f"deconcatenated columns. You need to provide "
-            f"{len(new_column_names)} names to new_column_names."
+            f"you need to provide {len(deconcat.shape[1])} names "
+            "to new_column_names"
         )
 
     df_deconcat.columns = new_column_names

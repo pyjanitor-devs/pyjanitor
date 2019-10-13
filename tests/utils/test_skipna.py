@@ -1,8 +1,8 @@
-import pandas as pd
-from janitor.utils import skipna
 import numpy as np
-
+import pandas as pd
 import pytest
+
+from janitor.utils import skipna
 
 
 @pytest.mark.functions

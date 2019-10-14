@@ -4,6 +4,7 @@ new version (on deck)
 - [ENH] Added option to coalesce function to not delete coalesced columns.
 - [ENH] Added functionality to deconcatenate tuple/list/collections in a column to deconcatenate_column
 - [ENH] Fix error message when length of new_column_names is wrong
+- [DOC] Fixed several examples of functional syntax in ``functions.py``.
 
 v0.18.2
 =======

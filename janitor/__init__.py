@@ -1,4 +1,5 @@
 from .functions import *  # noqa: F403, F401
+from .math import *
 from .ml import get_features_targets as _get_features_targets
 from .utils import refactored_function
 

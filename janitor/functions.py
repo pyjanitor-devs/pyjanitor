@@ -2817,7 +2817,7 @@ def impute(
         value = funcs[statistic_column_name](df[column_name].dropna().values)
         # special treatment for mode, because scipy stats mode returns a
         # moderesult object.
-        if statistic_column_name is "mode":
+        if statistic_column_name == "mode":
             value = value.mode[0]
 
     # The code is architected this way - if `value` is not provided but

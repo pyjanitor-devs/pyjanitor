@@ -344,7 +344,7 @@ def encode_categorical(
     .. code-block:: python
 
         categorical_cols = ['col1', 'col2', 'col4']
-        df = df.encode_categorical(columns=categorical_cols)  # one way
+        df = encode_categorical(df, columns=categorical_cols)  # one way
 
     Method chaining example:
 
@@ -399,7 +399,7 @@ def label_encode(
 
     .. code-block:: python
 
-        label_encode(df, column_names="my_categorical_column")  # one way
+        df = label_encode(df, column_names="my_categorical_column")  # one way
 
     Method chaining example:
 
@@ -446,7 +446,7 @@ def rename_column(
 
     .. code-block:: python
 
-        df = rename_column("old_column_name", "new_column_name")
+        df = rename_column(df, "old_column_name", "new_column_name")
 
     Method chaining example:
 
@@ -480,7 +480,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
     .. code-block:: python
 
-        df = rename_columns({"old_column_name": "new_column_name"})
+        df = rename_columns(df, {"old_column_name": "new_column_name"})
 
     Method chaining example:
 
@@ -580,7 +580,7 @@ def coalesce(
 
     .. code-block:: python
 
-        df = coalesce(df, columns=['col1', 'col2'], 'col3'
+        df = coalesce(df, columns=['col1', 'col2'], 'col3')
 
     Method chaining example:
 
@@ -758,7 +758,7 @@ def fill_empty(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).fill_empty(df, column_names='col1', value=0)
+        df = pd.DataFrame(...).fill_empty(column_names='col1', value=0)
 
     :param df: A pandas DataFrame.
     :param column_names: Either a `str` or `list` or `tuple`. If a string
@@ -809,8 +809,7 @@ def expand_column(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).expand_column(df,
-                                             column_name='col_name',
+        df = pd.DataFrame(...).expand_column(column_name='col_name',
                                              sep=', ')
 
     :param df: A pandas DataFrame.
@@ -1058,7 +1057,7 @@ def filter_string(
 
         df = filter_string(df,
                            column_name='column',
-                           search_string='pattern'
+                           search_string='pattern',
                            complement=False)
 
     Method chaining example:
@@ -1067,7 +1066,7 @@ def filter_string(
 
         df = (pd.DataFrame(...)
               .filter_string(column_name='column',
-                             search_string='pattern'
+                             search_string='pattern',
                              complement=False)
               ...)
 
@@ -1131,8 +1130,7 @@ def filter_on(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on('score < 50', complement=False)
-              ...)
+              .filter_on('score < 50', complement=False))
 
     Credit to Brant Peterson for the name.
 
@@ -1444,7 +1442,7 @@ def remove_columns(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).remove_columns(column_names=['col1', ['col2']])
+        df = pd.DataFrame(...).remove_columns(column_names=['col1', 'col2'])
 
     :param df: A pandas DataFrame
     :param column_names: The columns to remove.
@@ -2903,13 +2901,13 @@ def find_replace(
 
         # Functional usage
         df = find_replace(
-            df, 'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            df, 'order', {'ice coffee': 'latte', 'regular coffee': 'latte'},
             match='exact'
         )
 
         # Method chaining usage
         df = df.find_replace(
-            'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            'order', {'ice coffee': 'latte', 'regular coffee': 'latte'},
             match='exact'
         )
 
@@ -3060,8 +3058,7 @@ def groupby_agg(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).groupby_agg(df,
-                                           by='group',
+        df = pd.DataFrame(...).groupby_agg(by='group',
                                            agg='mean',
                                            agg_column_name="col1"
                                            new_column_name='col1_mean_by_group')

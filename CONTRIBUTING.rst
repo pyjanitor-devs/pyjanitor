@@ -133,7 +133,7 @@ highlight all of the key sections
 
         .. code-block:: python
 
-            df = rename_columns({"old_column_name": "new_column_name"})
+            df = rename_columns(df, {"old_column_name": "new_column_name"})
 
         Method chaining example:
 
@@ -201,7 +201,7 @@ the content of the code block must be separated by
 
     .. code-block:: python
 
-        df = rename_columns({"old_column_name": "new_column_name"})
+        df = rename_columns(df, {"old_column_name": "new_column_name"})
 
     """
 

@@ -242,8 +242,8 @@ def _normalize_1(col_name: str) -> str:
 def _strip_accents(col_name: str) -> str:
     """
     Removes accents from a DataFrame column name.
-    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string # noqa: E501
-    """
+    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string
+    """  # noqa: E501
     return "".join(
         l
         for l in unicodedata.normalize("NFD", col_name)
@@ -263,7 +263,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     Implementation is inspired from `StackOverflow`_.
 
-    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
+    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
 
     Functional usage example:
 
@@ -282,7 +282,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
     :param df: The pandas DataFrame object.
 
     :returns: A pandas DataFrame.
-    """
+    """  # noqa: E501
     nanrows = df.index[df.isnull().all(axis=1)]
     df = df.drop(index=nanrows).reset_index(drop=True)
 
@@ -335,7 +335,7 @@ def encode_categorical(
 ) -> pd.DataFrame:
     """
     Encode the specified columns with Pandas'
-    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_. # noqa:E501
+    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_.
 
     This method mutates the original DataFrame.
 
@@ -359,7 +359,7 @@ def encode_categorical(
     :param str/iterable column_names: A column name or an iterable (list or
         tuple) of column names.
     :returns: A pandas DataFrame
-    """
+    """  # noqa: E501
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             if col not in df.columns:
@@ -454,8 +454,7 @@ def rename_column(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).rename_column("old_column_name",
-        "new_column_name")  # noqa: E501
+        df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -465,7 +464,7 @@ def rename_column(
     :param old_column_name: The old column name.
     :param new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
-    """
+    """  # noqa: E501
     check_column(df, [old_column_name])
 
     return df.rename(columns={old_column_name: new_column_name})
@@ -488,8 +487,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).rename_columns({"old_column_name":
-        "new_column_name"})  # noqa: E501
+        df = pd.DataFrame(...).rename_columns({"old_column_name": "new_column_name"})
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -498,7 +496,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
     :param df: The pandas DataFrame object.
     :param new_column_names: A dictionary of old and new column names.
     :returns: A pandas DataFrame with renamed columns.
-    """
+    """  # noqa: E501
     check_column(df, list(new_column_names.keys()))
 
     return df.rename(columns=new_column_names)
@@ -628,7 +626,7 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
     Implementation is also from `Stack Overflow`.
 
-    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas  # noqa: E501
+    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
 
     Functional usage example:
 
@@ -647,7 +645,7 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
-    """
+    """  # noqa: E501
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"
     ) + dt.datetime(
@@ -662,7 +660,9 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     """
     Convert Matlab's serial date number into Python datetime format.
 
-    Implementation is also from `Stack Overflow <https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python>`.  # noqa: E501
+    Implementation is also from `StackOverflow`_.
+
+    .. _StackOverflow: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python
 
     This method mutates the original DataFrame.
 
@@ -683,7 +683,7 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
-    """
+    """  # noqa: E501
     days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
     df[column_name] = (
         df[column_name].astype(int).apply(dt.datetime.fromordinal)
@@ -875,7 +875,7 @@ def concatenate_columns(
         else:
             df[new_column_name] = (
                 df[new_column_name] + sep + df[col].astype(str)
-            )  # noqa: E501
+            )
 
     return df
 
@@ -1037,8 +1037,7 @@ def filter_string(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string('column', search_string='pattern', c
-                                omplement=False)  # noqa: E501
+              .filter_string('column', search_string='pattern', complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -1075,7 +1074,7 @@ def filter_string(
     :param search_string: A regex pattern or a (sub-)string to search.
     :param complement: Whether to return the complement of the filter or not.
     :returns: A filtered pandas DataFrame.
-    """
+    """  # noqa: E501
     criteria = df[column_name].str.contains(search_string)
     if complement:
         return df[~criteria]

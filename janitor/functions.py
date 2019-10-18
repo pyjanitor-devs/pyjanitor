@@ -13,6 +13,7 @@ import pandas as pd
 import pandas_flavor as pf
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
+from pandas.api.types import union_categoricals
 
 from .errors import JanitorError
 from .utils import (
@@ -25,6 +26,93 @@ from .utils import (
     check_column,
     deprecated_alias,
 )
+
+
+def unionize_dataframe_categories(
+    *dataframes, column_names: Union[str, Iterable[str], Any] = None
+) -> List[pd.DataFrame]:
+    """
+    Given a group of dataframes which contain some categorical columns, for
+    each categorical column present, find all the possible categories across
+    all the dataframes which have that column. Update each dataframes'
+    corresponding column with a new categorical object that contains the
+    original data but has labels for all the possible categories from all
+    dataframes.
+
+    This is useful when concatenating a list of dataframes which all have the
+    same categorical columns into one dataframe. If, for a given categorical
+    column, all input dataframes do not have at least one instance of all the
+    possible categories, Pandas will change the output dtype of that column
+    from ``category`` to ``object``, losing out on dramatic speed gains you get
+    from the former format.
+
+    Usage example for concatentation of categorical column-containing
+    dataframes:
+
+    Instead of:
+
+    .. code-block:: python
+        concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
+
+    which results in ``category`` -> ``object`` conversion, use:
+
+    .. code-block:: python
+
+        unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
+        concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+
+    :param dataframes: The dataframes you wish to unionize the categorical
+        objects for.
+    :param column_names: If supplied, only unionize this subset of columns.
+    :returns: A list of the category-unioned dataframes in the same order they
+        were provided.
+    """
+
+    if any(not isinstance(df, pd.DataFrame) for df in dataframes):
+        raise TypeError("Inputs must all be dataframes.")
+
+    if column_names is None:
+        # Find all columns across all dataframes that are categorical
+
+        column_names = set()
+
+        for df in dataframes:
+            column_names = column_names.union(
+                [
+                    column_name
+                    for column_name in df.columns
+                    if isinstance(df[column_name].dtype, pd.CategoricalDtype)
+                ]
+            )
+    elif isinstance(column_names, str):
+        column_names = [column_names]
+
+    # For each categorical column, find all possible values across the DFs
+
+    category_unions = {
+        column_name: union_categoricals(
+            [df[column_name] for df in dataframes if column_name in df.columns]
+        )
+        for column_name in column_names
+    }
+
+    # Make a shallow copy of all DFs and modify the categorical columns
+    # such that they can encode the union of all possible categories for each.
+
+    refactored_dfs = []
+
+    for df in dataframes:
+        df = df.copy(deep=False)
+
+        for column_name, categorical in category_unions.items():
+            if column_name in df.columns:
+                df[column_name] = pd.Categorical(
+                    df[column_name], categories=categorical.categories
+                )
+
+        refactored_dfs.append(df)
+
+    return refactored_dfs
 
 
 @pf.register_dataframe_method

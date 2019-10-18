@@ -11,9 +11,9 @@ from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import union_categoricals
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-from pandas.api.types import union_categoricals
 
 from .errors import JanitorError
 from .utils import (
@@ -52,6 +52,7 @@ def unionize_dataframe_categories(
     Instead of:
 
     .. code-block:: python
+
         concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
 
     which results in ``category`` -> ``object`` conversion, use:

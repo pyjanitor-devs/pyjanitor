@@ -1,6 +1,7 @@
-import pytest
-import janitor
 import pandas as pd
+import pytest
+
+import janitor
 
 
 @pytest.fixture

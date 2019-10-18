@@ -55,7 +55,8 @@ def unionize_dataframe_categories(
 
         concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
 
-    which results in ``category`` -> ``object`` conversion, use:
+    which in your case has resulted in ``category`` -> ``object`` conversion,
+    use:
 
     .. code-block:: python
 

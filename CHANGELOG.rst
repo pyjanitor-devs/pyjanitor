@@ -6,6 +6,7 @@ new version (on deck)
 - [ENH] Fix error message when length of new_column_names is wrong
 - [DOC] Fixed several examples of functional syntax in ``functions.py``.
 - [DOC] Fix #noqa comments showing up in docs.
+- [ENH] Add unionizing a group of dataframes' categoricals.
 
 v0.18.2
 =======

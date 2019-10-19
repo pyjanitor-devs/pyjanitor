@@ -91,14 +91,20 @@ def test_unionize_dataframe_categories(
 
     # test that pd.concat now does not destroy categoricals
 
+    # NOTE: 'animals' column will not be preserved as categorical after concat
+    # because it is not present in df1. Instead, this column will be set to
+    # object with NaN filled in for df1 missing values.
+
     udf = pd.concat([udf1, udf2, udf3], ignore_index=True)
 
     assert isinstance(udf["jerbs"].dtype, pd.CategoricalDtype)
     assert isinstance(udf["fruits"].dtype, pd.CategoricalDtype)
 
-    # NOTE: 'animals' column will not be preserved as categorical after concat
-    # because it is not present in df1. Instead, this column will be set to
-    # object with NaN filled in for df1 missing values.
+    # test that the data is the same
+
+    pd.testing.assert_frame_equal(udf1, uniontest_df1, check_categorical=False)
+    pd.testing.assert_frame_equal(udf2, uniontest_df2, check_categorical=False)
+    pd.testing.assert_frame_equal(udf3, uniontest_df3, check_categorical=False)
 
 
 def test_unionize_dataframe_categories_original_preservation(

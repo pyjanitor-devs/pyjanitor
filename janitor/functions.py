@@ -34,17 +34,18 @@ def unionize_dataframe_categories(
     """
     Given a group of dataframes which contain some categorical columns, for
     each categorical column present, find all the possible categories across
-    all the dataframes which have that column. Update each dataframes'
-    corresponding column with a new categorical object that contains the
-    original data but has labels for all the possible categories from all
-    dataframes.
-
+    all the dataframes which have that column.
+    Update each dataframes' corresponding column with a new categorical object
+    that contains the original data
+    but has labels for all the possible categories from all dataframes.
     This is useful when concatenating a list of dataframes which all have the
-    same categorical columns into one dataframe. If, for a given categorical
-    column, all input dataframes do not have at least one instance of all the
-    possible categories, Pandas will change the output dtype of that column
-    from ``category`` to ``object``, losing out on dramatic speed gains you get
-    from the former format.
+    same categorical columns into one dataframe.
+
+    If, for a given categorical column, all input dataframes do not have at
+    least one instance of all the possible categories,
+    Pandas will change the output dtype of that column from ``category`` to
+    ``object``, losing out on dramatic speed gains you get from the former
+    format.
 
     Usage example for concatentation of categorical column-containing
     dataframes:

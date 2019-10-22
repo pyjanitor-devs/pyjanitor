@@ -63,26 +63,25 @@ Contributors
 - `@benjaminjack <https://github.com/benjaminjack>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Abenjaminjack>`_
 - `@loganthomas <https://github.com/loganthomas>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aloganthomas>`_
     - Helped others with ``git`` issues at SciPy 2019.
-- `@kulini <https://github.com/kulini>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+kulini>`_
+- `@kulini <https://github.com/kulini>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Akulini>`_
 - `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Adwgoltra>`_
-- `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Ashandou>`_
+- `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ashandou>`_
 - `@samwalkow <https://github.com/samwalkow>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Asamwalkow>`_
-- `@portc13 <https://github.com/portc13>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3portc13>`_
+- `@portc13 <https://github.com/portc13>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aportc13>`_
 - `@DSNortsev <https://github.com/DSNortsev>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ADSNortsev>`_
-- `@qtson <https://github.com/qtson>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3qtson>`_
-- `@keoghdata <https://github.com/keoghdata>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3A+pr+mentions%3Akeoghdata+>`_
+- `@qtson <https://github.com/qtson>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aqtson>`_
+- `@keoghdata <https://github.com/keoghdata>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Akeoghdata>`_
 - `@cjmayers <https://github.com/cjmayers>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Acjmayers>`_
 - `@gjlynx <https://github.com/gjlynx>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agjlynx>`_
 - `@aopisco <https://github.com/aopisco>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aaopisco>`_
-- `@gaworecki5 <https://github.com/gaworecki5>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?q=is%3Aclosed+mentions%3Agaworecki5>`_
-- `@puruckertom <https://github.com/puruckertom>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Apr+author%3Apuruckertom>`_
-- `@thomasjpfan <https://github.com/thomasjpfan>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Athomasjpfan>`_
-- `@jiafengkevinchen <https://github.com/jiafengkevinchen>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pull/480#issue-298730562>`_
-    - `<https://github.com/ericmjl/pyjanitor/issues/549>`_
-- `@mralbu <https://github.com/mralbu>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues/502>`_
-- `@anzelpwj <https://github.com/anzelpwj>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3anzelpwj>`_
+- `@gaworecki5 <https://github.com/gaworecki5>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agaworecki5>`_
+- `@puruckertom <https://github.com/puruckertom>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Apuruckertom>`_
+- `@thomasjpfan <https://github.com/thomasjpfan>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Athomasjpfan>`_
+- `@jiafengkevinchen <https://github.com/jiafengkevinchen>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ajiafengkevinchen>`_
+- `@mralbu <https://github.com/mralbu>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Amralbu>`_
+- `@anzelpwj <https://github.com/anzelpwj>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aanzelpwj>`_
 - `@Ram-N <https://github.com/Ram-N>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ARam-N>`_
-- `@eyaltrabelsi <https://github.com/eyaltrabelsi>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?q=is%3Aclosed+mentions%3A eyaltrabelsi>`_
-- `@gddcunh <https://github.com/gddcunh>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?q=is%3Aclosed+mentions%3A gddcunh>`_
-- `@DollofCuty <https://github.com/DollofCuty>`_ | `contributions <https://github.com/qtson/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ADollofCuty>`_
-- `@bdice <https://github.com/bdice>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Abdice>`_
+- `@eyaltrabelsi <https://github.com/eyaltrabelsi>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aeyaltrabelsi>`_
+- `@gddcunh <https://github.com/gddcunh>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agddcunh>`_
+- `@DollofCuty <https://github.com/DollofCuty>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ADollofCuty>`_
+- `@bdice <https://github.com/bdice>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Abdice>`_

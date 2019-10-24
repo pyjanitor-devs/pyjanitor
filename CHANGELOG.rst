@@ -1,28 +1,29 @@
 new version (on deck)
 =====================
-- [ENH] Series toset() functionality #570
-- [ENH] Added option to coalesce function to not delete coalesced columns.
-- [ENH] Added functionality to deconcatenate tuple/list/collections in a column to deconcatenate_column
-- [ENH] Fix error message when length of new_column_names is wrong
-- [DOC] Fixed several examples of functional syntax in ``functions.py``.
-- [DOC] Fix #noqa comments showing up in docs.
-- [ENH] Add unionizing a group of dataframes' categoricals.
+- [ENH] Series toset() functionality #570 @eyaltrabelsi
+- [ENH] Added option to coalesce function to not delete coalesced columns. @gddcunh
+- [ENH] Added functionality to deconcatenate tuple/list/collections in a column to deconcatenate_column @zbarry
+- [ENH] Fix error message when length of new_column_names is wrong @DollofCutty
+- [DOC] Fixed several examples of functional syntax in ``functions.py``. @bdice
+- [DOC] Fix #noqa comments showing up in docs by @hectormz
+- [ENH] Add unionizing a group of dataframes' categoricals. @zbarry
+- [DOC] Fix contributions hyperlinks in ``AUTHORS.rst`` and contributions by @hectormz
 
 v0.18.2
 =======
-- [INF] Make requirements.txt smaller
-- [ENH] Add a reset_index parameter to shuffle
-- [DOC] Added contribution page link to readme
+- [INF] Make requirements.txt smaller @eyaltrabelsi
+- [ENH] Add a reset_index parameter to shuffle @eyaltrabelsi
+- [DOC] Added contribution page link to readme @eyaltrabelsi
 - [DOC] fix example for ``update_where``, provide a bit more detail, and expand the bad_values example notebook to demonstrate its use by @anzelpwj.
 - [INF] Fix pytest marks by @ericmjl (issue #520)
 - [ENH] add example notebook with use of finance submodule methods by @rahosbach
 - [DOC] added a couple of admonitions for Windows users. h/t @anzelpwj for debugging
-   help when a few tests failed for `win32`
+   help when a few tests failed for `win32` @Ram-N
 - [ENH] Pyjanitor for PySpark @zjpoh
 - [ENH] Add pyspark clean_names @zjpoh
 - [ENH] Convert asserts to raise exceptions by @hectormz
 - [ENH] Add decorator functions for missing and error handling @jiafengkevinchen
-- [DOC] Update README with functional ``pandas`` API example.
+- [DOC] Update README with functional ``pandas`` API example. @ericmjl
 - [INF] Move ``get_features_targets()`` to new ``ml.py`` module by @hectormz
 - [ENH] Add chirality to morgan fingerprints in janitor.chemistry submodule by @Clayton-Springer
 - [INF] ``import_message`` suggests python dist. appropriate installs by @hectormz

@@ -6,6 +6,7 @@ import pandas as pd
 import pandas_flavor as pf
 
 from .utils import deprecated_alias, import_message
+from typing import Hashable
 
 try:
     from Bio import SeqIO
@@ -21,7 +22,7 @@ except ImportError:
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def join_fasta(
-    df: pd.DataFrame, filename: str, id_col: str, column_name: str
+    df: pd.DataFrame, filename: str, id_col: Hashable, column_name: str
 ) -> pd.DataFrame:
     """
     Convenience method to join in a FASTA file as a column.

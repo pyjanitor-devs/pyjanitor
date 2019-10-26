@@ -5,6 +5,7 @@ Engineering-specific data cleaning functions.
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from typing import Hashable
 
 from janitor import check
 
@@ -24,10 +25,10 @@ except ImportError:
 @pf.register_dataframe_method
 def convert_units(
     df: pd.DataFrame,
-    column_name: str = None,
+    column_name: Hashable = None,
     existing_units: str = None,
     to_units: str = None,
-    dest_column_name: str = None,
+    dest_column_name: Hashable = None,
 ) -> pd.DataFrame:
     """
     Converts a column of numeric values from one unit to another.
@@ -90,10 +91,10 @@ def convert_units(
     """
 
     # Check all inputs are correct data type
-    check("column_name", column_name, [str])
+    check("column_name", column_name, [Hashable])
     check("existing_units", existing_units, [str])
     check("to_units", to_units, [str])
-    check("dest_column_name", dest_column_name, [str])
+    check("dest_column_name", dest_column_name, [Hashable])
 
     # Check that column_name is a numeric column
     if not np.issubdtype(df[column_name].dtype, np.number):

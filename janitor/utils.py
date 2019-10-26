@@ -1,10 +1,14 @@
 """ Miscellaneous internal PyJanitor helper functions. """
 
 import functools
+import os
+import sys
 import warnings
+from typing import Callable, Dict, List, Union
+
+import numpy as np
 import pandas as pd
 
-from typing import Callable, Dict, Union
 from .errors import JanitorError
 
 
@@ -131,6 +135,17 @@ def _strip_underscores(
         and True.
     :returns: A pandas DataFrame with underscores removed.
     """
+
+    df = df.rename(
+        columns=lambda x: _strip_underscores_func(x, strip_underscores)
+    )
+    return df
+
+
+def _strip_underscores_func(
+    col: str, strip_underscores: Union[str, bool] = None
+) -> pd.DataFrame:
+    """Strip underscores from a string."""
     underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
         raise JanitorError(
@@ -138,15 +153,20 @@ def _strip_underscores(
         )
 
     if strip_underscores in ["left", "l"]:
-        df = df.rename(columns=lambda x: x.lstrip("_"))
+        col = col.lstrip("_")
     elif strip_underscores in ["right", "r"]:
-        df = df.rename(columns=lambda x: x.rstrip("_"))
+        col = col.rstrip("_")
     elif strip_underscores == "both" or strip_underscores is True:
-        df = df.rename(columns=lambda x: x.strip("_"))
-    return df
+        col = col.strip("_")
+    return col
 
 
-def import_message(submodule: str, package: str, installation: str):
+def import_message(
+    submodule: str,
+    package: str,
+    conda_channel: str = None,
+    pip_install: bool = False,
+):
     """
     Generic message for indicating to the user when a function relies on an
     optional module / package that is not currently installed. Includes
@@ -154,18 +174,37 @@ def import_message(submodule: str, package: str, installation: str):
 
     :param submodule: pyjanitor submodule that needs an external dependency.
     :param package: External package this submodule relies on.
-    :param installation: Command to execute in the environment to install
-        the package.
+    :param conda_channel: Conda channel package can be installed from,
+        if at all.
+    :param pip_install: Whether package can be installed via pip.
     """
+
+    is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
+    installable = True
+    if is_conda:
+        if conda_channel is None:
+            installable = False
+            installation = f"{package} cannot be installed via conda"
+        else:
+            installation = f"conda install -c {conda_channel} {package}"
+    else:
+        if pip_install:
+            installation = f"pip install {package}"
+        else:
+            installable = False
+            installation = f"{package} cannot be installed via pip"
 
     print(
         f"To use the janitor submodule {submodule}, you need to install "
         f"{package}."
     )
     print()
-    print(f"To do so, use the following command:")
-    print()
-    print(f"    {installation}")
+    if installable:
+        print(f"To do so, use the following command:")
+        print()
+        print(f"    {installation}")
+    else:
+        print(f"{installation}")
 
 
 def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
@@ -221,6 +260,38 @@ def deprecated_alias(**aliases) -> Callable:
     return decorator
 
 
+def refactored_function(message: str) -> Callable:
+    """Used as a decorator when refactoring functions
+    
+    Implementation is inspired from `Hacker Noon`_.
+
+    .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987  # noqa: E501
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        @refactored_function(
+            message="simple_sum() has been refactored. Use hard_sum() instead."
+        )
+        def simple_sum(alpha, beta):
+            return alpha + beta
+
+    :param message: Message to use in warning user about refactoring.
+    :return: Your original function wrapped with the kwarg redirection
+        function.
+    """
+
+    def decorator(func):
+        def emit_warning(*args, **kwargs):
+            warnings.warn(message, FutureWarning)
+            return func(*args, **kwargs)
+
+        return emit_warning
+
+    return decorator
+
+
 def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     """
     Used to update deprecated argument names with new names. Throws a
@@ -242,7 +313,101 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
                     f"{func_name} received both {old_alias} and {new_alias}"
                 )
             warnings.warn(
-                "{old_alias} is deprecated; use {new_alias}",
+                f"{old_alias} is deprecated; use {new_alias}",
                 DeprecationWarning,
             )
             kwargs[new_alias] = kwargs.pop(old_alias)
+
+
+def check_column(
+    df: pd.DataFrame, old_column_names: List, present: bool = True
+):
+    """
+    One-liner syntactic sugar for checking the presence or absence of a column.
+
+    Should be used like this::
+
+        check(df, ['a', 'b'], present=True)
+
+    :param df: The name of the variable.
+    :param old_column_names: A list of column names we want to check to see if
+        present (or absent) in df.
+    :param present: If True (default), checks to see if all of old_column_names
+        are in df.columns. If False, checks that none of old_column_names are
+        in df.columns.
+    :returns: ValueError if data is not the expected type.
+    """
+    for column_name in old_column_names:
+        if present:
+            if column_name not in df.columns:
+                raise ValueError(
+                    f"{column_name} not present in dataframe columns!"
+                )
+        else:  # Tests for exclusion
+            if column_name in df.columns:
+                raise ValueError(
+                    f"{column_name} already present in dataframe columns!"
+                )
+
+
+def skipna(f: Callable) -> Callable:
+    """
+    Decorator for escaping np.nan and None in a function
+
+    Should be used like this::
+
+        df[column].apply(skipna(transform))
+
+    or::
+
+        @skipna
+        def transform(x):
+            pass
+
+    :param f: the function to be wrapped
+    :returns: _wrapped, the wrapped function
+    """
+
+    def _wrapped(x, *args, **kwargs):
+        if (type(x) is float and np.isnan(x)) or x is None:
+            return np.nan
+        else:
+            return f(x, *args, **kwargs)
+
+    return _wrapped
+
+
+def skiperror(
+    f: Callable, return_x: bool = False, return_val=np.nan
+) -> Callable:
+    """
+    Decorator for escaping errors in a function
+
+    Should be used like this::
+
+        df[column].apply(
+            skiperror(transform, return_val=3, return_x=False))
+
+    or::
+
+        @skiperror(return_val=3, return_x=False)
+        def transform(x):
+            pass
+
+    :param f: the function to be wrapped
+    :param return_x: whether or not the original value that caused error
+        should be returned
+    :param return_val: the value to be returned when an error hits.
+        Ignored if return_x is True
+    :returns: _wrapped, the wrapped function
+    """
+
+    def _wrapped(x, *args, **kwargs):
+        try:
+            return f(x, *args, **kwargs)
+        except Exception:
+            if return_x:
+                return x
+            return return_val
+
+    return _wrapped

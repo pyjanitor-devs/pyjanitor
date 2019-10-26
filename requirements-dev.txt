@@ -9,3 +9,7 @@ jupyter_client
 ipykernel
 seaborn
 pytest-azurepipelines
+pytest-cov
+lxml
+unyt
+pyspark

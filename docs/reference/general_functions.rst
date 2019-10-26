@@ -1,5 +1,5 @@
 =================
-General functions
+General Functions
 =================
 .. currentmodule:: janitor
 
@@ -17,6 +17,7 @@ Modify columns
     transform_column
     transform_columns
     rename_column
+    rename_columns
     reorder_columns
     collapse_levels
     change_type
@@ -56,6 +57,7 @@ Filtering
     filter_column_isin
     select_columns
     dropnotnull
+    get_dupes
 
 Preprocessing
 ~~~~~~~~~~~~~
@@ -67,6 +69,7 @@ Preprocessing
     impute
     label_encode
     min_max_scale
+    get_features_targets
 
 Other
 ~~~~~
@@ -75,3 +78,4 @@ Other
 
     then
     shuffle
+    count_cumulative_unique

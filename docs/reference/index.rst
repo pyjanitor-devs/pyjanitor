@@ -13,10 +13,17 @@ methods.
 
    biology
    chemistry
+   engineering
    finance
+   ml
    general_functions
+   pyspark
 
-.. autosummary:: janitor.biology
-.. autosummary:: janitor.chemistry
-.. autosummary:: janitor.finance
-.. autosummary:: janitor.functions
+.. autosummary::
+      janitor.biology
+      janitor.chemistry
+      janitor.engineering
+      janitor.finance
+      janitor.ml
+      janitor.functions
+      janitor.spark.functions

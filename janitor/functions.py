@@ -1,28 +1,119 @@
 """ General purpose data cleaning functions. """
 
 import datetime as dt
+import re
+import unicodedata
+import warnings
+from fnmatch import translate
+from functools import partial, reduce
+from typing import Any, Callable, Dict, Iterable, List, Tuple, Union, Set
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-import re
-import warnings
-
-from functools import partial, reduce
-from fnmatch import translate
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-from typing import Callable, Dict, Iterable, List, Union, Any, Tuple
 
+from .errors import JanitorError
 from .utils import (
-    deprecated_alias,
-    _strip_underscores,
-    check,
     _clean_accounting_column,
     _currency_column_to_numeric,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
+    _strip_underscores,
+    check,
+    check_column,
+    deprecated_alias,
 )
-from .errors import JanitorError
+
+
+@pf.register_dataframe_method
+def move(
+    df: pd.DataFrame,
+    source: Union[int, str],
+    target: Union[int, str],
+    position: str = "before",
+    axis: int = 0,
+) -> pd.DataFrame:
+    """
+    Move column or row to a position adjacent to another column or row in
+    dataframe. Must have unique column names or indices.
+
+    This operation does not reset the index of the dataframe. User must
+    explicitly do so.
+
+    Does not apply to multilevel dataframes.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = move(df, source=3, target=15, position='after', axis=0)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).move(source=3, target=15, position='after',
+        axis=0)
+
+    :param df: The pandas Dataframe object.
+    :param int or str source: column or row to move
+    :param str target: column or row to move adjacent to
+    :param str position: Specifies whether the Series is moved to before or
+        after the adjacent Series. Values can be either 'before' or 'after';
+        defaults to 'before'.
+    :param int axis: Axis along which the function is applied. 0 to move a
+        row, 1 to move a column.
+    :returns: The dataframe with the Series moved.
+
+    """
+    if axis not in [0, 1]:
+        raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
+
+    if position not in ["before", "after"]:
+        raise ValueError(
+            f"Invalid position '{position}'. Can only be 'before' or 'after'."
+        )
+
+    if axis == 0:
+        names = list(df.index)
+
+        if source not in names:
+            raise ValueError(f"Source row '{source}' not in dataframe.")
+
+        if target not in names:
+            raise ValueError(f"Target row '{target}' not in dataframe.")
+
+        names.remove(source)
+        pos = names.index(target)
+
+        if position == "after":
+            pos += 1
+        names.insert(pos, source)
+
+        df = df.loc[names, :]
+    else:
+        names = list(df.columns)
+
+        if source not in names:
+            raise ValueError(f"Source column '{source}' not in dataframe.")
+
+        if target not in names:
+            raise ValueError(f"Target column '{target}' not in dataframe.")
+
+        names.remove(source)
+        pos = names.index(target)
+
+        if position == "after":
+            pos += 1
+        names.insert(pos, source)
+
+        df = df.loc[:, names]
+
+    return df
 
 
 @pf.register_dataframe_method
@@ -31,6 +122,7 @@ def clean_names(
     strip_underscores: str = None,
     case_type: str = "lower",
     remove_special: bool = False,
+    strip_accents: bool = True,
     preserve_original_columns: bool = True,
 ) -> pd.DataFrame:
     """
@@ -38,6 +130,8 @@ def clean_names(
 
     Takes all column names, converts them to lowercase, then replaces all
     spaces with underscores.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -66,36 +160,27 @@ def clean_names(
         either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
         and True.
     :param case_type: (optional) Whether to make columns lower or uppercase.
-        Current case may be preserved with 'preserve'. Default 'lower'
-        makes all characters lowercase.
+        Current case may be preserved with 'preserve',
+        while snake case conversion (from CamelCase or camelCase only)
+        can be turned on using "snake".
+        Default 'lower' makes all characters lowercase.
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
-    :returns: A pandas DataFrame.
     :param preserve_original_columns: (optional) Preserve original names.
         This is later retrievable using `df.original_columns`.
+    :returns: A pandas DataFrame.
     """
     original_column_names = list(df.columns)
 
-    assert case_type.lower() in {
-        "preserve",
-        "upper",
-        "lower",
-    }, "case_type argument must be one of ('preserve', 'upper', 'lower')"
-
-    if case_type.lower() != "preserve":
-        if case_type.lower() == "upper":
-            df = df.rename(columns=lambda x: x.upper())
-
-        elif case_type.lower() == "lower":
-            df = df.rename(columns=lambda x: x.lower())
+    df = df.rename(columns=lambda x: _change_case(x, case_type))
 
     df = df.rename(columns=_normalize_1)
 
-    def _remove_special(col):
-        return "".join(item for item in col if item.isalnum() or "_" in item)
-
     if remove_special:
         df = df.rename(columns=_remove_special)
+
+    if strip_accents:
+        df = df.rename(columns=_strip_accents)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))
     df = _strip_underscores(df, strip_underscores)
@@ -106,14 +191,64 @@ def clean_names(
     return df
 
 
+def _change_case(col: str, case_type: str) -> str:
+    """Change case of a column name."""
+    case_types = ["preserve", "upper", "lower", "snake"]
+    if case_type.lower() not in case_types:
+        raise JanitorError(f"case_type must be one of: {case_types}")
+
+    if case_type.lower() != "preserve":
+        if case_type.lower() == "upper":
+            col = col.upper()
+        elif case_type.lower() == "lower":
+            col = col.lower()
+        elif case_type.lower() == "snake":
+            col = _camel2snake(col)
+
+    return col
+
+
+def _remove_special(col_name):
+    """Remove special characters from column name."""
+    return "".join(item for item in col_name if item.isalnum() or "_" in item)
+
+
+_underscorer1 = re.compile(r"(.)([A-Z][a-z]+)")
+_underscorer2 = re.compile("([a-z0-9])([A-Z])")
+
+
+def _camel2snake(col_name: str) -> str:
+    """
+    Convert camelcase names to snake case.
+
+    Implementation taken from: https://gist.github.com/jaytaylor/3660565
+    by @jtaylor
+    """
+
+    subbed = _underscorer1.sub(r"\1_\2", col_name)
+    return _underscorer2.sub(r"\1_\2", subbed).lower()
+
+
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
-def _normalize_1(col_name):
+def _normalize_1(col_name: str) -> str:
     result = col_name
     for search, replace in FIXES:
         result = re.sub(search, replace, result)
     return result
+
+
+def _strip_accents(col_name: str) -> str:
+    """
+    Removes accents from a DataFrame column name.
+    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string # noqa: E501
+    """
+    return "".join(
+        l
+        for l in unicodedata.normalize("NFD", col_name)
+        if not unicodedata.combining(l)
+    )
 
 
 @pf.register_dataframe_method
@@ -123,6 +258,8 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     This method also resets the index(by default) since it doesn't make sense
     to preserve the index of a completely empty row.
+
+    This method mutates the original DataFrame.
 
     Implementation is inspired from `StackOverflow`_.
 
@@ -163,6 +300,8 @@ def get_dupes(
     """
     Return all duplicate rows.
 
+    This method does not mutate the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -196,8 +335,9 @@ def encode_categorical(
 ) -> pd.DataFrame:
     """
     Encode the specified columns with Pandas'
-    `category <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`  # noqa: E501
-    dtype.
+    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_. # noqa:E501
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -222,16 +362,14 @@ def encode_categorical(
     """
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
-            assert col in df.columns, JanitorError(
-                "{col} missing from dataframe columns!".format(col=col)
-            )
+            if col not in df.columns:
+                raise JanitorError(f"{col} missing from dataframe columns!")
             df[col] = pd.Categorical(df[col])
     elif isinstance(column_names, str):
-        assert column_names in df.columns, JanitorError(
-            "{column_names} missing from dataframe columns!".format(
-                column_names=column_names
+        if column_names not in df.columns:
+            raise JanitorError(
+                f"{column_names} missing from dataframe columns!"
             )
-        )
         df[column_names] = pd.Categorical(df[column_names])
     else:
         raise JanitorError(
@@ -248,12 +386,14 @@ def label_encode(
     """
     Convert labels into numerical data.
 
-    This function will create a new column with the string "_enc" appended
+    This method will create a new column with the string "_enc" appended
     after the original column's name. Consider this to be syntactic sugar.
 
-    This function behaves differently from `encode_categorical`. This function
+    This method behaves differently from `encode_categorical`. This method
     creates a new column of numeric data. `encode_categorical` replaces the
     dtype of the original column with a "categorical" dtype.
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -278,14 +418,12 @@ def label_encode(
     le = LabelEncoder()
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
-            assert col in df.columns, JanitorError(
-                f"{col} missing from column_names"
-            )  # noqa: E501
+            if col not in df.columns:
+                raise JanitorError(f"{col} missing from column_names")
             df[f"{col}_enc"] = le.fit_transform(df[col])
     elif isinstance(column_names, str):
-        assert column_names in df.columns, JanitorError(
-            f"{column_names} missing from column_names"
-        )  # noqa: E501
+        if column_names not in df.columns:
+            raise JanitorError(f"{column_names} missing from column_names")
         df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
         raise JanitorError(
@@ -295,74 +433,14 @@ def label_encode(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(
-    target_columns="target_column_names",
-    feature_columns="feature_column_names",
-)
-def get_features_targets(
-    df: pd.DataFrame,
-    target_column_names: Union[str, Union[List, Tuple], Any],
-    feature_column_names: Union[str, Iterable[str], Any] = None,
-):
-    """
-    Get the features and targets as separate DataFrames/Series.
-
-    The behaviour is as such:
-
-    - ``target_column_names`` is mandatory.
-    - If ``feature_column_names`` is present, then we will respect the column
-        names inside there.
-    - If ``feature_column_names`` is not passed in, then we will assume that the
-    rest of the columns are feature columns, and return them.
-
-    Functional usage example:
-
-    .. code-block:: python
-
-        X, y = get_features_targets(df, target_column_names="measurement")
-
-    Method chaining example:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...)
-        target_cols = ['output1', 'output2']
-        X, y = df.get_features_targets(target_column_names=target_cols)
-        # noqa: E501
-
-    :param df: The pandas DataFrame object.
-    :param str/iterable target_column_names: Either a column name or an
-        iterable (list or tuple) of column names that are the target(s) to be
-        predicted.
-    :param str/iterable feature_column_names: (optional) The column name or
-        iterable of column names that are the features (a.k.a. predictors)
-        used to predict the targets.
-    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both
-        are pandas DataFrames.
-    """
-    Y = df[target_column_names]
-
-    if feature_column_names:
-        X = df[feature_column_names]
-    else:
-        if isinstance(target_column_names, (list, tuple)):  # noqa: W503
-            xcols = [c for c in df.columns if c not in target_column_names]
-        else:
-            xcols = [c for c in df.columns if target_column_names != c]
-
-        X = df[xcols]
-    return X, Y
-
-
-@pf.register_dataframe_method
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
-    df: pd.DataFrame, old_column_name, new_column_name
+    df: pd.DataFrame, old_column_name: str, new_column_name: str
 ) -> pd.DataFrame:
     """
     Rename a column in place.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -384,15 +462,46 @@ def rename_column(
     changing, then use the :py:meth:`pandas.DataFrame.rename` method.
 
     :param df: The pandas DataFrame object.
-    :param str old_column_name: The old column name.
-    :param str new_column_name: The new column name.
+    :param old_column_name: The old column name.
+    :param new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
     """
-    if old_column_name not in df.columns:
-        raise ValueError(
-            f"{old_column_name} not present in dataframe columns!"
-        )
+    check_column(df, [old_column_name])
+
     return df.rename(columns={old_column_name: new_column_name})
+
+
+@pf.register_dataframe_method
+def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
+    """
+    Rename columns in place.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = rename_columns({"old_column_name": "new_column_name"})
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        df = pd.DataFrame(...).rename_columns({"old_column_name":
+        "new_column_name"})  # noqa: E501
+
+    This is just syntactic sugar/a convenience function for renaming one column
+    at a time. If you are convinced that there are multiple columns in need of
+    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+
+    :param df: The pandas DataFrame object.
+    :param new_column_names: A dictionary of old and new column names.
+    :returns: A pandas DataFrame with renamed columns.
+    """
+    check_column(df, list(new_column_names.keys()))
+
+    return df.rename(columns=new_column_names)
 
 
 @pf.register_dataframe_method
@@ -405,6 +514,8 @@ def reorder_columns(
     Columns not specified retain their order and follow after specified cols.
 
     Validates column_order to ensure columns are all present in DataFrame.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -457,10 +568,13 @@ def coalesce(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
     new_column_name: str = None,
+    delete_columns: bool = True,
 ) -> pd.DataFrame:
     """
 
     Coalesces two or more columns of data in order of column names provided.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -488,6 +602,7 @@ def coalesce(
     :param df: A pandas DataFrame.
     :param column_names: A list of column names.
     :param str new_column_name: The new column name after combining.
+    :param bool delete_columns: Whether to delete the columns being coalesced
     :returns: A pandas DataFrame with coalesced columns.
     """
     series = [df[c] for c in column_names]
@@ -495,7 +610,8 @@ def coalesce(
     def _coalesce(series1, series2):
         return series1.combine_first(series2)
 
-    df = df.drop(columns=column_names)
+    if delete_columns:
+        df = df.drop(columns=column_names)
     if not new_column_name:
         new_column_name = column_names[0]
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
@@ -507,6 +623,8 @@ def coalesce(
 def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     """
     Convert Excel's serial date format into Python datetime format.
+
+    This method mutates the original DataFrame.
 
     Implementation is also from `Stack Overflow`.
 
@@ -546,6 +664,8 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
     Implementation is also from `Stack Overflow <https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python>`.  # noqa: E501
 
+    This method mutates the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -581,6 +701,8 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
     Note that this ignores local tz and convert all timestamps to naive
     datetime based on UTC!
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -622,6 +744,8 @@ def fill_empty(
 
     Super sugary syntax that wraps :py:meth:`pandas.DataFrame.fillna`.
 
+    This method mutates the original DataFrame.
+
     Functional usage example:
 
     .. code-block:: python
@@ -646,14 +770,14 @@ def fill_empty(
     """
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
-            assert (
-                col in df.columns
-            ), "{col} missing from dataframe columns!".format(col=col)
+            if col not in df.columns:
+                raise JanitorError(f"{col} missing from dataframe columns!")
             df[col] = df[col].fillna(value)
     else:
-        assert (
-            column_names in df.columns
-        ), "{col} missing from dataframe columns!".format(col=column_names)
+        if column_names not in df.columns:
+            raise JanitorError(
+                f"{column_names} missing from dataframe columns!"
+            )
         df[column_names] = df[column_names].fillna(value)
 
     return df
@@ -668,6 +792,8 @@ def expand_column(
     Expand a categorical column with multiple labels into dummy-coded columns.
 
     Super sugary syntax that wraps :py:meth:`pandas.Series.str.get_dummies`.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
@@ -710,11 +836,13 @@ def concatenate_columns(
     column_names: Union[str, Iterable[str], Any],
     new_column_name,
     sep: str = "-",
-):
+) -> pd.DataFrame:
     """
     Concatenates the set of columns into a single column.
 
     Used to quickly generate an index based on a group of columns.
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -740,7 +868,8 @@ def concatenate_columns(
     :param sep: The separator between each column's data.
     :returns: A pandas DataFrame with concatenated columns.
     """
-    assert len(column_names) >= 2, "At least two columns must be specified"
+    if len(column_names) < 2:
+        raise JanitorError("At least two columns must be specified")
     for i, col in enumerate(column_names):
         if i == 0:
             df[new_column_name] = df[col].astype(str)
@@ -757,49 +886,111 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name,
-    new_column_names: Union[str, Iterable[str], Any],
     sep: str,
-):
+    new_column_names: Union[List[str], Tuple[str]] = None,
+    autoname: str = None,
+    preserve_position: bool = False,
+) -> pd.DataFrame:
     """
     De-concatenates a single column into multiple columns.
 
-    This is the inverse of the `concatenate_columns` function.
+    This is the inverse of the ``concatenate_columns`` function.
 
     Used to quickly split columns out of a single column.
+
+    The keyword argument ``preserve_position``
+    takes ``True`` or ``False`` boolean
+    that controls whether the ``new_column_names``
+    will take the original position
+    of the to-be-deconcatenated ``column_name``:
+
+    - When `preserve_position=False` (default), `df.columns` change from
+      `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
+      In other words, the deconcatenated new columns are appended to the right
+      of the original dataframe and the original `column_name` is NOT dropped.
+    - When `preserve_position=True`, `df.column` change from
+      `[..., column_name, ...]` to `[..., new_column_names, ...]`.
+      In other words, the deconcatenated new column will REPLACE the original
+      `column_name` at its original position, and `column_name` itself
+      is dropped.
+
+    The keyword argument ``autoname`` accepts a base string
+    and then automatically creates numbered column names
+    based off the base string.
+    For example, if ``col`` is passed in
+    as the argument to ``autoname``,
+    and 4 columns are created,
+    then the resulting columns will be named
+    ``col1, col2, col3, col4``.
+    Numbering is always 1-indexed, not 0-indexed,
+    in order to make the column names human-friendly.
+
+    This method does not mutate the original DataFrame.
 
     Functional usage example:
 
     .. code-block:: python
 
-        df = deconcatenate_columns(df,
-                                   column_name='id',
-                                   new_column_names=['col1', 'col2'],
-                                   sep='-')
+        df = deconcatenate_column(
+                df, column_name='id', new_column_names=['col1', 'col2'],
+                sep='-', preserve_position=True
+        )
 
     Method chaining example:
 
     .. code-block:: python
 
         df = (pd.DataFrame(...).
-              deconcatenate_columns(column_name='id',
-                                    new_column_names=['col1', 'col2'],
-                                    sep='-'))
+                deconcatenate_column(
+                    column_name='id', new_column_names=['col1', 'col2'],
+                    sep='-', preserve_position=True
+                ))
 
     :param df: A pandas DataFrame.
     :param column_name: The column to split.
-    :param new_column_names: A list of new column names post-splitting.
     :param sep: The separator delimiting the column's data.
+    :param new_column_names: A list of new column names post-splitting.
+    :param autoname: A base name for automatically naming the new columns.
+        Takes precedence over ``new_column_names`` if both are provided.
+    :param preserve_position: Boolean for whether or not to preserve original
+        position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
-    assert (
-        column_name in df.columns
-    ), f"column name {column_name} not present in dataframe"  # noqa: E501
+    if column_name not in df.columns:
+        raise ValueError(f"column name {column_name} not present in dataframe")
     deconcat = df[column_name].str.split(sep, expand=True)
-    assert (
-        len(new_column_names) == deconcat.shape[1]
-    ), "number of new column names not correct."
+    if preserve_position:
+        # Keep a copy of the original dataframe
+        df_original = df.copy()
+    if autoname:
+        new_column_names = [
+            f"{autoname}{i}" for i in range(1, deconcat.shape[1] + 1)
+        ]
+    if not len(new_column_names) == deconcat.shape[1]:
+        raise JanitorError(
+            f"you need to provide {len(new_column_names)} names"
+            "to new_column_names"
+        )
+
     deconcat.columns = new_column_names
-    return df.join(deconcat)
+    df = pd.concat([df, deconcat], axis=1)
+
+    if preserve_position:
+        cols = list(df_original.columns)
+        index_original = cols.index(column_name)
+        for i, col_new in enumerate(new_column_names):
+            cols.insert(index_original + i, col_new)
+        df = df[cols].drop(columns=column_name)
+
+        # TODO: I suspect this should become a test
+        # instead of a defensive check?
+        if len(df.columns) != (
+            len(df_original.columns) + len(new_column_names) - 1
+        ):
+            raise JanitorError(
+                "number of columns after deconcatenation is incorrect"
+            )
+    return df
 
 
 @pf.register_dataframe_method
@@ -816,6 +1007,8 @@ def filter_string(
     Because this uses internally `pandas.Series.str.contains`, which allows a
     regex string to be passed into it, thus `search_string` can also be a regex
     pattern.
+
+    This method does not mutate the original DataFrame.
 
     This function allows us to method chain filtering operations:
 
@@ -874,6 +1067,8 @@ def filter_on(
 ) -> pd.DataFrame:
     """
     Return a dataframe filtered on a particular criteria.
+
+    This method does not mutate the original DataFrame.
 
     This is super-sugary syntax that wraps the pandas `.query()` API, enabling
     users to use strings to quickly specify filters for filtering their
@@ -945,6 +1140,8 @@ def filter_date(
 ) -> pd.DataFrame:
     """
     Filter a date-based column based on certain criteria.
+
+    This method does not mutate the original DataFrame.
 
     Dates may be finicky and this function builds on top of the "magic" from
     the pandas `to_datetime` function that is able to parse dates well.
@@ -1163,6 +1360,8 @@ def filter_column_isin(
     """
     Filter a dataframe for values in a column that exist in another iterable.
 
+    This method does not mutate the original DataFrame.
+
     Assumes exact matching; fuzzy matching not implemented.
 
     The below example syntax will filter the DataFrame such that we only get
@@ -1214,6 +1413,8 @@ def remove_columns(
     """
     Remove the set of columns specified in `column_names`.
 
+    This method does not mutate the original DataFrame.
+
     Intended to be the method-chaining alternative to `del df[col]`.
 
     Method chaining example:
@@ -1236,6 +1437,8 @@ def change_type(
 ) -> pd.DataFrame:
     """
     Change the type of a column.
+
+    This method mutates the original DataFrame.
 
     Exceptions that are raised can be ignored. For example, if one has a mixed
     dtype column that has non-integer strings and integers, and you want to
@@ -1284,6 +1487,8 @@ def add_column(
 ) -> pd.DataFrame:
     """
     Add a column to the dataframe.
+
+    This method does not mutate the original DataFrame.
 
     Intended to be the method-chaining alternative to::
 
@@ -1452,6 +1657,8 @@ def add_columns(
     """
     Add multiple columns to the dataframe.
 
+    This method does not mutate the original DataFrame.
+
     Method to augment `add_column` with ability to add multiple columns in
     one go. This replaces the need for multiple `add_column` calls.
 
@@ -1490,6 +1697,8 @@ def limit_column_characters(
 ) -> pd.DataFrame:
     """
     Truncate column sizes to a specific length.
+
+    This method mutates the original DataFrame.
 
     Method chaining will truncate all columns to a given length and append
     a given separator character with the index of duplicate columns, except
@@ -1609,6 +1818,8 @@ def row_to_names(
 ) -> pd.DataFrame:
     """
     Elevates a row to be the column names of a DataFrame.
+
+    This method mutates the original DataFrame.
 
     Contains options to remove the elevated row from the DataFrame along with
     removing the rows above the selected row.
@@ -1736,6 +1947,8 @@ def round_to_fraction(
     """
     Round all values in a column to a fraction.
 
+    This method mutates the original DataFrame.
+
     Taken from https://github.com/sfirke/janitor/issues/235.
 
     Also, optionally round to a specified number of digits.
@@ -1862,6 +2075,8 @@ def transform_column(
     """
     Transform the given column in-place using the provided function.
 
+    This method mutates the original DataFrame.
+
     Let's say we wanted to apply a log10 transform a column of data.
 
     Originally one would write code like this:
@@ -1912,6 +2127,8 @@ def transform_columns(
 ) -> pd.DataFrame:
     """
     Transform multiple columns through the same transformation.
+
+    This method mutates the original DataFrame.
 
     Super syntactic sugar!
 
@@ -2010,6 +2227,8 @@ def min_max_scale(
     """
     Scales data to between a minimum and maximum value.
 
+    This method mutates the original DataFrame.
+
     If `minimum` and `maximum` are provided, the true min/max of the
     `DataFrame` or column is ignored in the scaling process and replaced with
     these values, instead.
@@ -2105,6 +2324,8 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     """
     Flatten multi-level column dataframe to a single level.
 
+    This method mutates the original DataFrame.
+
     Given a `DataFrame` containing multi-level columns, flatten to single-
     level by string-joining the column labels in each level.
 
@@ -2169,6 +2390,8 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 def reset_index_inplace(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     Return the dataframe with an inplace resetting of the index.
+
+    This method mutates the original DataFrame.
 
     Compared to non-inplace resetting, this avoids data copying, thus
     providing a potential speedup.
@@ -2236,6 +2459,8 @@ def currency_column_to_numeric(
     """
     Convert currency column to numeric.
 
+    This method does not mutate the original DataFrame.
+
     This method allows one to take a column containing currency values,
     inadvertently imported as a string, and cast it as a float. This is
     usually the case when reading CSV files that were modified in Excel.
@@ -2257,7 +2482,7 @@ def currency_column_to_numeric(
         make everything that doesn't coerce to a currency 1.
     :param remove_non_numeric: Will remove rows of a DataFrame that contain
         non-numeric values in the `column_name` column. Defaults to `False`.
-    :returns: A mutated DataFrame.
+    :returns: A pandas DataFrame.
     """
     # TODO: Convert this to a notebook.
     # :Example Setup:
@@ -2456,6 +2681,8 @@ def select_columns(
     """
     Method-chainable selection of columns.
 
+    This method does not mutate the original DataFrame.
+
     Optional ability to invert selection of columns available as well.
 
     Method-chaining example:
@@ -2494,6 +2721,8 @@ def impute(
 ) -> pd.DataFrame:
     """
     Method-chainable imputation of values in a column.
+
+    This method mutates the original DataFrame.
 
     Underneath the hood, this function calls the ``.fillna()`` method available
     to every pandas.Series object.
@@ -2583,6 +2812,8 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """
     Add an arbitrary function to run in the ``pyjanitor`` method chain.
 
+    This method does not mutate the original DataFrame.
+
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.
         It should take one parameter and return one parameter, each being the
@@ -2600,6 +2831,8 @@ def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
     """
     Drop rows that do not have null values in the given column.
 
+    This method does not mutate the original DataFrame.
+
     Example usage:
 
     .. code-block:: python
@@ -2615,34 +2848,85 @@ def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def find_replace(df: pd.DataFrame, column_name, mapper: Dict) -> pd.DataFrame:
+def find_replace(
+    df: pd.DataFrame, column_name, mapper: Dict, match: str = "exact"
+) -> pd.DataFrame:
     """
     Perform a find-and-replace action on a column of data.
 
-    For example, let's say we have a column for which we want to replace all
-    of the values 'a' with 1, 'b' with 2, 'c' with 3. We would use the
-    following function call:
+    This method mutates the original DataFrame.
+
+    Depending on use cases, users can choose either exact, full value matching
+    or regular-expression-based fuzzy matching (substring matching is allowed
+    in the latter case). For strings, the matching is always case sensitive.
+
+    Note that default value for keyword argument `match` is "exact".
+
+    For instance, given a dataframe containing orders at a coffee shop:
 
     .. code-block:: python
 
-        df = (
-            pd.DataFrame(...)
-            .find_replace('column_name', {'a': 1, 'b': 2, 'c': 3})
+        df = pd.DataFrame({
+            'customer': ['Mary', 'Tom', 'Lila'],
+            'order': ['ice coffee', 'lemonade', 'regular coffee']
+        })
+
+    Our task is to replace values `'ice coffee'` and `'regular coffee'`
+    of the `'order'` column into `'latte'`.
+
+    Example 1: Exact matching
+
+    .. code-block:: python
+
+        # Functional usage
+        df = find_replace(
+            df, 'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            match='exact'
         )
 
-    This find-and-replace functionality does an exact match only. Hence,
-    substring matches do not work. The value of a cell in the dataframe
-    must be exactly 'a', 'b', or 'c', otherwise the replacement will not
-    happen and the original data will be left in-place.
+        # Method chaining usage
+        df = df.find_replace(
+            'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            match='exact'
+        )
+
+
+    Example 2: Regular-expression-based matching
+
+    .. code-block:: python
+
+        # Functional usage
+        df = find_replace(df, 'order', {'coffee$': 'latte'}, match='regex')
+
+        # Method chaining usage
+        df = df.find_replace('order', {'coffee$': 'latte'}, match='regex')
+
 
     :param df: A pandas DataFrame.
     :param column_name: The column on which the find/replace action is to be
         made.
     :param mapper: A dictionary that maps "thing to find" -> "thing to
-        replace".
+        replace".  Note: Does not support null-value replacement.
+    :param match: A string that dictates whether exact match or
+        regular-expression-based fuzzy match will be used for finding patterns.
+        Default to "exact". Can only be "exact" or "regex".
     :returns: A pandas DataFrame.
+    :raises: ValueError
     """
-    df[column_name] = df[column_name].apply(lambda x: mapper.get(x, x))
+    if any(map(pd.isna, mapper.keys())):
+        raise ValueError(
+            "find_replace() does not support null replacement. "
+            "Use DataFrame.fillna() instead."
+        )
+    if match.lower() not in ("exact", "regex"):
+        raise ValueError("`match` can only be 'exact' or 'regex'.")
+
+    if match.lower() == "exact":
+        df[column_name] = df[column_name].apply(lambda x: mapper.get(x, x))
+    if match.lower() == "regex":
+        for k, v in mapper.items():
+            condition = df[column_name].str.contains(k, regex=True)
+            df = df.update_where(condition, column_name, v)
     return df
 
 
@@ -2654,33 +2938,42 @@ def update_where(
     """
     Add multiple conditions to update a column in the dataframe.
 
+    This method mutates the original DataFrame.
+
     Example usage:
 
     .. code-block:: python
 
         # The dataframe must be assigned to a variable first.
         data = {
-            "a": [1, 2, 3] * 3,
-            "Bell__Chart": [1, 2, 3] * 3,
-            "decorated-elephant": [1, 2, 3] * 3,
-            "animals": ["rabbit", "leopard", "lion"] * 3,
-            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+            "a": [1, 2, 3, 4],
+            "b": [5, 6, 7, 8],
+            "c": [0, 0, 0, 0]
         }
         df = pd.DataFrame(data)
         df = (
             df
             .update_where(
-                condition=(df['column A'] == 'x') & (df['column B'] == 'y'),
-                target_column_name='column C',
-                target_val='z')
+                condition=(df['a'] > 2) & (df['b'] < 8),
+                target_column_name='c',
+                target_val=10)
             )
+        # a b  c
+        # 1 5  0
+        # 2 6  0
+        # 3 7 10
+        # 4 8  0
 
     :param df: The pandas DataFrame object.
-    :param conditions: conditions used to update a target column
-        and target value
-    :param target_column_name: Column to be updated
+    :param conditions: conditions used to update a target column and target
+        value
+    :param target_column_name: Column to be updated. If column does not exist
+        in dataframe, a new column will be created; note that entries that do
+        not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
+    :raises: IndexError if **conditions** does not have the same length as
+        **df**.
     """
     df.loc[conditions, target_column_name] = target_val
     return df
@@ -2691,6 +2984,8 @@ def update_where(
 def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
     """
     Method-chainable to_datetime.
+
+    This method mutates the original DataFrame.
 
     Functional usage example:
 
@@ -2720,21 +3015,21 @@ def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
     df: pd.DataFrame,
-    by: str,
-    new_column_name,
-    agg_column_name,
-    agg: Union[Callable, str, List, Dict],
-    axis: int = 0,
+    by: Union[List, str],
+    new_column_name: str,
+    agg_column_name: str,
+    agg: Union[Callable, str],
 ) -> pd.DataFrame:
     """
-    Method-chain a groupby and a merge in a single step.
+    Shortcut for assigning a groupby-transform to a new column.
 
-    Without this function, we would have to break out of method chaining:
+    This method does not mutate the original DataFrame.
+
+    Without this function, we would have to write a verbose line:
 
     .. code-block:: python
 
-        df_grp = df.groupby(...).agg(...)
-        df = df.merge(df_grp, ...)
+        df = df.assign(...=df.groupby(...)[...].tranform(...))
 
     Now, this function can be method-chained:
 
@@ -2743,9 +3038,10 @@ def groupby_agg(
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).groupby_agg(df,
-                                           by='col1',
+                                           by='group',
                                            agg='mean',
-                                           new_column_name='col1_mean')
+                                           agg_column_name="col1"
+                                           new_column_name='col1_mean_by_group')
 
     :param df: A pandas DataFrame.
     :param by: Column(s) to groupby on, either a `str` or
@@ -2756,21 +3052,9 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    df_grp = (
-        df.groupby(by, axis=axis)
-        .agg(agg, axis=axis)
-        .reset_index()
-        .rename(columns={agg_column_name: new_column_name})
-    )
-
-    if isinstance(by, list) or isinstance(by, tuple):
-        df_grp = df_grp[[*by, new_column_name]]
-    else:
-        df_grp = df_grp[[by, new_column_name]]
-
-    df = df.merge(df_grp, on=by)
-
-    return df
+    new_col = df.groupby(by)[agg_column_name].transform(agg)
+    df_new = df.assign(**{new_column_name: new_col})
+    return df_new
 
 
 @pf.register_dataframe_accessor("data_description")
@@ -2843,6 +3127,8 @@ def bin_numeric(
     """
     Generate a new column that labels bins for a specified numeric column.
 
+    This method mutates the original DataFrame.
+
     Makes use of pandas cut() function to bin data of one column, generating a
     new column with the results.
 
@@ -2889,6 +3175,8 @@ def drop_duplicate_columns(
 ) -> pd.DataFrame:
     """
     Remove a duplicated column specified by column_name, its index.
+
+    This method does not mutate the original DataFrame.
 
     Column order 0 is to remove the first column,
            order 1 is to remove the second column, and etc
@@ -2943,6 +3231,8 @@ def take_first(
     """
     Take the first row within each group specified by `subset`.
 
+    This method does not mutate the original DataFrame.
+
     .. code-block:: python
 
         import pandas as pd
@@ -2970,9 +3260,13 @@ def take_first(
 
 
 @pf.register_dataframe_method
-def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
+def shuffle(
+    df: pd.DataFrame, random_state=None, reset_index=True
+) -> pd.DataFrame:
     """
     Shuffle the rows of the DataFrame.
+
+    This method does not mutate the original DataFrame.
 
     Super-sugary syntax! Underneath the hood, we use ``df.sample(frac=1)``,
     with the option to set the random state.
@@ -2986,13 +3280,18 @@ def shuffle(df: pd.DataFrame, random_state=None) -> pd.DataFrame:
     :param df: A pandas DataFrame
     :param random_state: (optional) A seed for the random number generator.
     """
-    return df.sample(frac=1, random_state=random_state)
+    result = df.sample(frac=1, random_state=random_state)
+    if reset_index:
+        result = result.reset_index(drop=True)
+    return result
 
 
 @pf.register_dataframe_method
 def join_apply(df, func, new_column_name):
     """
     Join the result of applying a function across dataframe rows.
+
+    This method does not mutate the original DataFrame.
 
     This is a convenience function that allows us to apply arbitrary functions
     that take any combination of information from any of the columns. The only
@@ -3032,3 +3331,194 @@ def join_apply(df, func, new_column_name):
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df
+
+
+@pf.register_dataframe_method
+def flag_nulls(
+    df: pd.DataFrame,
+    column_name: str = "null_flag",
+    columns: Union[str, Iterable[str], Any] = None,
+) -> pd.DataFrame:
+    """
+    Creates a new column to indicate whether you have null values in a given
+    row. If the columns parameter is not set, looks across the entire
+    DataFrame, otherwise will look only in the columns you set.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        data = pd.DataFrame(
+            {'a': [1, 2, None, 4],
+             'b': [5.0, None, 7.0, 8.0]})
+
+        df.flag_nulls()
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   1
+        #   4  | 8.0  |   0
+
+        jn.functions.flag_nulls(data)
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   1
+        #   4  | 8.0  |   0
+
+        df.flag_nulls(columns=['b'])
+        #  'a' | 'b'  | 'null_flag'
+        #   1  | 5.0  |   0
+        #   2  | None |   1
+        # None | 7.0  |   0
+        #   4  | 8.0  |   0
+
+
+    :param df: Input Pandas dataframe.
+    :param column_name: Name for the output column. Defaults to 'null_flag'.
+    :param columns: List of columns to look at for finding null values. If you
+        only want to look at one column, you can simply give its name. If set
+        to None (default), all DataFrame columns are used.
+    :returns: Input dataframe with the null flag column.
+    :raises: ValueError
+    """
+    # Sort out columns input
+    if isinstance(columns, str):
+        columns = [columns]
+    elif columns is None:
+        columns = df.columns
+    elif not isinstance(columns, Iterable):
+        # Handle cases where we have an integer column or something
+        columns = [columns]
+
+    # Input sanitation checks
+    check_column(df, columns)
+    check_column(df, [column_name], present=False)
+
+    # This algorithm works best for n_rows >> n_cols. See issue #501
+    null_array = np.zeros(len(df))
+    for col in columns:
+        null_array = np.logical_or(null_array, pd.isnull(df[col]))
+
+    df = df.copy()
+    df[column_name] = null_array.astype(int)
+    return df
+
+
+@pf.register_dataframe_method
+def count_cumulative_unique(
+    df: pd.DataFrame,
+    column_name: str,
+    dest_column_name: str,
+    case_sensitive: bool = True,
+) -> pd.DataFrame:
+    """
+    Generates a running total of cumulative unique values in a given column.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+
+        df = jn.functions.count_cumulative_unique(
+            df=df,
+            column_name='animals',
+            dest_column_name='animals_unique_count',
+            case_sensitive=True
+        )
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.functions
+
+        df = pd.DataFrame(...)
+
+        df = df.count_cumulative_unique(
+            column_name='animals',
+            dest_column_name='animals_unique_count',
+            case_sensitive=True
+        )
+
+    A new column will be created containing a running
+    count of unique values in the specified column.
+    If `case_sensitive` is `True`, then the case of
+    any letters will matter (i.e., 'a' != 'A');
+    othewise, the case of any letters will not matter.
+
+    This method mutates the original DataFrame.
+
+    :param df: A pandas dataframe.
+    :param column_name: Name of the column containing
+        values from which a running count of unique values
+        will be created.
+    :param dest_column_name: The name of the new column containing the
+        cumulative count of unique values that will be created.
+    :param case_sensitive: Whether or not uppercase and lowercase letters
+        will be considered equal (e.g., 'A' != 'a' if `True`).
+
+    :returns: A pandas DataFrame with a new column containing a cumulative
+        count of unique values from another column.
+    """
+
+    if not case_sensitive:
+        # Make it so that the the same uppercase and lowercase
+        # letter are treated as one unique value
+        df[column_name] = df[column_name].astype(str).map(str.lower)
+
+    df[dest_column_name] = (
+        (
+            df[[column_name]]
+            .drop_duplicates()
+            .assign(dummyabcxyz=1)
+            .dummyabcxyz.cumsum()
+        )
+        .reindex(df.index)
+        .ffill()
+        .astype(int)
+    )
+
+    return df
+
+
+@pf.register_series_method
+def toset(series: pd.Series) -> Set:
+    """
+    Return a set of the values.
+
+    These are each a scalar type, which is a Python scalar
+    (for str, int, float) or a pandas scalar
+    (for Timestamp/Timedelta/Interval/Period)
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        series = pd.Series(...)
+        s = jn.functions.toset(series=series)
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.functions
+
+        series = pd.Series(...)
+        s = series.toset()
+
+    :param series: A pandas series.
+    :returns: A set of values.
+    """
+
+    return set(series.tolist())

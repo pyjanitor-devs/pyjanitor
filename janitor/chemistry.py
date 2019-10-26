@@ -2,13 +2,13 @@
 Chemistry and cheminformatics-oriented data cleaning functions.
 """
 
+from typing import Union
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 
-from typing import Union
-
-from .utils import import_message, deprecated_alias
+from .utils import deprecated_alias, import_message
 
 try:
     from rdkit import Chem, DataStructs
@@ -57,21 +57,31 @@ try:
         GetMACCSKeysFingerprint,
     )
 except ImportError:
-    import_message("chemistry", "rdkit", "conda install -c rdkit rdkit")
+    import_message(
+        submodule="chemistry",
+        package="rdkit",
+        conda_channel="conda-forge",
+        pip_install=False,
+    )
 
 try:
     from tqdm import tqdm
     from tqdm import tqdm_notebook as tqdmn
 except ImportError:
-    import_message("chemistry", "tqdm", "conda install -c conda-forge tqdm")
+    import_message(
+        submodule="chemistry",
+        package="tqdm",
+        conda_channel="conda-forge",
+        pip_install=True,
+    )
 
 
 @pf.register_dataframe_method
 @deprecated_alias(smiles_col="smiles_column_name", mols_col="mols_column_name")
 def smiles2mol(
     df: pd.DataFrame,
-    smiles_column_name,
-    mols_column_name,
+    smiles_column_name: str,
+    mols_column_name: str,
     drop_nulls: bool = True,
     progressbar: Union[None, str] = None,
 ) -> pd.DataFrame:
@@ -80,14 +90,34 @@ def smiles2mol(
 
     Automatically drops invalid SMILES, as determined by RDKIT.
 
-    Method chaining usage:
+    This method mutates the original DataFrame.
+
+    Functional usage example:
 
     .. code-block:: python
 
-        df = (
-            pd.DataFrame(...)
-            .smiles2mol(smiles_column_name='smiles', mols_column_name='mols')
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        df = janitor.chemistry.smiles2mol(
+            df=df,
+            smiles_column_name='smiles',
+            mols_column_name='mols'
         )
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        df = df.smiles2mol(smiles_column_name='smiles',
+                           mols_column_name='mols')
 
     A progressbar can be optionally used.
 
@@ -103,6 +133,7 @@ def smiles2mol(
     :param drop_nulls: Whether to drop rows whose mols failed to be
         constructed.
     :param progressbar: Whether to show a progressbar or not.
+    :returns: A pandas DataFrame with new RDKIT Mol objects column.
     """
     valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:
@@ -131,7 +162,7 @@ def smiles2mol(
 @deprecated_alias(mols_col="mols_column_name")
 def morgan_fingerprint(
     df: pd.DataFrame,
-    mols_column_name,
+    mols_column_name: str,
     radius: int = 3,
     nbits: int = 2048,
     kind: str = "counts",
@@ -143,17 +174,67 @@ def morgan_fingerprint(
     intentional, as Morgan fingerprints are usually high-dimensional
     features.
 
-    Method chaining usage:
+    This method does not mutate the original DataFrame.
+
+    Functional usage example:
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        morgans = df.morgan_fingerprint(mols_column_name='mols', radius=3,
-                                        nbits=2048)
+        import pandas as pd
+        import janitor.chemistry
 
-    If you wish to join the Morgans back into the original dataframe, this
-    can be accomplished by doing a `join`, becuase the indices are
-    preserved:
+        df = pd.DataFrame(...)
+
+        # For "counts" kind
+        morgans = janitor.chemistry.morgan_fingerprint(
+            df=df.smiles2mol('smiles', 'mols'),
+            mols_column_name='mols',
+            radius=3,      # Defaults to 3
+            nbits=2048,    # Defaults to 2048
+            kind='counts'  # Defaults to "counts"
+        )
+
+        # For "bits" kind
+        morgans = janitor.chemistry.morgan_fingerprint(
+            df=df.smiles2mol('smiles', 'mols'),
+            mols_column_name='mols',
+            radius=3,      # Defaults to 3
+            nbits=2048,    # Defaults to 2048
+            kind='bits'    # Defaults to "counts"
+        )
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        # For "counts" kind
+        morgans = (
+            df.smiles2mol('smiles', 'mols')
+              .morgan_fingerprint(mols_column_name='mols',
+                                  radius=3,      # Defaults to 3
+                                  nbits=2048,    # Defaults to 2048
+                                  kind='counts'  # Defaults to "counts"
+              )
+        )
+
+        # For "bits" kind
+        morgans = (
+            df.smiles2mol('smiles', 'mols')
+              .morgan_fingerprint(mols_column_name='mols',
+                                  radius=3,    # Defaults to 3
+                                  nbits=2048,  # Defaults to 2048
+                                  kind='bits'  # Defaults to "counts"
+              )
+        )
+
+    If you wish to join the morgan fingerprints back into the original
+    dataframe, this can be accomplished by doing a `join`,
+    because the indices are preserved:
 
     .. code-block:: python
 
@@ -165,7 +246,7 @@ def morgan_fingerprint(
     :param radius: Radius of Morgan fingerprints. Defaults to 3.
     :param nbits: The length of the fingerprints. Defaults to 2048.
     :param kind: Whether to return counts or bits. Defaults to counts.
-    :returns: A pandas DataFrame
+    :returns: A new pandas DataFrame of Morgan fingerprints.
     """
     acceptable_kinds = ["counts", "bits"]
     if kind not in acceptable_kinds:
@@ -173,12 +254,12 @@ def morgan_fingerprint(
 
     if kind == "bits":
         fps = [
-            GetMorganFingerprintAsBitVect(m, radius, nbits)
+            GetMorganFingerprintAsBitVect(m, radius, nbits, useChirality=True)
             for m in df[mols_column_name]
         ]
     elif kind == "counts":
         fps = [
-            GetHashedMorganFingerprint(m, radius, nbits)
+            GetHashedMorganFingerprint(m, radius, nbits, useChirality=True)
             for m in df[mols_column_name]
         ]
 
@@ -195,13 +276,17 @@ def morgan_fingerprint(
 
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
-def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
+def molecular_descriptors(
+    df: pd.DataFrame, mols_column_name: str
+) -> pd.DataFrame:
     """
     Convert a column of RDKIT mol objects into a Pandas DataFrame
     of molecular descriptors.
 
     Returns a new dataframe without any of the original data. This is
     intentional to leave the user only with the data requested.
+
+    This method does not mutate the original DataFrame.
 
     The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:
 
@@ -216,12 +301,33 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
         NumSaturatedRings, NumSpiroAtoms, NumUnspecifiedAtomStereoCenters,
         TPSA.
 
-     Method chaining usage:
+    Functional usage example:
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor.chemistry
+
         df = pd.DataFrame(...)
-        mol_desc = df.molecular_descriptors(mols_column_name='mols')
+
+        mol_desc = janitor.chemistry.molecular_descriptors(
+            df=df.smiles2mol('smiles', 'mols'),
+            mols_column_name='mols'
+        )
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        mol_desc = (
+            df.smiles2mol('smiles', 'mols')
+              .molecular_descriptors(mols_column_name='mols')
+        )
 
     If you wish to join the molecular descriptors back into the original
     dataframe, this can be accomplished by doing a `join`,
@@ -234,7 +340,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT mol
         objects.
-    :returns: A pandas DataFrame
+    :returns: A new pandas DataFrame of molecular descriptors.
     """
     descriptors = [
         CalcChi0n,
@@ -287,21 +393,46 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
-def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
+def maccs_keys_fingerprint(
+    df: pd.DataFrame, mols_column_name: str
+) -> pd.DataFrame:
     """
-    Convert a column of RDKIT mol objects into MACCS Keys Fingeprints.
+    Convert a column of RDKIT mol objects into MACCS Keys Fingerprints.
 
     Returns a new dataframe without any of the original data.
     This is intentional to leave the user with the data requested.
 
-    Method chaining usage:
+    This method does not mutate the original DataFrame.
+
+    Functional usage example:
 
     .. code-block:: python
 
-        df = pd.DataFrame(...)
-        maccs = df.maccs_keys_fingerprint(mols_column_name='mols')
+        import pandas as pd
+        import janitor.chemistry
 
-    If you wish to join the molecular descriptors back into the
+        df = pd.DataFrame(...)
+
+        maccs = janitor.chemistry.maccs_keys_fingerprint(
+            df=df.smiles2mol('smiles', 'mols'),
+            mols_column_name='mols'
+        )
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.chemistry
+
+        df = pd.DataFrame(...)
+
+        maccs = (
+            df.smiles2mol('smiles', 'mols')
+              .maccs_keys_fingerprint(mols_column_name='mols')
+        )
+
+    If you wish to join the maccs keys fingerprints back into the
     original dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
@@ -313,7 +444,7 @@ def maccs_keys_fingerprint(df: pd.DataFrame, mols_column_name) -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT mol
         objects.
-    :returns: A pandas DataFrame
+    :returns: A new pandas DataFrame of MACCS keys fingerprints.
     """
 
     maccs = [GetMACCSKeysFingerprint(m) for m in df[mols_column_name]]

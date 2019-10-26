@@ -1,6 +1,9 @@
 # Custom
 .vscode/*
 test*.xml
+*.DS_Store
+docs/notebooks
+pip-wheel-metadata
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -110,3 +113,26 @@ ENV/
 
 # Custom
 .pytest_cache
+
+# Ingore docs' symbolic link to notebooks
+docs/notebooks
+
+
+# Swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+*~
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~

@@ -1,7 +1,7 @@
 """ Machine learning specific functions. """
 
 import unicodedata
-from typing import Any, Iterable, List, Tuple, Union
+from typing import Hashable, Iterable, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -17,8 +17,8 @@ from .utils import deprecated_alias
 )
 def get_features_targets(
     df: pd.DataFrame,
-    target_column_names: Union[str, Union[List, Tuple], Any],
-    feature_column_names: Union[str, Iterable[str], Any] = None,
+    target_column_names: Union[str, Union[List, Tuple], Hashable],
+    feature_column_names: Union[str, Iterable[str], Hashable] = None,
 ):
     """
     Get the features and targets as separate DataFrames/Series.

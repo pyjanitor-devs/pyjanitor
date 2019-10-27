@@ -6,8 +6,9 @@ import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
-
+from typing import (
+    Any, Callable, Dict, Hashable, Iterable, List, Set, Tuple, Union
+)
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
@@ -29,7 +30,7 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Union[str, Iterable[str], Any] = None
+    *dataframes, column_names: Union[str, Iterable[str], Hashable] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -74,7 +75,7 @@ def unionize_dataframe_categories(
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
         raise TypeError("Inputs must all be dataframes.")
 
-    if column_names is None:
+    elif column_names is None:
         # Find all columns across all dataframes that are categorical
 
         column_names = set()
@@ -87,8 +88,8 @@ def unionize_dataframe_categories(
                     if isinstance(df[column_name].dtype, pd.CategoricalDtype)
                 ]
             )
-    elif isinstance(column_names, str):
-        column_names = [column_names]
+    elif isinstance(column_names, Hashable):
+        column_names = [str(name) for name in column_names]
 
     # For each categorical column, find all possible values across the DFs
 
@@ -299,9 +300,10 @@ def _change_case(col: str, case_type: str) -> str:
     return col
 
 
-def _remove_special(col_name):
+def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
-    return "".join(item for item in col_name if item.isalnum() or "_" in item)
+    return "".join(item for item in str(col_name)
+                   if item.isalnum() or "_" in item)
 
 
 _underscorer1 = re.compile(r"(.)([A-Z][a-z]+)")
@@ -323,8 +325,8 @@ def _camel2snake(col_name: str) -> str:
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
-def _normalize_1(col_name: str) -> str:
-    result = col_name
+def _normalize_1(col_name: Hashable) -> str:
+    result = str(col_name)
     for search, replace in FIXES:
         result = re.sub(search, replace, result)
     return result
@@ -386,7 +388,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any] = None
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable] = None
 ) -> pd.DataFrame:
     """
     Return all duplicate rows.
@@ -422,7 +424,7 @@ def get_dupes(
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def encode_categorical(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any]
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
     """
     Encode the specified columns with Pandas'
@@ -456,7 +458,7 @@ def encode_categorical(
             if col not in df.columns:
                 raise JanitorError(f"{col} missing from dataframe columns!")
             df[col] = pd.Categorical(df[col])
-    elif isinstance(column_names, str):
+    elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
             raise JanitorError(
                 f"{column_names} missing from dataframe columns!"
@@ -464,7 +466,7 @@ def encode_categorical(
         df[column_names] = pd.Categorical(df[column_names])
     else:
         raise JanitorError(
-            "kwarg `column_names` must be a string or iterable!"
+            "kwarg `column_names` must be hashable or iterable!"
         )
     return df
 
@@ -472,7 +474,7 @@ def encode_categorical(
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def label_encode(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any]
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
     """
     Convert labels into numerical data.
@@ -512,13 +514,13 @@ def label_encode(
             if col not in df.columns:
                 raise JanitorError(f"{col} missing from column_names")
             df[f"{col}_enc"] = le.fit_transform(df[col])
-    elif isinstance(column_names, str):
+    elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
             raise JanitorError(f"{column_names} missing from column_names")
         df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
         raise JanitorError(
-            "kwarg `column_names` must be a string or iterable!"
+            "kwarg `column_names` must be hashable or iterable!"
         )
     return df
 
@@ -595,7 +597,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def reorder_columns(
-    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Any]
+    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable]
 ) -> pd.DataFrame:
     """
     Reorder DataFrame columns by specifying desired order as list of col names.
@@ -655,7 +657,7 @@ def reorder_columns(
 @deprecated_alias(columns="column_names")
 def coalesce(
     df: pd.DataFrame,
-    column_names: Union[str, Iterable[str], Any],
+    column_names: Iterable[Hashable],
     new_column_name: str = None,
     delete_columns: bool = True,
 ) -> pd.DataFrame:
@@ -709,7 +711,9 @@ def coalesce(
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def convert_excel_date(
+    df: pd.DataFrame, column_name: Hashable
+) -> pd.DataFrame:
     """
     Convert Excel's serial date format into Python datetime format.
 
@@ -734,7 +738,7 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_excel_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column_name: A column name.
+    :param Hashable column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     df[column_name] = pd.TimedeltaIndex(
@@ -747,7 +751,9 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def convert_matlab_date(
+    df: pd.DataFrame, column_name: Hashable
+) -> pd.DataFrame:
     """
     Convert Matlab's serial date number into Python datetime format.
 
@@ -772,7 +778,7 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_matlab_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column_name: A column name.
+    :param Hashable column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])

@@ -449,7 +449,7 @@ def encode_categorical(
         df = pd.DataFrame(...).encode_categorical(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable column_names: A column name or an iterable (list or
+    :param Hashable/iterable column_names: A column name or an iterable (list or
         tuple) of column names.
     :returns: A pandas DataFrame
     """  # noqa: E501
@@ -504,8 +504,8 @@ def label_encode(
         df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable column_names: A column name or an iterable (list or
-        tuple) of column names.
+    :param Hashable/iterable column_names: A column name or an iterable (list
+        or tuple) of column names.
     :returns: A pandas DataFrame.
     """
     le = LabelEncoder()
@@ -792,7 +792,9 @@ def convert_matlab_date(
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def convert_unix_date(
+    df: pd.DataFrame, column_name: Hashable
+) -> pd.DataFrame:
     """
     Convert unix epoch time into Python datetime format.
 
@@ -816,7 +818,7 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_unix_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column_name: A column name.
+    :param Hashable column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
 
@@ -834,7 +836,7 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def fill_empty(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any], value
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
 ) -> pd.DataFrame:
     """
     Fill `NaN` values in specified columns with a given value.
@@ -858,10 +860,10 @@ def fill_empty(
         df = pd.DataFrame(...).fill_empty(column_names='col1', value=0)
 
     :param df: A pandas DataFrame.
-    :param column_names: Either a `str` or `list` or `tuple`. If a string
-        is passed in, then only that column will be filled; if a list or tuple
-        of strings are passed in, then they will all be filled with the same
-        value.
+    :param column_names: column_names: A column name or an iterable (list
+        or tuple) of column names If a single column name is passed in, then
+        only that column will be filled; if a list or tuple is passed in, then
+        those columns will all be filled with the same value.
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `Nan` values filled.
     """
@@ -883,7 +885,7 @@ def fill_empty(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name, sep: str, concat: bool = True
+    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
 ) -> pd.DataFrame:
     """
     Expand a categorical column with multiple labels into dummy-coded columns.
@@ -910,7 +912,7 @@ def expand_column(
                                              sep=', ')
 
     :param df: A pandas DataFrame.
-    :param column_name: A `str` indicating which column to expand.
+    :param column_name: Which column to expand.
     :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
     :param bool concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
@@ -929,7 +931,7 @@ def expand_column(
 @deprecated_alias(columns="column_names")
 def concatenate_columns(
     df: pd.DataFrame,
-    column_names: Union[str, Iterable[str], Any],
+    column_names: List[Hashable],
     new_column_name,
     sep: str = "-",
 ) -> pd.DataFrame:
@@ -981,7 +983,7 @@ def concatenate_columns(
 @deprecated_alias(column="column_name")
 def deconcatenate_column(
     df: pd.DataFrame,
-    column_name,
+    column_name: Hashable,
     sep: str = None,
     new_column_names: Union[List[str], Tuple[str]] = None,
     autoname: str = None,

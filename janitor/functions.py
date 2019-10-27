@@ -1117,7 +1117,8 @@ def deconcatenate_column(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_string(
-    df: pd.DataFrame, column_name, search_string: str, complement: bool = False
+    df: pd.DataFrame, column_name: Hashable, search_string: str,
+    complement: bool = False
 ) -> pd.DataFrame:
     """
     Filter a string-based column according to whether it contains a substring.
@@ -1248,7 +1249,7 @@ def filter_on(
 @deprecated_alias(column="column_name", start="start_date", end="end_date")
 def filter_date(
     df: pd.DataFrame,
-    column_name,
+    column_name: Hashable,
     start_date: dt.date = None,
     end_date: dt.date = None,
     years: List = None,
@@ -1474,7 +1475,8 @@ def filter_date(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_column_isin(
-    df: pd.DataFrame, column_name, iterable: Iterable, complement: bool = False
+    df: pd.DataFrame, column_name: Hashable, iterable: Iterable,
+    complement: bool = False
 ) -> pd.DataFrame:
     """
     Filter a dataframe for values in a column that exist in another iterable.
@@ -1527,7 +1529,7 @@ def filter_column_isin(
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def remove_columns(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any]
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
     """
     Remove the set of columns specified in `column_names`.
@@ -1552,7 +1554,8 @@ def remove_columns(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def change_type(
-    df: pd.DataFrame, column_name, dtype, ignore_exception: bool = False
+    df: pd.DataFrame, column_name: Hashable, dtype: type,
+    ignore_exception: bool = False
 ) -> pd.DataFrame:
     """
     Change the type of a column.
@@ -1602,7 +1605,9 @@ def change_type(
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def add_column(
-    df: pd.DataFrame, column_name, value, fill_remaining: bool = False
+    df: pd.DataFrame, column_name: str,
+    value: Union[List[Any], Tuple[Any], Any],
+    fill_remaining: bool = False
 ) -> pd.DataFrame:
     """
     Add a column to the dataframe.
@@ -2059,7 +2064,7 @@ def row_to_names(
 @deprecated_alias(col_name="column_name")
 def round_to_fraction(
     df: pd.DataFrame,
-    column_name=None,
+    column_name: Hashable = None,
     denominator: float = None,
     digits: float = np.inf,
 ) -> pd.DataFrame:
@@ -2189,7 +2194,8 @@ def round_to_fraction(
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
 def transform_column(
-    df: pd.DataFrame, column_name, function: Callable, dest_column_name=None
+    df: pd.DataFrame, column_name: Hashable, function: Callable,
+    dest_column_name: str=None
 ) -> pd.DataFrame:
     """
     Transform the given column in-place using the provided function.
@@ -2239,7 +2245,7 @@ def transform_column(
 @deprecated_alias(columns="column_names", new_names="new_column_names")
 def transform_columns(
     df: pd.DataFrame,
-    column_names: Union[List, Tuple],
+    column_names: Union[List[str], Tuple[str]],
     function: Callable,
     suffix: str = None,
     new_column_names: Dict[str, str] = None,
@@ -2256,7 +2262,8 @@ def transform_columns(
 
     User can optionally supply either a suffix to create a new set of columns
     with the specified suffix, or provide a dictionary mapping each original
-    column name to its corresponding new column name.
+    column name to its corresponding new column name. Note that all column
+    names must be strings.
 
     A few examples below. Firstly, to just log10 transform a list of columns
     without creating new columns to hold the transformed values:

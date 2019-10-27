@@ -1091,7 +1091,7 @@ def deconcatenate_column(
 
     if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
-            f"you need to provide {len(deconcat.shape[1])} names "
+            f"you need to provide {len(df_deconcat.shape[1])} names "
             "to new_column_names"
         )
 
@@ -2612,7 +2612,8 @@ def select_columns(
 @deprecated_alias(column="column_name")
 @deprecated_alias(statistic="statistic_column_name")
 def impute(
-    df: pd.DataFrame, column_name, value=None, statistic_column_name=None
+    df: pd.DataFrame, column_name: Hashable, value: Any = None,
+    statistic_column_name: str = None
 ) -> pd.DataFrame:
     """
     Method-chainable imputation of values in a column.
@@ -2722,7 +2723,7 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """
     Drop rows that do not have null values in the given column.
 
@@ -2744,7 +2745,7 @@ def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def find_replace(
-    df: pd.DataFrame, column_name, mapper: Dict, match: str = "exact"
+    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
 ) -> pd.DataFrame:
     """
     Perform a find-and-replace action on a column of data.
@@ -2799,7 +2800,7 @@ def find_replace(
 
     :param df: A pandas DataFrame.
     :param column_name: The column on which the find/replace action is to be
-        made.
+        made. Must be a string.
     :param mapper: A dictionary that maps "thing to find" -> "thing to
         replace".  Note: Does not support null-value replacement.
     :param match: A string that dictates whether exact match or
@@ -2828,7 +2829,8 @@ def find_replace(
 @pf.register_dataframe_method
 @deprecated_alias(target_col="target_column_name")
 def update_where(
-    df: pd.DataFrame, conditions, target_column_name, target_val
+    df: pd.DataFrame, conditions: Any,
+    target_column_name: Hashable, target_val: Any
 ) -> pd.DataFrame:
     """
     Add multiple conditions to update a column in the dataframe.
@@ -2876,7 +2878,9 @@ def update_where(
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
+def to_datetime(
+    df: pd.DataFrame, column_name: Hashable, **kwargs
+) -> pd.DataFrame:
     """
     Method-chainable to_datetime.
 
@@ -3013,8 +3017,8 @@ class DataDescription:
 @deprecated_alias(from_column="from_column_name", to_column="to_column_name")
 def bin_numeric(
     df: pd.DataFrame,
-    from_column_name,
-    to_column_name,
+    from_column_name: Hashable,
+    to_column_name: Hashable,
     num_bins: int = 5,
     labels: str = None,
 ) -> pd.DataFrame:
@@ -3065,7 +3069,7 @@ def bin_numeric(
 
 @pf.register_dataframe_method
 def drop_duplicate_columns(
-    df: pd.DataFrame, column_name, nth_index: int = 0
+    df: pd.DataFrame, column_name: Hashable, nth_index: int = 0
 ) -> pd.DataFrame:
     """
     Remove a duplicated column specified by column_name, its index.
@@ -3120,7 +3124,8 @@ def drop_duplicate_columns(
 
 @pf.register_dataframe_method
 def take_first(
-    df: pd.DataFrame, subset, by, ascending: bool = True
+    df: pd.DataFrame, subset: Union[Hashable, Iterable[Hashable]],
+    by: Hashable, ascending: bool = True
 ) -> pd.DataFrame:
     """
     Take the first row within each group specified by `subset`.
@@ -3141,8 +3146,8 @@ def take_first(
         df.take_first(subset="a", by="b")
 
     :param df: A pandas DataFrame.
-    :param subset: Column(s) defining the groups, `str` or list of `str`.
-    :param by: Column to sort by, `str`.
+    :param subset: Column(s) defining the group.
+    :param by: Column to sort by.
     :param ascending: Whether or not to sort in ascending order, `bool`.
     :returns: A pandas DataFrame.
     """
@@ -3173,6 +3178,7 @@ def shuffle(
 
     :param df: A pandas DataFrame
     :param random_state: (optional) A seed for the random number generator.
+    :param reset_index: (optional) Resets index to default integers
     """
     result = df.sample(frac=1, random_state=random_state)
     if reset_index:
@@ -3181,7 +3187,7 @@ def shuffle(
 
 
 @pf.register_dataframe_method
-def join_apply(df, func, new_column_name):
+def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
     """
     Join the result of applying a function across dataframe rows.
 
@@ -3221,7 +3227,7 @@ def join_apply(df, func, new_column_name):
     :param df: A pandas DataFrame
     :param func: A function that is applied elementwise across all rows of the
         DataFrame.
-    :param new_name: New column name.
+    :param new_column_name: New column name.
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df
@@ -3230,8 +3236,8 @@ def join_apply(df, func, new_column_name):
 @pf.register_dataframe_method
 def flag_nulls(
     df: pd.DataFrame,
-    column_name: str = "null_flag",
-    columns: Union[str, Iterable[str], Any] = None,
+    column_name: Hashable = "null_flag",
+    columns: Union[str, Iterable[str], Hashable] = None,
 ) -> pd.DataFrame:
     """
     Creates a new column to indicate whether you have null values in a given
@@ -3278,13 +3284,10 @@ def flag_nulls(
     :raises: ValueError
     """
     # Sort out columns input
-    if isinstance(columns, str):
+    if isinstance(columns, Hashable):
         columns = [columns]
     elif columns is None:
         columns = df.columns
-    elif not isinstance(columns, Iterable):
-        # Handle cases where we have an integer column or something
-        columns = [columns]
 
     # Input sanitation checks
     check_column(df, columns)
@@ -3303,7 +3306,7 @@ def flag_nulls(
 @pf.register_dataframe_method
 def count_cumulative_unique(
     df: pd.DataFrame,
-    column_name: str,
+    column_name: Hashable,
     dest_column_name: str,
     case_sensitive: bool = True,
 ) -> pd.DataFrame:

@@ -26,7 +26,7 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Union[str, Iterable[str], Hashable] = None
+    *dataframes, column_names: Iterable[pd.CategoricalDtype] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -84,9 +84,9 @@ def unionize_dataframe_categories(
                     if isinstance(df[column_name].dtype, pd.CategoricalDtype)
                 ]
             )
-    elif isinstance(column_names, Hashable):
-        column_names = [str(name) for name in column_names]
 
+    else:
+        column_names = [column_names]
     # For each categorical column, find all possible values across the DFs
 
     category_unions = {

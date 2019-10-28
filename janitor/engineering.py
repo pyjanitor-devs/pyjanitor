@@ -25,10 +25,10 @@ except ImportError:
 @pf.register_dataframe_method
 def convert_units(
     df: pd.DataFrame,
-    column_name: Hashable = None,
+    column_name: str = None,
     existing_units: str = None,
     to_units: str = None,
-    dest_column_name: Hashable = None,
+    dest_column_name: str = None,
 ) -> pd.DataFrame:
     """
     Converts a column of numeric values from one unit to another.
@@ -91,10 +91,10 @@ def convert_units(
     """
 
     # Check all inputs are correct data type
-    check("column_name", column_name, [Hashable])
+    check("column_name", column_name, [str])
     check("existing_units", existing_units, [str])
     check("to_units", to_units, [str])
-    check("dest_column_name", dest_column_name, [Hashable])
+    check("dest_column_name", dest_column_name, [str])
 
     # Check that column_name is a numeric column
     if not np.issubdtype(df[column_name].dtype, np.number):

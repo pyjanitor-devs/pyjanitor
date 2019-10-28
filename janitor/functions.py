@@ -3284,10 +3284,13 @@ def flag_nulls(
     :raises: ValueError
     """
     # Sort out columns input
-    if isinstance(columns, Hashable):
+    if isinstance(columns, str):
         columns = [columns]
     elif columns is None:
         columns = df.columns
+    elif not isinstance(columns, Iterable):
+        #catches other hashable types
+        columns = [columns]
 
     # Input sanitation checks
     check_column(df, columns)

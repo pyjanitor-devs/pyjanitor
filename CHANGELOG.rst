@@ -8,6 +8,9 @@ new version (on deck)
 - [DOC] Fix #noqa comments showing up in docs by @hectormz
 - [ENH] Add unionizing a group of dataframes' categoricals. @zbarry
 - [DOC] Fix contributions hyperlinks in ``AUTHORS.rst`` and contributions by @hectormz
+- [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API. @dendrondal
+- [TST] Moved and added tests for currency_column_to_numeric to finance
+- [INF] Made Black formatting and Linting avoid any env or venv folders
 
 v0.18.2
 =======

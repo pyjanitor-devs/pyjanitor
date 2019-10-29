@@ -13,3 +13,4 @@ pytest-cov
 lxml
 unyt
 pyspark
+pre-commit

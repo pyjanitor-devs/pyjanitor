@@ -1,4 +1,4 @@
-""" Miscellaneous internal PyJanitor helper functions. """
+"""Miscellaneous internal PyJanitor helper functions."""
 
 import functools
 import os
@@ -135,7 +135,6 @@ def _strip_underscores(
         and True.
     :returns: A pandas DataFrame with underscores removed.
     """
-
     df = df.rename(
         columns=lambda x: _strip_underscores_func(x, strip_underscores)
     )
@@ -168,6 +167,8 @@ def import_message(
     pip_install: bool = False,
 ):
     """
+    Return warning if package is not found.
+
     Generic message for indicating to the user when a function relies on an
     optional module / package that is not currently installed. Includes
     installation instructions. Used in `chemistry.py` and `biology.py`.
@@ -178,7 +179,6 @@ def import_message(
         if at all.
     :param pip_install: Whether package can be installed via pip.
     """
-
     is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
     installable = True
     if is_conda:
@@ -262,7 +262,7 @@ def deprecated_alias(**aliases) -> Callable:
 
 def refactored_function(message: str) -> Callable:
     """Used as a decorator when refactoring functions
-    
+
     Implementation is inspired from `Hacker Noon`_.
 
     .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987

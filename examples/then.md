@@ -6,16 +6,16 @@ This method allows for arbitrary functions to be used in the pyJanitor method-ch
 ## Parameters
 ### df
 A pandas dataframe.
-     
+
 ### func
 A function that takes one parameter and returns that same parameter. For consistency it should be `df` to indicate that it's the Pandas DataFrame.  After that, do whatever you want in the middle. Go crazy.
-     
+
 
 ## Setup
 ```python
 import pandas as pd
 import janitor
- 
+
 data_dict = {
     "a": [1.23, 2.45, 3.23] * 3,
     "Bell__Chart": [1, 2, 3] * 3,
@@ -34,7 +34,7 @@ def remove_first_two_letters_from_col_names(df):
     return df
 
 example_dataframe = pd.DataFrame(data_dict)
- 
+
 example_dataframe.then(remove_first_two_letters_from_col_names)
 ```
 
@@ -75,7 +75,7 @@ example_dataframe2.then(remove_rows_3_and_4)
     6  1.23            1                   1   rabbit  Cambridge
     7  2.45            2                   2  leopard   Shanghai
     8  3.23            3                   3     lion      Basel
-    
+
 ## Example 3
 
 ```python

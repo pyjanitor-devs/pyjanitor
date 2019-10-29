@@ -6,16 +6,16 @@ This method modifies a column of floats to a nearest fraction, given a certain d
 ## Parameters
 ### df
 A pandas dataframe.
-     
+
 ### column
 The column which to apply the fraction transformation.
-     
+
 ### start
-The beginning date to use to filter the DataFrame. 
+The beginning date to use to filter the DataFrame.
 
 ### end
 The end date to use to filter the DataFrame.
- 
+
 ### years
 The years to use to filter the DataFrame (it expects an iterable).
 
@@ -29,14 +29,14 @@ The days to use to filter the DataFrame (it expects an iterable).
 Special options to use when parsing the date column in the original DataFrame. The options may be found [at the official Pandas documentation](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html).
 
 ### format
-It you're using a format for `start` or `end` that is not recognized natively by pandas' `to_datetime` function, you may supply the format yourself. Python date and time formats [may be found here](http://strftime.org/). 
-__Note__: This only affects the format of the `start` and `end` parameters. If there's an issue with the format of the DataFrame being parsed, you would pass `{'format': your_format}` to `column_date_options`.    
-  
+It you're using a format for `start` or `end` that is not recognized natively by pandas' `to_datetime` function, you may supply the format yourself. Python date and time formats [may be found here](http://strftime.org/).
+__Note__: This only affects the format of the `start` and `end` parameters. If there's an issue with the format of the DataFrame being parsed, you would pass `{'format': your_format}` to `column_date_options`.
+
 ## Setup
 ```python
 import pandas as pd
 import janitor
- 
+
 date_list = [
     [1, "01/28/19"],
     [2, "01/29/19"],
@@ -59,13 +59,13 @@ date_list = [
     [19, "02/09/20"],
     [20, "02/10/20"],
     [21, "02/11/20"],
-    [22, "02/12/20"],    
+    [22, "02/12/20"],
     [23, "03/08/20"],
     [24, "03/09/20"],
     [25, "03/10/20"],
     [26, "03/11/20"],
     [27, "03/12/20"]]
-    
+
 example_dataframe = pd.DataFrame(date_list, columns = ['AMOUNT', 'DATE'])
 
 ```

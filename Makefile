@@ -49,3 +49,6 @@ install:
 
 	@echo "Registering current virtual environment as a Jupyter Python kernel..."
 	$(ACTIVATE) && python -m ipykernel install --user --name pyjanitor-dev --display-name "PyJanitor development"
+
+	@echo "Installing pre-commit hooks"
+	$(ACTIVATE) && pre-commit install

@@ -14,7 +14,7 @@ You can provide the optional information later. -->
 
 - Operating system: macOS/Linux/Windows  <!-- delete the appropriate ones -->
 - OS details (optional):  <!-- e.g. version, or Linux distro -->
-- Python version (required): 
+- Python version (required):
 
 # Minimally Reproducible Code
 

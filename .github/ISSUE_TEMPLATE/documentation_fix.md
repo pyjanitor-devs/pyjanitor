@@ -6,7 +6,7 @@ about: Use this issue tracker template if you'd like to propose a fix to the doc
 # Brief Description of Fix
 
 <!-- Please describe the fix in terms of a "before" and "after". In other words, what's not so good about the current docs
-page, and what you would like to see it become. 
+page, and what you would like to see it become.
 
 Example starter wording is provided. -->
 

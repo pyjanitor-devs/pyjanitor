@@ -27,6 +27,7 @@ dependencies:
 - pandas>=0.24.0
 - pip
 - pipreqs
+- pre-commit
 - pyflakes
 - pylint
 - pyspark

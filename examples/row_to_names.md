@@ -11,13 +11,13 @@ This method elevates a row to be the column names of a DataFrame. It contains pa
 ## Parameters
 ### df
 A pandas dataframe.
-     
+
 ### row_number
 The number of the row containing the variable names. Remember, indexing starts at zero!
-     
+
 ### remove_row (Default: False)
 Remove the row that is now the headers from the DataFrame.
-    
+
 ### remove_rows_above (Default: False)
 Remove the rows from the index above `row_number`.
 
@@ -28,7 +28,7 @@ Remove the rows from the index above `row_number`.
 
 import pandas as pd
 import janitor
- 
+
 
 data_dict = {
     "a": [1, 2, 3] * 3,
@@ -36,15 +36,15 @@ data_dict = {
     "decorated-elephant": [1, 2, 3] * 3,
     "animals": ["rabbit", "leopard", "lion"] * 3,
     "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-} 
+}
 ```
- 
- 
+
+
 
 ## Example1: Move first row to column names
  ```python
 example_dataframe = pd.DataFrame(data_dict)
- 
+
 example_dataframe.row_to_names(0)
 ```
 
@@ -65,12 +65,12 @@ example_dataframe.row_to_names(0)
 ```python
 
 example_dataframe = pd.DataFrame(data_dict)
- 
+
 example_dataframe.row_to_names(0, remove_row=True)
 ```
 
 ### Output
-   
+
        1  1  1   rabbit  Cambridge
     1  2  2  2  leopard   Shanghai
     2  3  3  3     lion      Basel
@@ -86,7 +86,7 @@ example_dataframe.row_to_names(0, remove_row=True)
 ```python
 
 example_dataframe = pd.DataFrame(data_dict)
- 
+
 example_dataframe.row_to_names(2, remove_row=True, remove_rows_above=True)
 ```
 

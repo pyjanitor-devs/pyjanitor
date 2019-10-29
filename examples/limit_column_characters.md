@@ -6,14 +6,14 @@ This method truncates column names to a given character length. In the case of d
 ## Parameters
 ### df
 A pandas dataframe.
-     
+
 ### column_length
 Character length for which to truncate all columns. The column separator value and number for duplicate column name does
     not contribute. Therefore, if all columns are truncated to 10
     characters, the first distinct column will be 10 characters and the
     remaining will be 12 characters (assuming a column separator of one
     character).
-     
+
 ### col_separator
 The separator to use for counting distinct column values. Default is "_". Supply an empty string (i.e. '') to remove the
     separator.
@@ -22,7 +22,7 @@ The separator to use for counting distinct column values. Default is "_". Supply
 ```python
 import pandas as pd
 import janitor
- 
+
 data_dict = {
     "really_long_name_for_a_column": range(10),
     "another_really_long_name_for_a_column": [2 * item for item in range(10)],
@@ -34,7 +34,7 @@ data_dict = {
 ## Example1: Standard truncation
  ```python
 example_dataframe = pd.DataFrame(data_dict)
- 
+
 example_dataframe.limit_column_characters(7)
 ```
 

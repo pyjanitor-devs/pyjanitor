@@ -6,17 +6,17 @@ This method converts a column from one currency to another, with an option to co
 ## Parameters
 ### df
 A pandas dataframe.
-     
+
 ### colname
 The column which to apply the currency conversion.
-     
+
 ### from_currency
-The base currency to convert from. 
+The base currency to convert from.
 
 May be any of: currency_set = {"AUD", "BGN", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HRK", "HUF", "IDR", "ILS", "INR", "ISK", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RON", "RUB", "SEK", "SGD", "THB", "TRY", "USD", "ZAR"}
 
 ### to_currency
-The target currency to convert to. 
+The target currency to convert to.
 
 May be any of: currency_set = {"AUD", "BGN", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HRK", "HUF", "IDR", "ILS", "INR", "ISK", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RON", "RUB", "SEK", "SGD", "THB", "TRY", "USD", "ZAR"}
 
@@ -28,7 +28,7 @@ If supplied, get exchange rate on a certain date. If not supplied, get the lates
 import pandas as pd
 import janitor
 from datetime import date
- 
+
 data_dict = {
     "a": [1.23452345, 2.456234, 3.2346125] * 3,
     "Bell__Chart": [1/3, 2/7, 3/2] * 3,
@@ -57,5 +57,5 @@ example_dataframe.convert_currency('a', from_currency='USD', to_currency='EUR', 
     6  1.029370     0.333333            0.004274   rabbit  Cambridge
     7  2.048056     0.285714            0.153846  leopard   Shanghai
     8  2.697084     1.500000            0.017964     lion      Basel
-    
-__Note:__ Since this hits an API for the currency conversions, you need internet access to fetch the results. However, results are locally cached for future calls, so if you need to run the same code again, but briefly lost internet access, this should still work.   
+
+__Note:__ Since this hits an API for the currency conversions, you need internet access to fetch the results. However, results are locally cached for future calls, so if you need to run the same code again, but briefly lost internet access, this should still work.

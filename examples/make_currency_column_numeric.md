@@ -28,7 +28,7 @@ Will remove rows of a DataFrame that contain non-numeric values in the `col_name
 ```python
 import pandas as pd
 import janitor
- 
+
 
 data = {
     "a": ["-$1.00", "", "REPAY"] * 2 + ["$23.00", "", "Other Account"],
@@ -39,8 +39,8 @@ data = {
 }
 df = pd.DataFrame(data)
 ```
- 
- 
+
+
 ## Example 1: Coerce numeric values in column to float
 
 ```python
@@ -97,7 +97,7 @@ df.make_currency_column_numeric("a", fill_all_non_numeric=35)
     7   NaN     2.456234                   2      leopard   Shanghai
     8  35.0     3.234612                   3         lion      Basel
 
-## Example 4: Coerce numeric values in column to float, replace a string value with a specific value, and replace remaining string values with a specific value 
+## Example 4: Coerce numeric values in column to float, replace a string value with a specific value, and replace remaining string values with a specific value
 
 ```python
 df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric, fill_all_non_numeric=35)
@@ -137,7 +137,7 @@ df.make_currency_column_numeric("a", remove_non_numeric=True)
 
 ## Example 6: Coerce numeric values in column to float, replace a string value with a specific value, and remove remaining string values
 
-```python 
+```python
 df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric, remove_non_numeric=True)
 ```
 

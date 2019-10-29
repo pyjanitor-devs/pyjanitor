@@ -11,9 +11,9 @@ I'd like to write a notebook that...
 
 (optional but encouraged) This notebook would likely cover the following pyjanitor functions:
 
-- 
-- 
-- 
+-
+-
+-
 
 <!-- It's ok if you don't eventually use those functions, by the way! -->
 

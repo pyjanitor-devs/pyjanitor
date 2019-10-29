@@ -1,4 +1,4 @@
-<!-- Thank you for your PR! 
+<!-- Thank you for your PR!
 
 BEFORE YOU CONTINUE! Please add the appropriate three-letter abbreviation to your title.
 
@@ -15,11 +15,11 @@ Finally, as commits come in, don't forget to regularly rebase!
 
 # PR Description
 
-Please describe the changes proposed in the pull request: 
+Please describe the changes proposed in the pull request:
 
-- 
-- 
-- 
+-
+-
+-
 
 <!-- Doing so provides maintainers with context on what the PR is, and can help us more effectively review your PR. -->
 
@@ -52,9 +52,9 @@ To do a very quick check that everything is correct, follow these steps below:
     - pycodestyle checking
     - running the test suite
     - docs build
-    
+
 Once done, please check off the check-box above.
-    
+
 If `make check` does not work for you, you can execute the commands listed in the Makefile individually.
 
 ## Code Changes

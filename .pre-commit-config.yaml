@@ -16,7 +16,3 @@ repos:
     rev: 19.3b0
     hooks:
     -   id: black
--   repo: https://github.com/PyCQA/pydocstyle
-    rev: 4.0.1
-    hooks:
-    -   id: pydocstyle

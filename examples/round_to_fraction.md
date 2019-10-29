@@ -6,10 +6,10 @@ This method modifies a column of floats to a nearest fraction, given a certain d
 ## Parameters
 ### df
 A pandas dataframe.
-     
+
 ### colname
 The column which to apply the fraction transformation.
-     
+
 ### denominator
 The denominator of the fraction to round to. For example, `2`  would values to the nearest half (i.e. `1/2`).
 
@@ -17,7 +17,7 @@ The denominator of the fraction to round to. For example, `2`  would values to t
 ```python
 import pandas as pd
 import janitor
- 
+
 data_dict = {
     "a": [1.23452345, 2.456234, 3.2346125] * 3,
     "Bell__Chart": [1/3, 2/7, 3/2] * 3,
@@ -30,7 +30,7 @@ data_dict = {
 ## Example 1: Rounding the first column to the nearest half
  ```python
 example_dataframe = pd.DataFrame(data_dict)
-  
+
 example_dataframe.round_to_fraction('a', 2)
 ```
 
@@ -52,7 +52,7 @@ example_dataframe.round_to_fraction('a', 2)
 ```python
 
 example_dataframe2 = pd.DataFrame(data_dict)
- 
+
 example_dataframe2.limit_column_characters('a', 3)
 ```
 
@@ -69,12 +69,12 @@ example_dataframe2.limit_column_characters('a', 3)
     7  2.333333     0.285714            0.153846  leopard   Shanghai
     8  3.333333     1.500000            0.017964     lion      Basel
 
-## Example 3: Rounding the first column to the nearest third and rounding each value to the 10,000th place 
+## Example 3: Rounding the first column to the nearest third and rounding each value to the 10,000th place
 
 ```python
 
 example_dataframe2 = pd.DataFrame(data_dict)
- 
+
 example_dataframe2.limit_column_characters('a', 3, 4)
 ```
 

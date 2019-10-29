@@ -2,11 +2,12 @@
 Biology and bioinformatics-oriented data cleaning functions.
 """
 
+from typing import Hashable
+
 import pandas as pd
 import pandas_flavor as pf
 
 from .utils import deprecated_alias, import_message
-from typing import Hashable
 
 try:
     from Bio import SeqIO

@@ -13,13 +13,12 @@ import requests
 from janitor import check
 
 from .utils import (
-    deprecated_alias,
     _clean_accounting_column,
     _currency_column_to_numeric,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
+    deprecated_alias,
 )
-
 
 currency_set = {
     "AUD",

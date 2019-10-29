@@ -2,7 +2,7 @@
 Chemistry and cheminformatics-oriented data cleaning functions.
 """
 
-from typing import Union, Hashable
+from typing import Hashable, Union
 
 import numpy as np
 import pandas as pd

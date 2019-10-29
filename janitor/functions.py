@@ -6,11 +6,12 @@ import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import union_categoricals
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
@@ -25,6 +26,96 @@ from .utils import (
     check_column,
     deprecated_alias,
 )
+
+
+def unionize_dataframe_categories(
+    *dataframes, column_names: Union[str, Iterable[str], Any] = None
+) -> List[pd.DataFrame]:
+    """
+    Given a group of dataframes which contain some categorical columns, for
+    each categorical column present, find all the possible categories across
+    all the dataframes which have that column.
+    Update each dataframes' corresponding column with a new categorical object
+    that contains the original data
+    but has labels for all the possible categories from all dataframes.
+    This is useful when concatenating a list of dataframes which all have the
+    same categorical columns into one dataframe.
+
+    If, for a given categorical column, all input dataframes do not have at
+    least one instance of all the possible categories,
+    Pandas will change the output dtype of that column from ``category`` to
+    ``object``, losing out on dramatic speed gains you get from the former
+    format.
+
+    Usage example for concatentation of categorical column-containing
+    dataframes:
+
+    Instead of:
+
+    .. code-block:: python
+
+        concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
+
+    which in your case has resulted in ``category`` -> ``object`` conversion,
+    use:
+
+    .. code-block:: python
+
+        unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
+        concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+
+    :param dataframes: The dataframes you wish to unionize the categorical
+        objects for.
+    :param column_names: If supplied, only unionize this subset of columns.
+    :returns: A list of the category-unioned dataframes in the same order they
+        were provided.
+    """
+
+    if any(not isinstance(df, pd.DataFrame) for df in dataframes):
+        raise TypeError("Inputs must all be dataframes.")
+
+    if column_names is None:
+        # Find all columns across all dataframes that are categorical
+
+        column_names = set()
+
+        for df in dataframes:
+            column_names = column_names.union(
+                [
+                    column_name
+                    for column_name in df.columns
+                    if isinstance(df[column_name].dtype, pd.CategoricalDtype)
+                ]
+            )
+    elif isinstance(column_names, str):
+        column_names = [column_names]
+
+    # For each categorical column, find all possible values across the DFs
+
+    category_unions = {
+        column_name: union_categoricals(
+            [df[column_name] for df in dataframes if column_name in df.columns]
+        )
+        for column_name in column_names
+    }
+
+    # Make a shallow copy of all DFs and modify the categorical columns
+    # such that they can encode the union of all possible categories for each.
+
+    refactored_dfs = []
+
+    for df in dataframes:
+        df = df.copy(deep=False)
+
+        for column_name, categorical in category_unions.items():
+            if column_name in df.columns:
+                df[column_name] = pd.Categorical(
+                    df[column_name], categories=categorical.categories
+                )
+
+        refactored_dfs.append(df)
+
+    return refactored_dfs
 
 
 @pf.register_dataframe_method
@@ -242,8 +333,8 @@ def _normalize_1(col_name: str) -> str:
 def _strip_accents(col_name: str) -> str:
     """
     Removes accents from a DataFrame column name.
-    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string # noqa: E501
-    """
+    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string
+    """  # noqa: E501
     return "".join(
         l
         for l in unicodedata.normalize("NFD", col_name)
@@ -263,7 +354,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     Implementation is inspired from `StackOverflow`_.
 
-    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan  # noqa: E501
+    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
 
     Functional usage example:
 
@@ -282,7 +373,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
     :param df: The pandas DataFrame object.
 
     :returns: A pandas DataFrame.
-    """
+    """  # noqa: E501
     nanrows = df.index[df.isnull().all(axis=1)]
     df = df.drop(index=nanrows).reset_index(drop=True)
 
@@ -335,7 +426,7 @@ def encode_categorical(
 ) -> pd.DataFrame:
     """
     Encode the specified columns with Pandas'
-    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_. # noqa:E501
+    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_.
 
     This method mutates the original DataFrame.
 
@@ -344,7 +435,7 @@ def encode_categorical(
     .. code-block:: python
 
         categorical_cols = ['col1', 'col2', 'col4']
-        df = df.encode_categorical(columns=categorical_cols)  # one way
+        df = encode_categorical(df, columns=categorical_cols)  # one way
 
     Method chaining example:
 
@@ -359,7 +450,7 @@ def encode_categorical(
     :param str/iterable column_names: A column name or an iterable (list or
         tuple) of column names.
     :returns: A pandas DataFrame
-    """
+    """  # noqa: E501
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             if col not in df.columns:
@@ -399,7 +490,7 @@ def label_encode(
 
     .. code-block:: python
 
-        label_encode(df, column_names="my_categorical_column")  # one way
+        df = label_encode(df, column_names="my_categorical_column")  # one way
 
     Method chaining example:
 
@@ -446,7 +537,7 @@ def rename_column(
 
     .. code-block:: python
 
-        df = rename_column("old_column_name", "new_column_name")
+        df = rename_column(df, "old_column_name", "new_column_name")
 
     Method chaining example:
 
@@ -454,8 +545,7 @@ def rename_column(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).rename_column("old_column_name",
-        "new_column_name")  # noqa: E501
+        df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -465,7 +555,7 @@ def rename_column(
     :param old_column_name: The old column name.
     :param new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
-    """
+    """  # noqa: E501
     check_column(df, [old_column_name])
 
     return df.rename(columns={old_column_name: new_column_name})
@@ -480,7 +570,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
     .. code-block:: python
 
-        df = rename_columns({"old_column_name": "new_column_name"})
+        df = rename_columns(df, {"old_column_name": "new_column_name"})
 
     Method chaining example:
 
@@ -488,8 +578,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).rename_columns({"old_column_name":
-        "new_column_name"})  # noqa: E501
+        df = pd.DataFrame(...).rename_columns({"old_column_name": "new_column_name"})
 
     This is just syntactic sugar/a convenience function for renaming one column
     at a time. If you are convinced that there are multiple columns in need of
@@ -498,7 +587,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
     :param df: The pandas DataFrame object.
     :param new_column_names: A dictionary of old and new column names.
     :returns: A pandas DataFrame with renamed columns.
-    """
+    """  # noqa: E501
     check_column(df, list(new_column_names.keys()))
 
     return df.rename(columns=new_column_names)
@@ -568,6 +657,7 @@ def coalesce(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Any],
     new_column_name: str = None,
+    delete_columns: bool = True,
 ) -> pd.DataFrame:
     """
 
@@ -579,7 +669,7 @@ def coalesce(
 
     .. code-block:: python
 
-        df = coalesce(df, columns=['col1', 'col2'], 'col3'
+        df = coalesce(df, columns=['col1', 'col2'], 'col3')
 
     Method chaining example:
 
@@ -601,6 +691,7 @@ def coalesce(
     :param df: A pandas DataFrame.
     :param column_names: A list of column names.
     :param str new_column_name: The new column name after combining.
+    :param bool delete_columns: Whether to delete the columns being coalesced
     :returns: A pandas DataFrame with coalesced columns.
     """
     series = [df[c] for c in column_names]
@@ -608,7 +699,8 @@ def coalesce(
     def _coalesce(series1, series2):
         return series1.combine_first(series2)
 
-    df = df.drop(columns=column_names)
+    if delete_columns:
+        df = df.drop(columns=column_names)
     if not new_column_name:
         new_column_name = column_names[0]
     df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
@@ -625,7 +717,7 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
     Implementation is also from `Stack Overflow`.
 
-    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas  # noqa: E501
+    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
 
     Functional usage example:
 
@@ -644,7 +736,7 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
-    """
+    """  # noqa: E501
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"
     ) + dt.datetime(
@@ -659,7 +751,9 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     """
     Convert Matlab's serial date number into Python datetime format.
 
-    Implementation is also from `Stack Overflow <https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python>`.  # noqa: E501
+    Implementation is also from `StackOverflow`_.
+
+    .. _StackOverflow: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python
 
     This method mutates the original DataFrame.
 
@@ -680,7 +774,7 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param str column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
-    """
+    """  # noqa: E501
     days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
     df[column_name] = (
         df[column_name].astype(int).apply(dt.datetime.fromordinal)
@@ -755,7 +849,7 @@ def fill_empty(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).fill_empty(df, column_names='col1', value=0)
+        df = pd.DataFrame(...).fill_empty(column_names='col1', value=0)
 
     :param df: A pandas DataFrame.
     :param column_names: Either a `str` or `list` or `tuple`. If a string
@@ -806,8 +900,7 @@ def expand_column(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).expand_column(df,
-                                             column_name='col_name',
+        df = pd.DataFrame(...).expand_column(column_name='col_name',
                                              sep=', ')
 
     :param df: A pandas DataFrame.
@@ -873,7 +966,7 @@ def concatenate_columns(
         else:
             df[new_column_name] = (
                 df[new_column_name] + sep + df[col].astype(str)
-            )  # noqa: E501
+            )
 
     return df
 
@@ -883,15 +976,25 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name,
-    sep: str,
+    sep: str = None,
     new_column_names: Union[List[str], Tuple[str]] = None,
     autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
     """
     De-concatenates a single column into multiple columns.
+    The column to de-concatenate can be either a collection (list, tuple, ...)
+    which can be separated out with ``pd.Series.tolist()``,
+    or a string to slice based on ``sep``.
+    To determine this behaviour automatically,
+    the first element in the column specified is inspected.
+    If it is a string, then ``sep`` must be specified.
+    Else, the function assumes that it is an iterable type
+    (e.g. ``list`` or ``tuple``),
+    and will attempt to deconcatenate by splitting the list.
 
-    This is the inverse of the ``concatenate_columns`` function.
+    Given a column with string values, this is the inverse of the
+    ``concatenate_columns`` function.
 
     Used to quickly split columns out of a single column.
 
@@ -953,40 +1056,53 @@ def deconcatenate_column(
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
     """
+
     if column_name not in df.columns:
         raise ValueError(f"column name {column_name} not present in dataframe")
-    deconcat = df[column_name].str.split(sep, expand=True)
+
+    if isinstance(df[column_name].iloc[0], str):
+        if sep is None:
+            raise ValueError(
+                "`sep` must be specified if the column values are " "strings."
+            )
+        df_deconcat = df[column_name].str.split(sep, expand=True)
+    else:
+        df_deconcat = pd.DataFrame(
+            df[column_name].to_list(), columns=new_column_names, index=df.index
+        )
+
     if preserve_position:
         # Keep a copy of the original dataframe
         df_original = df.copy()
+
+    if new_column_names is None and autoname is None:
+        raise ValueError(
+            "One of `new_column_names` or `autoname` must be supplied."
+        )
+
     if autoname:
         new_column_names = [
-            f"{autoname}{i}" for i in range(1, deconcat.shape[1] + 1)
+            f"{autoname}{i}" for i in range(1, df_deconcat.shape[1] + 1)
         ]
-    if not len(new_column_names) == deconcat.shape[1]:
+
+    if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
-            f"you need to provide {len(new_column_names)} names"
+            f"you need to provide {len(deconcat.shape[1])} names "
             "to new_column_names"
         )
 
-    deconcat.columns = new_column_names
-    df = pd.concat([df, deconcat], axis=1)
+    df_deconcat.columns = new_column_names
+    df = pd.concat([df, df_deconcat], axis=1)
 
     if preserve_position:
         cols = list(df_original.columns)
         index_original = cols.index(column_name)
+
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
+
         df = df[cols].drop(columns=column_name)
 
-        # TODO: I suspect this should become a test
-        # instead of a defensive check?
-        if len(df.columns) != (
-            len(df_original.columns) + len(new_column_names) - 1
-        ):
-            raise JanitorError(
-                "number of columns after deconcatenation is incorrect"
-            )
     return df
 
 
@@ -1012,8 +1128,7 @@ def filter_string(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_string('column', search_string='pattern', c
-                                omplement=False)  # noqa: E501
+              .filter_string('column', search_string='pattern', complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
@@ -1032,7 +1147,7 @@ def filter_string(
 
         df = filter_string(df,
                            column_name='column',
-                           search_string='pattern'
+                           search_string='pattern',
                            complement=False)
 
     Method chaining example:
@@ -1041,7 +1156,7 @@ def filter_string(
 
         df = (pd.DataFrame(...)
               .filter_string(column_name='column',
-                             search_string='pattern'
+                             search_string='pattern',
                              complement=False)
               ...)
 
@@ -1050,7 +1165,7 @@ def filter_string(
     :param search_string: A regex pattern or a (sub-)string to search.
     :param complement: Whether to return the complement of the filter or not.
     :returns: A filtered pandas DataFrame.
-    """
+    """  # noqa: E501
     criteria = df[column_name].str.contains(search_string)
     if complement:
         return df[~criteria]
@@ -1105,8 +1220,7 @@ def filter_on(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .filter_on('score < 50', complement=False)
-              ...)
+              .filter_on('score < 50', complement=False))
 
     Credit to Brant Peterson for the name.
 
@@ -1418,7 +1532,7 @@ def remove_columns(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).remove_columns(column_names=['col1', ['col2']])
+        df = pd.DataFrame(...).remove_columns(column_names=['col1', 'col2'])
 
     :param df: A pandas DataFrame
     :param column_names: The columns to remove.
@@ -2793,7 +2907,7 @@ def impute(
         value = funcs[statistic_column_name](df[column_name].dropna().values)
         # special treatment for mode, because scipy stats mode returns a
         # moderesult object.
-        if statistic_column_name is "mode":
+        if statistic_column_name == "mode":
             value = value.mode[0]
 
     # The code is architected this way - if `value` is not provided but
@@ -2877,13 +2991,13 @@ def find_replace(
 
         # Functional usage
         df = find_replace(
-            df, 'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            df, 'order', {'ice coffee': 'latte', 'regular coffee': 'latte'},
             match='exact'
         )
 
         # Method chaining usage
         df = df.find_replace(
-            'order', {'ice coffee': 'latte', 'regular coffee': 'latte},
+            'order', {'ice coffee': 'latte', 'regular coffee': 'latte'},
             match='exact'
         )
 
@@ -3012,10 +3126,10 @@ def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
     df: pd.DataFrame,
-    by: str,
-    new_column_name,
-    agg_column_name,
-    agg: Union[Callable, str, List, Dict],
+    by: Union[List, str],
+    new_column_name: str,
+    agg_column_name: str,
+    agg: Union[Callable, str],
 ) -> pd.DataFrame:
     """
     Shortcut for assigning a groupby-transform to a new column.
@@ -3034,10 +3148,10 @@ def groupby_agg(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).groupby_agg(df,
-                                           by='col1',
+        df = pd.DataFrame(...).groupby_agg(by='group',
                                            agg='mean',
-                                           new_column_name='col1_mean')
+                                           agg_column_name="col1"
+                                           new_column_name='col1_mean_by_group')
 
     :param df: A pandas DataFrame.
     :param by: Column(s) to groupby on, either a `str` or
@@ -3048,7 +3162,7 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    new_col = df.groupby(by).transform(agg)
+    new_col = df.groupby(by)[agg_column_name].transform(agg)
     df_new = df.assign(**{new_column_name: new_col})
     return df_new
 
@@ -3482,3 +3596,39 @@ def count_cumulative_unique(
     )
 
     return df
+
+
+@pf.register_series_method
+def toset(series: pd.Series) -> Set:
+    """
+    Return a set of the values.
+
+    These are each a scalar type, which is a Python scalar
+    (for str, int, float) or a pandas scalar
+    (for Timestamp/Timedelta/Interval/Period)
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        series = pd.Series(...)
+        s = jn.functions.toset(series=series)
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.functions
+
+        series = pd.Series(...)
+        s = series.toset()
+
+    :param series: A pandas series.
+    :returns: A set of values.
+    """
+
+    return set(series.tolist())

@@ -234,7 +234,7 @@ def deprecated_alias(**aliases) -> Callable:
 
     Implementation is inspired from `StackOverflow`_.
 
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias  # noqa: E501
+    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     Functional usage example:
 
@@ -247,7 +247,7 @@ def deprecated_alias(**aliases) -> Callable:
     :param aliases: Dictionary of aliases for a function's arguments.
     :return: Your original function wrapped with the kwarg redirection
         function.
-    """
+    """  # noqa: E501
 
     def decorator(func):
         @functools.wraps(func)
@@ -265,7 +265,7 @@ def refactored_function(message: str) -> Callable:
 
     Implementation is inspired from `Hacker Noon`_.
 
-    .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987  # noqa: E501
+    .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
 
     Functional usage example:
 
@@ -280,7 +280,7 @@ def refactored_function(message: str) -> Callable:
     :param message: Message to use in warning user about refactoring.
     :return: Your original function wrapped with the kwarg redirection
         function.
-    """
+    """  # noqa: E501
 
     def decorator(func):
         def emit_warning(*args, **kwargs):
@@ -299,13 +299,13 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
 
     Implementation is inspired from `StackOverflow`_.
 
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias  # noqa: E501
+    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     :param func_name: name of decorated function.
     :param kwargs: Arguments supplied to the method.
     :param aliases: Dictionary of aliases for a function's arguments.
     :return: Nothing; the passed `kwargs` are modified directly.
-    """
+    """  # noqa: E501
     for old_alias, new_alias in aliases.items():
         if old_alias in kwargs:
             if new_alias in kwargs:

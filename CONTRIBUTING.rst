@@ -41,7 +41,7 @@ As of 29 October 2019, pre-commit hooks are available to run code formatting che
 before git commits happen. If you did not have these installed before, run the following commands:
 
     # Update your environment to install pre-commit
-    $ conda env update  -f environment.yml
+    $ conda env update -f environment-dev.yml
     # Install pre-commit hooks
     $ pre-commit install-hooks
 

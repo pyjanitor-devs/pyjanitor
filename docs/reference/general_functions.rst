@@ -24,7 +24,6 @@ Modify columns
     limit_column_characters
     row_to_names
     clean_names
-    currency_column_to_numeric
     groupby_agg
     join_apply
     drop_duplicate_columns

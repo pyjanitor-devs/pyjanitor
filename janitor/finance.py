@@ -405,7 +405,7 @@ def _convert_currency(
 @deprecated_alias(col_name="column_name", type="cleaning_style")
 def currency_column_to_numeric(
     df: pd.DataFrame,
-    column_name,
+    column_name: str,
     cleaning_style: str = None,
     cast_non_numeric: dict = None,
     fill_all_non_numeric: float = None,

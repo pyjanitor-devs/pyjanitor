@@ -8,6 +8,8 @@ new version (on deck)
 - [DOC] Fix #noqa comments showing up in docs by @hectormz
 - [ENH] Add unionizing a group of dataframes' categoricals. @zbarry
 - [DOC] Fix contributions hyperlinks in ``AUTHORS.rst`` and contributions by @hectormz
+- [INF] Add ``pre-commit`` hooks to repository by @ericmjl
+- [DOC] Fix formatting code in ``CONTRIBUTING.rst`` by @hectormz
 
 v0.18.2
 =======

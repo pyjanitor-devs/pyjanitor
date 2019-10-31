@@ -16,12 +16,7 @@ from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
-from .utils import (
-    _strip_underscores,
-    check,
-    check_column,
-    deprecated_alias,
-)
+from .utils import _strip_underscores, check, check_column, deprecated_alias
 
 
 def unionize_dataframe_categories(
@@ -2327,7 +2322,7 @@ def min_max_scale(
     df: pd.DataFrame,
     old_min: Union[float, int] = None,
     old_max: Union[float, int] = None,
-    column_name: Hashable = None,
+    column_name=None,
     new_min=0,
     new_max=1,
 ) -> pd.DataFrame:

@@ -10,6 +10,7 @@ new version (on deck)
 - [DOC] Fix contributions hyperlinks in ``AUTHORS.rst`` and contributions by @hectormz
 - [INF] Add ``pre-commit`` hooks to repository by @ericmjl
 - [DOC] Fix formatting code in ``CONTRIBUTING.rst`` by @hectormz
+- [TST] Moved currency_column_to_numeric from functions to finance, added tests
 
 v0.18.2
 =======

@@ -7,8 +7,17 @@ import warnings
 from fnmatch import translate
 from functools import partial, reduce
 from typing import (
-    Any, Callable, Dict, Hashable, Iterable, List, Set, Tuple, Union
+    Any,
+    Callable,
+    Dict,
+    Hashable,
+    Iterable,
+    List,
+    Set,
+    Tuple,
+    Union,
 )
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
@@ -302,8 +311,9 @@ def _change_case(col: str, case_type: str) -> str:
 
 def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
-    return "".join(item for item in str(col_name)
-                   if item.isalnum() or "_" in item)
+    return "".join(
+        item for item in str(col_name) if item.isalnum() or "_" in item
+    )
 
 
 _underscorer1 = re.compile(r"(.)([A-Z][a-z]+)")
@@ -792,9 +802,7 @@ def convert_matlab_date(
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def convert_unix_date(
-    df: pd.DataFrame, column_name: Hashable
-) -> pd.DataFrame:
+def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """
     Convert unix epoch time into Python datetime format.
 
@@ -1117,8 +1125,10 @@ def deconcatenate_column(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_string(
-    df: pd.DataFrame, column_name: Hashable, search_string: str,
-    complement: bool = False
+    df: pd.DataFrame,
+    column_name: Hashable,
+    search_string: str,
+    complement: bool = False,
 ) -> pd.DataFrame:
     """
     Filter a string-based column according to whether it contains a substring.
@@ -1475,8 +1485,10 @@ def filter_date(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_column_isin(
-    df: pd.DataFrame, column_name: Hashable, iterable: Iterable,
-    complement: bool = False
+    df: pd.DataFrame,
+    column_name: Hashable,
+    iterable: Iterable,
+    complement: bool = False,
 ) -> pd.DataFrame:
     """
     Filter a dataframe for values in a column that exist in another iterable.
@@ -1554,8 +1566,10 @@ def remove_columns(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def change_type(
-    df: pd.DataFrame, column_name: Hashable, dtype: type,
-    ignore_exception: bool = False
+    df: pd.DataFrame,
+    column_name: Hashable,
+    dtype: type,
+    ignore_exception: bool = False,
 ) -> pd.DataFrame:
     """
     Change the type of a column.
@@ -1605,9 +1619,10 @@ def change_type(
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def add_column(
-    df: pd.DataFrame, column_name: str,
+    df: pd.DataFrame,
+    column_name: str,
     value: Union[List[Any], Tuple[Any], Any],
-    fill_remaining: bool = False
+    fill_remaining: bool = False,
 ) -> pd.DataFrame:
     """
     Add a column to the dataframe.
@@ -2194,8 +2209,10 @@ def round_to_fraction(
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
 def transform_column(
-    df: pd.DataFrame, column_name: Hashable, function: Callable,
-    dest_column_name: str=None
+    df: pd.DataFrame,
+    column_name: Hashable,
+    function: Callable,
+    dest_column_name: str = None,
 ) -> pd.DataFrame:
     """
     Transform the given column in-place using the provided function.
@@ -2843,8 +2860,10 @@ def select_columns(
 @deprecated_alias(column="column_name")
 @deprecated_alias(statistic="statistic_column_name")
 def impute(
-    df: pd.DataFrame, column_name: Hashable, value: Any = None,
-    statistic_column_name: str = None
+    df: pd.DataFrame,
+    column_name: Hashable,
+    value: Any = None,
+    statistic_column_name: str = None,
 ) -> pd.DataFrame:
     """
     Method-chainable imputation of values in a column.
@@ -3060,8 +3079,10 @@ def find_replace(
 @pf.register_dataframe_method
 @deprecated_alias(target_col="target_column_name")
 def update_where(
-    df: pd.DataFrame, conditions: Any,
-    target_column_name: Hashable, target_val: Any
+    df: pd.DataFrame,
+    conditions: Any,
+    target_column_name: Hashable,
+    target_val: Any,
 ) -> pd.DataFrame:
     """
     Add multiple conditions to update a column in the dataframe.
@@ -3355,8 +3376,10 @@ def drop_duplicate_columns(
 
 @pf.register_dataframe_method
 def take_first(
-    df: pd.DataFrame, subset: Union[Hashable, Iterable[Hashable]],
-    by: Hashable, ascending: bool = True
+    df: pd.DataFrame,
+    subset: Union[Hashable, Iterable[Hashable]],
+    by: Hashable,
+    ascending: bool = True,
 ) -> pd.DataFrame:
     """
     Take the first row within each group specified by `subset`.
@@ -3520,7 +3543,7 @@ def flag_nulls(
     elif columns is None:
         columns = df.columns
     elif not isinstance(columns, Iterable):
-        #catches other hashable types
+        # catches other hashable types
         columns = [columns]
 
     # Input sanitation checks

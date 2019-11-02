@@ -24,7 +24,7 @@ test:
 
 lint:
 	@echo "Checking code formatting..."
-	pycodestyle . --exclude ./nbconvert_config.py
+	pycodestyle . --exclude "./nbconvert_config.py, ./env, ./venv"
 
 docs:
 	@echo "Building documentation..."

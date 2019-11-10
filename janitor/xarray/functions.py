@@ -77,7 +77,9 @@ def clone_using(
 @register_dataset_method
 @register_dataarray_method
 def convert_datetime_to_number(
-    da: Union[xr.DataArray, xr.Dataset], time_units: str, dim: str = "time"
+    da_or_ds: Union[xr.DataArray, xr.Dataset],
+    time_units: str,
+    dim: str = "time",
 ):
     """
     Convert the coordinates of a datetime axis to a human-readable float
@@ -90,6 +92,6 @@ def convert_datetime_to_number(
     :return: The original XArray object with the time dimension reassigned.
     """
 
-    times = da.coords[dim].data / np.timedelta64(1, time_units)
+    times = da_or_ds.coords[dim].data / np.timedelta64(1, time_units)
 
-    return da.assign_coords({dim: times})
+    return da_or_ds.assign_coords({dim: times})

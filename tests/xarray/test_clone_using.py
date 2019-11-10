@@ -14,10 +14,10 @@ def test_successful_cloning_coords(da):
     with pytest.raises(AssertionError):
         np.testing.assert_equal(new_da.data, da.data)
 
-    assert [
+    assert all([
         new_coord == old_coord
         for new_coord, old_coord in zip(new_da.coords, da.coords)
-    ]
+    ])
     assert new_da.dims == da.dims
 
 

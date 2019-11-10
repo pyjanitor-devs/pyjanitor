@@ -1,5 +1,9 @@
 new version (on deck)
 =====================
+
+
+v0.18.3
+=======
 - [ENH] Series toset() functionality #570 @eyaltrabelsi
 - [ENH] Added option to coalesce function to not delete coalesced columns. @gddcunh
 - [ENH] Added functionality to deconcatenate tuple/list/collections in a column to deconcatenate_column @zbarry

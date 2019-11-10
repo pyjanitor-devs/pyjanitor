@@ -85,7 +85,7 @@ def convert_datetime_to_number(
     Convert the coordinates of a datetime axis to a human-readable float
     representation.
 
-    :param da: XArray object.
+    :param da_or_ds: XArray object.
     :param time_units: Numpy timedelta string specification for the unit you
         would like to convert the coordinates to.
     :param dim: the time dimension whose coordinates are datetime objects.

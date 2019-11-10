@@ -10,6 +10,8 @@ new version (on deck)
 - [DOC] Fix contributions hyperlinks in ``AUTHORS.rst`` and contributions by @hectormz
 - [INF] Add ``pre-commit`` hooks to repository by @ericmjl
 - [DOC] Fix formatting code in ``CONTRIBUTING.rst`` by @hectormz
+- [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal
+- [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal 
 
 v0.18.2
 =======

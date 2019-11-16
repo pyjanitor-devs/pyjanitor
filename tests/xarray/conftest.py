@@ -5,6 +5,9 @@ import numpy as np
 
 @pytest.fixture
 def da():
+    """ 
+    Input testing DataArray for clone_using and convert_datetime_to_number.
+    """
     da = xr.DataArray(
         np.random.randint(0, 100, size=(512, 1024)),
         dims=["random_ax_1", "random_ax_2"],

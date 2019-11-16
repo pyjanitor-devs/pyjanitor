@@ -43,14 +43,14 @@ def clone_using(
     .. code-block:: python
 
         da = xr.DataArray(
-            np.zeros((512, 512)), dims=['ax_1', 'ax_2'], 
-            coords=dict(ax_1=np.linspace(0, 1, 512), 
+            np.zeros((512, 512)), dims=['ax_1', 'ax_2'],
+            coords=dict(ax_1=np.linspace(0, 1, 512),
                         ax_2=np.logspace(-2, 2, 1024)),
             name='original'
         )
 
-        new_da = da.clone_using(np.ones((4, 6)), new_name='new_and_improved', 
-                                use_coords=False)   
+        new_da = da.clone_using(np.ones((4, 6)), new_name='new_and_improved',
+                                use_coords=False)
 
     :param da: The ``DataArray`` supplied by the method itself.
     :param np_arr: The NumPy array which will be wrapped in a new ``DataArray``
@@ -110,7 +110,7 @@ def convert_datetime_to_number(
     .. code-block:: python
 
         timepoints = 60
-        
+
         da = xr.DataArray(
             np.random.randint(0, 10, size=timepoints),
             dims='time',

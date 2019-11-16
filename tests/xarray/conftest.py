@@ -5,7 +5,7 @@ import numpy as np
 
 @pytest.fixture
 def da():
-    """ 
+    """
     Input testing DataArray for clone_using and convert_datetime_to_number.
 
     It creates a two-dimensional array of random integers adds axis coordinates

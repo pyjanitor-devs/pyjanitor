@@ -33,6 +33,22 @@ def clone_using(
     of the source and new NumPy arrays don't need to match.
     The number of dimensions do, however.
 
+    Usage example - making a new ``DataArray`` from a previous one, keeping the
+    dimension names but dropping the coordinates (the input NumPy array is of a
+    different size):
+
+    .. code-block:: python
+
+        da = xr.DataArray(
+            np.zeros((512, 512)), dims=['ax_1', 'ax_2'], 
+            coords=dict(ax_1=np.linspace(0, 1, 512), 
+                        ax_2=np.logspace(-2, 2, 1024)),
+            name='original'
+        )
+
+        new_da = da.clone_using(np.ones((4, 6)), new_name='new_and_improved', 
+                                use_coords=False)   
+
     :param da: The ``DataArray`` supplied by the method itself.
     :param np_arr: The NumPy array which will be wrapped in a new ``DataArray``
         given the properties copied over from the source ``DataArray``.
@@ -84,6 +100,21 @@ def convert_datetime_to_number(
     """
     Convert the coordinates of a datetime axis to a human-readable float
     representation.
+
+    Usage example to convert a ``DataArray``'s time dimension coordinates from
+    a ``datetime`` to minutes:
+
+    .. code-block:: python
+
+        timepoints = 60
+        
+        da = xr.DataArray(
+            np.random.randint(0, 10, size=timepoints),
+            dims='time',
+            coords=dict(time=np.arange(timepoints) * np.timedelta64(1, 's'))
+        )
+
+        da_minutes = da.convert_datetime_to_number('m', dim='time)
 
     :param da_or_ds: XArray object.
     :param time_units: Numpy timedelta string specification for the unit you

@@ -7,6 +7,11 @@ import numpy as np
 def da():
     """ 
     Input testing DataArray for clone_using and convert_datetime_to_number.
+
+    It creates a two-dimensional array of random integers adds axis coordinates
+    that are either linearly or log-spaced increments.
+
+    Included is a simple metadata dictionary passed as ``attrs``.
     """
     da = xr.DataArray(
         np.random.randint(0, 100, size=(512, 1024)),

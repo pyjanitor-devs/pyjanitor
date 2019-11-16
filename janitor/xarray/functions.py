@@ -9,10 +9,10 @@ import numpy as np
 
 from typing import Union
 
-from .utils import register_dataarray_method, register_dataset_method
+from pandas_flavor import register_xarray_dataarray_method, register_xarray_dataset_method
 
 
-@register_dataarray_method
+@register_xarray_dataarray_method
 def clone_using(
     da: xr.DataArray,
     np_arr: np.array,
@@ -74,8 +74,8 @@ def clone_using(
     )
 
 
-@register_dataset_method
-@register_dataarray_method
+@register_xarray_dataset_method
+@register_xarray_dataarray_method
 def convert_datetime_to_number(
     da_or_ds: Union[xr.DataArray, xr.Dataset],
     time_units: str,

@@ -9,7 +9,10 @@ import numpy as np
 
 from typing import Union
 
-from pandas_flavor import register_xarray_dataarray_method, register_xarray_dataset_method
+from pandas_flavor import (
+    register_xarray_dataarray_method,
+    register_xarray_dataset_method,
+)
 
 
 @register_xarray_dataarray_method

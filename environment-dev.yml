@@ -45,3 +45,4 @@ dependencies:
 - unyt
 - xlrd
 - xorg-libxrender
+- xarray

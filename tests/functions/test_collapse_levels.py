@@ -19,7 +19,7 @@ def test_collapse_levels_non_multilevel(multiindex_with_missing_dataframe):
 
 @pytest.mark.functions
 def test_collapse_levels_functionality_2level(
-    multiindex_with_missing_dataframe
+    multiindex_with_missing_dataframe,
 ):
 
     assert all(
@@ -42,7 +42,7 @@ def test_collapse_levels_functionality_2level(
 
 @pytest.mark.functions
 def test_collapse_levels_functionality_3level(
-    multiindex_with_missing_3level_dataframe
+    multiindex_with_missing_3level_dataframe,
 ):
     assert all(
         multiindex_with_missing_3level_dataframe.copy()

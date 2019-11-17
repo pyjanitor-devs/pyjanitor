@@ -26,7 +26,7 @@ def test_limit_column_characters_different_positions(dataframe):
 
 @pytest.mark.functions
 def test_limit_column_characters_different_positions_different_separator(
-    dataframe
+    dataframe,
 ):
     df = dataframe
     df.columns = ["first", "first", "second", "second", "first"]

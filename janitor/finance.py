@@ -17,8 +17,7 @@ from .utils import (
     _currency_column_to_numeric,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
-    deprecated_alias,
-    refactored_function
+    deprecated_alias
 )
 
 currency_set = {
@@ -404,10 +403,6 @@ def _convert_currency(
 
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name", type="cleaning_style")
-@refactored_function(
-    "currency_column_to_numeric has moved. \
-    Please use finance.currency_column_to_numeric"
-)
 def currency_column_to_numeric(
     df: pd.DataFrame,
     column_name: str,

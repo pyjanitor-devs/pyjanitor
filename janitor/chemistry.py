@@ -2,7 +2,7 @@
 Chemistry and cheminformatics-oriented data cleaning functions.
 """
 
-from typing import Union
+from typing import Hashable, Union
 
 import numpy as np
 import pandas as pd
@@ -80,8 +80,8 @@ except ImportError:
 @deprecated_alias(smiles_col="smiles_column_name", mols_col="mols_column_name")
 def smiles2mol(
     df: pd.DataFrame,
-    smiles_column_name: str,
-    mols_column_name: str,
+    smiles_column_name: Hashable,
+    mols_column_name: Hashable,
     drop_nulls: bool = True,
     progressbar: Union[None, str] = None,
 ) -> pd.DataFrame:
@@ -277,7 +277,7 @@ def morgan_fingerprint(
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def molecular_descriptors(
-    df: pd.DataFrame, mols_column_name: str
+    df: pd.DataFrame, mols_column_name: Hashable
 ) -> pd.DataFrame:
     """
     Convert a column of RDKIT mol objects into a Pandas DataFrame
@@ -394,7 +394,7 @@ def molecular_descriptors(
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def maccs_keys_fingerprint(
-    df: pd.DataFrame, mols_column_name: str
+    df: pd.DataFrame, mols_column_name: Hashable
 ) -> pd.DataFrame:
     """
     Convert a column of RDKIT mol objects into MACCS Keys Fingerprints.

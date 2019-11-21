@@ -18,6 +18,7 @@ methods.
    ml
    general_functions
    pyspark
+   xarray
 
 .. autosummary::
       janitor.biology
@@ -27,3 +28,4 @@ methods.
       janitor.ml
       janitor.functions
       janitor.spark.functions
+      janitor.xarray.functions

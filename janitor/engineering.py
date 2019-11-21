@@ -2,6 +2,8 @@
 Engineering-specific data cleaning functions.
 """
 
+from typing import Hashable
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf

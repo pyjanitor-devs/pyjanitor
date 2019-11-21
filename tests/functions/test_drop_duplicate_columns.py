@@ -18,7 +18,7 @@ def test_drop_duplicate_columns(df_duplicated_columns):
 
 @pytest.mark.functions
 def test_drop_duplicate_columns_for_second_duplicated_column(
-    df_duplicated_columns
+    df_duplicated_columns,
 ):
     clean_df = df_duplicated_columns.drop_duplicate_columns(
         column_name="a", nth_index=1
@@ -32,7 +32,7 @@ def test_drop_duplicate_columns_for_second_duplicated_column(
 
 @pytest.mark.functions
 def test_drop_duplicate_columns_for_third_duplicated_column(
-    df_duplicated_columns
+    df_duplicated_columns,
 ):
     clean_df = df_duplicated_columns.drop_duplicate_columns(
         column_name="a", nth_index=2

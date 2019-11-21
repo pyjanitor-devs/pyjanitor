@@ -6,7 +6,17 @@ import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Hashable,
+    Iterable,
+    List,
+    Set,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -20,7 +30,7 @@ from .utils import _strip_underscores, check, check_column, deprecated_alias
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Union[str, Iterable[str], Any] = None
+    *dataframes, column_names: Iterable[pd.CategoricalDtype] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -65,7 +75,7 @@ def unionize_dataframe_categories(
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
         raise TypeError("Inputs must all be dataframes.")
 
-    if column_names is None:
+    elif column_names is None:
         # Find all columns across all dataframes that are categorical
 
         column_names = set()
@@ -78,9 +88,9 @@ def unionize_dataframe_categories(
                     if isinstance(df[column_name].dtype, pd.CategoricalDtype)
                 ]
             )
-    elif isinstance(column_names, str):
-        column_names = [column_names]
 
+    else:
+        column_names = [column_names]
     # For each categorical column, find all possible values across the DFs
 
     category_unions = {
@@ -290,9 +300,11 @@ def _change_case(col: str, case_type: str) -> str:
     return col
 
 
-def _remove_special(col_name):
+def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
-    return "".join(item for item in col_name if item.isalnum() or "_" in item)
+    return "".join(
+        item for item in str(col_name) if item.isalnum() or "_" in item
+    )
 
 
 _underscorer1 = re.compile(r"(.)([A-Z][a-z]+)")
@@ -314,8 +326,8 @@ def _camel2snake(col_name: str) -> str:
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
-def _normalize_1(col_name: str) -> str:
-    result = col_name
+def _normalize_1(col_name: Hashable) -> str:
+    result = str(col_name)
     for search, replace in FIXES:
         result = re.sub(search, replace, result)
     return result
@@ -377,7 +389,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any] = None
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable] = None
 ) -> pd.DataFrame:
     """
     Return all duplicate rows.
@@ -413,7 +425,7 @@ def get_dupes(
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def encode_categorical(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any]
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
     """
     Encode the specified columns with Pandas'
@@ -438,7 +450,7 @@ def encode_categorical(
         df = pd.DataFrame(...).encode_categorical(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable column_names: A column name or an iterable (list or
+    :param Hashable/iterable column_names: A column name or an iterable (list or
         tuple) of column names.
     :returns: A pandas DataFrame
     """  # noqa: E501
@@ -447,7 +459,7 @@ def encode_categorical(
             if col not in df.columns:
                 raise JanitorError(f"{col} missing from dataframe columns!")
             df[col] = pd.Categorical(df[col])
-    elif isinstance(column_names, str):
+    elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
             raise JanitorError(
                 f"{column_names} missing from dataframe columns!"
@@ -455,7 +467,7 @@ def encode_categorical(
         df[column_names] = pd.Categorical(df[column_names])
     else:
         raise JanitorError(
-            "kwarg `column_names` must be a string or iterable!"
+            "kwarg `column_names` must be hashable or iterable!"
         )
     return df
 
@@ -463,7 +475,7 @@ def encode_categorical(
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def label_encode(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any]
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
     """
     Convert labels into numerical data.
@@ -493,8 +505,8 @@ def label_encode(
         df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable column_names: A column name or an iterable (list or
-        tuple) of column names.
+    :param Hashable/iterable column_names: A column name or an iterable (list
+        or tuple) of column names.
     :returns: A pandas DataFrame.
     """
     le = LabelEncoder()
@@ -503,13 +515,13 @@ def label_encode(
             if col not in df.columns:
                 raise JanitorError(f"{col} missing from column_names")
             df[f"{col}_enc"] = le.fit_transform(df[col])
-    elif isinstance(column_names, str):
+    elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
             raise JanitorError(f"{column_names} missing from column_names")
         df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
         raise JanitorError(
-            "kwarg `column_names` must be a string or iterable!"
+            "kwarg `column_names` must be hashable or iterable!"
         )
     return df
 
@@ -586,7 +598,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def reorder_columns(
-    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Any]
+    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable]
 ) -> pd.DataFrame:
     """
     Reorder DataFrame columns by specifying desired order as list of col names.
@@ -646,7 +658,7 @@ def reorder_columns(
 @deprecated_alias(columns="column_names")
 def coalesce(
     df: pd.DataFrame,
-    column_names: Union[str, Iterable[str], Any],
+    column_names: Iterable[Hashable],
     new_column_name: str = None,
     delete_columns: bool = True,
 ) -> pd.DataFrame:
@@ -700,7 +712,9 @@ def coalesce(
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def convert_excel_date(
+    df: pd.DataFrame, column_name: Hashable
+) -> pd.DataFrame:
     """
     Convert Excel's serial date format into Python datetime format.
 
@@ -725,7 +739,7 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_excel_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column_name: A column name.
+    :param Hashable column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     df[column_name] = pd.TimedeltaIndex(
@@ -738,7 +752,9 @@ def convert_excel_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def convert_matlab_date(
+    df: pd.DataFrame, column_name: Hashable
+) -> pd.DataFrame:
     """
     Convert Matlab's serial date number into Python datetime format.
 
@@ -763,7 +779,7 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_matlab_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column_name: A column name.
+    :param Hashable column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
@@ -777,7 +793,7 @@ def convert_matlab_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """
     Convert unix epoch time into Python datetime format.
 
@@ -801,7 +817,7 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_unix_date('date')
 
     :param df: A pandas DataFrame.
-    :param str column_name: A column name.
+    :param Hashable column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
 
@@ -819,7 +835,7 @@ def convert_unix_date(df: pd.DataFrame, column_name) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def fill_empty(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any], value
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
 ) -> pd.DataFrame:
     """
     Fill `NaN` values in specified columns with a given value.
@@ -843,10 +859,10 @@ def fill_empty(
         df = pd.DataFrame(...).fill_empty(column_names='col1', value=0)
 
     :param df: A pandas DataFrame.
-    :param column_names: Either a `str` or `list` or `tuple`. If a string
-        is passed in, then only that column will be filled; if a list or tuple
-        of strings are passed in, then they will all be filled with the same
-        value.
+    :param column_names: column_names: A column name or an iterable (list
+        or tuple) of column names If a single column name is passed in, then
+        only that column will be filled; if a list or tuple is passed in, then
+        those columns will all be filled with the same value.
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `Nan` values filled.
     """
@@ -868,7 +884,7 @@ def fill_empty(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name, sep: str, concat: bool = True
+    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
 ) -> pd.DataFrame:
     """
     Expand a categorical column with multiple labels into dummy-coded columns.
@@ -895,7 +911,7 @@ def expand_column(
                                              sep=', ')
 
     :param df: A pandas DataFrame.
-    :param column_name: A `str` indicating which column to expand.
+    :param column_name: Which column to expand.
     :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
     :param bool concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
@@ -914,7 +930,7 @@ def expand_column(
 @deprecated_alias(columns="column_names")
 def concatenate_columns(
     df: pd.DataFrame,
-    column_names: Union[str, Iterable[str], Any],
+    column_names: List[Hashable],
     new_column_name,
     sep: str = "-",
 ) -> pd.DataFrame:
@@ -966,7 +982,7 @@ def concatenate_columns(
 @deprecated_alias(column="column_name")
 def deconcatenate_column(
     df: pd.DataFrame,
-    column_name,
+    column_name: Hashable,
     sep: str = None,
     new_column_names: Union[List[str], Tuple[str]] = None,
     autoname: str = None,
@@ -1078,7 +1094,7 @@ def deconcatenate_column(
 
     if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
-            f"you need to provide {len(deconcat.shape[1])} names "
+            f"you need to provide {len(df_deconcat.shape[1])} names "
             "to new_column_names"
         )
 
@@ -1100,7 +1116,10 @@ def deconcatenate_column(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_string(
-    df: pd.DataFrame, column_name, search_string: str, complement: bool = False
+    df: pd.DataFrame,
+    column_name: Hashable,
+    search_string: str,
+    complement: bool = False,
 ) -> pd.DataFrame:
     """
     Filter a string-based column according to whether it contains a substring.
@@ -1231,7 +1250,7 @@ def filter_on(
 @deprecated_alias(column="column_name", start="start_date", end="end_date")
 def filter_date(
     df: pd.DataFrame,
-    column_name,
+    column_name: Hashable,
     start_date: dt.date = None,
     end_date: dt.date = None,
     years: List = None,
@@ -1457,7 +1476,10 @@ def filter_date(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_column_isin(
-    df: pd.DataFrame, column_name, iterable: Iterable, complement: bool = False
+    df: pd.DataFrame,
+    column_name: Hashable,
+    iterable: Iterable,
+    complement: bool = False,
 ) -> pd.DataFrame:
     """
     Filter a dataframe for values in a column that exist in another iterable.
@@ -1510,7 +1532,7 @@ def filter_column_isin(
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def remove_columns(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Any]
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
     """
     Remove the set of columns specified in `column_names`.
@@ -1535,7 +1557,10 @@ def remove_columns(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def change_type(
-    df: pd.DataFrame, column_name, dtype, ignore_exception: bool = False
+    df: pd.DataFrame,
+    column_name: Hashable,
+    dtype: type,
+    ignore_exception: bool = False,
 ) -> pd.DataFrame:
     """
     Change the type of a column.
@@ -1585,7 +1610,10 @@ def change_type(
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def add_column(
-    df: pd.DataFrame, column_name, value, fill_remaining: bool = False
+    df: pd.DataFrame,
+    column_name: str,
+    value: Union[List[Any], Tuple[Any], Any],
+    fill_remaining: bool = False,
 ) -> pd.DataFrame:
     """
     Add a column to the dataframe.
@@ -2042,7 +2070,7 @@ def row_to_names(
 @deprecated_alias(col_name="column_name")
 def round_to_fraction(
     df: pd.DataFrame,
-    column_name=None,
+    column_name: Hashable = None,
     denominator: float = None,
     digits: float = np.inf,
 ) -> pd.DataFrame:
@@ -2172,7 +2200,10 @@ def round_to_fraction(
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
 def transform_column(
-    df: pd.DataFrame, column_name, function: Callable, dest_column_name=None
+    df: pd.DataFrame,
+    column_name: Hashable,
+    function: Callable,
+    dest_column_name: str = None,
 ) -> pd.DataFrame:
     """
     Transform the given column in-place using the provided function.
@@ -2222,7 +2253,7 @@ def transform_column(
 @deprecated_alias(columns="column_names", new_names="new_column_names")
 def transform_columns(
     df: pd.DataFrame,
-    column_names: Union[List, Tuple],
+    column_names: Union[List[str], Tuple[str]],
     function: Callable,
     suffix: str = None,
     new_column_names: Dict[str, str] = None,
@@ -2239,7 +2270,8 @@ def transform_columns(
 
     User can optionally supply either a suffix to create a new set of columns
     with the specified suffix, or provide a dictionary mapping each original
-    column name to its corresponding new column name.
+    column name to its corresponding new column name. Note that all column
+    names must be strings.
 
     A few examples below. Firstly, to just log10 transform a list of columns
     without creating new columns to hold the transformed values:
@@ -2592,7 +2624,10 @@ def select_columns(
 @deprecated_alias(column="column_name")
 @deprecated_alias(statistic="statistic_column_name")
 def impute(
-    df: pd.DataFrame, column_name, value=None, statistic_column_name=None
+    df: pd.DataFrame,
+    column_name: Hashable,
+    value: Any = None,
+    statistic_column_name: str = None,
 ) -> pd.DataFrame:
     """
     Method-chainable imputation of values in a column.
@@ -2702,7 +2737,7 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
+def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """
     Drop rows that do not have null values in the given column.
 
@@ -2724,7 +2759,7 @@ def dropnotnull(df: pd.DataFrame, column_name) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def find_replace(
-    df: pd.DataFrame, column_name, mapper: Dict, match: str = "exact"
+    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
 ) -> pd.DataFrame:
     """
     Perform a find-and-replace action on a column of data.
@@ -2779,7 +2814,7 @@ def find_replace(
 
     :param df: A pandas DataFrame.
     :param column_name: The column on which the find/replace action is to be
-        made.
+        made. Must be a string.
     :param mapper: A dictionary that maps "thing to find" -> "thing to
         replace".  Note: Does not support null-value replacement.
     :param match: A string that dictates whether exact match or
@@ -2808,7 +2843,10 @@ def find_replace(
 @pf.register_dataframe_method
 @deprecated_alias(target_col="target_column_name")
 def update_where(
-    df: pd.DataFrame, conditions, target_column_name, target_val
+    df: pd.DataFrame,
+    conditions: Any,
+    target_column_name: Hashable,
+    target_val: Any,
 ) -> pd.DataFrame:
     """
     Add multiple conditions to update a column in the dataframe.
@@ -2856,7 +2894,9 @@ def update_where(
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
-def to_datetime(df: pd.DataFrame, column_name, **kwargs) -> pd.DataFrame:
+def to_datetime(
+    df: pd.DataFrame, column_name: Hashable, **kwargs
+) -> pd.DataFrame:
     """
     Method-chainable to_datetime.
 
@@ -2993,8 +3033,8 @@ class DataDescription:
 @deprecated_alias(from_column="from_column_name", to_column="to_column_name")
 def bin_numeric(
     df: pd.DataFrame,
-    from_column_name,
-    to_column_name,
+    from_column_name: Hashable,
+    to_column_name: Hashable,
     num_bins: int = 5,
     labels: str = None,
 ) -> pd.DataFrame:
@@ -3045,7 +3085,7 @@ def bin_numeric(
 
 @pf.register_dataframe_method
 def drop_duplicate_columns(
-    df: pd.DataFrame, column_name, nth_index: int = 0
+    df: pd.DataFrame, column_name: Hashable, nth_index: int = 0
 ) -> pd.DataFrame:
     """
     Remove a duplicated column specified by column_name, its index.
@@ -3100,7 +3140,10 @@ def drop_duplicate_columns(
 
 @pf.register_dataframe_method
 def take_first(
-    df: pd.DataFrame, subset, by, ascending: bool = True
+    df: pd.DataFrame,
+    subset: Union[Hashable, Iterable[Hashable]],
+    by: Hashable,
+    ascending: bool = True,
 ) -> pd.DataFrame:
     """
     Take the first row within each group specified by `subset`.
@@ -3121,8 +3164,8 @@ def take_first(
         df.take_first(subset="a", by="b")
 
     :param df: A pandas DataFrame.
-    :param subset: Column(s) defining the groups, `str` or list of `str`.
-    :param by: Column to sort by, `str`.
+    :param subset: Column(s) defining the group.
+    :param by: Column to sort by.
     :param ascending: Whether or not to sort in ascending order, `bool`.
     :returns: A pandas DataFrame.
     """
@@ -3153,6 +3196,7 @@ def shuffle(
 
     :param df: A pandas DataFrame
     :param random_state: (optional) A seed for the random number generator.
+    :param reset_index: (optional) Resets index to default integers
     """
     result = df.sample(frac=1, random_state=random_state)
     if reset_index:
@@ -3161,7 +3205,7 @@ def shuffle(
 
 
 @pf.register_dataframe_method
-def join_apply(df, func, new_column_name):
+def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
     """
     Join the result of applying a function across dataframe rows.
 
@@ -3201,7 +3245,7 @@ def join_apply(df, func, new_column_name):
     :param df: A pandas DataFrame
     :param func: A function that is applied elementwise across all rows of the
         DataFrame.
-    :param new_name: New column name.
+    :param new_column_name: New column name.
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df
@@ -3210,8 +3254,8 @@ def join_apply(df, func, new_column_name):
 @pf.register_dataframe_method
 def flag_nulls(
     df: pd.DataFrame,
-    column_name: str = "null_flag",
-    columns: Union[str, Iterable[str], Any] = None,
+    column_name: Hashable = "null_flag",
+    columns: Union[str, Iterable[str], Hashable] = None,
 ) -> pd.DataFrame:
     """
     Creates a new column to indicate whether you have null values in a given
@@ -3263,7 +3307,7 @@ def flag_nulls(
     elif columns is None:
         columns = df.columns
     elif not isinstance(columns, Iterable):
-        # Handle cases where we have an integer column or something
+        # catches other hashable types
         columns = [columns]
 
     # Input sanitation checks
@@ -3283,7 +3327,7 @@ def flag_nulls(
 @pf.register_dataframe_method
 def count_cumulative_unique(
     df: pd.DataFrame,
-    column_name: str,
+    column_name: Hashable,
     dest_column_name: str,
     case_sensitive: bool = True,
 ) -> pd.DataFrame:

@@ -1,3 +1,10 @@
+__version__ = "0.19.0"
+
+try:
+    import janitor.xarray
+except ImportError:
+    pass
+
 from .functions import *  # noqa: F403, F401
 from .math import *
 from .ml import get_features_targets as _get_features_targets
@@ -21,4 +28,3 @@ def currency_column_to_numeric(*args, **kwargs):
     return _currency_column_to_numeric(*args, **kwargs)
 
 
-__version__ = "0.18.2"

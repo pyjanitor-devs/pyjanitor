@@ -5,7 +5,7 @@ steps:
     displayName: 'Code style check: pycodestyle'
   - script: |
       $(activate.command) pyjanitor-dev
-      black --check -l 79 .
+      black
     displayName: 'Code style check: black'
   - script: |
       $(activate.command) pyjanitor-dev

@@ -2248,7 +2248,9 @@ def transform_column(
     :param column_name: The column to transform.
     :param function: A function to apply on the column.
     :param dest_column_name: The column name to store the transformation result
-        in. By default, replaces contents of original column.
+        in. Defaults to None, which will result in the original column
+        name being overwritten. If a name is provided here, then a new column
+        with the transformed values will be created.
     :returns: A pandas DataFrame with a transformed column.
     """
     if dest_column_name is None:

@@ -1,6 +1,6 @@
 new version (on deck)
 =====================
-
+- [DOC] Edited transform_column dest_column_name kwarg description to be clearer on defaults. @evan-anderson (issue #487)
 
 v0.18.3
 =======
@@ -15,7 +15,7 @@ v0.18.3
 - [INF] Add ``pre-commit`` hooks to repository by @ericmjl
 - [DOC] Fix formatting code in ``CONTRIBUTING.rst`` by @hectormz
 - [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal
-- [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal 
+- [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal
 
 v0.18.2
 =======

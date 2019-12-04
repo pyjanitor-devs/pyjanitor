@@ -1,5 +1,10 @@
 new version (on deck)
 =====================
+- [DOC] Edited transform_column dest_column_name kwarg description to be clearer on defaults by @evan-anderson.
+
+v0.19.0
+=======
+- [ENH] Add xarray support and clone_using / convert_datetime_to_number funcs by @zbarry.
 
 
 v0.18.3
@@ -16,7 +21,6 @@ v0.18.3
 - [DOC] Fix formatting code in ``CONTRIBUTING.rst`` by @hectormz
 - [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal
 - [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal
-- [ENH] Add xarray support and clone_using / convert_datetime_to_number funcs by @zbarry.
 
 v0.18.2
 =======

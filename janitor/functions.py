@@ -20,6 +20,8 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from pandas.errors import OutOfBoundsDatetime
+
 import pandas_flavor as pf
 from pandas.api.types import union_categoricals
 from scipy.stats import mode
@@ -830,14 +832,10 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     :returns: A pandas DataFrame with corrected dates.
     """
 
-    def _conv(value):
-        try:
-            date = dt.datetime.utcfromtimestamp(value)
-        except ValueError:  # year of of rang means milliseconds.
-            date = dt.datetime.utcfromtimestamp(value / 1000)
-        return date
-
-    df[column_name] = df[column_name].astype(int).apply(_conv)
+    try:
+        df[column_name] = pd.to_datetime(df[column_name], unit="s")
+    except OutOfBoundsDatetime:  # Indicates time is in milliseconds.
+        df[column_name] = pd.to_datetime(df[column_name], unit="ms")
     return df
 
 
@@ -1433,15 +1431,6 @@ def filter_date(
         """Taken from: https://stackoverflow.com/a/13616382."""
         return reduce(np.logical_and, conditions)
 
-    def _get_year(x):
-        return x.year
-
-    def _get_month(x):
-        return x.month
-
-    def _get_day(x):
-        return x.day
-
     if column_date_options:
         df.loc[:, column_name] = pd.to_datetime(
             df.loc[:, column_name], **column_date_options
@@ -1460,17 +1449,13 @@ def filter_date(
         _filter_list.append(df.loc[:, column_name] <= end_date)
 
     if years:
-        _filter_list.append(
-            df.loc[:, column_name].apply(_get_year).isin(years)
-        )
+        _filter_list.append(df.loc[:, column_name].dt.year.isin(years))
 
     if months:
-        _filter_list.append(
-            df.loc[:, column_name].apply(_get_month).isin(months)
-        )
+        _filter_list.append(df.loc[:, column_name].dt.month.isin(months))
 
     if days:
-        _filter_list.append(df.loc[:, column_name].apply(_get_day).isin(days))
+        _filter_list.append(df.loc[:, column_name].dt.day.isin(days))
 
     if start_date and end_date:
         if start_date > end_date:
@@ -2145,7 +2130,7 @@ def round_to_fraction(
     # .. code-block:: python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.limit_column_characters('a', 3)
+    #     example_dataframe2.round_to_fraction('a', 3)
 
     # :Output:
 
@@ -2168,7 +2153,7 @@ def round_to_fraction(
     # .. code-block:: python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.limit_column_characters('a', 3, 4)
+    #     example_dataframe2.round_to_fraction('a', 3, 4)
 
     # :Output:
 
@@ -2191,17 +2176,9 @@ def round_to_fraction(
     if digits:
         check("digits", digits, [float, int])
 
-    def _round_to_fraction(number, denominator, digits=np.inf):
-        num = round(number * denominator, 0) / denominator
-        if not np.isinf(digits):
-            num = round(num, digits)
-        return num
-
-    _round_to_fraction_partial = partial(
-        _round_to_fraction, denominator=denominator, digits=digits
-    )
-
-    df[column_name] = df[column_name].apply(_round_to_fraction_partial)
+    df[column_name] = round(df[column_name] * denominator, 0) / denominator
+    if not np.isinf(digits):
+        df[column_name] = round(df[column_name], digits)
 
     return df
 
@@ -2803,15 +2780,13 @@ def currency_column_to_numeric(
     # _replace_empty_string_with_none is applied here after the check on
     # remove_non_numeric since "" is our indicator that a string was coerced
     # in the original column
-    column_series = column_series.apply(_replace_empty_string_with_none)
+    column_series = _replace_empty_string_with_none(column_series)
 
     if fill_all_non_numeric is not None:
         check("fill_all_non_numeric", fill_all_non_numeric, [int, float])
         column_series = column_series.fillna(fill_all_non_numeric)
 
-    column_series = column_series.apply(
-        _replace_original_empty_string_with_none
-    )
+    column_series = _replace_original_empty_string_with_none(column_series)
 
     df = df.assign(**{column_name: pd.to_numeric(column_series)})
 

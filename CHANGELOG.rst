@@ -2,6 +2,7 @@ new version (on deck)
 =====================
 - [DOC] Edited transform_column dest_column_name kwarg description to be clearer on defaults by @evan-anderson.
 - [ENH] Replace ``apply()`` in favor of ``pandas`` functions in several functions. @hectormz
+- [ENH] Enforce string conversion when cleaning names. @ericmjl
 
 v0.19.0
 =======

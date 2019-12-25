@@ -161,3 +161,9 @@ def test_clean_names_camelcase_to_snake(dataframe):
         "snakes_on_a_plane2",
         "snakes_on_a_plane3",
     ]
+
+
+def test_clean_names_enforce_string(dataframe):
+    df = dataframe.rename(columns={"a": 1}).clean_names(enforce_string=True)
+    for c in df.columns:
+        assert isinstance(c, str)

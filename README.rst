@@ -325,6 +325,23 @@ any feature requests will be prioritized according to
 what maintainers encounter as a need in our day-to-day jobs.
 Please temper expectations accordingly.
 
+API Policy
+~~~~~~~~~~
+
+``pyjanitor`` only extends or aliases the pandas API
+(and other dataframe APIs),
+but will never fix or replace them.
+
+Undesirable ``pandas`` behaviour should be reported upstream
+in the ``pandas`` repository.
+If at some point the pandas devs
+decide to take something from pyjanitor
+and internalize it as part of the official pandas API,
+then we will deprecate it from pyjanitor,
+while acknowledge the original contributors' contribution
+as part of the official deprecation record.
+
+
 Credits
 ~~~~~~~
 

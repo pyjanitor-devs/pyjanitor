@@ -20,10 +20,9 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from pandas.errors import OutOfBoundsDatetime
-
 import pandas_flavor as pf
 from pandas.api.types import union_categoricals
+from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 

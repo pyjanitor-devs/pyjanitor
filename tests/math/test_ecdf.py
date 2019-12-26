@@ -1,7 +1,8 @@
-from hypothesis import strategies as st, given
-from hypothesis.extra.pandas import series
 import numpy as np
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
+from hypothesis.extra.pandas import series
 
 
 @given(s=series(dtype=np.number))

@@ -6,6 +6,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import is_numeric_dtype
 from scipy.special import expit
 from scipy.stats import norm
 
@@ -157,9 +158,6 @@ def z_score(
         moments_dict[keys[0]] = mean
         moments_dict[keys[1]] = std
     return (s - mean) / std
-
-
-from pandas.api.types import is_numeric_dtype
 
 
 @pf.register_series_method

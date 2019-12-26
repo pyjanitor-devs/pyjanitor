@@ -3029,7 +3029,7 @@ def find_replace(df, match: str = "exact", **mappings):
     pandas' ``df.replace()`` function provides the appropriate functionality.
     You can find more detail on the replace_ docs.
 
-    .. _replace: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
+    .. _replace: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html  # noqa: E501
 
     :param df: A pandas DataFrame.
     :param match: Whether or not to perform an exact match or not.

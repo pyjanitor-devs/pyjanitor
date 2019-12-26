@@ -3025,6 +3025,12 @@ def find_replace(df, match: str = "exact", **mappings):
             order={'coffee$': 'latte'},
         )
 
+    To perform a find and replace on the entire dataframe,
+    pandas' ``df.replace()`` function provides the appropriate functionality.
+    You can find more detail on the replace_ docs.
+
+    .. _replace: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
+
     :param df: A pandas DataFrame.
     :param match: Whether or not to perform an exact match or not.
         Valid values are "exact" or "regex".

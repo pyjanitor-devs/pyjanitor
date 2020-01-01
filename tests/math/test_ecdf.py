@@ -13,8 +13,7 @@ def test_ecdf(s):
             x, y = s.ecdf()
     else:
         x, y = s.ecdf()
-
-    assert len(x) == len(y)
+        assert len(x) == len(y)
 
 
 @given(s=series(dtype=str))

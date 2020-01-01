@@ -328,7 +328,7 @@ Please temper expectations accordingly.
 API Policy
 ~~~~~~~~~~
 
-``pyjanitor`` only extends or aliases the pandas API
+``pyjanitor`` only extends or aliases the ``pandas`` API
 (and other dataframe APIs),
 but will never fix or replace them.
 

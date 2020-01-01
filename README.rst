@@ -333,7 +333,7 @@ API Policy
 but will never fix or replace them.
 
 Undesirable ``pandas`` behaviour should be reported upstream
-in the ``pandas`` repository.
+in the ``pandas`` `issue tracker <https://github.com/pandas-dev/pandas/issues>`_.
 We explicitly do not fix the ``pandas`` API.
 If at some point the ``pandas`` devs
 decide to take something from ``pyjanitor``

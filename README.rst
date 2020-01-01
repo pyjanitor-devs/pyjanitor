@@ -334,11 +334,12 @@ but will never fix or replace them.
 
 Undesirable ``pandas`` behaviour should be reported upstream
 in the ``pandas`` repository.
-If at some point the pandas devs
-decide to take something from pyjanitor
-and internalize it as part of the official pandas API,
-then we will deprecate it from pyjanitor,
-while acknowledge the original contributors' contribution
+We explicitly do not fix the ``pandas`` API.
+If at some point the ``pandas`` devs
+decide to take something from ``pyjanitor``
+and internalize it as part of the official ``pandas`` API,
+then we will deprecate it from ``pyjanitor``,
+while acknowledging the original contributors' contribution
 as part of the official deprecation record.
 
 

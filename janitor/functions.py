@@ -18,6 +18,7 @@ from typing import (
     Union,
 )
 
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
@@ -226,12 +227,16 @@ def clean_names(
     remove_special: bool = False,
     strip_accents: bool = True,
     preserve_original_columns: bool = True,
+    enforce_string: bool = True,
 ) -> pd.DataFrame:
     """
     Clean column names.
 
-    Takes all column names, converts them to lowercase, then replaces all
-    spaces with underscores.
+    Takes all column names, converts them to lowercase,
+    then replaces all spaces with underscores.
+
+    By default, column names are converted to string types.
+    This can be switched off by passing in ``enforce_string=False``.
 
     This method does not mutate the original DataFrame.
 
@@ -270,9 +275,15 @@ def clean_names(
         Only letters, numbers and underscores are preserved.
     :param preserve_original_columns: (optional) Preserve original names.
         This is later retrievable using `df.original_columns`.
+    :param enforce_string: Whether or not to convert all column names
+        to string type. Defaults to True, but can be turned off.
+        Columns with >1 levels will not be converted by default.
     :returns: A pandas DataFrame.
     """
     original_column_names = list(df.columns)
+
+    if enforce_string:
+        df = df.rename(columns=lambda x: str(x))
 
     df = df.rename(columns=lambda x: _change_case(x, case_type))
 

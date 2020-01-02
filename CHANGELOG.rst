@@ -4,6 +4,7 @@ new version (on deck)
 - [ENH] Replace ``apply()`` in favor of ``pandas`` functions in several functions. @hectormz
 - [ENH] Add ``ecdf()`` Series function by @ericmjl.
 - [DOC] Update API policy for clarity. @ericmjl
+- [ENH] Enforce string conversion when cleaning names. @ericmjl
 
 v0.19.0
 =======

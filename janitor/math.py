@@ -6,6 +6,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import is_numeric_dtype
 from scipy.special import expit
 from scipy.stats import norm
 
@@ -129,7 +130,9 @@ def probit(s: pd.Series, error: str = "warn") -> pd.Series:
 
 @pf.register_series_method
 def z_score(
-    s: pd.Series, moments_dict: dict = None, keys: Tuple[str] = ("mean", "std")
+    s: pd.Series,
+    moments_dict: dict = None,
+    keys: Tuple[str, str] = ("mean", "std"),
 ) -> pd.Series:
     """
     Transforms the Series into z-scores
@@ -155,3 +158,43 @@ def z_score(
         moments_dict[keys[0]] = mean
         moments_dict[keys[1]] = std
     return (s - mean) / std
+
+
+@pf.register_series_method
+def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Return cumulative distribution of values in a series.
+
+    Intended to be used with the following pattern:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...)
+
+        # Obtain ECDF values to be plotted
+        x, y = df["column_name"].ecdf()
+
+        # Plot ECDF values
+        plt.scatter(x, y)
+
+    Null values must be dropped from the series,
+    otherwise a ``ValueError`` is raised.
+
+    Also, if the dtype of the series is not numeric,
+    a TypeError is raised.
+
+    :param s: A pandas series. dtype should be numeric.
+    :returns: (x, y).
+        x: sorted array of values.
+        y: cumulative fraction of data points with value ``x`` or lower.
+    """
+    if not is_numeric_dtype(s):
+        raise TypeError(f"series {s.name} must be numeric!")
+    if not s.isnull().sum() == 0:
+        raise ValueError(f"series {s.name} contains nulls. Please drop them.")
+
+    n = len(s)
+    x = np.sort(s)
+    y = np.arange(1, n + 1) / n
+
+    return x, y

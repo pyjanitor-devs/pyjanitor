@@ -48,6 +48,6 @@ def test_find_replace_regex(df_orders):
 
 
 @pytest.mark.functions
-def test_find_replace_regex_match_rases_error(df_orders):
+def test_find_replace_regex_match_raises_error(df_orders):
     with pytest.raises(ValueError):
         df_orders.find_replace(order={"lemonade": "orange juice"}, match="bla")

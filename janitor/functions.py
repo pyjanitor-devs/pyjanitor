@@ -17,7 +17,6 @@ from typing import (
     Tuple,
     Union,
 )
-from types import SimpleNamespace
 
 
 import numpy as np

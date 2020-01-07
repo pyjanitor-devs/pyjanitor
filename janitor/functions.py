@@ -3039,7 +3039,20 @@ def find_replace(df, match: str = "exact", **mappings):
     pandas' ``df.replace()`` function provides the appropriate functionality.
     You can find more detail on the replace_ docs.
 
+    This function only works with column names that have no spaces
+    or punctuation in them.
+    For example, a column name ``item_name`` would work with ``find_replace``,
+    because it is a contiguous string that can be parsed correctly,
+    but ``item name`` would not be parsed correctly by the Python interpreter.
+
+    If you have column names that might not be compatible,
+    we recommend calling on ``clean_names()`` as the first method call.
+    If, for whatever reason, that is not possible,
+    then ``_find_replace()`` is available as a function
+    that you can do a pandas pipe_ call on.
+
     .. _replace: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
+    .. _pipe: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.pipe.html
 
     :param df: A pandas DataFrame.
     :param match: Whether or not to perform an exact match or not.

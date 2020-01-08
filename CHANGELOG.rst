@@ -5,6 +5,7 @@ new version (on deck)
 - [ENH] Add ``ecdf()`` Series function by @ericmjl.
 - [DOC] Update API policy for clarity. @ericmjl
 - [ENH] Enforce string conversion when cleaning names. @ericmjl
+- [ENH] Change ``find_replace`` implementation to use keyword arguments to specify columns to perform find and replace on. @ericmjl
 
 v0.19.0
 =======

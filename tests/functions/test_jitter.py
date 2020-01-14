@@ -10,7 +10,8 @@ def test_datatypes_check(dataframe):
         assert dataframe.jitter(
             column_name="a", dest_column_name="a_jitter", scale="x"
         )
-        # `random_state` should be an integer or 1-d array (see documentation for np.random.seed)
+        # `random_state` should be an integer or 1-d array
+        # (see documentation for np.random.seed)
         assert dataframe.jitter(
             column_name="a",
             dest_column_name="a_jitter",

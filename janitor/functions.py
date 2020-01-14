@@ -13,6 +13,7 @@ from typing import (
     Hashable,
     Iterable,
     List,
+    Optional,
     Set,
     Tuple,
     Union,

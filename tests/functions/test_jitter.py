@@ -30,3 +30,18 @@ def test_datatypes_check(dataframe):
             clip=[-10, 10, 5]
         )
         
+@pytest.mark.functions
+def test_jitter(dataframe):
+    # Functional test to ensure jitter runs without error
+    dataframe.jitter(
+        column_name="a", dest_column_name="a_jitter", scale=1.0
+    )
+
+@pytest.mark.functions
+def test_jitter_random_state(dataframe):
+    # Functional test to ensure jitter runs when setting random seed
+    dataframe.jitter(
+        column_name="a", dest_column_name="a_jitter", scale=1.0,
+        random_state=77
+    )
+

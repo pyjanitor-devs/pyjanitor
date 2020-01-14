@@ -45,3 +45,13 @@ def test_jitter_random_state(dataframe):
         random_state=77
     )
 
+@pytest.mark.functions
+def test_jitter_clip(dataframe):
+    # Ensure clip works as intended
+    df = dataframe.jitter(
+        column_name="a", dest_column_name="a_jitter", scale=1.0,
+        clip=[1.5, 2.5]
+    )
+    assert (min(df["a_jitter"]) >= 1.5) & (max(df["a_jitter"]) <= 2.5) 
+
+

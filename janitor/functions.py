@@ -18,7 +18,6 @@ from typing import (
     Union,
 )
 
-
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
@@ -3715,8 +3714,8 @@ def jitter(
     column_name: Hashable,
     dest_column_name: str,
     scale: np.number,
-    clip: Optional[Iterable[np.number, np.number]]=None,
-    random_state: np.number=None,
+    clip: Optional[Iterable[np.number, np.number]] = None,
+    random_state: np.number = None,
 ) -> pd.DataFrame:
     """
     Adds Gaussian noise (jitter) to the values of a column.
@@ -3789,7 +3788,7 @@ def jitter(
     """
 
     # Check types
-    check('scale', scale, [int, float])
+    check("scale", scale, [int, float])
 
     if scale <= 0:
         raise ValueError("`scale` must be a numeric value greater than 0.")

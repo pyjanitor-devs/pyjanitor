@@ -3800,6 +3800,8 @@ def jitter(
     if clip:
         if len(clip) != 2:
             raise ValueError("`clip` must be an iterable of length 2.")
+        if clip[1] < clip[0]:
+            raise ValueError("`clip[0]` must be less than `clip[1]`.")
         result = np.clip(result, *clip)
     df[dest_column_name] = result
 

@@ -37,6 +37,13 @@ def test_datatypes_check(dataframe):
             scale=1,
             clip=[-10, 10, 5],
         )
+        # `clip[0]` should be less than `clip[1]`
+        assert dataframe.jitter(
+            column_name="a",
+            dest_column_name="a_jitter",
+            scale=1,
+            clip=[10, 5],
+        )
 
 
 @pytest.mark.functions

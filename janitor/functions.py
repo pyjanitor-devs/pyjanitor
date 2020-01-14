@@ -3715,7 +3715,7 @@ def jitter(
     column_name: Hashable,
     dest_column_name: str,
     scale: np.number,
-    clip: Optional[Iterable[np.number, np.number]] = None,
+    clip: Optional[Iterable[np.number]] = None,
     random_state: np.number = None,
 ) -> pd.DataFrame:
     """

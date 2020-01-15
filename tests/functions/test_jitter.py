@@ -10,7 +10,7 @@ def test_datatypes_check(dataframe):
         assert dataframe.jitter(
             column_name="a", dest_column_name="a_jitter", scale="x"
         )
-    
+
     # `random_state` should be an integer or 1-d array
     # (see documentation for np.random.seed)
     with pytest.raises(TypeError):
@@ -48,10 +48,7 @@ def test_datatypes_check(dataframe):
     # `clip[0]` should be less than `clip[1]`
     with pytest.raises(ValueError):
         assert dataframe.jitter(
-            column_name="a",
-            dest_column_name="a_jitter",
-            scale=1,
-            clip=[10, 5],
+            column_name="a", dest_column_name="a_jitter", scale=1, clip=[10, 5]
         )
 
 

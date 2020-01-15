@@ -3780,7 +3780,7 @@ def jitter(
         column value to determine the scale (standard deviation) of the
         Gaussian distribution to sample from. (A value of zero results in
         no jittering.)
-    :param clip: A tuple of two values (minimum and maximum) to clip
+    :param clip: An iterable of two values (minimum and maximum) to clip
         the jittered values to, default to None.
     :param random_state: A interger or 1-d array value used to set the random
         seed, default to None.

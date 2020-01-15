@@ -3799,8 +3799,10 @@ def jitter(
         np.random.seed(random_state)
     result = np.random.normal(loc=values, scale=scale)
     if clip:
+        # Ensure `clip` has length 2
         if len(clip) != 2:
             raise ValueError("`clip` must be an iterable of length 2.")
+        # Ensure the values in `clip` are ordered as min, max
         if clip[1] < clip[0]:
             raise ValueError("`clip[0]` must be less than `clip[1]`.")
         result = np.clip(result, *clip)

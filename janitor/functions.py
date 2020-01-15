@@ -3756,15 +3756,16 @@ def jitter(
             random_state=None,
         )
 
-    A new column will be created containing the values of the original column 
-    with Gaussian noise added.  
+    A new column will be created containing the values of the original column
+    with Gaussian noise added.
     For each value in the column, a Gaussian distribution is created
     having a location (mean) equal to the value
-    and a scale (standard deviation) equal to `scale`. 
-    A random value is then sampled from this distribution, 
-    which is the jittered value.  
-    If a tuple is supplied for `clip`, 
-    then any values of the new column less than `clip[0]` will be set to `clip[0]`,
+    and a scale (standard deviation) equal to `scale`.
+    A random value is then sampled from this distribution,
+    which is the jittered value.
+    If a tuple is supplied for `clip`,
+    then any values of the new column less than `clip[0]`
+    will be set to `clip[0]`,
     and any values greater than `clip[1]` will be set to `clip[1]`.
     Additionally, if a numeric value is supplied for `random_state`,
     this value will be used to set the random seed used for sampling.

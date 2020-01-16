@@ -3794,6 +3794,10 @@ def jitter(
     # Check types
     check("scale", scale, [int, float])
 
+    # Check that `column_name` is a numeric column
+    if not np.issubdtype(df[column_name].dtype, np.number):
+        raise TypeError(f"{column_name} must be a numeric column.")
+
     if scale <= 0:
         raise ValueError("`scale` must be a numeric value greater than 0.")
     values = df[column_name]

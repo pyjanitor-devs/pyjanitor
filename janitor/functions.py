@@ -3716,7 +3716,7 @@ def jitter(
     dest_column_name: str,
     scale: np.number,
     clip: Optional[Iterable[np.number]] = None,
-    random_state: np.number = None,
+    random_state: Optional[np.number] = None,
 ) -> pd.DataFrame:
     """
     Adds Gaussian noise (jitter) to the values of a column.

@@ -67,7 +67,7 @@ def test_jitter(dataframe):
 
 @pytest.mark.functions
 def test_jitter_with_nans(missingdata_df):
-    # Functional test to ensure jitter runs without error if NaN values are present
+    # Functional test to ensure jitter runs without error if NaNs are present
     missingdata_df.jitter(
         column_name="a", dest_column_name="a_jitter", scale=1.0
     )

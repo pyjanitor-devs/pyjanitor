@@ -6,6 +6,7 @@ new version (on deck)
 - [DOC] Update API policy for clarity. @ericmjl
 - [ENH] Enforce string conversion when cleaning names. @ericmjl
 - [ENH] Change ``find_replace`` implementation to use keyword arguments to specify columns to perform find and replace on. @ericmjl
+- [ENH] Add ``jitter()`` dataframe function by @rahosbach
 
 v0.19.0
 =======

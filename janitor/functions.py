@@ -3769,6 +3769,7 @@ def jitter(
     and any values greater than `clip[1]` will be set to `clip[1]`.
     Additionally, if a numeric value is supplied for `random_state`,
     this value will be used to set the random seed used for sampling.
+    NaN values are ignored in this method.
 
     This method mutates the original DataFrame.
 

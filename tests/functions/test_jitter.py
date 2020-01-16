@@ -87,3 +87,28 @@ def test_jitter_clip(dataframe):
         clip=[1.5, 2.5],
     )
     assert (min(df["a_jitter"]) >= 1.5) & (max(df["a_jitter"]) <= 2.5)
+
+
+@pytest.mark.functions
+def test_jitter_results():
+    '''Ensure the mean of the jittered values is approximately
+    equal to the mean of the original values, and that the
+    standard deviation of the jittered value is approximately
+    equal to the `scale` parameter.'''
+    error_tolerance = 0.05 # 5%
+    scale = 2.0
+
+    df = pd.DataFrame({"original": [1] * 1000})
+    results = df.jitter(
+        column_name="original",
+        dest_column_name="jittered",
+        scale=scale
+    )
+    assert abs(
+        (results["jittered"].mean() - results["original"].mean()) /
+        results["original"].mean()) <= error_tolerance
+    assert abs(
+        (results["jittered"].std() - scale) /
+        scale) <= error_tolerance
+
+    

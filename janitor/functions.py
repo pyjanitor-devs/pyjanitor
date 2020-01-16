@@ -3801,7 +3801,7 @@ def jitter(
     if scale <= 0:
         raise ValueError("`scale` must be a numeric value greater than 0.")
     values = df[column_name]
-    if random_state:
+    if random_state is not None:
         np.random.seed(random_state)
     result = np.random.normal(loc=values, scale=scale)
     if clip:

@@ -34,9 +34,7 @@ def test_datatypes_check(dataframe):
     # The column to jitter should be numeric
     with pytest.raises(TypeError):
         assert dataframe.jitter(
-            column_name="cities",
-            dest_column_name="cities_jitter",
-            scale=1,
+            column_name="cities", dest_column_name="cities_jitter", scale=1
         )
 
     # `scale` should be greater than 0
@@ -70,7 +68,9 @@ def test_jitter(dataframe):
 @pytest.mark.functions
 def test_jitter_with_nans(missingdata_df):
     # Functional test to ensure jitter runs without error if NaN values are present
-    missingdata_df.jitter(column_name="a", dest_column_name="a_jitter", scale=1.0)
+    missingdata_df.jitter(
+        column_name="a", dest_column_name="a_jitter", scale=1.0
+    )
 
 
 @pytest.mark.functions
@@ -98,24 +98,22 @@ def test_jitter_clip(dataframe):
 
 @pytest.mark.functions
 def test_jitter_results():
-    '''Ensure the mean of the jittered values is approximately
+    """Ensure the mean of the jittered values is approximately
     equal to the mean of the original values, and that the
     standard deviation of the jittered value is approximately
-    equal to the `scale` parameter.'''
-    error_tolerance = 0.05 # 5%
+    equal to the `scale` parameter."""
+    error_tolerance = 0.05  # 5%
     scale = 2.0
 
     df = pd.DataFrame({"original": [1] * 1000})
     results = df.jitter(
-        column_name="original",
-        dest_column_name="jittered",
-        scale=scale
+        column_name="original", dest_column_name="jittered", scale=scale
     )
-    assert abs(
-        (results["jittered"].mean() - results["original"].mean()) /
-        results["original"].mean()) <= error_tolerance
-    assert abs(
-        (results["jittered"].std() - scale) /
-        scale) <= error_tolerance
-
-    
+    assert (
+        abs(
+            (results["jittered"].mean() - results["original"].mean())
+            / results["original"].mean()
+        )
+        <= error_tolerance
+    )
+    assert abs((results["jittered"].std() - scale) / scale) <= error_tolerance

@@ -30,6 +30,14 @@ def test_datatypes_check(dataframe):
             clip=["x", 2],
         )
 
+    # The column to jitter should be numeric
+    with pytest.raises(TypeError):
+        assert dataframe.jitter(
+            column_name="cities",
+            dest_column_name="cities_jitter",
+            scale=1,
+        )
+
     # `scale` should be greater than 0
     with pytest.raises(ValueError):
         assert dataframe.jitter(

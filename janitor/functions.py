@@ -3236,6 +3236,51 @@ def groupby_agg(
     new_col = df.groupby(by)[agg_column_name].transform(agg)
     df_new = df.assign(**{new_column_name: new_col})
     return df_new
+    """
+    :Setup:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        
+        data = {'item':['shoe','shoe','bag','shoe','bag'],
+                'MRP':[220,450,320,200,305],
+                'number_sold':[100,40,56,38,25]}
+
+        df = pd.DataFrame(data)
+
+        df
+        
+            item   MRP  number_sold
+        0   shoe   220     100
+        1   shoe   450     40
+        2   bag    320     56
+        3   shoe   200     38
+        4   bag    305     25
+
+    :Example: Add column for average MRP
+
+    .. code-block:: python
+
+        df.groupby_agg(by='item',
+                       agg='mean',
+                       agg_column_name='MRP',
+                       new_column_name='Avg_MRP')
+
+    :Output:
+
+    .. code-block:: python
+
+            item   MRP   number_sold avg_MRP
+        0   shoe   220     100        290.0
+        1   shoe   450     40         290.0
+        2   bag    320     56         312.5
+        3   shoe   200     38         290.0
+        4   bag    305     25         312.5
+    """
+
+    
 
 
 @pf.register_dataframe_accessor("data_description")

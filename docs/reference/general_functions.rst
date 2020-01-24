@@ -44,6 +44,7 @@ Modify values
     round_to_fraction
     update_where
     to_datetime
+    jitter
 
 Filtering
 ~~~~~~~~~

@@ -1,5 +1,16 @@
 new version (on deck)
 =====================
+- [DOC] Edited transform_column dest_column_name kwarg description to be clearer on defaults by @evan-anderson.
+- [ENH] Replace ``apply()`` in favor of ``pandas`` functions in several functions. @hectormz
+- [ENH] Add ``ecdf()`` Series function by @ericmjl.
+- [DOC] Update API policy for clarity. @ericmjl
+- [ENH] Enforce string conversion when cleaning names. @ericmjl
+- [ENH] Change ``find_replace`` implementation to use keyword arguments to specify columns to perform find and replace on. @ericmjl
+- [ENH] Add ``jitter()`` dataframe function by @rahosbach
+
+v0.19.0
+=======
+- [ENH] Add xarray support and clone_using / convert_datetime_to_number funcs by @zbarry.
 
 
 v0.18.3
@@ -16,7 +27,6 @@ v0.18.3
 - [DOC] Fix formatting code in ``CONTRIBUTING.rst`` by @hectormz
 - [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal
 - [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal
-- [ENH] Add xarray support and clone_using / convert_datetime_to_number funcs by @zbarry.
 
 v0.18.2
 =======

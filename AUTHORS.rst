@@ -82,6 +82,7 @@ Contributors
 - `@anzelpwj <https://github.com/anzelpwj>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aanzelpwj>`_
 - `@Ram-N <https://github.com/Ram-N>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ARam-N>`_
 - `@eyaltrabelsi <https://github.com/eyaltrabelsi>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aeyaltrabelsi>`_
+- `@samukweku <https://github.com/samukweku>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Asamukweku>`_
 - `@gddcunh <https://github.com/gddcunh>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agddcunh>`_
 - `@DollofCuty <https://github.com/DollofCuty>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ADollofCuty>`_
 - `@bdice <https://github.com/bdice>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Abdice>`_

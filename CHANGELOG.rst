@@ -2,9 +2,8 @@ new version (on deck)
 =====================
 -[DOC]: Added an example for groupby_agg in general functions @samukweku
 
-
 v0.20.0
-=====================
+=======
 - [DOC] Edited transform_column dest_column_name kwarg description to be clearer on defaults by @evan-anderson.
 - [ENH] Replace ``apply()`` in favor of ``pandas`` functions in several functions. @hectormz
 - [ENH] Add ``ecdf()`` Series function by @ericmjl.

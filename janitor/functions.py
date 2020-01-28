@@ -13,6 +13,7 @@ from typing import (
     Hashable,
     Iterable,
     List,
+    Optional,
     Set,
     Tuple,
     Union,
@@ -22,6 +23,7 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import union_categoricals
+from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
@@ -225,12 +227,16 @@ def clean_names(
     remove_special: bool = False,
     strip_accents: bool = True,
     preserve_original_columns: bool = True,
+    enforce_string: bool = True,
 ) -> pd.DataFrame:
     """
     Clean column names.
 
-    Takes all column names, converts them to lowercase, then replaces all
-    spaces with underscores.
+    Takes all column names, converts them to lowercase,
+    then replaces all spaces with underscores.
+
+    By default, column names are converted to string types.
+    This can be switched off by passing in ``enforce_string=False``.
 
     This method does not mutate the original DataFrame.
 
@@ -269,9 +275,15 @@ def clean_names(
         Only letters, numbers and underscores are preserved.
     :param preserve_original_columns: (optional) Preserve original names.
         This is later retrievable using `df.original_columns`.
+    :param enforce_string: Whether or not to convert all column names
+        to string type. Defaults to True, but can be turned off.
+        Columns with >1 levels will not be converted by default.
     :returns: A pandas DataFrame.
     """
     original_column_names = list(df.columns)
+
+    if enforce_string:
+        df = df.rename(columns=lambda x: str(x))
 
     df = df.rename(columns=lambda x: _change_case(x, case_type))
 
@@ -830,14 +842,10 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     :returns: A pandas DataFrame with corrected dates.
     """
 
-    def _conv(value):
-        try:
-            date = dt.datetime.utcfromtimestamp(value)
-        except ValueError:  # year of of rang means milliseconds.
-            date = dt.datetime.utcfromtimestamp(value / 1000)
-        return date
-
-    df[column_name] = df[column_name].astype(int).apply(_conv)
+    try:
+        df[column_name] = pd.to_datetime(df[column_name], unit="s")
+    except OutOfBoundsDatetime:  # Indicates time is in milliseconds.
+        df[column_name] = pd.to_datetime(df[column_name], unit="ms")
     return df
 
 
@@ -1433,15 +1441,6 @@ def filter_date(
         """Taken from: https://stackoverflow.com/a/13616382."""
         return reduce(np.logical_and, conditions)
 
-    def _get_year(x):
-        return x.year
-
-    def _get_month(x):
-        return x.month
-
-    def _get_day(x):
-        return x.day
-
     if column_date_options:
         df.loc[:, column_name] = pd.to_datetime(
             df.loc[:, column_name], **column_date_options
@@ -1460,17 +1459,13 @@ def filter_date(
         _filter_list.append(df.loc[:, column_name] <= end_date)
 
     if years:
-        _filter_list.append(
-            df.loc[:, column_name].apply(_get_year).isin(years)
-        )
+        _filter_list.append(df.loc[:, column_name].dt.year.isin(years))
 
     if months:
-        _filter_list.append(
-            df.loc[:, column_name].apply(_get_month).isin(months)
-        )
+        _filter_list.append(df.loc[:, column_name].dt.month.isin(months))
 
     if days:
-        _filter_list.append(df.loc[:, column_name].apply(_get_day).isin(days))
+        _filter_list.append(df.loc[:, column_name].dt.day.isin(days))
 
     if start_date and end_date:
         if start_date > end_date:
@@ -2145,7 +2140,7 @@ def round_to_fraction(
     # .. code-block:: python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.limit_column_characters('a', 3)
+    #     example_dataframe2.round_to_fraction('a', 3)
 
     # :Output:
 
@@ -2168,7 +2163,7 @@ def round_to_fraction(
     # .. code-block:: python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.limit_column_characters('a', 3, 4)
+    #     example_dataframe2.round_to_fraction('a', 3, 4)
 
     # :Output:
 
@@ -2191,17 +2186,9 @@ def round_to_fraction(
     if digits:
         check("digits", digits, [float, int])
 
-    def _round_to_fraction(number, denominator, digits=np.inf):
-        num = round(number * denominator, 0) / denominator
-        if not np.isinf(digits):
-            num = round(num, digits)
-        return num
-
-    _round_to_fraction_partial = partial(
-        _round_to_fraction, denominator=denominator, digits=digits
-    )
-
-    df[column_name] = df[column_name].apply(_round_to_fraction_partial)
+    df[column_name] = round(df[column_name] * denominator, 0) / denominator
+    if not np.isinf(digits):
+        df[column_name] = round(df[column_name], digits)
 
     return df
 
@@ -2248,7 +2235,9 @@ def transform_column(
     :param column_name: The column to transform.
     :param function: A function to apply on the column.
     :param dest_column_name: The column name to store the transformation result
-        in. By default, replaces contents of original column.
+        in. Defaults to None, which will result in the original column
+        name being overwritten. If a name is provided here, then a new column
+        with the transformed values will be created.
     :returns: A pandas DataFrame with a transformed column.
     """
     if dest_column_name is None:
@@ -2801,15 +2790,13 @@ def currency_column_to_numeric(
     # _replace_empty_string_with_none is applied here after the check on
     # remove_non_numeric since "" is our indicator that a string was coerced
     # in the original column
-    column_series = column_series.apply(_replace_empty_string_with_none)
+    column_series = _replace_empty_string_with_none(column_series)
 
     if fill_all_non_numeric is not None:
         check("fill_all_non_numeric", fill_all_non_numeric, [int, float])
         column_series = column_series.fillna(fill_all_non_numeric)
 
-    column_series = column_series.apply(
-        _replace_original_empty_string_with_none
-    )
+    column_series = _replace_original_empty_string_with_none(column_series)
 
     df = df.assign(**{column_name: pd.to_numeric(column_series)})
 
@@ -2993,20 +2980,14 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
-@deprecated_alias(column="column_name")
-def find_replace(
-    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
-) -> pd.DataFrame:
+def find_replace(df, match: str = "exact", **mappings):
     """
-    Perform a find-and-replace action on a column of data.
+    Perform a find-and-replace action on provided columns.
 
-    This method mutates the original DataFrame.
-
-    Depending on use cases, users can choose either exact, full value matching
-    or regular-expression-based fuzzy matching (substring matching is allowed
-    in the latter case). For strings, the matching is always case sensitive.
-
-    Note that default value for keyword argument `match` is "exact".
+    Depending on use case, users can choose either exact, full-value matching,
+    or regular-expression-based fuzzy matching
+    (hence allowing substring matching in the latter case).
+    For strings, the matching is always case sensitive.
 
     For instance, given a dataframe containing orders at a coffee shop:
 
@@ -3026,27 +3007,77 @@ def find_replace(
 
         # Functional usage
         df = find_replace(
-            df, 'order', {'ice coffee': 'latte', 'regular coffee': 'latte'},
-            match='exact'
+            df,
+            match='exact',
+            order={'ice coffee': 'latte', 'regular coffee': 'latte'},
         )
 
         # Method chaining usage
         df = df.find_replace(
-            'order', {'ice coffee': 'latte', 'regular coffee': 'latte'},
             match='exact'
+            order={'ice coffee': 'latte', 'regular coffee': 'latte'},
         )
-
 
     Example 2: Regular-expression-based matching
 
     .. code-block:: python
 
         # Functional usage
-        df = find_replace(df, 'order', {'coffee$': 'latte'}, match='regex')
+        df = find_replace(
+            df,
+            match='regex',
+            order={'coffee$': 'latte'},
+        )
 
         # Method chaining usage
-        df = df.find_replace('order', {'coffee$': 'latte'}, match='regex')
+        df = df.find_replace(
+            match='regex',
+            order={'coffee$': 'latte'},
+        )
 
+    To perform a find and replace on the entire dataframe,
+    pandas' ``df.replace()`` function provides the appropriate functionality.
+    You can find more detail on the replace_ docs.
+
+    This function only works with column names that have no spaces
+    or punctuation in them.
+    For example, a column name ``item_name`` would work with ``find_replace``,
+    because it is a contiguous string that can be parsed correctly,
+    but ``item name`` would not be parsed correctly by the Python interpreter.
+
+    If you have column names that might not be compatible,
+    we recommend calling on ``clean_names()`` as the first method call.
+    If, for whatever reason, that is not possible,
+    then ``_find_replace()`` is available as a function
+    that you can do a pandas pipe_ call on.
+
+    .. _replace: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
+    .. _pipe: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.pipe.html
+
+    :param df: A pandas DataFrame.
+    :param match: Whether or not to perform an exact match or not.
+        Valid values are "exact" or "regex".
+    :param mappings: keyword arguments corresponding to column names
+        that have dictionaries passed in indicating what to find (keys)
+        and what to replace with (values).
+    """  # noqa: E501
+    for column_name, mapper in mappings.items():
+        df = _find_replace(df, column_name, mapper, match=match)
+    return df
+
+
+def _find_replace(
+    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
+) -> pd.DataFrame:
+    """
+    Utility function for ``find_replace``.
+
+    The code in here was the original implementation of ``find_replace``,
+    but we decided to change out the front-facing API to accept
+    kwargs + dictionaries for readability,
+    and instead dispatch underneath to this function.
+    This implementation was kept
+    because it has a number of validations that are quite useful.
 
     :param df: A pandas DataFrame.
     :param column_name: The column on which the find/replace action is to be
@@ -3676,3 +3707,111 @@ def toset(series: pd.Series) -> Set:
     """
 
     return set(series.tolist())
+
+
+@pf.register_dataframe_method
+def jitter(
+    df: pd.DataFrame,
+    column_name: Hashable,
+    dest_column_name: str,
+    scale: np.number,
+    clip: Optional[Iterable[np.number]] = None,
+    random_state: Optional[np.number] = None,
+) -> pd.DataFrame:
+    """
+    Adds Gaussian noise (jitter) to the values of a column.
+
+    Functional usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+
+        df = jn.functions.jitter(
+            df=df,
+            column_name='values',
+            dest_column_name='values_jitter',
+            scale=1.0,
+            clip=None,
+            random_state=None,
+        )
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.functions
+
+        df = pd.DataFrame(...)
+
+        df = df.jitter(
+            column_name='values',
+            dest_column_name='values_jitter',
+            scale=1.0,
+            clip=None,
+            random_state=None,
+        )
+
+    A new column will be created containing the values of the original column
+    with Gaussian noise added.
+    For each value in the column, a Gaussian distribution is created
+    having a location (mean) equal to the value
+    and a scale (standard deviation) equal to `scale`.
+    A random value is then sampled from this distribution,
+    which is the jittered value.
+    If a tuple is supplied for `clip`,
+    then any values of the new column less than `clip[0]`
+    will be set to `clip[0]`,
+    and any values greater than `clip[1]` will be set to `clip[1]`.
+    Additionally, if a numeric value is supplied for `random_state`,
+    this value will be used to set the random seed used for sampling.
+    NaN values are ignored in this method.
+
+    This method mutates the original DataFrame.
+
+    :param df: A pandas dataframe.
+    :param column_name: Name of the column containing
+        values to add Gaussian jitter to.
+    :param dest_column_name: The name of the new column containing the
+        jittered values that will be created.
+    :param scale: A positive value multiplied by the original
+        column value to determine the scale (standard deviation) of the
+        Gaussian distribution to sample from. (A value of zero results in
+        no jittering.)
+    :param clip: An iterable of two values (minimum and maximum) to clip
+        the jittered values to, default to None.
+    :param random_state: A interger or 1-d array value used to set the random
+        seed, default to None.
+
+    :returns: A pandas DataFrame with a new column containing Gaussian-
+        jittered values from another column.
+    """
+
+    # Check types
+    check("scale", scale, [int, float])
+
+    # Check that `column_name` is a numeric column
+    if not np.issubdtype(df[column_name].dtype, np.number):
+        raise TypeError(f"{column_name} must be a numeric column.")
+
+    if scale <= 0:
+        raise ValueError("`scale` must be a numeric value greater than 0.")
+    values = df[column_name]
+    if random_state is not None:
+        np.random.seed(random_state)
+    result = np.random.normal(loc=values, scale=scale)
+    if clip:
+        # Ensure `clip` has length 2
+        if len(clip) != 2:
+            raise ValueError("`clip` must be an iterable of length 2.")
+        # Ensure the values in `clip` are ordered as min, max
+        if clip[1] < clip[0]:
+            raise ValueError("`clip[0]` must be less than `clip[1]`.")
+        result = np.clip(result, *clip)
+    df[dest_column_name] = result
+
+    return df

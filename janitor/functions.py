@@ -147,13 +147,13 @@ def move(
 
     Does not apply to multilevel dataframes.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = move(df, source=3, target=15, position='after', axis=0)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -240,13 +240,13 @@ def clean_names(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = clean_names(df)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -380,13 +380,13 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = remove_empty(df)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -417,14 +417,14 @@ def get_dupes(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = pd.DataFrame(...)
         df = get_dupes(df)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -454,14 +454,14 @@ def encode_categorical(
 
     This method mutates the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         categorical_cols = ['col1', 'col2', 'col4']
         df = encode_categorical(df, columns=categorical_cols)  # one way
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -510,13 +510,13 @@ def label_encode(
 
     This method mutates the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = label_encode(df, column_names="my_categorical_column")  # one way
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -557,13 +557,13 @@ def rename_column(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = rename_column(df, "old_column_name", "new_column_name")
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -590,13 +590,13 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
     """
     Rename columns in place.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = rename_columns(df, {"old_column_name": "new_column_name"})
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -630,7 +630,7 @@ def reorder_columns(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     Given `DataFrame` with column names `col1`, `col2`, `col3`:
 
@@ -638,7 +638,7 @@ def reorder_columns(
 
         df = reorder_columns(df, ['col2', 'col3'])
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -689,13 +689,13 @@ def coalesce(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = coalesce(df, columns=['col1', 'col2'], 'col3')
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -745,13 +745,13 @@ def convert_excel_date(
 
     .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = convert_excel_date(df, column_name='date')
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -785,13 +785,13 @@ def convert_matlab_date(
 
     This method mutates the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = convert_matlab_date(df, column_name='date')
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -823,13 +823,13 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
     This method mutates the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = convert_unix_date(df, column_name='date')
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -861,13 +861,13 @@ def fill_empty(
 
     This method mutates the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = fill_empty(df, column_names=['col1', 'col2'], value=0)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -910,7 +910,7 @@ def expand_column(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -918,7 +918,7 @@ def expand_column(
                            column_name='col_name',
                            sep=', ')  # note space in sep
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -958,7 +958,7 @@ def concatenate_columns(
 
     This method mutates the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -967,7 +967,7 @@ def concatenate_columns(
                                  new_column_name='id',
                                  sep='-')
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -1051,7 +1051,7 @@ def deconcatenate_column(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -1060,7 +1060,7 @@ def deconcatenate_column(
                 sep='-', preserve_position=True
         )
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -1168,7 +1168,7 @@ def filter_string(
     As can be seen here, the API design allows for a more seamless flow in
     expressing the filtering operations.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -1177,7 +1177,7 @@ def filter_string(
                            search_string='pattern',
                            complement=False)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -1234,7 +1234,7 @@ def filter_on(
     As with the `filter_string` function, a more seamless flow can be expressed
     in the code.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -1242,7 +1242,7 @@ def filter_on(
                        'score < 50',
                        complement=False)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -1545,7 +1545,7 @@ def remove_columns(
 
     Intended to be the method-chaining alternative to `del df[col]`.
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -1580,7 +1580,7 @@ def change_type(
 
         df[col] = df[col].astype(dtype)
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -1628,14 +1628,14 @@ def add_column(
 
         df[column_name] = value
 
-    Method chaining example adding a column with only a single value:
+    Method chaining syntax adding a column with only a single value:
 
     .. code-block:: python
 
         # This will add a column with only one value.
         df = pd.DataFrame(...).add_column(column_name="new_column", 2)
 
-    Method chaining example adding a column with more than one value:
+    Method chaining syntax adding a column with more than one value:
 
     .. code-block:: python
 
@@ -2372,7 +2372,7 @@ def min_max_scale(
     If a particular column name is specified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -2470,7 +2470,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     this through a simple string-joining of all the names across different
     levels in a single column.
 
-    Method chaining example given two value columns `['max_speed', 'type']`:
+    Method chaining syntax given two value columns `['max_speed', 'type']`:
 
     .. code-block:: python
 
@@ -3169,13 +3169,13 @@ def to_datetime(
 
     This method mutates the original DataFrame.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
         df = to_datetime(df, 'col1', format='%Y%m%d')
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -3365,7 +3365,7 @@ def drop_duplicate_columns(
     The corresponding tidyverse R's library is:
     `select(-<column_name>_<nth_index + 1>)`
 
-    Method chaining example:
+    Method chaining syntax:
 
     .. code-block:: python
 
@@ -3601,7 +3601,7 @@ def count_cumulative_unique(
     """
     Generates a running total of cumulative unique values in a given column.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -3622,7 +3622,7 @@ def count_cumulative_unique(
     .. code-block:: python
 
         import pandas as pd
-        import janitor.functions
+        import janitor
 
         df = pd.DataFrame(...)
 
@@ -3682,7 +3682,7 @@ def toset(series: pd.Series) -> Set:
     (for str, int, float) or a pandas scalar
     (for Timestamp/Timedelta/Interval/Period)
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -3697,7 +3697,7 @@ def toset(series: pd.Series) -> Set:
     .. code-block:: python
 
         import pandas as pd
-        import janitor.functions
+        import janitor
 
         series = pd.Series(...)
         s = series.toset()
@@ -3721,7 +3721,7 @@ def jitter(
     """
     Adds Gaussian noise (jitter) to the values of a column.
 
-    Functional usage example:
+    Functional usage syntax:
 
     .. code-block:: python
 
@@ -3744,7 +3744,7 @@ def jitter(
     .. code-block:: python
 
         import pandas as pd
-        import janitor.functions
+        import janitor
 
         df = pd.DataFrame(...)
 
@@ -3815,3 +3815,70 @@ def jitter(
     df[dest_column_name] = result
 
     return df
+
+
+from natsort import natsorted
+
+
+@pf.register_dataframe_method
+def sort_naturally(
+    df: pd.DataFrame, column_name: str, **natsorted_kwargs
+) -> pd.DataFrame:
+    """
+    Sort an DataFrame by a column using "natural" sorting.
+
+    To accomplish this, we do a natural sort
+    on the unique values that are present in the dataframe.
+    Then, we reconstitute the entire dataframe
+    in the naturally sorted order.
+
+    Natural sorting is provided by the Python package natsort_.
+
+    .. _natsort: https://natsort.readthedocs.io/en/master/index.html
+
+    All keyword arguments to natsort should be provided
+    after the column name to sort by is provided.
+    They are passed through to the ``natsorted`` function.
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+
+        df = jn.functions.sort_naturally(
+            df=df,
+            column_name='alphanumeric_column',
+        )
+
+    Method chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        df = pd.DataFrame(...)
+
+        df = df.jitter(
+            column_name='alphanumeric_column',
+        )
+
+
+    This function returns a completely new dataframe object,
+    so attributes on the old dataframe are not preserved.
+
+    :param df: A pandas DataFrame.
+    :param column_name: The column on which natural sorting should take place.
+    :param natsorted_kwargs: Keyword arguments to be passed
+        to natsort's ``natsorted`` function.
+    """
+    sorted_values = natsorted(df[column_name].unique(), **natsorted_kwargs)
+
+    reordered_df = []
+    for val in sorted_values:
+        reordered_df.append(df.query(f"{column_name} == @val"))
+    return pd.concat(reordered_df)

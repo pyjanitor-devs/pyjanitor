@@ -26,5 +26,15 @@ def well_dataframe():
 
 
 def test_sort_naturally(well_dataframe):
+    """Example-based test for sort_naturally.
+
+    We check that:
+
+    - the resultant dataframe is sorted identically
+    to what natsorted would provide,
+    - the data in the dataframe are not corrupted.
+    """
     sorted_df = well_dataframe.sort_naturally("Well")
     assert sorted_df["Well"].tolist() == natsorted(well_dataframe["Well"])
+    pd.testing.assert_frame_equal(sorted_df.sort_index(), well_dataframe)
+

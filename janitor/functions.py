@@ -3825,6 +3825,24 @@ def sort_naturally(
     """
     Sort an DataFrame by a column using "natural" sorting.
 
+    Natural sorting is distinct from
+    the default lexiographical sorting provided by ``pandas``.
+    For example, given the following list of items:
+
+        ["A1", "A11", "A3", "A2", "A10"]
+
+    lexicographical sorting would give us:
+
+
+        ["A1", "A10", "A11", "A2", "A3"]
+
+    By contrast, "natural" sorting would give us:
+
+        ["A1", "A2", "A3", "A10", "A11"]
+
+    This function thus provides "natural" sorting
+    on a single column of a dataframe.
+
     To accomplish this, we do a natural sort
     on the unique values that are present in the dataframe.
     Then, we reconstitute the entire dataframe

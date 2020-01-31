@@ -1,6 +1,7 @@
 new version (on deck)
 =====================
--[DOC]: Added an example for groupby_agg in general functions @samukweku
+- [DOC]: Added an example for groupby_agg in general functions @samukweku
+- [ENH]: Contributed ``sort_naturally()`` function. @ericmjl
 
 v0.20.0
 =======

@@ -3,7 +3,8 @@ Tests for sort_naturally.
 
 Some places where this test suite could be improved:
 
-- Replace example-based test with Hypothesis-generated property-based test. [intermediate]
+- Replace example-based test
+with Hypothesis-generated property-based test. [intermediate]
 - Provide another example-based test of something
 that needs to be naturally rather than lexiographically sorted.
 """

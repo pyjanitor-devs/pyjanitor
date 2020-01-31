@@ -22,7 +22,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from natsort import natsorted
+from natsort import index_natsorted, natsorted
 from pandas.api.types import union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
@@ -3817,7 +3817,6 @@ def jitter(
 
     return df
 
-from natsort import index_natsorted
 
 @pf.register_dataframe_method
 def sort_naturally(
@@ -3873,4 +3872,3 @@ def sort_naturally(
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]
-

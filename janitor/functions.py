@@ -3817,6 +3817,7 @@ def jitter(
 
     return df
 
+from natsort import index_natsorted
 
 @pf.register_dataframe_method
 def sort_naturally(
@@ -3847,7 +3848,7 @@ def sort_naturally(
 
         df = pd.DataFrame(...)
 
-        df = jn.functions.sort_naturally(
+        df = jn.sort_naturally(
             df=df,
             column_name='alphanumeric_column',
         )
@@ -3861,22 +3862,15 @@ def sort_naturally(
 
         df = pd.DataFrame(...)
 
-        df = df.jitter(
+        df = df.sort_naturally(
             column_name='alphanumeric_column',
         )
-
-
-    This function returns a completely new dataframe object,
-    so attributes on the old dataframe are not preserved.
 
     :param df: A pandas DataFrame.
     :param column_name: The column on which natural sorting should take place.
     :param natsorted_kwargs: Keyword arguments to be passed
         to natsort's ``natsorted`` function.
     """
-    sorted_values = natsorted(df[column_name].unique(), **natsorted_kwargs)
+    new_order = index_natsorted(df[column_name], **natsorted_kwargs)
+    return df.iloc[new_order, :]
 
-    reordered_df = []
-    for val in sorted_values:
-        reordered_df.append(df.query(f"{column_name} == @val"))
-    return pd.concat(reordered_df)

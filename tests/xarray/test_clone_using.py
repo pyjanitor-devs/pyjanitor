@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
+import xarray as xr
 
 import janitor  # noqa: F401
-import xarray as xr
 
 
 @pytest.mark.xarray

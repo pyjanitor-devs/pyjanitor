@@ -7,12 +7,11 @@ functionality.
 from typing import Union
 
 import numpy as np
+import xarray as xr
 from pandas_flavor import (
     register_xarray_dataarray_method,
     register_xarray_dataset_method,
 )
-
-import xarray as xr
 
 
 @register_xarray_dataarray_method

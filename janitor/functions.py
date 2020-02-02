@@ -3852,7 +3852,7 @@ def sort_naturally(
 
     .. _natsort: https://natsort.readthedocs.io/en/master/index.html
 
-    All keyword arguments to natsort should be provided
+    All keyword arguments to ``natsort`` should be provided
     after the column name to sort by is provided.
     They are passed through to the ``natsorted`` function.
 

@@ -37,4 +37,3 @@ def test_sort_naturally(well_dataframe):
     sorted_df = well_dataframe.sort_naturally("Well")
     assert sorted_df["Well"].tolist() == natsorted(well_dataframe["Well"])
     pd.testing.assert_frame_equal(sorted_df.sort_index(), well_dataframe)
-

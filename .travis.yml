@@ -27,8 +27,10 @@ install:
   - conda activate pyjanitor-dev
   - python setup.py develop
 
-# Travis-CI is only concerned with building docs.
-before_deploy:
+# We use TravisCI to build docs and not run tests.
+# Tests are covered on Azure.
+# Travis, however, has saner deploy syntax.
+script:
   - make docs
 
 deploy:
@@ -36,6 +38,7 @@ deploy:
   deploy_key: $GITHUB_TOKEN
   edge: true  # opt in to dpl v2
   keep_history: false
+  cleanup: false
   verbose: true
   local_dir: docs/_build/html
   on:

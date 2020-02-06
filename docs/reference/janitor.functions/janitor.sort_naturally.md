@@ -1,5 +1,5 @@
 janitor.sort\_naturally
-=====================
+=======================
 
 .. currentmodule:: janitor
 

@@ -271,7 +271,7 @@ Contributing
 ------------
 
 Follow `contribution docs
-<https://pyjanitor.readthedocs.io/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
+<https://ericmjl.github.io/pyjanitor/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
 
 Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -308,7 +308,7 @@ Secondly, we ask that you contribute a test case,
 to ensure that it works as intended.
 Follow the `contribution`_ docs for further details.
 
-.. _contribution: https://pyjanitor.readthedocs.io/contributing.html#unit-test-guidelines
+.. _contribution: https://ericmjl.github.io/pyjanitor/contributing.html#unit-test-guidelines
 
 Feature requests
 ~~~~~~~~~~~~~~~~

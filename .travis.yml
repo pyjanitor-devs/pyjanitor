@@ -1,15 +1,6 @@
-# This is necessary for pyjanitor as matplotlib is involved.
-before_script:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 5 # give xvfb some time to start
-
 language: python
 matrix:
   include:
-    - python: 3.5  # we don't actually use this
-      env: PYTHON_VERSION=3.6
-
     - python: 3.5  # we don't actually use this
       env: PYTHON_VERSION=3.7
 
@@ -29,16 +20,26 @@ install:
 
   # Install Python, py.test, and required packages.
   - conda env create -f environment-dev.yml
+
   # This guarantees that Python version is matrixed.
   - conda install python=$PYTHON_VERSION
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - conda activate pyjanitor-dev
   - python setup.py develop
 
-script:
-  # Your test script goes here
-  - pycodestyle .
-  - py.test
+# Travis-CI is only concerned with building docs.
+before_deploy:
+  - make docs
+
+deploy:
+  provider: pages:git
+  deploy_key: $GITHUB_TOKEN
+  edge: true  # opt in to dpl v2
+  keep_history: false
+  verbose: true
+  local_dir: docs/_build/html
+  on:
+    branch: dev
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

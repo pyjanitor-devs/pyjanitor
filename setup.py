@@ -51,6 +51,7 @@ setup(
     author="Eric J. Ma",
     author_email="ericmajinglong@gmail.com",
     url="https://github.com/ericmjl/pyjanitor",
+    license="MIT",
     packages=["janitor"],
     install_requires=requirements(),
     extras_require={

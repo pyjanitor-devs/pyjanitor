@@ -3201,6 +3201,8 @@ def groupby_agg(
     :param agg: How to aggregate.
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
+    
+    Example Link : https://pyjanitor.readthedocs.io/notebooks/groupby_agg.html
     """
     new_col = df.groupby(by)[agg_column_name].transform(agg)
     df_new = df.assign(**{new_column_name: new_col})

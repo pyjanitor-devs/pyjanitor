@@ -1,6 +1,6 @@
-janitor.impute
+janitor.jitter
 ==============
 
 .. currentmodule:: janitor
 
-.. autofunction:: impute
+.. autofunction:: jitter

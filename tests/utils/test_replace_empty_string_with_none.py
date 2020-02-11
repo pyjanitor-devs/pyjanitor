@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from janitor.utils import (
@@ -7,21 +8,18 @@ from janitor.utils import (
 
 
 @pytest.mark.utils
-def test_int_input():
-    assert _replace_empty_string_with_none(4) == 4
+def test_replace_empty_string_with_none():
+    df = pd.DataFrame({"a": ["", 1, 0.34, "6.5", ""]})
+    df_expected = pd.DataFrame({"a": [None, 1, 0.34, "6.5", None]})
 
-
-@pytest.mark.utils
-def test_float_input():
-    assert _replace_empty_string_with_none(4.0) == 4.0
-
-
-@pytest.mark.utils
-def test_empty_string_input():
-    assert _replace_empty_string_with_none("") is None
+    df["a"] = _replace_empty_string_with_none(df["a"])
+    pd.testing.assert_series_equal(df["a"], df_expected["a"])
 
 
 @pytest.mark.utils
 def test_replace_original_empty_string_with_none():
-    assert _replace_original_empty_string_with_none("foo") == "foo"
-    assert _replace_original_empty_string_with_none("ORIGINAL_NA") is None
+    df = pd.DataFrame({"a": [1, 0.34, "6.5", None, "ORIGINAL_NA", "foo"]})
+    df_expected = pd.DataFrame({"a": [1, 0.34, "6.5", None, None, "foo"]})
+
+    df["a"] = _replace_original_empty_string_with_none(df["a"])
+    pd.testing.assert_series_equal(df["a"], df_expected["a"])

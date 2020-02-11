@@ -271,7 +271,7 @@ Contributing
 ------------
 
 Follow `contribution docs
-<https://pyjanitor.readthedocs.io/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
+<https://ericmjl.github.io/pyjanitor/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
 
 Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -308,7 +308,7 @@ Secondly, we ask that you contribute a test case,
 to ensure that it works as intended.
 Follow the `contribution`_ docs for further details.
 
-.. _contribution: https://pyjanitor.readthedocs.io/contributing.html#unit-test-guidelines
+.. _contribution: https://ericmjl.github.io/pyjanitor/contributing.html#unit-test-guidelines
 
 Feature requests
 ~~~~~~~~~~~~~~~~
@@ -324,6 +324,24 @@ and has no fiscal support,
 any feature requests will be prioritized according to
 what maintainers encounter as a need in our day-to-day jobs.
 Please temper expectations accordingly.
+
+API Policy
+~~~~~~~~~~
+
+``pyjanitor`` only extends or aliases the ``pandas`` API
+(and other dataframe APIs),
+but will never fix or replace them.
+
+Undesirable ``pandas`` behaviour should be reported upstream
+in the ``pandas`` `issue tracker <https://github.com/pandas-dev/pandas/issues>`_.
+We explicitly do not fix the ``pandas`` API.
+If at some point the ``pandas`` devs
+decide to take something from ``pyjanitor``
+and internalize it as part of the official ``pandas`` API,
+then we will deprecate it from ``pyjanitor``,
+while acknowledging the original contributors' contribution
+as part of the official deprecation record.
+
 
 Credits
 ~~~~~~~

@@ -44,6 +44,7 @@ Modify values
     round_to_fraction
     update_where
     to_datetime
+    jitter
 
 Filtering
 ~~~~~~~~~
@@ -78,4 +79,6 @@ Other
 
     then
     shuffle
+    reset_index_inplace
     count_cumulative_unique
+    sort_naturally

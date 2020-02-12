@@ -3225,6 +3225,8 @@ def groupby_agg(
                                            agg_column_name="col1"
                                            new_column_name='col1_mean_by_group')
 
+    Example Link : https://pyjanitor.readthedocs.io/notebooks/groupby_agg.html
+
     :param df: A pandas DataFrame.
     :param by: Column(s) to groupby on, either a `str` or
                a `list` of `str`

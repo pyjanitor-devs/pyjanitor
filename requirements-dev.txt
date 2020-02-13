@@ -6,6 +6,7 @@ nbsphinx>=0.4.2
 isort>=4.3.18
 black>=19.3b0
 jupyter_client
+natsort
 ipykernel
 seaborn
 pytest-azurepipelines

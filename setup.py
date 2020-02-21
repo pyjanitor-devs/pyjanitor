@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def requirements():
@@ -52,7 +52,8 @@ setup(
     author_email="ericmajinglong@gmail.com",
     url="https://github.com/ericmjl/pyjanitor",
     license="MIT",
-    packages=["janitor"],
+    # packages=["janitor", "janitor.xarray", "janitor.spark"],
+    packages=find_packages(),
     install_requires=requirements(),
     extras_require={
         "all": extra_all,

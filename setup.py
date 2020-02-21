@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def requirements():
@@ -46,13 +46,14 @@ extra_all = extra_biology + extra_engineering + extra_spark
 
 setup(
     name="pyjanitor",
-    version="0.20.2",
+    version="0.20.3",
     description="Tools for cleaning pandas DataFrames",
     author="Eric J. Ma",
     author_email="ericmajinglong@gmail.com",
     url="https://github.com/ericmjl/pyjanitor",
     license="MIT",
-    packages=["janitor"],
+    # packages=["janitor", "janitor.xarray", "janitor.spark"],
+    packages=find_packages(),
     install_requires=requirements(),
     extras_require={
         "all": extra_all,

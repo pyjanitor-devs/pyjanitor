@@ -71,7 +71,7 @@ def test_add_column_fill_remaining_iterable(df, vals):
             df = df.add_column("fill_in_iterable", vals, fill_remaining=True)
     else:
         df = df.add_column("fill_in_iterable", vals, fill_remaining=True)
-        assert not pd.isnull(df["fill_in_iterable"]).any()
+        assert not pd.isna(df["fill_in_iterable"]).any()
 
 
 @pytest.mark.functions

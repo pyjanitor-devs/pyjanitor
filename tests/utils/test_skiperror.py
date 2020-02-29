@@ -17,12 +17,12 @@ def test_skiperror():
         df["x"].apply(func)
 
     result = df["x"].apply(skiperror(func))
-    assert (result.values[:-1] == np.array([2, 3, 4])).all() and np.isnan(
-        result.values[-1]
+    assert (result.to_numpy()[:-1] == np.array([2, 3, 4])).all() and np.isnan(
+        result.to_numpy()[-1]
     )
 
     result = df["x"].apply(skiperror(func, return_x=True))
-    assert (result.values == np.array([2, 3, 4, "a"], dtype=object)).all()
+    assert (result.to_numpy() == np.array([2, 3, 4, "a"], dtype=object)).all()
 
     result = df["x"].apply(skiperror(func, return_x=False, return_val=5))
-    assert (result.values == np.array([2, 3, 4, 5])).all()
+    assert (result.to_numpy() == np.array([2, 3, 4, 5])).all()

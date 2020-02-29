@@ -399,10 +399,10 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     :returns: A pandas DataFrame.
     """  # noqa: E501
-    nanrows = df.index[df.isnull().all(axis=1)]
+    nanrows = df.index[df.isna().all(axis=1)]
     df = df.drop(index=nanrows).reset_index(drop=True)
 
-    nancols = df.columns[df.isnull().all(axis=0)]
+    nancols = df.columns[df.isna().all(axis=0)]
     df = df.drop(columns=nancols)
 
     return df
@@ -2927,7 +2927,9 @@ def impute(
         if statistic_column_name not in funcs.keys():
             raise KeyError(f"`statistic` must be one of {funcs.keys()}")
 
-        value = funcs[statistic_column_name](df[column_name].dropna().values)
+        value = funcs[statistic_column_name](
+            df[column_name].dropna().to_numpy()
+        )
         # special treatment for mode, because scipy stats mode returns a
         # moderesult object.
         if statistic_column_name == "mode":
@@ -2977,7 +2979,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     :param column_name: The column name to drop rows from.
     :returns: A pandas DataFrame with dropped rows.
     """
-    return df[pd.isnull(df[column_name])]
+    return df[pd.isna(df[column_name])]
 
 
 @pf.register_dataframe_method
@@ -3587,7 +3589,7 @@ def flag_nulls(
     # This algorithm works best for n_rows >> n_cols. See issue #501
     null_array = np.zeros(len(df))
     for col in columns:
-        null_array = np.logical_or(null_array, pd.isnull(df[col]))
+        null_array = np.logical_or(null_array, pd.isna(df[col]))
 
     df = df.copy()
     df[column_name] = null_array.astype(int)

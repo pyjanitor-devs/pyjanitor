@@ -44,7 +44,7 @@ def test_deconcatenate_column_string_no_sep(dataframe):
             sep="-",
             new_column_name="index",
         )
-        df = df_orig.deconcatenate_column(
+        df = df_orig.deconcatenate_column(  # noqa: F841
             column_name="index", new_column_names=["A", "B"]
         )
 

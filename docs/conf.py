@@ -35,7 +35,7 @@ else:
     try:
         print("Making symlink to ../examples/notebooks")
         notebooks.symlink_to("../examples/notebooks")
-    except FileExistsError as e:
+    except FileExistsError as e:  # noqa: F841
         print(f"{notebooks} directory already exists. Not creating..")
 
 # -- Project information -----------------------------------------------------

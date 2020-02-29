@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [INF]: Replace ``pycodestyle`` with ``flake8`` in order to add ``pandas-vet`` linter @hectormz
 
 
 v0.20.1

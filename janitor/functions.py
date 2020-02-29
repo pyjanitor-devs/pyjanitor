@@ -2520,66 +2520,6 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
-def reset_index_inplace(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
-    """
-    Return the dataframe with an inplace resetting of the index.
-
-    This method mutates the original DataFrame.
-
-    Compared to non-inplace resetting, this avoids data copying, thus
-    providing a potential speedup.
-
-    In Pandas, `reset_index()`, when used in place, does not return a
-    `DataFrame`, preventing this option's usage in the function-chaining
-    scheme. `reset_index_inplace()` provides one the ability to save
-    computation time and memory while still being able to use the chaining
-    syntax core to pyjanitor. This function, therefore, is the chaining
-    equivalent of:
-
-    .. code-block:: python
-
-        data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
-                "max_speed": [389, 389, 24, 80, 21],
-                "index": ["falcon", "falcon", "parrot", "Lion", "Monkey"]}
-
-        df = (
-            pd.DataFrame(data).set_index("index")
-                .drop_duplicates()
-        )
-
-        df.reset_index(inplace=True)
-
-    instead, being called simply as:
-
-    .. code-block:: python
-
-        df = (
-            pd.DataFrame(data).set_index("index")
-                .drop_duplicates()
-                .reset_index_inplace()
-        )
-
-    All supplied parameters are sent directly to `DataFrame.reset_index()`.
-
-    :param df: A pandas DataFrame.
-    :param args: Arguments supplied to `DataFrame.reset_index()`
-    :param kwargs: Arguments supplied to `DataFrame.reset_index()`
-    :returns: A pandas DataFrame with reset indexes.
-    """
-    # Deprecation Warning
-    warnings.warn(
-        "reset_index_inplace will be deprecated in the "
-        "upcoming 0.18 release. Use .reset_index() instead",
-        DeprecationWarning,
-    )
-
-    kwargs.update(inplace=True)
-
-    df.reset_index(*args, **kwargs)
-    return df
-
-
-@pf.register_dataframe_method
 @deprecated_alias(col_name="column_name", type="cleaning_style")
 def currency_column_to_numeric(
     df: pd.DataFrame,

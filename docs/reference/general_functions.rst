@@ -79,6 +79,5 @@ Other
 
     then
     shuffle
-    reset_index_inplace
     count_cumulative_unique
     sort_naturally

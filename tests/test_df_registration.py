@@ -97,5 +97,5 @@ def test_change_type_registration(dataframe):
     assert dataframe.__getattr__("change_type")
 
 
-def test_change_type_registration(dataframe):
+def test_filter_date_registration(dataframe):
     assert dataframe.__getattr__("filter_date")

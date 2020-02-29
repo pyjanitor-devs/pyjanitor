@@ -146,7 +146,7 @@ def test_clean_names_camelcase_to_snake(df):
 
 
 @pytest.mark.functions
-def test_clean_names_camelcase_to_snake(dataframe):
+def test_clean_names_camelcase_to_snake_multi(dataframe):
     df = (
         dataframe.select_columns(["a", "Bell__Chart", "decorated-elephant"])
         .rename_column("a", "snakesOnAPlane")

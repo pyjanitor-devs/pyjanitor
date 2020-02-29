@@ -45,7 +45,7 @@ def test_remove_columns_strange_cols(dataframe):
 
 
 @pytest.mark.functions
-def test_remove_columns_strange_cols(multilevel_dataframe):
+def test_remove_columns_strange_cols_multilevel(multilevel_dataframe):
     # When creating a multi level dataframe with 4 columns * 2 columns
     # (16 columns in total)
     # From input

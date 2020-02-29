@@ -22,7 +22,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from natsort import index_natsorted, natsorted
+from natsort import index_natsorted
 from pandas.api.types import union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode

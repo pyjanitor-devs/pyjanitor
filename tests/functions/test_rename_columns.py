@@ -1,5 +1,5 @@
 import pytest
-from hypothesis import given
+from hypothesis import given  # noqa: F401
 
 
 @pytest.mark.functions

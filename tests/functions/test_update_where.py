@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 
+@pytest.mark.functions
 def test_update_where(dataframe):
     """
     Test that it accepts conditional parameters

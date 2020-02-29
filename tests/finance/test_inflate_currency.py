@@ -1,9 +1,7 @@
-from datetime import date, datetime
-
 import pytest
 import requests
 
-from janitor.finance import _inflate_currency, inflate_currency
+from janitor.finance import _inflate_currency, inflate_currency  # noqa: F401
 
 
 @pytest.mark.finance

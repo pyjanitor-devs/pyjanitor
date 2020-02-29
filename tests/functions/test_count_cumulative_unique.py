@@ -1,6 +1,6 @@
 import pytest
 
-from janitor.functions import count_cumulative_unique
+from janitor.functions import count_cumulative_unique  # noqa: F401
 
 
 @pytest.mark.functions

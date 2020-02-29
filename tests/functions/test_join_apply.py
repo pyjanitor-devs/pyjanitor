@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-import janitor
+import janitor  # noqa: F401
 
 
 @pytest.mark.functions

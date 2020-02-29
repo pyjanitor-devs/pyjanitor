@@ -329,7 +329,7 @@ def _check_currency(currency: str):
 
 def _check_wb_country(country: str):
     if (country not in wb_country_dict.keys()) & (
-        country not in wb_country_dict.values()
+        country not in wb_country_dict.values()  # noqa: PD011
     ):
         raise ValueError(
             f"country {country} not in supported World Bank country dict, "

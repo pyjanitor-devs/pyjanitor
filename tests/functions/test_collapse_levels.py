@@ -23,13 +23,13 @@ def test_collapse_levels_functionality_2level(
 ):
 
     assert all(
-        multiindex_with_missing_dataframe.copy()
+        multiindex_with_missing_dataframe.copy()  # noqa: PD011
         .collapse_levels()
         .columns.values
         == ["a", "Normal  Distribution", "decorated-elephant_r.i.p-rhino :'("]
     )
     assert all(
-        multiindex_with_missing_dataframe.copy()
+        multiindex_with_missing_dataframe.copy()  # noqa: PD011
         .collapse_levels(sep="AsDf")
         .columns.values
         == [
@@ -45,7 +45,7 @@ def test_collapse_levels_functionality_3level(
     multiindex_with_missing_3level_dataframe,
 ):
     assert all(
-        multiindex_with_missing_3level_dataframe.copy()
+        multiindex_with_missing_3level_dataframe.copy()  # noqa: PD011
         .collapse_levels()
         .columns.values
         == [
@@ -55,7 +55,7 @@ def test_collapse_levels_functionality_3level(
         ]
     )
     assert all(
-        multiindex_with_missing_3level_dataframe.copy()
+        multiindex_with_missing_3level_dataframe.copy()  # noqa: PD011
         .collapse_levels(sep="AsDf")
         .columns.values
         == [

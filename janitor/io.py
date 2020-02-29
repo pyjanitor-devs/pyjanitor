@@ -45,17 +45,19 @@ def read_csvs(
     if len(dfs_dict) == 0:
         raise ValueError("No CSV files to read with the given `files_path`")
     # Concatenate the dataframes if requested (default)
-    col_names = list(dfs_dict.values())[0].columns
+    col_names = list(dfs_dict.values())[0].columns  # noqa: PD011
     if not separate_df:
         # If columns do not match raise an error
-        for df in dfs_dict.values():
+        for df in dfs_dict.values():  # noqa: PD011
             if not all(df.columns == col_names):
                 raise ValueError(
                     "Columns in input CSV files do not match."
                     "Files cannot be concatenated"
                 )
         return pd.concat(
-            list(dfs_dict.values()), ignore_index=True, sort=False
+            list(dfs_dict.values()),  # noqa: PD011
+            ignore_index=True,
+            sort=False,
         )
     else:
         return dfs_dict

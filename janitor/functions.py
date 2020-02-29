@@ -296,7 +296,7 @@ def clean_names(
     if strip_accents:
         df = df.rename(columns=_strip_accents)
 
-    df = df.rename(columns=lambda x: re.sub("_+", "_", x))
+    df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
     df = _strip_underscores(df, strip_underscores)
 
     # Store the original column names, if enabled by user
@@ -341,8 +341,8 @@ def _camel2snake(col_name: str) -> str:
     by @jtaylor
     """
 
-    subbed = _underscorer1.sub(r"\1_\2", col_name)
-    return _underscorer2.sub(r"\1_\2", subbed).lower()
+    subbed = _underscorer1.sub(r"\1_\2", col_name)  # noqa: PD005
+    return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
 
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
@@ -351,7 +351,7 @@ FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 def _normalize_1(col_name: Hashable) -> str:
     result = str(col_name)
     for search, replace in FIXES:
-        result = re.sub(search, replace, result)
+        result = re.sub(search, replace, result)  # noqa: PD005
     return result
 
 
@@ -2508,12 +2508,12 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     check("sep", sep, [str])
 
     # if already single-level, just return the DataFrame
-    if not isinstance(df.columns.values[0], tuple):
+    if not isinstance(df.columns.values[0], tuple):  # noqa: PD011
         return df
 
     df.columns = [
         sep.join([str(el) for el in tup if str(el) != ""])
-        for tup in df.columns.values
+        for tup in df.columns.values  # noqa: PD011
     ]
 
     return df

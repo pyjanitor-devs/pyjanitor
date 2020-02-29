@@ -47,3 +47,4 @@ dependencies:
 - xlrd
 - xorg-libxrender
 - xarray
+- pandas-vet

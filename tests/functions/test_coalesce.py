@@ -10,7 +10,7 @@ def test_coalesce_with_title():
     ).coalesce(["a", "b", "c"], "d")
     assert "a" not in df.columns
     assert df.shape == (3, 1)
-    assert pd.isnull(df).sum().sum() == 0
+    assert pd.isna(df).sum().sum() == 0
 
 
 @pytest.mark.functions
@@ -21,7 +21,7 @@ def test_coalesce_without_title():
     assert "a" in df.columns
     assert "b" not in df.columns
     assert df.shape == (3, 1)
-    assert pd.isnull(df).sum().sum() == 0
+    assert pd.isna(df).sum().sum() == 0
 
 
 @pytest.mark.functions
@@ -33,4 +33,4 @@ def test_coalesce_without_delete():
     assert "b" in df.columns
     assert "c" in df.columns
     assert df.shape == (3, 3)
-    assert pd.isnull(df).sum().sum() == 1
+    assert pd.isna(df).sum().sum() == 1

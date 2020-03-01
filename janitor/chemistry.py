@@ -153,8 +153,8 @@ def smiles2mol(
         )
 
     if drop_nulls:
-        df.dropna(subset=[mols_column_name], inplace=True)
-    df.reset_index(inplace=True, drop=True)
+        df = df.dropna(subset=[mols_column_name])
+    df = df.reset_index(drop=True)
     return df
 
 

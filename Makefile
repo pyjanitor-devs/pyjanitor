@@ -24,7 +24,7 @@ test:
 
 lint:
 	@echo "Checking code formatting..."
-	pycodestyle . --exclude "./nbconvert_config.py, ./env, ./venv"
+	flake8 . --exclude "./nbconvert_config.py, ./env, ./venv ./build"
 
 docs:
 	@echo "Building documentation..."

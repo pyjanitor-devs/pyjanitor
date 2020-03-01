@@ -4,7 +4,7 @@ import pytest
 try:
     import pyspark
 
-    import janitor.spark
+    import janitor.spark  # noqa: F401
 except ImportError:
     pyspark = None
 

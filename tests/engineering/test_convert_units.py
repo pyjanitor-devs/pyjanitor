@@ -1,7 +1,7 @@
 import pytest
 from unyt.exceptions import UnitConversionError
 
-from janitor.engineering import convert_units
+from janitor.engineering import convert_units  # noqa: F403, F401
 
 
 @pytest.mark.engineering

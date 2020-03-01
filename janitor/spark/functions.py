@@ -80,7 +80,7 @@ def clean_names(
     if remove_special:
         cols = [janitor_func._remove_special(col) for col in cols]
 
-    cols = [re.sub("_+", "_", col) for col in cols]
+    cols = [re.sub("_+", "_", col) for col in cols]  # noqa: PD005
 
     cols = [
         janitor_utils._strip_underscores_func(col, strip_underscores)

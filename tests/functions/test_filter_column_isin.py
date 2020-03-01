@@ -1,4 +1,3 @@
-import pandas as pd
 import pytest
 from hypothesis import assume, given
 

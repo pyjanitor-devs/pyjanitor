@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from janitor.functions import jitter
+from janitor.functions import jitter  # noqa: F401
 
 
 @pytest.mark.functions

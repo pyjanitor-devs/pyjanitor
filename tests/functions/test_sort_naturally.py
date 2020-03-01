@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 from natsort import natsorted
 
-import janitor
+import janitor  # noqa: F401
 
 
 @pytest.fixture

@@ -2,8 +2,6 @@
 Engineering-specific data cleaning functions.
 """
 
-from typing import Hashable
-
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
@@ -101,7 +99,7 @@ def convert_units(
     if not np.issubdtype(df[column_name].dtype, np.number):
         raise TypeError(f"{column_name} must be a numeric column.")
 
-    original_vals = df[column_name].values * unyt.Unit(existing_units)
+    original_vals = df[column_name].to_numpy() * unyt.Unit(existing_units)
     converted_vals = original_vals.to(to_units)
     df[dest_column_name] = np.array(converted_vals)
 

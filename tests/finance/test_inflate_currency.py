@@ -1,9 +1,7 @@
-from datetime import date, datetime
-
 import pytest
 import requests
 
-from janitor.finance import _inflate_currency, inflate_currency
+from janitor.finance import _inflate_currency, inflate_currency  # noqa: F401
 
 
 @pytest.mark.finance
@@ -61,7 +59,7 @@ def test_expected_result(dataframe):
         to_year=2015,
         make_new_column=True,
     )
-    updatedval = dataframe["a_2015"].sum()
+    updatedval = df["a_2015"].sum()
     assert (initialval * inflator) == pytest.approx(updatedval)
 
 
@@ -79,7 +77,7 @@ def test_expected_result_with_full_country_name(dataframe):
         to_year=2015,
         make_new_column=True,
     )
-    updatedval = dataframe["a_2015"].sum()
+    updatedval = df["a_2015"].sum()
     assert (initialval * inflator) == pytest.approx(updatedval)
 
 

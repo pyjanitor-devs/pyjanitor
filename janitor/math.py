@@ -190,7 +190,7 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
     """
     if not is_numeric_dtype(s):
         raise TypeError(f"series {s.name} must be numeric!")
-    if not s.isnull().sum() == 0:
+    if not s.isna().sum() == 0:
         raise ValueError(f"series {s.name} contains nulls. Please drop them.")
 
     n = len(s)

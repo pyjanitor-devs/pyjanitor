@@ -5,7 +5,7 @@ from janitor.errors import JanitorError
 try:
     import pyspark
 
-    import janitor.spark
+    import janitor.spark  # noqa: F401
 except ImportError:
     pyspark = None
 

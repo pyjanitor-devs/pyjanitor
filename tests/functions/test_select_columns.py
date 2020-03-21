@@ -30,3 +30,18 @@ def test_select_columns_glob_inputs(dataframe, invert, expected):
     df = dataframe.select_columns(search_column_names=columns, invert=invert)
 
     pd.testing.assert_frame_equal(df, dataframe[expected])
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "columns",
+    [
+        ["a", "Bell__Chart", "foo"],
+        ["a", "Bell__Chart", "foo", "bar"],
+        ["a*", "Bell__Chart", "foo"],
+        ["a*", "Bell__Chart", "foo", "bar"],
+    ],
+)
+def test_select_columns_missing_columns(dataframe, columns):
+    with pytest.raises(NameError):
+        df = dataframe.select_columns(search_column_names=columns)

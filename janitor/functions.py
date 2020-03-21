@@ -2772,6 +2772,15 @@ def select_columns(
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
     """
+    wildcards = [col for col in search_column_names if "*" in col]
+    non_wildcards = set(search_column_names) - set(wildcards)
+
+    if not non_wildcards.issubset(df.columns):
+        nonexistent_column_names = non_wildcards.difference(df.columns)
+        raise NameError(
+            f"The following column names are not present in the dataframe: {nonexistent_column_names}"
+        )
+
     full_column_list = []
 
     for col in search_column_names:

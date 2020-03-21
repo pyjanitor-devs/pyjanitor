@@ -2770,6 +2770,8 @@ def select_columns(
     :param invert: Whether or not to invert the selection.
         This will result in selection of the complement of the columns
         provided.
+    :raises: NameError: If one or more column labels in search_columns_names are missing
+        from pd.DataFrame.columns.
     :returns: A pandas DataFrame with the specified columns selected.
     """
     wildcards = [col for col in search_column_names if "*" in col]

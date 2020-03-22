@@ -2774,8 +2774,8 @@ def select_columns(
     :raises: NameError if one or more of the specified column names are
         not found in DataFrame columns.
     """
-    wildcards = [col for col in search_column_names if "*" in col]
-    non_wildcards = set(search_column_names) - set(wildcards)
+    wildcards = {col for col in search_column_names if "*" in col}
+    non_wildcards = set(search_column_names) - wildcards
 
     if not non_wildcards.issubset(df.columns):
         nonexistent_column_names = non_wildcards.difference(df.columns)

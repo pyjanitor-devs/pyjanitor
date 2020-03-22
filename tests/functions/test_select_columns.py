@@ -43,7 +43,7 @@ def test_select_columns_glob_inputs(dataframe, invert, expected):
     ],
 )
 def test_select_columns_missing_columns(dataframe, columns):
-    """Check that passing non-existent column names or search strings raises NameError"""
+    """Check that passing non-existent column names or search strings raises NameError"""  # noqa: E501
     with pytest.raises(NameError):
         dataframe.select_columns(search_column_names=columns)
 

@@ -43,5 +43,16 @@ def test_select_columns_glob_inputs(dataframe, invert, expected):
     ],
 )
 def test_select_columns_missing_columns(dataframe, columns):
+    """Check that passing non-existent column names or search strings raises NameError"""
     with pytest.raises(NameError):
+        dataframe.select_columns(search_column_names=columns)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "columns", ["a", ("a", "Bell__Chart"), {"a", "Bell__Chart"}]
+)
+def test_select_columns_input(dataframe, columns):
+    """Check that passing an iterable that is not a list raises TypeError."""
+    with pytest.raises(TypeError):
         dataframe.select_columns(search_column_names=columns)

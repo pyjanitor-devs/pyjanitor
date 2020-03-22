@@ -44,4 +44,4 @@ def test_select_columns_glob_inputs(dataframe, invert, expected):
 )
 def test_select_columns_missing_columns(dataframe, columns):
     with pytest.raises(NameError):
-        df = dataframe.select_columns(search_column_names=columns)
+        dataframe.select_columns(search_column_names=columns)

@@ -2780,10 +2780,7 @@ def select_columns(
     if not non_wildcards.issubset(df.columns):
         nonexistent_column_names = non_wildcards.difference(df.columns)
         raise NameError(
-            (
-                "The following column names are not present in the dataframe: "
-                f"{nonexistent_column_names}"
-            )
+            f"The following column names are not present in the dataframe: {nonexistent_column_names}"  # noqa: E501
         )
 
     full_column_list = []

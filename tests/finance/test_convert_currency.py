@@ -3,7 +3,7 @@ from datetime import date, datetime
 import pytest
 import requests
 
-from janitor.finance import convert_currency
+from janitor.finance import convert_currency  # noqa: F401
 
 
 @pytest.mark.finance

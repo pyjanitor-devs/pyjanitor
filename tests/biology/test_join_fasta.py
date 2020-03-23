@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-import janitor.biology
+import janitor.biology  # noqa: F403, F401
 
 
 @pytest.mark.skipif(

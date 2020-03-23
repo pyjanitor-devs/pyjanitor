@@ -3,6 +3,8 @@
 import warnings
 from functools import wraps
 
+from janitor.utils import import_message
+
 
 class CachedAccessor:
     """

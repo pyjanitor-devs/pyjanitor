@@ -15,4 +15,4 @@ def test_maccs_keys_fingerprint(chemdf):
         "mol"
     )
     assert maccs_keys.shape == (10, 167)
-    assert set(maccs_keys.values.flatten().tolist()) == set([0, 1])
+    assert set(maccs_keys.to_numpy().flatten().tolist()) == set([0, 1])

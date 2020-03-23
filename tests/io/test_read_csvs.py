@@ -33,12 +33,12 @@ def test_read_csvs_one_csv_path():
     create_csv_file(number_of_files)
 
     # If the csv file is read into DataFrame
-    dfs = io.read_csvs(CSV_FILE_PATH.format("*"))
+    df = io.read_csvs(CSV_FILE_PATH.format("*"))
 
     # Then the dataframe has 3 cols and 4 rows
     try:
-        assert len(dfs.columns) == 3
-        assert len(dfs) == 4
+        assert len(df.columns) == 3
+        assert len(df) == 4
     finally:
         # Cleanup
         remove_csv_files()
@@ -67,12 +67,12 @@ def test_read_csvs_three_csv_path():
     create_csv_file(number_of_files)
 
     # If the csv file is read into DataFrame
-    dfs = io.read_csvs(CSV_FILE_PATH.format("*"))
+    df = io.read_csvs(CSV_FILE_PATH.format("*"))
 
     # Then the dataframe has 3 cols and 12 rows
     try:
-        assert len(dfs.columns) == 3
-        assert len(dfs) == 4 * number_of_files
+        assert len(df.columns) == 3
+        assert len(df) == 4 * number_of_files
     finally:
         # Cleanup
         remove_csv_files()
@@ -86,12 +86,12 @@ def test_read_csvs_three_separated_csv_path():
     create_csv_file(number_of_files)
 
     # If the csv file is read into DataFrame
-    dfs = io.read_csvs(CSV_FILE_PATH.format("*"), separate_df=True)
+    dfs_dict = io.read_csvs(CSV_FILE_PATH.format("*"), separate_df=True)
 
     # Then the dataframe list has 3 dataframes
     try:
-        assert len(dfs) == number_of_files
-        for df in dfs.values():
+        assert len(dfs_dict) == number_of_files
+        for df in dfs_dict.values():  # noqa: PD011
             assert len(df) == 4
             assert len(df.columns) == 3
     finally:
@@ -133,12 +133,12 @@ def test_read_csvs_lists():
     csvs_list = [CSV_FILE_PATH.format(i) for i in range(number_of_files)]
 
     # If the list of csv files is read into DataFrame
-    dfs = io.read_csvs(files_path=csvs_list, separate_df=True)
+    dfs_list = io.read_csvs(files_path=csvs_list, separate_df=True)
 
     # Then the dataframe list has 3 dataframes
     try:
-        assert len(dfs) == number_of_files
-        for df in dfs.values():
+        assert len(dfs_list) == number_of_files
+        for df in dfs_list.values():  # noqa: PD011
             assert len(df) == 4
             assert len(df.columns) == 3
     finally:

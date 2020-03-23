@@ -32,28 +32,32 @@ def read_csvs(
     # Read the csv files
     # String to file/folder or file pattern provided
     if isinstance(files_path, str):
-        dfs = {
+        dfs_dict = {
             os.path.basename(f): pd.read_csv(f, **kwargs)
             for f in glob(files_path)
         }
     # Iterable of file paths provided
     else:
-        dfs = {
+        dfs_dict = {
             os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path
         }
     # Check if dataframes have been read
-    if len(dfs) == 0:
+    if len(dfs_dict) == 0:
         raise ValueError("No CSV files to read with the given `files_path`")
     # Concatenate the dataframes if requested (default)
-    col_names = list(dfs.values())[0].columns
+    col_names = list(dfs_dict.values())[0].columns  # noqa: PD011
     if not separate_df:
         # If columns do not match raise an error
-        for df in dfs.values():
+        for df in dfs_dict.values():  # noqa: PD011
             if not all(df.columns == col_names):
                 raise ValueError(
                     "Columns in input CSV files do not match."
                     "Files cannot be concatenated"
                 )
-        return pd.concat(list(dfs.values()), ignore_index=True, sort=False)
+        return pd.concat(
+            list(dfs_dict.values()),  # noqa: PD011
+            ignore_index=True,
+            sort=False,
+        )
     else:
-        return dfs
+        return dfs_dict

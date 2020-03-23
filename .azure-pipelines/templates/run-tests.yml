@@ -1,8 +1,8 @@
 steps:
   - script: |
       $(activate.command) pyjanitor-dev
-      pycodestyle . --exclude ./nbconvert_config.py
-    displayName: 'Code style check: pycodestyle'
+      flake8 . --exclude ./nbconvert_config.py
+    displayName: 'Code style check: flake8'
   - script: |
       $(activate.command) pyjanitor-dev
       black

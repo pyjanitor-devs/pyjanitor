@@ -1,9 +1,7 @@
 """ Machine learning specific functions. """
 
-import unicodedata
 from typing import Hashable, Iterable, List, Tuple, Union
 
-import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 

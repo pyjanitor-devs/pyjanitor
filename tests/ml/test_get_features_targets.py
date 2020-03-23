@@ -1,7 +1,7 @@
 import pytest
 from hypothesis import given
 
-import janitor.ml
+import janitor.ml  # noqa: F401
 from janitor.testing_utils.strategies import df_strategy
 
 

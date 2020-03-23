@@ -12,9 +12,9 @@ def test_remove_empty(df):
     # This test ensures that there are no columns that are completely null.
     df = df.remove_empty()
     for col in df.columns:
-        assert not pd.isnull(df[col]).all()
+        assert not pd.isna(df[col]).all()
     for r, d in df.iterrows():
-        assert not pd.isnull(d).all()
+        assert not pd.isna(d).all()
 
 
 @pytest.mark.functions

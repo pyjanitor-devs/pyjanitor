@@ -49,7 +49,7 @@ To do a very quick check that everything is correct, follow these steps below:
 
 - [ ] Run the command `make check` from pyjanitor's top-level directory. This will automatically run:
     - black formatting
-    - pycodestyle checking
+    - flake8 checking
     - running the test suite
     - docs build
 

@@ -22,7 +22,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from natsort import index_natsorted, natsorted
+from natsort import index_natsorted
 from pandas.api.types import union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
@@ -296,7 +296,7 @@ def clean_names(
     if strip_accents:
         df = df.rename(columns=_strip_accents)
 
-    df = df.rename(columns=lambda x: re.sub("_+", "_", x))
+    df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
     df = _strip_underscores(df, strip_underscores)
 
     # Store the original column names, if enabled by user
@@ -341,8 +341,8 @@ def _camel2snake(col_name: str) -> str:
     by @jtaylor
     """
 
-    subbed = _underscorer1.sub(r"\1_\2", col_name)
-    return _underscorer2.sub(r"\1_\2", subbed).lower()
+    subbed = _underscorer1.sub(r"\1_\2", col_name)  # noqa: PD005
+    return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
 
 FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
@@ -351,7 +351,7 @@ FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 def _normalize_1(col_name: Hashable) -> str:
     result = str(col_name)
     for search, replace in FIXES:
-        result = re.sub(search, replace, result)
+        result = re.sub(search, replace, result)  # noqa: PD005
     return result
 
 
@@ -399,10 +399,10 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     :returns: A pandas DataFrame.
     """  # noqa: E501
-    nanrows = df.index[df.isnull().all(axis=1)]
+    nanrows = df.index[df.isna().all(axis=1)]
     df = df.drop(index=nanrows).reset_index(drop=True)
 
-    nancols = df.columns[df.isnull().all(axis=0)]
+    nancols = df.columns[df.isna().all(axis=0)]
     df = df.drop(columns=nancols)
 
     return df
@@ -2508,74 +2508,14 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     check("sep", sep, [str])
 
     # if already single-level, just return the DataFrame
-    if not isinstance(df.columns.values[0], tuple):
+    if not isinstance(df.columns.values[0], tuple):  # noqa: PD011
         return df
 
     df.columns = [
         sep.join([str(el) for el in tup if str(el) != ""])
-        for tup in df.columns.values
+        for tup in df.columns.values  # noqa: PD011
     ]
 
-    return df
-
-
-@pf.register_dataframe_method
-def reset_index_inplace(df: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
-    """
-    Return the dataframe with an inplace resetting of the index.
-
-    This method mutates the original DataFrame.
-
-    Compared to non-inplace resetting, this avoids data copying, thus
-    providing a potential speedup.
-
-    In Pandas, `reset_index()`, when used in place, does not return a
-    `DataFrame`, preventing this option's usage in the function-chaining
-    scheme. `reset_index_inplace()` provides one the ability to save
-    computation time and memory while still being able to use the chaining
-    syntax core to pyjanitor. This function, therefore, is the chaining
-    equivalent of:
-
-    .. code-block:: python
-
-        data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
-                "max_speed": [389, 389, 24, 80, 21],
-                "index": ["falcon", "falcon", "parrot", "Lion", "Monkey"]}
-
-        df = (
-            pd.DataFrame(data).set_index("index")
-                .drop_duplicates()
-        )
-
-        df.reset_index(inplace=True)
-
-    instead, being called simply as:
-
-    .. code-block:: python
-
-        df = (
-            pd.DataFrame(data).set_index("index")
-                .drop_duplicates()
-                .reset_index_inplace()
-        )
-
-    All supplied parameters are sent directly to `DataFrame.reset_index()`.
-
-    :param df: A pandas DataFrame.
-    :param args: Arguments supplied to `DataFrame.reset_index()`
-    :param kwargs: Arguments supplied to `DataFrame.reset_index()`
-    :returns: A pandas DataFrame with reset indexes.
-    """
-    # Deprecation Warning
-    warnings.warn(
-        "reset_index_inplace will be deprecated in the "
-        "upcoming 0.18 release. Use .reset_index() instead",
-        DeprecationWarning,
-    )
-
-    kwargs.update(inplace=True)
-
-    df.reset_index(*args, **kwargs)
     return df
 
 
@@ -2807,7 +2747,7 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, search_column_names: Iterable, invert: bool = False
+    df: pd.DataFrame, search_column_names: List[str], invert: bool = False
 ) -> pd.DataFrame:
     """
     Method-chainable selection of columns.
@@ -2831,13 +2771,41 @@ def select_columns(
         This will result in selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
+    :raises:
+        TypeError: if input is not passed as a list.
+    :raises:
+        NameError: if one or more of the specified column names or
+        search strings are not found in DataFrame columns.
     """
+    if not isinstance(search_column_names, list):
+        raise TypeError(
+            "Column name(s) or search string(s) must be passed as list"
+        )
+
+    wildcards = {col for col in search_column_names if "*" in col}
+    non_wildcards = set(search_column_names) - wildcards
+
+    if not non_wildcards.issubset(df.columns):
+        nonexistent_column_names = non_wildcards.difference(df.columns)
+        raise NameError(
+            f"{list(nonexistent_column_names)} missing from DataFrame"
+        )
+
+    missing_wildcards = []
     full_column_list = []
 
     for col in search_column_names:
         search_string = translate(col)
         columns = [col for col in df if re.match(search_string, col)]
-        full_column_list.extend(columns)
+        if len(columns) == 0:
+            missing_wildcards.append(col)
+        else:
+            full_column_list.extend(columns)
+
+    if len(missing_wildcards) > 0:
+        raise NameError(
+            f"Search string(s) {missing_wildcards} not found in DataFrame"
+        )
 
     return (
         df.drop(columns=full_column_list) if invert else df[full_column_list]
@@ -2927,7 +2895,9 @@ def impute(
         if statistic_column_name not in funcs.keys():
             raise KeyError(f"`statistic` must be one of {funcs.keys()}")
 
-        value = funcs[statistic_column_name](df[column_name].dropna().values)
+        value = funcs[statistic_column_name](
+            df[column_name].dropna().to_numpy()
+        )
         # special treatment for mode, because scipy stats mode returns a
         # moderesult object.
         if statistic_column_name == "mode":
@@ -2977,7 +2947,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     :param column_name: The column name to drop rows from.
     :returns: A pandas DataFrame with dropped rows.
     """
-    return df[pd.isnull(df[column_name])]
+    return df[pd.isna(df[column_name])]
 
 
 @pf.register_dataframe_method
@@ -3587,7 +3557,7 @@ def flag_nulls(
     # This algorithm works best for n_rows >> n_cols. See issue #501
     null_array = np.zeros(len(df))
     for col in columns:
-        null_array = np.logical_or(null_array, pd.isnull(df[col]))
+        null_array = np.logical_or(null_array, pd.isna(df[col]))
 
     df = df.copy()
     df[column_name] = null_array.astype(int)

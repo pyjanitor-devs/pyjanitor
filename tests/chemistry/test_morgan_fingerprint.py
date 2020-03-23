@@ -15,7 +15,7 @@ def test_morgan_fingerprint_counts(chemdf):
         "mol", kind="counts"
     )
     assert morgans.shape == (10, 2048)
-    assert (morgans.values >= 0).all()
+    assert (morgans.to_numpy() >= 0).all()
 
 
 @pytest.mark.skipif(
@@ -28,7 +28,7 @@ def test_morgan_fingerprint_bits(chemdf):
         "mol", kind="bits"
     )
     assert morgans.shape == (10, 2048)
-    assert set(morgans.values.flatten().tolist()) == set([0, 1])
+    assert set(morgans.to_numpy().flatten().tolist()) == set([0, 1])
 
 
 @pytest.mark.skipif(

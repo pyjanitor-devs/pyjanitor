@@ -16,3 +16,4 @@ unyt
 pyspark
 pre-commit
 xarray
+pandas-vet

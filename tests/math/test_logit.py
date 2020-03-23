@@ -16,14 +16,14 @@ def test_logit():
     with pytest.warns(RuntimeWarning):
         out = s.logit(error="warn")
 
-    assert out[inside].notnull().all()
+    assert out[inside].notna().all()
     assert (out[inside] == ans).all()
     assert (out.index == s.index).all()
-    assert out[~inside].isnull().all()
+    assert out[~inside].isna().all()
 
     out = s.logit(error="ignore")
 
-    assert out[inside].notnull().all()
+    assert out[inside].notna().all()
     assert (out[inside] == ans).all()
     assert (out.index == s.index).all()
-    assert out[~inside].isnull().all()
+    assert out[~inside].isna().all()

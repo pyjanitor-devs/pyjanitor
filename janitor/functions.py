@@ -2747,7 +2747,7 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, search_column_names: Iterable, invert: bool = False
+    df: pd.DataFrame, search_column_names: List[str], invert: bool = False
 ) -> pd.DataFrame:
     """
     Method-chainable selection of columns.
@@ -2771,13 +2771,41 @@ def select_columns(
         This will result in selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
+    :raises:
+        TypeError: if input is not passed as a list.
+    :raises:
+        NameError: if one or more of the specified column names or
+        search strings are not found in DataFrame columns.
     """
+    if not isinstance(search_column_names, list):
+        raise TypeError(
+            "Column name(s) or search string(s) must be passed as list"
+        )
+
+    wildcards = {col for col in search_column_names if "*" in col}
+    non_wildcards = set(search_column_names) - wildcards
+
+    if not non_wildcards.issubset(df.columns):
+        nonexistent_column_names = non_wildcards.difference(df.columns)
+        raise NameError(
+            f"{list(nonexistent_column_names)} missing from DataFrame"
+        )
+
+    missing_wildcards = []
     full_column_list = []
 
     for col in search_column_names:
         search_string = translate(col)
         columns = [col for col in df if re.match(search_string, col)]
-        full_column_list.extend(columns)
+        if len(columns) == 0:
+            missing_wildcards.append(col)
+        else:
+            full_column_list.extend(columns)
+
+    if len(missing_wildcards) > 0:
+        raise NameError(
+            f"Search string(s) {missing_wildcards} not found in DataFrame"
+        )
 
     return (
         df.drop(columns=full_column_list) if invert else df[full_column_list]

@@ -87,3 +87,4 @@ Contributors
 - `@DollofCuty <https://github.com/DollofCuty>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ADollofCuty>`_
 - `@bdice <https://github.com/bdice>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Abdice>`_
 - `@evan-anderson <https://github.com/evan-anderson>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3evan-anderson>`_
+    `@smu095 <https://github.com/smu095>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3smu095>`_

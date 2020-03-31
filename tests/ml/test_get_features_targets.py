@@ -8,6 +8,7 @@ from janitor.testing_utils.strategies import df_strategy
 @pytest.mark.ml
 @given(df=df_strategy())
 def test_get_features_targets(df):
+    """Tests one column returned as target and rest as features."""
     X, y = df.clean_names().get_features_targets(
         target_column_names="bell_chart"
     )
@@ -18,6 +19,7 @@ def test_get_features_targets(df):
 @pytest.mark.ml
 @given(df=df_strategy())
 def test_get_features_targets_multi_features(df):
+    """Tests one column returned as target and two as features."""
     X, y = df.clean_names().get_features_targets(
         feature_column_names=["animals@#$%^", "cities"],
         target_column_names="bell_chart",
@@ -29,6 +31,7 @@ def test_get_features_targets_multi_features(df):
 @pytest.mark.ml
 @given(df=df_strategy())
 def test_get_features_target_multi_columns(df):
+    """Tests two columns returned as target and rest as features."""
     X, y = df.clean_names().get_features_targets(
         target_column_names=["a", "bell_chart"]
     )

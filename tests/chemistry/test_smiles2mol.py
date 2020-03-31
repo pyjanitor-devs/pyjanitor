@@ -10,6 +10,7 @@ import pytest
 @pytest.mark.parametrize("progressbar", [None, "terminal"])
 @pytest.mark.chemistry
 def test_smiles2mol(chemdf, progressbar):
+    """Test each SMILES properly converted to Mol object."""
     from rdkit import Chem
 
     chemdf = chemdf.smiles2mol("smiles", "mol", progressbar)

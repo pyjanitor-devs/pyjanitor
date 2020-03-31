@@ -11,6 +11,7 @@ import janitor.chemistry  # noqa: disable=unused-import
 )
 @pytest.mark.chemistry
 def test_morgan_fingerprint_counts(chemdf):
+    """Test counts of Morgan Fingerprints converted from Mol objects."""
     morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
         "mol", kind="counts"
     )
@@ -24,6 +25,7 @@ def test_morgan_fingerprint_counts(chemdf):
 )
 @pytest.mark.chemistry
 def test_morgan_fingerprint_bits(chemdf):
+    """Test bits of Morgan Fingerprints converted from Mol objects."""
     morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
         "mol", kind="bits"
     )
@@ -37,7 +39,8 @@ def test_morgan_fingerprint_bits(chemdf):
 )
 @pytest.mark.chemistry
 def test_morgan_fingerprint_kind_error(chemdf):
+    """Test ``morgan_fingerprint`` raises exception for invalid ``kind``."""
     with pytest.raises(ValueError):
         chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
-            "mol", kind="hdfs"
+            "mol", kind="invalid-kind"
         )

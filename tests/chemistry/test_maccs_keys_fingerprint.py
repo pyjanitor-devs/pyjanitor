@@ -11,7 +11,7 @@ import janitor.chemistry  # noqa: disable=unused-import
 )
 @pytest.mark.chemistry
 def test_maccs_keys_fingerprint(chemdf):
-    """Test conversion of SMILES strings to RDKit Mol objects of 0s and 1s."""
+    """Test conversion of SMILES strings to MACCS keys fingerprints."""
     maccs_keys = chemdf.smiles2mol("smiles", "mol").maccs_keys_fingerprint(
         "mol"
     )

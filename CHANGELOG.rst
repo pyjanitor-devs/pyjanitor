@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [TST]: Add docstrings to tests @hectormz
 
 
 v0.20.5

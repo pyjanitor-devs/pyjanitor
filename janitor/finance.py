@@ -339,7 +339,7 @@ def _check_wb_country(country: str):
 
 def _check_wb_years(year: int):
     if year < 1960:
-        raise ValueError(f"year value must be 1960 or later")
+        raise ValueError("year value must be 1960 or later")
 
 
 @lru_cache(maxsize=32)

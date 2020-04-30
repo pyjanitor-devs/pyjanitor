@@ -1757,13 +1757,13 @@ def add_column(
             )
         if len(value) != nrows and not fill_remaining:
             raise ValueError(
-                f"Attempted to add iterable of values with length"
+                "Attempted to add iterable of values with length"
                 f" not equal to number of DataFrame rows"
             )
 
         if len(value) == 0:
             raise ValueError(
-                f"Values has to be an iterable of minimum length 1"
+                "Values has to be an iterable of minimum length 1"
             )
         len_value = len(value)
     elif fill_remaining:
@@ -3314,7 +3314,7 @@ def bin_numeric(
         )
     else:
         if not len(labels) == num_bins:
-            raise ValueError(f"Number of labels must match number of bins.")
+            raise ValueError("Number of labels must match number of bins.")
 
         df[str(to_column_name)] = pd.cut(
             df[str(from_column_name)], bins=num_bins, labels=labels

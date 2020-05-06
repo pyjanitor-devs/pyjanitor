@@ -6,7 +6,6 @@ import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-import swifter
 from typing import (
     Any,
     Callable,

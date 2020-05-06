@@ -6,6 +6,7 @@ import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
+import swifter
 from typing import (
     Any,
     Callable,
@@ -2201,11 +2202,50 @@ def transform_column(
     column_name: Hashable,
     function: Callable,
     dest_column_name: str = None,
+    elementwise: bool = True,
 ) -> pd.DataFrame:
     """
     Transform the given column in-place using the provided function.
 
-    This method mutates the original DataFrame.
+    Functions can be applied one of two ways:
+
+    - Element-wise (default; ``elementwise=True``)
+    - Column-wise  (alternative; ``elementwise=False``)
+
+    If the function is applied "elementwise",
+    then the first argument of the function signature
+    should be the individual element of each function.
+    This is the default behaviour of ``transform_column``,
+    because it is easy to understand.
+    For example:
+
+    .. code-block:: python
+
+        def elemwise_func(x):
+            modified_x = ... # do stuff here
+            return modified_x
+
+        df.transform_column(column_name="my_column", function=elementwise_func)
+
+    On the other hand, columnwise application of a function
+    behaves as if the function takes in a pandas Series
+    and emits back a sequence that is of identical length to the original.
+    One place where this is desirable
+    is to gain access to `pandas` native string methods,
+    which are super fast!
+
+    .. code-block:: python
+
+        def columnwise_func(s: pd.Series) -> pd.Series:
+            return s.str[0:5]
+
+        df.transform_column(
+            column_name="my_column",
+            lambda s: s.str[0:5],
+            elementwise=False
+        )
+
+    This method does not mutate the original DataFrame.
 
     Let's say we wanted to apply a log10 transform a column of data.
 
@@ -2214,7 +2254,7 @@ def transform_column(
     .. code-block:: python
 
         # YOU NO LONGER NEED TO WRITE THIS!
-        df[column_name] = df[column_name].apply(function)
+        df[column_name] = df[column_name].apply(np.log10)
 
     With the method chaining syntax, we can do the following instead:
 
@@ -2222,7 +2262,7 @@ def transform_column(
 
         df = (
             pd.DataFrame(...)
-            .transform_column(column_name, function)
+            .transform_column(column_name, np.log10)
         )
 
     With the functional syntax:
@@ -2230,7 +2270,7 @@ def transform_column(
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = transform_column(df, column_name, function)
+        df = transform_column(df, column_name, np.log10)
 
     :param df: A pandas DataFrame.
     :param column_name: The column to transform.
@@ -2239,12 +2279,24 @@ def transform_column(
         in. Defaults to None, which will result in the original column
         name being overwritten. If a name is provided here, then a new column
         with the transformed values will be created.
+    :param elementwise: Whether or not to apply the function elementwise or not.
+        If elementwise is True, then the function's first argument
+        should be the data type of each datum in the column of data,
+        and should return a transformed datum.
+        If elementwise is False, then the function's should expect
+        a pandas Series passed into it, and return a pandas Series.
+
     :returns: A pandas DataFrame with a transformed column.
     """
     if dest_column_name is None:
         dest_column_name = column_name
 
-    df[dest_column_name] = df[column_name].apply(function)
+    if elementwise:
+        result = df[column_name].apply(function)
+    else:
+        result = function(df[column_name])
+
+    df = df.assign(**{dest_column_name: result})
     return df
 
 

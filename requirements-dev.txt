@@ -17,3 +17,4 @@ pyspark
 pre-commit
 xarray
 pandas-vet
+interrogate

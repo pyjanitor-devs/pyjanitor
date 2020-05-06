@@ -116,6 +116,7 @@ ENV/
 
 # Ingore docs' symbolic link to notebooks
 docs/notebooks
+docs/*
 
 
 # Swap

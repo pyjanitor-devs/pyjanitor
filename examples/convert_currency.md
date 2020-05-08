@@ -42,7 +42,12 @@ data_dict = {
  ```python
 example_dataframe = pd.DataFrame(data_dict)
 
-example_dataframe.convert_currency('a', from_currency='USD', to_currency='EUR', historical_date=date(2018,1,1))
+example_dataframe.convert_currency(
+    'a',
+    from_currency='USD',
+    to_currency='EUR',
+    historical_date=date(2018, 1, 1)
+)
 ```
 
 ### Output

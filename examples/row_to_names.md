@@ -25,7 +25,6 @@ Remove the rows from the index above `row_number`.
 ## Setup
 
 ```python
-
 import pandas as pd
 import janitor
 
@@ -63,7 +62,6 @@ example_dataframe.row_to_names(0)
 ## Example2: Move first row to column names and remove row
 
 ```python
-
 example_dataframe = pd.DataFrame(data_dict)
 
 example_dataframe.row_to_names(0, remove_row=True)
@@ -84,7 +82,6 @@ example_dataframe.row_to_names(0, remove_row=True)
 ## Example3: Move first row to column names, remove row, and remove rows above selected row
 
 ```python
-
 example_dataframe = pd.DataFrame(data_dict)
 
 example_dataframe.row_to_names(2, remove_row=True, remove_rows_above=True)

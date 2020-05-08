@@ -50,7 +50,6 @@ example_dataframe.round_to_fraction('a', 2)
 ## Example 2: Rounding the first column to nearest third
 
 ```python
-
 example_dataframe2 = pd.DataFrame(data_dict)
 
 example_dataframe2.limit_column_characters('a', 3)
@@ -72,7 +71,6 @@ example_dataframe2.limit_column_characters('a', 3)
 ## Example 3: Rounding the first column to the nearest third and rounding each value to the 10,000th place
 
 ```python
-
 example_dataframe2 = pd.DataFrame(data_dict)
 
 example_dataframe2.limit_column_characters('a', 3, 4)

@@ -66,8 +66,7 @@ date_list = [
     [26, "03/11/20"],
     [27, "03/12/20"]]
 
-example_dataframe = pd.DataFrame(date_list, columns = ['AMOUNT', 'DATE'])
-
+example_dataframe = pd.DataFrame(date_list, columns=['AMOUNT', 'DATE'])
 ```
 
 ## Example 1: Filter dataframe between two dates
@@ -102,7 +101,6 @@ example_dataframe.filter_date('DATE', end=end, format=format)
 ## Example 3: Filtering by year
 
 ```python
-
 years = [2019]
 
 example_dataframe.filter_date('DATE', years=years)
@@ -125,7 +123,6 @@ example_dataframe.filter_date('DATE', years=years)
 ## Example 4: Filtering by year and month
 
 ```python
-
 years = [2020]
 months = [3]
 
@@ -144,9 +141,8 @@ example_dataframe.filter_date('DATE', years=years, months=months)
 ## Example 5: Filtering by year and day
 
 ```python
-
 years = [2020]
-days = range(10,12)
+days = range(10, 12)
 
 example_dataframe.filter_date('DATE', years=years, days=days)
 ```

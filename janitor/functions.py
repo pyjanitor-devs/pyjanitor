@@ -2278,7 +2278,7 @@ def transform_column(
         in. Defaults to None, which will result in the original column
         name being overwritten. If a name is provided here, then a new column
         with the transformed values will be created.
-    :param elementwise: Whether or not to apply the function elementwise or not.
+    :param elementwise: Whether to apply the function elementwise or not.
         If elementwise is True, then the function's first argument
         should be the data type of each datum in the column of data,
         and should return a transformed datum.

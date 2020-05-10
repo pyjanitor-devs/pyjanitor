@@ -25,6 +25,7 @@ install:
   - conda install python=$PYTHON_VERSION
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - conda activate pyjanitor-dev
+  - python -m ipykernel install --name pyjanitor-dev
   - python setup.py develop
 
 # We use TravisCI to build docs and not run tests.

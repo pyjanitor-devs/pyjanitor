@@ -2306,6 +2306,7 @@ def transform_columns(
     column_names: Union[List[str], Tuple[str]],
     function: Callable,
     suffix: str = None,
+    elementwise: bool = True,
     new_column_names: Dict[str, str] = None,
 ) -> pd.DataFrame:
     """
@@ -2369,6 +2370,9 @@ def transform_columns(
     :param function: A function to apply on each column.
     :param suffix: (optional) Suffix to use when creating new columns to hold
         the transformed values.
+    :param elementwise: Passed on to `transform_column`; whether or not
+        to apply the transformation function elementwise (True)
+        or columnwise (False).
     :param new_column_names: (optional) An explicit mapping of old column names
         to new column names.
     :returns: A pandas DataFrame with transformed columns.
@@ -2393,7 +2397,9 @@ def transform_columns(
 
     # Now, transform columns.
     for old_col, new_col in dest_column_names.items():
-        df = transform_column(df, old_col, function, new_col)
+        df = transform_column(
+            df, old_col, function, new_col, elementwise=elementwise
+        )
 
     return df
 

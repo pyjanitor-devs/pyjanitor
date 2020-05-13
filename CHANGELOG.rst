@@ -1,6 +1,7 @@
 new version (on deck)
 =====================
 - [TST]: Add docstrings to tests @hectormz
+- [INF]: Add ``debug-statements``, ``requirements-txt-fixer``, and ``interrogate`` to ``pre-commit``. @hectormz
 
 
 v0.20.5

@@ -17,3 +17,14 @@ exclude = '''
   | venv
 )/
 '''
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-semiprivate = false
+ignore-private = false
+ignore-module = false
+fail-under = 100
+exclude = ["setup.py", "docs", "build"]
+verbose = 2
+quiet = false

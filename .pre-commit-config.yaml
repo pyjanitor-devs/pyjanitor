@@ -18,3 +18,8 @@ repos:
   hooks:
   - id: nbstripout
     files: ".ipynb"
+- repo: https://github.com/econchick/interrogate
+  rev: 1.1.5
+  hooks:
+   - id: interrogate
+     args: [--quiet, --fail-under=100, -c, pyproject.toml]

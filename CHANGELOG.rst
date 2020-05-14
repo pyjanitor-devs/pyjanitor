@@ -1,6 +1,7 @@
 new version (on deck)
 =====================
 - [TST]: Add docstrings to tests @hectormz
+- [INF]: Add ``debug-statements``, ``requirements-txt-fixer``, and ``interrogate`` to ``pre-commit``. @hectormz
 - [ENH]: Upgraded transform_column to use df.assign underneath the hood,
   and also added option to transform column elementwise (via apply)
   or columnwise (thus operating on a series). @ericmjl

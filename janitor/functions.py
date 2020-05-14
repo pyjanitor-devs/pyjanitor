@@ -62,7 +62,7 @@ def unionize_dataframe_categories(
     ``object``, losing out on dramatic speed gains you get from the former
     format.
 
-    Usage example for concatentation of categorical column-containing
+    Usage example for concatenation of categorical column-containing
     dataframes:
 
     Instead of:
@@ -3204,7 +3204,7 @@ def groupby_agg(
 
     .. code-block:: python
 
-        df = df.assign(...=df.groupby(...)[...].tranform(...))
+        df = df.assign(...=df.groupby(...)[...].transform(...))
 
     Now, this function can be method-chained:
 
@@ -3622,7 +3622,7 @@ def count_cumulative_unique(
     count of unique values in the specified column.
     If `case_sensitive` is `True`, then the case of
     any letters will matter (i.e., 'a' != 'A');
-    othewise, the case of any letters will not matter.
+    otherwise, the case of any letters will not matter.
 
     This method mutates the original DataFrame.
 
@@ -3768,7 +3768,7 @@ def jitter(
         no jittering.)
     :param clip: An iterable of two values (minimum and maximum) to clip
         the jittered values to, default to None.
-    :param random_state: A interger or 1-d array value used to set the random
+    :param random_state: An integer or 1-d array value used to set the random
         seed, default to None.
 
     :returns: A pandas DataFrame with a new column containing Gaussian-

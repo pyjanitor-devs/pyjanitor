@@ -22,4 +22,4 @@ repos:
   rev: 1.1.5
   hooks:
    - id: interrogate
-     args: [--quiet, --fail-under=100, -c, pyproject.toml]
+     args: [-c, pyproject.toml]

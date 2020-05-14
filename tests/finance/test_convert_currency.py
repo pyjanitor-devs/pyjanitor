@@ -1,3 +1,4 @@
+"""Tests for convert_currency() in finance module."""
 from datetime import date, datetime
 
 import pytest
@@ -26,12 +27,14 @@ def test_make_currency_api_request():
 
 @pytest.mark.finance
 def test_make_new_currency_col(dataframe):
+    """Test converting to same currency equals original currency column."""
     df = dataframe.convert_currency("a", "USD", "USD", make_new_column=True)
     assert all(df["a"] == df["a_USD"])
 
 
 @pytest.mark.finance
 def test_historical_datetime(dataframe):
+    """Test conversion raises exception for datetime outside API range."""
     with pytest.raises(ValueError):
         assert dataframe.convert_currency(
             "a",
@@ -44,6 +47,7 @@ def test_historical_datetime(dataframe):
 
 @pytest.mark.finance
 def test_historical_date(dataframe):
+    """Test conversion raises exception for date outside API range."""
     with pytest.raises(ValueError):
         assert dataframe.convert_currency(
             "a",
@@ -56,5 +60,6 @@ def test_historical_date(dataframe):
 
 @pytest.mark.finance
 def test_currency_check(dataframe):
+    """Test conversion raises exception for invalid currency."""
     with pytest.raises(ValueError):
-        assert dataframe.convert_currency("a", "USD", "ASDF")
+        assert dataframe.convert_currency("a", "USD", "INVALID-CURRENCY")

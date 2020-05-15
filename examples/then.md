@@ -80,9 +80,11 @@ example_dataframe2.then(remove_rows_3_and_4)
 
 ```python
 example_dataframe = pd.DataFrame(data_dict)
-example_dataframe = (example_dataframe
-                    .then(remove_first_two_letters_from_col_names)
-                    .then(remove_rows_3_and_4))
+example_dataframe = (
+    example_dataframe
+    .then(remove_first_two_letters_from_col_names)
+    .then(remove_rows_3_and_4)
+)
 ```
 
 ### Output

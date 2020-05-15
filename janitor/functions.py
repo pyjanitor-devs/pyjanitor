@@ -334,8 +334,7 @@ _underscorer2 = re.compile("([a-z0-9])([A-Z])")
 
 
 def _camel2snake(col_name: str) -> str:
-    """
-    Convert camelcase names to snake case.
+    """Convert camelcase names to snake case.
 
     Implementation taken from: https://gist.github.com/jaytaylor/3660565
     by @jtaylor
@@ -349,6 +348,7 @@ FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 
 def _normalize_1(col_name: Hashable) -> str:
+    """Perform normalization of column name."""
     result = str(col_name)
     for search, replace in FIXES:
         result = re.sub(search, replace, result)  # noqa: PD005
@@ -356,21 +356,20 @@ def _normalize_1(col_name: Hashable) -> str:
 
 
 def _strip_accents(col_name: str) -> str:
-    """
-    Removes accents from a DataFrame column name.
-    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string
+    """Remove accents from a DataFrame column name.
+    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-strin
     """  # noqa: E501
+
     return "".join(
-        l
-        for l in unicodedata.normalize("NFD", col_name)
-        if not unicodedata.combining(l)
+        letter
+        for letter in unicodedata.normalize("NFD", col_name)
+        if not unicodedata.combining(letter)
     )
 
 
 @pf.register_dataframe_method
 def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Drop all rows and columns that are completely null.
+    """Drop all rows and columns that are completely null.
 
     This method also resets the index(by default) since it doesn't make sense
     to preserve the index of a completely empty row.
@@ -413,8 +412,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 def get_dupes(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable] = None
 ) -> pd.DataFrame:
-    """
-    Return all duplicate rows.
+    """Return all duplicate rows.
 
     This method does not mutate the original DataFrame.
 
@@ -449,8 +447,7 @@ def get_dupes(
 def encode_categorical(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
-    """
-    Encode the specified columns with Pandas'
+    """Encode the specified columns with Pandas'
     `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_.
 
     This method mutates the original DataFrame.
@@ -499,8 +496,7 @@ def encode_categorical(
 def label_encode(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
-    """
-    Convert labels into numerical data.
+    """Convert labels into numerical data.
 
     This method will create a new column with the string "_enc" appended
     after the original column's name. Consider this to be syntactic sugar.
@@ -553,8 +549,7 @@ def label_encode(
 def rename_column(
     df: pd.DataFrame, old_column_name: str, new_column_name: str
 ) -> pd.DataFrame:
-    """
-    Rename a column in place.
+    """Rename a column in place.
 
     This method does not mutate the original DataFrame.
 
@@ -588,8 +583,7 @@ def rename_column(
 
 @pf.register_dataframe_method
 def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
-    """
-    Rename columns in place.
+    """Rename columns in place.
 
     Functional usage syntax:
 
@@ -622,8 +616,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 def reorder_columns(
     df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable]
 ) -> pd.DataFrame:
-    """
-    Reorder DataFrame columns by specifying desired order as list of col names.
+    """Reorder DataFrame columns by specifying desired order as list of col names.
 
     Columns not specified retain their order and follow after specified cols.
 
@@ -684,9 +677,7 @@ def coalesce(
     new_column_name: str = None,
     delete_columns: bool = True,
 ) -> pd.DataFrame:
-    """
-
-    Coalesces two or more columns of data in order of column names provided.
+    """Coalesce two or more columns of data in order of column names provided.
 
     This method does not mutate the original DataFrame.
 
@@ -737,8 +728,7 @@ def coalesce(
 def convert_excel_date(
     df: pd.DataFrame, column_name: Hashable
 ) -> pd.DataFrame:
-    """
-    Convert Excel's serial date format into Python datetime format.
+    """Convert Excel's serial date format into Python datetime format.
 
     This method mutates the original DataFrame.
 
@@ -777,8 +767,7 @@ def convert_excel_date(
 def convert_matlab_date(
     df: pd.DataFrame, column_name: Hashable
 ) -> pd.DataFrame:
-    """
-    Convert Matlab's serial date number into Python datetime format.
+    """Convert Matlab's serial date number into Python datetime format.
 
     Implementation is also from `StackOverflow`_.
 
@@ -816,8 +805,7 @@ def convert_matlab_date(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
-    """
-    Convert unix epoch time into Python datetime format.
+    """Convert unix epoch time into Python datetime format.
 
     Note that this ignores local tz and convert all timestamps to naive
     datetime based on UTC!
@@ -855,8 +843,7 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 def fill_empty(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
 ) -> pd.DataFrame:
-    """
-    Fill `NaN` values in specified columns with a given value.
+    """Fill `NaN` values in specified columns with a given value.
 
     Super sugary syntax that wraps :py:meth:`pandas.DataFrame.fillna`.
 
@@ -904,8 +891,7 @@ def fill_empty(
 def expand_column(
     df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
 ) -> pd.DataFrame:
-    """
-    Expand a categorical column with multiple labels into dummy-coded columns.
+    """Expand a categorical column with multiple labels into dummy-coded columns.
 
     Super sugary syntax that wraps :py:meth:`pandas.Series.str.get_dummies`.
 
@@ -952,8 +938,7 @@ def concatenate_columns(
     new_column_name,
     sep: str = "-",
 ) -> pd.DataFrame:
-    """
-    Concatenates the set of columns into a single column.
+    """Concatenates the set of columns into a single column.
 
     Used to quickly generate an index based on a group of columns.
 
@@ -1006,13 +991,15 @@ def deconcatenate_column(
     autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
-    """
-    De-concatenates a single column into multiple columns.
+    """De-concatenates a single column into multiple columns.
+
     The column to de-concatenate can be either a collection (list, tuple, ...)
     which can be separated out with ``pd.Series.tolist()``,
     or a string to slice based on ``sep``.
+
     To determine this behaviour automatically,
     the first element in the column specified is inspected.
+
     If it is a string, then ``sep`` must be specified.
     Else, the function assumes that it is an iterable type
     (e.g. ``list`` or ``tuple``),
@@ -1139,8 +1126,7 @@ def filter_string(
     search_string: str,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """
-    Filter a string-based column according to whether it contains a substring.
+    """Filter a string-based column according to whether it contains a substring.
 
     This is super sugary syntax that builds on top of
     `pandas.Series.str.contains`.
@@ -1205,8 +1191,7 @@ def filter_string(
 def filter_on(
     df: pd.DataFrame, criteria: str, complement: bool = False
 ) -> pd.DataFrame:
-    """
-    Return a dataframe filtered on a particular criteria.
+    """Return a dataframe filtered on a particular criteria.
 
     This method does not mutate the original DataFrame.
 
@@ -1277,8 +1262,7 @@ def filter_date(
     column_date_options: Dict = None,
     format: str = None,
 ) -> pd.DataFrame:
-    """
-    Filter a date-based column based on certain criteria.
+    """Filter a date-based column based on certain criteria.
 
     This method does not mutate the original DataFrame.
 
@@ -1486,8 +1470,7 @@ def filter_column_isin(
     iterable: Iterable,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """
-    Filter a dataframe for values in a column that exist in another iterable.
+    """Filter a dataframe for values in a column that exist in another iterable.
 
     This method does not mutate the original DataFrame.
 
@@ -1539,8 +1522,7 @@ def filter_column_isin(
 def remove_columns(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
-    """
-    Remove the set of columns specified in `column_names`.
+    """Remove the set of columns specified in `column_names`.
 
     This method does not mutate the original DataFrame.
 
@@ -1567,8 +1549,7 @@ def change_type(
     dtype: type,
     ignore_exception: bool = False,
 ) -> pd.DataFrame:
-    """
-    Change the type of a column.
+    """Change the type of a column.
 
     This method mutates the original DataFrame.
 
@@ -1620,8 +1601,7 @@ def add_column(
     value: Union[List[Any], Tuple[Any], Any],
     fill_remaining: bool = False,
 ) -> pd.DataFrame:
-    """
-    Add a column to the dataframe.
+    """Add a column to the dataframe.
 
     This method does not mutate the original DataFrame.
 
@@ -1751,14 +1731,14 @@ def add_column(
         # if `value` is a list, ndarray, etc.
         if len(value) > nrows:
             raise ValueError(
-                f"`values` has more elements than number of rows "
+                "`values` has more elements than number of rows "
                 f"in your `DataFrame`. vals: {len(value)}, "
                 f"df: {nrows}"
             )
         if len(value) != nrows and not fill_remaining:
             raise ValueError(
                 "Attempted to add iterable of values with length"
-                f" not equal to number of DataFrame rows"
+                " not equal to number of DataFrame rows"
             )
 
         if len(value) == 0:
@@ -1789,8 +1769,7 @@ def add_column(
 def add_columns(
     df: pd.DataFrame, fill_remaining: bool = False, **kwargs
 ) -> pd.DataFrame:
-    """
-    Add multiple columns to the dataframe.
+    """Add multiple columns to the dataframe.
 
     This method does not mutate the original DataFrame.
 
@@ -1830,8 +1809,7 @@ def add_columns(
 def limit_column_characters(
     df: pd.DataFrame, column_length: int, col_separator: str = "_"
 ) -> pd.DataFrame:
-    """
-    Truncate column sizes to a specific length.
+    """Truncate column sizes to a specific length.
 
     This method mutates the original DataFrame.
 
@@ -1951,8 +1929,7 @@ def row_to_names(
     remove_row: bool = False,
     remove_rows_above: bool = False,
 ) -> pd.DataFrame:
-    """
-    Elevates a row to be the column names of a DataFrame.
+    """Elevates a row to be the column names of a DataFrame.
 
     This method mutates the original DataFrame.
 
@@ -2079,8 +2056,7 @@ def round_to_fraction(
     denominator: float = None,
     digits: float = np.inf,
 ) -> pd.DataFrame:
-    """
-    Round all values in a column to a fraction.
+    """Round all values in a column to a fraction.
 
     This method mutates the original DataFrame.
 
@@ -2201,11 +2177,49 @@ def transform_column(
     column_name: Hashable,
     function: Callable,
     dest_column_name: str = None,
+    elementwise: bool = True,
 ) -> pd.DataFrame:
-    """
-    Transform the given column in-place using the provided function.
+    """Transform the given column in-place using the provided function.
 
-    This method mutates the original DataFrame.
+    Functions can be applied one of two ways:
+
+    - Element-wise (default; ``elementwise=True``)
+    - Column-wise  (alternative; ``elementwise=False``)
+
+    If the function is applied "elementwise",
+    then the first argument of the function signature
+    should be the individual element of each function.
+    This is the default behaviour of ``transform_column``,
+    because it is easy to understand.
+    For example:
+
+    .. code-block:: python
+
+        def elemwise_func(x):
+            modified_x = ... # do stuff here
+            return modified_x
+
+        df.transform_column(column_name="my_column", function=elementwise_func)
+
+    On the other hand, columnwise application of a function
+    behaves as if the function takes in a pandas Series
+    and emits back a sequence that is of identical length to the original.
+    One place where this is desirable
+    is to gain access to `pandas` native string methods,
+    which are super fast!
+
+    .. code-block:: python
+
+        def columnwise_func(s: pd.Series) -> pd.Series:
+            return s.str[0:5]
+
+        df.transform_column(
+            column_name="my_column",
+            lambda s: s.str[0:5],
+            elementwise=False
+        )
+
+    This method does not mutate the original DataFrame.
 
     Let's say we wanted to apply a log10 transform a column of data.
 
@@ -2214,7 +2228,7 @@ def transform_column(
     .. code-block:: python
 
         # YOU NO LONGER NEED TO WRITE THIS!
-        df[column_name] = df[column_name].apply(function)
+        df[column_name] = df[column_name].apply(np.log10)
 
     With the method chaining syntax, we can do the following instead:
 
@@ -2222,7 +2236,7 @@ def transform_column(
 
         df = (
             pd.DataFrame(...)
-            .transform_column(column_name, function)
+            .transform_column(column_name, np.log10)
         )
 
     With the functional syntax:
@@ -2230,7 +2244,7 @@ def transform_column(
     .. code-block:: python
 
         df = pd.DataFrame(...)
-        df = transform_column(df, column_name, function)
+        df = transform_column(df, column_name, np.log10)
 
     :param df: A pandas DataFrame.
     :param column_name: The column to transform.
@@ -2239,12 +2253,24 @@ def transform_column(
         in. Defaults to None, which will result in the original column
         name being overwritten. If a name is provided here, then a new column
         with the transformed values will be created.
+    :param elementwise: Whether to apply the function elementwise or not.
+        If elementwise is True, then the function's first argument
+        should be the data type of each datum in the column of data,
+        and should return a transformed datum.
+        If elementwise is False, then the function's should expect
+        a pandas Series passed into it, and return a pandas Series.
+
     :returns: A pandas DataFrame with a transformed column.
     """
     if dest_column_name is None:
         dest_column_name = column_name
 
-    df[dest_column_name] = df[column_name].apply(function)
+    if elementwise:
+        result = df[column_name].apply(function)
+    else:
+        result = function(df[column_name])
+
+    df = df.assign(**{dest_column_name: result})
     return df
 
 
@@ -2255,10 +2281,10 @@ def transform_columns(
     column_names: Union[List[str], Tuple[str]],
     function: Callable,
     suffix: str = None,
+    elementwise: bool = True,
     new_column_names: Dict[str, str] = None,
 ) -> pd.DataFrame:
-    """
-    Transform multiple columns through the same transformation.
+    """Transform multiple columns through the same transformation.
 
     This method mutates the original DataFrame.
 
@@ -2318,6 +2344,9 @@ def transform_columns(
     :param function: A function to apply on each column.
     :param suffix: (optional) Suffix to use when creating new columns to hold
         the transformed values.
+    :param elementwise: Passed on to `transform_column`; whether or not
+        to apply the transformation function elementwise (True)
+        or columnwise (False).
     :param new_column_names: (optional) An explicit mapping of old column names
         to new column names.
     :returns: A pandas DataFrame with transformed columns.
@@ -2342,7 +2371,9 @@ def transform_columns(
 
     # Now, transform columns.
     for old_col, new_col in dest_column_names.items():
-        df = transform_column(df, old_col, function, new_col)
+        df = transform_column(
+            df, old_col, function, new_col, elementwise=elementwise
+        )
 
     return df
 
@@ -2357,8 +2388,7 @@ def min_max_scale(
     new_min=0,
     new_max=1,
 ) -> pd.DataFrame:
-    """
-    Scales data to between a minimum and maximum value.
+    """Scales data to between a minimum and maximum value.
 
     This method mutates the original DataFrame.
 
@@ -2454,8 +2484,7 @@ def min_max_scale(
 
 @pf.register_dataframe_method
 def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
-    """
-    Flatten multi-level column dataframe to a single level.
+    """Flatten multi-level column dataframe to a single level.
 
     This method mutates the original DataFrame.
 
@@ -2529,8 +2558,7 @@ def currency_column_to_numeric(
     fill_all_non_numeric: float = None,
     remove_non_numeric: bool = False,
 ) -> pd.DataFrame:
-    """
-    Convert currency column to numeric.
+    """Convert currency column to numeric.
 
     This method does not mutate the original DataFrame.
 
@@ -2749,8 +2777,7 @@ def currency_column_to_numeric(
 def select_columns(
     df: pd.DataFrame, search_column_names: List[str], invert: bool = False
 ) -> pd.DataFrame:
-    """
-    Method-chainable selection of columns.
+    """Method-chainable selection of columns.
 
     This method does not mutate the original DataFrame.
 
@@ -2821,8 +2848,7 @@ def impute(
     value: Any = None,
     statistic_column_name: str = None,
 ) -> pd.DataFrame:
-    """
-    Method-chainable imputation of values in a column.
+    """Method-chainable imputation of values in a column.
 
     This method mutates the original DataFrame.
 
@@ -2913,8 +2939,7 @@ def impute(
 
 @pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
-    """
-    Add an arbitrary function to run in the ``pyjanitor`` method chain.
+    """Add an arbitrary function to run in the ``pyjanitor`` method chain.
 
     This method does not mutate the original DataFrame.
 
@@ -2932,8 +2957,7 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
-    """
-    Drop rows that do not have null values in the given column.
+    """Drop rows that do not have null values in the given column.
 
     This method does not mutate the original DataFrame.
 
@@ -2952,8 +2976,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def find_replace(df, match: str = "exact", **mappings):
-    """
-    Perform a find-and-replace action on provided columns.
+    """Perform a find-and-replace action on provided columns.
 
     Depending on use case, users can choose either exact, full-value matching,
     or regular-expression-based fuzzy matching
@@ -2972,7 +2995,7 @@ def find_replace(df, match: str = "exact", **mappings):
     Our task is to replace values `'ice coffee'` and `'regular coffee'`
     of the `'order'` column into `'latte'`.
 
-    Example 1: Exact matching
+    Example 1 for exact matching
 
     .. code-block:: python
 
@@ -3040,8 +3063,7 @@ def find_replace(df, match: str = "exact", **mappings):
 def _find_replace(
     df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
 ) -> pd.DataFrame:
-    """
-    Utility function for ``find_replace``.
+    """Utility function for ``find_replace``.
 
     The code in here was the original implementation of ``find_replace``,
     but we decided to change out the front-facing API to accept
@@ -3086,8 +3108,7 @@ def update_where(
     target_column_name: Hashable,
     target_val: Any,
 ) -> pd.DataFrame:
-    """
-    Add multiple conditions to update a column in the dataframe.
+    """Add multiple conditions to update a column in the dataframe.
 
     This method mutates the original DataFrame.
 
@@ -3135,8 +3156,7 @@ def update_where(
 def to_datetime(
     df: pd.DataFrame, column_name: Hashable, **kwargs
 ) -> pd.DataFrame:
-    """
-    Method-chainable to_datetime.
+    """Method-chainable to_datetime.
 
     This method mutates the original DataFrame.
 
@@ -3173,8 +3193,7 @@ def groupby_agg(
     agg_column_name: str,
     agg: Union[Callable, str],
 ) -> pd.DataFrame:
-    """
-    Shortcut for assigning a groupby-transform to a new column.
+    """Shortcut for assigning a groupby-transform to a new column.
 
     This method does not mutate the original DataFrame.
 
@@ -3213,8 +3232,7 @@ def groupby_agg(
 
 @pf.register_dataframe_accessor("data_description")
 class DataDescription:
-    """
-    High-level description of data present in this DataFrame.
+    """High-level description of data present in this DataFrame.
 
     This is a custom data accessor.
     """
@@ -3250,15 +3268,14 @@ class DataDescription:
         print(self)
 
     def set_description(self, desc: Union[List, Dict]):
-        """
-        Update the description for each of the columns in the DataFrame.
+        """Update the description for each of the columns in the DataFrame.
 
         :param desc: The structure containing the descriptions to update
         """
         if isinstance(desc, list):
             if len(desc) != len(self._data.columns):
                 raise ValueError(
-                    f"Length of description list "
+                    "Length of description list "
                     f"({len(desc)}) does not match number of columns in "
                     f"DataFrame ({len(self._data.columns)})"
                 )
@@ -3278,8 +3295,7 @@ def bin_numeric(
     num_bins: int = 5,
     labels: str = None,
 ) -> pd.DataFrame:
-    """
-    Generate a new column that labels bins for a specified numeric column.
+    """Generate a new column that labels bins for a specified numeric column.
 
     This method mutates the original DataFrame.
 
@@ -3327,8 +3343,7 @@ def bin_numeric(
 def drop_duplicate_columns(
     df: pd.DataFrame, column_name: Hashable, nth_index: int = 0
 ) -> pd.DataFrame:
-    """
-    Remove a duplicated column specified by column_name, its index.
+    """Remove a duplicated column specified by column_name, its index.
 
     This method does not mutate the original DataFrame.
 
@@ -3385,8 +3400,7 @@ def take_first(
     by: Hashable,
     ascending: bool = True,
 ) -> pd.DataFrame:
-    """
-    Take the first row within each group specified by `subset`.
+    """Take the first row within each group specified by `subset`.
 
     This method does not mutate the original DataFrame.
 
@@ -3420,8 +3434,7 @@ def take_first(
 def shuffle(
     df: pd.DataFrame, random_state=None, reset_index=True
 ) -> pd.DataFrame:
-    """
-    Shuffle the rows of the DataFrame.
+    """Shuffle the rows of the DataFrame.
 
     This method does not mutate the original DataFrame.
 
@@ -3446,8 +3459,7 @@ def shuffle(
 
 @pf.register_dataframe_method
 def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
-    """
-    Join the result of applying a function across dataframe rows.
+    """Join the result of applying a function across dataframe rows.
 
     This method does not mutate the original DataFrame.
 
@@ -3497,8 +3509,7 @@ def flag_nulls(
     column_name: Hashable = "null_flag",
     columns: Union[str, Iterable[str], Hashable] = None,
 ) -> pd.DataFrame:
-    """
-    Creates a new column to indicate whether you have null values in a given
+    """Creates a new column to indicate whether you have null values in a given
     row. If the columns parameter is not set, looks across the entire
     DataFrame, otherwise will look only in the columns you set.
 
@@ -3571,8 +3582,7 @@ def count_cumulative_unique(
     dest_column_name: str,
     case_sensitive: bool = True,
 ) -> pd.DataFrame:
-    """
-    Generates a running total of cumulative unique values in a given column.
+    """Generates a running total of cumulative unique values in a given column.
 
     Functional usage syntax:
 
@@ -3648,8 +3658,7 @@ def count_cumulative_unique(
 
 @pf.register_series_method
 def toset(series: pd.Series) -> Set:
-    """
-    Return a set of the values.
+    """Return a set of the values.
 
     These are each a scalar type, which is a Python scalar
     (for str, int, float) or a pandas scalar
@@ -3691,8 +3700,7 @@ def jitter(
     clip: Optional[Iterable[np.number]] = None,
     random_state: Optional[np.number] = None,
 ) -> pd.DataFrame:
-    """
-    Adds Gaussian noise (jitter) to the values of a column.
+    """Adds Gaussian noise (jitter) to the values of a column.
 
     Functional usage syntax:
 
@@ -3794,8 +3802,7 @@ def jitter(
 def sort_naturally(
     df: pd.DataFrame, column_name: str, **natsorted_kwargs
 ) -> pd.DataFrame:
-    """
-    Sort an DataFrame by a column using "natural" sorting.
+    """Sort an DataFrame by a column using "natural" sorting.
 
     Natural sorting is distinct from
     the default lexiographical sorting provided by ``pandas``.

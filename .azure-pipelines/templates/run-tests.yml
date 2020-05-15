@@ -17,6 +17,7 @@ steps:
     displayName: 'Upload code coverage.'
   - script: |
       $(activate.command) pyjanitor-dev
+      python -m ipykernel install --user --name pyjanitor-dev
       jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
     displayName: 'Test that all notebooks execute correctly.'
   - script: |

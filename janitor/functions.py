@@ -3275,7 +3275,7 @@ class DataDescription:
         if isinstance(desc, list):
             if len(desc) != len(self._data.columns):
                 raise ValueError(
-                    f"Length of description list "
+                    "Length of description list "
                     f"({len(desc)}) does not match number of columns in "
                     f"DataFrame ({len(self._data.columns)})"
                 )

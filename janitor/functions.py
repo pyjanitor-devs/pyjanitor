@@ -1731,14 +1731,14 @@ def add_column(
         # if `value` is a list, ndarray, etc.
         if len(value) > nrows:
             raise ValueError(
-                f"`values` has more elements than number of rows "
+                "`values` has more elements than number of rows "
                 f"in your `DataFrame`. vals: {len(value)}, "
                 f"df: {nrows}"
             )
         if len(value) != nrows and not fill_remaining:
             raise ValueError(
                 "Attempted to add iterable of values with length"
-                f" not equal to number of DataFrame rows"
+                " not equal to number of DataFrame rows"
             )
 
         if len(value) == 0:

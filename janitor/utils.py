@@ -194,7 +194,7 @@ def import_message(
     )
     print()
     if installable:
-        print(f"To do so, use the following command:")
+        print("To do so, use the following command:")
         print()
         print(f"    {installation}")
     else:

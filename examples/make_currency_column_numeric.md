@@ -100,8 +100,11 @@ df.make_currency_column_numeric("a", fill_all_non_numeric=35)
 ## Example 4: Coerce numeric values in column to float, replace a string value with a specific value, and replace remaining string values with a specific value
 
 ```python
-df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric, fill_all_non_numeric=35)
-
+df.make_currency_column_numeric(
+    "a",
+    cast_non_numeric=cast_non_numeric,
+    fill_all_non_numeric=35
+)
 ```
 
 ## Output
@@ -138,7 +141,11 @@ df.make_currency_column_numeric("a", remove_non_numeric=True)
 ## Example 6: Coerce numeric values in column to float, replace a string value with a specific value, and remove remaining string values
 
 ```python
-df.make_currency_column_numeric("a", cast_non_numeric=cast_non_numeric, remove_non_numeric=True)
+df.make_currency_column_numeric(
+    "a",
+    cast_non_numeric=cast_non_numeric,
+    remove_non_numeric=True
+)
 ```
 
 ## Output

@@ -363,7 +363,7 @@ def _strip_accents(col_name: str) -> str:
     return "".join(
         letter
         for letter in unicodedata.normalize("NFD", col_name)
-        if not unicodedata.combining(l)
+        if not unicodedata.combining(letter)
     )
 
 

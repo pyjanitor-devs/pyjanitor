@@ -1,5 +1,11 @@
 new version (on deck)
 =====================
+- [DOC] pep8 all examples. @VPerrollaz
+- [TST]: Add docstrings to tests @hectormz
+- [INF]: Add ``debug-statements``, ``requirements-txt-fixer``, and ``interrogate`` to ``pre-commit``. @hectormz
+- [ENH]: Upgraded transform_column to use df.assign underneath the hood,
+  and also added option to transform column elementwise (via apply)
+  or columnwise (thus operating on a series). @ericmjl
 
 
 v0.20.5
@@ -52,7 +58,7 @@ v0.18.2
 - [INF] Fix pytest marks by @ericmjl (issue #520)
 - [ENH] add example notebook with use of finance submodule methods by @rahosbach
 - [DOC] added a couple of admonitions for Windows users. h/t @anzelpwj for debugging
-   help when a few tests failed for `win32` @Ram-N
+  help when a few tests failed for `win32` @Ram-N
 - [ENH] Pyjanitor for PySpark @zjpoh
 - [ENH] Add pyspark clean_names @zjpoh
 - [ENH] Convert asserts to raise exceptions by @hectormz

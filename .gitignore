@@ -116,6 +116,7 @@ ENV/
 
 # Ingore docs' symbolic link to notebooks
 docs/notebooks
+docs/*
 
 
 # Swap
@@ -136,3 +137,6 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
+
+# Other stuff
+*.profraw

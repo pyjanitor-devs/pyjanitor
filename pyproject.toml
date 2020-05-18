@@ -17,3 +17,14 @@ exclude = '''
   | venv
 )/
 '''
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-semiprivate = false
+ignore-private = false
+ignore-module = false
+fail-under = 81
+exclude = ["setup.py", "docs", "build", "tests", "nbconvert_config.py"]
+verbose = 2
+quiet = false

@@ -4,10 +4,18 @@ import pytest
 
 
 @pytest.mark.functions
-def test_transform_column(dataframe):
-    # replacing the data of the original column
+@pytest.mark.parametrize("elementwise", [True, False])
+def test_transform_column(dataframe, elementwise):
+    """
+    Test replacing data of the original column.
 
-    df = dataframe.transform_column("a", np.log10)
+    The function that is used for testing here
+    must be able to operate elementwise
+    and on a single pandas Series.
+    We use np.log10 as an example
+    """
+
+    df = dataframe.transform_column("a", np.log10, elementwise=elementwise)
     expected = pd.Series(np.log10([1, 2, 3] * 3))
     expected.name = "a"
     pd.testing.assert_series_equal(df["a"], expected)
@@ -15,7 +23,7 @@ def test_transform_column(dataframe):
 
 @pytest.mark.functions
 def test_transform_column_with_dest(dataframe):
-    # creating a new destination column
+    """Test creating a new destination column."""
 
     expected_df = dataframe.assign(a_log10=np.log10(dataframe["a"]))
 

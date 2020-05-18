@@ -1,3 +1,5 @@
+"""Setup script."""
+
 import re
 from pathlib import Path
 
@@ -5,6 +7,7 @@ from setuptools import find_packages, setup
 
 
 def requirements():
+    """Reader for requirements.txt"""
     with open("requirements.txt", "r+") as f:
         return f.read()
 
@@ -17,7 +20,6 @@ def generate_long_description() -> str:
     so there must be an even number of comments in README.
 
     :returns: Extracted description from README
-
     """
     # Read the contents of README file
     this_directory = Path(__file__).parent
@@ -46,7 +48,7 @@ extra_all = extra_biology + extra_engineering + extra_spark
 
 setup(
     name="pyjanitor",
-    version="0.20.5",
+    version="0.20.6",
     description="Tools for cleaning pandas DataFrames",
     author="Eric J. Ma",
     author_email="ericmajinglong@gmail.com",

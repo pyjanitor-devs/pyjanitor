@@ -1,5 +1,9 @@
 new version (on deck)
 =====================
+
+
+v0.20.6
+=======
 - [DOC] pep8 all examples. @VPerrollaz
 - [TST]: Add docstrings to tests @hectormz
 - [INF]: Add ``debug-statements``, ``requirements-txt-fixer``, and ``interrogate`` to ``pre-commit``. @hectormz

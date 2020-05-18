@@ -39,7 +39,7 @@ def test_transform_column_with_dest(dataframe):
 
 @pytest.mark.functions
 def test_transform_column_no_mutation(dataframe):
-    """Test checking that transform_column doesn't mutate the orginal dataframe."""
+    """Test checking that transform_column doesn't mutate the dataframe."""
     df = dataframe.transform_column("a", np.log10)
 
     with pytest.raises(AssertionError):

@@ -1,3 +1,6 @@
+"""
+Tests referring to the method transform_column of the module functions.
+"""
 import numpy as np
 import pandas as pd
 import pytest
@@ -32,3 +35,12 @@ def test_transform_column_with_dest(dataframe):
     )
 
     pd.testing.assert_frame_equal(df, expected_df)
+
+
+@pytest.mark.functions
+def test_transform_column_no_mutation(dataframe):
+    """Test checking that transform_column doesn't mutate the orginal dataframe."""
+    df = dataframe.transform_column("a", np.log10)
+
+    with pytest.raises(AssertionError):
+        pd.testing.assert_frame_equal(dataframe, df)

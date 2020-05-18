@@ -1,10 +1,11 @@
 new version (on deck)
 =====================
+- [TST]: Add a test for transform_column to check for nonmutation. @VPerrollaz
 
 
 v0.20.6
 =======
-- [DOC] pep8 all examples. @VPerrollaz
+- [DOC]: Pep8 all examples. @VPerrollaz
 - [TST]: Add docstrings to tests @hectormz
 - [INF]: Add ``debug-statements``, ``requirements-txt-fixer``, and ``interrogate`` to ``pre-commit``. @hectormz
 - [ENH]: Upgraded transform_column to use df.assign underneath the hood,

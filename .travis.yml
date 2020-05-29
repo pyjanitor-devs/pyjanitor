@@ -4,6 +4,9 @@ matrix:
     - python: 3.5  # we don't actually use this
       env: PYTHON_VERSION=3.7
 
+services:
+  - docker
+
 install:
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
@@ -28,6 +31,9 @@ install:
   - python -m ipykernel install --name pyjanitor-dev --user
   - python setup.py develop
 
+  # Build development container
+  - docker build -t ericmjl/pyjanitor:devcontainer -f .devcontainer/Dockerfile .
+
 # We use TravisCI to build docs and not run tests.
 # Tests are covered on Azure.
 # Travis, however, has saner deploy syntax.
@@ -35,15 +41,21 @@ script:
   - make docs
 
 deploy:
-  provider: pages:git
-  deploy_key: $GITHUB_TOKEN
-  edge: true  # opt in to dpl v2
-  keep_history: false
-  cleanup: false
-  verbose: true
-  local_dir: docs/_build/html
-  on:
-    branch: dev
+  # Publish to github pages
+  - provider: pages:git
+    deploy_key: $GITHUB_TOKEN
+    edge: true  # opt in to dpl v2
+    keep_history: false
+    cleanup: false
+    verbose: true
+    local_dir: docs/_build/html
+    on:
+      branch: dev
+  # Push dev container to Dockerhub
+  - provider: script
+    script: bash scripts/docker_deploy.sh
+    on:
+      branch: dev
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

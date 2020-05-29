@@ -32,7 +32,7 @@ install:
   - python setup.py develop
 
   # Build development container
-  - docker build -t ericmjl/pyjanitor:devcontainer .devcontainer/Dockerfile
+  - docker build -t ericmjl/pyjanitor:devcontainer -f .devcontainer/Dockerfile .
 
 # We use TravisCI to build docs and not run tests.
 # Tests are covered on Azure.

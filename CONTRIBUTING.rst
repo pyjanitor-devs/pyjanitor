@@ -15,6 +15,39 @@ Get Started!
 
 Ready to contribute? Here's how to setup ``pyjanitor`` for local development.
 
+Development Containers with VSCode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As of 29 May 2020, development containers are supported!
+For me, this is the preferred way to get you started up and running,
+as I have experience with it.
+Here, you are provided with a pre-built and clean
+runtime and build environment.
+You don't have to wrestle with conda wait times if you don't want to!
+
+To get started:
+
+1. Fork the repository.
+2. Ensure you have Docker running on your local machine.
+3. Ensure you have VSCode running on your local machine.
+4. In Visual Studio Code,
+click on the quick actions Status Bar item in the lower left corner.
+5. Then select "Remote Containers: Open Repository In Container".
+6. Enter in the URL of your fork of pyjanitor.
+
+VSCode will pull down the prebuilt Docker container,
+git clone the repository for you inside an isolated Docker volume,
+and mount the repository directory inside your Docker container.
+Hack away, and submit in your pull request!
+
+You shouln't be able to access the cloned repo
+on your local hard drive.
+If you do want local access, then clone the repo locally first
+before selecting "Remote Containers: Open Folder In Container".
+
+Manual Setup
+~~~~~~~~~~~~
+
 1. Fork the ``pyjanitor`` repo on GitHub: https://github.com/ericmjl/pyjanitor.
 2. Clone your fork locally::
 

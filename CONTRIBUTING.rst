@@ -47,6 +47,11 @@ on your local hard drive.
 If you do want local access, then clone the repo locally first
 before selecting "Remote Containers: Open Folder In Container".
 
+If you find something is broken because a utility is missing in the container,
+submit a PR with the appropriate build command inserted in the Dockerfile.
+Care has been taken to document what each step does,
+so please read the in-line documentation in the Dockerfile carefully.
+
 Manual Setup
 ~~~~~~~~~~~~
 

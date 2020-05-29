@@ -3,7 +3,7 @@
 {
 	"name": "Python 3 - Miniconda",
 	"context": "..",
-	"image": "ericmjl/pyjanitor:devcontainer",
+	"image": "registry.hub.docker.com/ericmjl/pyjanitor:devcontainer",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"terminal.integrated.shell.linux": "/bin/bash",

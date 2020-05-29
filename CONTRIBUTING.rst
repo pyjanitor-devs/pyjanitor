@@ -38,7 +38,9 @@ click on the quick actions Status Bar item in the lower left corner.
 VSCode will pull down the prebuilt Docker container,
 git clone the repository for you inside an isolated Docker volume,
 and mount the repository directory inside your Docker container.
-Hack away, and submit in your pull request!
+
+Follow best practices to submit a pull request by making a feature branch.
+Now, hack away, and submit in your pull request!
 
 You shouln't be able to access the cloned repo
 on your local hard drive.

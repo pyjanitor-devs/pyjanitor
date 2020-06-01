@@ -232,10 +232,9 @@ def test_empty_dict():
 
 
 def test_scalar_to_list():
-    """Test that 
-    scalars(null,boolean,int,float), strings, sets, and tuples 
-    are converted to lists in the dictionary values
-     """
+    """
+    Test that dictionary values are all converted to lists.
+    """
     data = {
         "x": 1,
         "y": "string",

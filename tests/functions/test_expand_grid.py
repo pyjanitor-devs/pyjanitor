@@ -357,7 +357,7 @@ def test_dataframe_multi_index_column():
         assert expand_grid(others=data)
 
 
-def test_dataframe_multiIndex_index_column():
+def test_dataframe_multi_index_index_column():
     data = {
         "x":
         pd.DataFrame([[2, 3], [6, 7]],

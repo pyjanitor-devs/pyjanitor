@@ -3862,8 +3862,8 @@ def expand_grid(df: pd.DataFrame = None,
         #probably take this out,
         #as it is covered in expand_grid function
         raise ValueError("others must be a dictionary")
-    #if there is a dataframe, for the method chaining,
-    #it must have a key, to create a name value pair
+    # If there is a dataframe, for the method chaining,
+    # it must have a key, to create a name value pair
     if df is not None:
         if not df_key:
             raise ValueError("Using `expand_grid` as part of a DataFrame method chain requires that a string `df_key` be passed in.")

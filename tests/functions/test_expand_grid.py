@@ -122,9 +122,8 @@ def test_series_not_multi_index_with_name():
 def test_series_multi_ndex():
     """Test that multiIndexed series trigger error"""
     data = {
-        "x": pd.Series(
-            [2, 3], index=pd.MultiIndex.from_arrays([[1, 2], [3, 4]])
-        )
+        "x": pd.Series([2, 3],
+                       index=pd.MultiIndex.from_arrays([[1, 2], [3, 4]]))
     }
     with pytest.raises(ValueError):
         assert expand_grid(data)
@@ -147,7 +146,8 @@ def test_dataframe_single_index():
 def test_dataframe_multi_index_index():
     """Trigger error if dataframe has a MultiIndex index"""
     data = {
-        "x": pd.DataFrame(
+        "x":
+        pd.DataFrame(
             [[2, 3], [6, 7]],
             index=pd.MultiIndex.from_arrays([["a", "b"], ["y", "z"]]),
         )
@@ -160,7 +160,8 @@ def test_dataframe_multi_index_index():
 def test_dataframe_multi_index_column():
     """Trigger error if dataframe has a MultiIndex column"""
     data = {
-        "x": pd.DataFrame(
+        "x":
+        pd.DataFrame(
             [[2, 3], [6, 7]],
             columns=pd.MultiIndex.from_arrays([["m", "n"], ["p", "q"]]),
         )
@@ -173,7 +174,8 @@ def test_dataframe_multi_index_column():
 def test_dataframe_multi_index_index_column():
     """Trigger error if dataframe has a MultiIndex column or index"""
     data = {
-        "x": pd.DataFrame(
+        "x":
+        pd.DataFrame(
             [[2, 3], [6, 7]],
             index=pd.MultiIndex.from_arrays([["a", "b"], ["y", "z"]]),
             columns=pd.MultiIndex.from_arrays([["m", "n"], ["p", "q"]]),
@@ -221,18 +223,22 @@ def test_computation_output_1():
 def test_computation_output_2():
     """Test output if entry contains only dataframes/series"""
     data = {
-        "df": pd.DataFrame({"x": range(1, 6), "y": [5, 4, 3, 2, 1]}),
-        "df1": pd.DataFrame({"x": range(4, 7), "y": [6, 5, 4]}),
+        "df": pd.DataFrame({
+            "x": range(1, 6),
+            "y": [5, 4, 3, 2, 1]
+        }),
+        "df1": pd.DataFrame({
+            "x": range(4, 7),
+            "y": [6, 5, 4]
+        }),
     }
 
-    expected = pd.DataFrame(
-        {
-            "df_x": [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5],
-            "df_y": [5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1],
-            "df1_x": [4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6],
-            "df1_y": [6, 5, 4, 6, 5, 4, 6, 5, 4, 6, 5, 4, 6, 5, 4],
-        }
-    )
+    expected = pd.DataFrame({
+        "df_x": [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5],
+        "df_y": [5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1],
+        "df1_x": [4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6],
+        "df1_y": [6, 5, 4, 6, 5, 4, 6, 5, 4, 6, 5, 4, 6, 5, 4],
+    })
 
     assert_frame_equal(expand_grid(others=data), expected)
 
@@ -240,28 +246,27 @@ def test_computation_output_2():
 def test_computation_output_3():
     """Test mix of dataframes and lists"""
     data = {
-        "df": pd.DataFrame({"x": range(1, 3), "y": [2, 1]}),
+        "df": pd.DataFrame({
+            "x": range(1, 3),
+            "y": [2, 1]
+        }),
         "z": range(1, 4),
     }
-    expected = pd.DataFrame(
-        {
-            "df_x": [1, 1, 1, 2, 2, 2],
-            "df_y": [2, 2, 2, 1, 1, 1],
-            "z": [1, 2, 3, 1, 2, 3],
-        }
-    )
+    expected = pd.DataFrame({
+        "df_x": [1, 1, 1, 2, 2, 2],
+        "df_y": [2, 2, 2, 1, 1, 1],
+        "z": [1, 2, 3, 1, 2, 3],
+    })
     assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_computation_output_4():
     """ Test output from list of strings"""
     data = {"l1": ascii_lowercase[:3], "l2": ascii_uppercase[:3]}
-    expected = pd.DataFrame(
-        {
-            "l1": ["a", "a", "a", "b", "b", "b", "c", "c", "c"],
-            "l2": ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
-        }
-    )
+    expected = pd.DataFrame({
+        "l1": ["a", "a", "a", "b", "b", "b", "c", "c", "c"],
+        "l2": ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
+    })
     assert_frame_equal(expand_grid(others=data), expected)
 
 
@@ -289,12 +294,10 @@ def test_df_output():
        https://tidyr.tidyverse.org/reference/expand_grid.html#compared-to-expand-grid"""
     df = pd.DataFrame({"x": range(1, 3), "y": [2, 1]})
     others = {"z": range(1, 4)}
-    expected = pd.DataFrame(
-        {
-            "df_x": [1, 1, 1, 2, 2, 2],
-            "df_y": [2, 2, 2, 1, 1, 1],
-            "z": [1, 2, 3, 1, 2, 3],
-        }
-    )
+    expected = pd.DataFrame({
+        "df_x": [1, 1, 1, 2, 2, 2],
+        "df_y": [2, 2, 2, 1, 1, 1],
+        "z": [1, 2, 3, 1, 2, 3],
+    })
     result = expand_grid(df, df_key="df", others=others)
     assert_frame_equal(result, expected)

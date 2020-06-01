@@ -333,7 +333,7 @@ def test_dataframe_single_index():
     assert_frame_equal(expand_grid(others=data), expected)
 
 
-def test_dataframe_multiIndex_index():
+def test_dataframe_multi_index_index():
     """Test for multiIndex dataframe"""
     data = {
         "x":

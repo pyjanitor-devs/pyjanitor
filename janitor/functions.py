@@ -3819,8 +3819,8 @@ def sort_naturally(df: pd.DataFrame, column_name: str,
 def expand_grid(df: pd.DataFrame = None,
                 df_key: str = None,
                 others: Dict = None) -> pd.DataFrame:
-    """ Creates a dataframe from all combinations of all inputs.
-        This method mutates the original dataframe.
+    """
+    Creates a dataframe from all combinations of all inputs.
 
     Functional usage syntax:
 

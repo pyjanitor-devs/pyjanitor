@@ -5,7 +5,6 @@ import re
 import unicodedata
 import warnings
 from fnmatch import translate
-from itertools import chain
 from numpy.lib import recfunctions as rfn
 from functools import partial, reduce
 from typing import (
@@ -31,16 +30,12 @@ from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
-from .utils import (
-    _clean_accounting_column,
-    _currency_column_to_numeric,
-    _replace_empty_string_with_none,
-    _replace_original_empty_string_with_none,
-    _strip_underscores,
-    check,
-    check_column,
-    deprecated_alias,
-)
+from .utils import (_clean_accounting_column, _currency_column_to_numeric,
+                    _replace_empty_string_with_none,
+                    _replace_original_empty_string_with_none,
+                    _strip_underscores, check, check_column, deprecated_alias,
+                    _check_instance, _grid_computation, _grid_computation_dict,
+                    _grid_computation_list, _compute_two_dfs)
 
 
 def unionize_dataframe_categories(
@@ -3819,8 +3814,46 @@ def sort_naturally(df: pd.DataFrame, column_name: str,
 def expand_grid(df: pd.DataFrame = None,
                 df_key: str = None,
                 others: Dict = None) -> pd.DataFrame:
-    """ Creates a dataframe from all combinations of all inputs.
-        This method mutates the original dataframe.
+    """ Creates a dataframe from a combination of all inputs.
+        This works with a dictionary of name value pairs, 
+        and will work with structures that are not dataframes.
+        If method-chaining to a dataframe, 
+        a key to represent the column name in the output must be provided.
+        The output will always be a dataframe.
+
+    Example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"x":range(1,3), "y":[2,1]})
+        others = {"z" : range(1,4)}
+
+        df.expand_grid(df_key="df",others=others)
+
+        # df_x |   df_y |   z 
+        #    1 |      2 |   1 
+        #    1 |      2 |   2 
+        #    1 |      2 |   3 
+        #    2 |      1 |   1 
+        #    2 |      1 |   2 
+        #    2 |      1 |   3 
+
+        #create a dataframe from all combinations in a dictionary
+        data = {"x":range(1,4), "y":[1,2]}
+
+        jn.expand_grid(others=data)
+
+        #  x |   y 
+        #  1 |   1 
+        #  1 |   2 
+        #  2 |   1 
+        #  2 |   2 
+        #  3 |   1 
+        #  3 |   2 
+
 
     Functional usage syntax:
 
@@ -3833,210 +3866,45 @@ def expand_grid(df: pd.DataFrame = None,
         df = jn.expand_grid(df=df, df_key="...", others={...})
 
     Method-chaining usage syntax:
+        
+    .. code-block:: python
 
         import pandas as pd
         import janitor as jn
 
+        df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
+
+    Usage independent of a dataframe
+
     .. code-block:: python
 
-        df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
+        import pandas as pd
+        from janitor import expand_grid
+
+        df = expand_grid({"x":range(1,4), "y":[1,2]})
 
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe. It becomes the column name of the dataframe.
-    :others: A dictionary. This will contain the data to be combined with the dataframe.
+    :param others: A dictionary. This will contain the data to be combined with the dataframe.
+                   If no dataframe exists, all inputs in others will be combined to create
+                   a dataframe
     :returns : A pandas dataframe of all combinations of name value pairs.
+    :raises: ValueError
 
-    This works with a dictionary of name value pairs, and will work with structures that are not dataframes.
-    The output will always be a dataframe.
+
     """
-    #check if others is a dictionary
+    # check if others is a dictionary
     if not isinstance(others, dict):
-        #strictly name value pairs
-        #same idea as in R and tidyverse implementation
-        #probably take this out,
-        #as it is covered in expand_grid function
+        # strictly name value pairs
+        # same idea as in R and tidyverse implementation
         raise ValueError("others must be a dictionary")
-    #if there is a dataframe, for the method chaining,
-    #it must have a key, to create a name value pair
+    # if there is a dataframe, for the method chaining,
+    # it must have a key, to create a name value pair
     if df is not None:
         if not df_key:
             raise ValueError("dataframe requires a name")
         else:
             others.update({df_key: df})
-    dfs, dicts = check_instance(others)
+    dfs, dicts = _check_instance(others)
 
-    return grid_computation(dfs, dicts)
-
-
-def check_instance(entry):
-
-    if not entry:
-        raise ValueError("passed dictionary cannot be empty")
-    #if it is a number, convert to list
-    #as numbers are not iterable
-    entry = {
-        key: [value] if isinstance(value,
-                                   (type(None), int, float, bool)) else value
-        for key, value in entry.items()
-    }
-
-    #convert to list if value is a string or a set or a tuple
-    #probably irrelevant for a tuple
-    #just the safety that a list brings in
-    #if a string is supplied and not within a list
-    #it is expected that the string will be chunked into individual letters
-    #and iterated through
-    entry = {
-        key: list(value) if isinstance(value,
-                                       (str, set, tuple, range)) else value
-        for key, value in entry.items()
-    }
-
-    #collect dataframes here
-    dfs = []
-
-    #collect non dataframes here, proper dicts ... key value pair where the value is a list of scalars
-    dicts = {}
-
-    for key, value in entry.items():
-
-        #exclude dicts:
-        if isinstance(value, dict):
-            raise ValueError("nested dicts not allowed")
-
-        #process arrays
-        if isinstance(value, np.ndarray):
-            if value.size == 0:
-                raise ValueError("array cannot be empty")
-            elif value.ndim == 1:
-                dfs.append(pd.DataFrame(value, columns=[key]))
-            elif value.ndim == 2:
-                dfs.append(pd.DataFrame(value).add_prefix(f"{key}_"))
-            else:
-                raise ValueError(
-                    "expand_grid works with only vector and matrix arrays")
-        #process series
-        if isinstance(value, pd.Series):
-            if value.empty:
-                raise ValueError("passed Series cannot be empty")
-            if not isinstance(value.index, pd.MultiIndex):
-                if value.name:
-                    value = value.to_frame(name=f"{key}_{value.name}")
-                    dfs.append(value)
-                else:
-                    value = value.to_frame(name=f"{key}")
-                    dfs.append(value)
-            else:
-                raise ValueError(
-                    "expand_grid does not work with pd.MultiIndex")
-        #process dataframe
-        if isinstance(value, pd.DataFrame):
-            if value.empty:
-                raise ValueError("passed DataFrame cannot be empty")
-            if not (isinstance(value.index, pd.MultiIndex)
-                    or isinstance(value.columns, pd.MultiIndex)):
-                #add key to dataframe columns
-                value = value.add_prefix(f"{key}_")
-                dfs.append(value)
-            else:
-                raise ValueError(
-                    "expand grid does not work with pd.MultiIndex")
-        #process lists
-        if isinstance(value, list):
-            if not value:
-                raise ValueError("passed value cannot be empty")
-            elif np.array(value).ndim == 1:
-                checklist = (type(None), str, int, float, bool)
-                check = (isinstance(internal, checklist) for internal in value)
-                if all(check):
-                    dicts.update({key: value})
-                else:
-                    raise ValueError("values in iterable must be scalar")
-            elif np.array(value).ndim == 2:
-                value = pd.DataFrame(value).add_prefix(f"{key}_")
-                dfs.append(value)
-            else:
-                raise ValueError("sequence's dimension should be 1d or 2d")
-
-    return dfs, dicts
-
-
-#computation for values that are not arrays/dataframes/series
-#these are collected into dictionary and processed with numpy meshgrid
-def grid_computation_dict(dicts):
-    #actual computation
-    if len(dicts) == 1:
-        key = list(dicts.keys())[0]
-        value = list(dicts.values())[0]
-        final = pd.DataFrame(value, columns=[key])
-    else:
-        res = np.meshgrid(*dicts.values())
-        #create structured array
-        #keeps data type of each value in the dict
-        outcome = np.core.records.fromarrays(res, names=",".join(dicts))
-        #reshape into a 1 column array
-        #using the size of any of the arrays obtained from the meshgrid computation
-        outcome = np.reshape(outcome, (np.size(res[0]), 1))
-        #flatten structured array into 1d array
-        outcome = np.concatenate(outcome)
-        #sort array
-        outcome.sort(axis=0, order=list(dicts))
-        #create dataframe
-        final = pd.DataFrame.from_records(outcome)
-    return final
-
-
-#this is for dataframes/series
-#this should be the final output if there are lists or lists and dicts
-#returned from check instance
-def compute_two_dfs(df1, df2):
-    #get lengths of dataframes(number of rows) and swap
-    # essentially we'll pair one dataframe with the other's length:
-    lengths = reversed([ent.index.size for ent in (df1, df2)])
-    #grab the maximum string length
-    string_cols = [
-        frame.select_dtypes(include="object").columns for frame in (df1, df2)
-    ]
-
-    #pair max string length with col
-    #will be passed into frame.to_records, to get dtype in numpy recarray
-    string_cols = [{col: f"<U{frame[col].str.len().max()}"
-                    for col in ent}
-                   for ent, frame in zip(string_cols, (df1, df2))]
-
-    (len_first, col_dtypes,
-     first), (len_last, col_dtypes,
-              last) = list(zip(lengths, string_cols, (df1, df2)))
-
-    #export to numpy as recarray
-    first = first.to_records(column_dtypes=col_dtypes, index=False)
-    #tile first with len_first
-    #remember, len_first is the length of the other dataframe
-    first = np.tile(first, (len_first, 1))
-    #get a 1d array
-    first = np.concatenate(first)
-    #sorting here ensures we get each row of the first
-    #with the entire rows of the other dataframe
-    np.recarray.sort(first, order=first.dtype.names[0])
-
-    #same process as first, except there'll be no sorting
-    last = last.to_records(column_dtypes=col_dtypes, index=False)
-    last = np.tile(last, (len_last, 1))
-    last = np.concatenate(last)
-    result = rfn.merge_arrays((first, last), flatten=True, asrecarray=True)
-    return pd.DataFrame.from_records(result)
-
-
-def grid_computation_list(dfs):
-    return reduce(compute_two_dfs, dfs)
-
-
-def grid_computation(dfs, dicts):
-    if not dicts:
-        result = grid_computation_list(dfs)
-    elif not dfs:
-        result = grid_computation_dict(dicts)
-    else:
-        dfs.append(grid_computation_dict(dicts))
-        result = grid_computation_list(dfs)
-    return result
+    return _grid_computation(dfs, dicts)

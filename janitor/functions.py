@@ -3860,7 +3860,7 @@ def expand_grid(df: pd.DataFrame = None,
     #it must have a key, to create a name value pair
     if df is not None:
         if not df_key:
-            raise ValueError("dataframe requires a name")
+            raise ValueError("Using `expand_grid` as part of a DataFrame method chain requires that a string `df_key` be passed in.")
         else:
             others.update({df_key: df})
     dfs, dicts = check_instance(others)

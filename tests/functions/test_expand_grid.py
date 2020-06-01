@@ -519,31 +519,13 @@ def test_computation_output_3():
         }),
         "z": range(1, 4)
     }
-    expected = pd.DataFrame([{
-        'df_x': 1,
-        'df_y': 2,
-        'z': 1
-    }, {
-        'df_x': 1,
-        'df_y': 2,
-        'z': 2
-    }, {
-        'df_x': 1,
-        'df_y': 2,
-        'z': 3
-    }, {
-        'df_x': 2,
-        'df_y': 1,
-        'z': 1
-    }, {
-        'df_x': 2,
-        'df_y': 1,
-        'z': 2
-    }, {
-        'df_x': 2,
-        'df_y': 1,
-        'z': 3
-    }])
+    expected = pd.DataFrame(
+        {
+            "df_x": [1, 1, 1, 2, 2, 2,],
+            "df_y": [2, 2, 2, 1, 1, 1,],
+            "z": [1, 2, 3, 1, 2, 3,],
+        }
+    )
     assert_frame_equal(expand_grid(others=data), expected)
 
 

@@ -51,7 +51,7 @@ def test_scalar_to_list():
         [],
         {
             "x": [1],
-            "y": ["s", "t", "r", "i", "n", "g"],
+            "y": ["string"],
             "z": [2, 3, 4],
             "a": [26, 50],
             "b": [None],
@@ -170,7 +170,7 @@ def test_dataframe_multi_index_column():
         assert expand_grid(others=data)
 
 
-def test_dataframe_multi_index_index_column():
+def test_dataframe_multi_index_index_and_column():
     """Trigger error if dataframe has a MultiIndex column or index"""
     data = {
         "x": pd.DataFrame(
@@ -255,7 +255,7 @@ def test_computation_output_3():
 
 def test_computation_output_4():
     """ Test output from list of strings"""
-    data = {"l1": ascii_lowercase[:3], "l2": ascii_uppercase[:3]}
+    data = {"l1": list(ascii_lowercase[:3]), "l2": list(ascii_uppercase[:3])}
     expected = pd.DataFrame(
         {
             "l1": ["a", "a", "a", "b", "b", "b", "c", "c", "c"],

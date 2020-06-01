@@ -418,25 +418,17 @@ def _check_instance(entry: Dict):
     # entry has to be a dictionary
     if not entry:
         raise ValueError("passed dictionary cannot be empty")
-    # if it is a number, convert to list
-    # as numbers are not iterable
+    # if it is a number or string, wrap in a list
     entry = {
         key: [value]
-        if isinstance(value, (type(None), int, float, bool))
+        if isinstance(value, (type(None), int, float, bool, str))
         else value
         for key, value in entry.items()
     }
 
-    # convert to list if value is a string or a set or a tuple
-    # probably irrelevant for a tuple
-    # just the safety that a list brings in
-    # if a string is supplied and not within a list
-    # it is expected that the string will be chunked into individual letters
-    # and iterated through
+    # convert to list if value is a string|tuple|range
     entry = {
-        key: list(value)
-        if isinstance(value, (str, set, tuple, range))
-        else value
+        key: list(value) if isinstance(value, (set, tuple, range)) else value
         for key, value in entry.items()
     }
 

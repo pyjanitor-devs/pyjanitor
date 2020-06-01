@@ -3840,6 +3840,13 @@ def expand_grid(df: pd.DataFrame = None,
 
         df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
 
+    Usage independent of a DataFrame:
+
+        .. code-block:: python
+        import pandas as pd
+        from janitor import expand_grid
+
+        df = expand_grid(...please-fill-in-here...)
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe. It becomes the column name of the dataframe.
     :others: A dictionary. This will contain the data to be combined with the dataframe.

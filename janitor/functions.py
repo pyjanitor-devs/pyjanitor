@@ -3850,7 +3850,7 @@ def expand_grid(df: pd.DataFrame = None,
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe. It becomes the column name of the dataframe.
     :others: A dictionary. This will contain the data to be combined with the dataframe.
-    :returns : A pandas dataframe of all combinations of name value pairs.
+    :returns: A pandas dataframe of all combinations of name value pairs.
 
     This works with a dictionary of name value pairs, and will work with structures that are not dataframes.
     The output will always be a dataframe.

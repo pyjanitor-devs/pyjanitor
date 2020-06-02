@@ -5,7 +5,6 @@ import re
 import unicodedata
 import warnings
 from fnmatch import translate
-from numpy.lib import recfunctions as rfn
 from functools import partial, reduce
 from typing import (
     Any,

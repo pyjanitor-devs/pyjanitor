@@ -33,11 +33,8 @@ def check(varname: str, value, expected_types: list):
             break
 
     if not is_expected_type:
-        raise TypeError(
-            "{varname} should be one of {expected_types}".format(
-                varname=varname, expected_types=expected_types
-            )
-        )
+        raise TypeError("{varname} should be one of {expected_types}".format(
+            varname=varname, expected_types=expected_types))
 
 
 def _clean_accounting_column(x: str) -> float:
@@ -112,8 +109,8 @@ def _replace_original_empty_string_with_none(column_series):
 
 
 def _strip_underscores(
-    df: pd.DataFrame, strip_underscores: Union[str, bool] = None
-) -> pd.DataFrame:
+        df: pd.DataFrame,
+        strip_underscores: Union[str, bool] = None) -> pd.DataFrame:
     """
     Strip underscores from DataFrames column names.
 
@@ -131,20 +128,18 @@ def _strip_underscores(
     :returns: A pandas DataFrame with underscores removed.
     """
     df = df.rename(
-        columns=lambda x: _strip_underscores_func(x, strip_underscores)
-    )
+        columns=lambda x: _strip_underscores_func(x, strip_underscores))
     return df
 
 
-def _strip_underscores_func(
-    col: str, strip_underscores: Union[str, bool] = None
-) -> pd.DataFrame:
+def _strip_underscores_func(col: str,
+                            strip_underscores: Union[str, bool] = None
+                            ) -> pd.DataFrame:
     """Strip underscores from a string."""
     underscore_options = [None, "left", "right", "both", "l", "r", True]
     if strip_underscores not in underscore_options:
         raise JanitorError(
-            f"strip_underscores must be one of: {underscore_options}"
-        )
+            f"strip_underscores must be one of: {underscore_options}")
 
     if strip_underscores in ["left", "l"]:
         col = col.lstrip("_")
@@ -189,10 +184,8 @@ def import_message(
             installable = False
             installation = f"{package} cannot be installed via pip"
 
-    print(
-        f"To use the janitor submodule {submodule}, you need to install "
-        f"{package}."
-    )
+    print(f"To use the janitor submodule {submodule}, you need to install "
+          f"{package}.")
     print()
     if installable:
         print("To do so, use the following command:")
@@ -214,12 +207,10 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
     :raises ValueError: If `func` is found to not be idempotent for the given
         `DataFrame` `df`.
     """
-    if not func(df, *args, **kwargs) == func(
-        func(df, *args, **kwargs), *args, **kwargs
-    ):
-        raise ValueError(
-            "Supplied function is not idempotent for the given " "DataFrame."
-        )
+    if not func(df, *args, **kwargs) == func(func(df, *args, **kwargs), *args,
+                                             **kwargs):
+        raise ValueError("Supplied function is not idempotent for the given "
+                         "DataFrame.")
 
 
 def deprecated_alias(**aliases) -> Callable:
@@ -305,8 +296,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
         if old_alias in kwargs:
             if new_alias in kwargs:
                 raise TypeError(
-                    f"{func_name} received both {old_alias} and {new_alias}"
-                )
+                    f"{func_name} received both {old_alias} and {new_alias}")
             warnings.warn(
                 f"{old_alias} is deprecated; use {new_alias}",
                 DeprecationWarning,
@@ -314,9 +304,9 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
             kwargs[new_alias] = kwargs.pop(old_alias)
 
 
-def check_column(
-    df: pd.DataFrame, old_column_names: List, present: bool = True
-):
+def check_column(df: pd.DataFrame,
+                 old_column_names: List,
+                 present: bool = True):
     """
     One-liner syntactic sugar for checking the presence or absence of a column.
 
@@ -336,13 +326,11 @@ def check_column(
         if present:
             if column_name not in df.columns:
                 raise ValueError(
-                    f"{column_name} not present in dataframe columns!"
-                )
+                    f"{column_name} not present in dataframe columns!")
         else:  # Tests for exclusion
             if column_name in df.columns:
                 raise ValueError(
-                    f"{column_name} already present in dataframe columns!"
-                )
+                    f"{column_name} already present in dataframe columns!")
 
 
 def skipna(f: Callable) -> Callable:
@@ -362,7 +350,6 @@ def skipna(f: Callable) -> Callable:
     :param f: the function to be wrapped
     :returns: _wrapped, the wrapped function
     """
-
     def _wrapped(x, *args, **kwargs):
         if (type(x) is float and np.isnan(x)) or x is None:
             return np.nan
@@ -372,9 +359,9 @@ def skipna(f: Callable) -> Callable:
     return _wrapped
 
 
-def skiperror(
-    f: Callable, return_x: bool = False, return_val=np.nan
-) -> Callable:
+def skiperror(f: Callable,
+              return_x: bool = False,
+              return_val=np.nan) -> Callable:
     """
     Decorator for escaping errors in a function
 
@@ -396,7 +383,6 @@ def skiperror(
         Ignored if return_x is True
     :returns: _wrapped, the wrapped function
     """
-
     def _wrapped(x, *args, **kwargs):
         try:
             return f(x, *args, **kwargs)
@@ -410,23 +396,32 @@ def skiperror(
 
 def _check_instance(entry: Dict):
     """
-    Function to check instances in the expand_grid function
+    Function to check instances in the expand_grid function.
+
     This checks if entry is a dictionary,
     checks the instance of value in key:value pairs in entry,
     and makes changes to other types as deemed necessary. 
+
+    Additionally, type-specific errors are raised
+    if unsupported data types are passed in as values 
+    in the entry dictionary.
+
+    How each type is handled, and their associated exceptions,
+    are pretty clear from the code.
     """
-    # entry has to be a dictionary
+    # dictionary should not be empty
     if not entry:
         raise ValueError("passed dictionary cannot be empty")
-    # if it is a number or string, wrap in a list
+    # If it is a NoneType, number, Boolean, or string,
+    #then wrap in a list
     entry = {
-        key: [value]
-        if isinstance(value, (type(None), int, float, bool, str))
-        else value
+        key:
+        [value] if isinstance(value,
+                              (type(None), int, float, bool, str)) else value
         for key, value in entry.items()
     }
 
-    # convert to list if value is a string|tuple|range
+    # Convert to list if value is a set|tuple|range
     entry = {
         key: list(value) if isinstance(value, (set, tuple, range)) else value
         for key, value in entry.items()
@@ -435,14 +430,14 @@ def _check_instance(entry: Dict):
     # collect dataframes here
     dfs = []
 
-    # collect non dataframes here, proper dicts ... key value pair where the value is a list of scalars
+    # collect non dataframes here, proper dicts
     dicts = {}
 
     for key, value in entry.items():
 
         # exclude dicts:
         if isinstance(value, dict):
-            raise ValueError("nested dicts not allowed")
+            raise TypeError("Nested dictionaries are not allowed")
 
         # process arrays
         if isinstance(value, np.ndarray):
@@ -453,14 +448,16 @@ def _check_instance(entry: Dict):
             elif value.ndim == 2:
                 dfs.append(pd.DataFrame(value).add_prefix(f"{key}_"))
             else:
-                raise ValueError(
-                    "expand_grid works with only vector and matrix arrays"
-                )
+                raise TypeError(
+                    "expand_grid works with only vector and matrix arrays")
         # process series
         if isinstance(value, pd.Series):
             if value.empty:
                 raise ValueError("passed Series cannot be empty")
             if not isinstance(value.index, pd.MultiIndex):
+                #this section checks if the Series has a name or not
+                #and uses that information to create a new column name
+                #for the resulting Dataframe
                 if value.name:
                     value = value.to_frame(name=f"{key}_{value.name}")
                     dfs.append(value)
@@ -468,28 +465,22 @@ def _check_instance(entry: Dict):
                     value = value.to_frame(name=f"{key}")
                     dfs.append(value)
             else:
-                raise ValueError(
-                    "expand_grid does not work with pd.MultiIndex"
-                )
+                raise TypeError("expand_grid does not work with pd.MultiIndex")
         # process dataframe
         if isinstance(value, pd.DataFrame):
             if value.empty:
                 raise ValueError("passed DataFrame cannot be empty")
-            if not (
-                isinstance(value.index, pd.MultiIndex)
-                or isinstance(value.columns, pd.MultiIndex)
-            ):
+            if not (isinstance(value.index, pd.MultiIndex)
+                    or isinstance(value.columns, pd.MultiIndex)):
                 # add key to dataframe columns
                 value = value.add_prefix(f"{key}_")
                 dfs.append(value)
             else:
-                raise ValueError(
-                    "expand grid does not work with pd.MultiIndex"
-                )
+                raise TypeError("expand_grid does not work with pd.MultiIndex")
         # process lists
         if isinstance(value, list):
             if not value:
-                raise ValueError("passed value cannot be empty")
+                raise ValueError("passed Sequence cannot be empty")
             elif np.array(value).ndim == 1:
                 checklist = (type(None), str, int, float, bool)
                 check = (isinstance(internal, checklist) for internal in value)
@@ -501,12 +492,12 @@ def _check_instance(entry: Dict):
                 value = pd.DataFrame(value).add_prefix(f"{key}_")
                 dfs.append(value)
             else:
-                raise ValueError("sequence's dimension should be 1d or 2d")
+                raise ValueError("Sequence's dimension should be 1d or 2d")
 
     return dfs, dicts
 
 
-def _grid_computation_dict(dicts: Dict):
+def _grid_computation_dict(dicts: Dict) -> pd.DataFrame:
     """
     Function used within the expand_grid function,
     to compute dataframe from values that are not dataframes/arrays/series.
@@ -540,15 +531,15 @@ def _grid_computation_dict(dicts: Dict):
     return final
 
 
-# this is for dataframes/series
-# this should be the final output if there are lists or lists and dicts
-# returned from check instance
-def _compute_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame):
+def _compute_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     """
-    This computes the cartesian product of two dataframes.
-    Applies to the expand_grid function.
+    Compute the cartesian product of two Dataframes.
+    
+    Used by the expand_grid function.
+
     Numpy is employed here, to get faster computations,
     compared to running a many-to-many join with pandas merge.
+
     Structured arrays are employed, to preserve data type.
     """
     # get lengths of dataframes(number of rows) and swap
@@ -563,15 +554,14 @@ def _compute_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame):
     # pair max string length with col
     # will be passed into frame.to_records,
     # to get dtype in numpy recarray
-    string_cols = [
-        {col: f"<U{frame[col].str.len().max()}" for col in ent}
-        for ent, frame in zip(string_cols, (df1, df2))
-    ]
+    string_cols = [{col: f"<U{frame[col].str.len().max()}"
+                    for col in ent}
+                   for ent, frame in zip(string_cols, (df1, df2))]
 
     # pair length, column data type and dataframe
-    (len_first, col_dtypes, first), (len_last, col_dtypes, last) = list(
-        zip(lengths, string_cols, (df1, df2))
-    )
+    (len_first, col_dtypes,
+     first), (len_last, col_dtypes,
+              last) = list(zip(lengths, string_cols, (df1, df2)))
 
     # export to numpy as recarray,
     # ensuring that the column data types are captured
@@ -602,17 +592,17 @@ def _compute_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame):
 
 def _grid_computation_list(dfs: List):
     """
-    This computes cartesian product of dataframes in the expand_grid function.
+    Computes cartesian product of Dataframes in the expand_grid function.
+
     This builds on _compute_two_dfs function,
-    by applying it to more than two dataframes.
+    by applying it to more two or more Dataframes.
     """
     return functools.reduce(_compute_two_dfs, dfs)
 
 
-def _grid_computation(dfs: List, dicts: Dict):
+def _grid_computation(dfs: List, dicts: Dict) -> pd.DataFrame:
     """
-    This gets the final output of the expand_grid function.
-    Output is a dataframe
+    Return the final output of the expand_grid function.
     """
     if not dicts:
         result = _grid_computation_list(dfs)

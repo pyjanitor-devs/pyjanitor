@@ -13,7 +13,7 @@ def test_not_a_dict():
     """Test that entry(list) is not a dictionary"""
     data = [60, 70]
     with pytest.raises(TypeError):
-        assert expand_grid(others=data)
+        expand_grid(others=data)
 
 
 def test_not_a_dict_1():
@@ -37,8 +37,8 @@ def test_scalar_to_list():
     data = {
         "x": 1,
         "y": "string",
-        "z": set([2, 3, 4]),
-        "a": tuple([26, 50]),
+        "z": {(2, 3, 4)},
+        "a": (26, 50),
         "b": None,
         "c": 1.2,
         "d": True,
@@ -57,7 +57,7 @@ def test_scalar_to_list():
             "e": [False],
         },
     )
-    assert _check_instance(data) == expected
+    _check_instance(data) == expected
 
 
 def test_nested_dict():
@@ -205,7 +205,7 @@ def test_lists_all_scalar():
     """
     data = {"x": [2, 3, 4, 5, "ragnar"]}
     expected = {"x": [2, 3, 4, 5, "ragnar"]}
-    assert _check_instance(data)[-1] == expected
+    _check_instance(data)[-1] == expected
 
 
 def test_lists_not_all_scalar():

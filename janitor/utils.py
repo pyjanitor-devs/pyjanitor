@@ -457,13 +457,13 @@ def _check_instance(entry: Dict):
         if isinstance(value, np.ndarray):
             if value.size == 0:
                 raise ValueError("array cannot be empty")
-            elif value.ndim == 1:
+            if value.ndim == 1:
                 dfs.append(pd.DataFrame(value, columns=[key]))
             elif value.ndim == 2:
                 dfs.append(pd.DataFrame(value).add_prefix(f"{key}_"))
             else:
                 raise TypeError(
-                    "expand_grid works with only vector and matrix arrays"
+                    "`expand_grid` works with only vector and matrix arrays"
                 )
         # process series
         if isinstance(value, pd.Series):
@@ -480,7 +480,9 @@ def _check_instance(entry: Dict):
                     value = value.to_frame(name=f"{key}")
                     dfs.append(value)
             else:
-                raise TypeError("expand_grid does not work with pd.MultiIndex")
+                raise TypeError(
+                    "`expand_grid` does not work with pd.MultiIndex"
+                )
         # process dataframe
         if isinstance(value, pd.DataFrame):
             if value.empty:
@@ -493,15 +495,19 @@ def _check_instance(entry: Dict):
                 value = value.add_prefix(f"{key}_")
                 dfs.append(value)
             else:
-                raise TypeError("expand_grid does not work with pd.MultiIndex")
+                raise TypeError(
+                    "`expand_grid` does not work with pd.MultiIndex"
+                )
         # process lists
         if isinstance(value, list):
             if not value:
                 raise ValueError("passed Sequence cannot be empty")
-            elif np.array(value).ndim == 1:
+            if np.array(value).ndim == 1:
                 checklist = (type(None), str, int, float, bool)
-                check = (isinstance(internal, checklist) for internal in value)
-                if all(check):
+                instance_check_type = (
+                    isinstance(internal, checklist) for internal in value
+                )
+                if all(instance_check_type):
                     dicts.update({key: value})
                 else:
                     raise ValueError("values in iterable must be scalar")

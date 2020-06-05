@@ -514,7 +514,7 @@ def _grid_computation_dict(dicts: Dict) -> pd.DataFrame:
     # if there is only name value pair in the dictionary
     if len(dicts) == 1:
         key = list(dicts.keys())[0]
-        value = list(dicts.values())[0]
+        value = list(dicts.values())[0]  # noqa: PD011
         final = pd.DataFrame(value, columns=[key])
     # if there are more than one name value pair
     else:

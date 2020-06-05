@@ -541,7 +541,8 @@ def _grid_computation_dict(dicts: Dict) -> pd.DataFrame:
         # keeps data type of each value in the dict
         outcome = np.core.records.fromarrays(res, names=",".join(dicts))
         # reshape into a 1 column array
-        # using the size of any of the arrays obtained from the meshgrid computation
+        # using the size of any of the arrays obtained
+        # from the meshgrid computation
         outcome = np.reshape(outcome, (np.size(res[0]), 1))
         # flatten structured array into 1d array
         outcome = np.concatenate(outcome)

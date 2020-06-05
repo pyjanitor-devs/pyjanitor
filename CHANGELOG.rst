@@ -1,8 +1,11 @@
 new version (on deck)
 =====================
+
+
+v0.20.7
+=======
 - [TST]: Add a test for transform_column to check for nonmutation. @VPerrollaz
 - [ENH]: Contributed ``expand_grid`` function by @samukweku
-
 
 
 v0.20.6

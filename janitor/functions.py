@@ -3878,12 +3878,12 @@ def sort_naturally(
 def expand_grid(
     df: pd.DataFrame = None, df_key: str = None, others: Dict = None
 ) -> pd.DataFrame:
-    """ 
+    """
     Creates a dataframe from a combination of all inputs.
 
-    This works with a dictionary of name value pairs, 
+    This works with a dictionary of name value pairs,
     and will work with structures that are not dataframes.
-    If method-chaining to a dataframe, 
+    If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
     The output will always be a dataframe.
@@ -3900,26 +3900,26 @@ def expand_grid(
 
         df.expand_grid(df_key="df",others=others)
 
-        # df_x |   df_y |   z 
-        #    1 |      2 |   1 
-        #    1 |      2 |   2 
-        #    1 |      2 |   3 
-        #    2 |      1 |   1 
-        #    2 |      1 |   2 
-        #    2 |      1 |   3 
+        # df_x |   df_y |   z
+        #    1 |      2 |   1
+        #    1 |      2 |   2
+        #    1 |      2 |   3
+        #    2 |      1 |   1
+        #    2 |      1 |   2
+        #    2 |      1 |   3
 
         #create a dataframe from all combinations in a dictionary
         data = {"x":range(1,4), "y":[1,2]}
 
         jn.expand_grid(others=data)
 
-        #  x |   y 
-        #  1 |   1 
-        #  1 |   2 
-        #  2 |   1 
-        #  2 |   2 
-        #  3 |   1 
-        #  3 |   2 
+        #  x |   y
+        #  1 |   1
+        #  1 |   2
+        #  2 |   1
+        #  2 |   2
+        #  3 |   1
+        #  3 |   2
 
 
     Functional usage syntax:
@@ -3933,7 +3933,7 @@ def expand_grid(
         df = jn.expand_grid(df=df, df_key="...", others={...})
 
     Method-chaining usage syntax:
-        
+
     .. code-block:: python
         import pandas as pd
         import janitor as jn
@@ -3955,7 +3955,7 @@ def expand_grid(
                    If no dataframe exists, all inputs in others will be combined to create
                    a dataframe
     :returns : A pandas dataframe of all combinations of name value pairs.
-    :raises: TypeError if others is not a dictionary 
+    :raises: TypeError if others is not a dictionary
     :raises: KeyError if there is a dataframe and no key is provided.
 
 

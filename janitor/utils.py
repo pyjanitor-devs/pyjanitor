@@ -414,10 +414,10 @@ def _check_instance(entry: Dict):
 
     This checks if entry is a dictionary,
     checks the instance of value in key:value pairs in entry,
-    and makes changes to other types as deemed necessary. 
+    and makes changes to other types as deemed necessary.
 
     Additionally, type-specific errors are raised
-    if unsupported data types are passed in as values 
+    if unsupported data types are passed in as values
     in the entry dictionary.
 
     How each type is handled, and their associated exceptions,
@@ -557,7 +557,7 @@ def _grid_computation_dict(dicts: Dict) -> pd.DataFrame:
 def _compute_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     """
     Compute the cartesian product of two Dataframes.
-    
+
     Used by the expand_grid function.
 
     Numpy is employed here, to get faster computations,

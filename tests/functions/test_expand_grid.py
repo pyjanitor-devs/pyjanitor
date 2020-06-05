@@ -57,7 +57,8 @@ def test_scalar_to_list():
             "e": [False],
         },
     )
-    assert _check_instance(data)[0] == expected[0]
+    # assert that it is an empty list
+    assert not _check_instance(data)[0]
     assert _check_instance(data)[-1] == expected[-1]
 
 
@@ -206,7 +207,8 @@ def test_lists_all_scalar():
     """
     data = {"x": [2, 3, 4, 5, "ragnar"]}
     expected = ([], {"x": [2, 3, 4, 5, "ragnar"]})
-    assert _check_instance(data)[0] == expected[0]
+    # assert that it is an empty list
+    assert not _check_instance(data)[0]
     assert _check_instance(data)[-1] == expected[-1]
 
 

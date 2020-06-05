@@ -30,8 +30,10 @@ from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
+    _check_instance,
     _clean_accounting_column,
     _currency_column_to_numeric,
+    _grid_computation,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _strip_underscores,
@@ -1297,6 +1299,7 @@ def filter_date(
     parsed, you would pass `{'format': your_format}` to `column_date_options`.
 
     """
+
     # TODO: need to convert this to notebook.
     #     :Setup:
     # .. code-block:: python
@@ -3869,3 +3872,116 @@ def sort_naturally(
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]
+
+
+@pf.register_dataframe_method
+def expand_grid(
+    df: pd.DataFrame = None, df_key: str = None, others: Dict = None
+) -> pd.DataFrame:
+    """
+    Creates a dataframe from a combination of all inputs.
+
+    This works with a dictionary of name value pairs,
+    and will work with structures that are not dataframes.
+    If method-chaining to a dataframe,
+    a key to represent the column name in the output must be provided.
+
+    The output will always be a dataframe.
+
+    Example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"x":range(1,3), "y":[2,1]})
+        others = {"z" : range(1,4)}
+
+        df.expand_grid(df_key="df",others=others)
+
+        # df_x |   df_y |   z
+        #    1 |      2 |   1
+        #    1 |      2 |   2
+        #    1 |      2 |   3
+        #    2 |      1 |   1
+        #    2 |      1 |   2
+        #    2 |      1 |   3
+
+        #create a dataframe from all combinations in a dictionary
+        data = {"x":range(1,4), "y":[1,2]}
+
+        jn.expand_grid(others=data)
+
+        #  x |   y
+        #  1 |   1
+        #  1 |   2
+        #  2 |   1
+        #  2 |   2
+        #  3 |   1
+        #  3 |   2
+
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.expand_grid(df=df, df_key="...", others={...})
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
+
+    Usage independent of a dataframe
+
+    .. code-block:: python
+
+        import pandas as pd
+        from janitor import expand_grid
+
+        df = expand_grid({"x":range(1,4), "y":[1,2]})
+
+    :param df: A pandas dataframe.
+    :param df_key: name of key for the dataframe.
+                   It becomes the column name of the dataframe.
+    :param others: A dictionary that contains the data
+                   to be combined with the dataframe.
+                   If no dataframe exists, all inputs
+                   in others will be combined to create a dataframe.
+    :returns : A pandas dataframe of all combinations of name value pairs.
+    :raises: TypeError if others is not a dictionary
+    :raises: KeyError if there is a dataframe and no key is provided.
+
+
+    """
+    # check if others is a dictionary
+    if not isinstance(others, dict):
+        # strictly name value pairs
+        # same idea as in R and tidyverse implementation
+        raise TypeError("others must be a dictionary")
+    # if there is a dataframe, for the method chaining,
+    # it must have a key, to create a name value pair
+    if df is not None:
+        if isinstance(df.index, pd.MultiIndex) or isinstance(
+            df.columns, pd.MultiIndex
+        ):
+            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
+        if not df_key:
+            raise KeyError(
+                """
+                Using `expand_grid` as part of a DataFrame method chain
+                 requires that a string `df_key` be passed in.
+                 """
+            )
+        others.update({df_key: df})
+    dfs, dicts = _check_instance(others)
+
+    return _grid_computation(dfs, dicts)

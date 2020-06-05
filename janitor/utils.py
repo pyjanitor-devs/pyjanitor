@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Union
 
 import numpy as np
 import pandas as pd
+from numpy.lib import recfunctions as rfn
 
 from .errors import JanitorError
 
@@ -405,3 +406,238 @@ def skiperror(
             return return_val
 
     return _wrapped
+
+
+def _check_instance(entry: Dict):
+    """
+    Function to check instances in the expand_grid function.
+
+    This checks if entry is a dictionary,
+    checks the instance of value in key:value pairs in entry,
+    and makes changes to other types as deemed necessary.
+
+    Additionally, type-specific errors are raised
+    if unsupported data types are passed in as values
+    in the entry dictionary.
+
+    How each type is handled, and their associated exceptions,
+    are pretty clear from the code.
+    """
+    # dictionary should not be empty
+    if not entry:
+        raise ValueError("passed dictionary cannot be empty")
+    # If it is a NoneType, number, Boolean, or string,
+    # then wrap in a list
+    entry = {
+        key: [value]
+        if isinstance(value, (type(None), int, float, bool, str))
+        else value
+        for key, value in entry.items()
+    }
+
+    # Convert to list if value is a set|tuple|range
+    entry = {
+        key: list(value) if isinstance(value, (set, tuple, range)) else value
+        for key, value in entry.items()
+    }
+
+    # collect dataframes here
+    dfs = []
+
+    # collect non dataframes here, proper dicts
+    dicts = {}
+
+    for key, value in entry.items():
+
+        # exclude dicts:
+        if isinstance(value, dict):
+            raise TypeError("Nested dictionaries are not allowed")
+
+        # process arrays
+        if isinstance(value, np.ndarray):
+            if value.size == 0:
+                raise ValueError("array cannot be empty")
+            if value.ndim == 1:
+                dfs.append(pd.DataFrame(value, columns=[key]))
+            elif value.ndim == 2:
+                dfs.append(pd.DataFrame(value).add_prefix(f"{key}_"))
+            else:
+                raise TypeError(
+                    "`expand_grid` works with only vector and matrix arrays"
+                )
+        # process series
+        if isinstance(value, pd.Series):
+            if value.empty:
+                raise ValueError("passed Series cannot be empty")
+            if not isinstance(value.index, pd.MultiIndex):
+                # this section checks if the Series has a name or not
+                # and uses that information to create a new column name
+                # for the resulting Dataframe
+                if value.name:
+                    value = value.to_frame(name=f"{key}_{value.name}")
+                    dfs.append(value)
+                else:
+                    value = value.to_frame(name=f"{key}")
+                    dfs.append(value)
+            else:
+                raise TypeError(
+                    "`expand_grid` does not work with pd.MultiIndex"
+                )
+        # process dataframe
+        if isinstance(value, pd.DataFrame):
+            if value.empty:
+                raise ValueError("passed DataFrame cannot be empty")
+            if not (
+                isinstance(value.index, pd.MultiIndex)
+                or isinstance(value.columns, pd.MultiIndex)
+            ):
+                # add key to dataframe columns
+                value = value.add_prefix(f"{key}_")
+                dfs.append(value)
+            else:
+                raise TypeError(
+                    "`expand_grid` does not work with pd.MultiIndex"
+                )
+        # process lists
+        if isinstance(value, list):
+            if not value:
+                raise ValueError("passed Sequence cannot be empty")
+            if np.array(value).ndim == 1:
+                checklist = (type(None), str, int, float, bool)
+                instance_check_type = (
+                    isinstance(internal, checklist) for internal in value
+                )
+                if all(instance_check_type):
+                    dicts.update({key: value})
+                else:
+                    raise ValueError("values in iterable must be scalar")
+            elif np.array(value).ndim == 2:
+                value = pd.DataFrame(value).add_prefix(f"{key}_")
+                dfs.append(value)
+            else:
+                raise ValueError("Sequence's dimension should be 1d or 2d")
+
+    return dfs, dicts
+
+
+def _grid_computation_dict(dicts: Dict) -> pd.DataFrame:
+    """
+    Function used within the expand_grid function,
+    to compute dataframe from values that are not dataframes/arrays/series.
+    These values are collected into a dictionary,
+    and processed with numpy meshgrid.
+
+    Numpy's meshgrid is faster than itertools' product,
+    and when converting to a dataframe, is fast as well.
+    Structured arrays are used here, to ensure the datatypes are preserved.
+    """
+    # if there is only name value pair in the dictionary
+    if len(dicts) == 1:
+        final = pd.DataFrame(dicts)
+    # if there are more than one name value pair
+    else:
+        # extract value from each key:value pair
+        # in the dicts dictionary
+        extracted_data = [value for key, value in dicts.items()]
+        # create the cartesian product of the extracted data
+        res = np.meshgrid(*extracted_data)
+        # create structured array
+        # keeps data type of each value in the dict
+        outcome = np.core.records.fromarrays(res, names=",".join(dicts))
+        # reshape into a 1 column array
+        # using the size of any of the arrays obtained
+        # from the meshgrid computation
+        outcome = np.reshape(outcome, (np.size(res[0]), 1))
+        # flatten structured array into 1d array
+        outcome = np.concatenate(outcome)
+        # sort array
+        outcome.sort(axis=0, order=list(dicts))
+        # create dataframe
+        # structed array already has names,
+        # this gets transferred as column names
+        final = pd.DataFrame.from_records(outcome)
+    return final
+
+
+def _compute_two_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute the cartesian product of two Dataframes.
+
+    Used by the expand_grid function.
+
+    Numpy is employed here, to get faster computations,
+    compared to running a many-to-many join with pandas merge.
+
+    Structured arrays are employed, to preserve data type.
+    """
+    # get lengths of dataframes(number of rows) and swap
+    # essentially we'll pair one dataframe with the other's length:
+    lengths = reversed([ent.index.size for ent in (df1, df2)])
+
+    # grab the maximum string length
+    string_cols = [
+        frame.select_dtypes(include="object").columns for frame in (df1, df2)
+    ]
+
+    # pair max string length with col
+    # will be passed into frame.to_records,
+    # to get dtype in numpy recarray
+    string_cols = [
+        {col: f"<U{frame[col].str.len().max()}" for col in ent}
+        for ent, frame in zip(string_cols, (df1, df2))
+    ]
+
+    # pair length, column data type and dataframe
+    (len_first, col_dtypes, first), (len_last, col_dtypes, last) = list(
+        zip(lengths, string_cols, (df1, df2))
+    )
+
+    # export to numpy as recarray,
+    # ensuring that the column data types are captured
+    # this is particularly relevant to object data type
+    first = first.to_records(column_dtypes=col_dtypes, index=False)
+
+    # tile first with len_first
+    # remember, len_first is the length of the other dataframe
+    first = np.tile(first, (len_first, 1))
+
+    # get a 1d array
+    first = np.concatenate(first)
+
+    # sorting here ensures we get each row of the first
+    # with the entire rows of the other dataframe
+    np.recarray.sort(first, order=first.dtype.names[0])
+
+    # same process as first, except there'll be no sorting
+    last = last.to_records(column_dtypes=col_dtypes, index=False)
+    last = np.tile(last, (len_last, 1))
+    last = np.concatenate(last)
+
+    # merge first and last
+    # and return a dataframe
+    result = rfn.merge_arrays((first, last), flatten=True, asrecarray=True)
+    return pd.DataFrame.from_records(result)
+
+
+def _grid_computation_list(dfs: List):
+    """
+    Computes cartesian product of Dataframes in the expand_grid function.
+
+    This builds on _compute_two_dfs function,
+    by applying it to more two or more Dataframes.
+    """
+    return functools.reduce(_compute_two_dfs, dfs)
+
+
+def _grid_computation(dfs: List, dicts: Dict) -> pd.DataFrame:
+    """
+    Return the final output of the expand_grid function.
+    """
+    if not dicts:
+        result = _grid_computation_list(dfs)
+    elif not dfs:
+        result = _grid_computation_dict(dicts)
+    else:
+        dfs.append(_grid_computation_dict(dicts))
+        result = _grid_computation_list(dfs)
+    return result

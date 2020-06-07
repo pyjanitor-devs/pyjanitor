@@ -3932,9 +3932,11 @@ def expand_grid(
         df = pd.DataFrame(...)
         df = jn.expand_grid(df=df, df_key="...", others={...})
 
+
     Method-chaining usage syntax:
 
     .. code-block:: python
+
         import pandas as pd
         import janitor as jn
 

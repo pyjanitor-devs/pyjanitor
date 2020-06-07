@@ -3947,7 +3947,7 @@ def expand_grid(
         import pandas as pd
         from janitor import expand_grid
 
-        df = expand_grid({"x":range(1,4), "y":[1,2]})
+        df = expand_grid(others = {"x":range(1,4), "y":[1,2]})
 
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe.

@@ -527,9 +527,9 @@ def _grid_computation_dict(dicts: Dict) -> pd.DataFrame:
     and processed with numpy meshgrid.
 
     Numpy's meshgrid is faster than itertools' product -
-    the speed difference shows up as the size of the input dictionary increases
-    and when converting to a dataframe, is fast as well.
-    Structured arrays are used here, to ensure the datatypes are preserved.
+    the speed difference shows up,
+    as the size of the input dictionary increases,
+    and is also fast when converting to a dataframe.
     """
     # if there is only name value pair in the dictionary
     if len(dicts) == 1:

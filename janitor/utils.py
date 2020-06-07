@@ -583,7 +583,7 @@ def _grid_computation_list(frames: List) -> pd.DataFrame:
     # this ensures the cartesian mix
 
     # expand the index of the first dataframe
-    ind_first = first_frame.index.repeat(length / first_frame.index.size)
+    ind_first = first_frame.index.repeat(length // first_frame.index.size)
     first_frame = first_frame.reindex(ind_first).reset_index(drop=True)
 
     # expand the indices of the other dataframes

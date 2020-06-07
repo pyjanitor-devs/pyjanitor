@@ -3932,11 +3932,9 @@ def expand_grid(
         df = pd.DataFrame(...)
         df = jn.expand_grid(df=df, df_key="...", others={...})
 
-
     Method-chaining usage syntax:
 
     .. code-block:: python
-
         import pandas as pd
         import janitor as jn
 
@@ -3964,13 +3962,14 @@ def expand_grid(
 
 
     """
+
     # check if others is a dictionary
     if not isinstance(others, dict):
         # strictly name value pairs
         # same idea as in R and tidyverse implementation
         raise TypeError("others must be a dictionary")
-    # if there is a dataframe, for the method chaining,
-    # it must have a key, to create a name value pair
+        # if there is a dataframe, for the method chaining,
+        # it must have a key, to create a name value pair
     if df is not None:
         if isinstance(df.index, pd.MultiIndex) or isinstance(
             df.columns, pd.MultiIndex

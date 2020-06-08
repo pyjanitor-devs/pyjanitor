@@ -469,7 +469,7 @@ def _check_instance(entry: Dict):
             if value.empty:
                 raise ValueError("passed Series cannot be empty")
             if not isinstance(value.index, pd.MultiIndex):
-                # this section checks if the Series has a name or not
+                # this section checks if the Series has a name
                 # and uses that information to create a new column name
                 # for the resulting Dataframe
                 if value.name:

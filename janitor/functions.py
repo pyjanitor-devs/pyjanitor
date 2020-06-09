@@ -3935,6 +3935,7 @@ def expand_grid(
     Method-chaining usage syntax:
 
     .. code-block:: python
+
         import pandas as pd
         import janitor as jn
 
@@ -3951,16 +3952,14 @@ def expand_grid(
 
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe.
-        It becomes the column name of the dataframe.
+                   It becomes the column name of the dataframe.
     :param others: A dictionary that contains the data
-        to be combined with the dataframe.
-        If no dataframe exists, all inputs
-        in others will be combined to create a dataframe.
+                   to be combined with the dataframe.
+                   If no dataframe exists, all inputs
+                   in others will be combined to create a dataframe.
     :returns: A pandas dataframe of all combinations of name value pairs.
     :raises: TypeError if others is not a dictionary
     :raises: KeyError if there is a dataframe and no key is provided.
-
-
     """
     # check if others is a dictionary
     if not isinstance(others, dict):

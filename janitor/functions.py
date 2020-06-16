@@ -3168,12 +3168,12 @@ def update_where(
     ):
         warnings.warn(
             """
-                Boolean expressions have been deprecated,
-                and will be removed in future versions.
-                Use a pandas-compatible string query. See
-                https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
-                for more information
-                """,
+            Boolean expressions have been deprecated,
+            and will be removed in future versions.
+            Use a pandas-compatible string query. See
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
+            for more information
+            """,
             DeprecationWarning,
         )
 

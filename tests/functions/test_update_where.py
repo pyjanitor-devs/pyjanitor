@@ -5,31 +5,30 @@ from pandas._testing import assert_frame_equal
 
 from janitor.functions import update_where
 
-# @pytest.mark.functions
-# def test_update_where(dataframe):
 # not sure what is going on here @zbarry
 # would love to learn how this works
 # if you could explain it to me
 
-# @pytest.mark.functions
-# def test_update_where(dataframe):
-#   """
-#   Test that it accepts conditional parameters
-#    """
-#    pd.testing.assert_frame_equal(
-#        dataframe.update_where(
-#            (dataframe["decorated-elephant"] == 1)
-#            & (dataframe["animals@#$%^"] == "rabbit"),
-#            "cities",
-#            "Durham",
-#        ),
-#        dataframe.replace("Cambridge", "Durham"),
-#  )
 
-
-def test_update_where():
+@pytest.mark.functions
+def test_update_where(dataframe):
     """
-    Test that function works with expression
+    Test that it accepts conditional parameters
+    """
+    pd.testing.assert_frame_equal(
+        dataframe.update_where(
+            (dataframe["decorated-elephant"] == 1)
+            & (dataframe["animals@#$%^"] == "rabbit"),
+            "cities",
+            "Durham",
+        ),
+        dataframe.replace("Cambridge", "Durham"),
+    )
+
+
+def test_update_where_str():
+    """
+    Test that function works with pandas query-style string expression
     """
     df = pd.DataFrame(
         {"a": [1, 2, 3, 4], "b": [5, 6, 7, 8], "c": [0, 0, 0, 0]}
@@ -37,30 +36,11 @@ def test_update_where():
     expected = pd.DataFrame(
         {"a": [1, 2, 3, 4], "b": [5, 6, 7, 8], "c": [0, 0, 10, 0]}
     )
-    result = df.update_where(
-        conditions="a > 2 and b < 8", target_column_name="c", target_val=10
+    result = update_where(
+        df, conditions="a > 2 and b < 8", target_column_name="c", target_val=10
     )
 
     assert_frame_equal(result, expected)
-
-
-def test_update_where_1():
-    """
-    Raise an error if the conditions argument
-    is not a string
-    """
-
-    df = pd.DataFrame(
-        {"a": [1, 2, 3, 4], "b": [5, 6, 7, 8], "c": [0, 0, 0, 0]}
-    )
-
-    with pytest.raises(TypeError):
-        update_where(
-            df=df,
-            conditions=(df["a"] > 2) & (df["b"] < 8),
-            target_column_name="c",
-            target_val=10,
-        )
 
 
 def test_update_where_2():
@@ -86,8 +66,8 @@ def test_update_where_2():
 
     # set A not equal to A, since NaN != NaN
     # this excludes the null rows
-    result = df.update_where(
-        conditions="A!=A and B==2", target_column_name="C", target_val=10
+    result = update_where(
+        df, conditions="A!=A and B==2", target_column_name="C", target_val=10
     )
 
     assert_frame_equal(result, expected)

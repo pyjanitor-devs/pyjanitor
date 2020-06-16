@@ -3129,7 +3129,7 @@ def update_where(
         df = (
             df
             .update_where(
-                condition=(df['a'] > 2) & (df['b'] < 8),
+                condition=("a < 2 and b < 8",
                 target_column_name='c',
                 target_val=10)
             )
@@ -3140,23 +3140,46 @@ def update_where(
         # 4 8  0
 
     :param df: The pandas DataFrame object.
-    :param conditions: conditions used to update a target column and target
-        value
+    :param conditions: Conditions used to update a target column
+                       and target value.
     :param target_column_name: Column to be updated. If column does not exist
-        in dataframe, a new column will be created; note that entries that do
-        not get set in the new column will be null.
+                               in dataframe, a new column will be created;
+                               note that entries that do not get set
+                               in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
     :raises: IndexError if **conditions** does not have the same length as
-        **df**.
+             **df**.
     """
-    # use query style method
+
+    # Boolean expressions will be deprecated in future versions
+    # query style method used instead
     # to accommodate changes if the dataframe has been modified
     # somewhere along the method chain block
-    # suggested by @zbarry
+    # query style method suggested by @zbarry
+    # github issue #663
+    if isinstance(conditions, pd.Series):
+        warnings.warn(
+            """
+            Boolean expressions have been deprecated,
+            and will be removed in future versions.
+            Use a pandas-compatible string query. See
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
+            for more information
+            """,
+            DeprecationWarning,
+        )
 
-    if not isinstance(conditions, str):
-        raise TypeError("conditions argument should be an expression")
+        # index dataframe with boolean Series
+        # and assign target_val to target_column_name
+        df.loc[conditions, target_column_name] = target_val
+        return df
+    elif not isinstance(conditions, str):
+        raise TypeError(
+            """conditions argument should be a pandas-compatible string query. See
+               https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
+               for more information."""
+        )
 
     # get the index that meets the conditions criteria
     conditions_index = df.query(conditions).index

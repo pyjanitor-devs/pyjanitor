@@ -3160,43 +3160,41 @@ def update_where(
     # somewhere along the method chain block
     # query style method suggested by @zbarry
     # github issue #663
-    if not isinstance(conditions, str):
-        if conditions.dtypes.name == "bool":
-            warnings.warn(
-                """
+
+    if isinstance(conditions, pd.Series) and (
+        conditions.dtypes.name == "bool"
+    ):
+        warnings.warn(
+            """
                 Boolean expressions have been deprecated,
                 and will be removed in future versions.
                 Use a pandas-compatible string query. See
                 https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
                 for more information
                 """,
-                DeprecationWarning,
-            )
-
-            # index dataframe with boolean Series
-            # and assign target_val to target_column_name
-            df.loc[conditions, target_column_name] = target_val
-            return df
-
-        raise TypeError(
-            """
-                conditions argument should be a
-                pandas-compatible string query. See
-                https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
-                for more information.
-                """
+            DeprecationWarning,
         )
 
         # index dataframe with boolean Series
         # and assign target_val to target_column_name
         df.loc[conditions, target_column_name] = target_val
-        return df
 
-    # get the index that meets the conditions criteria
-    conditions_index = df.query(conditions).index
+    else:
+        if not isinstance(conditions, str):
+            raise TypeError(
+                """
+            conditions argument should be a
+            pandas-compatible string query. See
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
+            for more information.
+            """
+            )
+        # get the index that meets the conditions criteria
+        conditions_index = df.query(conditions).index
 
-    # pass target_val to dataframe
-    df.loc[conditions_index, target_column_name] = target_val
+        # pass target_val to dataframe
+        df.loc[conditions_index, target_column_name] = target_val
+
     return df
 
 

@@ -3141,7 +3141,7 @@ def update_where(
 
     :param df: The pandas DataFrame object.
     :param conditions: Conditions used to update a target column
-                       and target value.
+        and target value.
     :param target_column_name: Column to be updated. If column does not exist
                                in the dataframe, a new column will be created;
                                note that entries that do not get set

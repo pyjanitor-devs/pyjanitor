@@ -3143,7 +3143,7 @@ def update_where(
     :param conditions: Conditions used to update a target column
                        and target value.
     :param target_column_name: Column to be updated. If column does not exist
-                               in dataframe, a new column will be created;
+                               in the dataframe, a new column will be created;
                                note that entries that do not get set
                                in the new column will be null.
     :param target_val: Value to be updated
@@ -3161,6 +3161,8 @@ def update_where(
     # query style method suggested by @zbarry
     # github issue #663
 
+    # this section tests for boolean expressions
+    # and includes a deprecation warning to the user
     if isinstance(conditions, pd.Series) and (
         conditions.dtypes.name == "bool"
     ):

@@ -3129,7 +3129,7 @@ def update_where(
         df = (
             df
             .update_where(
-                condition=("a < 2 and b < 8",
+                condition=("a > 2 and b < 8",
                 target_column_name='c',
                 target_val=10)
             )

@@ -3151,7 +3151,7 @@ def update_where(
     :raises: IndexError if **conditions** does not have the same length as
          **df**.
     :raises: TypeError if **conditions** is not a pandas-compatible string
-             query.
+        query.
     """
 
     # use query mode if a string expression is passed

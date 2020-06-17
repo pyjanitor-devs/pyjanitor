@@ -3156,14 +3156,10 @@ def update_where(
 
     # use query mode if a string expression is passed
     if isinstance(conditions, str):
-        # get the index that meets the conditions criteria
         conditions_index = df.query(conditions).index
-
-        # pass target_val to dataframe
-        df.loc[conditions_index, target_column_name] = target_val
-
     else:
-        df.loc[conditions, target_column_name] = target_val
+        conditions_index = df.loc[conditions].index   
+    df.loc[conditions_index, target_column_name] = target_val
 
     return df
 

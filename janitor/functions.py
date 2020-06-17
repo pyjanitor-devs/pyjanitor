@@ -3149,7 +3149,7 @@ def update_where(
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
     :raises: IndexError if **conditions** does not have the same length as
-             **df**.
+         **df**.
     :raises: TypeError if **conditions** is not a pandas-compatible string
              query.
     """

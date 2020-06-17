@@ -3144,9 +3144,8 @@ def update_where(
     :param conditions: Conditions used to update a target column
         and target value.
     :param target_column_name: Column to be updated. If column does not exist
-                               in the dataframe, a new column will be created;
-                               note that entries that do not get set
-                               in the new column will be null.
+        in dataframe, a new column will be created; note that entries that do
+        not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
     :raises: IndexError if **conditions** does not have the same length as

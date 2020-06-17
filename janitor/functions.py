@@ -3162,8 +3162,8 @@ def update_where(
 
         # pass target_val to dataframe
         df.loc[conditions_index, target_column_name] = target_val
-    else:
 
+    else:
         df.loc[conditions, target_column_name] = target_val
 
     return df

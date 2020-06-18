@@ -3158,7 +3158,7 @@ def update_where(
     if isinstance(conditions, str):
         conditions_index = df.query(conditions).index
     else:
-        conditions_index = df.loc[conditions].index   
+        conditions_index = df.loc[conditions].index
     df.loc[conditions_index, target_column_name] = target_val
 
     return df

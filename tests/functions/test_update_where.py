@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from pandas._testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 from janitor.functions import update_where
 
@@ -22,9 +22,7 @@ def test_update_where(dataframe):
 
 
 def test_update_where_query():
-    """
-    Test that function works with pandas query-style string expression
-    """
+    """Test that function works with pandas query-style string expression."""
     df = pd.DataFrame(
         {"a": [1, 2, 3, 4], "b": [5, 6, 7, 8], "c": [0, 0, 0, 0]}
     )

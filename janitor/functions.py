@@ -3099,7 +3099,7 @@ def _find_replace(
     if match.lower() == "regex":
         for k, v in mapper.items():
             condition = df[column_name].str.contains(k, regex=True)
-            df = df.update_where(condition, column_name, v)
+            df.loc[condition, column_name] = v
     return df
 
 
@@ -3111,7 +3111,8 @@ def update_where(
     target_column_name: Hashable,
     target_val: Any,
 ) -> pd.DataFrame:
-    """Add multiple conditions to update a column in the dataframe.
+    """
+    Add multiple conditions to update a column in the dataframe.
 
     This method mutates the original DataFrame.
 
@@ -3129,7 +3130,7 @@ def update_where(
         df = (
             df
             .update_where(
-                condition=(df['a'] > 2) & (df['b'] < 8),
+                condition=("a > 2 and b < 8",
                 target_column_name='c',
                 target_val=10)
             )
@@ -3140,17 +3141,26 @@ def update_where(
         # 4 8  0
 
     :param df: The pandas DataFrame object.
-    :param conditions: conditions used to update a target column and target
-        value
+    :param conditions: Conditions used to update a target column
+        and target value.
     :param target_column_name: Column to be updated. If column does not exist
         in dataframe, a new column will be created; note that entries that do
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
-    :raises: IndexError if **conditions** does not have the same length as
-        **df**.
+    :raises: IndexError if ``conditions`` does not have the same length as
+        ``df``.
+    :raises: TypeError if ``conditions`` is not a pandas-compatible string
+        query.
     """
-    df.loc[conditions, target_column_name] = target_val
+
+    # use query mode if a string expression is passed
+    if isinstance(conditions, str):
+        conditions_index = df.query(conditions).index
+    else:
+        conditions_index = df.loc[conditions].index
+    df.loc[conditions_index, target_column_name] = target_val
+
     return df
 
 

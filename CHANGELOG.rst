@@ -4,6 +4,7 @@ new version (on deck)
   or boolean indexing via the ``loc`` method.
   Also updated ``find_replace`` function to use the ``loc`` method directly,
   instead of routing it through the ``update_where`` function. @samukweku
+- [INF]: Update ``pandas`` minimum version to 1.0.0. @hectormz
 
 v0.20.7
 =======

@@ -56,9 +56,9 @@ def test_scalar_to_list():
         },
     )
     # assert that it is an empty list
-    assert not _check_instance(data)[0]  # skipcq: BAN-B101
+    assert not _check_instance(data)[0]
     # assert that the dictionaries match
-    assert _check_instance(data)[-1] == expected[-1]  # skipcq: BAN-B101
+    assert _check_instance(data)[-1] == expected[-1]
 
 
 def test_nested_dict():
@@ -207,9 +207,9 @@ def test_lists_all_scalar():
     data = {"x": [2, 3, 4, 5, "ragnar"]}
     expected = ([], {"x": [2, 3, 4, 5, "ragnar"]})
     # assert that it is an empty list
-    assert not _check_instance(data)[0]  # skipcq: BAN-B101
+    assert not _check_instance(data)[0]
     # assert that the dictionaries match
-    assert _check_instance(data)[-1] == expected[-1]  # skipcq: BAN-B101
+    assert _check_instance(data)[-1] == expected[-1]
 
 
 def test_lists_not_all_scalar():

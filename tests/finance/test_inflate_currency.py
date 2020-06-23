@@ -1,3 +1,4 @@
+"""Tests for inflate_currency() in finance module."""
 import pytest
 import requests
 
@@ -6,8 +7,8 @@ from janitor.finance import _inflate_currency, inflate_currency  # noqa: F401
 
 @pytest.mark.finance
 def test_make_currency_inflator_api_request():
-    """
-    Test for currency inflator API request.
+    """Test for currency inflator API request.
+
     This test exists because we rely solely on the service by
     the World Bank's Indicator API:
     https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation
@@ -21,6 +22,7 @@ def test_make_currency_inflator_api_request():
 
 @pytest.mark.finance
 def test_make_new_inflated_currency_col(dataframe):
+    """Test currency inflation for same year added as a new column."""
     df = dataframe.inflate_currency(
         "a",
         country="USA",
@@ -33,6 +35,7 @@ def test_make_new_inflated_currency_col(dataframe):
 
 @pytest.mark.finance
 def test_inflate_existing_currency_col(dataframe):
+    """Test currency inflation updates existing column."""
     initialval = dataframe["a"].sum()
     # Pulled raw values from API website for USA 2018 and 2015
     inflator = _inflate_currency("USA", currency_year=2018, to_year=2015)
@@ -49,6 +52,7 @@ def test_inflate_existing_currency_col(dataframe):
 
 @pytest.mark.finance
 def test_expected_result(dataframe):
+    """Test inflation calculation gives expected value."""
     initialval = dataframe["a"].sum()
     # Pulled raw values from API website for USA 2018 and 2015
     inflator = _inflate_currency("USA", currency_year=2018, to_year=2015)
@@ -65,6 +69,7 @@ def test_expected_result(dataframe):
 
 @pytest.mark.finance
 def test_expected_result_with_full_country_name(dataframe):
+    """Test inflation calculation works when providing country name."""
     initialval = dataframe["a"].sum()
     # Pulled raw values from API website for USA 2018 and 2015
     inflator = _inflate_currency(
@@ -83,14 +88,16 @@ def test_expected_result_with_full_country_name(dataframe):
 
 @pytest.mark.finance
 def test_wb_country_check(dataframe):
+    """Test inflation calculation fails when providing invalid country name."""
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
-            "a", country="USAA", currency_year=2018, to_year=2018
+            "a", country="INVALID-COUNTRY", currency_year=2018, to_year=2018
         )
 
 
 @pytest.mark.finance
 def test_year_check(dataframe):
+    """Test inflation calculation fails with year outside valid range."""
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
             "a", country="USA", currency_year=1950, to_year=2018
@@ -99,6 +106,7 @@ def test_year_check(dataframe):
 
 @pytest.mark.finance
 def test_datatypes_check(dataframe):
+    """Test inflation calculation fails when provided invalid types."""
     with pytest.raises(TypeError):
         assert dataframe.inflate_currency(
             "a", country=123, currency_year=1960, to_year=2018
@@ -113,6 +121,7 @@ def test_datatypes_check(dataframe):
 
 @pytest.mark.finance
 def test_api_result_check(dataframe):
+    """Test inflation calculation fails with year outside API's valid range."""
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
             "a", country="USA", currency_year=2030, to_year=2050
@@ -121,6 +130,7 @@ def test_api_result_check(dataframe):
 
 @pytest.mark.finance
 def test_to_year_available(dataframe):
+    """Test inflation calculation fails with unavailable to_year."""
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
             "a", country="GHA", currency_year=2010, to_year=1962
@@ -129,6 +139,7 @@ def test_to_year_available(dataframe):
 
 @pytest.mark.finance
 def test_currency_year_available(dataframe):
+    """Test inflation calculation fails with unavailable currency_year."""
     with pytest.raises(ValueError):
         assert dataframe.inflate_currency(
             "a", country="GHA", currency_year=1962, to_year=2010

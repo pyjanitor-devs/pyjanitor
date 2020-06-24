@@ -82,3 +82,7 @@ Other
     count_cumulative_unique
     sort_naturally
     expand_grid
+    flag_nulls
+    move
+    toset
+    unionize_dataframe_categories

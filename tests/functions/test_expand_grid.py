@@ -3,7 +3,7 @@ from string import ascii_lowercase, ascii_uppercase
 import numpy as np
 import pandas as pd
 import pytest
-from pandas._testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 from janitor.functions import expand_grid
 from janitor.utils import _check_instance

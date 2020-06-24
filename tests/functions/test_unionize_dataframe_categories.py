@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 import janitor
 
@@ -102,9 +103,9 @@ def test_unionize_dataframe_categories(
 
     # test that the data is the same
 
-    pd.testing.assert_frame_equal(udf1, uniontest_df1, check_categorical=False)
-    pd.testing.assert_frame_equal(udf2, uniontest_df2, check_categorical=False)
-    pd.testing.assert_frame_equal(udf3, uniontest_df3, check_categorical=False)
+    assert_frame_equal(udf1, uniontest_df1, check_categorical=False)
+    assert_frame_equal(udf2, uniontest_df2, check_categorical=False)
+    assert_frame_equal(udf3, uniontest_df3, check_categorical=False)
 
 
 def test_unionize_dataframe_categories_original_preservation(

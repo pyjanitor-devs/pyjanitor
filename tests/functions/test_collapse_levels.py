@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.functions
@@ -11,7 +12,7 @@ def test_collapse_levels_sanity(multiindex_with_missing_dataframe):
 @pytest.mark.functions
 def test_collapse_levels_non_multilevel(multiindex_with_missing_dataframe):
     # an already single-level DataFrame is not distorted
-    pd.testing.assert_frame_equal(
+    assert_frame_equal(
         multiindex_with_missing_dataframe.copy().collapse_levels(),
         multiindex_with_missing_dataframe.collapse_levels().collapse_levels(),
     )

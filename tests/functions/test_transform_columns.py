@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.functions
@@ -15,7 +16,7 @@ def test_transform_columns(dataframe):
     expected = pd.DataFrame(
         {"another": np.ones(len(df)), "column": np.ones(len(df)) * 2}
     )
-    pd.testing.assert_frame_equal(df[["another", "column"]], expected)
+    assert_frame_equal(df[["another", "column"]], expected)
 
 
 @pytest.mark.functions

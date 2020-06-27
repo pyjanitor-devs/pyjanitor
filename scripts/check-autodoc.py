@@ -14,13 +14,15 @@ from pathlib import Path
 from typing import List, Tuple
 
 
-def extract_function_names(test_folder: Path,) -> List[str]:  # skipqc
+def extract_function_names(
+    test_folder: Path, exclude_names: List[str]
+) -> List[str]:  # skipqc
     """
     Extract function names from the list of functions.
     """
     function_names = []  # skipqc
     for name in test_folder.iterdir():
-        if not name.is_dir():
+        if not name.is_dir() and path_does_not_contain(name, exclude_names):
             function_names.append(name.stem.split("_", 1)[-1].strip())
     return function_names
 
@@ -63,7 +65,8 @@ def extract_folder_names(test_dir: Path) -> Tuple[Path, str]:
 
 
 test_folder = Path("./tests/functions")
-function_names = extract_function_names(test_folder)
+exclude_names = ["__pycache__", "test_data", "data_description"]
+function_names = extract_function_names(test_folder, exclude_names)
 docs = Path("./docs/reference/general_functions.rst")
 doc_functions = extract_documented_functions(docs)
 missing_funcs = set(function_names).difference(doc_functions)

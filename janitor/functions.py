@@ -30,8 +30,10 @@ from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
+    _check_instance,
     _clean_accounting_column,
     _currency_column_to_numeric,
+    _grid_computation,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _strip_underscores,
@@ -60,7 +62,7 @@ def unionize_dataframe_categories(
     ``object``, losing out on dramatic speed gains you get from the former
     format.
 
-    Usage example for concatentation of categorical column-containing
+    Usage example for concatenation of categorical column-containing
     dataframes:
 
     Instead of:
@@ -1297,6 +1299,7 @@ def filter_date(
     parsed, you would pass `{'format': your_format}` to `column_date_options`.
 
     """
+
     # TODO: need to convert this to notebook.
     #     :Setup:
     # .. code-block:: python
@@ -3096,7 +3099,7 @@ def _find_replace(
     if match.lower() == "regex":
         for k, v in mapper.items():
             condition = df[column_name].str.contains(k, regex=True)
-            df = df.update_where(condition, column_name, v)
+            df.loc[condition, column_name] = v
     return df
 
 
@@ -3108,7 +3111,8 @@ def update_where(
     target_column_name: Hashable,
     target_val: Any,
 ) -> pd.DataFrame:
-    """Add multiple conditions to update a column in the dataframe.
+    """
+    Add multiple conditions to update a column in the dataframe.
 
     This method mutates the original DataFrame.
 
@@ -3126,7 +3130,7 @@ def update_where(
         df = (
             df
             .update_where(
-                condition=(df['a'] > 2) & (df['b'] < 8),
+                condition=("a > 2 and b < 8",
                 target_column_name='c',
                 target_val=10)
             )
@@ -3137,17 +3141,26 @@ def update_where(
         # 4 8  0
 
     :param df: The pandas DataFrame object.
-    :param conditions: conditions used to update a target column and target
-        value
+    :param conditions: Conditions used to update a target column
+        and target value.
     :param target_column_name: Column to be updated. If column does not exist
         in dataframe, a new column will be created; note that entries that do
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
-    :raises: IndexError if **conditions** does not have the same length as
-        **df**.
+    :raises: IndexError if ``conditions`` does not have the same length as
+        ``df``.
+    :raises: TypeError if ``conditions`` is not a pandas-compatible string
+        query.
     """
-    df.loc[conditions, target_column_name] = target_val
+
+    # use query mode if a string expression is passed
+    if isinstance(conditions, str):
+        conditions_index = df.query(conditions).index
+    else:
+        conditions_index = df.loc[conditions].index
+    df.loc[conditions_index, target_column_name] = target_val
+
     return df
 
 
@@ -3201,7 +3214,7 @@ def groupby_agg(
 
     .. code-block:: python
 
-        df = df.assign(...=df.groupby(...)[...].tranform(...))
+        df = df.assign(...=df.groupby(...)[...].transform(...))
 
     Now, this function can be method-chained:
 
@@ -3619,7 +3632,7 @@ def count_cumulative_unique(
     count of unique values in the specified column.
     If `case_sensitive` is `True`, then the case of
     any letters will matter (i.e., 'a' != 'A');
-    othewise, the case of any letters will not matter.
+    otherwise, the case of any letters will not matter.
 
     This method mutates the original DataFrame.
 
@@ -3765,7 +3778,7 @@ def jitter(
         no jittering.)
     :param clip: An iterable of two values (minimum and maximum) to clip
         the jittered values to, default to None.
-    :param random_state: A interger or 1-d array value used to set the random
+    :param random_state: An integer or 1-d array value used to set the random
         seed, default to None.
 
     :returns: A pandas DataFrame with a new column containing Gaussian-
@@ -3869,3 +3882,115 @@ def sort_naturally(
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]
+
+
+@pf.register_dataframe_method
+def expand_grid(
+    df: pd.DataFrame = None, df_key: str = None, others: Dict = None
+) -> pd.DataFrame:
+    """
+    Creates a dataframe from a combination of all inputs.
+
+    This works with a dictionary of name value pairs,
+    and will work with structures that are not dataframes.
+    If method-chaining to a dataframe,
+    a key to represent the column name in the output must be provided.
+
+    The output will always be a dataframe.
+
+    Example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"x":range(1,3), "y":[2,1]})
+        others = {"z" : range(1,4)}
+
+        df.expand_grid(df_key="df",others=others)
+
+        # df_x |   df_y |   z
+        #    1 |      2 |   1
+        #    1 |      2 |   2
+        #    1 |      2 |   3
+        #    2 |      1 |   1
+        #    2 |      1 |   2
+        #    2 |      1 |   3
+
+        #create a dataframe from all combinations in a dictionary
+        data = {"x":range(1,4), "y":[1,2]}
+
+        jn.expand_grid(others=data)
+
+        #  x |   y
+        #  1 |   1
+        #  1 |   2
+        #  2 |   1
+        #  2 |   2
+        #  3 |   1
+        #  3 |   2
+
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.expand_grid(df=df, df_key="...", others={...})
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
+
+    Usage independent of a dataframe
+
+    .. code-block:: python
+
+        import pandas as pd
+        from janitor import expand_grid
+
+        df = expand_grid({"x":range(1,4), "y":[1,2]})
+
+    :param df: A pandas dataframe.
+    :param df_key: name of key for the dataframe.
+        It becomes the column name of the dataframe.
+    :param others: A dictionary that contains the data
+        to be combined with the dataframe.
+        If no dataframe exists, all inputs
+        in others will be combined to create a dataframe.
+    :returns: A pandas dataframe of all combinations of name value pairs.
+    :raises: TypeError if others is not a dictionary
+    :raises: KeyError if there is a dataframe and no key is provided.
+    """
+    # check if others is a dictionary
+    if not isinstance(others, dict):
+        # strictly name value pairs
+        # same idea as in R and tidyverse implementation
+        raise TypeError("others must be a dictionary")
+    # if there is a dataframe, for the method chaining,
+    # it must have a key, to create a name value pair
+    if df is not None:
+        if isinstance(df.index, pd.MultiIndex) or isinstance(
+            df.columns, pd.MultiIndex
+        ):
+            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
+        if not df_key:
+            raise KeyError(
+                """
+                Using `expand_grid` as part of a DataFrame method chain
+                requires that a string `df_key` be passed in.
+                """
+            )
+        others.update({df_key: df})
+    dfs, dicts = _check_instance(others)
+
+    return _grid_computation(dfs, dicts)

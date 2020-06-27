@@ -1,28 +1,38 @@
 new version (on deck)
 =====================
-- [TST]: Add a test for transform_column to check for nonmutation. @VPerrollaz
+- [ENH] Upgraded ``update_where`` function to use either the pandas query style,
+  or boolean indexing via the ``loc`` method.
+  Also updated ``find_replace`` function to use the ``loc`` method directly,
+  instead of routing it through the ``update_where`` function. @samukweku
+- [INF] Update ``pandas`` minimum version to 1.0.0. @hectormz
+- [DOC] Updated the general functions API page to show all available functions @samukweku
+
+v0.20.7
+=======
+- [TST] Add a test for transform_column to check for nonmutation. @VPerrollaz
+- [ENH] Contributed ``expand_grid`` function by @samukweku
 
 
 v0.20.6
 =======
-- [DOC]: Pep8 all examples. @VPerrollaz
-- [TST]: Add docstrings to tests @hectormz
-- [INF]: Add ``debug-statements``, ``requirements-txt-fixer``, and ``interrogate`` to ``pre-commit``. @hectormz
-- [ENH]: Upgraded transform_column to use df.assign underneath the hood,
+- [DOC] Pep8 all examples. @VPerrollaz
+- [TST] Add docstrings to tests @hectormz
+- [INF] Add ``debug-statements``, ``requirements-txt-fixer``, and ``interrogate`` to ``pre-commit``. @hectormz
+- [ENH] Upgraded transform_column to use df.assign underneath the hood,
   and also added option to transform column elementwise (via apply)
   or columnwise (thus operating on a series). @ericmjl
 
 
 v0.20.5
 =======
-- [INF]: Replace ``pycodestyle`` with ``flake8`` in order to add ``pandas-vet`` linter @hectormz
+- [INF] Replace ``pycodestyle`` with ``flake8`` in order to add ``pandas-vet`` linter @hectormz
 - [ENH] ``select_columns()`` now raises ``NameError`` if column label in
   ``search_columns_labels`` is missing from ``DataFrame`` columns. @smu095
 
 v0.20.1
 =======
-- [DOC]: Added an example for groupby_agg in general functions @samukweku
-- [ENH]: Contributed ``sort_naturally()`` function. @ericmjl
+- [DOC] Added an example for groupby_agg in general functions @samukweku
+- [ENH] Contributed ``sort_naturally()`` function. @ericmjl
 
 v0.20.0
 =======

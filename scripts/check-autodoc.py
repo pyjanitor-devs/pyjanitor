@@ -17,9 +17,7 @@ from typing import List, Tuple
 def extract_function_names(
     test_folder: Path, exclude_names: List[str]
 ) -> List[str]:  # skipqc
-    """
-    Extract function names from the list of functions.
-    """
+    """Extract function names from the list of functions."""
     function_names = []  # skipqc
     for name in test_folder.iterdir():
         if not name.is_dir() and path_does_not_contain(name, exclude_names):
@@ -50,8 +48,7 @@ def path_does_not_contain(path: Path, names: List[str]) -> bool:
 
 
 def extract_folder_names(test_dir: Path) -> Tuple[Path, str]:
-    """
-    Extract folder names.
+    """Extract folder names.
 
     This function could be used later.
     """

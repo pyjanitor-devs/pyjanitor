@@ -31,7 +31,6 @@ dependencies:
 - pre-commit
 - pyflakes
 - pylint
-- pyprojroot
 - pyspark
 - pytest
 - pytest-azurepipelines

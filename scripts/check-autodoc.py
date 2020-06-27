@@ -15,8 +15,8 @@ from typing import List, Tuple
 
 
 def extract_function_names(
-    test_folder: Path,
-) -> List[str]:  # skipqc: PYL-W0621
+    test_folder: Path,  # skipqc: PYL-W0621
+) -> List[str]:
     """
     Extract function names from the list of functions.
     """

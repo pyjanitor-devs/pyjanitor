@@ -1,18 +1,23 @@
 """
+Author: Eric J. Ma, borrowing code from Samuel Oranyeli.
 This Python script checks the docs pages for functions
 that have not been added to the "General Functions" API docs.
+
+Only the "general_functions.rst" needs the checks,
+as the others are auto-populated.
+This situation simply evolved out of how the docs are structured,
+I am not sure exactly how it turned out this way. :)
 """
 
 import re
 from pathlib import Path
-
-# Extract the names from the test_functions folder
-# function_names = [
-#     name.stem.split("_", 1)[-1].strip() for name in test_folder.iterdir()
-# ]
+from typing import List, Tuple
 
 
-def extract_function_names(test_folder):
+def extract_function_names(test_folder: Path) -> List[str]:
+    """
+    Extract function names from the list of functions.
+    """
     function_names = []
     for name in test_folder.iterdir():
         if not name.is_dir():
@@ -20,7 +25,8 @@ def extract_function_names(test_folder):
     return function_names
 
 
-def extract_documented_functions(docs):
+def extract_documented_functions(docs: Path) -> List[str]:
+    """Extract documented functions from docs page."""
     pattern = re.compile(r"\s{4}[a-zA-Z_]+")
 
     # get the names in the general_functions page
@@ -31,6 +37,29 @@ def extract_documented_functions(docs):
             if pattern.search(line)
         ]
     return doc_functions
+
+
+def path_does_not_contain(path: Path, names: List[str]) -> bool:
+    """Check if path does not contain a list of names."""
+    for name in names:
+        if name in str(path):
+            return False
+    return True
+
+
+def extract_folder_names(test_dir: Path) -> Tuple[Path, str]:
+    """
+    Extract folder names.
+
+    This function could be used later.
+    """
+    # folder_names = []
+    for name in test_dir.iterdir():
+        if name.is_dir() and path_does_not_contain(
+            name, ["__pycache__", "test_data", "data_description"]
+        ):
+            module_name = str(name).split("/")[-1]
+            yield Path(name), module_name
 
 
 test_folder = Path("./tests/functions")

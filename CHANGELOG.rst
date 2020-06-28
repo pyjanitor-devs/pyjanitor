@@ -6,6 +6,7 @@ new version (on deck)
   instead of routing it through the ``update_where`` function. @samukweku
 - [INF] Update ``pandas`` minimum version to 1.0.0. @hectormz
 - [DOC] Updated the general functions API page to show all available functions @samukweku
+- [DOC] Changed the signature from str to Optional[str] when initialized by None @VPerrollaz
 
 v0.20.7
 =======

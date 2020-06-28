@@ -17,7 +17,7 @@ def get_features_targets(
     df: pd.DataFrame,
     target_column_names: Union[str, Union[List, Tuple], Hashable],
     feature_column_names: Union[str, Iterable[str], Hashable] = None,
-):
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Get the features and targets as separate DataFrames/Series.
 

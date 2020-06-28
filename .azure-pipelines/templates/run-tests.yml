@@ -13,6 +13,10 @@ steps:
     displayName: 'Run all pyjanitor tests.'
   - script: |
       $(activate.command) pyjanitor-dev
+      python scripts/check-autodoc.py
+    displayName: 'Check that all general functions have been added to docs.'
+  - script: |
+      $(activate.command) pyjanitor-dev
       bash <(curl -s https://codecov.io/bash) -t c4aaeb6c-be8f-44b2-a529-6871f3537261
     displayName: 'Upload code coverage.'
   - script: |

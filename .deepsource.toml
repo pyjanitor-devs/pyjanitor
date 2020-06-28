@@ -1,5 +1,11 @@
 version = 1
 
+test_patterns = [
+  "tests/**",
+  "test_*.py",
+  "scripts/check-autodoc.py",
+]
+
 [[analyzers]]
 name = "python"
 enabled = true

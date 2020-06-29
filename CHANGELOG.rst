@@ -6,6 +6,7 @@ new version (on deck)
   instead of routing it through the ``update_where`` function. @samukweku
 - [INF] Update ``pandas`` minimum version to 1.0.0. @hectormz
 - [DOC] Updated the general functions API page to show all available functions @samukweku
+- [DOC] Fix the few lacking type annotations of functions. @VPerrollaz
 - [TST]: Make importing ``pandas`` testing functions follow uniform pattern. @hectormz
 
 v0.20.7

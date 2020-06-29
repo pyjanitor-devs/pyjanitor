@@ -44,7 +44,7 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Iterable[pd.CategoricalDtype] = None
+    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -412,7 +412,8 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable] = None
+    df: pd.DataFrame,
+    column_names: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Return all duplicate rows.
 
@@ -989,7 +990,7 @@ def deconcatenate_column(
     df: pd.DataFrame,
     column_name: Hashable,
     sep: str = None,
-    new_column_names: Union[List[str], Tuple[str]] = None,
+    new_column_names: Optional[Union[List[str], Tuple[str]]] = None,
     autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
@@ -1256,12 +1257,12 @@ def filter_on(
 def filter_date(
     df: pd.DataFrame,
     column_name: Hashable,
-    start_date: dt.date = None,
-    end_date: dt.date = None,
-    years: List = None,
-    months: List = None,
-    days: List = None,
-    column_date_options: Dict = None,
+    start_date: Optional[dt.date] = None,
+    end_date: Optional[dt.date] = None,
+    years: Optional[List] = None,
+    months: Optional[List] = None,
+    days: Optional[List] = None,
+    column_date_options: Optional[Dict] = None,
     format: str = None,
 ) -> pd.DataFrame:
     """Filter a date-based column based on certain criteria.
@@ -2285,7 +2286,7 @@ def transform_columns(
     function: Callable,
     suffix: str = None,
     elementwise: bool = True,
-    new_column_names: Dict[str, str] = None,
+    new_column_names: Optional[Dict[str, str]] = None,
 ) -> pd.DataFrame:
     """Transform multiple columns through the same transformation.
 
@@ -2557,8 +2558,8 @@ def currency_column_to_numeric(
     df: pd.DataFrame,
     column_name,
     cleaning_style: str = None,
-    cast_non_numeric: dict = None,
-    fill_all_non_numeric: float = None,
+    cast_non_numeric: Optional[dict] = None,
+    fill_all_non_numeric: Optional[Union[float, int]] = None,
     remove_non_numeric: bool = False,
 ) -> pd.DataFrame:
     """Convert currency column to numeric.
@@ -2848,7 +2849,7 @@ def select_columns(
 def impute(
     df: pd.DataFrame,
     column_name: Hashable,
-    value: Any = None,
+    value: Optional[Any] = None,
     statistic_column_name: str = None,
 ) -> pd.DataFrame:
     """Method-chainable imputation of values in a column.
@@ -3523,8 +3524,8 @@ def join_apply(
 @pf.register_dataframe_method
 def flag_nulls(
     df: pd.DataFrame,
-    column_name: Hashable = "null_flag",
-    columns: Union[str, Iterable[str], Hashable] = None,
+    column_name: Optional[Hashable] = "null_flag",
+    columns: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Creates a new column to indicate whether you have null values in a given
     row. If the columns parameter is not set, looks across the entire
@@ -3890,7 +3891,9 @@ def sort_naturally(
 
 @pf.register_dataframe_method
 def expand_grid(
-    df: pd.DataFrame = None, df_key: str = None, others: Dict = None
+    df: Optional[pd.DataFrame] = None,
+    df_key: Optional[str] = None,
+    others: Dict = None,
 ) -> pd.DataFrame:
     """
     Creates a dataframe from a combination of all inputs.

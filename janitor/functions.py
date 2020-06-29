@@ -2978,7 +2978,9 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
-def find_replace(df, match: str = "exact", **mappings):
+def find_replace(
+    df: pd.DataFrame, match: str = "exact", **mappings
+) -> pd.DataFrame:
     """Perform a find-and-replace action on provided columns.
 
     Depending on use case, users can choose either exact, full-value matching,
@@ -3471,7 +3473,9 @@ def shuffle(
 
 
 @pf.register_dataframe_method
-def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
+def join_apply(
+    df: pd.DataFrame, func: Callable, new_column_name: str
+) -> pd.DataFrame:
     """Join the result of applying a function across dataframe rows.
 
     This method does not mutate the original DataFrame.

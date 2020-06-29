@@ -412,7 +412,8 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
-    df: pd.DataFrame, column_names: Optional[Union[str, Iterable[str]]] = None
+    df: pd.DataFrame,
+    column_names: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Return all duplicate rows.
 

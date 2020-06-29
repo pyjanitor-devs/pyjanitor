@@ -7,6 +7,7 @@ new version (on deck)
 - [INF] Update ``pandas`` minimum version to 1.0.0. @hectormz
 - [DOC] Updated the general functions API page to show all available functions @samukweku
 - [DOC] Fix the few lacking type annotations of functions. @VPerrollaz
+- [DOC] Add the Optional type for all signatures of the API @VPerrollaz
 
 v0.20.7
 =======

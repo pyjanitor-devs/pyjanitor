@@ -8,7 +8,7 @@ new version (on deck)
 - [DOC] Updated the general functions API page to show all available functions. @samukweku
 - [DOC] Fix the few lacking type annotations of functions. @VPerrollaz
 - [DOC] Changed the signature from str to Optional[str] when initialized by None. @VPerrollaz
-
+- [DOC] Add the Optional type for all signatures of the API. @VPerrollaz
 
 v0.20.7
 =======

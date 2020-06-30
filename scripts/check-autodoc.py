@@ -16,22 +16,22 @@ from typing import List, Tuple
 
 def extract_function_names(
     test_folder: Path, exclude_names: List[str]
-) -> List[str]:  # skipqc
+) -> List[str]:  # skipcq
     """Extract function names from the list of functions."""
-    function_names = []  # skipqc
+    function_names = []  # skipcq
     for name in test_folder.iterdir():
         if not name.is_dir() and path_does_not_contain(name, exclude_names):
             function_names.append(name.stem.split("_", 1)[-1].strip())
     return function_names
 
 
-def extract_documented_functions(docs: Path) -> List[str]:  # skipqc
+def extract_documented_functions(docs: Path) -> List[str]:  # skipcq
     """Extract documented functions from docs page."""
     pattern = re.compile(r"\s{4}[a-zA-Z_]+")
 
     # get the names in the general_functions page
     with docs.open() as doc:
-        doc_functions = [  # skipqc
+        doc_functions = [  # skipcq
             pattern.search(line).group().strip()
             for line in doc
             if pattern.search(line)

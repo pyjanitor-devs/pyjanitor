@@ -225,7 +225,7 @@ def move(
 @pf.register_dataframe_method
 def clean_names(
     df: pd.DataFrame,
-    strip_underscores: str = None,
+    strip_underscores: Optional[Union[str, bool]] = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = True,
@@ -676,7 +676,7 @@ def reorder_columns(
 def coalesce(
     df: pd.DataFrame,
     column_names: Iterable[Hashable],
-    new_column_name: str = None,
+    new_column_name: Optional[str] = None,
     delete_columns: bool = True,
 ) -> pd.DataFrame:
     """Coalesce two or more columns of data in order of column names provided.
@@ -988,9 +988,9 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name: Hashable,
-    sep: str = None,
+    sep: Optional[str] = None,
     new_column_names: Union[List[str], Tuple[str]] = None,
-    autoname: str = None,
+    autoname: Optional[str] = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
     """De-concatenates a single column into multiple columns.
@@ -1262,7 +1262,7 @@ def filter_date(
     months: List = None,
     days: List = None,
     column_date_options: Dict = None,
-    format: str = None,
+    format: Optional[str] = None,
 ) -> pd.DataFrame:
     """Filter a date-based column based on certain criteria.
 
@@ -2179,7 +2179,7 @@ def transform_column(
     df: pd.DataFrame,
     column_name: Hashable,
     function: Callable,
-    dest_column_name: str = None,
+    dest_column_name: Optional[str] = None,
     elementwise: bool = True,
 ) -> pd.DataFrame:
     """Transform the given column in-place using the provided function.
@@ -2283,7 +2283,7 @@ def transform_columns(
     df: pd.DataFrame,
     column_names: Union[List[str], Tuple[str]],
     function: Callable,
-    suffix: str = None,
+    suffix: Optional[str] = None,
     elementwise: bool = True,
     new_column_names: Dict[str, str] = None,
 ) -> pd.DataFrame:
@@ -2556,7 +2556,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 def currency_column_to_numeric(
     df: pd.DataFrame,
     column_name,
-    cleaning_style: str = None,
+    cleaning_style: Optional[str] = None,
     cast_non_numeric: dict = None,
     fill_all_non_numeric: float = None,
     remove_non_numeric: bool = False,
@@ -2849,7 +2849,7 @@ def impute(
     df: pd.DataFrame,
     column_name: Hashable,
     value: Any = None,
-    statistic_column_name: str = None,
+    statistic_column_name: Optional[str] = None,
 ) -> pd.DataFrame:
     """Method-chainable imputation of values in a column.
 
@@ -3308,7 +3308,7 @@ def bin_numeric(
     from_column_name: Hashable,
     to_column_name: Hashable,
     num_bins: int = 5,
-    labels: str = None,
+    labels: Optional[str] = None,
 ) -> pd.DataFrame:
     """Generate a new column that labels bins for a specified numeric column.
 

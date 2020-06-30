@@ -5,6 +5,7 @@ Finance-specific data cleaning functions.
 import json
 from datetime import date, datetime
 from functools import lru_cache
+from typing import Optional
 
 import pandas as pd
 import pandas_flavor as pf
@@ -346,7 +347,7 @@ def _check_wb_years(year: int):
 def _convert_currency(
     from_currency: str = None,
     to_currency: str = None,
-    historical_date: date = None,
+    historical_date: Optional[date] = None,
 ) -> float:
     """
     Currency conversion for Pandas DataFrame column.

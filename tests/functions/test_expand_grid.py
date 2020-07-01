@@ -239,6 +239,7 @@ def test_computation_output_1():
     # pandas simply picked up the dtype supplied from numpy
     # whereas the expected dataframe was created within Pandas
     # and got assigned the minimum dtype of int64
+    # hence the error and the need to set check_dtype to False
     assert_frame_equal(expand_grid(others=data), expected, check_dtype=False)
 
 

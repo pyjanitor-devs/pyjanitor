@@ -339,12 +339,3 @@ def test_df_multi_index():
 
     with pytest.raises(TypeError):
         expand_grid(df, others=others)
-
-
-data = {"x": range(1, 4), "y": [1, 2]}
-
-print(expand_grid(others=data).columns)
-
-expected = pd.DataFrame({"x": [1, 1, 2, 2, 3, 3], "y": [1, 2, 1, 2, 1, 2]})
-
-print(expected.columns)

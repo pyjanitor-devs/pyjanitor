@@ -4,7 +4,8 @@ new version (on deck)
   or boolean indexing via the ``loc`` method.
   Also updated ``find_replace`` function to use the ``loc`` method directly,
   instead of routing it through the ``update_where`` function.
-  Updated the general functions API page to show all available functions @samukweku
+  Updated the general functions API page to show all available functions 
+  Updated test_expand_grid to account for int dtype difference in Windows OS @samukweku
 
 v0.20.7
 =======

@@ -44,7 +44,7 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Iterable[pd.CategoricalDtype] = None
+    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -225,7 +225,7 @@ def move(
 @pf.register_dataframe_method
 def clean_names(
     df: pd.DataFrame,
-    strip_underscores: str = None,
+    strip_underscores: Optional[Union[str, bool]] = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = True,
@@ -412,7 +412,8 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable] = None
+    df: pd.DataFrame,
+    column_names: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Return all duplicate rows.
 
@@ -676,7 +677,7 @@ def reorder_columns(
 def coalesce(
     df: pd.DataFrame,
     column_names: Iterable[Hashable],
-    new_column_name: str = None,
+    new_column_name: Optional[str] = None,
     delete_columns: bool = True,
 ) -> pd.DataFrame:
     """Coalesce two or more columns of data in order of column names provided.
@@ -988,8 +989,8 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name: Hashable,
-    sep: str = None,
-    new_column_names: Union[List[str], Tuple[str]] = None,
+    sep: Optional[str] = None,
+    new_column_names: Optional[Union[List[str], Tuple[str]]] = None,
     autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
@@ -1256,13 +1257,13 @@ def filter_on(
 def filter_date(
     df: pd.DataFrame,
     column_name: Hashable,
-    start_date: dt.date = None,
-    end_date: dt.date = None,
-    years: List = None,
-    months: List = None,
-    days: List = None,
-    column_date_options: Dict = None,
-    format: str = None,
+    start_date: Optional[dt.date] = None,
+    end_date: Optional[dt.date] = None,
+    years: Optional[List] = None,
+    months: Optional[List] = None,
+    days: Optional[List] = None,
+    column_date_options: Optional[Dict] = None,
+    format: Optional[str] = None,
 ) -> pd.DataFrame:
     """Filter a date-based column based on certain criteria.
 
@@ -2179,7 +2180,7 @@ def transform_column(
     df: pd.DataFrame,
     column_name: Hashable,
     function: Callable,
-    dest_column_name: str = None,
+    dest_column_name: Optional[str] = None,
     elementwise: bool = True,
 ) -> pd.DataFrame:
     """Transform the given column in-place using the provided function.
@@ -2283,9 +2284,9 @@ def transform_columns(
     df: pd.DataFrame,
     column_names: Union[List[str], Tuple[str]],
     function: Callable,
-    suffix: str = None,
+    suffix: Optional[str] = None,
     elementwise: bool = True,
-    new_column_names: Dict[str, str] = None,
+    new_column_names: Optional[Dict[str, str]] = None,
 ) -> pd.DataFrame:
     """Transform multiple columns through the same transformation.
 
@@ -2556,9 +2557,9 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 def currency_column_to_numeric(
     df: pd.DataFrame,
     column_name,
-    cleaning_style: str = None,
-    cast_non_numeric: dict = None,
-    fill_all_non_numeric: float = None,
+    cleaning_style: Optional[str] = None,
+    cast_non_numeric: Optional[dict] = None,
+    fill_all_non_numeric: Optional[Union[float, int]] = None,
     remove_non_numeric: bool = False,
 ) -> pd.DataFrame:
     """Convert currency column to numeric.
@@ -2848,8 +2849,8 @@ def select_columns(
 def impute(
     df: pd.DataFrame,
     column_name: Hashable,
-    value: Any = None,
-    statistic_column_name: str = None,
+    value: Optional[Any] = None,
+    statistic_column_name: Optional[str] = None,
 ) -> pd.DataFrame:
     """Method-chainable imputation of values in a column.
 
@@ -2978,7 +2979,9 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
-def find_replace(df, match: str = "exact", **mappings):
+def find_replace(
+    df: pd.DataFrame, match: str = "exact", **mappings
+) -> pd.DataFrame:
     """Perform a find-and-replace action on provided columns.
 
     Depending on use case, users can choose either exact, full-value matching,
@@ -3306,7 +3309,7 @@ def bin_numeric(
     from_column_name: Hashable,
     to_column_name: Hashable,
     num_bins: int = 5,
-    labels: str = None,
+    labels: Optional[str] = None,
 ) -> pd.DataFrame:
     """Generate a new column that labels bins for a specified numeric column.
 
@@ -3471,7 +3474,9 @@ def shuffle(
 
 
 @pf.register_dataframe_method
-def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
+def join_apply(
+    df: pd.DataFrame, func: Callable, new_column_name: str
+) -> pd.DataFrame:
     """Join the result of applying a function across dataframe rows.
 
     This method does not mutate the original DataFrame.
@@ -3519,8 +3524,8 @@ def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
 @pf.register_dataframe_method
 def flag_nulls(
     df: pd.DataFrame,
-    column_name: Hashable = "null_flag",
-    columns: Union[str, Iterable[str], Hashable] = None,
+    column_name: Optional[Hashable] = "null_flag",
+    columns: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Creates a new column to indicate whether you have null values in a given
     row. If the columns parameter is not set, looks across the entire
@@ -3886,7 +3891,9 @@ def sort_naturally(
 
 @pf.register_dataframe_method
 def expand_grid(
-    df: pd.DataFrame = None, df_key: str = None, others: Dict = None
+    df: Optional[pd.DataFrame] = None,
+    df_key: Optional[str] = None,
+    others: Dict = None,
 ) -> pd.DataFrame:
     """
     Creates a dataframe from a combination of all inputs.

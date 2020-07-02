@@ -1,6 +1,6 @@
 """ Machine learning specific functions. """
 
-from typing import Hashable, Iterable, List, Tuple, Union
+from typing import Hashable, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 import pandas_flavor as pf
@@ -16,8 +16,8 @@ from .utils import deprecated_alias
 def get_features_targets(
     df: pd.DataFrame,
     target_column_names: Union[str, Union[List, Tuple], Hashable],
-    feature_column_names: Union[str, Iterable[str], Hashable] = None,
-):
+    feature_column_names: Optional[Union[str, Iterable[str], Hashable]] = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Get the features and targets as separate DataFrames/Series.
 

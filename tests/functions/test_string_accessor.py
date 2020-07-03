@@ -55,6 +55,3 @@ def test_str_get():
     )
 
     assert_frame_equal(result, expected)
-
-
-box = pd.DataFrame({"text": ["aA", "bB", "cC", "dD"], "numbers": range(1, 5)})

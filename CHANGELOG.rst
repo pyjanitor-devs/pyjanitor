@@ -5,7 +5,7 @@ new version (on deck)
   Also updated ``find_replace`` function to use the ``loc`` method directly,
   instead of routing it through the ``update_where`` function.
   Updated the general functions API page to show all available functions 
-  Updated test_expand_grid to account for int dtype difference in Windows OS @samukweku
+  [TST] Updated test_expand_grid to account for int dtype difference in Windows OS @samukweku
 - [INF] Update ``pandas`` minimum version to 1.0.0. @hectormz
 - [DOC] Updated the general functions API page to show all available functions. @samukweku
 - [DOC] Fix the few lacking type annotations of functions. @VPerrollaz

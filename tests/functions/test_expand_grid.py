@@ -226,7 +226,21 @@ def test_computation_output_1():
     """Test output if entry contains no dataframes/series"""
     data = {"x": range(1, 4), "y": [1, 2]}
     expected = pd.DataFrame({"x": [1, 1, 2, 2, 3, 3], "y": [1, 2, 1, 2, 1, 2]})
-    assert_frame_equal(expand_grid(others=data), expected)
+    # h/t to @hectormz for picking it up
+    # check_dtype is set to False for this test -
+    # on Windows systems integer dtype default is int32
+    # while on Ubuntu it comes up as int64
+    # when the test is executed, the dtype on the left is int32
+    # while the expected dataframe has a dtype of int64
+    # And this was causing this particular test to fail on Windows
+    # pandas has a minimum of int64 for integer columns
+    # My suspicion is that because the resulting dataframe was
+    # created solely from a dictionary via numpy
+    # pandas simply picked up the dtype supplied from numpy
+    # whereas the expected dataframe was created within Pandas
+    # and got assigned the minimum dtype of int64
+    # hence the error and the need to set check_dtype to False
+    assert_frame_equal(expand_grid(others=data), expected, check_dtype=False)
 
 
 def test_computation_output_2():

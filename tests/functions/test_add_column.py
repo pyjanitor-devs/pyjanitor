@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+from pandas.testing import assert_series_equal
 
 from janitor.testing_utils.strategies import df_strategy
 
@@ -41,7 +42,7 @@ def test_add_column_scalar(df):
     # values are correct in dataframe for scalar
     series = pd.Series([42] * len(df))
     series.name = "fortytwo"
-    pd.testing.assert_series_equal(df["fortytwo"], series)
+    assert_series_equal(df["fortytwo"], series)
 
     # scalar values are correct for strings
     # also, verify sanity check excludes strings, which have a length:
@@ -53,14 +54,14 @@ def test_add_column_string(df):
     df = df.add_column("fortythousand", "test string")
     series = pd.Series(["test string"] * len(df))
     series.name = "fortythousand"
-    pd.testing.assert_series_equal(df["fortythousand"], series)
+    assert_series_equal(df["fortythousand"], series)
 
     # values are correct in dataframe for iterable
     vals = np.linspace(0, 43, len(df))
     df = df.add_column("fortythree", vals)
     series = pd.Series(vals)
     series.name = "fortythree"
-    pd.testing.assert_series_equal(df["fortythree"], series)
+    assert_series_equal(df["fortythree"], series)
 
 
 @pytest.mark.functions
@@ -82,7 +83,7 @@ def test_add_column_fill_scalar(df):
     df = df.add_column("fill_in_scalar", vals, fill_remaining=True)
     series = pd.Series([42] * len(df))
     series.name = "fill_in_scalar"
-    pd.testing.assert_series_equal(df["fill_in_scalar"], series)
+    assert_series_equal(df["fill_in_scalar"], series)
 
 
 @pytest.mark.functions

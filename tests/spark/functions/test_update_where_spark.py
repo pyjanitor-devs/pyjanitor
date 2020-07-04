@@ -1,5 +1,5 @@
-import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 try:
     import pyspark
@@ -15,7 +15,7 @@ except ImportError:
 )
 def test_update_where_string(dataframe, spark_dataframe):
     """Test update_where and update with a string."""
-    pd.testing.assert_frame_equal(
+    assert_frame_equal(
         spark_dataframe.update_where(
             conditions="""
             `decorated-elephant` = 1 AND `animals@#$%^` = 'rabbit'
@@ -38,7 +38,7 @@ def test_update_where_string(dataframe, spark_dataframe):
 )
 def test_update_where_float(dataframe, spark_dataframe):
     """Test update_where and update with a float."""
-    pd.testing.assert_frame_equal(
+    assert_frame_equal(
         spark_dataframe.update_where(
             conditions="""
             `decorated-elephant` = 1 AND `animals@#$%^` = 'rabbit'
@@ -61,7 +61,7 @@ def test_update_where_float(dataframe, spark_dataframe):
 )
 def test_update_where_int(dataframe, spark_dataframe):
     """Test update_where and update with a int."""
-    pd.testing.assert_frame_equal(
+    assert_frame_equal(
         spark_dataframe.update_where(
             conditions="""
             `decorated-elephant` = 1 AND `animals@#$%^` = 'rabbit'
@@ -84,7 +84,7 @@ def test_update_where_int(dataframe, spark_dataframe):
 )
 def test_update_where_column_dne(dataframe, spark_dataframe):
     """Test update_where. Target column name does not exists."""
-    pd.testing.assert_frame_equal(
+    assert_frame_equal(
         spark_dataframe.update_where(
             conditions="""
             `decorated-elephant` = 1 AND `animals@#$%^` = 'rabbit'

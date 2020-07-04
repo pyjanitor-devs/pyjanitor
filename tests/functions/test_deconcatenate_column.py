@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 import janitor  # noqa: F401
 
@@ -27,13 +28,13 @@ def test_deconcatenate_column_collection(dataframe: pd.DataFrame):
         .reorder_columns(dataframe.columns)
     )
 
-    pd.testing.assert_frame_equal(dataframe, deconcat_df)
+    assert_frame_equal(dataframe, deconcat_df)
 
     deconcat_df = concat_df.deconcatenate_column(
         "concatenated", new_column_names=column_names, preserve_position=True
     ).reorder_columns(dataframe.columns)
 
-    pd.testing.assert_frame_equal(dataframe, deconcat_df)
+    assert_frame_equal(dataframe, deconcat_df)
 
 
 @pytest.mark.functions

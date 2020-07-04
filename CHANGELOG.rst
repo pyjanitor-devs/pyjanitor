@@ -10,6 +10,8 @@ new version (on deck)
 - [DOC] Changed the signature from str to Optional[str] when initialized by None. @VPerrollaz
 - [DOC] Add the Optional type for all signatures of the API. @VPerrollaz
 - [TST] Updated test_expand_grid to account for int dtype difference in Windows OS @samukweku
+- [TST] Make importing ``pandas`` testing functions follow uniform pattern. @hectormz
+
 
 v0.20.7
 =======

@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 import janitor  # noqa: F401
 
@@ -13,4 +14,4 @@ def test_join_apply():
     expected = df.copy()
     expected["2a+b"] = [4, 7, 10]
 
-    pd.testing.assert_frame_equal(df, expected)
+    assert_frame_equal(df, expected)

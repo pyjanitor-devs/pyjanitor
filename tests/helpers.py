@@ -32,7 +32,8 @@ def importorskip(
     Example::
         docutils = pytest.importorskip("docutils")
     """
-    # JANITOR_CI_MACHINE is True if tests run on CI, where JANITOR_CI_MACHINE env variable exists
+    # JANITOR_CI_MACHINE is True if tests run on CI,
+    # where JANITOR_CI_MACHINE env variable exists
     JANITOR_CI_MACHINE = running_on_ci()
     if JANITOR_CI_MACHINE:
         import warnings

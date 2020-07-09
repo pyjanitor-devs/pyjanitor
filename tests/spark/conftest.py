@@ -1,7 +1,6 @@
 import pytest
 
 try:
-    import pyspark
     from pyspark.sql import SparkSession
     from pyspark.sql.types import (
         FloatType,
@@ -11,7 +10,7 @@ try:
         StructType,
     )
 except ImportError:
-    pyspark = None
+    pass
 
 
 @pytest.fixture(scope="session")

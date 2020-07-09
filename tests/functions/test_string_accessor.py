@@ -102,9 +102,11 @@ def test_str_lower():
 
     assert_frame_equal(result, expected)
 
+
 def test_str_wrong():
     """Test that string_function is not a Pandas string method"""
-    df = pd.DataFrame({"text":["ragnar","sammywemmy","ginger"],
-                               "code" : [1, 2, 3]})
+    df = pd.DataFrame(
+        {"text": ["ragnar", "sammywemmy", "ginger"], "code": [1, 2, 3]}
+    )
     with pytest.raises(KeyError):
-        process_text(df, column = "text", string_function="ragnar")
+        process_text(df, column="text", string_function="ragnar")

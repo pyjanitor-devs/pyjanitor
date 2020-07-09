@@ -1,18 +1,13 @@
 import pytest
 from pandas.testing import assert_frame_equal
 
-try:
-    import pyspark
+from helpers import importorskip
 
-    import janitor.spark  # noqa: F401
-except ImportError:
-    pyspark = None
+pyspark = importorskip("pyspark")
+import janitor.spark  # noqa: F401 isort:skip
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_update_where_string(dataframe, spark_dataframe):
     """Test update_where and update with a string."""
     assert_frame_equal(
@@ -33,9 +28,6 @@ def test_update_where_string(dataframe, spark_dataframe):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_update_where_float(dataframe, spark_dataframe):
     """Test update_where and update with a float."""
     assert_frame_equal(
@@ -56,9 +48,6 @@ def test_update_where_float(dataframe, spark_dataframe):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_update_where_int(dataframe, spark_dataframe):
     """Test update_where and update with a int."""
     assert_frame_equal(
@@ -79,9 +68,6 @@ def test_update_where_int(dataframe, spark_dataframe):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_update_where_column_dne(dataframe, spark_dataframe):
     """Test update_where. Target column name does not exists."""
     assert_frame_equal(

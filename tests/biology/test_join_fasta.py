@@ -6,11 +6,13 @@ import pytest
 import janitor.biology  # noqa: F403, F401
 from helpers import running_on_ci
 
-
-@pytest.mark.skipif(
+# Skip all tests if Biopython not installed
+pytestmark = pytest.mark.skipif(
     (importlib.util.find_spec("Bio") is None) & ~running_on_ci(),
     reason="Biology tests relying on Biopython only required for CI",
 )
+
+
 @pytest.mark.biology
 def test_join_fasta(biodf):
     """Test adding sequence from FASTA file in ``sequence`` column."""

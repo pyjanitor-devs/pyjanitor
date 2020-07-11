@@ -4055,7 +4055,7 @@ def process_text(
         import janitor as jn
 
         df = pd.DataFrame(...)
-        df = jn.process_text(df = df, string_function = "...", args, kwargs)
+        df = jn.process_text(df = df, string_function = "string_func_name_here", args, kwargs)
 
     Method-chaining usage syntax:
 

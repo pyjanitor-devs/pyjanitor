@@ -103,7 +103,7 @@ def test_str_lower():
 
 
 def test_str_wrong():
-    """Test that string_function is not a Pandas string method"""
+    """Test that string_function that is not a Pandas string method actually errors out"""
     df = pd.DataFrame(
         {"text": ["ragnar", "sammywemmy", "ginger"], "code": [1, 2, 3]}
     )

@@ -7,7 +7,7 @@ from janitor.functions import process_text
 
 
 def test_str_split():
-    "Test Pandas string split method"
+    "Test wrapper for Pandas ``.str.split()`` method"
 
     df = pd.DataFrame(
         {"text": ["a_b_c", "c_d_e", np.nan, "f_g_h"], "numbers": range(1, 5)}

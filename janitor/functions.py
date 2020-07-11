@@ -45,7 +45,7 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
+    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None,
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -618,7 +618,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def reorder_columns(
-    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable]
+    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable],
 ) -> pd.DataFrame:
     """Reorder DataFrame columns by specifying desired order as list of col names.
 
@@ -845,7 +845,7 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def fill_empty(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value,
 ) -> pd.DataFrame:
     """Fill `NaN` values in specified columns with a given value.
 
@@ -893,7 +893,7 @@ def fill_empty(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
+    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True,
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -1084,7 +1084,9 @@ def deconcatenate_column(
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:
         df_deconcat = pd.DataFrame(
-            df[column_name].to_list(), columns=new_column_names, index=df.index
+            df[column_name].to_list(),
+            columns=new_column_names,
+            index=df.index,
         )
 
     if preserve_position:
@@ -2780,7 +2782,7 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, search_column_names: List[str], invert: bool = False
+    df: pd.DataFrame, search_column_names: List[str], invert: bool = False,
 ) -> pd.DataFrame:
     """Method-chainable selection of columns.
 
@@ -3068,7 +3070,7 @@ def find_replace(
 
 
 def _find_replace(
-    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
+    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact",
 ) -> pd.DataFrame:
     """Utility function for ``find_replace``.
 
@@ -4013,11 +4015,15 @@ def process_text(
     **kwargs: str,
 ) -> pd.DataFrame:
     """
-    Applies Pandas string method to a column, and returns a dataframe.
+    Applies Pandas string method to an existing column,
+    and returns a dataframe.
     This function aims to make string cleaning easy, while chaining,
-    by simply passing the string method name to the ``process_text`` function.
+    by simply passing the string method name to the
+    ``process_text`` function.
+    Note that this modifies an existing column,
+    and should not be used to create a new column.
     A list of all the string methods in Pandas can be accessed here:
-    https://pandas.pydata.org/docs/user_guide/text.html#method-summary
+    https://pandas.pydata.org/docs/user_guide/text.html#method-summary.
 
     Example:
 
@@ -4036,10 +4042,12 @@ def process_text(
         # ginger     |    3
 
         #For string methods with parameters, simply pass the arguments :
-        df.process_text(column = "text",
-                        string_function = "extract",
-                        pat = r"(ag)",
-                        flags = re.IGNORECASE)
+        df.process_text(
+            column = "text",
+            string_function = "extract",
+            pat = r"(ag)",
+            flags = re.IGNORECASE
+            )
 
         # text |   code
         # ag   |    1
@@ -4055,7 +4063,11 @@ def process_text(
         import janitor as jn
 
         df = pd.DataFrame(...)
-        df = jn.process_text(df = df, string_function = "string_func_name_here", args, kwargs)
+        df = jn.process_text(
+            df = df,
+            string_function = "string_func_name_here",
+            args, kwargs
+            )
 
     Method-chaining usage syntax:
 
@@ -4066,7 +4078,10 @@ def process_text(
 
         df = (
             pd.DataFrame(...)
-            .process_text(string_function = "string_func_name_here", args, kwargs)
+            .process_text(
+                string_function = "string_func_name_here",
+                args, kwargs
+                )
         )
 
 
@@ -4075,6 +4090,7 @@ def process_text(
     :param args, kwargs: Arguments for parameters.
     :returns: A pandas dataframe with modified column.
     :raises: KeyError if ``string_function`` is not a Pandas string method.
+    :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
     """
 
     data = [

@@ -97,7 +97,7 @@ def test_str_lower():
         }
     )
 
-    result = process_text(df, column="names", string_function="lower")
+    result = df.process_text(column="names", string_function="lower")
 
     assert_frame_equal(result, expected)
 

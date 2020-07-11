@@ -57,7 +57,7 @@ def test_str_get():
         {"text": ["aA", "bB", "cC", "dD"], "numbers": range(1, 5)}
     )
 
-    result = process_text(df=df, column="text", string_function="get", i=-1)
+    result = df.process_text(column="text", string_function="get", i=-1)
 
     expected = pd.DataFrame(
         {"text": ["A", "B", "C", "D"], "numbers": [1, 2, 3, 4]}

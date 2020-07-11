@@ -51,7 +51,7 @@ def test_str_cat():
 
 
 def test_str_get():
-    """Test Pandas string get method"""
+    """Test wrapper for Pandas ``.str.get()`` method"""
 
     df = pd.DataFrame(
         {"text": ["aA", "bB", "cC", "dD"], "numbers": range(1, 5)}

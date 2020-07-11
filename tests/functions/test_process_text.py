@@ -108,4 +108,4 @@ def test_str_wrong():
         {"text": ["ragnar", "sammywemmy", "ginger"], "code": [1, 2, 3]}
     )
     with pytest.raises(KeyError):
-        process_text(df, column="text", string_function="ragnar")
+        df.process_text(column="text", string_function="ragnar")

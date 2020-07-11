@@ -4064,9 +4064,10 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = (pd.DataFrame(...)
-             .process_text(string_function = "bla", args, kwargs)
-             )
+        df = (
+            pd.DataFrame(...)
+            .process_text(string_function = "string_func_name_here", args, kwargs)
+        )
 
 
     :param df: A pandas dataframe.

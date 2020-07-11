@@ -13,8 +13,8 @@ def test_str_split():
         {"text": ["a_b_c", "c_d_e", np.nan, "f_g_h"], "numbers": range(1, 5)}
     )
 
-    result = process_text(
-        df=df, column="text", string_function="split", pat="_"
+    result = df.process_text(
+        column="text", string_function="split", pat="_"
     )
 
     expected = pd.DataFrame(

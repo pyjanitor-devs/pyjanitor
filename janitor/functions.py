@@ -45,7 +45,7 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None,
+    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -618,7 +618,7 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def reorder_columns(
-    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable],
+    df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable]
 ) -> pd.DataFrame:
     """Reorder DataFrame columns by specifying desired order as list of col names.
 
@@ -845,7 +845,7 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def fill_empty(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value,
+    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
 ) -> pd.DataFrame:
     """Fill `NaN` values in specified columns with a given value.
 
@@ -893,7 +893,7 @@ def fill_empty(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True,
+    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -2782,7 +2782,7 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, search_column_names: List[str], invert: bool = False,
+    df: pd.DataFrame, search_column_names: List[str], invert: bool = False
 ) -> pd.DataFrame:
     """Method-chainable selection of columns.
 
@@ -3070,7 +3070,7 @@ def find_replace(
 
 
 def _find_replace(
-    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact",
+    df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
 ) -> pd.DataFrame:
     """Utility function for ``find_replace``.
 

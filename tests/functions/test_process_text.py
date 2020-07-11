@@ -37,8 +37,7 @@ def test_str_cat():
 
     df = pd.DataFrame({"text": ["a", "b", "c", "d"], "numbers": range(1, 5)})
 
-    result = process_text(
-        df=df,
+    result = df.process_text(
         column="text",
         string_function="cat",
         others=["A", "B", "C", "D"],

@@ -33,7 +33,7 @@ def test_str_split():
 
 
 def test_str_cat():
-    "Test Pandas string cat method"
+    "Test wrapper for Pandas ``.str.cat()`` method"
 
     df = pd.DataFrame({"text": ["a", "b", "c", "d"], "numbers": range(1, 5)})
 

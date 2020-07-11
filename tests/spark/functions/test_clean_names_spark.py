@@ -1,9 +1,12 @@
 import pytest
 
-from helpers import importorskip
+from helpers import running_on_ci
 from janitor.errors import JanitorError
 
-pyspark = importorskip("pyspark")
+if running_on_ci():
+    import pyspark
+else:
+    pyspark = pytest.importorskip("pyspark")
 import janitor.spark  # noqa: F401 isort:skip
 
 

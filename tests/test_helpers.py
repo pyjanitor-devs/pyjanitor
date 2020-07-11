@@ -1,19 +1,14 @@
 """Tests for test helper functions."""
-import pytest
-from _pytest.outcomes import Skipped
-
-from helpers import importorskip
+from helpers import running_on_ci
 
 
-def test_importorskip_local(monkeypatch):
-    """Test importorskip run on local machine with fake module -> skip."""
+def test_running_on_ci_local(monkeypatch):
+    """Test running_on_ci run on local machine returns False."""
     monkeypatch.delenv("JANITOR_CI_MACHINE", raising=False)
-    with pytest.raises(Skipped):
-        importorskip("non-existent-function")
+    assert running_on_ci() is False
 
 
-def test_importorskip_ci(monkeypatch):
-    """Test importorskip run on CI machine with fake module -> fail."""
+def test_running_on_ci_ci(monkeypatch):
+    """Test running_on_ci run on CI machine returns True."""
     monkeypatch.setenv("JANITOR_CI_MACHINE", "1")
-    with pytest.raises(ModuleNotFoundError):
-        importorskip("non-existent-function")
+    assert running_on_ci() is True

@@ -4093,13 +4093,13 @@ def process_text(
     :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
     """
 
-    data = [
+    pandas_string_methods = [
         func.__name__
         for _, func in inspect.getmembers(pd.Series.str, inspect.isfunction)
         if not func.__name__.startswith("_")
     ]
 
-    if string_function not in data:
+    if string_function not in pandas_string_methods:
         raise KeyError(f"{string_function} is not a Pandas string method.")
 
     df[column] = getattr(df[column].str, string_function)(*args, **kwargs)

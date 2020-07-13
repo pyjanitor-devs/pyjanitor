@@ -74,10 +74,7 @@ def test_str_lower():
 
 
 def test_str_wrong():
-    """
-    Test that string_function that is not a Pandas string method
-    actually errors out.
-    """
+    """Test that an invalid Pandas string method raises an exception."""
     df = pd.DataFrame(
         {"text": ["ragnar", "sammywemmy", "ginger"], "code": [1, 2, 3]}
     )

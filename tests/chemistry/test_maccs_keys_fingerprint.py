@@ -3,12 +3,15 @@ import importlib
 import pytest
 
 import janitor.chemistry  # noqa: disable=unused-import
+from helpers import running_on_ci
 
-
-@pytest.mark.skipif(
-    importlib.util.find_spec("rdkit") is None,
+# Skip all tests if rdkit not installed
+pytestmark = pytest.mark.skipif(
+    (importlib.util.find_spec("rdkit") is None) & ~running_on_ci(),
     reason="rdkit tests only required for CI",
 )
+
+
 @pytest.mark.chemistry
 def test_maccs_keys_fingerprint(chemdf):
     """Test conversion of SMILES strings to MACCS keys fingerprints."""

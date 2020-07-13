@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.functions
@@ -9,4 +10,4 @@ def test_dropnotnull(missingdata_df):
 
     assert pd.isna(df_drop["bell_chart"]).all()
 
-    pd.testing.assert_frame_equal(df.loc[df_drop.index], df_drop)
+    assert_frame_equal(df.loc[df_drop.index], df_drop)

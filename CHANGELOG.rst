@@ -9,6 +9,7 @@ new version (on deck)
 - [DOC] Fix the few lacking type annotations of functions. @VPerrollaz
 - [DOC] Changed the signature from str to Optional[str] when initialized by None. @VPerrollaz
 - [DOC] Add the Optional type for all signatures of the API. @VPerrollaz
+- [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 
 v0.20.7
 =======

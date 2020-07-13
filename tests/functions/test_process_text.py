@@ -86,10 +86,7 @@ def test_str_wrong():
 
 
 def test_str_wrong_parameters():
-    """
-    Test that wrong parameters for a Pandas string method
-    actually errors out.
-    """
+    """Test that invalid argument for Pandas string method raises an error."""
 
     df = pd.DataFrame(
         {"text": ["a_b_c", "c_d_e", np.nan, "f_g_h"], "numbers": range(1, 5)}

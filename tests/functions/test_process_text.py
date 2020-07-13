@@ -49,7 +49,7 @@ def test_str_get():
 
 
 def test_str_lower():
-    """Test string conversion to lowercase using ``.str.lower()``"""
+    """Test string conversion to lowercase using ``.str.lower()``."""
 
     df = pd.DataFrame(
         {

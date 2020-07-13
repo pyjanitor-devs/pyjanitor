@@ -11,6 +11,7 @@ new version (on deck)
 - [DOC] Add the Optional type for all signatures of the API. @VPerrollaz
 - [TST] Updated test_expand_grid to account for int dtype difference in Windows OS @samukweku
 - [TST] Make importing ``pandas`` testing functions follow uniform pattern. @hectormz
+- [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 - [TST] Only skip tests for non-installed libraries on local machine. @hectormz
 
 

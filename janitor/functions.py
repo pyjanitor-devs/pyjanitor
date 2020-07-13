@@ -1,6 +1,7 @@
 """ General purpose data cleaning functions. """
 
 import datetime as dt
+import inspect
 import re
 import unicodedata
 import warnings
@@ -1083,7 +1084,9 @@ def deconcatenate_column(
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:
         df_deconcat = pd.DataFrame(
-            df[column_name].to_list(), columns=new_column_names, index=df.index
+            df[column_name].to_list(),
+            columns=new_column_names,
+            index=df.index,
         )
 
     if preserve_position:
@@ -4001,3 +4004,103 @@ def expand_grid(
     dfs, dicts = _check_instance(others)
 
     return _grid_computation(dfs, dicts)
+
+
+@pf.register_dataframe_method
+def process_text(
+    df: pd.DataFrame,
+    column: str,
+    string_function: str,
+    *args: str,
+    **kwargs: str,
+) -> pd.DataFrame:
+    """
+    Apply a Pandas string method to an existing column and return a dataframe.
+
+    This function aims to make string cleaning easy, while chaining,
+    by simply passing the string method name to the ``process_text`` function.
+    Note that this modifies an existing column,
+    and should not be used to create a new column.
+    A list of all the string methods in Pandas can be accessed here:
+    https://pandas.pydata.org/docs/user_guide/text.html#method-summary.
+
+    Example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"text":["ragnar","sammywemmy","ginger"],
+                           "code" : [1, 2, 3]})
+
+        df.process_text(column = "text", string_function = "lower")
+        # text       |   code
+        # ragnar     |    1
+        # sammywemmy |    2
+        # ginger     |    3
+
+        #For string methods with parameters, simply pass the arguments :
+        df.process_text(
+            column = "text",
+            string_function = "extract",
+            pat = r"(ag)",
+            flags = re.IGNORECASE
+            )
+
+        # text |   code
+        # ag   |    1
+        # NaN  |    2
+        # NaN  |    3
+
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.process_text(
+            df = df,
+            string_function = "string_func_name_here",
+            args, kwargs
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .process_text(
+                string_function = "string_func_name_here",
+                args, kwargs
+                )
+        )
+
+
+    :param df: A pandas dataframe.
+    :param column: String column to be operated on.
+    :param args, kwargs: Arguments for parameters.
+    :returns: A pandas dataframe with modified column.
+    :raises: KeyError if ``string_function`` is not a Pandas string method.
+    :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
+    """
+
+    pandas_string_methods = [
+        func.__name__
+        for _, func in inspect.getmembers(pd.Series.str, inspect.isfunction)
+        if not func.__name__.startswith("_")
+    ]
+
+    if string_function not in pandas_string_methods:
+        raise KeyError(f"{string_function} is not a Pandas string method.")
+
+    df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
+
+    return df

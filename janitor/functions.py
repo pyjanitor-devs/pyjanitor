@@ -4018,10 +4018,9 @@ def process_text(
     Applies a Pandas string method to an existing column,
     and returns a dataframe.
     This function aims to make string cleaning easy, while chaining,
-    by simply passing the string method name to the
-    ``process_text`` function.
-    Note that this modifies an existing column, and should not be
-    used to create a new column.
+    by simply passing the string method name to the ``process_text`` function.
+    Note that this modifies an existing column,
+    and should not be used to create a new column.
     A list of all the string methods in Pandas can be accessed here:
     https://pandas.pydata.org/docs/user_guide/text.html#method-summary.
 

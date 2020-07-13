@@ -4015,8 +4015,8 @@ def process_text(
     **kwargs: str,
 ) -> pd.DataFrame:
     """
-    Applies a Pandas string method to an existing column,
-    and returns a dataframe.
+    Apply a Pandas string method to an existing column and return a dataframe.
+    
     This function aims to make string cleaning easy, while chaining,
     by simply passing the string method name to the ``process_text`` function.
     Note that this modifies an existing column,

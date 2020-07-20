@@ -33,7 +33,7 @@ To get started:
 4. In Visual Studio Code,
    click on the quick actions Status Bar item in the lower left corner.
 5. Then select "Remote Containers: Open Repository In Container".
-6. Enter in the URL of your fork of pyjanitor.
+6. Enter in the URL of your fork of ``pyjanitor``.
 
 VSCode will pull down the prebuilt Docker container,
 git clone the repository for you inside an isolated Docker volume,
@@ -100,7 +100,7 @@ The command above allows you to view the documentation locally in your browser. 
     $ conda activate pyjanitor-dev
 
 
-Sphinx uses `rst files (restructured text) <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ as its markdown language. To edit documentation, go to the rst file that corresponds to the html file you would like to edit. Make the changes directly in the rst file with the correct markup. Save the file, and rebuild the html pages using the same commands as above to see what your changes look like in html.
+Sphinx uses `rst files (restructured text) <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ as its markdown language. To edit documentation, go to the rst file that corresponds to the html file you would like to edit. Make the changes directly in the rst file with the correct markup. Save the file and rebuild the html pages using the same commands as above to see what your changes look like in html.
 
 6. Submit an issue to the ``pyjanitor`` GitHub issue tracker describing your planned changes: https://github.com/ericmjl/pyjanitor/issues
 
@@ -108,9 +108,9 @@ This helps us keep track of who is working on what.
 
 7. Create a branch for local development:
 
-New features added to ``pyjanitor`` should be done in a new branch you have based off of the latest version of the ``dev`` branch. The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI, whereas the ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability/suitability for introducing a batch of changes into the official version, the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.
+New features added to ``pyjanitor`` should be done in a new branch you have based off the latest version of the ``dev`` branch. The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI, whereas the ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable. Once more confident in the reliability/suitability for introducing a batch of changes into the official version, the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.
 
-To base a branch directly off of ``dev`` instead of ``master``, create a new one as follows::
+To base a branch directly off ``dev`` instead of ``master``, create a new one as follows::
 
     $ git checkout -b name-of-your-bugfix-or-feature dev
 
@@ -128,9 +128,9 @@ If any of the checks fail, you can apply the checks individually (to save time):
 
 Styling problems must be resolved before the pull request can be accepted.
 
-``make test`` runs all of ``pyjanitor``'s unit tests to probe for whether changes to the source code have potentially introduced bugs. These tests must also pass before the pull request is accepted.
+``make test`` runs all ``pyjanitor``'s unit tests to probe for whether changes to the source code have potentially introduced bugs. These tests must also pass before the pull request is accepted.
 
-All of these commands are available when you create the development environment.
+All these commands are available when you create the development environment.
 
 When you run the test locally, the tests in ``chemistry.py``, ``biology.py``, ``spark.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
 
@@ -165,5 +165,5 @@ Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include tests.
 2. If the pull request adds functionality, the docs should be updated. Put
-   your new functionality into a function with a docstring, and add the
+   your new functionality into a function with a docstring and add the
    feature to the list in README.rst.

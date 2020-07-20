@@ -101,7 +101,7 @@ In ``pyjanitor``, we use the `Sphinx style docstring <https://thomas-cokelaer.in
 is built on top of the `reStructuredText (reST) markup <http://openalea.gforge.inria.fr/doc/openalea/doc/_build/html/source/sphinx/rest_syntax.html#headings>`_ language.
 
 reST syntax, like python, is sensitive to **indentation**,
-and all of the text units (e.g., heading, paragraph, and code block) must be
+and all the text units (e.g., heading, paragraph, and code block) must be
 separated by **blank lines** from each other.
 Proper rendering of the web docs you are browsing through right now
 relies on our contributors' adherence to these reST syntax rules.
@@ -109,7 +109,7 @@ relies on our contributors' adherence to these reST syntax rules.
 Below is a docstring example from ``pyjanitor``'s ``rename_columns`` function.
 For illustration purposes,
 we also add annotations (surrounded by square brackets) to
-highlight all of the key sections
+highlight all the key sections
 (Note: These annotations are NOT part of the docstring).
 
 .. code-block:: python
@@ -239,7 +239,7 @@ the returned values typically are pandas ``DataFrame``. e.g.,
 .. note::
 
    We may go back-and-forth a few times on the docstring.
-   The docstring is a very important part of developer documentation;
+   The docstring is a particularly important part of developer documentation;
    therefore, we may want much more detail than you are used to providing.
    This is for maintenance purposes:
    Contributions from new contributors frequently end up being maintained by
@@ -279,7 +279,7 @@ It is the "magic" that allows ``pyjanitor`` code to
 use just one set of implementations (like this `rename_columns` function) for
 both the functional and the method chaining usages of the API.
 In your new feature or feature enhancement,
-you are very likely to start your function with this decorator line
+you are highly likely to start your function with this decorator line
 (or see it in the function that you are enhancing).
 
 * Line 2 and 7: The *dataframe in, dataframe out* function signature
@@ -319,7 +319,7 @@ Unit Test Guidelines
 
 Unit tests form the basic immune system for a code base.
 For this reason, all ``pyjanitor`` features,
-regardless of being a brand new function or an enhancement to an existing function,
+regardless of being a brand-new function or an enhancement to an existing function,
 should have accompanying tests.
 
 ``pyjanitor`` uses the `pytest <https://docs.pytest.org/en/latest/index.html>`_ framework
@@ -350,7 +350,7 @@ let's look at the structure of the current ``pyjanitor`` codes:
     │   └── strategies.py  # contains dataframe-generating strategies
     └── utils.py
 
-In this tree diagram, all of the top level ``*.py`` files are
+In this tree diagram, all the top level ``*.py`` files are
 the **modules** of the ``pyjanitor`` library.
 The accompanying tests files are in the ``pyjanitor/tests`` directory and
 has a structure as shown below:

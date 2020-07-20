@@ -17,7 +17,8 @@ Doing so has numerous benefits:
 2. Your documentation contribution will be a pain point that you have full context on.
 3. Your contribution will be impactful because documentation is the project's front-facing interface.
 4. Your first contribution will be simpler, because you won't have to wrestle with build systems.
-5. You can choose between getting set up locally first (recommended), or instead directly making edits on the GitHub web UI (also not a problem).
+5. You can choose between getting set up locally first (recommended),
+   or instead directly making edits on the GitHub web UI (also not a problem).
 6. Every newcomer is equal in our eyes, and it's the most egalitarian way to get started (regardless of experience).
 
 Remote contributors outside of sprints and prior contributors

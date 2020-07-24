@@ -13,6 +13,7 @@ new version (on deck)
 - [TST] Make importing ``pandas`` testing functions follow uniform pattern. @hectormz
 - [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 - [TST] Only skip tests for non-installed libraries on local machine. @hectormz
+- [DOC] Fix minor issues in documentation. @hectormz
 
 
 v0.20.7

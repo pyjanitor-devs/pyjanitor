@@ -4104,3 +4104,196 @@ def process_text(
     df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
 
     return df
+
+
+@pf.register_dataframe_method
+def fill(
+    df: pd.DataFrame,
+    columns: Union[Tuple[str], List[str], str],
+    directions: Union[Tuple[str], List[str], str] = "down",
+    limit: Optional[int] = None,
+) -> pd.DataFrame:
+    """
+    Provides a method-chainable way to fill missing values in selected columns,
+    using the next or previous entry and return a dataframe. The columns can
+    be a single column, a string of column names separated by a comma, or a
+    list of column names. Same applies to the directions argument.
+    The default direction is "down", which is equivalent to
+    ``pd.Series.ffill``.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"text":["ragnar", np.nan, "sammywemmy",
+                                    np.nan, "ginger"],
+                           "code" : [np.nan, 2, 3, np.nan, 5]})
+
+        df.fill(columns = "text", directions = "up")
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    NaN
+        # ginger     |    5
+
+        # For multiple columns, you can pass a list/tuple of column names :
+        df.fill(columns = ['text', 'code'])
+
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    3
+        # ginger     |    5
+
+        # Or a string of column names, separated by a comma :
+        df.fill(columns = "text,code")
+
+        # text       |   code
+        # ragnar     |    NaN
+        # ragnar     |    2
+        # sammywemmy |    3
+        # sammywemmy |    3
+        # ginger     |    5
+
+        # If only one direction is supplied, it is replicated for all the
+        # columns :
+        df.fill(columns = ['text', 'code'], directions = "up")
+
+        # text       |   code
+        # ragnar     |    2
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    5
+        # ginger     |    5
+
+        # If multiple directions are provided, they are paired with the
+        # columns :
+        # so, the text column is filled upwards, while the code column is
+        # filled downwards.
+        df.fill(columns = ['text', 'code'], directions = ["up", "down"])
+
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    3
+        # ginger     |    5
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.fill(
+            df = df,
+            columns = ['column1', 'column2',...]
+            directions = ["up","down", ...],
+            limit = None # limit must be greater than 0
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .fill(
+            columns = ['column1', 'column2',...]
+            directions = ["up","down", ...],
+            limit = None # limit must be greater than 0
+            )
+        )
+
+    :param df: A pandas dataframe.
+    :param columns: Column(s) to forward/backward fill on.
+    :param directions: Directions in which to fill values. Options are :
+        "down" (default), "up", "updown"(fill up then down),
+        "downup" (fill down then up).
+    :param limit: number of consecutive null values to forward/backward fill.
+    :returns: A pandas dataframe with modified column(s).
+    :raises: ValueError if the number of directions is greater than 1 and
+        the number of columns do not match the number of directions.
+    :raises: TypeError if column or direction is not of type List or Tuple or
+        Str.
+    """
+
+    if not columns:
+        raise ValueError("columns argument cannot be empty")
+
+    if not isinstance(columns, (list, tuple, str)):
+        raise TypeError(
+            """columns argument should be a list/tuple of column names,
+            a single column, or a string of columns separated by a comma"""
+        )
+    if not isinstance(directions, (list, tuple, str)):
+        raise TypeError(
+            """directions argument should be a list/tuple of directions,
+            a single direction, or a string of directions separated by
+            a comma"""
+        )
+    # if columns/directions is a string, convert to list
+    if isinstance(columns, str):
+        columns = columns.split(",")
+    if isinstance(directions, str):
+        directions = directions.split(",")
+
+    # check that all columns supplied exist in the dataframe
+    non_existent_columns = set(columns).difference(df.columns)
+    if any(non_existent_columns):
+        # handles multiple columns
+        if len(non_existent_columns) > 1:
+            outcome = [f"'{word}'" for word in non_existent_columns]
+            outcome = ",".join(outcome)
+            raise ValueError(f"Columns {outcome} do not exist")
+        outcome = "".join(non_existent_columns)
+        raise ValueError(f"Column '{outcome}' does not exist")
+
+    # check supplied directions exist in directions_options
+    direction_options = ("up", "down", "updown", "downup")
+    directions = [direction.lower() for direction in directions]
+    incorrect_direction = set(directions).difference(direction_options)
+    if any(incorrect_direction):
+        raise ValueError(
+            "The direction should be 'up', 'down', 'updown', or 'downup'"
+        )
+
+    # check that length of columns match length of directions
+    # if length of directions is greater than 1
+    length_columns_arg = len(columns)
+    length_directions_arg = len(directions)
+
+    if length_columns_arg != length_directions_arg:
+        if length_directions_arg > 1:
+            raise ValueError(
+                """number of items in the columns and
+            directions arguments do not match"""
+            )
+        elif length_directions_arg == 1:
+            directions = directions * length_columns_arg
+
+    fill_pairs = dict(zip(columns, directions))
+
+    for column, direction in fill_pairs.items():
+        if direction == "up":
+            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
+        elif direction == "down":
+            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
+        elif direction == "updown":
+            df.loc[:, column] = (
+                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
+            )
+        elif direction == "downup":
+            df.loc[:, column] = (
+                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
+            )
+
+    return df

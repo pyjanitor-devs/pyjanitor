@@ -4214,7 +4214,8 @@ def fill(
         )
 
     :param df: A pandas dataframe.
-    :param columns: Column(s) to forward/backward fill on.
+    :param columns: Column(s) to forward/backward fill on. Columns can be a
+        list/tuple of columns, or a string of column names, separated by ``,``.
     :param directions: Directions in which to fill values. Options are :
         "down" (default), "up", "updown"(fill up then down),
         "downup" (fill down then up).
@@ -4232,13 +4233,13 @@ def fill(
     if not isinstance(columns, (list, tuple, str)):
         raise TypeError(
             """columns argument should be a list/tuple of column names,
-            a single column, or a string of columns separated by a comma"""
+            a single column, or a string of columns separated by ',' """
         )
     if not isinstance(directions, (list, tuple, str)):
         raise TypeError(
             """directions argument should be a list/tuple of directions,
             a single direction, or a string of directions separated by
-            a comma"""
+            ',' """
         )
     # if columns/directions is a string, convert to list
     if isinstance(columns, str):

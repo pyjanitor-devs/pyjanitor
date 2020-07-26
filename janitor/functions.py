@@ -4114,10 +4114,11 @@ def fill(
     limit: Optional[int] = None,
 ) -> pd.DataFrame:
     """
-    Provides a method-chainable function for filling missing values in selected columns,
-    using the next or previous entry and return a dataframe. The columns can
-    be a single column, a string of column names separated by a comma, or a
-    list of column names. Same applies to the directions argument.
+    Provides a method-chainable function for filling missing values in
+    selected columns, using the next or previous entry and return a dataframe.
+    The columns can be a single column, a string of column names separated
+    by a ``,`` or a list/tuple of column names. The same conditions apply
+    to the directions argument.
     The default direction is "down", which is equivalent to
     ``pd.Series.ffill``.
 
@@ -4143,9 +4144,9 @@ def fill(
 
         # text       |   code
         # ragnar     |    NaN
-        # sammywemmy |    2
+        # ragnar     |    2
         # sammywemmy |    3
-        # ginger     |    3
+        # sammywemmy |    3
         # ginger     |    5
 
         # Or a string of column names, separated by a comma :
@@ -4217,9 +4218,10 @@ def fill(
     :param columns: Column(s) to forward/backward fill on. Columns can be a
         list/tuple of columns, or a string of column names, separated by ``,``.
     :param directions: Directions in which to fill values. Options are :
-        "down" (default), "up", "updown"(fill up then down),
+        "down" (default), "up", "updown"(fill up then down) and
         "downup" (fill down then up).
     :param limit: number of consecutive null values to forward/backward fill.
+        Value must be greater than 0.
     :returns: A pandas dataframe with modified column(s).
     :raises: ValueError if the number of directions is greater than 1 and
         the number of columns do not match the number of directions.
@@ -4234,7 +4236,7 @@ def fill(
         raise TypeError(
             """
             The columns argument should be a list/tuple of column names,
-            a single column, or a string of columns separated by ',' 
+            a single column, or a string of columns separated by ','
             """
         )
 
@@ -4243,7 +4245,7 @@ def fill(
             """
             The directions argument should be a list/tuple of directions,
             a single direction, or a string of directions separated by
-            ',' 
+            ','
             """
         )
 
@@ -4260,7 +4262,9 @@ def fill(
         if len(non_existent_columns) > 1:
             outcome = [f"'{word}'" for word in non_existent_columns]
             outcome = ", ".join(outcome)
-            raise ValueError(f"Columns {outcome} do not exist in the dataframe")
+            raise ValueError(
+                f"Columns {outcome} do not exist in the dataframe"
+            )
         outcome = "".join(non_existent_columns)
         raise ValueError(f"Column '{outcome}' does not exist in the dataframe")
 
@@ -4271,7 +4275,7 @@ def fill(
     if any(incorrect_direction):
         raise ValueError(
             """
-            The direction should be either 'up', 'down', 'updown', 'downup', 
+            The direction should be either 'up', 'down', 'updown', 'downup',
             or a combination of the aforementioned options
             """
         )

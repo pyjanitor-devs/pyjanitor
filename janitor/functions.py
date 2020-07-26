@@ -4115,10 +4115,10 @@ def fill(
 ) -> pd.DataFrame:
     """
     Provides a method-chainable function for filling missing values in
-    selected columns, using the next or previous entry. The columns can 
-    be a single column, a string of column names separated by a ``,`` 
-    or a list/tuple of column names. The same conditions apply to the 
-    directions argument. The default direction is "down", which is 
+    selected columns, using the next or previous entry. The columns can
+    be a single column, a string of column names separated by a ``,``
+    or a list/tuple of column names. The same conditions apply to the
+    directions argument. The default direction is "down", which is
     equivalent to ``pd.Series.ffill``.
 
     .. code-block:: python

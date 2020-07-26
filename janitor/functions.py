@@ -4193,7 +4193,7 @@ def fill(
         df = jn.fill(
             df = df,
             columns = ['column1', 'column2',...]
-            directions = ["up","down", ...],
+            directions = ["up", "down", ...],
             limit = None # limit must be greater than 0
             )
 
@@ -4208,7 +4208,7 @@ def fill(
             pd.DataFrame(...)
             .fill(
             columns = ['column1', 'column2',...]
-            directions = ["up","down", ...],
+            directions = ["up", "down", ...],
             limit = None # limit must be greater than 0
             )
         )
@@ -4267,8 +4267,8 @@ def fill(
             "The direction should be 'up', 'down', 'updown', or 'downup'"
         )
 
-    # check that length of columns match length of directions
-    # if length of directions is greater than 1
+    # check that the length of columns matches the length of directions
+    # if the length of directions is greater than 1
     length_columns_arg = len(columns)
     length_directions_arg = len(directions)
 

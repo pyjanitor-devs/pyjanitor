@@ -4114,7 +4114,7 @@ def fill(
     limit: Optional[int] = None,
 ) -> pd.DataFrame:
     """
-    Provides a method-chainable way to fill missing values in selected columns,
+    Provides a method-chainable function for filling missing values in selected columns,
     using the next or previous entry and return a dataframe. The columns can
     be a single column, a string of column names separated by a comma, or a
     list of column names. Same applies to the directions argument.
@@ -4223,8 +4223,8 @@ def fill(
     :returns: A pandas dataframe with modified column(s).
     :raises: ValueError if the number of directions is greater than 1 and
         the number of columns do not match the number of directions.
-    :raises: TypeError if column or direction is not of type List or Tuple or
-        Str.
+    :raises: TypeError if column or direction is not of type list or tuple or
+        str.
     """
 
     if not columns:
@@ -4232,15 +4232,21 @@ def fill(
 
     if not isinstance(columns, (list, tuple, str)):
         raise TypeError(
-            """columns argument should be a list/tuple of column names,
-            a single column, or a string of columns separated by ',' """
+            """
+            The columns argument should be a list/tuple of column names,
+            a single column, or a string of columns separated by ',' 
+            """
         )
+
     if not isinstance(directions, (list, tuple, str)):
         raise TypeError(
-            """directions argument should be a list/tuple of directions,
+            """
+            The directions argument should be a list/tuple of directions,
             a single direction, or a string of directions separated by
-            ',' """
+            ',' 
+            """
         )
+
     # if columns/directions is a string, convert to list
     if isinstance(columns, str):
         columns = columns.split(",")
@@ -4253,10 +4259,10 @@ def fill(
         # handles multiple columns
         if len(non_existent_columns) > 1:
             outcome = [f"'{word}'" for word in non_existent_columns]
-            outcome = ",".join(outcome)
-            raise ValueError(f"Columns {outcome} do not exist")
+            outcome = ", ".join(outcome)
+            raise ValueError(f"Columns {outcome} do not exist in the dataframe")
         outcome = "".join(non_existent_columns)
-        raise ValueError(f"Column '{outcome}' does not exist")
+        raise ValueError(f"Column '{outcome}' does not exist in the dataframe")
 
     # check supplied directions exist in directions_options
     direction_options = ("up", "down", "updown", "downup")
@@ -4264,7 +4270,10 @@ def fill(
     incorrect_direction = set(directions).difference(direction_options)
     if any(incorrect_direction):
         raise ValueError(
-            "The direction should be 'up', 'down', 'updown', or 'downup'"
+            """
+            The direction should be either 'up', 'down', 'updown', 'downup', 
+            or a combination of the aforementioned options
+            """
         )
 
     # check that the length of columns matches the length of directions
@@ -4275,8 +4284,10 @@ def fill(
     if length_columns_arg != length_directions_arg:
         if length_directions_arg > 1:
             raise ValueError(
-                """number of items in the columns and
-            directions arguments do not match"""
+                """
+                The number of arguments in the columns and
+                directions do not match.
+                """
             )
         elif length_directions_arg == 1:
             directions = directions * length_columns_arg

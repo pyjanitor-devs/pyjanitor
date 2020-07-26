@@ -4292,8 +4292,7 @@ def fill(
                 directions do not match.
                 """
             )
-        elif length_directions_arg == 1:
-            directions = directions * length_columns_arg
+        directions = directions * length_columns_arg
 
     fill_pairs = dict(zip(columns, directions))
 

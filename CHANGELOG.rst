@@ -14,6 +14,7 @@ new version (on deck)
 - [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 - [TST] Only skip tests for non-installed libraries on local machine. @hectormz
 - [DOC] Fix minor issues in documentation. @hectormz
+- [ENH] Introducing timeseries module. Adding ```fill_missing_timestamps``` function @UGuntupalli 
 
 
 v0.20.7

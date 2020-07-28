@@ -57,10 +57,10 @@ def _flag_missing_timestamps(
     # Check if they are the same
     comparison_index = expected_timestamps.difference(actual_timestamps)
     if comparison_index.empty:
+        result['flag'] = False
+    else:
         result['flag'] = True
         result['new_index'] = expected_timestamps
-    else:
-        result['flag'] = False
 
     # Return the result as a Named Tuple
     return MissingTimeStampFlag._make(result)

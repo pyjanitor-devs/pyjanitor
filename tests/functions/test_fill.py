@@ -134,3 +134,12 @@ def test_wrong_direction():
     """ Raise Value Error if wrong direction is provided."""
     with pytest.raises(ValueError):
         df.fill(columns=("pet_type",), directions="upanddown")
+
+
+directions = {"A":"up", "wrong":"down", "C":2}
+
+df = pd.DataFrame({"A":[2,3,4], "B":[5,6,7]})
+
+list_directions = {"up","down","updown","downup"}
+
+print(set(directions.values()).difference(list_directions))

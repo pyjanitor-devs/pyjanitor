@@ -4107,10 +4107,9 @@ def process_text(
 
 
 @pf.register_dataframe_method
-def fill(
+def fill_direction(
     df: pd.DataFrame,
-    columns: Union[Tuple[str], List[str], str],
-    directions: Union[Tuple[str], List[str], str] = "down",
+    directions: Dict[Hashable, str],
     limit: Optional[int] = None,
 ) -> pd.DataFrame:
     """
@@ -4228,86 +4227,21 @@ def fill(
         str.
     """
 
-    if not columns:
-        raise ValueError("columns argument cannot be empty")
+    if not directions:
+        raise ValueError("A mapping of columns with directions is required.")
 
-    if not isinstance(columns, (list, tuple, str)):
-        raise TypeError(
-            """
-            The columns argument should be a list/tuple of column names,
-            a single column, or a string of columns separated by ','
-            """
-        )
+    wrong_columns_provided = set(directions).difference(df.columns)
+    if any(wrong_columns_provided):
+        if len(wrong_columns_provided) > 1 : 
+            outcome = ", ".join(f"'{word}'" for word in wrong_columns_provided)
+            raise ValueError(f"Columns {outcome} do not exist in the dataframe")
+        outcome = "".join(wrong_columns_provided)
+        raise ValueError(f"Column {outcome} does not exist in the dataframe")
 
-    if not isinstance(directions, (list, tuple, str)):
-        raise TypeError(
-            """
-            The directions argument should be a list/tuple of directions,
-            a single direction, or a string of directions separated by
-            ','
-            """
-        )
+    set_directions = {"up", "down", "updown", "downup"}
+    wrong_direction_provided = set(directions.values()).difference(set_directions)
+    if any(wrong_directions_provided):
+        raise ValueError("The fill direction should be a string and one of `up`, `down`, `updown`, or `downup`.")
 
-    # if columns/directions is a string, convert to list
-    if isinstance(columns, str):
-        columns = columns.split(",")
-    if isinstance(directions, str):
-        directions = directions.split(",")
-
-    # check that all columns supplied exist in the dataframe
-    non_existent_columns = set(columns).difference(df.columns)
-    if any(non_existent_columns):
-        # handles multiple columns
-        if len(non_existent_columns) > 1:
-            outcome = [f"'{word}'" for word in non_existent_columns]
-            outcome = ", ".join(outcome)
-            raise ValueError(
-                f"Columns {outcome} do not exist in the dataframe"
-            )
-        outcome = "".join(non_existent_columns)
-        raise ValueError(f"Column '{outcome}' does not exist in the dataframe")
-
-    # check supplied directions exist in directions_options
-    direction_options = ("up", "down", "updown", "downup")
-    directions = [direction.lower() for direction in directions]
-    incorrect_direction = set(directions).difference(direction_options)
-    if any(incorrect_direction):
-        raise ValueError(
-            """
-            The direction should be either 'up', 'down', 'updown', 'downup',
-            or a combination of the aforementioned options
-            """
-        )
-
-    # check that the length of columns matches the length of directions
-    # if the length of directions is greater than 1
-    length_columns_arg = len(columns)
-    length_directions_arg = len(directions)
-
-    if length_columns_arg != length_directions_arg:
-        if length_directions_arg > 1:
-            raise ValueError(
-                """
-                The number of arguments in the columns and
-                directions do not match.
-                """
-            )
-        directions = directions * length_columns_arg
-
-    fill_pairs = dict(zip(columns, directions))
-
-    for column, direction in fill_pairs.items():
-        if direction == "up":
-            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
-        elif direction == "down":
-            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
-        elif direction == "updown":
-            df.loc[:, column] = (
-                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
-            )
-        elif direction == "downup":
-            df.loc[:, column] = (
-                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
-            )
 
     return df

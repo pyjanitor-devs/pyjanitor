@@ -3,52 +3,55 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-df = pd.DataFrame(
-    [
-        {
-            "rank": 1,
-            "pet_type": np.nan,
-            "breed": "Boston Terrier",
-            "owner": "sam",
-        },
-        {
-            "rank": 2,
-            "pet_type": np.nan,
-            "breed": "Retrievers (Labrador)",
-            "owner": "ogor",
-        },
-        {
-            "rank": 3,
-            "pet_type": np.nan,
-            "breed": "Retrievers (Golden)",
-            "owner": "nathan",
-        },
-        {
-            "rank": 4,
-            "pet_type": np.nan,
-            "breed": "French Bulldogs",
-            "owner": np.nan,
-        },
-        {"rank": 5, "pet_type": np.nan, "breed": "Bulldogs", "owner": np.nan},
-        {"rank": 6, "pet_type": "Dog", "breed": "Beagles", "owner": np.nan},
-        {"rank": 1, "pet_type": np.nan, "breed": "Persian", "owner": np.nan},
-        {
-            "rank": 2,
-            "pet_type": np.nan,
-            "breed": "Maine Coon",
-            "owner": "ragnar",
-        },
-        {"rank": 3, "pet_type": np.nan, "breed": "Ragdoll", "owner": np.nan},
-        {"rank": 4, "pet_type": np.nan, "breed": "Exotic", "owner": np.nan},
-        {"rank": 5, "pet_type": np.nan, "breed": "Siamese", "owner": np.nan},
-        {
-            "rank": 6,
-            "pet_type": "Cat",
-            "breed": "American Short",
-            "owner": "adaora",
-        },
-    ]
-)
+@pytest.fixture
+def fill_dummy_data():
+    df = pd.DataFrame(
+        [
+            {
+                "rank": 1,
+                "pet_type": np.nan,
+                "breed": "Boston Terrier",
+                "owner": "sam",
+            },
+            {
+                "rank": 2,
+                "pet_type": np.nan,
+                "breed": "Retrievers (Labrador)",
+                "owner": "ogor",
+            },
+            {
+                "rank": 3,
+                "pet_type": np.nan,
+                "breed": "Retrievers (Golden)",
+                "owner": "nathan",
+            },
+            {
+                "rank": 4,
+                "pet_type": np.nan,
+                "breed": "French Bulldogs",
+                "owner": np.nan,
+            },
+            {"rank": 5, "pet_type": np.nan, "breed": "Bulldogs", "owner": np.nan},
+            {"rank": 6, "pet_type": "Dog", "breed": "Beagles", "owner": np.nan},
+            {"rank": 1, "pet_type": np.nan, "breed": "Persian", "owner": np.nan},
+            {
+                "rank": 2,
+                "pet_type": np.nan,
+                "breed": "Maine Coon",
+                "owner": "ragnar",
+            },
+            {"rank": 3, "pet_type": np.nan, "breed": "Ragdoll", "owner": np.nan},
+            {"rank": 4, "pet_type": np.nan, "breed": "Exotic", "owner": np.nan},
+            {"rank": 5, "pet_type": np.nan, "breed": "Siamese", "owner": np.nan},
+            {
+                "rank": 6,
+                "pet_type": "Cat",
+                "breed": "American Short",
+                "owner": "adaora",
+            },
+        ]
+    )
+    return df
 
 
 def test_fill_column():

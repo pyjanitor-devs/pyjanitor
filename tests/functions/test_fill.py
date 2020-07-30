@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+
 @pytest.fixture
 def fill_dummy_data():
     df = pd.DataFrame(
@@ -31,18 +32,48 @@ def fill_dummy_data():
                 "breed": "French Bulldogs",
                 "owner": np.nan,
             },
-            {"rank": 5, "pet_type": np.nan, "breed": "Bulldogs", "owner": np.nan},
-            {"rank": 6, "pet_type": "Dog", "breed": "Beagles", "owner": np.nan},
-            {"rank": 1, "pet_type": np.nan, "breed": "Persian", "owner": np.nan},
+            {
+                "rank": 5,
+                "pet_type": np.nan,
+                "breed": "Bulldogs",
+                "owner": np.nan,
+            },
+            {
+                "rank": 6,
+                "pet_type": "Dog",
+                "breed": "Beagles",
+                "owner": np.nan,
+            },
+            {
+                "rank": 1,
+                "pet_type": np.nan,
+                "breed": "Persian",
+                "owner": np.nan,
+            },
             {
                 "rank": 2,
                 "pet_type": np.nan,
                 "breed": "Maine Coon",
                 "owner": "ragnar",
             },
-            {"rank": 3, "pet_type": np.nan, "breed": "Ragdoll", "owner": np.nan},
-            {"rank": 4, "pet_type": np.nan, "breed": "Exotic", "owner": np.nan},
-            {"rank": 5, "pet_type": np.nan, "breed": "Siamese", "owner": np.nan},
+            {
+                "rank": 3,
+                "pet_type": np.nan,
+                "breed": "Ragdoll",
+                "owner": np.nan,
+            },
+            {
+                "rank": 4,
+                "pet_type": np.nan,
+                "breed": "Exotic",
+                "owner": np.nan,
+            },
+            {
+                "rank": 5,
+                "pet_type": np.nan,
+                "breed": "Siamese",
+                "owner": np.nan,
+            },
             {
                 "rank": 6,
                 "pet_type": "Cat",
@@ -136,10 +167,10 @@ def test_wrong_direction():
         df.fill(columns=("pet_type",), directions="upanddown")
 
 
-directions = {"A":"up", "wrong":"down", "C":2}
+directions = {"A": "up", "wrong": "down", "C": 2}
 
-df = pd.DataFrame({"A":[2,3,4], "B":[5,6,7]})
+df = pd.DataFrame({"A": [2, 3, 4], "B": [5, 6, 7]})
 
-list_directions = {"up","down","updown","downup"}
+list_directions = {"up", "down", "updown", "downup"}
 
 print(set(directions.values()).difference(list_directions))

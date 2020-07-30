@@ -4213,35 +4213,42 @@ def fill_direction(
         )
 
     :param df: A pandas dataframe.
-    :param columns: Column(s) to forward/backward fill on. Columns can be a
-        list/tuple of columns, or a string of column names, separated by ``,``.
-    :param directions: Directions in which to fill values. Options are :
-        "down" (default), "up", "updown"(fill up then down) and
-        "downup" (fill down then up).
+    :param directions: Key - value pairs of columns and directions. Directions 
+         can be either `down` (default), `up`, `updown`(fill up then down) and
+        `downup` (fill down then up).
     :param limit: number of consecutive null values to forward/backward fill.
         Value must be greater than 0.
     :returns: A pandas dataframe with modified column(s).
-    :raises: ValueError if the number of directions is greater than 1 and
-        the number of columns do not match the number of directions.
-    :raises: TypeError if column or direction is not of type list or tuple or
-        str.
+    :raises: ValueError if ``directions`` dictionary is empty.
+    :raises: ValueError if column or direction supplied is not in the dataframe.
+    :raises: ValueError if direction supplied is not one of `down`, `up`, `updown`,
+        or `downup`.
     """
-
+    
+    #check that dictionary is not empty
     if not directions:
         raise ValueError("A mapping of columns with directions is required.")
 
+    #check that the right columns are provided
     wrong_columns_provided = set(directions).difference(df.columns)
     if any(wrong_columns_provided):
-        if len(wrong_columns_provided) > 1 : 
+        if len(wrong_columns_provided) > 1:
             outcome = ", ".join(f"'{word}'" for word in wrong_columns_provided)
-            raise ValueError(f"Columns {outcome} do not exist in the dataframe")
+            raise ValueError(
+                f"Columns {outcome} do not exist in the dataframe"
+            )
         outcome = "".join(wrong_columns_provided)
         raise ValueError(f"Column {outcome} does not exist in the dataframe")
 
+    #check that the right directions are provided
     set_directions = {"up", "down", "updown", "downup"}
-    wrong_direction_provided = set(directions.values()).difference(set_directions)
+    wrong_directions_provided = set(directions.values()).difference(
+        set_directions
+    )
     if any(wrong_directions_provided):
-        raise ValueError("The fill direction should be a string and one of `up`, `down`, `updown`, or `downup`.")
-
+        raise ValueError(
+            """The fill direction should be a string and should be one of `up`, 
+            `down`, `updown`, or `downup`."""
+        )
 
     return df

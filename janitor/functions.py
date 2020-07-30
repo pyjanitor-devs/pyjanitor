@@ -4187,7 +4187,7 @@ def fill_direction(
 
     :param df: A pandas dataframe.
     :param directions: Key - value pairs of columns and directions. Directions
-        can be either `down` (default), `up`, `updown`(fill up then down) and
+        can be either `down`(default), `up`, `updown`(fill up then down) and
         `downup` (fill down then up).
     :param limit: number of consecutive null values to forward/backward fill.
         Value must be greater than 0.
@@ -4216,9 +4216,9 @@ def fill_direction(
 
     # check that the right directions are provided
     set_directions = {"up", "down", "updown", "downup"}
-    
-    #linter throws an error when I use dictionary.values()
-    #it assumes that dictionary is a dataframe
+
+    # linter throws an error when I use dictionary.values()
+    # it assumes that dictionary is a dataframe
     directions_values = [value for key, value in directions.items()]
     wrong_directions_provided = set(directions_values).difference(
         set_directions

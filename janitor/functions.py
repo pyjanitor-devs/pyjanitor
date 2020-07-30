@@ -4113,12 +4113,10 @@ def fill_direction(
     limit: Optional[int] = None,
 ) -> pd.DataFrame:
     """
-    Provides a method-chainable function for filling missing values in
-    selected columns, using the next or previous entry. The columns can
-    be a single column, a string of column names separated by a ``,``
-    or a list/tuple of column names. The same conditions apply to the
-    directions argument. The default direction is "down", which is
-    equivalent to ``pd.Series.ffill``.
+    Provides a method-chainable function for filling missing values in selected
+    columns, using the next or previous entry. The columns are paired with the
+    directions in a dictionary. It is a wrapper for ``pd.Series.ffill`` and
+    ``pd.Series.bfill``.
 
     .. code-block:: python
 
@@ -4181,7 +4179,7 @@ def fill_direction(
 
         df = (
             pd.DataFrame(...)
-            .fill(
+            .fill_direction(
             directions = {column_1 : direction_1, column_2 : direction_2, ...},
             limit = None # limit must be greater than 0
             )

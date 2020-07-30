@@ -4216,13 +4216,16 @@ def fill_direction(
 
     # check that the right directions are provided
     set_directions = {"up", "down", "updown", "downup"}
+    
+    #linter throws an error when I use dictionary.values()
+    #it assumes that dictionary is a dataframe
     directions_values = [value for key, value in directions.items()]
     wrong_directions_provided = set(directions_values).difference(
         set_directions
     )
     if any(wrong_directions_provided):
         raise ValueError(
-            """The fill direction should be a string and should be one of `up`,
+            """The direction should be a string and should be one of `up`,
             `down`, `updown`, or `downup`."""
         )
 

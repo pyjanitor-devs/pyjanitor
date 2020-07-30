@@ -14,7 +14,7 @@ new version (on deck)
 - [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 - [TST] Only skip tests for non-installed libraries on local machine. @hectormz
 - [DOC] Fix minor issues in documentation. @hectormz
-- [ENH] Added ``fill`` function for forward/backward fills on missing values
+- [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
 
 

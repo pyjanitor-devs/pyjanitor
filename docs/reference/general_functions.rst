@@ -36,7 +36,7 @@ Modify values
     :toctree: janitor.functions/
 
     fill_empty
-    fill
+    fill_direction
     convert_excel_date
     convert_matlab_date
     convert_unix_date

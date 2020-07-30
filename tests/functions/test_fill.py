@@ -5,8 +5,8 @@ from pandas.testing import assert_frame_equal
 
 
 @pytest.fixture
-def fill_dummy_data():
-    df = pd.DataFrame(
+def df():
+    return pd.DataFrame(
         [
             {
                 "rank": 1,
@@ -82,95 +82,64 @@ def fill_dummy_data():
             },
         ]
     )
-    return df
 
 
-def test_fill_column():
-    """ Fill down on a single column with default direction."""
+def test_fill_column(df):
+    """ Fill down on a single column."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].ffill()
-    result = df.fill(columns="pet_type")
-    assert_frame_equal(result, expected)
+    assert_frame_equal(df.fill_direction({"pet_type": "down"}), expected)
 
 
-def test_fill_column_up():
+def test_fill_column_up(df):
     """ Fill up on a single column."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].bfill()
-    result = df.fill(columns="pet_type", directions="up")
-    assert_frame_equal(result, expected)
+    assert_frame_equal(df.fill_direction({"pet_type": "up"}), expected)
 
 
-def test_fill_column_updown():
+def test_fill_column_updown(df):
     """ Fill upwards, then downwards on a single column."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].bfill().ffill()
-    result = df.fill(columns="pet_type", directions="updown")
-    assert_frame_equal(result, expected)
+    assert_frame_equal(df.fill_direction({"pet_type": "updown"}), expected)
 
 
-def test_fill_column_down_up():
+def test_fill_column_down_up(df):
     """ Fill downwards, then upwards on a single column."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].ffill().bfill()
-    result = df.fill(columns="pet_type", directions="downup")
-    assert_frame_equal(result, expected)
+    assert_frame_equal(df.fill_direction({"pet_type": "downup"}), expected)
 
 
-def test_fill_multiple_columns():
+def test_fill_multiple_columns(df):
     """ Fill on multiple columns with a single direction."""
     expected = df.copy()
     expected.loc[:, ["pet_type", "owner"]] = expected.loc[
         :, ["pet_type", "owner"]
     ].ffill()
-    result = df.fill(columns="pet_type,owner")
-    assert_frame_equal(result, expected)
+    assert_frame_equal(
+        df.fill_direction({"pet_type": "down", "owner": "down"}), expected
+    )
 
 
-def test_fill_multiple_columns_multiple_directions():
+def test_fill_multiple_columns_multiple_directions(df):
     """ Fill on multiple columns with different directions."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].ffill()
     expected.loc[:, "owner"] = expected.loc[:, "owner"].bfill()
-    result = df.fill(columns=("pet_type", "owner"), directions="down,up")
-    assert_frame_equal(result, expected)
+    assert_frame_equal(
+        df.fill_direction({"pet_type": "down", "owner": "up"}), expected
+    )
 
 
-def test_fill_uneven_lengths():
-    """ Raise Value Error if number of directions is greater than one and
-    is unequal to number of columns."""
-    with pytest.raises(ValueError):
-        df.fill(columns=["pet_type", "owner"], directions=["up", "up", "down"])
-
-
-def test_wrong_column_instance():
-    """ Raise Type Error if columns argument is not a List/Tuple/str."""
-    with pytest.raises(TypeError):
-        df.fill(columns={"pet_type"})
-
-
-def test_wrong_direction_instance():
-    """ Raise Type Error if directions argument is not a List/Tuple/str."""
-    with pytest.raises(TypeError):
-        df.fill(columns=["pet_type"], directions={"pet_type": "up"})
-
-
-def test_wrong_column_name():
+def test_wrong_column_name(df):
     """ Raise Value Error if wrong column name is provided."""
     with pytest.raises(ValueError):
-        df.fill(columns="PetType")
+        df.fill_direction({"PetType": "down"})
 
 
-def test_wrong_direction():
+def test_wrong_direction(df):
     """ Raise Value Error if wrong direction is provided."""
     with pytest.raises(ValueError):
-        df.fill(columns=("pet_type",), directions="upanddown")
-
-
-directions = {"A": "up", "wrong": "down", "C": 2}
-
-df = pd.DataFrame({"A": [2, 3, 4], "B": [5, 6, 7]})
-
-list_directions = {"up", "down", "updown", "downup"}
-
-print(set(directions.values()).difference(list_directions))
+        df.fill_direction({"pet_type": "upanddawn"})

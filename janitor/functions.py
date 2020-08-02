@@ -4203,6 +4203,8 @@ def fill_direction(
         raise ValueError("A mapping of columns with directions is required.")
 
     # check that the right columns are provided
+    # should be removed once the minimum Pandas version is 1.1,
+    # as Pandas loc will raise a KeyError if columns provided do not exist
     wrong_columns_provided = set(directions).difference(df.columns)
     if any(wrong_columns_provided):
         if len(wrong_columns_provided) > 1:

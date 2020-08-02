@@ -37,15 +37,15 @@ def _flag_missing_timestamps(
             Assigned a value only when flag is set to True
     """
     # Declare a named tuple to hold results
-    MissingTimeStampFlag = namedtuple('MissingTimeStampFlag', ['flag', 'raw_data', 'new_index'])
-    result = {
-        'flag': None,
-        'raw_data': df.copy(deep=True),
-        'new_index': None
-    }
+    MissingTimeStampFlag = namedtuple(
+        "MissingTimeStampFlag", ["flag", "raw_data", "new_index"]
+    )
+    result = {"flag": None, "raw_data": df.copy(deep=True), "new_index": None}
 
     # Generate expected timestamps
-    expected_timestamps = pd.date_range(start=first_time_stamp, end=last_time_stamp, frequency=frequency)
+    expected_timestamps = pd.date_range(
+        start=first_time_stamp, end=last_time_stamp, frequency=frequency
+    )
 
     # Get actual timestamps
     if column_name:
@@ -57,10 +57,9 @@ def _flag_missing_timestamps(
     # Check if they are the same
     comparison_index = expected_timestamps.difference(actual_timestamps)
     if comparison_index.empty:
-        result['flag'] = False
-    else:
-        result['flag'] = True
-        result['new_index'] = expected_timestamps
+        result["flag"] = False
+    result["flag"] = True
+    result["new_index"] = expected_timestamps
 
     # Return the result as a Named Tuple
     return MissingTimeStampFlag._make(result)
@@ -109,7 +108,9 @@ def fill_missing_timestamps(
     if column_name:
         test_new_index_data_type = is_datetime(df[column_name])
         if not test_new_index_data_type:
-            raise TypeError("\n column_name should refer to a column whose data type is datetime")
+            raise TypeError(
+                "\n column_name should refer to a column whose data type is datetime"
+            )
     if not first_time_stamp:
         first_time_stamp = df.index.min()
     if not last_time_stamp:
@@ -117,16 +118,11 @@ def fill_missing_timestamps(
 
     # Test if there are any timestamps missing
     timestamps_missing_flag = _flag_missing_timestamps(
-        df,
-        frequency,
-        column_name,
-        first_time_stamp,
-        last_time_stamp
+        df, frequency, column_name, first_time_stamp, last_time_stamp
     )
 
     # Return result based on whether timestamps are missing or not
-    if timestamps_missing_flag['flag']:
-        df = df.set_index(timestamps_missing_flag['new_index'], inplace=True)
+    if timestamps_missing_flag["flag"]:
+        df = df.set_index(timestamps_missing_flag["new_index"], inplace=True)
         return df
-    else:
-        return timestamps_missing_flag['raw_data']
+    return timestamps_missing_flag["raw_data"]

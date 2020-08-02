@@ -87,4 +87,5 @@ Other
     toset
     unionize_dataframe_categories
     process_text
+    add_count
     

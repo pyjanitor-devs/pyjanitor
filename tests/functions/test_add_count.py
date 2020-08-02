@@ -20,7 +20,7 @@ def test_add_count_one_column(df):
     """Group by one column and add count per row """
     expected = df.copy()
     expected["n"] = expected.groupby("name")["name"].transform("size")
-    assert_frame_equal(df.add_count(by="name"), expected)
+    assert_frame_equal(df.add_count(by="name", name="n"), expected)
 
 
 def test_add_count_multiple_columns(df):
@@ -30,17 +30,7 @@ def test_add_count_multiple_columns(df):
     expected["n"] = expected.groupby(["name", "type"])["type"].transform(
         "size"
     )
-    assert_frame_equal(df.add_count(by=columns), expected)
-
-
-def test_add_count_new_column_name(df):
-    """Add count per row with new column name"""
-    columns = ["name", "type"]
-    expected = df.copy()
-    expected["counter"] = expected.groupby(["name", "type"])["type"].transform(
-        "size"
-    )
-    assert_frame_equal(df.add_count(by=columns, name="counter"), expected)
+    assert_frame_equal(df.add_count(by=columns, name="n"), expected)
 
 
 def test_add_count_null_columns(df):
@@ -49,4 +39,4 @@ def test_add_count_null_columns(df):
     expected["n"] = (
         expected.fillna("rar").groupby(["nulls"])["type"].transform("size")
     )
-    assert_frame_equal(df.add_count(by="nulls"), expected)
+    assert_frame_equal(df.add_count(by="nulls", name="n"), expected)

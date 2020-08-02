@@ -4108,7 +4108,7 @@ def process_text(
 
 @pf.register_dataframe_method
 def add_count(
-    df: pd.DataFrame, by: Union[List[str], str], name: Optional[str] = None
+    df: pd.DataFrame, by: Union[List[str], str], name: str
 ) -> pd.DataFrame:
     """
     Adds a count column per group to each row in a dataframe. It is a
@@ -4126,9 +4126,9 @@ def add_count(
                            "num": (4, 5, 12, 4, 3),
                            "nulls": (1, 1, np.nan, np.nan, 3),
                            })
-        # Count on one column, with the ``n`` as the default column name
-        df.add_count(by = "name")
 
+        # Count on one column
+        df.add_count(by = "name", name = "n")
               name   type  num  nulls  n
         # 0  black  chair    4    1.0  3
         # 1  black  chair    5    1.0  3
@@ -4136,26 +4136,32 @@ def add_count(
         # 3    red   sofa    4    NaN  2
         # 4    red  plate    3    3.0  2
 
-        # Multiple columns are possible, and you can pass a name for the
-        # new column
+        # Multiple columns are possible
         df.add_count(by = ['name', 'type'], name = "count")
-
              name   type  num   nulls  count
-        # 0  black  chair    4    1.0    2.0
-        # 1  black  chair    5    1.0    2.0
-        # 2  black   sofa   12    NaN    NaN
-        # 3    red   sofa    4    NaN    NaN
-        # 4    red  plate    3    3.0    1.0
+        # 0  black  chair    4    1.0    2
+        # 1  black  chair    5    1.0    2
+        # 2  black   sofa   12    NaN    1
+        # 3    red   sofa    4    NaN    1
+        # 4    red  plate    3    3.0    1
 
         # Count for null columns are captured as well :
-        df.add_count(by = ['name', 'type', 'nulls'])
-
+        df.add_count(by = ['name', 'type', 'nulls'], name = "counter")
              name     type  num  nulls  counter
         # 0  black    chair   4    1.0        2
         # 1  black    chair   5    1.0        2
         # 2  black    sofa   12    NaN        1
         # 3    red    sofa    4    NaN        1
         # 4    red    plate   3    3.0        1
+
+        # The add_count function can be handy for filtering on groups :
+        (df
+        .add_count(by = ['name', 'type', 'nulls'], name = "counter")
+        .filter_on("counter > 1")
+        )
+             name     type  num  nulls  counter
+        # 0  black    chair   4    1.0        2
+        # 1  black    chair   5    1.0        2
 
 
     Functional usage syntax:
@@ -4168,8 +4174,8 @@ def add_count(
         df = pd.DataFrame(...)
         df = jn.add_count(
             df = df,
-            by = column_1 # or [column_1, column_2],
-            name = column_name # defaults to ``n``
+            by = column_1 # or [column_1, column_2, ...],
+            name = column_name
             )
 
     Method-chaining usage syntax:
@@ -4182,16 +4188,14 @@ def add_count(
         df = (
             pd.DataFrame(...)
             .add_count(
-                by = column_1 # or [column_1, column_2],
-                name = column_name # defaults to ``n``
+                by = column_1 # or [column_1, column_2, ...],
+                name = column_name
                 )
         )
 
-
     :param df: A pandas dataframe.
     :param by: Column or list of columns to group by.
-    :param name: Name of count column. Defaults to ``n`` if no name
-        is provided.
+    :param name: Name of count column. 
     :returns: A pandas dataframe with a new column.
     :raises: KeyError if column in ``by`` does not exist in the dataframe.
     """
@@ -4207,13 +4211,14 @@ def add_count(
     # in the column
     # The hasnans property is significantly faster than .isnull().any()
     if any(df[col].hasnans for col in by):
+
         mapping = {
             column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
         }
-        df["n"] = df.fillna(mapping).groupby(by)[by[0]].transform("size")
-    else:
-        df["n"] = df.groupby(by)[by[0]].transform("size")
 
-    if name is not None:
-        df = df.rename(columns={"n": name})
+        df[name] = df.fillna(mapping).groupby(by)[by[0]].transform("size")
+
+    else:
+        df[name] = df.groupby(by)[by[0]].transform("size")
+
     return df

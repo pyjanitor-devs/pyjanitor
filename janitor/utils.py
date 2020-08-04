@@ -477,7 +477,7 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     # checks if the dictionary is only lists/tuples values
     # and use itertools.product
     # numpy meshgrid is faster, but requires homogenous data to
-    # appreciate the speed. Itertools product is efficient
+    # appreciate the speed. Itertools product is efficient and suffices.
 
     if not any(
         isinstance(value, (pd.DataFrame, pd.Series, np.ndarray))
@@ -487,8 +487,9 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
             product(*(value for key, value in entry.items())), columns=entry
         )
     # dictionary contains a mix of different types - dataframe/series/numpy/...
-    # attaching names to get unique columns
-    # indices are set, so that cross joins can be generated
+    # so we check for each data type, convert to a Pandas dataframe, attach
+    # names to get unique columns, and set indices to each dataframe, so that
+    # cross joins can be generated.
     else:
         box = []
         for key, value in entry.items():

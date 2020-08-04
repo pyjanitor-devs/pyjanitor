@@ -113,7 +113,7 @@ def test_fill_column_down_up(df):
 
 
 def test_fill_multiple_columns(df):
-    """ Fill on multiple columns with a single direction."""
+    """Fill on multiple columns with a single direction."""
     expected = df.copy()
     expected.loc[:, ["pet_type", "owner"]] = expected.loc[
         :, ["pet_type", "owner"]

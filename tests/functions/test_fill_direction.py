@@ -85,7 +85,7 @@ def df():
 
 
 def test_fill_column(df):
-    """ Fill down on a single column."""
+    """Fill down on a single column."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].ffill()
     assert_frame_equal(df.fill_direction({"pet_type": "down"}), expected)

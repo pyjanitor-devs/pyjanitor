@@ -475,7 +475,7 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     Return the final output of the expand_grid function as a dataframe.
      This kicks in after the ``_check_instance`` function is completed,
      and essentially creates a cross join of the values in the `entry`
-     dictionary. If the `entry` dictionary is a collections of lists/tuples,
+     dictionary. If the `entry` dictionary is a collection of lists/tuples,
      then `itertools.product` will be used for the cross join, before a
     dataframe is created; if however, the `entry` contains a pandas dataframe
     or a pandas series or a numpy array, then identical indices are created for

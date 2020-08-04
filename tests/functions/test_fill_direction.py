@@ -134,7 +134,7 @@ def test_fill_multiple_columns_multiple_directions(df):
 
 
 def test_wrong_column_name(df):
-    """ Raise Value Error if wrong column name is provided."""
+    """Raise Value Error if wrong column name is provided."""
     with pytest.raises(ValueError):
         df.fill_direction({"PetType": "down"})
 

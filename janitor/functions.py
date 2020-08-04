@@ -4112,11 +4112,11 @@ def fill_direction(
     directions: Dict[Hashable, str],
     limit: Optional[int] = None,
 ) -> pd.DataFrame:
-    """
-    Provides a method-chainable function for filling missing values in selected
-    columns, using the next or previous entry. The columns are paired with the
-    directions in a dictionary. It is a wrapper for ``pd.Series.ffill`` and
-    ``pd.Series.bfill``.
+    """Provide a method-chainable function for filling missing values in selected columns.
+    
+    Missing values are filled using the next or previous entry.
+    The columns are paired with the directions in a dictionary.
+    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``.
 
     .. code-block:: python
 

@@ -31,7 +31,7 @@ def test_empty_dict():
 
 
 def test_scalar_to_list():
-    """Test that dictionary values are all converted to lists."""
+    """Test that dictionary values are all converted to lists/tuples."""
     data = {
         "x": 1,
         "y": "string",
@@ -42,23 +42,18 @@ def test_scalar_to_list():
         "d": True,
         "e": False,
     }
-    expected = (
-        [],
-        {
-            "x": [1],
-            "y": ["string"],
-            "z": [2, 3, 4],
-            "a": [26, 50],
-            "b": [None],
-            "c": [1.2],
-            "d": [True],
-            "e": [False],
-        },
-    )
-    # assert that it is an empty list
-    assert not _check_instance(data)[0]
-    # assert that the dictionaries match
-    assert _check_instance(data)[-1] == expected[-1]
+    expected = {
+        "x": [1],
+        "y": ["string"],
+        "z": (2, 3, 4),
+        "a": (26, 50),
+        "b": [None],
+        "c": [1.2],
+        "d": [True],
+        "e": [False],
+    }
+
+    assert _check_instance(data) == expected
 
 
 def test_nested_dict():
@@ -78,7 +73,7 @@ def test_numpy():
 def test_numpy_1d():
     """Test output from a 1d numpy array """
     data = {"x": np.array([2, 3])}
-    expected = pd.DataFrame(np.array([2, 3]), columns=["x"])
+    expected = pd.DataFrame(np.array([2, 3]), columns=["x_0"])
     assert_frame_equal(expand_grid(others=data), expected)
 
 
@@ -92,7 +87,7 @@ def test_numpy_2d():
 def test_numpy_gt_2d():
     """Raise error if numpy array dimension is greater than 2"""
     data = {"x": np.array([[[2, 3]]])}
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         expand_grid(others=data)
 
 
@@ -103,18 +98,21 @@ def test_series_empty():
         expand_grid(others=data)
 
 
+data = {"x": pd.Series([2, 3])}
+
+
 def test_series_not_multi_index_no_name():
     """Test for single index series"""
     data = {"x": pd.Series([2, 3])}
     expected = pd.DataFrame([2, 3], columns=["x"])
-    assert_frame_equal(_check_instance(data)[0][0], expected)
+    assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_series_not_multi_index_with_name():
     """Test for single index series with name"""
     data = {"x": pd.Series([2, 3], name="y")}
     expected = pd.DataFrame([2, 3], columns=["x_y"])
-    assert_frame_equal(_check_instance(data)[0][0], expected)
+    assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_series_multi_index():
@@ -190,15 +188,15 @@ def test_list_empty():
 
 def test_lists():
     """
-    Test expected output
-    from one level nested lists
-    in a dictionary's values
+    Test expected output from one level nested lists in a dictionary's values
     """
     data = {"x": [[2, 3], [4, 3]]}
-    expected = pd.DataFrame([[2, 3], [4, 3]]).add_prefix("x_")
+    expected = pd.DataFrame({"x": [[2, 3], [4, 3]]})
     assert_frame_equal(expand_grid(others=data), expected)
 
 
+@pytest.mark.xfail
+# not necessary to check scalars, will remove
 def test_lists_all_scalar():
     """
     Test that all values in a list
@@ -212,6 +210,8 @@ def test_lists_all_scalar():
     assert _check_instance(data)[-1] == expected[-1]
 
 
+@pytest.mark.xfail
+# not necessary to check scalars, will remove
 def test_lists_not_all_scalar():
     """
     Trigger error if values in a list
@@ -324,6 +324,27 @@ def test_df_output():
     )
     result = expand_grid(df, df_key="df", others=others)
     assert_frame_equal(result, expected)
+
+
+def test_2d_arrays_multiple_columns():
+    """Test on 2d arrays with multiple columns and rows"""
+    # example referenced from tidyr page
+    # https://tidyr.tidyverse.org/reference/expand_grid.html
+    data = {
+        "x": np.reshape(np.arange(1, 5), (2, -1), order="F"),
+        "y": np.reshape(np.arange(5, 9), (2, -1), order="F"),
+    }
+
+    expected = pd.DataFrame(
+        {
+            "x_0": [1, 1, 2, 2],
+            "x_1": [3, 3, 4, 4],
+            "y_0": [5, 6, 5, 6],
+            "y_1": [7, 8, 7, 8],
+        }
+    )
+
+    assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_df_multi_index():

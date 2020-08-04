@@ -28,7 +28,7 @@ def _flag_missing_timestamps(
     :param df: data frame to test for missing timestamps
     :param frequency: frequency i.e. sampling frequency
         Acceptable frequency strings are available
-        [Reference](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/):
+        `Reference <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/>`_
     :param column_name: name of the column which has time series if not the index
     :param first_time_stamp: timestamp the time_series is expected to start from
     :param last_time_stamp: timestamp the time_series is expected to end with
@@ -87,7 +87,7 @@ def fill_missing_timestamps(
     :param df: data frame which needs to be tested for missing timestamps
     :param frequency: frequency i.e. sampling frequency of the data.
         Acceptable frequency strings are available
-        [Reference](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/):
+        `Reference <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/>`_
     :param column_name: name of the column which has time series if not the index.
         Defaults to None.
         By default the index is used for checking for the timestamps,

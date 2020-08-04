@@ -29,9 +29,9 @@ def _flag_missing_timestamps(
     :param frequency: frequency i.e. sampling frequency
         Acceptable frequency strings are available
         `Reference <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/>`_
-    :param column_name: name of the column which has time series if not the index
-    :param first_time_stamp: timestamp the time_series is expected to start from
-    :param last_time_stamp: timestamp the time_series is expected to end with
+    :param column_name: column which has time series if not the index
+    :param first_time_stamp: timestamp expected to start from
+    :param last_time_stamp: timestamp expected to end with
     :return: namedtuple with 3 attributes namely flag, raw_data and new_index
         1. flag - boolean set to True if there are missing timestamps,
             else set to False
@@ -88,14 +88,14 @@ def fill_missing_timestamps(
     :param frequency: frequency i.e. sampling frequency of the data.
         Acceptable frequency strings are available
         `Reference <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/>`_
-    :param column_name: name of the column which has time series if not the index.
+    :param column_name: column which has time series if not index
         Defaults to None.
         By default the index is used for checking for the timestamps,
         unless a value other than None is assigned to column_name
-    :param first_time_stamp: timestamp at which the time_series is expected to start from.
+    :param first_time_stamp: timestamp expected to start from
         Defaults to None.
         If no input is provided assumes the minimum value in time_series
-    :param last_time_stamp: timestamp at which the time_series is expected to end with.
+    :param last_time_stamp: timestamp expected to end with.
         Defaults to None.
         If no input is provided, assumes the maximum value in time_series
     :return: reindexed data frame if it turns out to have missing timestamps,
@@ -113,7 +113,7 @@ def fill_missing_timestamps(
         test_new_index_data_type = is_datetime(df[column_name])
         if not test_new_index_data_type:
             raise TypeError(
-                "\n column_name should refer to a column whose data type is datetime"
+                f""" \n {column_name} data type must be datetime"""
             )
     if not first_time_stamp:
         first_time_stamp = df.index.min()

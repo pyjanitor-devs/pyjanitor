@@ -4210,7 +4210,7 @@ def fill_direction(
         if len(wrong_columns_provided) > 1:
             outcome = ", ".join(f"'{word}'" for word in wrong_columns_provided)
             raise ValueError(
-                f"Columns {outcome} do not exist in the dataframe"
+                f"Columns {outcome} do not exist in the dataframe."
             )
         outcome = "".join(wrong_columns_provided)
         raise ValueError(f"Column {outcome} does not exist in the dataframe")

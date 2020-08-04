@@ -19,18 +19,22 @@ def _flag_missing_timestamps(
     """
     Test if timestamps are missing
 
-    Utility function to test if input data frame is missing any timestamps relative to expected timestamps.
-    They are generated based on the first_time_stamp, last_time_stamp and frequency.
+    Utility function to test if input data frame
+    is missing timestamps relative to expected timestamps.
+    They are generated based on the first_time_stamp,
+    last_time_stamp
+    and frequency.
 
-    :param df: data frame which needs to be tested for missing timestamps
-    :param frequency: frequency i.e. sampling frequency of the data.
-        A list of acceptable frequency strings are available here:
-        (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases)
-    :param column_name: name of the column which has time series if not the index.
-    :param first_time_stamp: timestamp at which the time_series is expected to start from.
-    :param last_time_stamp: timestamp at which the time_series is expected to end with.
+    :param df: data frame to test for missing timestamps
+    :param frequency: frequency i.e. sampling frequency
+        Acceptable frequency strings are available
+        [Reference](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/):
+    :param column_name: name of the column which has time series if not the index
+    :param first_time_stamp: timestamp the time_series is expected to start from
+    :param last_time_stamp: timestamp the time_series is expected to end with
     :return: namedtuple with 3 attributes namely flag, raw_data and new_index
-        1. flag - boolean set to True if there are missing timestamps, else set to False
+        1. flag - boolean set to True if there are missing timestamps,
+            else set to False
         2. raw_data - input data frame as is without any modifications
         3. new_index - pd.DateTimeIndex that can be used to set the new index.
             Defaults to None.
@@ -49,10 +53,10 @@ def _flag_missing_timestamps(
 
     # Get actual timestamps
     if column_name:
-        df = df.set_index(column_name, inplace=True)
+        df = df.set_index(column_name)
 
     df = df.sort_index(inplace=True)
-    actual_timestamps = df.index.values
+    actual_timestamps = df.index.array
 
     # Check if they are the same
     comparison_index = expected_timestamps.difference(actual_timestamps)
@@ -74,16 +78,16 @@ def fill_missing_timestamps(
     last_time_stamp: pd.Timestamp = None,
 ) -> pd.DataFrame:
     """
-    Fills data frame with missing timestamps if found to be missing.
+    Fills data frame with missing timestamps if missing
 
-    Test the data frame for missing timestamps.
-    If timestamps are missing, then Re-indexes the data frame.
-    If timestamps are not missing, original data frame will be returned.
+    Test the data frame for missing timestamps
+    If timestamps are missing, Re-indexes the data frame
+    If timestamps are not missing, returns original data frame
 
     :param df: data frame which needs to be tested for missing timestamps
     :param frequency: frequency i.e. sampling frequency of the data.
-        A list of acceptable frequency strings are available here:
-        (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases)
+        Acceptable frequency strings are available
+        [Reference](https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases/):
     :param column_name: name of the column which has time series if not the index.
         Defaults to None.
         By default the index is used for checking for the timestamps,
@@ -123,6 +127,6 @@ def fill_missing_timestamps(
 
     # Return result based on whether timestamps are missing or not
     if timestamps_missing_flag["flag"]:
-        df = df.set_index(timestamps_missing_flag["new_index"], inplace=True)
+        df = df.set_index(timestamps_missing_flag["new_index"])
         return df
     return timestamps_missing_flag["raw_data"]

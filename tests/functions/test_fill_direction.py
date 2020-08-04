@@ -140,6 +140,6 @@ def test_wrong_column_name(df):
 
 
 def test_wrong_direction(df):
-    """ Raise Value Error if wrong direction is provided."""
+    """Raise Value Error if wrong direction is provided."""
     with pytest.raises(ValueError):
         df.fill_direction({"pet_type": "upanddawn"})

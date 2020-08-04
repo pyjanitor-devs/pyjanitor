@@ -4213,7 +4213,7 @@ def fill_direction(
                 f"Columns {outcome} do not exist in the dataframe."
             )
         outcome = "".join(wrong_columns_provided)
-        raise ValueError(f"Column {outcome} does not exist in the dataframe")
+        raise ValueError(f"Column {outcome} does not exist in the dataframe.")
 
     # check that the right directions are provided
     set_directions = {"up", "down", "updown", "downup"}

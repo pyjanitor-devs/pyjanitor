@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 
+@pytest.mark.xfail
 def test_filter_date_column_name(date_dataframe):
     df = date_dataframe
     # `column_name` wasn't a string

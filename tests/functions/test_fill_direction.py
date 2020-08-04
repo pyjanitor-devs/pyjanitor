@@ -124,7 +124,7 @@ def test_fill_multiple_columns(df):
 
 
 def test_fill_multiple_columns_multiple_directions(df):
-    """ Fill on multiple columns with different directions."""
+    """Fill on multiple columns with different directions."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].ffill()
     expected.loc[:, "owner"] = expected.loc[:, "owner"].bfill()

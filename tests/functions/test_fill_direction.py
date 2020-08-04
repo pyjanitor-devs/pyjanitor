@@ -106,7 +106,7 @@ def test_fill_column_updown(df):
 
 
 def test_fill_column_down_up(df):
-    """ Fill downwards, then upwards on a single column."""
+    """Fill downwards, then upwards on a single column."""
     expected = df.copy()
     expected.loc[:, "pet_type"] = expected.loc[:, "pet_type"].ffill().bfill()
     assert_frame_equal(df.fill_direction({"pet_type": "downup"}), expected)

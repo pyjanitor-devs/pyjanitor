@@ -411,11 +411,12 @@ def skiperror(
 def _check_instance(entry: Dict):
     """
     Function to check instances in the expand_grid function.
-    This checks if entry is a dictionary, checks the instance of value
-    in key:value pairs in entry, and makes changes to other types as
-    deemed necessary. Additionally, type-specific errors are raised
-    if unsupported data types are passed in as values in the entry
-    dictionary. How each type is handled, and their associated exceptions,
+    This checks if entry is a dictionary,
+    checks the instance of value in key:value pairs in entry,
+    and makes changes to other types as deemed necessary.
+    Additionally, type-specific errors are raised if unsupported data types
+    are passed in as values in the entry dictionary.
+    How each type is handled, and their associated exceptions,
     are pretty clear from the code.
     """
     # dictionary should not be empty

@@ -474,10 +474,10 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     Return the final output of the expand_grid function.
     """
 
-    # checks if the dictionary is only lists/tuples values
-    # and use itertools.product
-    # numpy meshgrid is faster, but requires homogenous data to
-    # appreciate the speed. Itertools product is efficient and suffices.
+    # checks if the dictionary is only lists/tuples values and uses
+    # itertools.product. numpy meshgrid is faster, but requires homogenous
+    # data to appreciate the speed. Itertools product is efficient and
+    # suffices.
 
     if not any(
         isinstance(value, (pd.DataFrame, pd.Series, np.ndarray))

@@ -14,6 +14,8 @@ new version (on deck)
 - [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 - [TST] Only skip tests for non-installed libraries on local machine. @hectormz
 - [DOC] Fix minor issues in documentation. @hectormz
+- [ENH] Updated expand_grid function, with less fluff and better performance for
+  cross-joins on dataframes/series/numpy arrays @samukweku
 
 
 v0.20.7

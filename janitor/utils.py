@@ -525,6 +525,7 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
         if len(box) == 1:
             result = box[0].reset_index(drop=True)
         else:
-            result = pd.DataFrame.join(*box).reset_index(drop=True)
+            first, *rest = box
+            result = pd.DataFrame.join(first, rest).reset_index(drop=True)
 
     return result

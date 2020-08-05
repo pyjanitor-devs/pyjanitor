@@ -14,7 +14,6 @@ new version (on deck)
 - [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 - [TST] Only skip tests for non-installed libraries on local machine. @hectormz
 - [DOC] Fix minor issues in documentation. @hectormz
-- [ENH] Add add_count method as sugary syntax for df.groupby(by).by.transform('size') @samukweku
 
 
 v0.20.7

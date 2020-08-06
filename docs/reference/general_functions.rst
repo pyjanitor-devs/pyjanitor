@@ -28,6 +28,7 @@ Modify columns
     groupby_agg
     join_apply
     drop_duplicate_columns
+    process_text
 
 Modify values
 ~~~~~~~~~~~~~
@@ -35,6 +36,7 @@ Modify values
     :toctree: janitor.functions/
 
     fill_empty
+    fill_direction
     convert_excel_date
     convert_matlab_date
     convert_unix_date
@@ -81,3 +83,9 @@ Other
     shuffle
     count_cumulative_unique
     sort_naturally
+    expand_grid
+    flag_nulls
+    move
+    toset
+    unionize_dataframe_categories
+    

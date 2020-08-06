@@ -2,7 +2,7 @@
 Chemistry and cheminformatics-oriented data cleaning functions.
 """
 
-from typing import Hashable, Union
+from typing import Hashable, Optional
 
 import numpy as np
 import pandas as pd
@@ -83,7 +83,7 @@ def smiles2mol(
     smiles_column_name: Hashable,
     mols_column_name: Hashable,
     drop_nulls: bool = True,
-    progressbar: Union[None, str] = None,
+    progressbar: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     Convert a column of SMILES strings into RDKit Mol objects.

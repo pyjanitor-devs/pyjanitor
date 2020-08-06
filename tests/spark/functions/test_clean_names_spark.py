@@ -1,19 +1,16 @@
 import pytest
 
+from helpers import running_on_ci
 from janitor.errors import JanitorError
 
-try:
+if running_on_ci():
     import pyspark
-
-    import janitor.spark  # noqa: F401
-except ImportError:
-    pyspark = None
+else:
+    pyspark = pytest.importorskip("pyspark")
+import janitor.spark  # noqa: F401 isort:skip
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_clean_names_method_chain(spark_df):
     spark_df = spark_df.clean_names()
     expected_columns = [
@@ -27,9 +24,6 @@ def test_clean_names_method_chain(spark_df):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_clean_names_special_characters(spark_df):
     spark_df = spark_df.clean_names(remove_special=True)
     expected_columns = [
@@ -43,9 +37,6 @@ def test_clean_names_special_characters(spark_df):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_clean_names_case_type_uppercase(spark_df):
     spark_df = spark_df.clean_names(case_type="upper")
     expected_columns = [
@@ -59,9 +50,6 @@ def test_clean_names_case_type_uppercase(spark_df):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_clean_names_case_type_preserve(spark_df):
     spark_df = spark_df.clean_names(case_type="preserve")
     expected_columns = [
@@ -75,18 +63,12 @@ def test_clean_names_case_type_preserve(spark_df):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_clean_names_case_type_invalid(spark_df):
     with pytest.raises(JanitorError, match=r"case_type must be one of:"):
         spark_df = spark_df.clean_names(case_type="foo")
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def test_clean_names_camelcase_to_snake(spark_df):
     spark_df = spark_df.selectExpr("a AS AColumnName").clean_names(
         case_type="snake"
@@ -95,9 +77,6 @@ def test_clean_names_camelcase_to_snake(spark_df):
 
 
 @pytest.mark.spark_functions
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 @pytest.mark.parametrize(
     "strip_underscores", ["both", True, "right", "r", "left", "l"]
 )

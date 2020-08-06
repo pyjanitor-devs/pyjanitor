@@ -4,6 +4,7 @@ import functools
 import os
 import sys
 import warnings
+from itertools import product
 from typing import Callable, Dict, List, Union
 
 import numpy as np
@@ -405,3 +406,134 @@ def skiperror(
             return return_val
 
     return _wrapped
+
+
+def _check_instance(entry: Dict):
+    """
+    Function to check instances in the expand_grid function.
+    This checks if entry is a dictionary,
+    checks the instance of value in key:value pairs in entry,
+    and makes changes to other types as deemed necessary.
+    Additionally, type-specific errors are raised if unsupported data types
+    are passed in as values in the entry dictionary.
+    How each type is handled, and their associated exceptions,
+    are pretty clear from the code.
+    """
+    # dictionary should not be empty
+    if not entry:
+        raise ValueError("passed dictionary cannot be empty")
+
+    entry = {
+        # If it is a NoneType, number, Boolean, or string,
+        # then wrap in a list
+        key: [value]
+        if isinstance(value, (type(None), int, float, bool, str))
+        else tuple(value)
+        if isinstance(value, (set, range))
+        else value
+        for key, value in entry.items()
+    }
+
+    for _, value in entry.items():
+        # exclude dicts:
+        if isinstance(value, dict):
+            raise TypeError("Nested dictionaries are not allowed")
+
+        # process arrays
+        if isinstance(value, np.ndarray):
+            if value.size == 0:
+                raise ValueError("array cannot be empty")
+
+        # process series
+        if isinstance(value, pd.Series):
+            if value.empty:
+                raise ValueError("passed Series cannot be empty")
+            if isinstance(value.index, pd.MultiIndex):
+                raise TypeError(
+                    "`expand_grid` does not work with pd.MultiIndex"
+                )
+        # process dataframe
+        if isinstance(value, pd.DataFrame):
+            if value.empty:
+                raise ValueError("passed DataFrame cannot be empty")
+            if (isinstance(value.index, pd.MultiIndex)) or (
+                isinstance(value.columns, pd.MultiIndex)
+            ):
+                raise TypeError(
+                    "`expand_grid` does not work with pd.MultiIndex"
+                )
+        # process lists
+        if isinstance(value, (list, tuple)):
+            if not value:
+                raise ValueError("passed Sequence cannot be empty")
+
+    return entry
+
+
+def _grid_computation(entry: Dict) -> pd.DataFrame:
+    """
+    Return the final output of the expand_grid function as a dataframe.
+     This kicks in after the ``_check_instance`` function is completed,
+     and essentially creates a cross join of the values in the `entry`
+     dictionary. If the `entry` dictionary is a collection of lists/tuples,
+     then `itertools.product` will be used for the cross join, before a
+    dataframe is created; if however, the `entry` contains a pandas dataframe
+    or a pandas series or a numpy array, then identical indices are created for
+    each entry and `pandas DataFrame join` is called to create the cross join.
+    """
+
+    # checks if the dictionary is only lists/tuples values and uses
+    # itertools.product. numpy meshgrid is faster, but requires homogenous
+    # data to appreciate the speed. Itertools product is efficient and
+    # suffices.
+
+    if not any(
+        isinstance(value, (pd.DataFrame, pd.Series, np.ndarray))
+        for key, value in entry.items()
+    ):
+        result = pd.DataFrame(
+            product(*(value for key, value in entry.items())), columns=entry
+        )
+    # dictionary contains a mix of different types - dataframe/series/numpy/...
+    # so we check for each data type, convert to a Pandas dataframe, attach
+    # names to get unique columns, and set indices to each dataframe, so that
+    # cross joins can be generated.
+    else:
+        box = []
+        for key, value in entry.items():
+            if isinstance(value, pd.DataFrame):
+                box.append(
+                    value.add_prefix(f"{key}_").set_index([[1] * len(value)])
+                )
+            elif isinstance(value, pd.Series):
+                if value.name:
+                    box.append(
+                        value.to_frame(name=f"{key}_{value.name}").set_index(
+                            [[1] * len(value)]
+                        )
+                    )
+                else:
+                    box.append(
+                        value.to_frame(name=f"{key}").set_index(
+                            [[1] * len(value)]
+                        )
+                    )
+            elif isinstance(value, np.ndarray):
+                box.append(
+                    pd.DataFrame(value)
+                    .add_prefix(f"{key}_")
+                    .set_index([[1] * len(value)])
+                )
+            else:
+                box.append(
+                    pd.DataFrame(
+                        value, columns=[key], index=([1] * len(value))
+                    )
+                )
+        if len(box) == 1:
+            result = box[0].reset_index(drop=True)
+        else:
+            first, *rest = box
+            result = pd.DataFrame.join(first, rest).reset_index(drop=True)
+
+    return result

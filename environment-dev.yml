@@ -25,7 +25,7 @@ dependencies:
 - nox
 - numpy>=1.16
 - pandas-flavor
-- pandas>=0.24.0
+- pandas>=1.0.0
 - pip
 - pipreqs
 - pre-commit

@@ -2,7 +2,7 @@ SHELL=/bin/bash
 ACTIVATE=source activate pyjanitor-dev
 
 release:
-	rm dist/*
+	rm -f dist/*
 	python setup.py sdist bdist_wheel
 	twine upload dist/*
 

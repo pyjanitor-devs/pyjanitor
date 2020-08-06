@@ -1,6 +1,10 @@
+"""
+Tests referring to the method transform_column of the module functions.
+"""
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 
 @pytest.mark.functions
@@ -18,7 +22,7 @@ def test_transform_column(dataframe, elementwise):
     df = dataframe.transform_column("a", np.log10, elementwise=elementwise)
     expected = pd.Series(np.log10([1, 2, 3] * 3))
     expected.name = "a"
-    pd.testing.assert_series_equal(df["a"], expected)
+    assert_series_equal(df["a"], expected)
 
 
 @pytest.mark.functions
@@ -31,4 +35,13 @@ def test_transform_column_with_dest(dataframe):
         "a", np.log10, dest_column_name="a_log10"
     )
 
-    pd.testing.assert_frame_equal(df, expected_df)
+    assert_frame_equal(df, expected_df)
+
+
+@pytest.mark.functions
+def test_transform_column_no_mutation(dataframe):
+    """Test checking that transform_column doesn't mutate the dataframe."""
+    df = dataframe.transform_column("a", np.log10)
+
+    with pytest.raises(AssertionError):
+        assert_frame_equal(dataframe, df)

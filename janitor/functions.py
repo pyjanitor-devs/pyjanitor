@@ -1,6 +1,7 @@
 """ General purpose data cleaning functions. """
 
 import datetime as dt
+import inspect
 import re
 import unicodedata
 import warnings
@@ -30,8 +31,10 @@ from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
+    _check_instance,
     _clean_accounting_column,
     _currency_column_to_numeric,
+    _grid_computation,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _strip_underscores,
@@ -42,7 +45,7 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Iterable[pd.CategoricalDtype] = None
+    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -60,7 +63,7 @@ def unionize_dataframe_categories(
     ``object``, losing out on dramatic speed gains you get from the former
     format.
 
-    Usage example for concatentation of categorical column-containing
+    Usage example for concatenation of categorical column-containing
     dataframes:
 
     Instead of:
@@ -223,7 +226,7 @@ def move(
 @pf.register_dataframe_method
 def clean_names(
     df: pd.DataFrame,
-    strip_underscores: str = None,
+    strip_underscores: Optional[Union[str, bool]] = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = True,
@@ -410,7 +413,8 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable] = None
+    df: pd.DataFrame,
+    column_names: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Return all duplicate rows.
 
@@ -674,7 +678,7 @@ def reorder_columns(
 def coalesce(
     df: pd.DataFrame,
     column_names: Iterable[Hashable],
-    new_column_name: str = None,
+    new_column_name: Optional[str] = None,
     delete_columns: bool = True,
 ) -> pd.DataFrame:
     """Coalesce two or more columns of data in order of column names provided.
@@ -986,8 +990,8 @@ def concatenate_columns(
 def deconcatenate_column(
     df: pd.DataFrame,
     column_name: Hashable,
-    sep: str = None,
-    new_column_names: Union[List[str], Tuple[str]] = None,
+    sep: Optional[str] = None,
+    new_column_names: Optional[Union[List[str], Tuple[str]]] = None,
     autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:
@@ -1080,7 +1084,9 @@ def deconcatenate_column(
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:
         df_deconcat = pd.DataFrame(
-            df[column_name].to_list(), columns=new_column_names, index=df.index
+            df[column_name].to_list(),
+            columns=new_column_names,
+            index=df.index,
         )
 
     if preserve_position:
@@ -1254,13 +1260,13 @@ def filter_on(
 def filter_date(
     df: pd.DataFrame,
     column_name: Hashable,
-    start_date: dt.date = None,
-    end_date: dt.date = None,
-    years: List = None,
-    months: List = None,
-    days: List = None,
-    column_date_options: Dict = None,
-    format: str = None,
+    start_date: Optional[dt.date] = None,
+    end_date: Optional[dt.date] = None,
+    years: Optional[List] = None,
+    months: Optional[List] = None,
+    days: Optional[List] = None,
+    column_date_options: Optional[Dict] = None,
+    format: Optional[str] = None,
 ) -> pd.DataFrame:
     """Filter a date-based column based on certain criteria.
 
@@ -1297,6 +1303,7 @@ def filter_date(
     parsed, you would pass `{'format': your_format}` to `column_date_options`.
 
     """
+
     # TODO: need to convert this to notebook.
     #     :Setup:
     # .. code-block:: python
@@ -2176,7 +2183,7 @@ def transform_column(
     df: pd.DataFrame,
     column_name: Hashable,
     function: Callable,
-    dest_column_name: str = None,
+    dest_column_name: Optional[str] = None,
     elementwise: bool = True,
 ) -> pd.DataFrame:
     """Transform the given column in-place using the provided function.
@@ -2280,9 +2287,9 @@ def transform_columns(
     df: pd.DataFrame,
     column_names: Union[List[str], Tuple[str]],
     function: Callable,
-    suffix: str = None,
+    suffix: Optional[str] = None,
     elementwise: bool = True,
-    new_column_names: Dict[str, str] = None,
+    new_column_names: Optional[Dict[str, str]] = None,
 ) -> pd.DataFrame:
     """Transform multiple columns through the same transformation.
 
@@ -2553,9 +2560,9 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 def currency_column_to_numeric(
     df: pd.DataFrame,
     column_name,
-    cleaning_style: str = None,
-    cast_non_numeric: dict = None,
-    fill_all_non_numeric: float = None,
+    cleaning_style: Optional[str] = None,
+    cast_non_numeric: Optional[dict] = None,
+    fill_all_non_numeric: Optional[Union[float, int]] = None,
     remove_non_numeric: bool = False,
 ) -> pd.DataFrame:
     """Convert currency column to numeric.
@@ -2845,8 +2852,8 @@ def select_columns(
 def impute(
     df: pd.DataFrame,
     column_name: Hashable,
-    value: Any = None,
-    statistic_column_name: str = None,
+    value: Optional[Any] = None,
+    statistic_column_name: Optional[str] = None,
 ) -> pd.DataFrame:
     """Method-chainable imputation of values in a column.
 
@@ -2975,7 +2982,9 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
-def find_replace(df, match: str = "exact", **mappings):
+def find_replace(
+    df: pd.DataFrame, match: str = "exact", **mappings
+) -> pd.DataFrame:
     """Perform a find-and-replace action on provided columns.
 
     Depending on use case, users can choose either exact, full-value matching,
@@ -3096,7 +3105,7 @@ def _find_replace(
     if match.lower() == "regex":
         for k, v in mapper.items():
             condition = df[column_name].str.contains(k, regex=True)
-            df = df.update_where(condition, column_name, v)
+            df.loc[condition, column_name] = v
     return df
 
 
@@ -3108,7 +3117,8 @@ def update_where(
     target_column_name: Hashable,
     target_val: Any,
 ) -> pd.DataFrame:
-    """Add multiple conditions to update a column in the dataframe.
+    """
+    Add multiple conditions to update a column in the dataframe.
 
     This method mutates the original DataFrame.
 
@@ -3126,7 +3136,7 @@ def update_where(
         df = (
             df
             .update_where(
-                condition=(df['a'] > 2) & (df['b'] < 8),
+                condition=("a > 2 and b < 8",
                 target_column_name='c',
                 target_val=10)
             )
@@ -3137,17 +3147,26 @@ def update_where(
         # 4 8  0
 
     :param df: The pandas DataFrame object.
-    :param conditions: conditions used to update a target column and target
-        value
+    :param conditions: Conditions used to update a target column
+        and target value.
     :param target_column_name: Column to be updated. If column does not exist
         in dataframe, a new column will be created; note that entries that do
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
-    :raises: IndexError if **conditions** does not have the same length as
-        **df**.
+    :raises: IndexError if ``conditions`` does not have the same length as
+        ``df``.
+    :raises: TypeError if ``conditions`` is not a pandas-compatible string
+        query.
     """
-    df.loc[conditions, target_column_name] = target_val
+
+    # use query mode if a string expression is passed
+    if isinstance(conditions, str):
+        conditions_index = df.query(conditions).index
+    else:
+        conditions_index = df.loc[conditions].index
+    df.loc[conditions_index, target_column_name] = target_val
+
     return df
 
 
@@ -3201,7 +3220,7 @@ def groupby_agg(
 
     .. code-block:: python
 
-        df = df.assign(...=df.groupby(...)[...].tranform(...))
+        df = df.assign(...=df.groupby(...)[...].transform(...))
 
     Now, this function can be method-chained:
 
@@ -3293,7 +3312,7 @@ def bin_numeric(
     from_column_name: Hashable,
     to_column_name: Hashable,
     num_bins: int = 5,
-    labels: str = None,
+    labels: Optional[str] = None,
 ) -> pd.DataFrame:
     """Generate a new column that labels bins for a specified numeric column.
 
@@ -3458,7 +3477,9 @@ def shuffle(
 
 
 @pf.register_dataframe_method
-def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
+def join_apply(
+    df: pd.DataFrame, func: Callable, new_column_name: str
+) -> pd.DataFrame:
     """Join the result of applying a function across dataframe rows.
 
     This method does not mutate the original DataFrame.
@@ -3506,8 +3527,8 @@ def join_apply(df: pd.DataFrame, func: Callable, new_column_name: str):
 @pf.register_dataframe_method
 def flag_nulls(
     df: pd.DataFrame,
-    column_name: Hashable = "null_flag",
-    columns: Union[str, Iterable[str], Hashable] = None,
+    column_name: Optional[Hashable] = "null_flag",
+    columns: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Creates a new column to indicate whether you have null values in a given
     row. If the columns parameter is not set, looks across the entire
@@ -3619,7 +3640,7 @@ def count_cumulative_unique(
     count of unique values in the specified column.
     If `case_sensitive` is `True`, then the case of
     any letters will matter (i.e., 'a' != 'A');
-    othewise, the case of any letters will not matter.
+    otherwise, the case of any letters will not matter.
 
     This method mutates the original DataFrame.
 
@@ -3765,7 +3786,7 @@ def jitter(
         no jittering.)
     :param clip: An iterable of two values (minimum and maximum) to clip
         the jittered values to, default to None.
-    :param random_state: A interger or 1-d array value used to set the random
+    :param random_state: An integer or 1-d array value used to set the random
         seed, default to None.
 
     :returns: A pandas DataFrame with a new column containing Gaussian-
@@ -3869,3 +3890,358 @@ def sort_naturally(
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]
+
+
+@pf.register_dataframe_method
+def expand_grid(
+    df: Optional[pd.DataFrame] = None,
+    df_key: Optional[str] = None,
+    others: Dict = None,
+) -> pd.DataFrame:
+    """
+    Creates a dataframe from a combination of all inputs.
+
+    This works with a dictionary of name value pairs,
+    and will work with structures that are not dataframes.
+    If method-chaining to a dataframe,
+    a key to represent the column name in the output must be provided.
+
+    The output will always be a dataframe.
+
+    Example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"x":range(1,3), "y":[2,1]})
+        others = {"z" : range(1,4)}
+
+        df.expand_grid(df_key="df",others=others)
+
+        # df_x |   df_y |   z
+        #    1 |      2 |   1
+        #    1 |      2 |   2
+        #    1 |      2 |   3
+        #    2 |      1 |   1
+        #    2 |      1 |   2
+        #    2 |      1 |   3
+
+        #create a dataframe from all combinations in a dictionary
+        data = {"x":range(1,4), "y":[1,2]}
+
+        jn.expand_grid(others=data)
+
+        #  x |   y
+        #  1 |   1
+        #  1 |   2
+        #  2 |   1
+        #  2 |   2
+        #  3 |   1
+        #  3 |   2
+
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.expand_grid(df=df, df_key="...", others={...})
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
+
+    Usage independent of a dataframe
+
+    .. code-block:: python
+
+        import pandas as pd
+        from janitor import expand_grid
+
+        df = expand_grid({"x":range(1,4), "y":[1,2]})
+
+    :param df: A pandas dataframe.
+    :param df_key: name of key for the dataframe.
+        It becomes the column name of the dataframe.
+    :param others: A dictionary that contains the data
+        to be combined with the dataframe.
+        If no dataframe exists, all inputs
+        in others will be combined to create a dataframe.
+    :returns: A pandas dataframe of all combinations of name value pairs.
+    :raises: TypeError if others is not a dictionary
+    :raises: KeyError if there is a dataframe and no key is provided.
+    """
+    # check if others is a dictionary
+    if not isinstance(others, dict):
+        # strictly name value pairs
+        # same idea as in R and tidyverse implementation
+        raise TypeError("others must be a dictionary")
+    # if there is a dataframe, for the method chaining,
+    # it must have a key, to create a name value pair
+    if df is not None:
+        if isinstance(df.index, pd.MultiIndex) or isinstance(
+            df.columns, pd.MultiIndex
+        ):
+            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
+        if not df_key:
+            raise KeyError(
+                """
+                Using `expand_grid` as part of a DataFrame method chain
+                requires that a string `df_key` be passed in.
+                """
+            )
+        others = {**{df_key: df}, **others}
+    entry = _check_instance(others)
+
+    return _grid_computation(entry)
+
+
+@pf.register_dataframe_method
+def process_text(
+    df: pd.DataFrame,
+    column: str,
+    string_function: str,
+    *args: str,
+    **kwargs: str,
+) -> pd.DataFrame:
+    """
+    Apply a Pandas string method to an existing column and return a dataframe.
+
+    This function aims to make string cleaning easy, while chaining,
+    by simply passing the string method name to the ``process_text`` function.
+    Note that this modifies an existing column,
+    and should not be used to create a new column.
+    A list of all the string methods in Pandas can be accessed here:
+    https://pandas.pydata.org/docs/user_guide/text.html#method-summary.
+
+    Example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"text":["ragnar","sammywemmy","ginger"],
+                           "code" : [1, 2, 3]})
+
+        df.process_text(column = "text", string_function = "lower")
+        # text       |   code
+        # ragnar     |    1
+        # sammywemmy |    2
+        # ginger     |    3
+
+        #For string methods with parameters, simply pass the arguments :
+        df.process_text(
+            column = "text",
+            string_function = "extract",
+            pat = r"(ag)",
+            flags = re.IGNORECASE
+            )
+
+        # text |   code
+        # ag   |    1
+        # NaN  |    2
+        # NaN  |    3
+
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.process_text(
+            df = df,
+            string_function = "string_func_name_here",
+            args, kwargs
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .process_text(
+                string_function = "string_func_name_here",
+                args, kwargs
+                )
+        )
+
+
+    :param df: A pandas dataframe.
+    :param column: String column to be operated on.
+    :param args, kwargs: Arguments for parameters.
+    :returns: A pandas dataframe with modified column.
+    :raises: KeyError if ``string_function`` is not a Pandas string method.
+    :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
+    """
+
+    pandas_string_methods = [
+        func.__name__
+        for _, func in inspect.getmembers(pd.Series.str, inspect.isfunction)
+        if not func.__name__.startswith("_")
+    ]
+
+    if string_function not in pandas_string_methods:
+        raise KeyError(f"{string_function} is not a Pandas string method.")
+
+    df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
+
+    return df
+
+
+@pf.register_dataframe_method
+def fill_direction(
+    df: pd.DataFrame,
+    directions: Dict[Hashable, str],
+    limit: Optional[int] = None,
+) -> pd.DataFrame:
+    """Provide a method-chainable function for filling missing values
+    in selected columns.
+
+    Missing values are filled using the next or previous entry.
+    The columns are paired with the directions in a dictionary.
+    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"text": ["ragnar", np.nan, "sammywemmy",
+                                    np.nan, "ginger"],
+                           "code" : [np.nan, 2, 3, np.nan, 5]})
+
+        # Single column :
+        df.fill_direction({"text" : "up"})
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    NaN
+        # ginger     |    5
+
+        # Multiple columns :
+        df.fill_direction({"text" : "down", "code" : "down"})
+
+        # text       |   code
+        # ragnar     |    NaN
+        # ragnar     |    2
+        # sammywemmy |    3
+        # sammywemmy |    3
+        # ginger     |    5
+
+        # Multiple columns in different directions.
+        df.fill_direction({"text" : "up", "code" : "down"})
+
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    3
+        # ginger     |    5
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.fill_direction(
+            df = df,
+            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            limit = None # limit must be greater than 0
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .fill_direction(
+            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            limit = None # limit must be greater than 0
+            )
+        )
+
+    :param df: A pandas dataframe.
+    :param directions: Key - value pairs of columns and directions. Directions
+        can be either `down`(default), `up`, `updown`(fill up then down) and
+        `downup` (fill down then up).
+    :param limit: number of consecutive null values to forward/backward fill.
+        Value must be greater than 0.
+    :returns: A pandas dataframe with modified column(s).
+    :raises: ValueError if ``directions`` dictionary is empty.
+    :raises: ValueError if column supplied is not in the dataframe.
+    :raises: ValueError if direction supplied is not one of `down`,`up`,
+        `updown`, or `downup`.
+    """
+
+    # check that dictionary is not empty
+    if not directions:
+        raise ValueError("A mapping of columns with directions is required.")
+
+    # check that the right columns are provided
+    # should be removed once the minimum Pandas version is 1.1,
+    # as Pandas loc will raise a KeyError if columns provided do not exist
+    wrong_columns_provided = set(directions).difference(df.columns)
+    if any(wrong_columns_provided):
+        if len(wrong_columns_provided) > 1:
+            outcome = ", ".join(f"'{word}'" for word in wrong_columns_provided)
+            raise ValueError(
+                f"Columns {outcome} do not exist in the dataframe."
+            )
+        outcome = "".join(wrong_columns_provided)
+        raise ValueError(f"Column {outcome} does not exist in the dataframe.")
+
+    # check that the right directions are provided
+    set_directions = {"up", "down", "updown", "downup"}
+
+    # linter throws an error when I use dictionary.values()
+    # it assumes that dictionary is a dataframe
+    directions_values = [value for key, value in directions.items()]
+    wrong_directions_provided = set(directions_values).difference(
+        set_directions
+    )
+    if any(wrong_directions_provided):
+        raise ValueError(
+            """The direction should be a string and should be one of `up`,
+            `down`, `updown`, or `downup`."""
+        )
+
+    for column, direction in directions.items():
+        if direction == "up":
+            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
+        elif direction == "down":
+            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
+        elif direction == "updown":
+            df.loc[:, column] = (
+                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
+            )
+        elif direction == "downup":
+            df.loc[:, column] = (
+                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
+            )
+    return df

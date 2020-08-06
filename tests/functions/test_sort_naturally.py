@@ -11,6 +11,7 @@ that needs to be naturally rather than lexiographically sorted.
 import pandas as pd
 import pytest
 from natsort import natsorted
+from pandas.testing import assert_frame_equal
 
 import janitor  # noqa: F401
 
@@ -36,4 +37,4 @@ def test_sort_naturally(well_dataframe):
     """
     sorted_df = well_dataframe.sort_naturally("Well")
     assert sorted_df["Well"].tolist() == natsorted(well_dataframe["Well"])
-    pd.testing.assert_frame_equal(sorted_df.sort_index(), well_dataframe)
+    assert_frame_equal(sorted_df.sort_index(), well_dataframe)

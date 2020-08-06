@@ -2,11 +2,15 @@ import importlib
 
 import pytest
 
+from helpers import running_on_ci
 
-@pytest.mark.skipif(
-    importlib.util.find_spec("rdkit") is None,
+# Skip all tests if rdkit not installed
+pytestmark = pytest.mark.skipif(
+    (importlib.util.find_spec("rdkit") is None) & ~running_on_ci(),
     reason="rdkit tests only required for CI",
 )
+
+
 @pytest.mark.parametrize("progressbar", [None, "terminal"])
 @pytest.mark.chemistry
 def test_smiles2mol(chemdf, progressbar):

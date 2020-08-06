@@ -1,7 +1,6 @@
 import pytest
 
 try:
-    import pyspark
     from pyspark.sql import SparkSession
     from pyspark.sql.types import (
         FloatType,
@@ -11,13 +10,10 @@ try:
         StructType,
     )
 except ImportError:
-    pyspark = None
+    pass
 
 
 @pytest.fixture(scope="session")
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def spark():
     spark = SparkSession.builder.getOrCreate()
     yield spark
@@ -25,9 +21,6 @@ def spark():
 
 
 @pytest.fixture
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def spark_df(spark):
     schema = StructType(
         [
@@ -42,8 +35,5 @@ def spark_df(spark):
 
 
 @pytest.fixture
-@pytest.mark.skipif(
-    pyspark is None, reason="pyspark tests only required for CI"
-)
 def spark_dataframe(spark, dataframe):
     return spark.createDataFrame(dataframe)

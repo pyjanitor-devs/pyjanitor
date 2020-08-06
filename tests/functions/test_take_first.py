@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.functions
@@ -9,4 +10,4 @@ def test_take_first():
     res = df.take_first(subset="a", by="b")
     exp = df.iloc[[0, 2], :]
 
-    pd.testing.assert_frame_equal(res, exp)
+    assert_frame_equal(res, exp)

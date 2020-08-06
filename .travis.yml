@@ -4,6 +4,9 @@ matrix:
     - python: 3.5  # we don't actually use this
       env: PYTHON_VERSION=3.7
 
+services:
+  - docker
+
 install:
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
@@ -15,18 +18,23 @@ install:
   - conda update -q conda
   - conda config --add channels conda-forge
 
+  - conda install -c conda-forge mamba
+
   # Useful for debugging any issues with conda
   - conda info -a
 
   # Install Python, py.test, and required packages.
-  - conda env create -f environment-dev.yml
+  - mamba env create -f environment-dev.yml
 
   # This guarantees that Python version is matrixed.
-  - conda install python=$PYTHON_VERSION
+  - mamba install python=$PYTHON_VERSION -n pyjanitor-dev
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - conda activate pyjanitor-dev
   - python -m ipykernel install --name pyjanitor-dev --user
   - python setup.py develop
+
+  # Build development container
+  # - docker build -t ericmjl/pyjanitor:devcontainer -f .devcontainer/Dockerfile .
 
 # We use TravisCI to build docs and not run tests.
 # Tests are covered on Azure.
@@ -35,15 +43,21 @@ script:
   - make docs
 
 deploy:
-  provider: pages:git
-  deploy_key: $GITHUB_TOKEN
-  edge: true  # opt in to dpl v2
-  keep_history: false
-  cleanup: false
-  verbose: true
-  local_dir: docs/_build/html
-  on:
-    branch: dev
+  # Publish to github pages
+  - provider: pages:git
+    deploy_key: $GITHUB_TOKEN
+    edge: true  # opt in to dpl v2
+    keep_history: false
+    cleanup: false
+    verbose: true
+    local_dir: docs/_build/html
+    on:
+      branch: dev
+  # Push dev container to Dockerhub
+  - provider: script
+    script: bash scripts/docker_deploy.sh
+    on:
+      branch: dev
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

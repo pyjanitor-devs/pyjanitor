@@ -5,6 +5,7 @@ jobs:
   - job: linux
     variables:
       activate.command: "source activate"
+      JANITOR_CI_MACHINE: 1
     strategy:
       matrix:
         py37:
@@ -23,6 +24,7 @@ jobs:
   - job: macos
     variables:
       activate.command: "source activate"
+      JANITOR_CI_MACHINE: 1
     strategy:
       matrix:
         py37:
@@ -46,6 +48,7 @@ jobs:
   - job: windows
     variables:
       activate.command: "activate"
+      JANITOR_CI_MACHINE: 1
     strategy:
       matrix:
         py37:

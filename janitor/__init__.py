@@ -21,4 +21,4 @@ def get_features_targets(*args, **kwargs):
     return _get_features_targets(*args, **kwargs)
 
 
-__version__ = "0.20.7"
+__version__ = "0.20.8"

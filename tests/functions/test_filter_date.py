@@ -4,6 +4,8 @@ import pytest
 
 
 @pytest.mark.xfail
+# pandas 1.1 raises a KeyError if columns/indices passed to loc does not exist
+# pandas <1.1 raises a TypeError
 def test_filter_date_column_name(date_dataframe):
     df = date_dataframe
     # `column_name` wasn't a string

@@ -14,13 +14,8 @@ new version (on deck)
 - [ENH] Added ``process_text`` wrapper function for all Pandas string methods. @samukweku
 - [TST] Only skip tests for non-installed libraries on local machine. @hectormz
 - [DOC] Fix minor issues in documentation. @hectormz
-<<<<<<< HEAD
-- [ENH] Updated expand_grid function, with less fluff and better performance for
-  cross-joins on dataframes/series/numpy arrays @samukweku
-=======
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
->>>>>>> 74b26be04c43a656c9730f669aecc991717f9c19
 
 
 v0.20.7

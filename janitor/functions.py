@@ -4000,10 +4000,10 @@ def expand_grid(
                 requires that a string `df_key` be passed in.
                 """
             )
-        others.update({df_key: df})
-    dfs, dicts = _check_instance(others)
+        others = {**{df_key: df}, **others}
+    entry = _check_instance(others)
 
-    return _grid_computation(dfs, dicts)
+    return _grid_computation(entry)
 
 
 @pf.register_dataframe_method

@@ -16,6 +16,7 @@ new version (on deck)
 - [DOC] Fix minor issues in documentation. @hectormz
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
+- [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
 
 
 v0.20.7

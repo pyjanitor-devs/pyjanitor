@@ -10,21 +10,21 @@ from janitor.utils import _check_instance
 
 
 def test_not_a_dict():
-    """Test that entry(list) is not a dictionary"""
+    """Test that entry(list) is not a dictionary."""
     data = [60, 70]
     with pytest.raises(TypeError):
         expand_grid(others=data)
 
 
 def test_not_a_dict_1():
-    """Test that entry (dataframe) is not a dictionary"""
+    """Test that entry (dataframe) is not a dictionary."""
     data = pd.DataFrame([60, 70])
     with pytest.raises(TypeError):
         expand_grid(others=data)
 
 
 def test_empty_dict():
-    """Test that entry should not be empty"""
+    """Test that entry should not be empty."""
     data = {}
     with pytest.raises(ValueError):
         expand_grid(others=data)
@@ -57,42 +57,42 @@ def test_scalar_to_list():
 
 
 def test_nested_dict():
-    """Raise error if dictionary is nested in a dictionary's values"""
+    """Raise error if dictionary is nested in a dictionary's values."""
     data = {"x": {"y": 2}}
     with pytest.raises(TypeError):
         expand_grid(others=data)
 
 
 def test_numpy():
-    """Raise error if numpy array in dictionary's values is empty"""
+    """Raise error if numpy array in dictionary's values is empty."""
     data = {"x": np.array([])}
     with pytest.raises(ValueError):
         expand_grid(others=data)
 
 
 def test_numpy_1d():
-    """Test output from a 1d numpy array """
+    """Test output from a 1d numpy array."""
     data = {"x": np.array([2, 3])}
     expected = pd.DataFrame(np.array([2, 3]), columns=["x_0"])
     assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_numpy_2d():
-    """Test output from a 2d numpy array"""
+    """Test output from a 2d numpy array."""
     data = {"x": np.array([[2, 3]])}
     expected = pd.DataFrame(np.array([[2, 3]])).add_prefix("x_")
     assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_numpy_gt_2d():
-    """Raise error if numpy array dimension is greater than 2"""
+    """Raise error if numpy array dimension is greater than 2."""
     data = {"x": np.array([[[2, 3]]])}
     with pytest.raises(ValueError):
         expand_grid(others=data)
 
 
 def test_series_empty():
-    """Test that values in key value pair should not be empty ... for Series"""
+    """Test that values in key value pair should not be empty for Series."""
     data = {"x": pd.Series([], dtype="int")}
     with pytest.raises(ValueError):
         expand_grid(others=data)
@@ -102,21 +102,21 @@ data = {"x": pd.Series([2, 3])}
 
 
 def test_series_not_multi_index_no_name():
-    """Test for single index series"""
+    """Test for single index series."""
     data = {"x": pd.Series([2, 3])}
     expected = pd.DataFrame([2, 3], columns=["x"])
     assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_series_not_multi_index_with_name():
-    """Test for single index series with name"""
+    """Test for single index series with name."""
     data = {"x": pd.Series([2, 3], name="y")}
     expected = pd.DataFrame([2, 3], columns=["x_y"])
     assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_series_multi_index():
-    """Test that multiIndexed series trigger error"""
+    """Test that multiIndexed series trigger error."""
     data = {
         "x": pd.Series(
             [2, 3], index=pd.MultiIndex.from_arrays([[1, 2], [3, 4]])
@@ -127,21 +127,21 @@ def test_series_multi_index():
 
 
 def test_dataframe_empty():
-    """Trigger error for empty dataframes"""
+    """Trigger error for empty dataframes."""
     data = {"x": pd.DataFrame([])}
     with pytest.raises(ValueError):
         expand_grid(others=data)
 
 
 def test_dataframe_single_index():
-    """Test for single indexed dataframes"""
+    """Test for single indexed dataframes."""
     data = {"x": pd.DataFrame([[2, 3], [6, 7]])}
     expected = pd.DataFrame([[2, 3], [6, 7]]).add_prefix("x_")
     assert_frame_equal(expand_grid(others=data), expected)
 
 
 def test_dataframe_multi_index_index():
-    """Trigger error if dataframe has a MultiIndex index"""
+    """Trigger error if dataframe has a MultiIndex index."""
     data = {
         "x": pd.DataFrame(
             [[2, 3], [6, 7]],
@@ -154,7 +154,7 @@ def test_dataframe_multi_index_index():
 
 
 def test_dataframe_multi_index_column():
-    """Trigger error if dataframe has a MultiIndex column"""
+    """Trigger error if dataframe has a MultiIndex column."""
     data = {
         "x": pd.DataFrame(
             [[2, 3], [6, 7]],
@@ -167,7 +167,7 @@ def test_dataframe_multi_index_column():
 
 
 def test_dataframe_multi_index_index_and_column():
-    """Trigger error if dataframe has a MultiIndex column or index"""
+    """Trigger error if dataframe has a MultiIndex column or index."""
     data = {
         "x": pd.DataFrame(
             [[2, 3], [6, 7]],
@@ -180,7 +180,7 @@ def test_dataframe_multi_index_index_and_column():
 
 
 def test_list_empty():
-    """Raise error if any list in dictionary's values is empty"""
+    """Raise error if any list in dictionary's values is empty."""
     data = {"x": [], "y": [2, 3]}
     with pytest.raises(ValueError):
         expand_grid(others=data)
@@ -188,7 +188,7 @@ def test_list_empty():
 
 def test_lists():
     """
-    Test expected output from one level nested lists in a dictionary's values
+    Test expected output from one level nested lists in a dictionary's values.
     """
     data = {"x": [[2, 3], [4, 3]]}
     expected = pd.DataFrame({"x": [[2, 3], [4, 3]]})
@@ -200,7 +200,7 @@ def test_lists():
 def test_lists_all_scalar():
     """
     Test that all values in a list
-    in dictionary's values are scalar
+    in dictionary's values are scalar.
     """
     data = {"x": [2, 3, 4, 5, "ragnar"]}
     expected = ([], {"x": [2, 3, 4, 5, "ragnar"]})
@@ -215,7 +215,7 @@ def test_lists_all_scalar():
 def test_lists_not_all_scalar():
     """
     Trigger error if values in a list
-    in the dictionary's values are not scalar
+    in the dictionary's values are not scalar.
     """
     data = {"x": [[2, 3], 4, 5, "ragnar"]}
     with pytest.raises(ValueError):
@@ -223,7 +223,7 @@ def test_lists_not_all_scalar():
 
 
 def test_computation_output_1():
-    """Test output if entry contains no dataframes/series"""
+    """Test output if entry contains no dataframes/series."""
     data = {"x": range(1, 4), "y": [1, 2]}
     expected = pd.DataFrame({"x": [1, 1, 2, 2, 3, 3], "y": [1, 2, 1, 2, 1, 2]})
     # h/t to @hectormz for picking it up
@@ -244,7 +244,7 @@ def test_computation_output_1():
 
 
 def test_computation_output_2():
-    """Test output if entry contains only dataframes/series"""
+    """Test output if entry contains only dataframes/series."""
     data = {
         "df": pd.DataFrame({"x": range(1, 6), "y": [5, 4, 3, 2, 1]}),
         "df1": pd.DataFrame({"x": range(4, 7), "y": [6, 5, 4]}),
@@ -263,7 +263,7 @@ def test_computation_output_2():
 
 
 def test_computation_output_3():
-    """Test mix of dataframes and lists"""
+    """Test mix of dataframes and lists."""
     data = {
         "df": pd.DataFrame({"x": range(1, 3), "y": [2, 1]}),
         "z": range(1, 4),
@@ -279,7 +279,7 @@ def test_computation_output_3():
 
 
 def test_computation_output_4():
-    """ Test output from list of strings"""
+    """Test output from list of strings."""
     data = {"l1": list(ascii_lowercase[:3]), "l2": list(ascii_uppercase[:3])}
     expected = pd.DataFrame(
         {
@@ -291,7 +291,7 @@ def test_computation_output_4():
 
 
 def test_df_key():
-    """ Raise error if dataframe key is not supplied"""
+    """Raise error if dataframe key is not supplied."""
     df = pd.DataFrame({"x": [2, 3]})
     others = {"df": pd.DataFrame({"x": range(1, 6), "y": [5, 4, 3, 2, 1]})}
 
@@ -300,7 +300,7 @@ def test_df_key():
 
 
 def test_df_others():
-    """ Raise error if others is not a dict"""
+    """Raise error if others is not a dict."""
     df = pd.DataFrame({"x": [2, 3]})
     others = [5, 4, 3, 2, 1]
     with pytest.raises(TypeError):
@@ -327,7 +327,7 @@ def test_df_output():
 
 
 def test_2d_arrays_multiple_columns():
-    """Test on 2d arrays with multiple columns and rows"""
+    """Test on 2d arrays with multiple columns and rows."""
     # example referenced from tidyr page
     # https://tidyr.tidyverse.org/reference/expand_grid.html
     data = {
@@ -348,7 +348,7 @@ def test_2d_arrays_multiple_columns():
 
 
 def test_df_multi_index():
-    """Test that datafarme is not a multiIndex"""
+    """Test that datafarme is not a multiIndex."""
     df = {
         "x": pd.DataFrame(
             [[2, 3], [6, 7]],

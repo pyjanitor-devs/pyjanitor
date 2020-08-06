@@ -59,5 +59,3 @@ def test_fill_missing_timestamps(my_dataframe):
     delta = original_index.difference(new_index)
 
     assert delta.empty is True
-
-

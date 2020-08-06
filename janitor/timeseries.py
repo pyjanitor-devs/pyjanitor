@@ -67,7 +67,8 @@ def _flag_missing_timestamps(
     result["new_index"] = expected_timestamps
 
     # Return the result as a Named Tuple
-    return MissingTimeStampFlag._make(list(result.values()))
+    values = [v for k, v in result.items()]
+    return MissingTimeStampFlag._make(values)
 
 
 @pf.register_dataframe_method

@@ -44,8 +44,20 @@ def test_datatypes_check(
 @pytest.mark.timeseries
 def test_fill_missing_timestamps(my_dataframe):
     # Remove random row from the data frame
-    df1 = my_dataframe.drop(my_dataframe.sample())
+    random_number = randint(1, len(my_dataframe))
+    df1 = my_dataframe.drop(my_dataframe.index[random_number])
 
+    # Fill missing timestamps
     result = fill_missing_timestamps(df1, frequency="1H")
 
-    assert result == my_dataframe
+    # Testing if the missing timestamp has been filled
+    assert len(result) == len(my_dataframe)
+
+    # Testing if indices are exactly the same after filling
+    original_index = my_dataframe.index
+    new_index = result.index
+    delta = original_index.difference(new_index)
+
+    assert delta.empty is True
+
+

@@ -49,7 +49,7 @@ def _flag_missing_timestamps(
 
     # Generate expected timestamps
     expected_timestamps = pd.date_range(
-        start=first_time_stamp, end=last_time_stamp, frequency=frequency
+        start=first_time_stamp, end=last_time_stamp, freq=frequency
     )
 
     # Get actual timestamps
@@ -67,7 +67,7 @@ def _flag_missing_timestamps(
     result["new_index"] = expected_timestamps
 
     # Return the result as a Named Tuple
-    return MissingTimeStampFlag._make(result)
+    return MissingTimeStampFlag._make(result.values())
 
 
 @pf.register_dataframe_method
@@ -106,9 +106,9 @@ def fill_missing_timestamps(
     # Check all the inputs are the correct data type
     check("df", df, [pd.DataFrame])
     check("frequency", frequency, [str])
-    check("column_name", column_name, [str, None])
-    check("first_time_stamp", first_time_stamp, [pd.Timestamp, None])
-    check("last_time_stamp", last_time_stamp, [pd.Timestamp, None])
+    check("column_name", column_name, [str, type(None)])
+    check("first_time_stamp", first_time_stamp, [pd.Timestamp, type(None)])
+    check("last_time_stamp", last_time_stamp, [pd.Timestamp, type(None)])
 
     # Assign inputs if not provided
     if column_name:
@@ -128,7 +128,7 @@ def fill_missing_timestamps(
     )
 
     # Return result based on whether timestamps are missing or not
-    if timestamps_missing_flag["flag"]:
-        df = df.set_index(timestamps_missing_flag["new_index"])
+    if timestamps_missing_flag.flag:
+        df = df.reindex(timestamps_missing_flag.new_index)
         return df
-    return timestamps_missing_flag["raw_data"]
+    return timestamps_missing_flag.raw_data

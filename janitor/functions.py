@@ -3244,9 +3244,30 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    new_col = df.groupby(by)[agg_column_name].transform(agg)
-    df_new = df.assign(**{new_column_name: new_col})
-    return df_new
+
+    # convert to list
+    # needed when creating a mapping through the iteration
+    if isinstance(by, str):
+        by = [by]
+    # this is a temporary measure, till the minimum Pandas version is 1.1,
+    # which supports null values in the group by
+    # If any of the grouping columns has null values, we temporarily
+    # replace the values with some outrageous value, that should not exist
+    # in the column. Also, the hasnans property is significantly faster than
+    # .isnull().any()
+    if any(df[col].hasnans for col in by):
+
+        mapping = {
+            column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
+        }
+
+        df[new_column_name] = (
+            df.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
+        )
+
+    else:
+        df[new_column_name] = df.groupby(by)[agg_column_name].transform(agg)
+    return df
 
 
 @pf.register_dataframe_accessor("data_description")
@@ -4102,123 +4123,5 @@ def process_text(
         raise KeyError(f"{string_function} is not a Pandas string method.")
 
     df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
-
-    return df
-
-
-@pf.register_dataframe_method
-def add_count(
-    df: pd.DataFrame, by: Union[List[str], str], name: str
-) -> pd.DataFrame:
-    """
-    Adds a count column per group to each row in a dataframe. It is a
-    sugary syntax for ``dataframe.groupby(by).transform(by).size()``.
-
-    Example:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame({"name": ("black", "black", "black", "red", "red"),
-                           "type": ("chair", "chair", "sofa", "sofa", "plate"),
-                           "num": (4, 5, 12, 4, 3),
-                           "nulls": (1, 1, np.nan, np.nan, 3),
-                           })
-
-        # Count on one column
-        df.add_count(by = "name", name = "n")
-              name   type  num  nulls  n
-        # 0  black  chair    4    1.0  3
-        # 1  black  chair    5    1.0  3
-        # 2  black   sofa   12    NaN  3
-        # 3    red   sofa    4    NaN  2
-        # 4    red  plate    3    3.0  2
-
-        # Multiple columns are possible
-        df.add_count(by = ['name', 'type'], name = "count")
-             name   type  num   nulls  count
-        # 0  black  chair    4    1.0    2
-        # 1  black  chair    5    1.0    2
-        # 2  black   sofa   12    NaN    1
-        # 3    red   sofa    4    NaN    1
-        # 4    red  plate    3    3.0    1
-
-        # Count for null columns are captured as well :
-        df.add_count(by = ['name', 'type', 'nulls'], name = "counter")
-             name     type  num  nulls  counter
-        # 0  black    chair   4    1.0        2
-        # 1  black    chair   5    1.0        2
-        # 2  black    sofa   12    NaN        1
-        # 3    red    sofa    4    NaN        1
-        # 4    red    plate   3    3.0        1
-
-        # The add_count function can be handy for filtering on groups :
-        (df
-        .add_count(by = ['name', 'type', 'nulls'], name = "counter")
-        .filter_on("counter > 1")
-        )
-             name     type  num  nulls  counter
-        # 0  black    chair   4    1.0        2
-        # 1  black    chair   5    1.0        2
-
-
-    Functional usage syntax:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame(...)
-        df = jn.add_count(
-            df = df,
-            by = column_1 # or [column_1, column_2, ...],
-            name = column_name
-            )
-
-    Method-chaining usage syntax:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
-
-        df = (
-            pd.DataFrame(...)
-            .add_count(
-                by = column_1 # or [column_1, column_2, ...],
-                name = column_name
-                )
-        )
-
-    :param df: A pandas dataframe.
-    :param by: Column or list of columns to group by.
-    :param name: Name of count column. 
-    :returns: A pandas dataframe with a new column.
-    :raises: KeyError if column in ``by`` does not exist in the dataframe.
-    """
-
-    # convert to list
-    # makes it easy to index and pull out a column for  transform
-    # especially for multiple columns
-    if isinstance(by, str):
-        by = [by]
-
-    # If any of the grouping columns has null values, we temporarily
-    # replace the values with some outrageous value, that should not exist
-    # in the column
-    # The hasnans property is significantly faster than .isnull().any()
-    if any(df[col].hasnans for col in by):
-
-        mapping = {
-            column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
-        }
-
-        df[name] = df.fillna(mapping).groupby(by)[by[0]].transform("size")
-
-    else:
-        df[name] = df.groupby(by)[by[0]].transform("size")
 
     return df

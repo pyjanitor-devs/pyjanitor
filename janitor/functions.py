@@ -4125,3 +4125,144 @@ def process_text(
     df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
 
     return df
+
+
+@pf.register_dataframe_method
+def fill_direction(
+    df: pd.DataFrame,
+    directions: Dict[Hashable, str],
+    limit: Optional[int] = None,
+) -> pd.DataFrame:
+    """Provide a method-chainable function for filling missing values
+    in selected columns.
+
+    Missing values are filled using the next or previous entry.
+    The columns are paired with the directions in a dictionary.
+    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"text": ["ragnar", np.nan, "sammywemmy",
+                                    np.nan, "ginger"],
+                           "code" : [np.nan, 2, 3, np.nan, 5]})
+
+        # Single column :
+        df.fill_direction({"text" : "up"})
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    NaN
+        # ginger     |    5
+
+        # Multiple columns :
+        df.fill_direction({"text" : "down", "code" : "down"})
+
+        # text       |   code
+        # ragnar     |    NaN
+        # ragnar     |    2
+        # sammywemmy |    3
+        # sammywemmy |    3
+        # ginger     |    5
+
+        # Multiple columns in different directions.
+        df.fill_direction({"text" : "up", "code" : "down"})
+
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    3
+        # ginger     |    5
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.fill_direction(
+            df = df,
+            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            limit = None # limit must be greater than 0
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .fill_direction(
+            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            limit = None # limit must be greater than 0
+            )
+        )
+
+    :param df: A pandas dataframe.
+    :param directions: Key - value pairs of columns and directions. Directions
+        can be either `down`(default), `up`, `updown`(fill up then down) and
+        `downup` (fill down then up).
+    :param limit: number of consecutive null values to forward/backward fill.
+        Value must be greater than 0.
+    :returns: A pandas dataframe with modified column(s).
+    :raises: ValueError if ``directions`` dictionary is empty.
+    :raises: ValueError if column supplied is not in the dataframe.
+    :raises: ValueError if direction supplied is not one of `down`,`up`,
+        `updown`, or `downup`.
+    """
+
+    # check that dictionary is not empty
+    if not directions:
+        raise ValueError("A mapping of columns with directions is required.")
+
+    # check that the right columns are provided
+    # should be removed once the minimum Pandas version is 1.1,
+    # as Pandas loc will raise a KeyError if columns provided do not exist
+    wrong_columns_provided = set(directions).difference(df.columns)
+    if any(wrong_columns_provided):
+        if len(wrong_columns_provided) > 1:
+            outcome = ", ".join(f"'{word}'" for word in wrong_columns_provided)
+            raise ValueError(
+                f"Columns {outcome} do not exist in the dataframe."
+            )
+        outcome = "".join(wrong_columns_provided)
+        raise ValueError(f"Column {outcome} does not exist in the dataframe.")
+
+    # check that the right directions are provided
+    set_directions = {"up", "down", "updown", "downup"}
+
+    # linter throws an error when I use dictionary.values()
+    # it assumes that dictionary is a dataframe
+    directions_values = [value for key, value in directions.items()]
+    wrong_directions_provided = set(directions_values).difference(
+        set_directions
+    )
+    if any(wrong_directions_provided):
+        raise ValueError(
+            """The direction should be a string and should be one of `up`,
+            `down`, `updown`, or `downup`."""
+        )
+
+    for column, direction in directions.items():
+        if direction == "up":
+            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
+        elif direction == "down":
+            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
+        elif direction == "updown":
+            df.loc[:, column] = (
+                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
+            )
+        elif direction == "downup":
+            df.loc[:, column] = (
+                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
+            )
+    return df

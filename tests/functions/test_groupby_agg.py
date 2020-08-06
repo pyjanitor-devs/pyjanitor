@@ -109,7 +109,7 @@ def df():
 
 def test_groupby_agg_null_columns(df):
     """
-    Test that aggregation on null column retains the null entries and returns 
+    Test that aggregation on null column retains the null entries and returns
     the right aggregated value.
     """
     expected = df.copy()

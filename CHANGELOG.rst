@@ -1,5 +1,9 @@
 new version (on deck)
 =====================
+
+
+v0.20.8
+=======
 - [ENH] Upgraded ``update_where`` function to use either the pandas query style,
   or boolean indexing via the ``loc`` method.
   Also updated ``find_replace`` function to use the ``loc`` method directly,
@@ -16,6 +20,7 @@ new version (on deck)
 - [DOC] Fix minor issues in documentation. @hectormz
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
+- [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
 
 
 v0.20.7

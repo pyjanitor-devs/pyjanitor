@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
 
 
 v0.20.8
@@ -20,7 +21,6 @@ v0.20.8
 - [DOC] Fix minor issues in documentation. @hectormz
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
-- [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
 - [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
 
 

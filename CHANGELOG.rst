@@ -16,7 +16,7 @@ new version (on deck)
 - [DOC] Fix minor issues in documentation. @hectormz
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
-
+- [ENH] Updated groupby_agg function to account for null centries in the ``by`` argument. @samukweku
 
 v0.20.7
 =======

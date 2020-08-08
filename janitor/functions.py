@@ -4253,7 +4253,7 @@ def groupby_topk(
     groupby_column_name: Hashable,
     sort_column_name: Hashable,
     k: int,
-    sort_values_kwargs: Dict = {},
+    sort_values_kwargs: Dict = None,
 ) -> pd.DataFrame:
     """
     Return a dataframe that has the top `k` values grouped by
@@ -4339,6 +4339,10 @@ def groupby_topk(
     :raises: ValueError if `groupby_column_name` is same as `sort_column_name`.
     :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
     """
+
+    # Convert the default sort_values_kwargs from None to empty Dict
+    sort_values_kwargs = sort_values_kwargs or {}
+
     # Check if k is greater than 0.
     if k < 1:
         raise ValueError(

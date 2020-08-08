@@ -4245,3 +4245,128 @@ def fill_direction(
                 df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
             )
     return df
+
+
+@pf.register_dataframe_method
+def groupby_topk(
+    df: pd.DataFrame,
+    groupby_column_name: Hashable,
+    sort_column_name: Hashable,
+    k: int,
+    sort_values_kwargs: Dict = {},
+) -> pd.DataFrame:
+    """
+    Return a dataframe that has the top `k` values grouped by
+    `groupby_column_name` and sorted by `sort_column_name`. Additional
+    parameters to the sorting (such as ascending=True) can be passed using
+    `sort_values_kwargs`. List of all sort_values() parameters can be found at
+    https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html
+
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({'age' : [20, 22, 24, 23, 21, 22],
+                           'ID' : [1,2,3,4,5,6],
+                           'result' : ["pass", "fail", "pass",
+                                       "pass", "fail", "pass"]})
+
+        # Ascending top 3:
+        df.groupby_topk('result', 'age', 3)
+        #       age  ID  result
+        #result
+        #fail   21   5   fail
+        #       22   2   fail
+        #pass   20   1   pass
+        #       22   6   pass
+        #       23   4   pass
+
+        #Descending top 2:
+        df.groupby_topk('result', 'age', 2, {'ascending':False})
+        #       age  ID result
+        #result
+        #fail   22   2   fail
+        #       21   5   fail
+        #pass   24   3   pass
+        #       23   4   pass
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.groupby_topk(
+            df = df,
+            groupby_column_name = 'groupby_column',
+            sort_column_name = 'sort_column',
+            k = 5
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .groupby_topk(
+            df = df,
+            groupby_column_name = 'groupby_column',
+            sort_column_name = 'sort_column',
+            k = 5
+            )
+        )
+
+    :param df: A pandas dataframe.
+    :param groupby_column_name: Column name to group input dataframe `df` by.
+    :param sort_column_name: Name of the column to sort along the
+        input dataframe `df`.
+    :param k: Number of top rows to return from each group after sorting.
+    :param sort_values_kwargs: Arguments to be passed to sort_values function.
+    :returns: A pandas dataframe with top `k` rows that are grouped by
+        `groupby_column_name` column with each group sorted along the
+        column `sort_column_name`.
+    :raises: ValueError if `k` is less than 1.
+    :raises: ValueError if `groupb y_column_name` does not exist in dataframe.
+    :raises: ValueError if `sort_column_name` does not exist in dataframe.
+    :raises: ValueError if `groupby_column_name` is same as `sort_column_name`.
+    """
+    # Check if k is greater than 0.
+    if k < 1:
+        raise ValueError(
+            "Numbers of rows per group to be returned must be greater than 0."
+        )
+
+    # Check if groupby_column_name exists in dataframe.
+    if groupby_column_name not in df.columns:
+        raise ValueError(
+            f"Column {groupby_column_name} does not exist in the dataframe."
+        )
+
+    # Check if sort_column_name exists in dataframe.
+    if sort_column_name not in df.columns:
+        raise ValueError(
+            f"Column {sort_column_name} does not exist in the dataframe."
+        )
+
+    # Check if group by column and sort column are unique.
+    if sort_column_name == groupby_column_name:
+        raise ValueError("Group by column and sort column cannot be same.")
+
+    # Check if inplace:True in sort values kwargs because it returns None
+    if (
+        "inplace" in sort_values_kwargs.keys()
+        and sort_values_kwargs["inplace"]
+    ):
+        raise KeyError("Cannot use inplace : True in sort_values_kwargs.")
+
+    return df.groupby(groupby_column_name).apply(
+        lambda d: d.sort_values(sort_column_name, **sort_values_kwargs).head(k)
+    )

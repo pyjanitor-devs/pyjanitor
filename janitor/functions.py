@@ -4337,6 +4337,7 @@ def groupby_topk(
     :raises: ValueError if `groupb y_column_name` does not exist in dataframe.
     :raises: ValueError if `sort_column_name` does not exist in dataframe.
     :raises: ValueError if `groupby_column_name` is same as `sort_column_name`.
+    :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
     """
     # Check if k is greater than 0.
     if k < 1:

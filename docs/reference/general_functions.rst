@@ -88,4 +88,5 @@ Other
     move
     toset
     unionize_dataframe_categories
+    groupby_topk
     

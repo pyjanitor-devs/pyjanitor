@@ -70,5 +70,7 @@ missing_funcs = set(function_names).difference(doc_functions)
 
 if len(missing_funcs) > 0:
     raise Exception(
-        f"The following functions have not yet been added: {missing_funcs}"
+        f'''The following functions have not yet been added: {missing_funcs}.
+         Please add the function names to docs/reference/general_functions.rst
+         under an appropriate section.'''
     )

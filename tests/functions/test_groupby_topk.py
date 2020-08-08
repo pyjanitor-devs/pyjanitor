@@ -19,7 +19,6 @@ def df():
 
 def test_ascending_groupby_k_2(df):
     """Test ascending group by, k=2"""
-    expected = df.copy()
     expected = df.groupby("result").apply(
         lambda d: d.sort_values("age").head(2)
     )
@@ -28,7 +27,6 @@ def test_ascending_groupby_k_2(df):
 
 def test_descending_groupby_k_3(df):
     """Test descending group by, k=3"""
-    expected = df.copy()
     expected = df.groupby("result").apply(
         lambda d: d.sort_values("age", ascending=False).head(3)
     )

@@ -1,5 +1,9 @@
 new version (on deck)
 =====================
+
+
+v0.20.8
+=======
 - [ENH] Upgraded ``update_where`` function to use either the pandas query style,
   or boolean indexing via the ``loc`` method.
   Also updated ``find_replace`` function to use the ``loc`` method directly,

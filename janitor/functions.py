@@ -4256,11 +4256,16 @@ def groupby_topk(
     sort_values_kwargs: Dict = None,
 ) -> pd.DataFrame:
     """
-    Return a dataframe that has the top `k` values grouped by
-    `groupby_column_name` and sorted by `sort_column_name`. Additional
-    parameters to the sorting (such as ascending=True) can be passed using
-    `sort_values_kwargs`. List of all sort_values() parameters can be found at
-    https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html
+    Return top `k` rows from a groupby of a set of columns.
+
+    Returns a dataframe that has the top `k` values grouped by `groupby_column_name`
+    and sorted by `sort_column_name`.
+    Additional parameters to the sorting (such as ascending=True)
+    can be passed using `sort_values_kwargs`.
+
+    List of all sort_values() parameters can be found here_.
+
+    .. _here: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html
 
 
     .. code-block:: python
@@ -4334,11 +4339,9 @@ def groupby_topk(
         `groupby_column_name` column with each group sorted along the
         column `sort_column_name`.
     :raises: ValueError if `k` is less than 1.
-    :raises: ValueError if `groupb y_column_name` does not exist in dataframe.
-    :raises: ValueError if `sort_column_name` does not exist in dataframe.
     :raises: ValueError if `groupby_column_name` is same as `sort_column_name`.
     :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
-    """
+    """  # noqa: E501
 
     # Convert the default sort_values_kwargs from None to empty Dict
     sort_values_kwargs = sort_values_kwargs or {}
@@ -4347,18 +4350,6 @@ def groupby_topk(
     if k < 1:
         raise ValueError(
             "Numbers of rows per group to be returned must be greater than 0."
-        )
-
-    # Check if groupby_column_name exists in dataframe.
-    if groupby_column_name not in df.columns:
-        raise ValueError(
-            f"Column {groupby_column_name} does not exist in the dataframe."
-        )
-
-    # Check if sort_column_name exists in dataframe.
-    if sort_column_name not in df.columns:
-        raise ValueError(
-            f"Column {sort_column_name} does not exist in the dataframe."
         )
 
     # Check if group by column and sort column are unique.
@@ -4370,7 +4361,7 @@ def groupby_topk(
         "inplace" in sort_values_kwargs.keys()
         and sort_values_kwargs["inplace"]
     ):
-        raise KeyError("Cannot use inplace : True in sort_values_kwargs.")
+        raise KeyError("Cannot use `inplace=True` in `sort_values_kwargs`.")
 
     return df.groupby(groupby_column_name).apply(
         lambda d: d.sort_values(sort_column_name, **sort_values_kwargs).head(k)

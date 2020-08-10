@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
 
 
 v0.20.8
@@ -21,7 +22,6 @@ v0.20.8
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
 - [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
-- [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
 
 
 v0.20.7

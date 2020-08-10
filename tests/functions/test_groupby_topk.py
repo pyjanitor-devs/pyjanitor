@@ -37,13 +37,13 @@ def test_descending_groupby_k_3(df):
 
 def test_wrong_groupby_column_name(df):
     """Raise Value Error if wrong groupby column name is provided."""
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         df.groupby_topk("RESULT", "age", 3)
 
 
 def test_wrong_sort_column_name(df):
     """Raise Value Error if wrong sort column name is provided."""
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         df.groupby_topk("result", "Age", 3)
 
 

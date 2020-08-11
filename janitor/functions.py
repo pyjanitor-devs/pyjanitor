@@ -1901,7 +1901,7 @@ def limit_column_characters(
     col_names = [col_name[:column_length] for col_name in col_names]
 
     col_name_set = set(col_names)
-    col_name_count = dict()
+    col_name_count = {}
 
     # If no columns are duplicates, we can skip the loops below.
     if len(col_name_set) == len(col_names):
@@ -3280,12 +3280,12 @@ class DataDescription:
     def __init__(self, data):
         """Initialize DataDescription class."""
         self._data = data
-        self._desc = dict()
+        self._desc = {}
 
     def _get_data_df(self) -> pd.DataFrame:
         df = self._data
 
-        data_dict = dict()
+        data_dict = {}
         data_dict["column_name"] = df.columns.tolist()
         data_dict["type"] = df.dtypes.tolist()
         data_dict["count"] = df.count().tolist()
@@ -4360,11 +4360,16 @@ def groupby_topk(
         `groupby_column_name` column with each group sorted along the
         column `sort_column_name`.
     :raises: ValueError if `k` is less than 1.
+    :raises: ValueError if `groupby_column_name` not in dataframe `df`.
+    :raises: ValueError if `sort_column_name` not in dataframe `df`.
     :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
     """  # noqa: E501
 
     # Convert the default sort_values_kwargs from None to empty Dict
     sort_values_kwargs = sort_values_kwargs or {}
+
+    # Check if groupby_column_name and sort_column_name exists in the dataframe
+    check_column(df, [groupby_column_name, sort_column_name])
 
     # Check if k is greater than 0.
     if k < 1:

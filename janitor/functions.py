@@ -3244,9 +3244,30 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    new_col = df.groupby(by)[agg_column_name].transform(agg)
-    df_new = df.assign(**{new_column_name: new_col})
-    return df_new
+
+    # convert to list
+    # needed when creating a mapping through the iteration
+    if isinstance(by, str):
+        by = [by]
+    # this is a temporary measure, till the minimum Pandas version is 1.1,
+    # which supports null values in the group by
+    # If any of the grouping columns has null values, we temporarily
+    # replace the values with some outrageous value, that should not exist
+    # in the column. Also, the hasnans property is significantly faster than
+    # .isnull().any()
+    if any(df[col].hasnans for col in by):
+
+        mapping = {
+            column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
+        }
+
+        df[new_column_name] = (
+            df.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
+        )
+
+    else:
+        df[new_column_name] = df.groupby(by)[agg_column_name].transform(agg)
+    return df
 
 
 @pf.register_dataframe_accessor("data_description")

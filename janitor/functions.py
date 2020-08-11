@@ -4339,7 +4339,6 @@ def groupby_topk(
         `groupby_column_name` column with each group sorted along the
         column `sort_column_name`.
     :raises: ValueError if `k` is less than 1.
-    :raises: ValueError if `groupby_column_name` is same as `sort_column_name`.
     :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
     """  # noqa: E501
 
@@ -4351,10 +4350,6 @@ def groupby_topk(
         raise ValueError(
             "Numbers of rows per group to be returned must be greater than 0."
         )
-
-    # Check if group by column and sort column are unique.
-    if sort_column_name == groupby_column_name:
-        raise ValueError("Group by column and sort column cannot be same.")
 
     # Check if inplace:True in sort values kwargs because it returns None
     if (

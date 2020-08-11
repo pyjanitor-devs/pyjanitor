@@ -55,12 +55,6 @@ def test_negative_k(df):
         df.groupby_topk("result", "age", 0)
 
 
-def test_same_sort_groupby_columns(df):
-    """Raises Value Error if columns to group by and sort along are same."""
-    with pytest.raises(ValueError):
-        df.groupby_topk("result", "result", 2)
-
-
 def test_inplace(df):
     """Raise Key Error if inplace is True in sort_values_kwargs"""
     with pytest.raises(KeyError):

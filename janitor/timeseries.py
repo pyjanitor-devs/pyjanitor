@@ -9,127 +9,76 @@ from collections import namedtuple
 from janitor import check
 
 
-def _flag_missing_timestamps(
-    df: pd.DataFrame,
-    frequency: str,
-    column_name: str,
-    first_time_stamp: pd.Timestamp,
-    last_time_stamp: pd.Timestamp,
-) -> namedtuple:
-    """
-    Test if timestamps are missing
-
-    Utility function to test if input data frame
-    is missing timestamps relative to expected timestamps.
-    They are generated based on the first_time_stamp,
-    last_time_stamp
-    and frequency.
-
-    :param df: data frame to test for missing timestamps
-    :param frequency: frequency i.e. sampling frequency
-        Acceptable frequency strings are available
-        `Reference <https://pandas.pydata.org/pandas-docs/stable/>`_
-        Check offset aliases under time series in user guide
-    :param column_name: column which has time series if not the index
-    :param first_time_stamp: timestamp expected to start from
-    :param last_time_stamp: timestamp expected to end with
-    :return: namedtuple with 3 attributes namely flag, raw_data and new_index
-        1. flag - boolean set to True if there are missing timestamps,
-            else set to False
-        2. raw_data - input data frame as is without any modifications
-        3. new_index - pd.DateTimeIndex that can be used to set the new index.
-            Defaults to None.
-            Assigned a value only when flag is set to True
-    """
-    # Declare a named tuple to hold results
-    MissingTimeStampFlag = namedtuple(
-        "MissingTimeStampFlag", ["flag", "raw_data", "new_index"]
-    )
-    result = {"flag": None, "raw_data": df.copy(deep=True), "new_index": None}
-
-    # Generate expected timestamps
-    expected_timestamps = pd.date_range(
-        start=first_time_stamp, end=last_time_stamp, freq=frequency
-    )
-
-    # Get actual timestamps
-    if column_name:
-        df = df.set_index(column_name)
-
-    df = df.sort_index()
-    actual_timestamps = df.index.array
-
-    # Check if they are the same
-    comparison_index = expected_timestamps.difference(actual_timestamps)
-    if comparison_index.empty:
-        result["flag"] = False
-    result["flag"] = True
-    result["new_index"] = expected_timestamps
-
-    # Return the result as a Named Tuple
-    values = [v for k, v in result.items()]
-    return MissingTimeStampFlag._make(values)
-
-
 @pf.register_dataframe_method
 def fill_missing_timestamps(
     df: pd.DataFrame,
     frequency: str,
-    column_name: str = None,
     first_time_stamp: pd.Timestamp = None,
     last_time_stamp: pd.Timestamp = None,
 ) -> pd.DataFrame:
     """
-    Fills data frame with missing timestamps if missing
+    Fill dataframe with missing timestamps based on a defined frequency.
 
-    Test the data frame for missing timestamps
-    If timestamps are missing, Re-indexes the data frame
-    If timestamps are not missing, returns original data frame
+    If timestamps are missing,
+    this function will reindex the dataframe.
+    If timestamps are not missing,
+    then the function will return the dataframe unmodified.
 
-    :param df: data frame which needs to be tested for missing timestamps
+    :param df: Dataframe which needs to be tested for missing timestamps
     :param frequency: frequency i.e. sampling frequency of the data.
         Acceptable frequency strings are available
-        `Reference <https://pandas.pydata.org/pandas-docs/stable/>`_
+        `here <https://pandas.pydata.org/pandas-docs/stable/>`_
         Check offset aliases under time series in user guide
-    :param column_name: column which has time series if not index
-        Defaults to None.
-        By default the index is used for checking for the timestamps,
-        unless a value other than None is assigned to column_name
     :param first_time_stamp: timestamp expected to start from
         Defaults to None.
         If no input is provided assumes the minimum value in time_series
     :param last_time_stamp: timestamp expected to end with.
         Defaults to None.
         If no input is provided, assumes the maximum value in time_series
-    :return: reindexed data frame if it turns out to have missing timestamps,
-        else returns the input data frame as is
+    :returns: dataframe that has a complete set of contiguous datetimes.
     """
     # Check all the inputs are the correct data type
-    check("df", df, [pd.DataFrame])
     check("frequency", frequency, [str])
-    check("column_name", column_name, [str, type(None)])
     check("first_time_stamp", first_time_stamp, [pd.Timestamp, type(None)])
     check("last_time_stamp", last_time_stamp, [pd.Timestamp, type(None)])
 
-    # Assign inputs if not provided
-    if column_name:
-        test_new_index_data_type = is_datetime(df[column_name])
-        if not test_new_index_data_type:
-            raise TypeError(
-                f""" \n {column_name} data type must be datetime"""
-            )
-    if not first_time_stamp:
+    if first_time_stamp is None:
         first_time_stamp = df.index.min()
-    if not last_time_stamp:
+    if last_time_stamp is None:
         last_time_stamp = df.index.max()
 
-    # Test if there are any timestamps missing
-    timestamps_missing_flag = _flag_missing_timestamps(
-        df, frequency, column_name, first_time_stamp, last_time_stamp
+    # Generate expected timestamps
+    expected_timestamps = pd.date_range(
+        start=first_time_stamp, end=last_time_stamp, freq=frequency
     )
 
-    # Return result based on whether timestamps are missing or not
-    if timestamps_missing_flag.flag:
-        df = df.reindex(timestamps_missing_flag.new_index)
-        return df
-    return timestamps_missing_flag.raw_data
+    return df.reindex(expected_timestamps)
+
+
+def _get_missing_timestamps(
+    df: pd.DataFrame,
+    frequency: str,
+    first_time_stamp: pd.Timestamp = None,
+    last_time_stamp: pd.Timestamp = None,
+):
+    """
+    Return the timestamps that are missing in a dataframe.
+
+    This function takes in a dataframe,
+    and checks its index against a dataframe
+    that contains the expected timestamps.
+    Here, we assume that the expected timestamps
+    are going to be of a larger size
+    than the timestamps available in the input dataframe ``df``.
+
+    If there are any missing timestamps in the input dataframe,
+    this function will return those missing timestamps
+    from the expected dataframe.
+    """
+    expected_df = df.fill_missing_timestamps(
+        frequency, first_time_stamp, last_time_stamp
+    )
+
+    missing_timestamps = expected_df.index.difference(df.index)
+
+    return expected_df.loc[missing_timestamps]

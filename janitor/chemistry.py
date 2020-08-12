@@ -174,8 +174,6 @@ def morgan_fingerprint(
     intentional, as Morgan fingerprints are usually high-dimensional
     features.
 
-    This method does not mutate the original DataFrame.
-
     Functional usage example:
 
     .. code-block:: python
@@ -215,21 +213,22 @@ def morgan_fingerprint(
         # For "counts" kind
         morgans = (
             df.smiles2mol('smiles', 'mols')
-              .morgan_fingerprint(mols_column_name='mols',
-                                  radius=3,      # Defaults to 3
-                                  nbits=2048,    # Defaults to 2048
-                                  kind='counts'  # Defaults to "counts"
-              )
+            .morgan_fingerprint(
+                mols_column_name='mols',
+                radius=3,      # Defaults to 3
+                nbits=2048,    # Defaults to 2048
+                kind='counts'  # Defaults to "counts"
+                )
         )
 
         # For "bits" kind
         morgans = (
             df.smiles2mol('smiles', 'mols')
-              .morgan_fingerprint(mols_column_name='mols',
-                                  radius=3,    # Defaults to 3
-                                  nbits=2048,  # Defaults to 2048
-                                  kind='bits'  # Defaults to "counts"
-              )
+            .morgan_fingerprint(mols_column_name='mols',
+            radius=3,    # Defaults to 3
+            nbits=2048,  # Defaults to 2048
+            kind='bits'  # Defaults to "counts"
+            )
         )
 
     If you wish to join the morgan fingerprints back into the original
@@ -286,8 +285,6 @@ def molecular_descriptors(
     Returns a new dataframe without any of the original data. This is
     intentional to leave the user only with the data requested.
 
-    This method does not mutate the original DataFrame.
-
     The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:
 
         Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,
@@ -325,8 +322,9 @@ def molecular_descriptors(
         df = pd.DataFrame(...)
 
         mol_desc = (
-            df.smiles2mol('smiles', 'mols')
-              .molecular_descriptors(mols_column_name='mols')
+            df
+            .smiles2mol('smiles', 'mols')
+            .molecular_descriptors(mols_column_name='mols')
         )
 
     If you wish to join the molecular descriptors back into the original
@@ -401,8 +399,6 @@ def maccs_keys_fingerprint(
 
     Returns a new dataframe without any of the original data.
     This is intentional to leave the user with the data requested.
-
-    This method does not mutate the original DataFrame.
 
     Functional usage example:
 

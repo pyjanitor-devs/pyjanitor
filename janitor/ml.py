@@ -21,8 +21,6 @@ def get_features_targets(
     """
     Get the features and targets as separate DataFrames/Series.
 
-    This method does not mutate the original DataFrame.
-
     The behaviour is as such:
 
     - ``target_column_names`` is mandatory.

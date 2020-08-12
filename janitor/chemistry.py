@@ -114,17 +114,20 @@ def smiles2mol(
         import pandas as pd
         import janitor.chemistry
 
-        df = pd.DataFrame(...)
-
-        df = df.smiles2mol(smiles_column_name='smiles',
-                           mols_column_name='mols')
+        df = (
+            pd.DataFrame(...)
+            .smiles2mol(
+                smiles_column_name='smiles',
+                mols_column_name='mols'
+            )
+        )
 
     A progressbar can be optionally used.
 
     - Pass in "notebook" to show a tqdm notebook progressbar. (ipywidgets must
-      be enabled with your Jupyter installation.)
+    be enabled with your Jupyter installation.)
     - Pass in "terminal" to show a tqdm progressbar. Better suited for use
-      with scripts.
+    with scripts.
     - "none" is the default value - progress bar will be not be shown.
 
     :param df: pandas DataFrame.
@@ -424,8 +427,9 @@ def maccs_keys_fingerprint(
         df = pd.DataFrame(...)
 
         maccs = (
-            df.smiles2mol('smiles', 'mols')
-              .maccs_keys_fingerprint(mols_column_name='mols')
+            df
+            .smiles2mol('smiles', 'mols')
+            .maccs_keys_fingerprint(mols_column_name='mols')
         )
 
     If you wish to join the maccs keys fingerprints back into the

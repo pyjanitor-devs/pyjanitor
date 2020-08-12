@@ -33,8 +33,6 @@ def clean_names(
     Takes all column names, converts them to lowercase, then replaces all
     spaces with underscores.
 
-    This method does not mutate the original DataFrame.
-
     Functional usage example:
 
     .. code-block:: python
@@ -103,8 +101,6 @@ def update_where(
 ) -> DataFrame:
     """
     Add multiple conditions to update a column in the dataframe.
-
-    This method does not mutate the original DataFrame.
 
     Example usage:
 

@@ -55,15 +55,15 @@ def get_features_targets(
     :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both
         are pandas DataFrames.
     """
-    Y = df[target_column_names]
+    Y = df.loc[:, target_column_names]
 
     if feature_column_names:
-        X = df[feature_column_names]
+        X = df.loc[:, feature_column_names]
     else:
         if isinstance(target_column_names, (list, tuple)):  # noqa: W503
             xcols = [c for c in df.columns if c not in target_column_names]
         else:
             xcols = [c for c in df.columns if target_column_names != c]
 
-        X = df[xcols]
+        X = df.loc[:, xcols]
     return X, Y

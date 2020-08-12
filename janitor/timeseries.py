@@ -69,7 +69,7 @@ def _get_missing_timestamps(
     frequency: str,
     first_time_stamp: pd.Timestamp = None,
     last_time_stamp: pd.Timestamp = None,
-):
+) -> pd.DataFrame:
     """
     Return the timestamps that are missing in a dataframe.
 

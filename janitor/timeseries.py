@@ -23,6 +23,15 @@ def fill_missing_timestamps(
     this function will reindex the dataframe.
     If timestamps are not missing,
     then the function will return the dataframe unmodified.
+    
+    Example usage:
+    
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .fill_missing_timestamps(frequency="1H")
+        )
 
     :param df: Dataframe which needs to be tested for missing timestamps
     :param frequency: frequency i.e. sampling frequency of the data.

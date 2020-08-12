@@ -4,8 +4,6 @@ Time series-specific data testing and cleaning functions.
 
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_datetime64_any_dtype as is_datetime
-from collections import namedtuple
 from janitor import check
 
 

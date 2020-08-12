@@ -1901,7 +1901,7 @@ def limit_column_characters(
     col_names = [col_name[:column_length] for col_name in col_names]
 
     col_name_set = set(col_names)
-    col_name_count = dict()
+    col_name_count = {}
 
     # If no columns are duplicates, we can skip the loops below.
     if len(col_name_set) == len(col_names):
@@ -3244,9 +3244,30 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    new_col = df.groupby(by)[agg_column_name].transform(agg)
-    df_new = df.assign(**{new_column_name: new_col})
-    return df_new
+
+    # convert to list
+    # needed when creating a mapping through the iteration
+    if isinstance(by, str):
+        by = [by]
+    # this is a temporary measure, till the minimum Pandas version is 1.1,
+    # which supports null values in the group by
+    # If any of the grouping columns has null values, we temporarily
+    # replace the values with some outrageous value, that should not exist
+    # in the column. Also, the hasnans property is significantly faster than
+    # .isnull().any()
+    if any(df[col].hasnans for col in by):
+
+        mapping = {
+            column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
+        }
+
+        df[new_column_name] = (
+            df.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
+        )
+
+    else:
+        df[new_column_name] = df.groupby(by)[agg_column_name].transform(agg)
+    return df
 
 
 @pf.register_dataframe_accessor("data_description")
@@ -3259,12 +3280,12 @@ class DataDescription:
     def __init__(self, data):
         """Initialize DataDescription class."""
         self._data = data
-        self._desc = dict()
+        self._desc = {}
 
     def _get_data_df(self) -> pd.DataFrame:
         df = self._data
 
-        data_dict = dict()
+        data_dict = {}
         data_dict["column_name"] = df.columns.tolist()
         data_dict["type"] = df.dtypes.tolist()
         data_dict["count"] = df.count().tolist()
@@ -4245,3 +4266,124 @@ def fill_direction(
                 df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
             )
     return df
+
+
+@pf.register_dataframe_method
+def groupby_topk(
+    df: pd.DataFrame,
+    groupby_column_name: Hashable,
+    sort_column_name: Hashable,
+    k: int,
+    sort_values_kwargs: Dict = None,
+) -> pd.DataFrame:
+    """
+    Return top `k` rows from a groupby of a set of columns.
+
+    Returns a dataframe that has the top `k` values grouped by `groupby_column_name`
+    and sorted by `sort_column_name`.
+    Additional parameters to the sorting (such as ascending=True)
+    can be passed using `sort_values_kwargs`.
+
+    List of all sort_values() parameters can be found here_.
+
+    .. _here: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html
+
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({'age' : [20, 22, 24, 23, 21, 22],
+                           'ID' : [1,2,3,4,5,6],
+                           'result' : ["pass", "fail", "pass",
+                                       "pass", "fail", "pass"]})
+
+        # Ascending top 3:
+        df.groupby_topk('result', 'age', 3)
+        #       age  ID  result
+        #result
+        #fail   21   5   fail
+        #       22   2   fail
+        #pass   20   1   pass
+        #       22   6   pass
+        #       23   4   pass
+
+        #Descending top 2:
+        df.groupby_topk('result', 'age', 2, {'ascending':False})
+        #       age  ID result
+        #result
+        #fail   22   2   fail
+        #       21   5   fail
+        #pass   24   3   pass
+        #       23   4   pass
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.groupby_topk(
+            df = df,
+            groupby_column_name = 'groupby_column',
+            sort_column_name = 'sort_column',
+            k = 5
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .groupby_topk(
+            df = df,
+            groupby_column_name = 'groupby_column',
+            sort_column_name = 'sort_column',
+            k = 5
+            )
+        )
+
+    :param df: A pandas dataframe.
+    :param groupby_column_name: Column name to group input dataframe `df` by.
+    :param sort_column_name: Name of the column to sort along the
+        input dataframe `df`.
+    :param k: Number of top rows to return from each group after sorting.
+    :param sort_values_kwargs: Arguments to be passed to sort_values function.
+    :returns: A pandas dataframe with top `k` rows that are grouped by
+        `groupby_column_name` column with each group sorted along the
+        column `sort_column_name`.
+    :raises: ValueError if `k` is less than 1.
+    :raises: ValueError if `groupby_column_name` not in dataframe `df`.
+    :raises: ValueError if `sort_column_name` not in dataframe `df`.
+    :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
+    """  # noqa: E501
+
+    # Convert the default sort_values_kwargs from None to empty Dict
+    sort_values_kwargs = sort_values_kwargs or {}
+
+    # Check if groupby_column_name and sort_column_name exists in the dataframe
+    check_column(df, [groupby_column_name, sort_column_name])
+
+    # Check if k is greater than 0.
+    if k < 1:
+        raise ValueError(
+            "Numbers of rows per group to be returned must be greater than 0."
+        )
+
+    # Check if inplace:True in sort values kwargs because it returns None
+    if (
+        "inplace" in sort_values_kwargs.keys()
+        and sort_values_kwargs["inplace"]
+    ):
+        raise KeyError("Cannot use `inplace=True` in `sort_values_kwargs`.")
+
+    return df.groupby(groupby_column_name).apply(
+        lambda d: d.sort_values(sort_column_name, **sort_values_kwargs).head(k)
+    )

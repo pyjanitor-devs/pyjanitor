@@ -1,5 +1,11 @@
 new version (on deck)
 =====================
+- [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
+- [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
+
+
+v0.20.8
+=======
 - [ENH] Upgraded ``update_where`` function to use either the pandas query style,
   or boolean indexing via the ``loc`` method.
   Also updated ``find_replace`` function to use the ``loc`` method directly,

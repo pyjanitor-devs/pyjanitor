@@ -1,12 +1,12 @@
 import pytest
 import pandas as pd
 from random import randint
-from janitor.timeseries import fill_missing_timestamps
+from janitor.timeseries import fill_missing_timestamps, _get_missing_timestamps
 
 
 # Random data for testing
 @pytest.fixture
-def my_dataframe() -> pd.DataFrame:
+def timeseries_dataframe() -> pd.DataFrame:
     """
     Returns a time series dataframe
     """
@@ -16,46 +16,33 @@ def my_dataframe() -> pd.DataFrame:
     return test_df
 
 
-@pytest.mark.parametrize(
-    "df,frequency,column_name,first_time_stamp,last_time_stamp",
-    [
-        (4, "1T", None, None, None),
-        (pd.DataFrame([]), 2, None, None, None),
-        (pd.DataFrame([]), "1B", 1, None, None),
-        (pd.DataFrame([]), "1B", "DateTime", "2020-01-01", None),
-        (
-            pd.DataFrame([]),
-            "1B",
-            "DateTime",
-            pd.Timestamp(2020, 1, 1),
-            "2020-02-01",
-        ),
-    ],
-)
-def test_datatypes_check(
-    df, frequency, column_name, first_time_stamp, last_time_stamp
-):
-    with pytest.raises(TypeError):
-        fill_missing_timestamps(
-            df, frequency, column_name, first_time_stamp, last_time_stamp
-        )
-
-
 @pytest.mark.timeseries
-def test_fill_missing_timestamps(my_dataframe):
+def test_fill_missing_timestamps(timeseries_dataframe):
+    """Test that filling missing timestamps works as expected."""
     # Remove random row from the data frame
-    random_number = randint(1, len(my_dataframe))
-    df1 = my_dataframe.drop(my_dataframe.index[random_number])
+    random_number = randint(1, len(timeseries_dataframe))
+    df1 = timeseries_dataframe.drop(timeseries_dataframe.index[random_number])
 
     # Fill missing timestamps
     result = fill_missing_timestamps(df1, frequency="1H")
 
     # Testing if the missing timestamp has been filled
-    assert len(result) == len(my_dataframe)
+    assert len(result) == len(timeseries_dataframe)
 
     # Testing if indices are exactly the same after filling
-    original_index = my_dataframe.index
+    original_index = timeseries_dataframe.index
     new_index = result.index
     delta = original_index.difference(new_index)
 
     assert delta.empty is True
+
+
+@pytest.mark.timeseries
+def test__get_missing_timestamps(timeseries_dataframe):
+    """Test utility function for identifying the missing timestamps."""
+    from random import sample
+
+    timestamps_to_drop = sample(timeseries_dataframe.index.tolist(), 3)
+    df = timeseries_dataframe.drop(index=timestamps_to_drop)
+    missing_timestamps = _get_missing_timestamps(df, "1H")
+    assert set(missing_timestamps.index) == set(timestamps_to_drop)

@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 from random import randint
 from janitor.timeseries import fill_missing_timestamps, _get_missing_timestamps
+from janitor.timeseries import sort_timestamps_monotonically
 
 
 # Random data for testing
@@ -46,3 +47,19 @@ def test__get_missing_timestamps(timeseries_dataframe):
     df = timeseries_dataframe.drop(index=timestamps_to_drop)
     missing_timestamps = _get_missing_timestamps(df, "1H")
     assert set(missing_timestamps.index) == set(timestamps_to_drop)
+
+
+@pytest.mark.timeseries
+def test_sort_timestamps_monotonically(timeseries_dataframe):
+    """Test that sort_timestamps_monotonically works as expected."""
+    from sklearn.utils import shuffle
+
+    # Increasing direction
+    df = shuffle(timeseries_dataframe)
+    df1 = sort_timestamps_monotonically(df)
+    assert df1.equals(timeseries_dataframe)
+
+    # Decreasing direction
+    df2 = timeseries_dataframe.sort_index(ascending=False)
+    df3 = sort_timestamps_monotonically(df2, "decreasing")
+    assert df3.equals(df2)

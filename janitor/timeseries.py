@@ -21,9 +21,7 @@ def fill_missing_timestamps(
     this function will reindex the dataframe.
     If timestamps are not missing,
     then the function will return the dataframe unmodified.
-    
     Example usage:
-    
     .. code-block:: python
 
         df = (

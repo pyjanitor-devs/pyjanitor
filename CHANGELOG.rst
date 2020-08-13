@@ -2,6 +2,7 @@ new version (on deck)
 =====================
 - [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
 - [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
+- [ENH] Added function ```sort_timestamps_monotonically```. @UGuntupalli
 
 
 v0.20.8

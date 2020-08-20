@@ -2,6 +2,7 @@ new version (on deck)
 =====================
 - [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
 - [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
+- [ENH] Added ``complete`` function, which turns implicit missing valeues into explicit missing values. @samukweku
 
 
 v0.20.8

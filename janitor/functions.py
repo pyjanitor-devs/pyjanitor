@@ -7,6 +7,7 @@ import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
+import itertools
 from typing import (
     Any,
     Callable,
@@ -4387,3 +4388,152 @@ def groupby_topk(
     return df.groupby(groupby_column_name).apply(
         lambda d: d.sort_values(sort_column_name, **sort_values_kwargs).head(k)
     )
+
+
+@pf.register_dataframe_method
+def complete(
+    df: pd.DataFrame,
+    list_of_columns: List[Union[List, Tuple, str]],
+    fill_value: Optional[Union[Dict, int, float, str]] = None,
+) -> pd.DataFrame:
+    """Provide a method-chainable function for filling missing values
+    in selected columns.
+
+    Missing values are filled using the next or previous entry.
+    The columns are paired with the directions in a dictionary.
+    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"text": ["ragnar", np.nan, "sammywemmy",
+                                    np.nan, "ginger"],
+                           "code" : [np.nan, 2, 3, np.nan, 5]})
+
+        # Single column :
+        df.fill_direction({"text" : "up"})
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    NaN
+        # ginger     |    5
+
+        # Multiple columns :
+        df.fill_direction({"text" : "down", "code" : "down"})
+
+        # text       |   code
+        # ragnar     |    NaN
+        # ragnar     |    2
+        # sammywemmy |    3
+        # sammywemmy |    3
+        # ginger     |    5
+
+        # Multiple columns in different directions.
+        df.fill_direction({"text" : "up", "code" : "down"})
+
+        # text       |   code
+        # ragnar     |    NaN
+        # sammywemmy |    2
+        # sammywemmy |    3
+        # ginger     |    3
+        # ginger     |    5
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.fill_direction(
+            df = df,
+            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            limit = None # limit must be greater than 0
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .fill_direction(
+            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            limit = None # limit must be greater than 0
+            )
+        )
+
+    :param df: A pandas dataframe.
+    :param directions: Key - value pairs of columns and directions. Directions
+        can be either `down`(default), `up`, `updown`(fill up then down) and
+        `downup` (fill down then up).
+    :param limit: number of consecutive null values to forward/backward fill.
+        Value must be greater than 0.
+    :returns: A pandas dataframe with modified column(s).
+    :raises: ValueError if ``directions`` dictionary is empty.
+    :raises: ValueError if column supplied is not in the dataframe.
+    :raises: ValueError if direction supplied is not one of `down`,`up`,
+        `updown`, or `downup`.
+    """
+
+    # if there is no grouping within the list of columns :
+    if all(isinstance(column, str) for column in list_of_columns):
+        # Using sets gets more speed than say np.unique or drop_duplicates
+        reindex_columns = [set(df[item].array) for item in list_of_columns]
+        reindex_columns = itertools.product(*reindex_columns)
+        df = (
+            df.set_index(list_of_columns)
+            .reindex(sorted(reindex_columns))
+            .reset_index()
+        )
+    # if there is a grouping - list/tuple, we flatten the list_of_columns;
+    # we'll use that to set_index on the dataframe:
+    else:
+        index_columns = []
+        reindex_columns = []
+        for item in list_of_columns:
+            if isinstance(item, str):
+                reindex_columns.append(set(df[item].array))
+                index_columns.append(item)
+            elif isinstance(item, (list, tuple)):
+                index_columns.extend(item)
+                item = (df[sub_column].array for sub_column in item)
+                item = set(zip(*item))
+                reindex_columns.append(item)
+            # we have to make room for a dictionary of column name and new values pair
+            else:
+                raise ValueError(
+                    "value must be a string or a list/tuple of columns."
+                )
+
+        reindex_columns = itertools.product(*reindex_columns)
+        # A list comprehension, coupled with itertools chain.from_iterable 
+        # would likely be faster; I fear that it may hamper readability with
+        # nested list comprehensions; as such, I chose the for loop method.
+        new_index = []
+        for row in reindex_columns:
+            new_row = []
+            for cell in row:
+                if isinstance(cell, tuple):
+                    new_row.extend(cell)
+                else:
+                    new_row.append(cell)
+            new_index.append(tuple(new_row))
+
+        df = (
+            df.set_index(index_columns)
+            .reindex(sorted(new_index))
+            .reset_index()
+        )
+        # if fill_value is not None
+    if fill_value is not None:
+        df = df.fillna(fill_value)
+
+    return df

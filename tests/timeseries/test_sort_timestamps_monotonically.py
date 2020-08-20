@@ -30,3 +30,9 @@ def test_sort_timestamps_monotonically(timeseries_dataframe):
     df2 = timeseries_dataframe.sort_index(ascending=False)
     df3 = sort_timestamps_monotonically(df2, "decreasing")
     assert df3.equals(df2)
+
+    # Test for strictness
+    random_number = randint(1, len(timeseries_dataframe))
+    df4 = df.append(df.loc[df.index[random_number], :])
+    df5 = sort_timestamps_monotonically(df4, "increasing", True)
+    assert df5.equals(timeseries_dataframe)

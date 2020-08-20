@@ -26,7 +26,7 @@ def test_sort_timestamps_monotonically(timeseries_dataframe):
 
 
 @pytest.mark.timeseries
-def test_sort_timestamps_monotonically(timeseries_dataframe):
+def test_sort_timestamps_monotonically_decreasing(timeseries_dataframe):
     """Test sort_timestamps_monotonically for descending order"""
     df2 = timeseries_dataframe.sort_index(ascending=False)
     df3 = sort_timestamps_monotonically(df2, "decreasing")
@@ -41,4 +41,3 @@ def test_sort_timestamps_monotonically_strict(timeseries_dataframe):
     df4 = df.append(df.loc[df.index[random_number], :])
     df5 = sort_timestamps_monotonically(df4, "increasing", True)
     pd.testing.assert_frame_equal(df5, timeseries_dataframe)
-

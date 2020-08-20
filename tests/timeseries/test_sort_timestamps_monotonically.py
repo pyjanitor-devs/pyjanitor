@@ -17,6 +17,8 @@ def timeseries_dataframe() -> pd.DataFrame:
     return test_df
 
 
+# NOTE: The tests possibly can be merged back together later if they are parametrized properly.
+
 @pytest.mark.timeseries
 def test_sort_timestamps_monotonically(timeseries_dataframe):
     """Test sort_timestamps_monotonically for ascending order"""

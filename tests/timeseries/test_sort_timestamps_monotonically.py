@@ -42,6 +42,3 @@ def test_sort_timestamps_monotonically_strict(timeseries_dataframe):
     df5 = sort_timestamps_monotonically(df4, "increasing", True)
     pd.testing.assert_frame_equal(df5, timeseries_dataframe)
 
-
-if __name__ == '__main__':
-    pytest.main()

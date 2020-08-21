@@ -4394,7 +4394,7 @@ def groupby_topk(
 def complete(
     df: pd.DataFrame,
     list_of_columns: List[Union[List, Tuple, str]],
-    fill_value: Optional[Union[Dict, int, float, str]] = None,
+    fill_value: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """Provide a method-chainable function for filling missing values
     in selected columns.
@@ -4502,11 +4502,29 @@ def complete(
             if isinstance(item, str):
                 reindex_columns.append(set(df[item].array))
                 index_columns.append(item)
-            elif isinstance(item, (list, tuple)):
-                index_columns.extend(item)
-                item = (df[sub_column].array for sub_column in item)
-                item = set(zip(*item))
-                reindex_columns.append(item)
+            elif isinstance(item, (dict, list, tuple)):
+                if not item:
+                    raise ValueError("grouping cannot be empty")
+                # this comes into play if we wish to input values that
+                # do not exist in the data, say years, or alphabets, or
+                # range of numbers
+                elif isinstance(item, dict):
+                    if len(item) > 1:
+                        index_columns.extend(item.keys())
+                    else:
+                        index_columns.append(*item.keys())
+                    item_contents = [
+                        [value]
+                        if isinstance(value, (int, float, str, bool))
+                        else value
+                        for key, value in item.items()
+                    ]
+                    reindex_columns.extend(item_contents)
+                elif isinstance(item, (list, tuple)):
+                    index_columns.extend(item)
+                    item = (df[sub_column].array for sub_column in item)
+                    item = set(zip(*item))
+                    reindex_columns.append(item)
             # we have to make room for a dictionary of column name and new values pair
             else:
                 raise ValueError(
@@ -4514,7 +4532,7 @@ def complete(
                 )
 
         reindex_columns = itertools.product(*reindex_columns)
-        # A list comprehension, coupled with itertools chain.from_iterable 
+        # A list comprehension, coupled with itertools chain.from_iterable
         # would likely be faster; I fear that it may hamper readability with
         # nested list comprehensions; as such, I chose the for loop method.
         new_index = []
@@ -4532,8 +4550,8 @@ def complete(
             .reindex(sorted(new_index))
             .reset_index()
         )
-        # if fill_value is not None
-    if fill_value is not None:
+    # also excludes empty dict
+    if fill_value:
         df = df.fillna(fill_value)
 
     return df

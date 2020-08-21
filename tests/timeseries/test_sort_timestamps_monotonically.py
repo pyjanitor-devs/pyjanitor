@@ -2,7 +2,6 @@ import pytest
 import pandas as pd
 from random import randint
 from janitor.timeseries import sort_timestamps_monotonically
-from janitor.functions import shuffle
 
 
 # Random data for testing
@@ -24,24 +23,26 @@ def timeseries_dataframe() -> pd.DataFrame:
 @pytest.mark.timeseries
 def test_sort_timestamps_monotonically(timeseries_dataframe):
     """Test sort_timestamps_monotonically for ascending order"""
-    df = shuffle(timeseries_dataframe, reset_index=False)
-    df1 = sort_timestamps_monotonically(df)
-    pd.testing.assert_frame_equal(df1, timeseries_dataframe)
+    df = timeseries_dataframe.shuffle(
+        reset_index=False
+    ).sort_timestamps_monotonically()
+    pd.testing.assert_frame_equal(df, timeseries_dataframe)
 
 
 @pytest.mark.timeseries
 def test_sort_timestamps_monotonically_decreasing(timeseries_dataframe):
     """Test sort_timestamps_monotonically for descending order"""
     df2 = timeseries_dataframe.sort_index(ascending=False)
-    df3 = sort_timestamps_monotonically(df2, "decreasing")
+    df3 = df2.sort_timestamps_monotonically("decreasing")
     pd.testing.assert_frame_equal(df3, df2)
 
 
 @pytest.mark.timeseries
 def test_sort_timestamps_monotonically_strict(timeseries_dataframe):
     """Test sort_timestamps_monotonically for index duplication handling"""
-    df = shuffle(timeseries_dataframe, reset_index=False)
+    df = timeseries_dataframe.shuffle(reset_index=False)
     random_number = randint(1, len(timeseries_dataframe))
-    df4 = df.append(df.loc[df.index[random_number], :])
-    df5 = sort_timestamps_monotonically(df4, "increasing", True)
-    pd.testing.assert_frame_equal(df5, timeseries_dataframe)
+    df = df.append(
+        df.loc[df.index[random_number], :]
+    ).sort_timestamps_monotonically(direction="increasing", strict=True)
+    pd.testing.assert_frame_equal(df, timeseries_dataframe)

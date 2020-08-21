@@ -4393,7 +4393,7 @@ def groupby_topk(
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    list_of_columns: List[Union[List, Tuple, str]],
+    list_of_columns: List[Union[List, Tuple, Dict, str]],
     fill_value: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """Provide a method-chainable function for filling missing values
@@ -4484,72 +4484,77 @@ def complete(
     """
 
     # if there is no grouping within the list of columns :
-    if all(isinstance(column, str) for column in list_of_columns):
-        # Using sets gets more speed than say np.unique or drop_duplicates
-        reindex_columns = [set(df[item].array) for item in list_of_columns]
-        reindex_columns = itertools.product(*reindex_columns)
-        df = (
-            df.set_index(list_of_columns)
-            .reindex(sorted(reindex_columns))
-            .reset_index()
-        )
-    # if there is a grouping - list/tuple, we flatten the list_of_columns;
-    # we'll use that to set_index on the dataframe:
+    if not isinstance(list_of_columns, list):
+        raise TypeError("Columns should be in a list")
+    elif not list_of_columns:
+        raise ValueError("list_of_columns cannot be empty")
     else:
-        index_columns = []
-        reindex_columns = []
-        for item in list_of_columns:
-            if isinstance(item, str):
-                reindex_columns.append(set(df[item].array))
-                index_columns.append(item)
-            elif isinstance(item, (dict, list, tuple)):
-                if not item:
-                    raise ValueError("grouping cannot be empty")
-                # this comes into play if we wish to input values that
-                # do not exist in the data, say years, or alphabets, or
-                # range of numbers
-                elif isinstance(item, dict):
-                    if len(item) > 1:
-                        index_columns.extend(item.keys())
-                    else:
-                        index_columns.append(*item.keys())
-                    item_contents = [
-                        [value]
-                        if isinstance(value, (int, float, str, bool))
-                        else value
-                        for key, value in item.items()
-                    ]
-                    reindex_columns.extend(item_contents)
-                elif isinstance(item, (list, tuple)):
-                    index_columns.extend(item)
-                    item = (df[sub_column].array for sub_column in item)
-                    item = set(zip(*item))
-                    reindex_columns.append(item)
-            # we have to make room for a dictionary of column name and new values pair
-            else:
-                raise ValueError(
-                    "value must be a string or a list/tuple of columns."
-                )
-
-        reindex_columns = itertools.product(*reindex_columns)
-        # A list comprehension, coupled with itertools chain.from_iterable
-        # would likely be faster; I fear that it may hamper readability with
-        # nested list comprehensions; as such, I chose the for loop method.
-        new_index = []
-        for row in reindex_columns:
-            new_row = []
-            for cell in row:
-                if isinstance(cell, tuple):
-                    new_row.extend(cell)
+        if all(isinstance(column, str) for column in list_of_columns):
+            # Using sets gets more speed than say np.unique or drop_duplicates
+            reindex_columns = [set(df[item].array) for item in list_of_columns]
+            reindex_columns = itertools.product(*reindex_columns)
+            df = (
+                df.set_index(list_of_columns)
+                .reindex(sorted(reindex_columns))
+                .reset_index()
+            )
+        # if there is a grouping - list/tuple, we flatten the list_of_columns;
+        # we'll use that to set_index on the dataframe:
+        else:
+            index_columns = []
+            reindex_columns = []
+            for item in list_of_columns:
+                if isinstance(item, str):
+                    reindex_columns.append(set(df[item].array))
+                    index_columns.append(item)
+                elif isinstance(item, (dict, list, tuple)):
+                    if not item:
+                        raise ValueError("grouping cannot be empty")
+                    # this comes into play if we wish to input values that
+                    # do not exist in the data, say years, or alphabets, or
+                    # range of numbers
+                    elif isinstance(item, dict):
+                        if len(item) > 1:
+                            index_columns.extend(item.keys())
+                        else:
+                            index_columns.append(*item.keys())
+                        item_contents = [
+                            [value]
+                            if isinstance(value, (int, float, str, bool))
+                            else value
+                            for key, value in item.items()
+                        ]
+                        reindex_columns.extend(item_contents)
+                    elif isinstance(item, (list, tuple)):
+                        index_columns.extend(item)
+                        item = (df[sub_column].array for sub_column in item)
+                        item = set(zip(*item))
+                        reindex_columns.append(item)
+                # we have to make room for a dictionary of column name and new values pair
                 else:
-                    new_row.append(cell)
-            new_index.append(tuple(new_row))
+                    raise ValueError(
+                        "value must be a string or a list/tuple of columns."
+                    )
 
-        df = (
-            df.set_index(index_columns)
-            .reindex(sorted(new_index))
-            .reset_index()
-        )
+            reindex_columns = itertools.product(*reindex_columns)
+            # A list comprehension, coupled with itertools chain.from_iterable
+            # would likely be faster; I fear that it may hamper readability with
+            # nested list comprehensions; as such, I chose the for loop method.
+            new_index = []
+            for row in reindex_columns:
+                new_row = []
+                for cell in row:
+                    if isinstance(cell, tuple):
+                        new_row.extend(cell)
+                    else:
+                        new_row.append(cell)
+                new_index.append(tuple(new_row))
+
+            df = (
+                df.set_index(index_columns)
+                .reindex(sorted(new_index))
+                .reset_index()
+            )
     # also excludes empty dict
     if fill_value:
         df = df.fillna(fill_value)

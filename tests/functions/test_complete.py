@@ -205,7 +205,7 @@ def test_wrong_column_type(df1):
 
 
 # https://stackoverflow.com/questions/32874239/how-do-i-use-tidyr-to-fill-in-completed-rows-within-each-value-of-a-grouping-var
-def test_df2_grouping_first_columns():
+def test_grouping_first_columns():
     """Test complete function when the first entry in list_of_columns is 
         a grouping."""
 

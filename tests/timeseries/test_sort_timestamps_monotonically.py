@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 from random import randint
-import janitor
+import janitor  # noqa: F401
 import janitor.timeseries  # noqa: F401
 
 

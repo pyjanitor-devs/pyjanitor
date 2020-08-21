@@ -2,9 +2,9 @@ import pytest
 import pandas as pd
 from random import randint
 import janitor
-import janitor.timeseries
+import janitor.timeseries  # noqa: F401
 
-# Random data for testing
+
 @pytest.fixture
 def timeseries_dataframe() -> pd.DataFrame:
     """

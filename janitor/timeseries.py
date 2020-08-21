@@ -91,9 +91,7 @@ def _get_missing_timestamps(
 
 @pf.register_dataframe_method
 def sort_timestamps_monotonically(
-    df: pd.DataFrame,
-    direction: str = "increasing",
-    strict: bool = False
+    df: pd.DataFrame, direction: str = "increasing", strict: bool = False
 ) -> pd.DataFrame:
     """
     Sort dataframe such that index is monotonic.
@@ -134,7 +132,7 @@ def sort_timestamps_monotonically(
 
     # Remove duplicates if requested
     if strict:
-        df = df[~df.index.duplicated(keep='first')]
+        df = df[~df.index.duplicated(keep="first")]
 
     # Sort timestamps
     if direction == "increasing":

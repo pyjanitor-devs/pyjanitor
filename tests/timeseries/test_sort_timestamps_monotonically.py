@@ -1,8 +1,8 @@
 import pytest
 import pandas as pd
 from random import randint
-from janitor.timeseries import sort_timestamps_monotonically
-
+import janitor
+import janitor.timeseries
 
 # Random data for testing
 @pytest.fixture

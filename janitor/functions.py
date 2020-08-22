@@ -4397,13 +4397,13 @@ def complete(
     list_of_columns: List[Union[List, Tuple, Dict, str]],
     fill_value: Optional[Dict] = None,
 ) -> pd.DataFrame:
-    """Provide a method-chainable function for filling missing values
-    in selected columns.
+    """
+    This function shows all possible combinations in a dataframe, including
+    the missing values.
+    
+    This function is similar to tidyr's `complete` function.
 
-    Missing values are filled using the next or previous entry.
-    The columns are paired with the directions in a dictionary.
-    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``.
-
+    #how i wan take write the story here????
     .. code-block:: python
 
         import pandas as pd

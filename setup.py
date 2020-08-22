@@ -48,7 +48,7 @@ extra_all = extra_biology + extra_engineering + extra_spark
 
 setup(
     name="pyjanitor",
-    version="0.20.8",
+    version="0.20.9",
     description="Tools for cleaning pandas DataFrames",
     author="Eric J. Ma",
     author_email="ericmajinglong@gmail.com",

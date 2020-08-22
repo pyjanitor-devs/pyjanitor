@@ -537,3 +537,5 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
             result = pd.DataFrame.join(first, rest).reset_index(drop=True)
 
     return result
+
+

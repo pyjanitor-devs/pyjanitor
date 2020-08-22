@@ -2,12 +2,12 @@
 
 import datetime as dt
 import inspect
+import itertools
 import re
 import unicodedata
 import warnings
 from fnmatch import translate
 from functools import partial, reduce
-import itertools
 from typing import (
     Any,
     Callable,
@@ -34,6 +34,7 @@ from .errors import JanitorError
 from .utils import (
     _check_instance,
     _clean_accounting_column,
+    _complete_groupings,
     _currency_column_to_numeric,
     _grid_computation,
     _replace_empty_string_with_none,
@@ -42,7 +43,6 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    _complete_groupings
 )
 
 
@@ -4484,12 +4484,12 @@ def complete(
         `updown`, or `downup`.
     """
 
-    # if there is no grouping within the list of columns :
     if not isinstance(list_of_columns, list):
         raise TypeError("Columns should be in a list")
     elif not list_of_columns:
         raise ValueError("list_of_columns cannot be empty")
     else:
+        # if there is no grouping within the list of columns :
         if all(isinstance(column, str) for column in list_of_columns):
             # Using sets gets more speed than say np.unique or drop_duplicates
             reindex_columns = [set(df[item].array) for item in list_of_columns]
@@ -4502,7 +4502,6 @@ def complete(
         else:
             df = _complete_groupings(df, list_of_columns)
 
-    # also excludes empty dict
     if fill_value:
         df = df.fillna(fill_value)
 

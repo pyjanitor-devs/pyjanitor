@@ -1,9 +1,9 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import pytest
-import itertools
 from pandas.testing import assert_frame_equal
-
 
 # from https://tidyr.tidyverse.org/reference/complete.html
 df = pd.DataFrame(
@@ -169,13 +169,15 @@ def test_wrong_column_names_dict(df1):
 
 
 def test_wrong_column_names_sublist(df1):
-    """Raise error if wrong column name is in list grouping in list_of_columns'"""
+    """Raise error if wrong column name is in list grouping in
+       list_of_columns."""
     with pytest.raises(KeyError):
         df1.complete(list_of_columns=["Year", ["Abundant", "Taxon"]])
 
 
 def test_wrong_column_names_tuple(df1):
-    """Raise error if wrong column name is in tuple grouping in list_of_columns'"""
+    """Raise error if wrong column name is in tuple grouping in
+       list_of_columns'"""
     with pytest.raises(KeyError):
         df1.complete(list_of_columns=["Year", ("Abundant", "Taxon")])
 
@@ -199,14 +201,15 @@ def test_empty_tuple(df1):
 
 
 def test_wrong_column_type(df1):
-    """Raise error if entry in list_of_columns is not a string/list/tuple/dict'"""
+    """Raise error if entry in list_of_columns is not a
+       string/list/tuple/dict"""
     with pytest.raises(ValueError):
         df1.complete(list_of_columns=["Year", set()])
 
 
 # https://stackoverflow.com/questions/32874239/how-do-i-use-tidyr-to-fill-in-completed-rows-within-each-value-of-a-grouping-var
 def test_grouping_first_columns():
-    """Test complete function when the first entry in list_of_columns is 
+    """Test complete function when the first entry in list_of_columns is
         a grouping."""
 
     df2 = pd.DataFrame(
@@ -274,11 +277,12 @@ def test_complete_multiple_groupings():
             ],
             fill_value={"tag_count": 0},
         )
-    # this part is not necessary for the test
-    # however, I wanted to match the result from Stack Overflow,
-    # hence the extra steps
-        .sort_values(["project_id", "meta"], ignore_index=True)
-        .reindex(columns=df3.columns)
+        # this part is not necessary for the test
+        # however, I wanted to match the result from Stack Overflow,
+        # hence the extra steps
+        .sort_values(["project_id", "meta"], ignore_index=True).reindex(
+            columns=df3.columns
+        )
     )
 
     assert_frame_equal(result, output3)

@@ -578,7 +578,7 @@ def _complete_groupings(df, list_of_columns):
                 reindex_columns.append(item)
         else:
             raise ValueError(
-                """Value must either be a column label, a list/tuple of columns or a 
+                """Value must either be a column label, a list/tuple of columns or a
                     dictionary where the keys are columns in the dataframe."""
             )
     reindex_columns = product(*reindex_columns)

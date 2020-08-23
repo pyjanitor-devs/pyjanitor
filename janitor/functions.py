@@ -3807,11 +3807,13 @@ def complete(
         3   1999     Agarum            1
         4   2004     Agarum            8
 
-        Year 2000 and Agarum pairing is missing. Let's make that explicit:
+        Data Source - http://imachordata.com/2016/02/05/you-complete-me/
+        
+        Note that Year 2000 and Agarum pairing is missing. Let's make that explicit:
 
         df.complete(list_of_columns = ['Year', 'Taxon'])
 
-            Year      Taxon     Abundance
+           Year      Taxon     Abundance
         0  1999     Agarum         1.0
         1  1999     Saccharina     4.0
         2  2000     Agarum         NaN
@@ -3824,7 +3826,7 @@ def complete(
         df.complete(list_of_columns = ['Year', 'Taxon'],
                     fill_value={"Abundance":0})
 
-            Year      Taxon     Abundance
+           Year      Taxon     Abundance
         0  1999     Agarum         1.0
         1  1999     Saccharina     4.0
         2  2000     Agarum         0.0

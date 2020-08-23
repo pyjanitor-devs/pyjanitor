@@ -2,6 +2,7 @@
 
 import datetime as dt
 import inspect
+import itertools
 import re
 import unicodedata
 import warnings
@@ -33,6 +34,7 @@ from .errors import JanitorError
 from .utils import (
     _check_instance,
     _clean_accounting_column,
+    _complete_groupings,
     _currency_column_to_numeric,
     _grid_computation,
     _replace_empty_string_with_none,
@@ -3792,7 +3794,7 @@ def complete(
     This function is similar to tidyr's `complete` function.
 
     Individual combinations or combinations with groupings are possible.
-    
+
     .. code-block:: python
 
         import pandas as pd
@@ -3804,7 +3806,7 @@ def complete(
         2   2004    Saccharina         2
         3   1999     Agarum            1
         4   2004     Agarum            8
-    
+
         Year 2000 and Agarum pairing is missing. Let's make that explicit:
 
         df.complete(list_of_columns = ['Year', 'Taxon'])
@@ -3819,7 +3821,8 @@ def complete(
 
         The null value can be replaced with the fill_value argument:
 
-        df.complete(list_of_columns = ['Year', 'Taxon'], fill_value={"Abundance":0})
+        df.complete(list_of_columns = ['Year', 'Taxon'],
+                    fill_value={"Abundance":0})
 
             Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -3828,19 +3831,14 @@ def complete(
         3  2000     Saccharina     5.0
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
-        
-        What if we wanted the explicit missing values for all the years from 1999 to 2004? 
-        Easy - simply pass a dictionary paring the column name with the new values :
-complete(
-        list_of_columns=[
-            {"Year": range(df1.Year.min(), df1.Year.max() + 1)},
-            "Taxon",
-        ],
-        fill_value={"Abundance": 0},
-    )
-        df.complete(list_of_columns = [{"Year": range(df.Year.min(), 
+
+        What if we wanted the explicit missing values for all the years from
+        1999 to 2004? Easy - simply pass a dictionary paring the column name
+        with the new values :
+
+        df.complete(list_of_columns = [{"Year": range(df.Year.min(),
                                                       df.Year.max() + 1)},
-                                       "Taxon"], 
+                                       "Taxon"],
                     fill_value={"Abundance":0})
 
         Year      Taxon     Abundance
@@ -3867,8 +3865,8 @@ complete(
         df = pd.DataFrame(...)
         df = jn.complete(
             df = df,
-            list_of_columns= [column_label, 
-                              [column1, column2, ...], 
+            list_of_columns= [column_label,
+                              [column1, column2, ...],
                               {column1: new_values, ...}],
             fill_value = None
             )
@@ -3878,22 +3876,25 @@ complete(
     .. code-block:: python
 
         df = pd.DataFrame.complete(df = df,
-                                   list_of_columns= [column_label, 
-                                                   [column1, column2, ...], 
+                                   list_of_columns= [column_label,
+                                                   [column1, column2, ...],
                                                    {column1: new_values, ...}],
                                    fill_value = None)
 
 
     :param df: A pandas dataframe.
-    :param list_of_columns: This is a list containing the columns to be completed.
-        It could be column labels, a list/tuple of column labels, or a dictionary
-        that pairs column labels with new values.
-    :param fill_value: Dictionary pairing the columns with the null replacement value.
+    :param list_of_columns: This is a list containing the columns to be
+        completed. It could be column labels, a list/tuple of column labels,
+        or a dictionary that pairs column labels with new values.
+    :param fill_value: Dictionary pairing the columns with the null replacement
+        value.
     :returns: A pandas dataframe with modified column(s).
     :raises: ValueError if list_of_columns is empty.
     :raises: TypeError if list_of_columns is not a list.
-    :raises: ValueError if entry in list_of_columns is not a str/dict/list/tuple.
-    :raises: ValueError if entry in list_of_columns is a dict/list/tuple and is empty.
+    :raises: ValueError if entry in list_of_columns is not a
+        str/dict/list/tuple.
+    :raises: ValueError if entry in list_of_columns is a dict/list/tuple
+        and is empty.
     """
 
     if not isinstance(list_of_columns, list):

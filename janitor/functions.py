@@ -3866,7 +3866,7 @@ def complete(
         df = jn.complete(
             df = df,
             list_of_columns= [column_label,
-                              [column1, column2, ...],
+                              (column1, column2, ...),
                               {column1: new_values, ...}],
             fill_value = None
             )
@@ -3877,7 +3877,7 @@ def complete(
 
         df = pd.DataFrame.complete(df = df,
                                    list_of_columns= [column_label,
-                                                   [column1, column2, ...],
+                                                     (column1, column2, ...),
                                                    {column1: new_values, ...}],
                                    fill_value = None)
 

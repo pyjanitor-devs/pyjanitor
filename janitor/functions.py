@@ -4400,10 +4400,11 @@ def complete(
     """
     This function shows all possible combinations in a dataframe, including
     the missing values.
-    
+
     This function is similar to tidyr's `complete` function.
 
-    #how i wan take write the story here????
+    Individual combinations or combinations with groupings are possible.
+    
     .. code-block:: python
 
         import pandas as pd
@@ -4494,13 +4495,18 @@ def complete(
             # Using sets gets more speed than say np.unique or drop_duplicates
             reindex_columns = [set(df[item].array) for item in list_of_columns]
             reindex_columns = itertools.product(*reindex_columns)
-            df = (
-                df.set_index(list_of_columns)
-                .reindex(sorted(reindex_columns))
-                .reset_index()
-            )
+            df = df.set_index(list_of_columns)
+
         else:
-            df = _complete_groupings(df, list_of_columns)
+            df, reindex_columns = _complete_groupings(df, list_of_columns)
+
+    if df.index.has_duplicates:
+        reindex_columns = pd.DataFrame(
+            [], index=pd.Index(reindex_columns, names=list_of_columns)
+        )
+        df = df.join(reindex_columns, how="outer").reset_index()
+    else:
+        df = df.reindex(sorted(reindex_columns)).reset_index()
 
     if fill_value:
         df = df.fillna(fill_value)

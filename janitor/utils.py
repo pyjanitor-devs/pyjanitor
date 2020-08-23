@@ -585,7 +585,7 @@ def _complete_groupings(df, list_of_columns):
     # A list comprehension, coupled with itertools chain.from_iterable
     # would likely be faster; I fear that it may hamper readability with
     # nested list comprehensions; as such, I chose the for loop method.
-    new_index = []
+    new_reindex_columns = []
     for row in reindex_columns:
         new_row = []
         for cell in row:
@@ -593,7 +593,8 @@ def _complete_groupings(df, list_of_columns):
                 new_row.extend(cell)
             else:
                 new_row.append(cell)
-        new_index.append(tuple(new_row))
+        new_reindex_columns.append(tuple(new_row))
 
-    df = df.set_index(index_columns).reindex(sorted(new_index)).reset_index()
-    return df
+    df = df.set_index(index_columns)
+
+    return df, new_reindex_columns

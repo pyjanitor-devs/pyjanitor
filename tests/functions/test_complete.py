@@ -207,7 +207,8 @@ def test_wrong_column_type(df1):
         df1.complete(list_of_columns=["Year", set()])
 
 
-# https://stackoverflow.com/questions/32874239/how-do-i-use-tidyr-to-fill-in-completed-rows-within-each-value-of-a-grouping-var
+# https://stackoverflow.com/questions/32874239/
+# how-do-i-use-tidyr-to-fill-in-completed-rows-within-each-value-of-a-grouping-var
 def test_grouping_first_columns():
     """Test complete function when the first entry in list_of_columns is
         a grouping."""
@@ -286,3 +287,48 @@ def test_complete_multiple_groupings():
     )
 
     assert_frame_equal(result, output3)
+
+
+# https://stackoverflow.com/questions/63541729/
+# pandas-how-to-include-all-columns-for-all-rows-although-value-is-missing-in-a-d
+# /63543164#63543164
+def test_duplicate_index():
+    """Test that the complete function for duplicate index"""
+    df = pd.DataFrame(
+        {
+            "row": {
+                0: "21.08.2020",
+                1: "21.08.2020",
+                2: "21.08.2020",
+                3: "21.08.2020",
+                4: "22.08.2020",
+                5: "22.08.2020",
+                6: "22.08.2020",
+            },
+            "column": {0: "A", 1: "A", 2: "B", 3: "C", 4: "A", 5: "B", 6: "B"},
+            "value": {0: 43, 1: 36, 2: 36, 3: 28, 4: 16, 5: 40, 6: 34},
+        }
+    )
+
+    dup_expected_output = pd.DataFrame(
+        {
+            "row": [
+                "21.08.2020",
+                "21.08.2020",
+                "21.08.2020",
+                "21.08.2020",
+                "22.08.2020",
+                "22.08.2020",
+                "22.08.2020",
+                "22.08.2020",
+            ],
+            "column": ["A", "A", "B", "C", "A", "B", "B", "C"],
+            "value": [43.0, 36, 36, 28, 16, 40, 34, 0],
+        }
+    )
+
+    result = df.complete(
+        list_of_columns=["row", "column"], fill_value={"value": 0}
+    )
+
+    assert_frame_equal(result, dup_expected_output)

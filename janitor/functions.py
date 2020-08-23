@@ -3904,16 +3904,15 @@ def complete(
         raise TypeError("Columns should be in a list")
     if not list_of_columns:
         raise ValueError("list_of_columns cannot be empty")
-    else:
-        # if there is no grouping within the list of columns :
-        if all(isinstance(column, str) for column in list_of_columns):
-            # Using sets gets more speed than say np.unique or drop_duplicates
-            reindex_columns = [set(df[item].array) for item in list_of_columns]
-            reindex_columns = itertools.product(*reindex_columns)
-            df = df.set_index(list_of_columns)
+    # if there is no grouping within the list of columns :
+    if all(isinstance(column, str) for column in list_of_columns):
+       # Using sets gets more speed than say np.unique or drop_duplicates
+        reindex_columns = [set(df[item].array) for item in list_of_columns]
+        reindex_columns = itertools.product(*reindex_columns)
+        df = df.set_index(list_of_columns)
 
-        else:
-            df, reindex_columns = _complete_groupings(df, list_of_columns)
+    else:
+        df, reindex_columns = _complete_groupings(df, list_of_columns)
 
     if df.index.has_duplicates:
         reindex_columns = pd.DataFrame(

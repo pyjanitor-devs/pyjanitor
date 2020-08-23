@@ -3808,8 +3808,9 @@ def complete(
         4   2004     Agarum            8
 
         Data Source - http://imachordata.com/2016/02/05/you-complete-me/
-        
-        Note that Year 2000 and Agarum pairing is missing. Let's make that explicit:
+
+        Note that Year 2000 and Agarum pairing is missing. Let's make it
+        explicit:
 
         df.complete(list_of_columns = ['Year', 'Taxon'])
 

@@ -3906,7 +3906,7 @@ def complete(
         raise ValueError("list_of_columns cannot be empty")
     # if there is no grouping within the list of columns :
     if all(isinstance(column, str) for column in list_of_columns):
-       # Using sets gets more speed than say np.unique or drop_duplicates
+        # Using sets gets more speed than say np.unique or drop_duplicates
         reindex_columns = [set(df[item].array) for item in list_of_columns]
         reindex_columns = itertools.product(*reindex_columns)
         df = df.set_index(list_of_columns)

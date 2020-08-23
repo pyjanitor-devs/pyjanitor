@@ -557,7 +557,7 @@ def _complete_groupings(df, list_of_columns):
             # this comes into play if we wish to input values that
             # do not exist in the data, say years, or alphabets, or
             # range of numbers
-            elif isinstance(item, dict):
+            if isinstance(item, dict):
                 if len(item) > 1:
                     index_columns.extend(item.keys())
                 else:

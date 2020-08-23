@@ -3902,7 +3902,7 @@ def complete(
 
     if not isinstance(list_of_columns, list):
         raise TypeError("Columns should be in a list")
-    elif not list_of_columns:
+    if not list_of_columns:
         raise ValueError("list_of_columns cannot be empty")
     else:
         # if there is no grouping within the list of columns :

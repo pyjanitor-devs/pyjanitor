@@ -1,6 +1,6 @@
 new version (on deck)
 =====================
-
+- [ENH] Further simplification of expand_grid. @samukweku
 
 v0.20.9
 =======

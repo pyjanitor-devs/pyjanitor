@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [ENH] Added function ``range_flag`` to timeseries. @UGuntupalli
 
 
 v0.20.9

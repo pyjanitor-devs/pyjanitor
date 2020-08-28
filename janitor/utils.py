@@ -498,7 +498,10 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
                 df_expand_grid.append(value.to_numpy())
                 if isinstance(value.columns, pd.MultiIndex):
                     df_columns.extend(
-                        [f"{key}_{'_'.join(map(str,col))}" for col in value]
+                        [
+                            f"{key}_{ind}"
+                            for ind, col in enumerate(value.columns)
+                        ]
                     )
                 else:
                     df_columns.extend([f"{key}_{col}" for col in value])

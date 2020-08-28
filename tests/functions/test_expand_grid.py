@@ -79,7 +79,7 @@ multiIndex_pandas = [
 
 multiIndex_output = [
     pd.DataFrame({"x_mika": [2, 3, 4]}),
-    pd.DataFrame({"x_1_2": [2], "x_3_4": [3], "x_5_6": [4]}),
+    pd.DataFrame({"x_0": [2], "x_1": [3], "x_2": [4]}),
 ]
 
 zip_multiIndex = zip(multiIndex_pandas, multiIndex_output)
@@ -283,5 +283,4 @@ def test_null_entries():
             "V2": [1, 3, 2, 1, 3, 2, 1, 3, 2],
         }
     )
-    assert (expand_grid(others=data), expected)
-
+    assert_frame_equal(expand_grid(others=data), expected)

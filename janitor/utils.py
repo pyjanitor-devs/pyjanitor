@@ -411,10 +411,10 @@ def skiperror(
 def _check_instance(entry: Dict):
     """
     Function to check instances in the expand_grid function.
-    This checks if entry is a dictionary,
-    checks the instance of value in key:value pairs in entry,
-    and makes changes to other types as deemed necessary.
-    Additionally, type-specific errors are raised if empty containers are
+    This checks if entry is a dictionary, checks the instance
+    of value in key:value pairs in entry, and makes changes to
+    other types as deemed necessary.
+    Additionally, ValueErrors are raised if empty containers are
     passed in as values into the dictionary.
     How each type is handled, and their associated exceptions,
     are pretty clear from the code.
@@ -490,55 +490,48 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     # `df_expand_grid` as is. For each of the data types, new column names are
     # created if they do not have, and modified if names already exist. These
     # names are built through the for loop below and added to `df_columns`
-    else:
-        df_columns = []
-        df_expand_grid = []
-        for key, value in entry.items():
-            if isinstance(value, pd.DataFrame):
-                df_expand_grid.append(value.to_numpy())
-                if isinstance(value.columns, pd.MultiIndex):
-                    df_columns.extend(
-                        [
-                            f"{key}_{ind}"
-                            for ind, col in enumerate(value.columns)
-                        ]
-                    )
-                else:
-                    df_columns.extend([f"{key}_{col}" for col in value])
-            elif isinstance(value, pd.Series):
-                df_expand_grid.append(np.array(value))
-                if value.name:
-                    df_columns.append(f"{key}_{value.name}")
-                else:
-                    df_columns.append(str(key))
-            elif isinstance(value, np.ndarray):
-                df_expand_grid.append(value)
-                if value.ndim == 1:
-                    df_columns.append(f"{key}_0")
-                else:
-                    df_columns.extend(
-                        [f"{key}_{ind}" for ind in range(value.shape[-1])]
-                    )
+    df_columns = []
+    df_expand_grid = []
+    for key, value in entry.items():
+        if isinstance(value, pd.DataFrame):
+            df_expand_grid.append(value.to_numpy())
+            if isinstance(value.columns, pd.MultiIndex):
+                df_columns.extend(
+                    [f"{key}_{ind}" for ind, col in enumerate(value.columns)]
+                )
             else:
-                df_expand_grid.append(value)
-                df_columns.append(key)
+                df_columns.extend([f"{key}_{col}" for col in value])
+        elif isinstance(value, pd.Series):
+            df_expand_grid.append(np.array(value))
+            if value.name:
+                df_columns.append(f"{key}_{value.name}")
+            else:
+                df_columns.append(str(key))
+        elif isinstance(value, np.ndarray):
+            df_expand_grid.append(value)
+            if value.ndim == 1:
+                df_columns.append(f"{key}_0")
+            else:
+                df_columns.extend(
+                    [f"{key}_{ind}" for ind in range(value.shape[-1])]
+                )
+        else:
+            df_expand_grid.append(value)
+            df_columns.append(key)
 
         # here we run the product function from itertools only if there is
         # more than one item in the list; if only one item, we simply
         # create a dataframe with the new column names from `df_columns`
-        if len(df_expand_grid) > 1:
-            df_expand_grid = product(*df_expand_grid)
-            df_expand_grid = (
-                chain.from_iterable(
-                    [val]
-                    if not isinstance(
-                        val, (pd.DataFrame, pd.Series, np.ndarray)
-                    )
-                    else val
-                    for val in value
-                )
-                for value in df_expand_grid
+    if len(df_expand_grid) > 1:
+        df_expand_grid = product(*df_expand_grid)
+        df_expand_grid = (
+            chain.from_iterable(
+                [val]
+                if not isinstance(val, (pd.DataFrame, pd.Series, np.ndarray))
+                else val
+                for val in value
             )
-            return pd.DataFrame(df_expand_grid, columns=df_columns)
-        else:
-            return pd.DataFrame(*df_expand_grid, columns=df_columns)
+            for value in df_expand_grid
+        )
+        return pd.DataFrame(df_expand_grid, columns=df_columns)
+    return pd.DataFrame(*df_expand_grid, columns=df_columns)

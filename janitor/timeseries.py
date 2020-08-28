@@ -87,3 +87,54 @@ def _get_missing_timestamps(
     missing_timestamps = expected_df.index.difference(df.index)
 
     return expected_df.loc[missing_timestamps]
+
+
+@pf.register_dataframe_method
+def range_flag(
+    df: pd.DataFrame,
+    bound: list,
+    inclusive: bool = True
+):
+    """
+    Test each column's values against boundaries.
+    If values in a column,
+    are within bound,
+    this function will return True.
+    If values in a column,
+    are not within bound,
+    this function will return False.
+
+    Example usage:
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .flag_values_not_in_range(bound=[-3, 5])
+        )
+
+    :param df: dataframe to test for values in range
+    :param bound: left and right boundary
+    :param inclusive: flag to include boundaries
+    :returns: dataframe with booleans for each column
+    """
+    # Check the input data sets for data type
+    check("df", df, [pd.DataFrame])
+    check("bound", bound, [list])
+    check("inclusive", inclusive, [bool])
+
+    # Get names of the columns into a list
+    columns = df.columns
+
+    # Make a copy to avoid mutation of the source dataframe
+    df1 = pd.DataFrame(index=df.index)
+
+    # Loop through the columns and create new flags
+    for column in columns:
+        df1[column + '_range_flag'] = df[column].between(
+            left=bound[0],
+            right=bound[1],
+            inclusive=inclusive
+        )
+
+    # Return the result
+    return df1

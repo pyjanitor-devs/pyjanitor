@@ -275,7 +275,7 @@ def test_2d_arrays_multiple_columns():
 
 
 def test_null_entries():
-    """Test on null entries"""
+    """Test that null entries get expanded properly."""
     data = {"V1": (5, np.nan, 1), "V2": (1, 3, 2)}
     expected = pd.DataFrame(
         {

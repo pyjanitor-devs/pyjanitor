@@ -88,3 +88,58 @@ def _get_missing_timestamps(
     missing_timestamps = expected_df.index.difference(df.index)
 
     return expected_df.loc[missing_timestamps]
+
+
+@pf.register_dataframe_method
+def sort_timestamps_monotonically(
+    df: pd.DataFrame, direction: str = "increasing", strict: bool = False
+) -> pd.DataFrame:
+    """
+    Sort dataframe such that index is monotonic.
+
+    If timestamps are monotonic,
+    this function will return the dataframe unmodified.
+    If timestamps are not monotonic,
+    then the function will sort the dataframe.
+
+    Example usage:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .sort_timestamps_monotonically(direction='increasing')
+        )
+
+    :param df: Dataframe which needs to be tested for monotonicity
+    :param direction: type of monotonicity desired.
+        Acceptable arguments are:
+            1. increasing
+            2. decreasing
+    :param strict: flag to enable/disable strict monotonicity.
+        If set to True,
+        will remove duplicates in the index,
+        by retaining first occurrence of value in index.
+        If set to False,
+        will not test for duplicates in the index.
+        Defaults to False.
+    :returns: Dataframe that has monotonically increasing
+        (or decreasing) timestamps.
+    """
+    # Check all the inputs are the correct data type
+    check("df", df, [pd.DataFrame])
+    check("direction", direction, [str])
+    check("strict", strict, [bool])
+
+    # Remove duplicates if requested
+    if strict:
+        df = df[~df.index.duplicated(keep="first")]
+
+    # Sort timestamps
+    if direction == "increasing":
+        df = df.sort_index()
+    else:
+        df = df.sort_index(ascending=False)
+
+    # Return the dataframe
+    return df

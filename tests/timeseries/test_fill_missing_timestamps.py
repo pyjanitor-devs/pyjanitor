@@ -1,7 +1,9 @@
-import pytest
-import pandas as pd
 from random import randint
-from janitor.timeseries import fill_missing_timestamps, _get_missing_timestamps
+
+import pandas as pd
+import pytest
+
+from janitor.timeseries import _get_missing_timestamps, fill_missing_timestamps
 
 
 # Random data for testing

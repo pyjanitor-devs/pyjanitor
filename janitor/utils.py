@@ -471,8 +471,8 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     # checks if the dictionary does not have any of
     # (pd.Dataframe, pd.Series, numpy) values and uses itertools.product.
     # numpy meshgrid is faster, but requires homogenous data to appreciate
-    # the speed, and also keep the data type for each column created. As an
-    # example,  if we have a mix in the dictionary of strings and numbers,
+    # the speed, and also to keep the data type for each column created.
+    # As an example, if we have a mix in the dictionary of strings and numbers,
     # numpy will convert it to an object data type. Itertools product is
     # efficient and does not lose the data type.
 

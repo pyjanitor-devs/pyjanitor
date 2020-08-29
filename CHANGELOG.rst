@@ -1,5 +1,7 @@
 new version (on deck)
 =====================
+- [ENH] Added the complete function for converting implicit missing values 
+  to explicit ones. @samukweku
 
 
 v0.20.9

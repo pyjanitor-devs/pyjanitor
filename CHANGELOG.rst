@@ -1,6 +1,7 @@
 new version (on deck)
 =====================
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
+- [ENH] Further simplification of expand_grid. @samukweku
 
 v0.20.9
 =======

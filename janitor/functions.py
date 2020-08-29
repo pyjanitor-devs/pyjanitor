@@ -4478,21 +4478,27 @@ def complete(
         df = pd.DataFrame(...)
         df = jn.complete(
             df = df,
-            list_of_columns= [column_label,
-                              (column1, column2, ...),
-                              {column1: new_values, ...}],
+            list_of_columns= [
+                column_label,
+                (column1, column2, ...),
+                {column1: new_values, ...}
+            ],
             fill_value = None
-            )
+        )
 
     Method chaining syntax:
 
     .. code-block:: python
 
-        df = pd.DataFrame.complete(df = df,
-                                   list_of_columns= [column_label,
-                                                     (column1, column2, ...),
-                                                   {column1: new_values, ...}],
-                                   fill_value = None)
+        df = (
+            pd.DataFrame(...)
+            .complete(list_of_columns=[
+                column_label,
+                (column1, column2, ...),
+                {column1: new_values, ...},
+            ],
+            fill_value=None,
+        )
 
 
     :param df: A pandas dataframe.

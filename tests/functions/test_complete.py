@@ -97,8 +97,10 @@ def test_fill_value(df1):
 
 
 def test_fill_value_all_years(df1):
-    """Test the complete function accurately replicates for all the years
-       from 1999 to 2004."""
+    """
+    Test the complete function accurately replicates for all the years
+    from 1999 to 2004.
+    """
 
     output1 = pd.DataFrame(
         {

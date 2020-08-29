@@ -1,10 +1,10 @@
 import pytest
 import pandas as pd
 from random import randint
-from janitor.timeseries import sort_timestamps_monotonically
+import janitor  # noqa: F401
+import janitor.timeseries  # noqa: F401
 
 
-# Random data for testing
 @pytest.fixture
 def timeseries_dataframe() -> pd.DataFrame:
     """
@@ -16,17 +16,33 @@ def timeseries_dataframe() -> pd.DataFrame:
     return test_df
 
 
+# NOTE: The tests possibly can be merged back together later
+# if they are parametrized properly.
+
+
 @pytest.mark.timeseries
 def test_sort_timestamps_monotonically(timeseries_dataframe):
-    """Test that sort_timestamps_monotonically works as expected."""
-    from sklearn.utils import shuffle
+    """Test sort_timestamps_monotonically for ascending order"""
+    df = timeseries_dataframe.shuffle(
+        reset_index=False
+    ).sort_timestamps_monotonically()
+    assert df.equals(timeseries_dataframe)
 
-    # Increasing direction
-    df = shuffle(timeseries_dataframe)
-    df1 = sort_timestamps_monotonically(df)
-    assert df1.equals(timeseries_dataframe)
 
-    # Decreasing direction
+@pytest.mark.timeseries
+def test_sort_timestamps_monotonically_decreasing(timeseries_dataframe):
+    """Test sort_timestamps_monotonically for descending order"""
     df2 = timeseries_dataframe.sort_index(ascending=False)
-    df3 = sort_timestamps_monotonically(df2, "decreasing")
+    df3 = df2.sort_timestamps_monotonically("decreasing")
     assert df3.equals(df2)
+
+
+@pytest.mark.timeseries
+def test_sort_timestamps_monotonically_strict(timeseries_dataframe):
+    """Test sort_timestamps_monotonically for index duplication handling"""
+    df = timeseries_dataframe.shuffle(reset_index=False)
+    random_number = randint(1, len(timeseries_dataframe))
+    df = df.append(
+        df.loc[df.index[random_number], :]
+    ).sort_timestamps_monotonically(direction="increasing", strict=True)
+    assert df.equals(timeseries_dataframe)

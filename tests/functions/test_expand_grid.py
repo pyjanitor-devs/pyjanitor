@@ -250,7 +250,7 @@ zip_others_only = zip(input_others, output_others)
 @pytest.mark.parametrize("grid_input,grid_output", zip_others_only)
 def test_expand_grid_others_only(grid_input, grid_output):
     """
-    Tests that expand_grid output is correct where only the `others` argument
+    Tests that expand_grid output is correct when only the `others` argument
     is supplied.
     """
     assert_frame_equal(expand_grid(others=grid_input), grid_output)

@@ -18,6 +18,10 @@ def timeseries_dataframe() -> pd.DataFrame:
 
 # NOTE: The tests possibly can be merged back together later
 # if they are parametrized properly.
+# NOTE: These tests use `df.equals(other_df)`,
+# because the desired `pd.assert_frame_equal(df, other_df)`
+# constantly failed on the CI systems.
+# It's a task for later to fix.
 
 
 @pytest.mark.timeseries

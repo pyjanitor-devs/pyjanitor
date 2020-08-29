@@ -1,6 +1,6 @@
 new version (on deck)
 =====================
-
+- [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
 
 v0.20.9
 =======

@@ -16,7 +16,7 @@ df = pd.DataFrame(
     }
 )
 
-list_of_columns = [
+columns = [
     ["group", "item_id", "item_name"],
     ["group", ("item_id", "item_name")],
 ]
@@ -44,7 +44,7 @@ expected_output = [
 complete_parameters = [
     (dataframe, columns, output)
     for dataframe, (columns, output) in itertools.product(
-        [df], zip(list_of_columns, expected_output)
+        [df], zip(columns, expected_output)
     )
 ]
 
@@ -91,7 +91,7 @@ def test_fill_value(df1):
     )
 
     result = df1.complete(
-        list_of_columns=["Year", "Taxon"], fill_value={"Abundance": 0}
+        columns=["Year", "Taxon"], fill_value={"Abundance": 0}
     )
     assert_frame_equal(result, output1)
 
@@ -137,7 +137,7 @@ def test_fill_value_all_years(df1):
     )
 
     result = df1.complete(
-        list_of_columns=[
+        columns=[
             {"Year": range(df1.Year.min(), df1.Year.max() + 1)},
             "Taxon",
         ],
@@ -146,73 +146,64 @@ def test_fill_value_all_years(df1):
     assert_frame_equal(result, output1)
 
 
-def test_type_list_of_columns(df1):
-    """Raise error if list_of_columns is not a list object.'"""
+def test_type_columns(df1):
+    """Raise error if columns is not a list object.'"""
     with pytest.raises(TypeError):
-        df1.complete(list_of_columns="Year")
+        df1.complete(columns="Year")
 
 
-def test_empty_list_of_columns(df1):
-    """Raise error if list_of_columns is empty'"""
+def test_empty_columns(df1):
+    """Raise error if columns is empty'"""
     with pytest.raises(ValueError):
-        df1.complete(list_of_columns=[])
+        df1.complete(columns=[])
 
 
-def test_wrong_column_names_string(df1):
-    """Raise error if wrong column names is passed as strings'"""
+frame = pd.DataFrame(
+    {
+        "Year": [1999, 2000, 2004, 1999, 2004],
+        "Taxon": [
+            "Saccharina",
+            "Saccharina",
+            "Saccharina",
+            "Agarum",
+            "Agarum",
+        ],
+        "Abundance": [4, 5, 2, 1, 8],
+    }
+)
+wrong_columns = (
+    (frame, ["b", "Year"]),
+    (frame, [{"Yayay": range(7)}]),
+    (frame, ["Year", ["Abundant", "Taxon"]]),
+    (frame, ["Year", ("Abundant", "Taxon")]),
+)
+
+empty_sub_columns = [
+    (frame, ["Year", []]),
+    (frame, ["Year", {}]),
+    (frame, ["Year", ()]),
+    (frame, ["Year", set()]),
+]
+
+
+@pytest.mark.parametrize("frame,wrong_columns", wrong_columns)
+def test_wrong_columns(frame, wrong_columns):
+    """Test that KeyError is raised if wrong column is supplied."""
     with pytest.raises(KeyError):
-        df1.complete(list_of_columns=["b", "Year"])
+        frame.complete(columns=wrong_columns)
 
 
-def test_wrong_column_names_dict(df1):
-    """Raise error if wrong column name is in dictionary in list_of_columns'"""
-    with pytest.raises(KeyError):
-        df1.complete(list_of_columns=[{"Yayay": range(7)}])
-
-
-def test_wrong_column_names_sublist(df1):
-    """Raise error if wrong column name is in list grouping in
-       list_of_columns."""
-    with pytest.raises(KeyError):
-        df1.complete(list_of_columns=["Year", ["Abundant", "Taxon"]])
-
-
-def test_wrong_column_names_tuple(df1):
-    """Raise error if wrong column name is in tuple grouping in
-       list_of_columns'"""
-    with pytest.raises(KeyError):
-        df1.complete(list_of_columns=["Year", ("Abundant", "Taxon")])
-
-
-def test_empty_sublist(df1):
-    """Raise error for an empty sublist in list_of_columns'"""
+@pytest.mark.parametrize("frame,empty_sub_cols", empty_sub_columns)
+def test_empty_subcols(frame, empty_sub_cols):
+    """Raise ValueError for an empty container in columns'"""
     with pytest.raises(ValueError):
-        df1.complete(list_of_columns=["Year", []])
-
-
-def test_empty_dict(df1):
-    """Raise error for any empty dictionary in list_of_columns'"""
-    with pytest.raises(ValueError):
-        df1.complete(list_of_columns=["Year", {}])
-
-
-def test_empty_tuple(df1):
-    """Raise error for any empty tuple in list_of_columns'"""
-    with pytest.raises(ValueError):
-        df1.complete(list_of_columns=["Year", ()])
-
-
-def test_wrong_column_type(df1):
-    """Raise error if entry in list_of_columns is not a
-       string/list/tuple/dict"""
-    with pytest.raises(ValueError):
-        df1.complete(list_of_columns=["Year", set()])
+        frame.complete(columns=empty_sub_cols)
 
 
 # https://stackoverflow.com/questions/32874239/
 # how-do-i-use-tidyr-to-fill-in-completed-rows-within-each-value-of-a-grouping-var
 def test_grouping_first_columns():
-    """Test complete function when the first entry in list_of_columns is
+    """Test complete function when the first entry in columns is
         a grouping."""
 
     df2 = pd.DataFrame(
@@ -245,7 +236,7 @@ def test_grouping_first_columns():
             "choice": [5, 6, 7, 5, 6, 7, 5, 6, 7],
         }
     )
-    result = df2.complete(list_of_columns=[("id", "c", "d"), "choice"])
+    result = df2.complete(columns=[("id", "c", "d"), "choice"])
     assert_frame_equal(result, output2)
 
 
@@ -274,10 +265,7 @@ def test_complete_multiple_groupings():
 
     result = (
         df3.complete(
-            list_of_columns=[
-                ("meta", "domain1"),
-                ("project_id", "question_count"),
-            ],
+            columns=[("meta", "domain1"), ("project_id", "question_count")],
             fill_value={"tag_count": 0},
         )
         # this part is not necessary for the test
@@ -295,7 +283,7 @@ def test_complete_multiple_groupings():
 # pandas-how-to-include-all-columns-for-all-rows-although-value-is-missing-in-a-d
 # /63543164#63543164
 def test_duplicate_index():
-    """Test that the complete function for duplicate index"""
+    """Test that the complete function works for duplicate index."""
     df = pd.DataFrame(
         {
             "row": {
@@ -329,8 +317,6 @@ def test_duplicate_index():
         }
     )
 
-    result = df.complete(
-        list_of_columns=["row", "column"], fill_value={"value": 0}
-    )
+    result = df.complete(columns=["row", "column"], fill_value={"value": 0})
 
     assert_frame_equal(result, dup_expected_output)

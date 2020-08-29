@@ -4394,7 +4394,7 @@ def groupby_topk(
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    list_of_columns: List[Union[List, Tuple, Dict, str]],
+    columns: List[Union[List, Tuple, Dict, str]],
     fill_value: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
@@ -4422,7 +4422,7 @@ def complete(
         Note that Year 2000 and Agarum pairing is missing. Let's make it
         explicit:
 
-        df.complete(list_of_columns = ['Year', 'Taxon'])
+        df.complete(columns = ['Year', 'Taxon'])
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -4434,7 +4434,7 @@ def complete(
 
         The null value can be replaced with the fill_value argument:
 
-        df.complete(list_of_columns = ['Year', 'Taxon'],
+        df.complete(columns = ['Year', 'Taxon'],
                     fill_value={"Abundance":0})
 
            Year      Taxon     Abundance
@@ -4449,8 +4449,8 @@ def complete(
         1999 to 2004? Easy - simply pass a dictionary paring the column name
         with the new values :
 
-        df.complete(list_of_columns = [{"Year": range(df.Year.min(),
-                                                      df.Year.max() + 1)},
+        df.complete(columns = [{"Year": range(df.Year.min(),
+                                              df.Year.max() + 1)},
                                        "Taxon"],
                     fill_value={"Abundance":0})
 
@@ -4478,7 +4478,7 @@ def complete(
         df = pd.DataFrame(...)
         df = jn.complete(
             df = df,
-            list_of_columns= [
+            columns= [
                 column_label,
                 (column1, column2, ...),
                 {column1: new_values, ...}
@@ -4492,7 +4492,7 @@ def complete(
 
         df = (
             pd.DataFrame(...)
-            .complete(list_of_columns=[
+            .complete(columns=[
                 column_label,
                 (column1, column2, ...),
                 {column1: new_values, ...},
@@ -4502,37 +4502,38 @@ def complete(
 
 
     :param df: A pandas dataframe.
-    :param list_of_columns: This is a list containing the columns to be
-        completed. It could be column labels, a list/tuple of column labels,
-        or a dictionary that pairs column labels with new values.
+    :param columns: This is a list containing the columns to be
+        completed. It could be column labels (string trype),
+        a list/tuple of column labels, or a dictionary that pairs
+        column labels with new values.
     :param fill_value: Dictionary pairing the columns with the null replacement
         value.
     :returns: A pandas dataframe with modified column(s).
-    :raises: ValueError if list_of_columns is empty.
-    :raises: TypeError if list_of_columns is not a list.
-    :raises: ValueError if entry in list_of_columns is not a
+    :raises: ValueError if `columns` is empty.
+    :raises: TypeError if `columns` is not a list.
+    :raises: ValueError if entry in `columns` is not a
         str/dict/list/tuple.
-    :raises: ValueError if entry in list_of_columns is a dict/list/tuple
+    :raises: ValueError if entry in `columns` is a dict/list/tuple
         and is empty.
     """
 
-    if not isinstance(list_of_columns, list):
+    if not isinstance(columns, list):
         raise TypeError("Columns should be in a list")
-    if not list_of_columns:
-        raise ValueError("list_of_columns cannot be empty")
+    if not columns:
+        raise ValueError("columns cannot be empty")
     # if there is no grouping within the list of columns :
-    if all(isinstance(column, str) for column in list_of_columns):
+    if all(isinstance(column, str) for column in columns):
         # Using sets gets more speed than say np.unique or drop_duplicates
-        reindex_columns = [set(df[item].array) for item in list_of_columns]
+        reindex_columns = [set(df[item].array) for item in columns]
         reindex_columns = itertools.product(*reindex_columns)
-        df = df.set_index(list_of_columns)
+        df = df.set_index(columns)
 
     else:
-        df, reindex_columns = _complete_groupings(df, list_of_columns)
+        df, reindex_columns = _complete_groupings(df, columns)
 
     if df.index.has_duplicates:
         reindex_columns = pd.DataFrame(
-            [], index=pd.Index(reindex_columns, names=list_of_columns)
+            [], index=pd.Index(reindex_columns, names=columns)
         )
         df = df.join(reindex_columns, how="outer").reset_index()
     else:

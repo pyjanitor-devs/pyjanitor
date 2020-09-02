@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
 - [ENH] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
 
 v0.20.9

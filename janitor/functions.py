@@ -4516,7 +4516,7 @@ def complete(
     :raises: ValueError if entry in `columns` is a dict/list/tuple
         and is empty.
     """
-
+    df_c = df.copy()
     if not isinstance(columns, list):
         raise TypeError("Columns should be in a list")
     if not columns:
@@ -4524,22 +4524,22 @@ def complete(
     # if there is no grouping within the list of columns :
     if all(isinstance(column, str) for column in columns):
         # Using sets gets more speed than say np.unique or drop_duplicates
-        reindex_columns = [set(df[item].array) for item in columns]
+        reindex_columns = [set(df_c[item].array) for item in columns]
         reindex_columns = itertools.product(*reindex_columns)
-        df = df.set_index(columns)
+        df_c = df_c.set_index(columns)
 
     else:
-        df, reindex_columns = _complete_groupings(df, columns)
+        df_c, reindex_columns = _complete_groupings(df_c, columns)
 
-    if df.index.has_duplicates:
+    if df_c.index.has_duplicates:
         reindex_columns = pd.DataFrame(
             [], index=pd.Index(reindex_columns, names=columns)
         )
-        df = df.join(reindex_columns, how="outer").reset_index()
+        df_c = df_c.join(reindex_columns, how="outer").reset_index()
     else:
-        df = df.reindex(sorted(reindex_columns)).reset_index()
+        df_c = df_c.reindex(sorted(reindex_columns)).reset_index()
 
     if fill_value:
-        df = df.fillna(fill_value)
+        df_c = df_c.fillna(fill_value)
 
-    return df
+    return df_c

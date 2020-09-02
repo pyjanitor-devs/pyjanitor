@@ -3244,7 +3244,7 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-
+    df_c = df.copy()
     # convert to list
     # needed when creating a mapping through the iteration
     if isinstance(by, str):
@@ -3255,19 +3255,21 @@ def groupby_agg(
     # replace the values with some outrageous value, that should not exist
     # in the column. Also, the hasnans property is significantly faster than
     # .isnull().any()
-    if any(df[col].hasnans for col in by):
+    if any(df_c[col].hasnans for col in by):
 
         mapping = {
             column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
         }
 
-        df[new_column_name] = (
-            df.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
+        df_c[new_column_name] = (
+            df_c.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
         )
 
     else:
-        df[new_column_name] = df.groupby(by)[agg_column_name].transform(agg)
-    return df
+        df_c[new_column_name] = df_c.groupby(by)[agg_column_name].transform(
+            agg
+        )
+    return df_c
 
 
 @pf.register_dataframe_accessor("data_description")
@@ -4010,8 +4012,9 @@ def expand_grid(
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
-        if isinstance(df.index, pd.MultiIndex) or isinstance(
-            df.columns, pd.MultiIndex
+        df_c = df.copy()
+        if isinstance(df_c.index, pd.MultiIndex) or isinstance(
+            df_c.columns, pd.MultiIndex
         ):
             raise TypeError("`expand_grid` does not work with pd.MultiIndex")
         if not df_key:
@@ -4021,7 +4024,7 @@ def expand_grid(
                 requires that a string `df_key` be passed in.
                 """
             )
-        others = {**{df_key: df}, **others}
+        others = {**{df_key: df_c}, **others}
     entry = _check_instance(others)
 
     return _grid_computation(entry)
@@ -4112,6 +4115,7 @@ def process_text(
     :raises: KeyError if ``string_function`` is not a Pandas string method.
     :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
     """
+    df_c = df.copy()
 
     pandas_string_methods = [
         func.__name__
@@ -4122,9 +4126,9 @@ def process_text(
     if string_function not in pandas_string_methods:
         raise KeyError(f"{string_function} is not a Pandas string method.")
 
-    df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
+    df_c[column] = getattr(df_c[column].str, string_function)(*args, **kwargs)
 
-    return df
+    return df_c
 
 
 @pf.register_dataframe_method
@@ -4219,7 +4223,7 @@ def fill_direction(
     :raises: ValueError if direction supplied is not one of `down`,`up`,
         `updown`, or `downup`.
     """
-
+    df_c = df.copy()
     # check that dictionary is not empty
     if not directions:
         raise ValueError("A mapping of columns with directions is required.")
@@ -4227,7 +4231,7 @@ def fill_direction(
     # check that the right columns are provided
     # should be removed once the minimum Pandas version is 1.1,
     # as Pandas loc will raise a KeyError if columns provided do not exist
-    wrong_columns_provided = set(directions).difference(df.columns)
+    wrong_columns_provided = set(directions).difference(df_c.columns)
     if any(wrong_columns_provided):
         if len(wrong_columns_provided) > 1:
             outcome = ", ".join(f"'{word}'" for word in wrong_columns_provided)
@@ -4254,18 +4258,18 @@ def fill_direction(
 
     for column, direction in directions.items():
         if direction == "up":
-            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
+            df_c.loc[:, column] = df_c.loc[:, column].bfill(limit=limit)
         elif direction == "down":
-            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
+            df_c.loc[:, column] = df_c.loc[:, column].ffill(limit=limit)
         elif direction == "updown":
-            df.loc[:, column] = (
-                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
+            df_c.loc[:, column] = (
+                df_c.loc[:, column].bfill(limit=limit).ffill(limit=limit)
             )
         elif direction == "downup":
-            df.loc[:, column] = (
-                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
+            df_c.loc[:, column] = (
+                df_c.loc[:, column].ffill(limit=limit).bfill(limit=limit)
             )
-    return df
+    return df_c
 
 
 @pf.register_dataframe_method

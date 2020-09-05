@@ -3064,7 +3064,6 @@ def find_replace(
         that have dictionaries passed in indicating what to find (keys)
         and what to replace with (values).
     """  # noqa: E501
-    df = df.copy()
     for column_name, mapper in mappings.items():
         df = _find_replace(df, column_name, mapper, match=match)
     return df

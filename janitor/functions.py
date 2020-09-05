@@ -3244,7 +3244,7 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    df_c = df.copy()
+    df = df.copy()
     # convert to list
     # needed when creating a mapping through the iteration
     if isinstance(by, str):

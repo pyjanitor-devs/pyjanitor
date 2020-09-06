@@ -535,3 +535,65 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
         )
         return pd.DataFrame(df_expand_grid, columns=df_columns)
     return pd.DataFrame(*df_expand_grid, columns=df_columns)
+
+
+def _complete_groupings(df, list_of_columns):
+    # this collects all the columns as individual labels, which will be
+    # used to set the index of the dataframe
+    index_columns = []
+    # this will collect all the values associated with the respective
+    # columns, and used to reindex the dataframe, to get the complete
+    # pairings
+    reindex_columns = []
+    for item in list_of_columns:
+        if not isinstance(item, (str, dict, list, tuple)):
+            raise ValueError(
+                """Value must either be a column label, a list/tuple of columns or a
+                    dictionary where the keys are columns in the dataframe."""
+            )
+        if not item:
+            raise ValueError("grouping cannot be empty")
+        if isinstance(item, str):
+            reindex_columns.append(set(df[item].array))
+            index_columns.append(item)
+        else:
+            # this comes into play if we wish to input values that
+            # do not exist in the data, say years, or alphabets, or
+            # range of numbers
+            if isinstance(item, dict):
+                if len(item) > 1:
+                    index_columns.extend(item.keys())
+                else:
+                    index_columns.append(*item.keys())
+                    item_contents = [
+                        # convert scalars to iterables; this is necessary
+                        # when creating combinations with itertools' product
+                        [value]
+                        if isinstance(value, (int, float, str, bool))
+                        else value
+                        for key, value in item.items()
+                    ]
+                    reindex_columns.extend(item_contents)
+            else:
+                index_columns.extend(item)
+                item = (df[sub_column].array for sub_column in item)
+                item = set(zip(*item))
+                reindex_columns.append(item)
+
+    reindex_columns = product(*reindex_columns)
+    # A list comprehension, coupled with itertools chain.from_iterable
+    # would likely be faster; I fear that it may hamper readability with
+    # nested list comprehensions; as such, I chose the for loop method.
+    new_reindex_columns = []
+    for row in reindex_columns:
+        new_row = []
+        for cell in row:
+            if isinstance(cell, tuple):
+                new_row.extend(cell)
+            else:
+                new_row.append(cell)
+        new_reindex_columns.append(tuple(new_row))
+
+    df = df.set_index(index_columns)
+
+    return df, new_reindex_columns

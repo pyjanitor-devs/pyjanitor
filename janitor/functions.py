@@ -43,7 +43,6 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    _complete_groupings
 )
 
 

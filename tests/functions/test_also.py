@@ -68,7 +68,7 @@ def test_also_args(dataframe):
 
 
 @pytest.mark.functions
-def test_also_kargs(dataframe):
+def test_also_kwargs(dataframe):
     """Test that the kwargs are passed through to the function."""
     method = Mock(return_value=None)
     _ = dataframe.also(method, n=5)

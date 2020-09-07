@@ -2993,7 +2993,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     :param func: A function you would like to run in the method chain.
         It should take one DataFrame object as a parameter and have no return.
         If there is a return, it will be ignored.
-    :param args, kwargs: Optional arguments and keywork arguments for `func`.
+    :param args, kwargs: Optional arguments and keyword arguments for `func`.
     :returns: The input pandas DataFrame.
     """
     func(df.copy(), *args, **kwargs)

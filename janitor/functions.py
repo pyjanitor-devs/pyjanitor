@@ -2974,6 +2974,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     Example usage:
 
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .query(...)

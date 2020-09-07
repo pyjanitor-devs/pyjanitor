@@ -2965,8 +2965,9 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
-    """Add an arbitrary function to run in the ``pyjanitor`` method chain.
-    This returns the input dataframe instead, not the output of `func`.
+    """Add an arbitrary function with no return value to run in the
+    ``pyjanitor`` method chain. This returns the input dataframe instead,
+    not the output of `func`.
 
     This method does not mutate the original DataFrame.
 

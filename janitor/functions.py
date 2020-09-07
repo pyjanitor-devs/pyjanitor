@@ -3929,6 +3929,9 @@ def expand_grid(
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
+    Note that if a MultiIndex dataframe or series is passed, the index/columns
+    will be discarded, and a single indexed dataframe will be returned.
+
     The output will always be a dataframe.
 
     Example:
@@ -4012,10 +4015,6 @@ def expand_grid(
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
-        if isinstance(df.index, pd.MultiIndex) or isinstance(
-            df.columns, pd.MultiIndex
-        ):
-            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
         if not df_key:
             raise KeyError(
                 """

@@ -3929,6 +3929,9 @@ def expand_grid(
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
+    Note that if a MultiIndex dataframe or series is passed, the index/columns
+    will be discarded, and a single indexed dataframe will be returned.
+
     The output will always be a dataframe.
 
     Example:

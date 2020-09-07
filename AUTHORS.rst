@@ -90,4 +90,5 @@ Contributors
 - `@evan-anderson <https://github.com/evan-anderson>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3evan-anderson>`_
 - `@smu095 <https://github.com/smu095>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3smu095>`_
 - `@VPerrollaz <https://github.com/VPerrollaz>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AVPerrollaz>`_
+- `@UGuntupalli <https://github.com/UGuntupalli>`_ | `contributions < https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AUGuntupalli >`_
 - `@mphirke <https://github.com/mphirke>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Amphirke>`_

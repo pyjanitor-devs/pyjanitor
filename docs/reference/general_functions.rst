@@ -89,4 +89,5 @@ Other
     toset
     unionize_dataframe_categories
     groupby_topk
+    complete
     

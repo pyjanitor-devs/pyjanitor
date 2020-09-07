@@ -2,6 +2,7 @@
 
 import datetime as dt
 import inspect
+import itertools
 import re
 import unicodedata
 import warnings
@@ -33,6 +34,7 @@ from .errors import JanitorError
 from .utils import (
     _check_instance,
     _clean_accounting_column,
+    _complete_groupings,
     _currency_column_to_numeric,
     _grid_computation,
     _replace_empty_string_with_none,
@@ -3887,6 +3889,9 @@ def expand_grid(
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
+    Note that if a MultiIndex dataframe or series is passed, the index/columns
+    will be discarded, and a single indexed dataframe will be returned.
+
     The output will always be a dataframe.
 
     Example:
@@ -3970,10 +3975,6 @@ def expand_grid(
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
-        if isinstance(df.index, pd.MultiIndex) or isinstance(
-            df.columns, pd.MultiIndex
-        ):
-            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
         if not df_key:
             raise KeyError(
                 """
@@ -4347,3 +4348,157 @@ def groupby_topk(
     return df.groupby(groupby_column_name).apply(
         lambda d: d.sort_values(sort_column_name, **sort_values_kwargs).head(k)
     )
+
+
+@pf.register_dataframe_method
+def complete(
+    df: pd.DataFrame,
+    columns: List[Union[List, Tuple, Dict, str]],
+    fill_value: Optional[Dict] = None,
+) -> pd.DataFrame:
+    """
+    This function shows all possible combinations in a dataframe, including
+    the missing values.
+
+    This function is similar to tidyr's `complete` function.
+
+    Individual combinations or combinations with groupings are possible.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+            Year      Taxon         Abundance
+        0   1999    Saccharina         4
+        1   2000    Saccharina         5
+        2   2004    Saccharina         2
+        3   1999     Agarum            1
+        4   2004     Agarum            8
+
+        Data Source - http://imachordata.com/2016/02/05/you-complete-me/
+
+        Note that Year 2000 and Agarum pairing is missing. Let's make it
+        explicit:
+
+        df.complete(columns = ['Year', 'Taxon'])
+
+           Year      Taxon     Abundance
+        0  1999     Agarum         1.0
+        1  1999     Saccharina     4.0
+        2  2000     Agarum         NaN
+        3  2000     Saccharina     5.0
+        4  2004     Agarum         8.0
+        5  2004     Saccharina     2.0
+
+        The null value can be replaced with the fill_value argument:
+
+        df.complete(columns = ['Year', 'Taxon'],
+                    fill_value={"Abundance":0})
+
+           Year      Taxon     Abundance
+        0  1999     Agarum         1.0
+        1  1999     Saccharina     4.0
+        2  2000     Agarum         0.0
+        3  2000     Saccharina     5.0
+        4  2004     Agarum         8.0
+        5  2004     Saccharina     2.0
+
+        What if we wanted the explicit missing values for all the years from
+        1999 to 2004? Easy - simply pass a dictionary paring the column name
+        with the new values :
+
+        df.complete(columns = [{"Year": range(df.Year.min(),
+                                              df.Year.max() + 1)},
+                                       "Taxon"],
+                    fill_value={"Abundance":0})
+
+        Year      Taxon     Abundance
+    0   1999     Agarum         1.0
+    1   1999    Saccharina      4.0
+    2   2000     Agarum         0.0
+    3   2000    Saccharina      5.0
+    4   2001     Agarum         0.0
+    5   2001    Saccharina      0.0
+    6   2002     Agarum         0.0
+    7   2002    Saccharina      0.0
+    8   2003     Agarum         0.0
+    9  2003     Saccharina      0.0
+    10  2004     Agarum         8.0
+    11  2004    Saccharina      2.0
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.complete(
+            df = df,
+            columns= [
+                column_label,
+                (column1, column2, ...),
+                {column1: new_values, ...}
+            ],
+            fill_value = None
+        )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .complete(columns=[
+                column_label,
+                (column1, column2, ...),
+                {column1: new_values, ...},
+            ],
+            fill_value=None,
+        )
+
+
+    :param df: A pandas dataframe.
+    :param columns: This is a list containing the columns to be
+        completed. It could be column labels (string trype),
+        a list/tuple of column labels, or a dictionary that pairs
+        column labels with new values.
+    :param fill_value: Dictionary pairing the columns with the null replacement
+        value.
+    :returns: A pandas dataframe with modified column(s).
+    :raises: ValueError if `columns` is empty.
+    :raises: TypeError if `columns` is not a list.
+    :raises: ValueError if entry in `columns` is not a
+        str/dict/list/tuple.
+    :raises: ValueError if entry in `columns` is a dict/list/tuple
+        and is empty.
+    """
+    df_c = df.copy()
+    if not isinstance(columns, list):
+        raise TypeError("Columns should be in a list")
+    if not columns:
+        raise ValueError("columns cannot be empty")
+    # if there is no grouping within the list of columns :
+    if all(isinstance(column, str) for column in columns):
+        # Using sets gets more speed than say np.unique or drop_duplicates
+        reindex_columns = [set(df_c[item].array) for item in columns]
+        reindex_columns = itertools.product(*reindex_columns)
+        df_c = df_c.set_index(columns)
+
+    else:
+        df_c, reindex_columns = _complete_groupings(df_c, columns)
+
+    if df_c.index.has_duplicates:
+        reindex_columns = pd.DataFrame(
+            [], index=pd.Index(reindex_columns, names=columns)
+        )
+        df_c = df_c.join(reindex_columns, how="outer").reset_index()
+    else:
+        df_c = df_c.reindex(sorted(reindex_columns)).reset_index()
+
+    if fill_value:
+        df_c = df_c.fillna(fill_value)
+
+    return df_c

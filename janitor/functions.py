@@ -2966,7 +2966,7 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 @pf.register_dataframe_method
 def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     """Add an arbitrary function to run in the ``pyjanitor`` method chain.
-    Returns the input dataframe, not the output of `func`.
+    This returns the input dataframe instead, not the output of `func`.
 
     This method does not mutate the original DataFrame.
 
@@ -2989,10 +2989,9 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
 
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.
-        It should take one parameter and return one parameter, each being the
-        DataFrame object. After that, do whatever you want in the middle.
-        Go crazy.
-    :param args, kwargs: Arguments for parameters.
+        It should take one DataFrame object as a parameter and have no return.
+        If there is a return, it will be ignored.
+    :param args, kwargs: Optional arguments and keywork arguments for `func`.
     :returns: The input pandas DataFrame.
     """
     func(df.copy(), *args, **kwargs)

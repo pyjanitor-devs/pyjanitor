@@ -3,7 +3,9 @@ new version (on deck)
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
 - [ENH] Added the complete function for converting implicit missing values
   to explicit ones. @samukweku
+- [ENH] Further simplification of expand_grid. @samukweku
 - [ENH] Added `also` method for running functions in chain with no return values.
+
 v0.20.9
 =======
 - [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku

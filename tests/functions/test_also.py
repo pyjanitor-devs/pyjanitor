@@ -43,6 +43,20 @@ def test_also_runs_function(dataframe):
 
 
 @pytest.mark.functions
+def test_also_args(dataframe):
+    method = Mock(return_value=None)
+    _ = dataframe.also(method, 5)
+    assert method.call_args.args[1] == 5
+
+
+@pytest.mark.functions
+def test_also_kargs(dataframe):
+    method = Mock(return_value=None)
+    _ = dataframe.also(method, n=5)
+    assert method.call_args.kwargs == {'n': 5}
+
+
+@pytest.mark.functions
 def test_also_drop_inplace(dataframe):
     cols = tuple(dataframe.columns)
     df = dataframe.also(drop_inplace)

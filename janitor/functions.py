@@ -2964,6 +2964,25 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
+def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
+    """Add an arbitrary function to run in the ``pyjanitor`` method chain that
+    has no return.
+
+    This method does not mutate the original DataFrame.
+
+    :param df: A pandas dataframe.
+    :param func: A function you would like to run in the method chain.
+        It should take one parameter and return one parameter, each being the
+        DataFrame object. After that, do whatever you want in the middle.
+        Go crazy.
+    :param args, kwargs: Arguments for parameters.
+    :returns: The input pandas DataFrame.
+    """
+    func(df.copy(), *args, **kwargs)
+    return df
+
+
+@pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """Drop rows that do not have null values in the given column.

@@ -2965,10 +2965,27 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
-    """Add an arbitrary function to run in the ``pyjanitor`` method chain that
-    has no return.
+    """Add an arbitrary function to run in the ``pyjanitor`` method chain.
+    Returns the input dataframe, not the output of `func`.
 
     This method does not mutate the original DataFrame.
+
+    Example usage:
+
+    .. code-block:: python
+        df = (
+            pd.DataFrame(...)
+            .query(...)
+            .also(lambda df: print(f"DataFrame shape is: {df.shape}"))
+            .transform_column(...)
+            .also(lambda df: df.to_csv("midpoint.csv"))
+            .also(
+                lambda df: print(
+                    f"Column col_name has these values: {set(df['col_name'].unique())}"
+                )
+            )
+            .group_add(...)
+        )
 
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.

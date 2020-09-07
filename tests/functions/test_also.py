@@ -16,7 +16,7 @@ def remove_rows_3_and_4(df):
 
 
 def drop_inplace(df):
-    df.drop(columns=[df.columns[0]], inplace=True)
+    df.drop(columns=[df.columns[0]], inplace=True)  # noqa: PD002
 
 
 @pytest.mark.functions

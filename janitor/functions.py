@@ -2995,7 +2995,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
         If there is a return, it will be ignored.
     :param args, kwargs: Optional arguments and keyword arguments for `func`.
     :returns: The input pandas DataFrame.
-    """
+    """  # noqa: E501
     func(df.copy(), *args, **kwargs)
     return df
 

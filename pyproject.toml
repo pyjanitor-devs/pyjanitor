@@ -1,7 +1,4 @@
 [tool.black]
-line-length = 79
-target-version = ['py36', 'py37']
-include = '\.pyi?$'
 exclude = '''
 /(
     \.git
@@ -17,14 +14,17 @@ exclude = '''
   | venv
 )/
 '''
+include = '\.pyi?$'
+line-length = 79
+target-version = ['py36', 'py37']
 
 [tool.interrogate]
+exclude = ["setup.py", "docs", "build", "nbconvert_config.py"]
+fail-under = 81
 ignore-init-method = true
 ignore-init-module = true
-ignore-semiprivate = false
-ignore-private = false
 ignore-module = false
-fail-under = 81
-exclude = ["setup.py", "docs", "build", "tests", "nbconvert_config.py"]
-verbose = 2
+ignore-private = false
+ignore-semiprivate = false
 quiet = false
+verbose = 2

@@ -48,3 +48,4 @@ dependencies:
 - xorg-libxrender
 - xarray
 - pandas-vet
+- interrogate

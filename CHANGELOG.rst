@@ -4,6 +4,7 @@ new version (on deck)
 - [ENH] Added the complete function for converting implicit missing values 
   to explicit ones. @samukweku
 - [ENH] Further simplification of expand_grid. @samukweku
+- [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
 
 v0.20.9
 =======

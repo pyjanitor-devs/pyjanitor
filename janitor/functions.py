@@ -3246,7 +3246,7 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-
+    df = df.copy()
     # convert to list
     # needed when creating a mapping through the iteration
     if isinstance(by, str):
@@ -4015,6 +4015,11 @@ def expand_grid(
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
+        df = df.copy()
+        if isinstance(df.index, pd.MultiIndex) or isinstance(
+            df.columns, pd.MultiIndex
+        ):
+            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
         if not df_key:
             raise KeyError(
                 """
@@ -4113,6 +4118,7 @@ def process_text(
     :raises: KeyError if ``string_function`` is not a Pandas string method.
     :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
     """
+    df = df.copy()
 
     pandas_string_methods = [
         func.__name__
@@ -4123,7 +4129,9 @@ def process_text(
     if string_function not in pandas_string_methods:
         raise KeyError(f"{string_function} is not a Pandas string method.")
 
-    df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
+    df.loc[:, column] = getattr(df.loc[:, column].str, string_function)(
+        *args, **kwargs
+    )
 
     return df
 
@@ -4220,7 +4228,7 @@ def fill_direction(
     :raises: ValueError if direction supplied is not one of `down`,`up`,
         `updown`, or `downup`.
     """
-
+    df = df.copy()
     # check that dictionary is not empty
     if not directions:
         raise ValueError("A mapping of columns with directions is required.")

@@ -3246,7 +3246,7 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-
+    df = df.copy()
     # convert to list
     # needed when creating a mapping through the iteration
     if isinstance(by, str):
@@ -3929,6 +3929,9 @@ def expand_grid(
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
+    Note that if a MultiIndex dataframe or series is passed, the index/columns
+    will be discarded, and a single indexed dataframe will be returned.
+
     The output will always be a dataframe.
 
     Example:
@@ -4012,6 +4015,7 @@ def expand_grid(
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
+        df = df.copy()
         if isinstance(df.index, pd.MultiIndex) or isinstance(
             df.columns, pd.MultiIndex
         ):
@@ -4114,6 +4118,7 @@ def process_text(
     :raises: KeyError if ``string_function`` is not a Pandas string method.
     :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
     """
+    df = df.copy()
 
     pandas_string_methods = [
         func.__name__
@@ -4124,7 +4129,9 @@ def process_text(
     if string_function not in pandas_string_methods:
         raise KeyError(f"{string_function} is not a Pandas string method.")
 
-    df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
+    df.loc[:, column] = getattr(df.loc[:, column].str, string_function)(
+        *args, **kwargs
+    )
 
     return df
 
@@ -4191,7 +4198,7 @@ def fill_direction(
         df = jn.fill_direction(
             df = df,
             directions = {column_1 : direction_1, column_2 : direction_2, ...},
-            limit = None # limit must be greater than 0
+            limit = None # limit must be None or greater than 0
             )
 
     Method-chaining usage syntax:
@@ -4205,7 +4212,7 @@ def fill_direction(
             pd.DataFrame(...)
             .fill_direction(
             directions = {column_1 : direction_1, column_2 : direction_2, ...},
-            limit = None # limit must be greater than 0
+            limit = None # limit must be None or greater than 0
             )
         )
 
@@ -4214,14 +4221,14 @@ def fill_direction(
         can be either `down`(default), `up`, `updown`(fill up then down) and
         `downup` (fill down then up).
     :param limit: number of consecutive null values to forward/backward fill.
-        Value must be greater than 0.
+        Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
     :raises: ValueError if ``directions`` dictionary is empty.
     :raises: ValueError if column supplied is not in the dataframe.
     :raises: ValueError if direction supplied is not one of `down`,`up`,
         `updown`, or `downup`.
     """
-
+    df = df.copy()
     # check that dictionary is not empty
     if not directions:
         raise ValueError("A mapping of columns with directions is required.")
@@ -4446,7 +4453,7 @@ def complete(
         5  2004     Saccharina     2.0
 
         What if we wanted the explicit missing values for all the years from
-        1999 to 2004? Easy - simply pass a dictionary paring the column name
+        1999 to 2004? Easy - simply pass a dictionary pairing the column name
         with the new values :
 
         df.complete(columns = [{"Year": range(df.Year.min(),
@@ -4454,19 +4461,19 @@ def complete(
                                        "Taxon"],
                     fill_value={"Abundance":0})
 
-        Year      Taxon     Abundance
-    0   1999     Agarum         1.0
-    1   1999    Saccharina      4.0
-    2   2000     Agarum         0.0
-    3   2000    Saccharina      5.0
-    4   2001     Agarum         0.0
-    5   2001    Saccharina      0.0
-    6   2002     Agarum         0.0
-    7   2002    Saccharina      0.0
-    8   2003     Agarum         0.0
-    9  2003     Saccharina      0.0
-    10  2004     Agarum         8.0
-    11  2004    Saccharina      2.0
+            Year      Taxon     Abundance
+        0   1999     Agarum         1.0
+        1   1999    Saccharina      4.0
+        2   2000     Agarum         0.0
+        3   2000    Saccharina      5.0
+        4   2001     Agarum         0.0
+        5   2001    Saccharina      0.0
+        6   2002     Agarum         0.0
+        7   2002    Saccharina      0.0
+        8   2003     Agarum         0.0
+        9  2003     Saccharina      0.0
+        10  2004     Agarum         8.0
+        11  2004    Saccharina      2.0
 
     Functional usage syntax:
 
@@ -4516,7 +4523,7 @@ def complete(
     :raises: ValueError if entry in `columns` is a dict/list/tuple
         and is empty.
     """
-    df_c = df.copy()
+    df = df.copy()
     if not isinstance(columns, list):
         raise TypeError("Columns should be in a list")
     if not columns:
@@ -4524,22 +4531,22 @@ def complete(
     # if there is no grouping within the list of columns :
     if all(isinstance(column, str) for column in columns):
         # Using sets gets more speed than say np.unique or drop_duplicates
-        reindex_columns = [set(df_c[item].array) for item in columns]
+        reindex_columns = [set(df[item].array) for item in columns]
         reindex_columns = itertools.product(*reindex_columns)
-        df_c = df_c.set_index(columns)
+        df = df.set_index(columns)
 
     else:
-        df_c, reindex_columns = _complete_groupings(df_c, columns)
+        df, reindex_columns = _complete_groupings(df, columns)
 
-    if df_c.index.has_duplicates:
+    if df.index.has_duplicates:
         reindex_columns = pd.DataFrame(
             [], index=pd.Index(reindex_columns, names=columns)
         )
-        df_c = df_c.join(reindex_columns, how="outer").reset_index()
+        df = df.join(reindex_columns, how="outer").reset_index()
     else:
-        df_c = df_c.reindex(sorted(reindex_columns)).reset_index()
+        df = df.reindex(sorted(reindex_columns)).reset_index()
 
     if fill_value:
-        df_c = df_c.fillna(fill_value)
+        df = df.fillna(fill_value)
 
-    return df_c
+    return df

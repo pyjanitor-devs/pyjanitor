@@ -1,4 +1,4 @@
-janitor.label\_encode
+﻿janitor.label\_encode
 =====================
 
 .. currentmodule:: janitor

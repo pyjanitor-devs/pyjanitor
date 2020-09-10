@@ -63,8 +63,7 @@ def test_also_args(dataframe):
     method = Mock(return_value=None)
     _ = dataframe.also(method, 5)
 
-    args, kwargs = method.call_args
-    assert args[1] == 5
+    assert method.call_args[0][1] == 5
 
 
 @pytest.mark.functions
@@ -73,8 +72,7 @@ def test_also_kwargs(dataframe):
     method = Mock(return_value=None)
     _ = dataframe.also(method, n=5)
 
-    args, kwargs = method.call_args
-    assert kwargs == {'n': 5}
+    assert method.call_args[1] == {"n": 5}
 
 
 @pytest.mark.functions

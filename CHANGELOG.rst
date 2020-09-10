@@ -5,6 +5,7 @@ new version (on deck)
   to explicit ones. @samukweku
 - [ENH] Further simplification of expand_grid. @samukweku
 - [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
+- [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
 
 v0.20.9
 =======

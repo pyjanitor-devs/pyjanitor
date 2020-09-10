@@ -80,6 +80,7 @@ Other
     :toctree: janitor.functions/
 
     then
+    also
     shuffle
     count_cumulative_unique
     sort_naturally

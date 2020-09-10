@@ -2964,6 +2964,43 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
+def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
+    """Add an arbitrary function with no return value to run in the
+    ``pyjanitor`` method chain. This returns the input dataframe instead,
+    not the output of `func`.
+
+    This method does not mutate the original DataFrame.
+
+    Example usage:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .query(...)
+            .also(lambda df: print(f"DataFrame shape is: {df.shape}"))
+            .transform_column(...)
+            .also(lambda df: df.to_csv("midpoint.csv"))
+            .also(
+                lambda df: print(
+                    f"Column col_name has these values: {set(df['col_name'].unique())}"
+                )
+            )
+            .group_add(...)
+        )
+
+    :param df: A pandas dataframe.
+    :param func: A function you would like to run in the method chain.
+        It should take one DataFrame object as a parameter and have no return.
+        If there is a return, it will be ignored.
+    :param args, kwargs: Optional arguments and keyword arguments for `func`.
+    :returns: The input pandas DataFrame.
+    """  # noqa: E501
+    func(df.copy(), *args, **kwargs)
+    return df
+
+
+@pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """Drop rows that do not have null values in the given column.

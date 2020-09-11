@@ -92,3 +92,4 @@ Contributors
 - `@VPerrollaz <https://github.com/VPerrollaz>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AVPerrollaz>`_
 - `@UGuntupalli <https://github.com/UGuntupalli>`_ | `contributions < https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AUGuntupalli >`_
 - `@mphirke <https://github.com/mphirke>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Amphirke>`_
+- `@sauln <https://github.com/sauln>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Asauln`_

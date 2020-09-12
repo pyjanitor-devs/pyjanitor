@@ -160,23 +160,24 @@ def _flag_jumps_single_col(
     between consecutive rows in the provided dataframe column exceeds a
     provided threshold.
 
-    Comparisons are always performed utilizing a GREATER THAN the
+    Comparisons are always performed utilizing a GREATER THAN
     threshold check (`.gt(threshold)`). Thus, flags correspond to values
     that EXCEED the provided threshold.
 
     The method used to create consecutive row comparisons is set by the
-    `scale` argument. A `scale=absolute` corresponds to a strict
-    difference method (`.diff()`) and a `scale=percentage` corresponds
-    to a percentage change methods (`pct_change()`).
+    `scale` argument. A `scale=absolute` corresponds to a difference
+    method (`.diff()`) and a `scale=percentage` corresponds to a
+    percentage change methods (`pct_change()`).
 
-    A direction argument is used to determine how to handle the sign of
-    the difference or percentage change methods. A `direction=increasing`
-    will only consider consecutive rows that are increasing in value and
-    exceeding the provided threshold. A `direction=decreasing` will
-    only consider consecutive rows that are decreasing in value and
-    exceeding the provided threshold. If `direction=any`, the absolute
-    value is taken for both the difference method and the percentage
-    change methods and the sign between consecutive rows is ignored.
+    A `direction` argument is used to determine how to handle the sign
+    of the difference or percentage change methods.
+    A `direction=increasing` will only consider consecutive rows that
+    are increasing in value and exceeding the provided threshold.
+    A `direction=decreasing` will only consider consecutive rows that
+    are decreasing in value and exceeding the provided threshold.
+    If `direction=any`, the absolute value is taken for both the
+    difference method and the percentage change methods and the sign
+    between consecutive rows is ignored.
     """
     check("scale", scale, [str])
     check("direction", direction, [str])
@@ -196,7 +197,9 @@ def _flag_jumps_single_col(
 
     if threshold < 0:
         raise JanitorError(
-            f"Unrecognized threshold: {threshold}. This value must be >= 0.0. Use 'direction' to specify positive or negative intent."
+            f"Unrecognized threshold: {threshold}. "
+            + "This value must be >= 0.0. "
+            + "Use 'direction' to specify positive or negative intent."
         )
 
     single_col = df[col]
@@ -240,9 +243,8 @@ def flag_jumps(
     strict: bool = False,
 ) -> pd.DataFrame:
     """
-    Create a boolean column that flags whether or not the change
-    between consecutive rows in the provided dataframe column exceeds a
-    provided threshold.
+    Create boolean column(s) that flag whether or not the change
+    between consecutive rows exceeds a provided threshold.
 
     Example usage:
 
@@ -306,7 +308,7 @@ def flag_jumps(
                 sign is ignored).
         Defaults to any.
     :param threshold: The value to check if consecutive row comparisons
-        exceed. Always uses a greater than comparison.
+        exceed. Always uses a greater than comparison. Must be >= 0.0.
         Defaults to 0.0
     :param strict: flag to enable/disable appending of a flag column for
         each column in the provided dataframe.
@@ -324,6 +326,7 @@ def flag_jumps(
         ``["absolute", "percentage"]``.
     :raises: JanitorError if ``direction is not one of
         ``["increasing", "decreasing", "any"]``.
+    :raises: JanitorError if ``threshold`` is less than 0.0.
     """
     df = df.copy()
 

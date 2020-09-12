@@ -34,7 +34,10 @@ def test__flag_jumps_single_col_raises_error_for_bad_scale_type(
     """Test that invalid scale argument raises a JanitorError."""
     # Setup
     df = timeseries_dataframe
-    expected_error_msg = "Unrecognized scale: 'bad_scale'. Must be one of: ['absolute', 'percentage']."
+    expected_error_msg = (
+        "Unrecognized scale: 'bad_scale'. "
+        + "Must be one of: ['absolute', 'percentage']."
+    )
 
     # Exercise
     with pytest.raises(JanitorError) as error_info:
@@ -55,7 +58,10 @@ def test__flag_jumps_single_col_raises_error_for_bad_direction_type(
     """Test that invalid direction argument raises a JanitorError."""
     # Setup
     df = timeseries_dataframe
-    expected_error_msg = "Unrecognized direction: 'bad_direction'. Must be one of: ['increasing', 'decreasing', 'any']."
+    expected_error_msg = (
+        "Unrecognized direction: 'bad_direction'. "
+        + "Must be one of: ['increasing', 'decreasing', 'any']."
+    )
 
     # Exercise
     with pytest.raises(JanitorError) as error_info:
@@ -80,7 +86,10 @@ def test__flag_jumps_single_col_raises_error_for_bad_threshold_value(
     """Test that invalid threshold argument raises a JanitorError."""
     # Setup
     df = timeseries_dataframe
-    expected_error_msg = "Unrecognized threshold: -1. This value must be >= 0.0. Use 'direction' to specify positive or negative intent."
+    expected_error_msg = (
+        "Unrecognized threshold: -1. This value must be >= 0.0. "
+        + "Use 'direction' to specify positive or negative intent."
+    )
 
     # Exercise
     with pytest.raises(JanitorError) as error_info:
@@ -146,9 +155,9 @@ def test__flag_jumps_single_col_absolute_scale_inverse_direction(
 ):
     """
     Test utility function for flagging jumps with absolute scale.
-    Here, the inverse `direction` is provided so should not flag anything
-        (i.e. increasing when the df column is truly decreasing
-        and increasing when the df column is truly increasing)
+    Here, the inverse `direction` is provided so should not flag
+    anything (i.e. increasing when the df column is truly decreasing
+    and increasing when the df column is truly increasing)
     """
     # Setup
     df = timeseries_dataframe
@@ -240,10 +249,10 @@ def test__flag_jumps_single_col_percentage_scale_correct_direction(
     timeseries_dataframe, col, direction, expected
 ):
     """
-    Test utility function for flagging jumps with percentage scale (25% jump).
-    Here, the correct/anticipated `direction` is provided
-        (i.e. increasing when the df column is truly increasing
-        and decreasing when the df column is truly decreasing)
+    Test utility function for flagging jumps with percentage scale and
+    a 25% jump. Here, the correct/anticipated `direction` is provided
+    (i.e. increasing when the df column is truly increasing and
+    decreasing when the df column is truly decreasing).
     """
     # Setup
     df = timeseries_dataframe
@@ -275,10 +284,10 @@ def test__flag_jumps_single_col_percentage_scale_inverse_direction(
     timeseries_dataframe, col, direction, expected
 ):
     """
-    Test utility function for flagging jumps with percentage scale (25% jump).
-    Here, the inverse `direction` is provided so should not flag anything
-        (i.e. increasing when the df column is truly decreasing
-        and increasing when the df column is truly increasing)
+    Test utility function for flagging jumps with percentage scale and
+    a 25% jump. Here, the inverse `direction` is provided so should not
+    flag anything (i.e. increasing when the df column is truly
+    decreasing and increasing when the df column is truly increasing).
     """
     # Setup
     df = timeseries_dataframe
@@ -309,8 +318,9 @@ def test__flag_jumps_single_col_percentage_scale_any_direction(
     timeseries_dataframe, col, expected
 ):
     """
-    Test utility function for flagging jumps with percentage scale (10% jump).
-    Here, the any direction is provided so should flag everything.
+    Test utility function for flagging jumps with percentage scale and
+    a 10% jump. Here, the any direction is provided so should flag
+    everything.
     """
     # Setup
     df = timeseries_dataframe
@@ -331,9 +341,9 @@ def test__flag_jumps_single_col_percentage_scale_flags_large_jump(
     timeseries_dataframe
 ):
     """
-    Test utility function for flagging jumps with percentage scale.
-    Here, a large threshold is used to verify only drastically changed
-    rows are flagged.
+    Test utility function for flagging jumps with percentage scale and
+    a 100% jump. Here, a large threshold is used to verify only
+    drastically changed rows are flagged.
     """
     # Setup
     df = timeseries_dataframe
@@ -373,7 +383,10 @@ def test_flag_jumps_raises_error_for_strict_no_arg_dicts(timeseries_dataframe):
     df = timeseries_dataframe
 
     # Exercise
-    expected_error_msg = "When enacting 'strict=True', 'scale', 'direction', or 'threshold' must be a dictionary."
+    expected_error_msg = (
+        "When enacting 'strict=True', 'scale', 'direction', "
+        + "or 'threshold' must be a dictionary."
+    )
 
     # Exercise
     with pytest.raises(JanitorError) as error_info:
@@ -391,7 +404,8 @@ def test_flag_jumps_raises_error_for_strict_no_arg_dicts(timeseries_dataframe):
 def test_flag_jumps_default_args(timeseries_dataframe):
     """
     Test the default values behave as expected.
-    Namely, `scale=percentage`, `direction=any`, `threshold=0.0` and `strict=False`
+    Namely, `scale=percentage`, `direction=any`, `threshold=0.0` and
+    `strict=False`.
     """
     # Setup
     df = timeseries_dataframe
@@ -437,9 +451,10 @@ def test_flag_jumps_all_args_specifed_as_non_dict(timeseries_dataframe):
 @pytest.mark.timeseries
 def test_flag_jumps_all_args_specified_as_dict(timeseries_dataframe):
     """
-    Test provided kwargs (of type dict) behaves as expeced.
-    Since strict defaults to `False`, col3, col4, and col5 will be flagged
-    and will use default args (`scale=percentage`, `direction=any`, `threshold=0.0`)
+    Test provided kwargs (of type dict) behaves as expected.
+    Since strict defaults to `False`, col3, col4, and col5 will be
+    flagged and will use default args (`scale=percentage`,
+    `direction=any`, and `threshold=0.0`).
     """
     df = timeseries_dataframe
     orig_cols = df.columns
@@ -464,7 +479,8 @@ def test_flag_jumps_all_args_specified_as_dict(timeseries_dataframe):
 @pytest.mark.timeseries
 def test_flag_jumps_strict_with_both_cols_in_all_args(timeseries_dataframe):
     """
-    Test provided strict behaves as expected (only col1 and col2 flagged)
+    Test provided strict behaves as expected
+    (only col1 and col2 flagged).
     """
     df = timeseries_dataframe
     orig_cols = df.columns
@@ -491,7 +507,8 @@ def test_flag_jumps_strict_with_both_cols_in_at_least_one_args(
     timeseries_dataframe
 ):
     """
-    Test provided strict behaves as expected (col4 not provided in any input arg dict thus not flagged)
+    Test provided strict behaves as expected
+    (col4 not provided in any input arg dict thus not flagged)
     When left unspecified, a column will be flagged based on defaults
     (`scale=percentage`, `direction=any`, `threshold=0.0`).
     """

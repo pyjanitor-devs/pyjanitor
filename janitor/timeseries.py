@@ -246,7 +246,24 @@ def flag_jumps(
     Create boolean column(s) that flag whether or not the change
     between consecutive rows exceeds a provided threshold.
 
-    Example usage:
+    Functional usage example:
+
+    .. code-block:: python
+
+        df = flag_jumps(df, scale="absolute", direction="any", threshold=2)
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.timeseries
+        df = (
+            pd.DatFrame(...)
+            .flag_jumps(scale="absolute", direction="any", threshold=2)
+        )
+
+    Detailed chaining examples:
 
     .. code-block:: python
 

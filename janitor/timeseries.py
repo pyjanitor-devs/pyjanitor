@@ -161,8 +161,8 @@ def _flag_jumps_single_col(
     provided threshold.
 
     Comparisons are always performed utilizing a GREATER THAN
-    threshold check (`.gt(threshold)`). Thus, flags correspond to values
-    that EXCEED the provided threshold.
+    threshold check. Thus, flags correspond to values that EXCEED
+    the provided threshold.
 
     The method used to create consecutive row comparisons is set by the
     `scale` argument. A `scale=absolute` corresponds to a difference
@@ -192,7 +192,8 @@ def _flag_jumps_single_col(
     direction_types = ["increasing", "decreasing", "any"]
     if direction not in direction_types:
         raise JanitorError(
-            f"Unrecognized direction: '{direction}'. Must be one of: {direction_types}."
+            f"Unrecognized direction: '{direction}'. "
+            + f"Must be one of: {direction_types}."
         )
 
     if threshold < 0:
@@ -209,25 +210,27 @@ def _flag_jumps_single_col(
         single_col_pcts = single_col.pct_change()
 
         if direction == "increasing":
-            # Using diffs ensures correct sign is used for incr/decr (see issue #711)
-            out = single_col_diffs.gt(0) & single_col_pcts.abs().gt(threshold)
+            # Using diffs ensures correct sign is used for incr/decr
+            # (see issue #711)
+            out = (single_col_diffs > 0) & (single_col_pcts.abs() > threshold)
 
         elif direction == "decreasing":
-            # Using diffs ensures correct sign is used for incr/decr (see issue #711)
-            out = single_col_diffs.lt(0) & single_col_pcts.abs().gt(threshold)
+            # Using diffs ensures correct sign is used for incr/decr
+            # (see issue #711)
+            out = (single_col_diffs < 0) & (single_col_pcts.abs() > threshold)
 
         else:
-            out = single_col_pcts.abs().gt(threshold)
+            out = single_col_pcts.abs() > threshold
 
     else:
         if direction == "increasing":
-            out = single_col_diffs.gt(threshold)
+            out = single_col_diffs > threshold
 
         elif direction == "decreasing":
-            out = single_col_diffs.lt(0) & single_col_diffs.abs().gt(threshold)
+            out = (single_col_diffs < 0) & (single_col_diffs.abs() > threshold)
 
         else:
-            out = single_col_diffs.abs().gt(threshold)
+            out = single_col_diffs.abs() > threshold
 
     out = out.astype(int)
 
@@ -299,7 +302,8 @@ def flag_jumps(
 
         # Applies specific criteria to certain dataframe columns
         # Applies default criteria to columns not specifically listed
-        # Appends a flag column for only those columns found in specified criteria
+        # Appends a flag column for only those columns found in
+        #   specified criteria
         df = (
             pd.DataFrame(...)
             .flag_jumps(
@@ -353,10 +357,12 @@ def flag_jumps(
             is False
         ):
             raise JanitorError(
-                "When enacting 'strict=True', 'scale', 'direction', or 'threshold' must be a dictionary."
+                "When enacting 'strict=True', 'scale', 'direction', or "
+                + "'threshold' must be a dictionary."
             )
 
-        # Only append a flag col for the cols that appear in at least one of the input dicts
+        # Only append a flag col for the cols that appear
+        # in at least one of the input dicts
         arg_keys = [
             arg.keys()
             for arg in (scale, direction, threshold)

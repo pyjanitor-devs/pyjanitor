@@ -133,7 +133,7 @@ def test__flag_jumps_single_col_absolute_scale_correct_direction(
     )
 
     # Verify
-    np.testing.assert_array_equal(result.values, expected)
+    np.testing.assert_array_equal(result.array, expected)
 
     # Cleanup - none necessary
 
@@ -168,7 +168,7 @@ def test__flag_jumps_single_col_absolute_scale_inverse_direction(
     )
 
     # Verify
-    np.testing.assert_array_equal(result.values, expected)
+    np.testing.assert_array_equal(result.array, expected)
 
     # Cleanup - none necessary
 
@@ -191,9 +191,7 @@ def test__flag_jumps_single_col_absolute_scale_any_direction(
     )
 
     # Verify
-    np.testing.assert_array_equal(
-        result.values, [0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    )
+    np.testing.assert_array_equal(result.array, [0, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
     # Cleanup - none necessary
 
@@ -222,12 +220,12 @@ def test__flag_jumps_single_col_absolute_scale_flags_large_jump(
     )
 
     # Verify
-    np.testing.assert_array_equal(result_incr.values, [0] * 10)
+    np.testing.assert_array_equal(result_incr.array, [0] * 10)
     np.testing.assert_array_equal(
-        result_decr.values, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        result_decr.array, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     )
     np.testing.assert_array_equal(
-        result_any.values, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        result_any.array, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
     )
 
     # Cleanup - none necessary
@@ -263,7 +261,7 @@ def test__flag_jumps_single_col_percentage_scale_correct_direction(
     )
 
     # Verify
-    np.testing.assert_array_equal(result.values, expected)
+    np.testing.assert_array_equal(result.array, expected)
 
     # Cleanup - none necessary
 
@@ -298,7 +296,7 @@ def test__flag_jumps_single_col_percentage_scale_inverse_direction(
     )
 
     # Verify
-    np.testing.assert_array_equal(result.values, expected)
+    np.testing.assert_array_equal(result.array, expected)
 
     # Cleanup - none necessary
 
@@ -331,7 +329,7 @@ def test__flag_jumps_single_col_percentage_scale_any_direction(
     )
 
     # Verify
-    np.testing.assert_array_equal(result.values, expected)
+    np.testing.assert_array_equal(result.array, expected)
 
     # Cleanup - none necessary
 
@@ -361,13 +359,13 @@ def test__flag_jumps_single_col_percentage_scale_flags_large_jump(
 
     # Verify
     np.testing.assert_array_equal(
-        result_incr.values, [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+        result_incr.array, [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
     )
     np.testing.assert_array_equal(
-        result_decr.values, [0, 0, 0, 0, 0, 0, 0, 1, 0, 1]
+        result_decr.array, [0, 0, 0, 0, 0, 0, 0, 1, 0, 1]
     )
     np.testing.assert_array_equal(
-        result_any.values, [0, 0, 0, 1, 0, 0, 0, 1, 0, 1]
+        result_any.array, [0, 0, 0, 1, 0, 0, 0, 1, 0, 1]
     )
 
     # Cleanup - none necessary
@@ -410,17 +408,18 @@ def test_flag_jumps_default_args(timeseries_dataframe):
     # Setup
     df = timeseries_dataframe
     orig_cols = df.columns
+
     expected = np.ones((10, 5), dtype=int)
     expected[0, :] = 0
+    expected_cols = [f"{c}_jump_flag" for c in orig_cols]
+    expected_df = pd.DataFrame(expected, columns=expected_cols, index=df.index)
 
     # Exercise
     df = df.flag_jumps()
 
     # Verify
-    assert list(df.columns) == list(orig_cols) + [
-        f"{c}_jump_flag" for c in orig_cols
-    ]
-    np.testing.assert_array_equal(df.filter(regex="flag").values, expected)
+    assert list(df.columns) == list(orig_cols) + expected_cols
+    assert df.filter(regex="flag").equals(expected_df)
 
     # Cleanup - none necessary
 
@@ -431,10 +430,13 @@ def test_flag_jumps_all_args_specifed_as_non_dict(timeseries_dataframe):
     # Setup
     df = timeseries_dataframe
     orig_cols = df.columns
+
     expected = np.ones((10, 5), dtype=int)
     expected[0, :] = 0
     expected[:, 2:4] = 0
     expected[5:10, 4] = 0
+    expected_cols = [f"{c}_jump_flag" for c in orig_cols]
+    expected_df = pd.DataFrame(expected, columns=expected_cols, index=df.index)
 
     # Exercise
     df = df.flag_jumps(
@@ -442,10 +444,10 @@ def test_flag_jumps_all_args_specifed_as_non_dict(timeseries_dataframe):
     )
 
     # Verify
-    assert list(df.columns) == list(orig_cols) + [
-        f"{c}_jump_flag" for c in orig_cols
-    ]
-    np.testing.assert_array_equal(df.filter(regex="flag").values, expected)
+    assert list(df.columns) == list(orig_cols) + expected_cols
+    assert df.filter(regex="flag").equals(expected_df)
+
+    # Cleanup - none necessary
 
 
 @pytest.mark.timeseries
@@ -458,9 +460,12 @@ def test_flag_jumps_all_args_specified_as_dict(timeseries_dataframe):
     """
     df = timeseries_dataframe
     orig_cols = df.columns
+
     expected = np.ones((10, 5), dtype=int)
     expected[0, :] = 0
     expected[:, 0:2] = 0
+    expected_cols = [f"{c}_jump_flag" for c in orig_cols]
+    expected_df = pd.DataFrame(expected, columns=expected_cols, index=df.index)
 
     # Exercise
     df = df.flag_jumps(
@@ -470,10 +475,10 @@ def test_flag_jumps_all_args_specified_as_dict(timeseries_dataframe):
     )
 
     # Verify
-    assert list(df.columns) == list(orig_cols) + [
-        f"{c}_jump_flag" for c in orig_cols
-    ]
-    np.testing.assert_array_equal(df.filter(regex="flag").values, expected)
+    assert list(df.columns) == list(orig_cols) + expected_cols
+    assert df.filter(regex="flag").equals(expected_df)
+
+    # Cleanup - none necessary
 
 
 @pytest.mark.timeseries
@@ -484,7 +489,10 @@ def test_flag_jumps_strict_with_both_cols_in_all_args(timeseries_dataframe):
     """
     df = timeseries_dataframe
     orig_cols = df.columns
+
     expected = np.zeros((10, 2), dtype=int)
+    expected_cols = ["col1_jump_flag", "col2_jump_flag"]
+    expected_df = pd.DataFrame(expected, columns=expected_cols, index=df.index)
 
     # Exercise
     df = df.flag_jumps(
@@ -495,11 +503,10 @@ def test_flag_jumps_strict_with_both_cols_in_all_args(timeseries_dataframe):
     )
 
     # Verify
-    assert list(df.columns) == list(orig_cols) + [
-        "col1_jump_flag",
-        "col2_jump_flag",
-    ]
-    np.testing.assert_array_equal(df.filter(regex="flag").values, expected)
+    assert list(df.columns) == list(orig_cols) + expected_cols
+    assert df.filter(regex="flag").equals(expected_df)
+
+    # Cleanup - none necessary
 
 
 @pytest.mark.timeseries
@@ -514,12 +521,15 @@ def test_flag_jumps_strict_with_both_cols_in_at_least_one_args(
     """
     df = timeseries_dataframe
     orig_cols = df.columns
+
     expected = np.ones((10, 4), dtype=int)
     expected[0, :] = 0
     expected[:, 3] = 0
     expected[3, 3] = 1
     expected[7, 3] = 1
     expected[9, 3] = 1
+    expected_cols = [f"col{i}_jump_flag" for i in [1, 2, 3, 5]]
+    expected_df = pd.DataFrame(expected, columns=expected_cols, index=df.index)
 
     # Exercise
     df = df.flag_jumps(
@@ -530,10 +540,10 @@ def test_flag_jumps_strict_with_both_cols_in_at_least_one_args(
     )
 
     # Verify
-    assert list(df.columns) == list(orig_cols) + [
-        f"col{i}_jump_flag" for i in [1, 2, 3, 5]
-    ]
-    np.testing.assert_array_equal(df.filter(regex="flag").values, expected)
+    assert list(df.columns) == list(orig_cols) + expected_cols
+    assert df.filter(regex="flag").equals(expected_df)
+
+    # Cleanup - none necessary
 
 
 @pytest.mark.timeseries
@@ -550,7 +560,9 @@ def test_flag_jumps_for_one_column(timeseries_dataframe):
 
     # Verify
     assert list(df.columns) == list(orig_cols) + ["col1_jump_flag"]
-    np.testing.assert_array_equal(df["col1_jump_flag"].values, expected)
+    np.testing.assert_array_equal(df["col1_jump_flag"].array, expected)
+
+    # Cleanup - none necessary
 
 
 @pytest.mark.timeseries
@@ -592,7 +604,8 @@ def test_flag_jumps_on_issue_provided_use_case():
     )
 
     df["DateTime"] = pd.to_datetime(df["DateTime"])
-    df.set_index("DateTime", inplace=True)
+    df = df.set_index("DateTime")
+    orig_cols = df.columns
 
     expected = np.zeros((25, 4), dtype=int)
     expected[3, 2] = 1
@@ -600,6 +613,8 @@ def test_flag_jumps_on_issue_provided_use_case():
     expected[13, 2] = 1
     expected[18, 2] = 1
     expected[23, 2] = 1
+    expected_cols = [f"{c}_jump_flag" for c in orig_cols]
+    expected_df = pd.DataFrame(expected, columns=expected_cols, index=df.index)
 
     # Exercise
     result = df.flag_jumps(
@@ -607,6 +622,7 @@ def test_flag_jumps_on_issue_provided_use_case():
     )
 
     # Verify
-    np.testing.assert_array_equal(result.filter(regex="flag").values, expected)
+    assert list(result.columns) == list(orig_cols) + expected_cols
+    assert result.filter(regex="flag").equals(expected_df)
 
     # Cleanup - none necessary

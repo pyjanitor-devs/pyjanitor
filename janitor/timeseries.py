@@ -185,13 +185,18 @@ def _flag_jumps_single_col(
     scale_types = ["absolute", "percentage"]
     if scale not in scale_types:
         raise JanitorError(
-            f"Unrecognized scale='{scale}'. Must be one of: {scale_types}"
+            f"Unrecognized scale: '{scale}'. Must be one of: {scale_types}."
         )
 
     direction_types = ["increasing", "decreasing", "any"]
     if direction not in direction_types:
         raise JanitorError(
-            f"Unrecognized direction='{direction}'. Must be one of: {direction_types}"
+            f"Unrecognized direction: '{direction}'. Must be one of: {direction_types}."
+        )
+
+    if threshold < 0:
+        raise JanitorError(
+            f"Unrecognized threshold: {threshold}. This value must be >= 0.0. Use 'direction' to specify positive or negative intent."
         )
 
     single_col = df[col]
@@ -343,7 +348,7 @@ def flag_jumps(
         # Append a flag col for each col in the dataframe
         cols = df.columns
 
-    for col in cols:
+    for col in sorted(cols):
 
         # Allow arguments to be a mix of dict and single instances
         s = scale.get(col, "percentage") if isinstance(scale, dict) else scale
@@ -358,7 +363,7 @@ def flag_jumps(
             else threshold
         )
 
-        df[f"{col}_flag_jumps"] = _flag_jumps_single_col(
+        df[f"{col}_jump_flag"] = _flag_jumps_single_col(
             df, col, scale=s, direction=d, threshold=t
         )
 

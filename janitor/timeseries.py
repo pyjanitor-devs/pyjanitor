@@ -1,4 +1,4 @@
-"""Time series-specific data cleaning functions."""
+""" Time series-specific data cleaning functions. """
 
 import pandas as pd
 import pandas_flavor as pf

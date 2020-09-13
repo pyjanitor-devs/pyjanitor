@@ -1,6 +1,4 @@
-"""
-Time series-specific data testing and cleaning functions.
-"""
+"""Time series-specific data cleaning functions."""
 
 import pandas as pd
 import pandas_flavor as pf
@@ -22,8 +20,27 @@ def fill_missing_timestamps(
     this function will reindex the dataframe.
     If timestamps are not missing,
     then the function will return the dataframe unmodified.
-    Example usage:
+
+    Functional usage example:
+
     .. code-block:: python
+
+        import pandas as pd
+        import janitor.timeseries
+
+        df = pd.DataFrame(...)
+
+        df = janitor.timeseries.fill_missing_timestamps(
+            df=df,
+            frequency="1H",
+        )
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.timeseries
 
         df = (
             pd.DataFrame(...)
@@ -102,13 +119,29 @@ def sort_timestamps_monotonically(
     If timestamps are not monotonic,
     then the function will sort the dataframe.
 
-    Example usage:
+    Functional usage example:
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor.timeseries
+
+        df = pd.DataFrame(...)
+
+        df = janitor.timeseries.sort_timestamps_monotonically(
+            direction="increasing"
+        )
+
+    Method chaining example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor.timeseries
+
         df = (
             pd.DataFrame(...)
-            .sort_timestamps_monotonically(direction='increasing')
+            .sort_timestamps_monotonically(direction="increasing")
         )
 
     :param df: Dataframe which needs to be tested for monotonicity

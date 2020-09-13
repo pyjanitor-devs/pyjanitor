@@ -1,4 +1,4 @@
-janitor.spark.clean\_names
+﻿janitor.spark.clean\_names
 ==========================
 
 .. currentmodule:: janitor.spark

@@ -1,4 +1,4 @@
-janitor.collapse\_levels
+﻿janitor.collapse\_levels
 ========================
 
 .. currentmodule:: janitor

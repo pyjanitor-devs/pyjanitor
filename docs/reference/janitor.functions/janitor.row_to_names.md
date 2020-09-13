@@ -1,4 +1,4 @@
-janitor.row\_to\_names
+﻿janitor.row\_to\_names
 ======================
 
 .. currentmodule:: janitor

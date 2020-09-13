@@ -1,4 +1,4 @@
-janitor.sort\_naturally
+﻿janitor.sort\_naturally
 =======================
 
 .. currentmodule:: janitor

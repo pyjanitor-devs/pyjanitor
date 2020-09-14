@@ -1,4 +1,4 @@
-janitor.count\_cumulative\_unique
+﻿janitor.count\_cumulative\_unique
 =================================
 
 .. currentmodule:: janitor

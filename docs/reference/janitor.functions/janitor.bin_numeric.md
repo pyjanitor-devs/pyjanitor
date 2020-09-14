@@ -1,4 +1,4 @@
-janitor.bin\_numeric
+﻿janitor.bin\_numeric
 ====================
 
 .. currentmodule:: janitor

@@ -1,4 +1,4 @@
-janitor.min\_max\_scale
+﻿janitor.min\_max\_scale
 =======================
 
 .. currentmodule:: janitor

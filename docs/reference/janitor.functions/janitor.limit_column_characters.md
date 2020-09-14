@@ -1,4 +1,4 @@
-janitor.limit\_column\_characters
+﻿janitor.limit\_column\_characters
 =================================
 
 .. currentmodule:: janitor

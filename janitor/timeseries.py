@@ -287,7 +287,17 @@ def flag_jumps(
 
     .. code-block:: python
 
-        df = flag_jumps(df, scale="absolute", direction="any", threshold=2)
+        import pandas as pd
+        import janitor.timeseries
+
+        df = pd.DataFrame(...)
+
+        df = flag_jumps(
+            df=df,
+            scale="absolute",
+            direction="any",
+            threshold=2,
+        )
 
     Method chaining example:
 
@@ -295,9 +305,14 @@ def flag_jumps(
 
         import pandas as pd
         import janitor.timeseries
+
         df = (
             pd.DatFrame(...)
-            .flag_jumps(scale="absolute", direction="any", threshold=2)
+            .flag_jumps(
+                scale="absolute",
+                direction="any",
+                threshold=2,
+            )
         )
 
     Detailed chaining examples:
@@ -308,7 +323,11 @@ def flag_jumps(
         # Appends a flag column for each column in the dataframe
         df = (
             pd.DataFrame(...)
-            .flag_jumps(scale="absolute", direction="any", threshold=2)
+            .flag_jumps(
+                scale="absolute",
+                direction="any",
+                threshold=2
+            )
         )
 
         # Applies specific criteria to certain dataframe columns

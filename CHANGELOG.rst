@@ -6,7 +6,9 @@ new version (on deck)
 - [ENH] Further simplification of expand_grid. @samukweku
 - [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
 - [ENH] Added `also` method for running functions in chain with no return values.
+- [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
+
 
 v0.20.9
 =======

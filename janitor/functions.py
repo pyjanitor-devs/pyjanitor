@@ -19,6 +19,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    Pattern
 )
 
 import numpy as np
@@ -4587,3 +4588,55 @@ def complete(
         df = df.fillna(fill_value)
 
     return df
+
+
+@pf.register_dataframe_method
+def pivot_longer(
+    df: pd.DataFrame,
+    index:Optional[List, Tuple] = None, 
+    columns: Optional[List, Tuple] = None,
+    columns_pattern:Optional[Pattern[str]] = None,
+    names_sep: Optional[str]= None,
+    names_pattern: Optional[Pattern[str]] = None,
+    names_to: Optional[List, Tuple] = None,
+    values_to: Optional[List, Tuple] = None
+) -> pd.DataFrame:
+    # copy docstrings from previous PR
+
+    # notes for myself
+    # delete later
+    # if names_sep, then no names_pattern and vice versa
+    # how do i include stubnames, suffix, i, j, ... pd.wide_to_long
+    # names_prefix for stubnames?
+    # change name_sep to sep
+    # for tidy data, should stubnames be there?
+
+    if index is not None:
+        # check data type
+        if not isinstance(index, [list, tuple]):
+            raise TypeError("index argument must be a list or tuple of columns.")
+        # check if columns exist in dataframe
+        check_column(df, index, present=True)
+    if columns is not None:
+        if not isinstance(columns, [list, tuple]):
+            raise TypeError("columns argument must be a list or tuple of columns.")
+        check_column(df, columns, present=True)
+    if names_to is not None:
+        if not isinstance(names_to, [list, tuple]):
+            raise TypeError("names_to argument must be a list or tuple of strings.")
+    if names_to is not None:
+        if not isinstance(values_to, [list, tuple]):
+            raise TypeError("values_to argument must be a list or tuple of strings.")
+    if columns_pattern is not None:
+        if not isinstance(columns_pattern, Pattern):
+            raise TypeError("columns_pattern argument should be a regular expression.")
+    if names_pattern is not None:
+        if not isinstance(names_pattern, Pattern):
+            raise TypeError("names_pattern argument should be a regular expression.")
+        if names_sep is not None:
+            raise ValueError("only one of ``names_pattern`` or ``names_sep`` is required.")
+    if names_sep is not None:
+        if not isinstance(names_sep, str):
+            raise TypeError("names_sep argument should be a string.")
+    return df
+

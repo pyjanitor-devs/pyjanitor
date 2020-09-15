@@ -7,6 +7,8 @@ new version (on deck)
 - [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
 - [ENH] Added `also` method for running functions in chain with no return values.
 - [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
+- [ENH] Added a `pivot_longer` function, a wrapper around ``pd.melt`` and similar to 
+  tidyr's ``pivot_longer`` function. @samukweku
 
 v0.20.9
 =======

@@ -1,10 +1,12 @@
 new version (on deck)
 =====================
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
-- [ENH] Added the complete function for converting implicit missing values 
+- [ENH] Added the complete function for converting implicit missing values
   to explicit ones. @samukweku
 - [ENH] Further simplification of expand_grid. @samukweku
 - [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
+- [ENH] Added `also` method for running functions in chain with no return values.
+- [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
 
 v0.20.9
 =======

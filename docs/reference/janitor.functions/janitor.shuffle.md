@@ -1,4 +1,4 @@
-janitor.shuffle
+﻿janitor.shuffle
 ===============
 
 .. currentmodule:: janitor

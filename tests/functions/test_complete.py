@@ -157,6 +157,7 @@ def test_empty_columns(df1):
     with pytest.raises(ValueError):
         df1.complete(columns=[])
 
+
 def test_fill_value_is_a_dict(df1):
     """Raise error if fill_value is not a dictionary"""
     with pytest.raises(TypeError):
@@ -325,19 +326,3 @@ def test_duplicate_index():
     result = df.complete(columns=["row", "column"], fill_value={"value": 0})
 
     assert_frame_equal(result, dup_expected_output)
-
-
-
-df10 = pd.DataFrame(
-        {
-            "Year": [1999, 2000, 2004, 1999, 2004],
-            "Taxon": [
-                "Saccharina",
-                "Saccharina",
-                "Saccharina",
-                "Agarum",
-                "Agarum",
-            ],
-            "Abundance": [4, 5, 2, 1, 8],
-        }
-    )

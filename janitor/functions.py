@@ -2,6 +2,7 @@
 
 import datetime as dt
 import inspect
+import itertools
 import re
 import unicodedata
 import warnings
@@ -33,6 +34,7 @@ from .errors import JanitorError
 from .utils import (
     _check_instance,
     _clean_accounting_column,
+    _complete_groupings,
     _currency_column_to_numeric,
     _grid_computation,
     _replace_empty_string_with_none,
@@ -1901,7 +1903,7 @@ def limit_column_characters(
     col_names = [col_name[:column_length] for col_name in col_names]
 
     col_name_set = set(col_names)
-    col_name_count = dict()
+    col_name_count = {}
 
     # If no columns are duplicates, we can skip the loops below.
     if len(col_name_set) == len(col_names):
@@ -2962,6 +2964,43 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 
 @pf.register_dataframe_method
+def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
+    """Add an arbitrary function with no return value to run in the
+    ``pyjanitor`` method chain. This returns the input dataframe instead,
+    not the output of `func`.
+
+    This method does not mutate the original DataFrame.
+
+    Example usage:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .query(...)
+            .also(lambda df: print(f"DataFrame shape is: {df.shape}"))
+            .transform_column(...)
+            .also(lambda df: df.to_csv("midpoint.csv"))
+            .also(
+                lambda df: print(
+                    f"Column col_name has these values: {set(df['col_name'].unique())}"
+                )
+            )
+            .group_add(...)
+        )
+
+    :param df: A pandas dataframe.
+    :param func: A function you would like to run in the method chain.
+        It should take one DataFrame object as a parameter and have no return.
+        If there is a return, it will be ignored.
+    :param args, kwargs: Optional arguments and keyword arguments for `func`.
+    :returns: The input pandas DataFrame.
+    """  # noqa: E501
+    func(df.copy(), *args, **kwargs)
+    return df
+
+
+@pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """Drop rows that do not have null values in the given column.
@@ -3244,9 +3283,30 @@ def groupby_agg(
     :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
-    new_col = df.groupby(by)[agg_column_name].transform(agg)
-    df_new = df.assign(**{new_column_name: new_col})
-    return df_new
+    df = df.copy()
+    # convert to list
+    # needed when creating a mapping through the iteration
+    if isinstance(by, str):
+        by = [by]
+    # this is a temporary measure, till the minimum Pandas version is 1.1,
+    # which supports null values in the group by
+    # If any of the grouping columns has null values, we temporarily
+    # replace the values with some outrageous value, that should not exist
+    # in the column. Also, the hasnans property is significantly faster than
+    # .isnull().any()
+    if any(df[col].hasnans for col in by):
+
+        mapping = {
+            column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
+        }
+
+        df[new_column_name] = (
+            df.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
+        )
+
+    else:
+        df[new_column_name] = df.groupby(by)[agg_column_name].transform(agg)
+    return df
 
 
 @pf.register_dataframe_accessor("data_description")
@@ -3259,12 +3319,12 @@ class DataDescription:
     def __init__(self, data):
         """Initialize DataDescription class."""
         self._data = data
-        self._desc = dict()
+        self._desc = {}
 
     def _get_data_df(self) -> pd.DataFrame:
         df = self._data
 
-        data_dict = dict()
+        data_dict = {}
         data_dict["column_name"] = df.columns.tolist()
         data_dict["type"] = df.dtypes.tolist()
         data_dict["count"] = df.count().tolist()
@@ -3906,6 +3966,9 @@ def expand_grid(
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
+    Note that if a MultiIndex dataframe or series is passed, the index/columns
+    will be discarded, and a single indexed dataframe will be returned.
+
     The output will always be a dataframe.
 
     Example:
@@ -3989,6 +4052,7 @@ def expand_grid(
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
+        df = df.copy()
         if isinstance(df.index, pd.MultiIndex) or isinstance(
             df.columns, pd.MultiIndex
         ):
@@ -4091,6 +4155,7 @@ def process_text(
     :raises: KeyError if ``string_function`` is not a Pandas string method.
     :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
     """
+    df = df.copy()
 
     pandas_string_methods = [
         func.__name__
@@ -4101,7 +4166,9 @@ def process_text(
     if string_function not in pandas_string_methods:
         raise KeyError(f"{string_function} is not a Pandas string method.")
 
-    df[column] = getattr(df[column].str, string_function)(*args, **kwargs)
+    df.loc[:, column] = getattr(df.loc[:, column].str, string_function)(
+        *args, **kwargs
+    )
 
     return df
 
@@ -4168,7 +4235,7 @@ def fill_direction(
         df = jn.fill_direction(
             df = df,
             directions = {column_1 : direction_1, column_2 : direction_2, ...},
-            limit = None # limit must be greater than 0
+            limit = None # limit must be None or greater than 0
             )
 
     Method-chaining usage syntax:
@@ -4182,7 +4249,7 @@ def fill_direction(
             pd.DataFrame(...)
             .fill_direction(
             directions = {column_1 : direction_1, column_2 : direction_2, ...},
-            limit = None # limit must be greater than 0
+            limit = None # limit must be None or greater than 0
             )
         )
 
@@ -4191,14 +4258,14 @@ def fill_direction(
         can be either `down`(default), `up`, `updown`(fill up then down) and
         `downup` (fill down then up).
     :param limit: number of consecutive null values to forward/backward fill.
-        Value must be greater than 0.
+        Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
     :raises: ValueError if ``directions`` dictionary is empty.
     :raises: ValueError if column supplied is not in the dataframe.
     :raises: ValueError if direction supplied is not one of `down`,`up`,
         `updown`, or `downup`.
     """
-
+    df = df.copy()
     # check that dictionary is not empty
     if not directions:
         raise ValueError("A mapping of columns with directions is required.")
@@ -4244,4 +4311,279 @@ def fill_direction(
             df.loc[:, column] = (
                 df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
             )
+    return df
+
+
+@pf.register_dataframe_method
+def groupby_topk(
+    df: pd.DataFrame,
+    groupby_column_name: Hashable,
+    sort_column_name: Hashable,
+    k: int,
+    sort_values_kwargs: Dict = None,
+) -> pd.DataFrame:
+    """
+    Return top `k` rows from a groupby of a set of columns.
+
+    Returns a dataframe that has the top `k` values grouped by `groupby_column_name`
+    and sorted by `sort_column_name`.
+    Additional parameters to the sorting (such as ascending=True)
+    can be passed using `sort_values_kwargs`.
+
+    List of all sort_values() parameters can be found here_.
+
+    .. _here: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html
+
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({'age' : [20, 22, 24, 23, 21, 22],
+                           'ID' : [1,2,3,4,5,6],
+                           'result' : ["pass", "fail", "pass",
+                                       "pass", "fail", "pass"]})
+
+        # Ascending top 3:
+        df.groupby_topk('result', 'age', 3)
+        #       age  ID  result
+        #result
+        #fail   21   5   fail
+        #       22   2   fail
+        #pass   20   1   pass
+        #       22   6   pass
+        #       23   4   pass
+
+        #Descending top 2:
+        df.groupby_topk('result', 'age', 2, {'ascending':False})
+        #       age  ID result
+        #result
+        #fail   22   2   fail
+        #       21   5   fail
+        #pass   24   3   pass
+        #       23   4   pass
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.groupby_topk(
+            df = df,
+            groupby_column_name = 'groupby_column',
+            sort_column_name = 'sort_column',
+            k = 5
+            )
+
+    Method-chaining usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = (
+            pd.DataFrame(...)
+            .groupby_topk(
+            df = df,
+            groupby_column_name = 'groupby_column',
+            sort_column_name = 'sort_column',
+            k = 5
+            )
+        )
+
+    :param df: A pandas dataframe.
+    :param groupby_column_name: Column name to group input dataframe `df` by.
+    :param sort_column_name: Name of the column to sort along the
+        input dataframe `df`.
+    :param k: Number of top rows to return from each group after sorting.
+    :param sort_values_kwargs: Arguments to be passed to sort_values function.
+    :returns: A pandas dataframe with top `k` rows that are grouped by
+        `groupby_column_name` column with each group sorted along the
+        column `sort_column_name`.
+    :raises: ValueError if `k` is less than 1.
+    :raises: ValueError if `groupby_column_name` not in dataframe `df`.
+    :raises: ValueError if `sort_column_name` not in dataframe `df`.
+    :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
+    """  # noqa: E501
+
+    # Convert the default sort_values_kwargs from None to empty Dict
+    sort_values_kwargs = sort_values_kwargs or {}
+
+    # Check if groupby_column_name and sort_column_name exists in the dataframe
+    check_column(df, [groupby_column_name, sort_column_name])
+
+    # Check if k is greater than 0.
+    if k < 1:
+        raise ValueError(
+            "Numbers of rows per group to be returned must be greater than 0."
+        )
+
+    # Check if inplace:True in sort values kwargs because it returns None
+    if (
+        "inplace" in sort_values_kwargs.keys()
+        and sort_values_kwargs["inplace"]
+    ):
+        raise KeyError("Cannot use `inplace=True` in `sort_values_kwargs`.")
+
+    return df.groupby(groupby_column_name).apply(
+        lambda d: d.sort_values(sort_column_name, **sort_values_kwargs).head(k)
+    )
+
+
+@pf.register_dataframe_method
+def complete(
+    df: pd.DataFrame,
+    columns: List[Union[List, Tuple, Dict, str]],
+    fill_value: Optional[Dict] = None,
+) -> pd.DataFrame:
+    """
+    This function shows all possible combinations in a dataframe, including
+    the missing values.
+
+    This function is similar to tidyr's `complete` function.
+
+    Individual combinations or combinations with groupings are possible.
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+            Year      Taxon         Abundance
+        0   1999    Saccharina         4
+        1   2000    Saccharina         5
+        2   2004    Saccharina         2
+        3   1999     Agarum            1
+        4   2004     Agarum            8
+
+        Data Source - http://imachordata.com/2016/02/05/you-complete-me/
+
+        Note that Year 2000 and Agarum pairing is missing. Let's make it
+        explicit:
+
+        df.complete(columns = ['Year', 'Taxon'])
+
+           Year      Taxon     Abundance
+        0  1999     Agarum         1.0
+        1  1999     Saccharina     4.0
+        2  2000     Agarum         NaN
+        3  2000     Saccharina     5.0
+        4  2004     Agarum         8.0
+        5  2004     Saccharina     2.0
+
+        The null value can be replaced with the fill_value argument:
+
+        df.complete(columns = ['Year', 'Taxon'],
+                    fill_value={"Abundance":0})
+
+           Year      Taxon     Abundance
+        0  1999     Agarum         1.0
+        1  1999     Saccharina     4.0
+        2  2000     Agarum         0.0
+        3  2000     Saccharina     5.0
+        4  2004     Agarum         8.0
+        5  2004     Saccharina     2.0
+
+        What if we wanted the explicit missing values for all the years from
+        1999 to 2004? Easy - simply pass a dictionary pairing the column name
+        with the new values :
+
+        df.complete(columns = [{"Year": range(df.Year.min(),
+                                              df.Year.max() + 1)},
+                                       "Taxon"],
+                    fill_value={"Abundance":0})
+
+            Year      Taxon     Abundance
+        0   1999     Agarum         1.0
+        1   1999    Saccharina      4.0
+        2   2000     Agarum         0.0
+        3   2000    Saccharina      5.0
+        4   2001     Agarum         0.0
+        5   2001    Saccharina      0.0
+        6   2002     Agarum         0.0
+        7   2002    Saccharina      0.0
+        8   2003     Agarum         0.0
+        9  2003     Saccharina      0.0
+        10  2004     Agarum         8.0
+        11  2004    Saccharina      2.0
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.complete(
+            df = df,
+            columns= [
+                column_label,
+                (column1, column2, ...),
+                {column1: new_values, ...}
+            ],
+            fill_value = None
+        )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .complete(columns=[
+                column_label,
+                (column1, column2, ...),
+                {column1: new_values, ...},
+            ],
+            fill_value=None,
+        )
+
+
+    :param df: A pandas dataframe.
+    :param columns: This is a list containing the columns to be
+        completed. It could be column labels (string trype),
+        a list/tuple of column labels, or a dictionary that pairs
+        column labels with new values.
+    :param fill_value: Dictionary pairing the columns with the null replacement
+        value.
+    :returns: A pandas dataframe with modified column(s).
+    :raises: ValueError if `columns` is empty.
+    :raises: TypeError if `columns` is not a list.
+    :raises: ValueError if entry in `columns` is not a
+        str/dict/list/tuple.
+    :raises: ValueError if entry in `columns` is a dict/list/tuple
+        and is empty.
+    """
+    df = df.copy()
+    if not isinstance(columns, list):
+        raise TypeError("Columns should be in a list")
+    if not columns:
+        raise ValueError("columns cannot be empty")
+    # if there is no grouping within the list of columns :
+    if all(isinstance(column, str) for column in columns):
+        # Using sets gets more speed than say np.unique or drop_duplicates
+        reindex_columns = [set(df[item].array) for item in columns]
+        reindex_columns = itertools.product(*reindex_columns)
+        df = df.set_index(columns)
+
+    else:
+        df, reindex_columns = _complete_groupings(df, columns)
+
+    if df.index.has_duplicates:
+        reindex_columns = pd.DataFrame(
+            [], index=pd.Index(reindex_columns, names=columns)
+        )
+        df = df.join(reindex_columns, how="outer").reset_index()
+    else:
+        df = df.reindex(sorted(reindex_columns)).reset_index()
+
+    if fill_value:
+        df = df.fillna(fill_value)
+
     return df

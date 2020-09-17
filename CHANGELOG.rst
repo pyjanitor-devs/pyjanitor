@@ -1,5 +1,17 @@
 new version (on deck)
 =====================
+- [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
+- [ENH] Added the complete function for converting implicit missing values
+  to explicit ones. @samukweku
+- [ENH] Further simplification of expand_grid. @samukweku
+- [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
+- [ENH] Added `also` method for running functions in chain with no return values.
+- [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
+
+v0.20.9
+=======
+- [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
+- [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
 
 
 v0.20.8
@@ -21,6 +33,7 @@ v0.20.8
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
 - [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
+
 
 
 v0.20.7

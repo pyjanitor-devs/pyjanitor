@@ -1,4 +1,4 @@
-janitor.encode\_categorical
+﻿janitor.encode\_categorical
 ===========================
 
 .. currentmodule:: janitor

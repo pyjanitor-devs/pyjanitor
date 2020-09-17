@@ -1,4 +1,4 @@
-janitor.filter\_on
+﻿janitor.filter\_on
 ==================
 
 .. currentmodule:: janitor

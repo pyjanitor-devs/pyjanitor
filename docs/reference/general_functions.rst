@@ -80,6 +80,7 @@ Other
     :toctree: janitor.functions/
 
     then
+    also
     shuffle
     count_cumulative_unique
     sort_naturally
@@ -88,4 +89,5 @@ Other
     move
     toset
     unionize_dataframe_categories
-    
+    groupby_topk
+    complete

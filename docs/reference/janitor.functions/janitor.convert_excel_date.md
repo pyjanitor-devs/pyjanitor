@@ -1,4 +1,4 @@
-janitor.convert\_excel\_date
+﻿janitor.convert\_excel\_date
 ============================
 
 .. currentmodule:: janitor

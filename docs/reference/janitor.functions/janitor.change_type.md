@@ -1,4 +1,4 @@
-janitor.change\_type
+﻿janitor.change\_type
 ====================
 
 .. currentmodule:: janitor

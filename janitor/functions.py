@@ -4593,9 +4593,9 @@ def complete(
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index:Optional[List, Tuple, str, Callable] = None, 
+    index: Optional[List, Tuple, str, Callable] = None,
     columns: Optional[List, Tuple, str, Callable] = None,
-    names_sep: Optional[str]= None,
+    names_sep: Optional[str] = None,
     names_pattern: Optional[Pattern[str]] = None,
     names_to: Optional[List, Tuple] = None,
     values_to: Optional[List, Tuple] = None
@@ -4610,32 +4610,5 @@ def pivot_longer(
     # change name_sep to sep
     # for tidy data, should stubnames be there?
 
-    if any(isinstance(df.index, pd.MultiIndex), 
-           isinstance(df.columns, pd.MultiIndex)):
-        warnings.warn("""pivot_longer is designed for single index dataframes; 
-                         for multiIndex dataframes, kindly use pandas.melt.""")
-    if not any(index, columns):
-        raise ValueError("Either index or columns must be supplied.")
-    if index is not None:
-        # check data type
-        if not isinstance(index, [list, tuple, str, Callable]):
-            raise TypeError("""index argument must be a list/tuple of columns, a string, or a `pattern` function.""")
-    if columns is not None:
-        if not isinstance(columns, [list, tuple, str, Callable]):
-            raise TypeError("""columns argument must be a list/tuple of columns, a string, or a `pattern` function.""")
-    if names_to is not None:
-        if not isinstance(names_to, [list, tuple]):
-            raise TypeError("names_to argument must be a list or tuple of strings.")
-        if names_to > 1:
-            if (names_pattern is not None) and (names_sep is not None):
-                raise ValueError("""Only one of names_pattern or names_sep should be provided.""")
-        if  (names_pattern is not None) or (names_sep is not None) :
-            raise ValueError("""For a single names_to value, names_pattern nor names_sep is required.""")
-    if names_pattern is not None:
-        if not isinstance(names_pattern, str):
-            raise TypeError("names_pattern argument should be a regular expression.")
-    if names_sep is not None:
-        if not isinstance(names_sep, str):
-            raise TypeError("names_sep argument should be a string.")
-    return df
 
+    return df

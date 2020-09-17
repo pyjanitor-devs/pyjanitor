@@ -597,3 +597,52 @@ def _complete_groupings(df, list_of_columns):
     df = df.set_index(index_columns)
 
     return df, new_reindex_columns
+
+
+def _data_checks_pivot_longer(df, index, columns, names_sep,
+                              names_pattern, names_to, values_to):
+
+    # a better docstring is needed here
+
+    """
+    This function checks that the arguments meet the requirements 
+    before proceeding to the computation phase.
+    """
+    
+    # put good description/comments for the checks
+    # as well as the purpose/reason behind the checks
+    if any(isinstance(df.index, pd.MultiIndex),
+           isinstance(df.columns, pd.MultiIndex)):
+        warnings.warn("""pivot_longer is designed for single index dataframes;
+                         for multiIndex dataframes, kindly use pandas.melt.""")
+    if not any(index, columns):
+        raise ValueError("Either index or columns must be supplied.")
+    if index is not None:
+        if not isinstance(index, [list, tuple, str, Callable]):
+            raise TypeError("""index argument must be a list/tuple of columns,
+            a string, or a `pattern` function.""")
+    if columns is not None:
+        if not isinstance(columns, [list, tuple, str, Callable]):
+            raise TypeError("""columns argument must be a list/tuple of columns,
+            a string, or a `pattern` function.""")
+    if names_to is not None:
+        if not isinstance(names_to, [list, tuple, str]):
+            raise TypeError("""names_to argument must be a single string or
+            a list/tuple of strings.""")
+        if isinstance(names_to, (list, tuple)) and (len(names_to) > 1):
+            if (names_pattern is not None) and (names_sep is not None):
+                raise ValueError("""Only one of names_pattern or names_sep
+                should be provided.""")
+        if (names_pattern is not None) or (names_sep is not None):
+            raise ValueError("""For a single names_to value, names_pattern nor
+            names_sep is required.""")
+    if names_pattern is not None:
+        if not isinstance(names_pattern, str):
+            raise TypeError("""names_pattern argument should be a
+            regular expression.""")
+    if names_sep is not None:
+        if not isinstance(names_sep, str):
+            raise TypeError("""names_sep argument should be a string.""")
+    if values_to is not None:
+        if not isinstance(values_to, str):
+            raise TypeError("""values_to argument should be a string.""")

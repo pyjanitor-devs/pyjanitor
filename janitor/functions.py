@@ -19,7 +19,6 @@ from typing import (
     Set,
     Tuple,
     Union,
-    Pattern
 )
 
 import numpy as np
@@ -37,6 +36,7 @@ from .utils import (
     _clean_accounting_column,
     _complete_groupings,
     _currency_column_to_numeric,
+    _data_checks_pivot_longer,
     _grid_computation,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
@@ -4593,12 +4593,12 @@ def complete(
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index: Optional[List, Tuple, str, Callable] = None,
-    columns: Optional[List, Tuple, str, Callable] = None,
+    index: Optional[Union[List, Tuple, str, Callable]] = None,
+    columns: Optional[Union[List, Tuple, str, Callable]] = None,
     names_sep: Optional[str] = None,
-    names_pattern: Optional[Pattern[str]] = None,
-    names_to: Optional[List, Tuple] = None,
-    values_to: Optional[List, Tuple] = None
+    names_pattern: Optional[str] = None,
+    names_to: Optional[Union[List, Tuple]] = None,
+    values_to: Optional[Union[List, Tuple]] = None,
 ) -> pd.DataFrame:
     # copy docstrings from previous PR
 
@@ -4610,5 +4610,9 @@ def pivot_longer(
     # change name_sep to sep
     # for tidy data, should stubnames be there?
 
+    df = df.copy()
 
+    df = _data_checks_pivot_longer(
+        df, index, columns, names_sep, names_pattern, names_to, values_to
+    )
     return df

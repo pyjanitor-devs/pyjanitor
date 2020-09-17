@@ -2,10 +2,11 @@
 
 import functools
 import os
+import re
 import sys
 import warnings
 from itertools import chain, product
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Pattern, Union
 
 import numpy as np
 import pandas as pd
@@ -599,50 +600,124 @@ def _complete_groupings(df, list_of_columns):
     return df, new_reindex_columns
 
 
-def _data_checks_pivot_longer(df, index, columns, names_sep,
-                              names_pattern, names_to, values_to):
+def _data_checks_pivot_longer(
+    df, index, columns, names_sep, names_pattern, names_to, values_to
+):
 
     # a better docstring is needed here
 
     """
-    This function checks that the arguments meet the requirements 
+    This function checks that the arguments meet the requirements
     before proceeding to the computation phase.
     """
-    
+
     # put good description/comments for the checks
     # as well as the purpose/reason behind the checks
-    if any(isinstance(df.index, pd.MultiIndex),
-           isinstance(df.columns, pd.MultiIndex)):
-        warnings.warn("""pivot_longer is designed for single index dataframes;
-                         for multiIndex dataframes, kindly use pandas.melt.""")
+    if any(
+        isinstance(df.index, pd.MultiIndex),
+        isinstance(df.columns, pd.MultiIndex),
+    ):
+        warnings.warn(
+            """pivot_longer is designed for single index dataframes;
+               for multiIndex dataframes, kindly use pandas.melt."""
+        )
     if not any(index, columns):
         raise ValueError("Either index or columns must be supplied.")
     if index is not None:
         if not isinstance(index, [list, tuple, str, Callable]):
-            raise TypeError("""index argument must be a list/tuple of columns,
-            a string, or a `pattern` function.""")
+            raise TypeError(
+                """index argument must be a list/tuple of columns,
+                   a string, or a `pattern` function."""
+            )
     if columns is not None:
         if not isinstance(columns, [list, tuple, str, Callable]):
-            raise TypeError("""columns argument must be a list/tuple of columns,
-            a string, or a `pattern` function.""")
+            raise TypeError(
+                """columns argument must be a list/tuple of columns,
+                   a string, or a `pattern` function."""
+            )
     if names_to is not None:
         if not isinstance(names_to, [list, tuple, str]):
-            raise TypeError("""names_to argument must be a single string or
-            a list/tuple of strings.""")
+            raise TypeError(
+                """names_to argument must be a single string or
+                   a list/tuple of strings."""
+            )
         if isinstance(names_to, (list, tuple)) and (len(names_to) > 1):
             if (names_pattern is not None) and (names_sep is not None):
-                raise ValueError("""Only one of names_pattern or names_sep
-                should be provided.""")
+                raise ValueError(
+                    """Only one of names_pattern or names_sep
+                       should be provided."""
+                )
         if (names_pattern is not None) or (names_sep is not None):
-            raise ValueError("""For a single names_to value, names_pattern nor
-            names_sep is required.""")
+            raise ValueError(
+                """For a single names_to value, names_pattern nor
+                   names_sep is required."""
+            )
     if names_pattern is not None:
         if not isinstance(names_pattern, str):
-            raise TypeError("""names_pattern argument should be a
-            regular expression.""")
+            raise TypeError(
+                """names_pattern argument should be a
+                   regular expression."""
+            )
     if names_sep is not None:
         if not isinstance(names_sep, str):
             raise TypeError("""names_sep argument should be a string.""")
     if values_to is not None:
         if not isinstance(values_to, str):
             raise TypeError("""values_to argument should be a string.""")
+
+    return df
+
+
+def _patterns(word):
+    """
+    This function acts as a regular expression selector in the index or columns
+    argument of ``pivot_longer`` function. A single  regular expression, or a
+    list/tuple of regular expressions can be passed to the `word` argument.
+    """
+    if not isinstance(word, (str, list, tuple)):
+        raise TypeError(
+            """pattern should be a single regular expression,
+                           or a list/tuple of regular expressions."""
+        )
+    if isinstance(word, str):
+        return re.compile(word)
+    return [re.compile(w) for w in word]
+
+
+def _computations_pivot_longer(
+    df, index, columns, names_sep, names_pattern, names_to, values_to
+):
+    # if columns or index is a regular expression
+    if isinstance(columns, Pattern):
+        columns = [col for col in df if columns.search(col)]
+    elif isinstance(columns, (list, tuple)):
+        if not all(isinstance(w, Pattern) for w in columns):
+            raise TypeError(
+                """All entries in the sequence must be a
+                   regular expression."""
+            )
+        columns = [
+            col for pattern, col in product(columns, df) if pattern.search(col)
+        ]
+
+    if isinstance(index, Pattern):
+        index = [col for col in df if index.search(col)]
+    elif isinstance(index, (list, tuple)):
+        if not all(isinstance(w, Pattern) for w in index):
+            raise TypeError(
+                """All entries in the sequence must be a
+                   regular expression."""
+            )
+        index = [
+            col for pattern, col in product(index, df) if pattern.search(col)
+        ]
+
+    if (names_pattern is None) and (names_sep is None):
+        return pd.melt(
+            df,
+            id_vars=index,
+            value_vars=columns,
+            var_name=names_to,
+            value_name=values_to,
+        )
+    return df

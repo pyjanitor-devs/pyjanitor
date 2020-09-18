@@ -5,16 +5,14 @@ issueOpen: >
   Hello World! Welcome to the project!
   Thanks and congrats for opening your very first issue in this project.
   You may submit a PR on the same if you like!
-  Join the Slack channel or the gitter chat for discussions.
   Hope you have a great time here :)
 
 # Message for a new user who comments on an issue
 issueComment: >
   Hello World! Welcome to the project!
   Thanks and congrats for your very first comment on this project.
-  Checkout the ReadMe for more details on it.
+  Checkout the README for more details on it.
   Want to contribute? Make an issue or submit a PR.
-  Join the Slack channel or the gitter chat for discussions.
   Hope you have a great time here :)
 
 # Message for a new user who opens a PR
@@ -22,15 +20,13 @@ prOpen: >
   Hello World! Welcome to the project!
   Thankyou and congarts for your first PR on this project.
   We will review it soon!
-  Till then you can checkout the ReadMe for more details on it.
-  Join the Slack channel or the gitter chat for discussions.
+  Till then you can checkout the README for more details on it.
   Hope you have a great time here :)
 
 # Default message for a new user
 welcomeMessage: >
   Hello World! Welcome to the project! Feel free to explore it.
-  Checkout the ReadMe for more details on it.
+  Checkout the README for more details on it.
   Want to contribute? Make an issue or submit a PR.
   You can check the contributing guides and code of conduct for the same.
-  Join the Slack channel or the gitter chat for discussions.
   Hope you have a great time here :

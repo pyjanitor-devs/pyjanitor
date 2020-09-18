@@ -33,7 +33,7 @@ To get started:
 3. Ensure you have VSCode running on your local machine.
 4. In Visual Studio Code,
     click on the quick actions Status Bar item in the lower left corner.
-5. Then select "Remote Containers: Open Repository In Container".
+5. Then select "Remote Containers: Clone Repository In Container Volume".
 6. Enter in the URL of your fork of ``pyjanitor``.
 
 VSCode will pull down the prebuilt Docker container,

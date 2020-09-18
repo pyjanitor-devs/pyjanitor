@@ -107,7 +107,7 @@ and then you can find the correct html file.
 To see the main pyjanitor page,
 open the ``index.html`` file.
 
-.. note:: If you get any errors related to Importing modules when running `make docs`,
+.. note:: If you get any errors related to Importing modules when running ``make docs``,
     first activate the development environment::
 
     $ source activate pyjanitor-dev

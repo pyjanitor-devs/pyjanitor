@@ -427,6 +427,7 @@ def flag_jumps(
         # Append a flag col for each col in the dataframe
         cols = df.columns
 
+    columns_to_add = {}
     for col in sorted(cols):
 
         # Allow arguments to be a mix of dict and single instances
@@ -442,8 +443,10 @@ def flag_jumps(
             else threshold
         )
 
-        df[f"{col}_jump_flag"] = _flag_jumps_single_col(
+        columns_to_add[f"{col}_jump_flag"] = _flag_jumps_single_col(
             df, col, scale=s, direction=d, threshold=t
         )
+
+    df = df.assign(**columns_to_add)
 
     return df

@@ -643,18 +643,21 @@ def _data_checks_pivot_longer(
                    a list/tuple of strings."""
             )
         if isinstance(names_to, (list, tuple)) and (len(names_to) > 1):
-            if (names_pattern is None) and (names_sep is None):
+            if all((names_pattern is not None, names_sep is not None)):
                 raise ValueError(
                     """Only one of names_pattern or names_sep
                        should be provided."""
                 )
-        if (isinstance(names_to, str) or (len(names_to) == 1)) and (
-            (names_pattern is not None) or (names_sep is not None)
-        ):
-            raise ValueError(
-                """For a single names_to value, neither names_pattern nor
-                   names_sep is required."""
-            )
+        if isinstance(names_to, str) or (len(names_to) == 1):
+            # names_sep creates more than one column
+            # whereas names_pattern can be limited to one column
+            if names_sep is not None:
+                raise ValueError(
+                    """
+                    For a single names_to value,
+                    names_sep is not required.
+                    """
+                )
     if names_pattern is not None:
         if not isinstance(names_pattern, str):
             raise TypeError(
@@ -664,7 +667,10 @@ def _data_checks_pivot_longer(
     if names_sep is not None:
         if not isinstance(names_sep, str):
             raise TypeError(
-                """names_sep argument should be a string or regular expression."""
+                """
+                names_sep argument should be a string or
+                regular expression.
+                """
             )
     if not isinstance(values_to, str):
         raise TypeError("""values_to argument should be a string.""")

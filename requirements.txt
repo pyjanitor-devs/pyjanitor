@@ -7,6 +7,7 @@ lxml
 natsort
 nbsphinx>=0.4.2
 pandas-vet
+pandas-flavor
 pre-commit
 pyspark
 pytest-azurepipelines

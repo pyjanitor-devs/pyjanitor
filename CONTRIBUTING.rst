@@ -130,12 +130,10 @@ This helps us keep track of who is working on what.
 7. Create a branch for local development:
 
 New features added to ``pyjanitor`` should be done in a new branch you have based off the latest version of the ``dev`` branch.
-The protocol for ``pyjanitor`` branches for new development
-the ``dev`` branch is for additional features for an eventual new official version of the package
-which might be deemed slightly less stable.
+
 Releases are made off the ``dev`` branch.
 
-To base a branch directly off ``dev`` instead of ``master``, create a new one as follows::
+To create a new branch::
 
     $ git checkout -b name-of-your-bugfix-or-feature dev
 

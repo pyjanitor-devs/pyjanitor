@@ -622,8 +622,6 @@ def _data_checks_pivot_longer(
             """pivot_longer is designed for single index dataframes;
                for multiIndex dataframes, kindly use pandas.melt."""
         )
-    if not any((index, columns)):
-        raise ValueError("Either index or columns must be supplied.")
     if index is not None:
         if not isinstance(index, (list, tuple, str, Pattern)):
             raise TypeError(
@@ -691,11 +689,10 @@ def _computations_pivot_longer(
             col for pattern, col in product(columns, df) if pattern.search(col)
         ]
 
-    if index is None:
-        index = df.columns.difference(columns)
-
     # if index is a regular expression
-    if isinstance(index, Pattern):
+    if index is None and (columns is not None):
+        index = df.columns.difference(columns)
+    elif isinstance(index, Pattern):
         index = [col for col in df if index.search(col)]
     elif isinstance(index, Callable):
         index = [
@@ -739,16 +736,62 @@ def _computations_pivot_longer(
                 number of columns extracted.
                 """
             )
-        between = between.set_axis(names_to, axis="columns")
-        # if we need the column names as headers
+        # if we need the `value` in the column names as the
+        # new headers. The `.value` signifies that that 
+        # particular value becomes a header
+        # it is also another way of achieving pandas wide_to_long
         if all((len(names_to) > 1, ".value" in names_to)):
             if names_to.count(".value") > 1:
                 raise ValueError(
                     """Column name `.value` must not be duplicated."""
                 )
-            names_to = [
-                uniq_name if col == ".value" else col for col in names_to
-            ]
+
+            # the resulting columns will always be two
+            after = np.reshape(after.to_numpy(), (-1, 2), order="F")
+
+            # since names_to is a length of 2, the resulting shape
+            # here will be 4 columns. The Fortran order gets us the
+            # right shape.
+            between = np.reshape(between.to_numpy(), (-1, 4), order="F")
+            middle_header, last_header, second, ignore = (
+                between[:, 0],
+                between[:, 1],
+                between[:, -2],
+                between[:, -1],
+            )
+            # here we extract the headers for the new dataframe
+            # stack overflow came in handy in deciphering the best
+            # way to pull a value from a set; luckily our set will
+            # always return a single value. I also chose set method,
+            # as it is faster than np.unique
+            second_header = set(names_to).difference([".value"])
+            second_header = next(iter(second_header))
+            middle_header = next(iter(set(middle_header)))
+            last_header = next(iter(set(last_header)))
+
+            # this will serve as the column name for the new dataframe
+            # it will be index, followed by provided name, followed by
+            # the names extracted from the columns
+            new_columns = before.columns.union(
+                [second_header, middle_header, last_header], sort=False
+            )
+
+            # here we get unique values for before, and repeat it with
+            # the length of unique values in the last column from the 
+            # between array. Note that ``np.tile`` is used, which assures
+            # exact matching with the rest of the array.
+            before = before.drop_duplicates().to_numpy()
+            if before.ndim > 1:
+                before = np.tile(before, (len(set(ignore)), 1))
+            else:
+                before = np.tile(before, len(set(ignore)))[:, np.newaxis]
+            new_data = (before, second[:, np.newaxis], after)
+            new_data = np.hstack(new_data)
+
+            return pd.DataFrame(new_data, columns=new_columns)
+
+        between = between.set_axis(names_to, axis="columns")
+
         return pd.concat((before, between, after), axis=1)
 
     return df

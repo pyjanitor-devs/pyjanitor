@@ -78,4 +78,47 @@ import janitor
 
 # print(df5)
 
-# print(df5.pivot_longer(index='country', names_to='event', names_sep="_"))
+# print(df5.pivot_longer(index='country', names_to='event', names_sep="_")
+
+
+# df6 = pd.DataFrame(
+#     {
+#         "family": [1, 2, 3, 4, 5],
+#         "dob_child1": [
+#             "1998-11-26",
+#             "1996-06-22",
+#             "2002-07-11",
+#             "2004-10-10",
+#             "2000-12-05",
+#         ],
+#         "dob_child2": [
+#             "2000-01-29",
+#             np.nan,
+#             "2004-04-05",
+#             "2009-08-27",
+#             "2005-02-28",
+#         ],
+#         "gender_child1": [1, 2, 2, 1, 2],
+#         "gender_child2": [2.0, np.nan, 2.0, 1.0, 1.0],
+#     }
+# )
+
+# print(df6)
+
+# print(
+#     df6.pivot_longer(
+#         index="family", names_to=(".value", "child"), names_sep="_"
+#     )
+# )
+
+# df7 = pd.DataFrame([{' id': 1,
+#   'a1': ' a',
+#   'a2': ' b',
+#   'a3': ' c',
+#   'A1': ' A',
+#   'A2': ' B',
+#   'A3': ' C'}])
+
+# print(df7)
+
+# print(df7.pivot_longer(columns= janitor.patterns("^a|^A"), names_to=(".value", "instance"), names_pattern = "(\\w)(\\d)"))

@@ -13,6 +13,7 @@ pyspark
 pytest-azurepipelines
 pytest-cov
 pytest>=3.4.2
+scikit-learn
 seaborn
 setuptools>=38.5.2
 sphinxcontrib-fulltoc==1.2.0

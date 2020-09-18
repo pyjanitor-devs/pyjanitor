@@ -1,13 +1,15 @@
 black>=19.3b0
 hypothesis>=4.4.0
+interrogate
 ipykernel
 isort>=4.3.18
 jupyter_client
 lxml
 natsort
 nbsphinx>=0.4.2
-pandas-vet
 pandas-flavor
+pandas-vet
+pandas-vet
 pre-commit
 pyspark
 pytest-azurepipelines
@@ -19,5 +21,3 @@ setuptools>=38.5.2
 sphinxcontrib-fulltoc==1.2.0
 unyt
 xarray
-pandas-vet
-interrogate

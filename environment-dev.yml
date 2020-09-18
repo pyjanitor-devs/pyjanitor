@@ -12,6 +12,7 @@ dependencies:
 - doc8
 - flake8
 - hypothesis>=4.4.0
+- interrogate
 - ipykernel
 - ipython
 - isort
@@ -25,6 +26,7 @@ dependencies:
 - nox
 - numpy>=1.16
 - pandas-flavor
+- pandas-vet
 - pandas>=1.0.0
 - pip
 - pipreqs
@@ -44,8 +46,6 @@ dependencies:
 - sphinxcontrib-fulltoc
 - twine
 - unyt
+- xarray
 - xlrd
 - xorg-libxrender
-- xarray
-- pandas-vet
-- interrogate

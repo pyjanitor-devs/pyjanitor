@@ -681,7 +681,7 @@ def _data_checks_pivot_longer(
 def _computations_pivot_longer(
     df, index, columns, names_sep, names_pattern, names_to, values_to
 ):
-    # if columns or index is a regular expression
+    # if columns is a regular expression
     if isinstance(columns, str):
         columns = [columns]
     if isinstance(columns, Pattern):
@@ -694,13 +694,14 @@ def _computations_pivot_longer(
     if index is None:
         index = df.columns.difference(columns)
 
+    # if index is a regular expression
     if isinstance(index, Pattern):
         index = [col for col in df if index.search(col)]
     elif isinstance(index, Callable):
         index = [
             col for pattern, col in product(index, df) if pattern.search(col)
         ]
-    
+
     if all((names_pattern is None, names_sep is None)):
         return pd.melt(
             df,
@@ -713,13 +714,14 @@ def _computations_pivot_longer(
             # on second thought, is it necessary? looks cleaner sorted, but
             # does the end user care?
         )
-    if any((names_pattern is not None, names_pattern is not None)):
+    if any((names_pattern is not None, names_sep is not None)):
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
         df = pd.melt(df, id_vars=index, value_vars=columns, var_name=uniq_name)
-        position = df.columns.get_loc(uniq_name)
-        before = df.iloc[:, :position]
-        after = df.iloc[:, position + 1 :]
+        # just before uniq_name column
+        before = df.iloc[:, :-2] 
+        # melt returns uniq_name and value as the last columns
+        after = df.iloc[:, -1] 
         between = df.pop(uniq_name)
         if names_sep is not None:
             between = between.str.split(names_sep, expand=True)
@@ -727,8 +729,16 @@ def _computations_pivot_longer(
             between = between.str.extractall(names_pattern).reset_index(
                 drop=True
             )
+        # set_axis function labels argument takes only list-like objects
         if isinstance(names_to, str):
             names_to = [names_to]
+        if len(names_to) != between.shape[-1]:
+            raise ValueError(
+                """
+                Length of ``names_to`` does not match
+                number of columns extracted.
+                """
+            )
         between = between.set_axis(names_to, axis="columns")
         return pd.concat((before, between, after), axis=1)
 

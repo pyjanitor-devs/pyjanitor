@@ -2,7 +2,6 @@
 
 import functools
 import os
-import re
 import sys
 import warnings
 from itertools import chain, product
@@ -614,42 +613,46 @@ def _data_checks_pivot_longer(
     # put good description/comments for the checks
     # as well as the purpose/reason behind the checks
     if any(
-        isinstance(df.index, pd.MultiIndex),
-        isinstance(df.columns, pd.MultiIndex),
+        (
+            isinstance(df.index, pd.MultiIndex),
+            isinstance(df.columns, pd.MultiIndex),
+        ),
     ):
         warnings.warn(
             """pivot_longer is designed for single index dataframes;
                for multiIndex dataframes, kindly use pandas.melt."""
         )
-    if not any(index, columns):
+    if not any((index, columns)):
         raise ValueError("Either index or columns must be supplied.")
     if index is not None:
-        if not isinstance(index, [list, tuple, str, Callable]):
+        if not isinstance(index, (list, tuple, str, Pattern)):
             raise TypeError(
                 """index argument must be a list/tuple of columns,
                    a string, or a `pattern` function."""
             )
     if columns is not None:
-        if not isinstance(columns, [list, tuple, str, Callable]):
+        if not isinstance(columns, (list, tuple, str, Pattern)):
             raise TypeError(
                 """columns argument must be a list/tuple of columns,
                    a string, or a `pattern` function."""
             )
     if names_to is not None:
-        if not isinstance(names_to, [list, tuple, str]):
+        if not isinstance(names_to, (list, tuple, str)):
             raise TypeError(
                 """names_to argument must be a single string or
                    a list/tuple of strings."""
             )
         if isinstance(names_to, (list, tuple)) and (len(names_to) > 1):
-            if (names_pattern is not None) and (names_sep is not None):
+            if (names_pattern is None) and (names_sep is None):
                 raise ValueError(
                     """Only one of names_pattern or names_sep
                        should be provided."""
                 )
-        if (names_pattern is not None) or (names_sep is not None):
+        if (isinstance(names_to, str) or (len(names_to) == 1)) and (
+            (names_pattern is not None) or (names_sep is not None)
+        ):
             raise ValueError(
-                """For a single names_to value, names_pattern nor
+                """For a single names_to value, neither names_pattern nor
                    names_sep is required."""
             )
     if names_pattern is not None:
@@ -660,54 +663,34 @@ def _data_checks_pivot_longer(
             )
     if names_sep is not None:
         if not isinstance(names_sep, str):
-            raise TypeError("""names_sep argument should be a string.""")
-    if values_to is not None:
-        if not isinstance(values_to, str):
-            raise TypeError("""values_to argument should be a string.""")
+            raise TypeError(
+                """names_sep argument should be a string or regular expression."""
+            )
+    if not isinstance(values_to, str):
+        raise TypeError("""values_to argument should be a string.""")
 
     return df
-
-
-def _patterns(word):
-    """
-    This function acts as a regular expression selector in the index or columns
-    argument of ``pivot_longer`` function. A single  regular expression, or a
-    list/tuple of regular expressions can be passed to the `word` argument.
-    """
-    if not isinstance(word, (str, list, tuple)):
-        raise TypeError(
-            """pattern should be a single regular expression,
-                           or a list/tuple of regular expressions."""
-        )
-    if isinstance(word, str):
-        return re.compile(word)
-    return [re.compile(w) for w in word]
 
 
 def _computations_pivot_longer(
     df, index, columns, names_sep, names_pattern, names_to, values_to
 ):
     # if columns or index is a regular expression
+    if isinstance(columns, str):
+        columns = [columns]
     if isinstance(columns, Pattern):
         columns = [col for col in df if columns.search(col)]
-    elif isinstance(columns, (list, tuple)):
-        if not all(isinstance(w, Pattern) for w in columns):
-            raise TypeError(
-                """All entries in the sequence must be a
-                   regular expression."""
-            )
+    elif isinstance(columns, Callable):
         columns = [
             col for pattern, col in product(columns, df) if pattern.search(col)
         ]
 
+    if index is None:
+        index = df.columns.difference(columns)
+
     if isinstance(index, Pattern):
         index = [col for col in df if index.search(col)]
-    elif isinstance(index, (list, tuple)):
-        if not all(isinstance(w, Pattern) for w in index):
-            raise TypeError(
-                """All entries in the sequence must be a
-                   regular expression."""
-            )
+    elif isinstance(index, Callable):
         index = [
             col for pattern, col in product(index, df) if pattern.search(col)
         ]
@@ -719,5 +702,26 @@ def _computations_pivot_longer(
             value_vars=columns,
             var_name=names_to,
             value_name=values_to,
+            # introduce ignore_index argument when minimum version is 1.1
+            # this will allow for easy sorting via the index
+            # on second thought, is it necessary? looks cleaner sorted, but
+            # does the end user care?
         )
+    if not isinstance(names_to, str) and (len(names_to) > 1):
+        # should avoid conflict if index/columns has a string named `variable`
+        uniq_name = "*^#variable!@?$%"
+        df = pd.melt(df, id_vars=index, value_vars=columns, var_name=uniq_name)
+        position = df.columns.get_loc(uniq_name)
+        before = df.iloc[:, :position]
+        after = df.iloc[:, position + 1 :]
+        between = df.pop(uniq_name)
+        if names_sep is not None:
+            between = between.str.split(names_sep, expand=True)
+        else:
+            between = between.str.extractall(names_pattern).reset_index(
+                drop=True
+            )
+        between = between.set_axis(names_to, axis="columns")
+        return pd.concat((before, between, after), axis=1)
+
     return df

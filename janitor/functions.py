@@ -35,6 +35,7 @@ from .utils import (
     _check_instance,
     _clean_accounting_column,
     _complete_groupings,
+    _computations_pivot_longer,
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
     _grid_computation,
@@ -4598,7 +4599,7 @@ def pivot_longer(
     names_sep: Optional[str] = None,
     names_pattern: Optional[str] = None,
     names_to: Optional[Union[List, Tuple]] = None,
-    values_to: Optional[Union[List, Tuple]] = None,
+    values_to: Optional[Union[List, Tuple]] = "value",
 ) -> pd.DataFrame:
     # copy docstrings from previous PR
 
@@ -4615,4 +4616,30 @@ def pivot_longer(
     df = _data_checks_pivot_longer(
         df, index, columns, names_sep, names_pattern, names_to, values_to
     )
+
+    df = _computations_pivot_longer(
+        df, index, columns, names_sep, names_pattern, names_to, values_to
+    )
+
     return df
+
+
+def patterns(word):
+    """
+    This function acts as a regular expression selector in the index or columns
+    argument of ``pivot_longer`` function. A single  regular expression, or a
+    list/tuple of regular expressions can be passed to the `word` argument.
+    """
+
+    if not isinstance(word, (str, list, tuple)):
+        raise TypeError(
+            """
+            pattern should be a single regular expression,
+            or a list/tuple of regular expressions.
+            """
+        )
+    if isinstance(word, (list, tuple)):
+        if not all(isinstance(w, str) for w in word):
+            raise TypeError("""value in sequence must be a string.""")
+        return [re.compile(w) for w in word]
+    return re.compile(word)

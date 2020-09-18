@@ -719,9 +719,9 @@ def _computations_pivot_longer(
         uniq_name = "*^#variable!@?$%"
         df = pd.melt(df, id_vars=index, value_vars=columns, var_name=uniq_name)
         # just before uniq_name column
-        before = df.iloc[:, :-2] 
+        before = df.iloc[:, :-2]
         # melt returns uniq_name and value as the last columns
-        after = df.iloc[:, -1] 
+        after = df.iloc[:, -1]
         between = df.pop(uniq_name)
         if names_sep is not None:
             between = between.str.split(names_sep, expand=True)
@@ -740,6 +740,15 @@ def _computations_pivot_longer(
                 """
             )
         between = between.set_axis(names_to, axis="columns")
+        # if we need the column names as headers
+        if all((len(names_to) > 1, ".value" in names_to)):
+            if names_to.count(".value") > 1:
+                raise ValueError(
+                    """Column name `.value` must not be duplicated."""
+                )
+            names_to = [
+                uniq_name if col == ".value" else col for col in names_to
+            ]
         return pd.concat((before, between, after), axis=1)
 
     return df

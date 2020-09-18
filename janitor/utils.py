@@ -700,8 +700,8 @@ def _computations_pivot_longer(
         index = [
             col for pattern, col in product(index, df) if pattern.search(col)
         ]
-
-    if (names_pattern is None) and (names_sep is None):
+    
+    if all((names_pattern is None, names_sep is None)):
         return pd.melt(
             df,
             id_vars=index,
@@ -713,7 +713,7 @@ def _computations_pivot_longer(
             # on second thought, is it necessary? looks cleaner sorted, but
             # does the end user care?
         )
-    if not isinstance(names_to, str) and (len(names_to) > 1):
+    if any((names_pattern is not None, names_pattern is not None)):
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
         df = pd.melt(df, id_vars=index, value_vars=columns, var_name=uniq_name)
@@ -727,6 +727,8 @@ def _computations_pivot_longer(
             between = between.str.extractall(names_pattern).reset_index(
                 drop=True
             )
+        if isinstance(names_to, str):
+            names_to = [names_to]
         between = between.set_axis(names_to, axis="columns")
         return pd.concat((before, between, after), axis=1)
 

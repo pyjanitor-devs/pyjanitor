@@ -72,3 +72,11 @@ import janitor
 #        names_pattern="([A-Za-z]+)(\\d+)",
 #    )
 # )
+
+#df5 = pd.DataFrame({'country': ['United States', 'Russia', 'China'],
+# 'score_vault': [46.86600000000001, 45.733000000000004, 44.332],
+ #'score_floor': [45.998999999999995, 42.032, 42.066]})
+
+#print(df5)
+
+#print(df5.pivot_longer(index='country', names_to='event', names_sep="_"))

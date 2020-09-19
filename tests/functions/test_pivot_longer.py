@@ -176,3 +176,55 @@ import janitor
 # print(df9)
 
 # print(df9.pivot_longer(index='X', names_to=(".value", "year"), names_pattern="([A-Z])(.+)"))
+
+# df10 = pd.DataFrame({
+#     'famid': [1, 1, 1, 2, 2, 2, 3, 3, 3],
+#     'birth': [1, 2, 3, 1, 2, 3, 1, 2, 3],
+#     'ht1': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+#     'ht2': [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9]
+# })
+
+
+# print(df10)
+
+# print(df10.pivot_longer(index=['famid','birth'], names_to=('.value','age'), names_pattern="(ht)(\d)"))
+
+# df11 = pd.DataFrame(
+#     {
+#         "A(weekly)-2010": [0.548814, 0.7151890000000001, 0.602763],
+#         "A(weekly)-2011": [0.544883, 0.423655, 0.645894],
+#         "B(weekly)-2010": [0.437587, 0.8917729999999999, 0.9636629999999999],
+#         "B(weekly)-2011": [0.383442, 0.791725, 0.528895],
+#         "X": [0, 1, 1],
+
+#     }
+# )
+
+# print(df11)
+
+# print(
+#     df11.pivot_longer(
+#         index=["X"], names_to=(".value", "year"), names_sep="-"
+#     )
+# )
+
+df12 = pd.DataFrame({'id': ['A', 'B', 'C', 'D', 'E', 'F'],
+ 'f_start': ['p', 'i', 'i', 'p', 'p', 'i'],
+ 'd_start': ['2018-01-01',
+  '2019-04-01',
+  '2018-06-01',
+  '2019-12-01',
+  '2019-02-01',
+  '2018-04-01'],
+ 'f_end': ['p', 'p', 'i', 'p', 'p', 'i'],
+ 'd_end': ['2018-02-01',
+  '2020-01-01',
+  '2019-03-01',
+  '2020-05-01',
+  '2019-05-01',
+  '2018-07-01']})
+
+print(df12)
+
+print(df12.pivot_longer(index='id', names_to = ('.value' , 'status') ,
+               names_pattern = '(.*)_(.*)'))

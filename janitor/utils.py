@@ -705,6 +705,7 @@ def _pivot_longer_pattern_match(df, index, columns):
     return df, index, columns
 
 
+
 def _computations_pivot_longer(
     df, index, columns, names_sep, names_pattern, names_to, values_to
 ):
@@ -720,8 +721,16 @@ def _computations_pivot_longer(
             # introduce ignore_index argument when minimum version is 1.1
             # this will allow for easy sorting via the index
         )
-
+    # TODO : track data type when reshaped
     if any((names_pattern is not None, names_sep is not None)):
+
+        # this ensures the wrong output is not provided for non-unique
+        # index column(s)
+        if index is not None:
+            if df.loc[:, index].duplicated().any():
+                raise ValueError(
+                    """The index variables need to uniquely identify each row."""
+                )
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
         df = pd.melt(df, id_vars=index, value_vars=columns, var_name=uniq_name)
@@ -776,19 +785,20 @@ def _computations_pivot_longer(
             # map `names_to` to `between`; this allows us to keep
             # track of the underlying data in `between` when reshaping.
             between_dict = dict(zip(names_to, [between[:, 0], between[:, -1]]))
-            # this will be our new headers
-            # used np.unique here to keep the order
+            # this will be our new headers ... sorted
             value_headers = np.unique(between_dict[".value"])
+            sorter = np.argsort(between_dict[".value"])
             # this becomes a column to add to the new dataframe
             # and will have `first_header` as its column name
-            indexer = between_dict[first_header]
+            between = between_dict[first_header]
             value_length = len(value_headers)
-            # get indexer to same height as `after`
-            indexer = indexer[: len(indexer) // value_length]
+            # get between to same height as `after`
+            between = np.reshape(between[sorter], (-1, value_length), order="F")
+            between = between[:,0, np.newaxis]
             # the idea here is that the shape of after should match the number
             # of new column names. The Fortran order ensures we get data in the
             # right shape.
-            after = np.reshape(after.to_numpy(), (-1, value_length), order="F")
+            after = np.reshape(after[sorter].to_numpy(), (-1, value_length), order="F")
             first_header = pd.Index([first_header])
 
             # position of uniq_name column. This kicks in if there is no
@@ -802,20 +812,26 @@ def _computations_pivot_longer(
                 # between array. Note that ``np.tile`` is used, which assures
                 # exact matching with the rest of the array.
 
-                new_data = np.hstack((indexer[:, np.newaxis], after))
+                new_data = np.hstack((between, after))
                 return pd.DataFrame(new_data, columns=new_columns)
 
             # kicks in if index/columns is supplied
             new_columns = before.columns
             new_columns = new_columns.union(first_header, sort=False)
             new_columns = new_columns.union(value_headers, sort=False)
-            before = before.drop_duplicates().to_numpy()
+            # this entire section is messed up
+            # fix it
+            before = before.to_numpy()
             if before.ndim > 1:
-                before = np.tile(before, (len(indexer)//len(before), 1))
+                # need to test this idea 
+                before = before[sorter]
+                before = before[:len(before)//len(after)]
             else:
-                before = np.tile(before, len(indexer)//len(before))[:, np.newaxis]
-            new_data = (before, indexer[:, np.newaxis], after)
-            new_data = np.hstack(new_data)
+                before = before.to_numpy()[sorter]
+                before = np.reshape(before, (-1, value_length), order="F")
+                before = before[:, 0, np.newaxis]
+                # before_sorter = np.argsort(before, axis=None)
+            new_data = np.hstack((before, between, after)) # [before_sorter]         
 
             return pd.DataFrame(new_data, columns=new_columns)
 

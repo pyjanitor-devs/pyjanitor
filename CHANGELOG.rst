@@ -7,6 +7,7 @@ new version (on deck)
 - [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
 - [ENH] Added `also` method for running functions in chain with no return values.
 - [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
+- [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
 
 

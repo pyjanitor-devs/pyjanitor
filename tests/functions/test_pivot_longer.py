@@ -208,23 +208,37 @@ import janitor
 #     )
 # )
 
-df12 = pd.DataFrame({'id': ['A', 'B', 'C', 'D', 'E', 'F'],
- 'f_start': ['p', 'i', 'i', 'p', 'p', 'i'],
- 'd_start': ['2018-01-01',
-  '2019-04-01',
-  '2018-06-01',
-  '2019-12-01',
-  '2019-02-01',
-  '2018-04-01'],
- 'f_end': ['p', 'p', 'i', 'p', 'p', 'i'],
- 'd_end': ['2018-02-01',
-  '2020-01-01',
-  '2019-03-01',
-  '2020-05-01',
-  '2019-05-01',
-  '2018-07-01']})
+# df12 = pd.DataFrame({'id': ['A', 'B', 'C', 'D', 'E', 'F'],
+#  'f_start': ['p', 'i', 'i', 'p', 'p', 'i'],
+#  'd_start': ['2018-01-01',
+#   '2019-04-01',
+#   '2018-06-01',
+#   '2019-12-01',
+#   '2019-02-01',
+#   '2018-04-01'],
+#  'f_end': ['p', 'p', 'i', 'p', 'p', 'i'],
+#  'd_end': ['2018-02-01',
+#   '2020-01-01',
+#   '2019-03-01',
+#   '2020-05-01',
+#   '2019-05-01',
+#   '2018-07-01']})
 
-print(df12)
+# print(df12)
 
-print(df12.pivot_longer(index='id', names_to = ('.value' , 'status') ,
-               names_pattern = '(.*)_(.*)'))
+# print(df12.pivot_longer(index='id', names_to = ('.value' , 'status') ,
+#                names_pattern = '(.*)_(.*)'))
+
+
+# df13 = pd.DataFrame({'commune': ['A', 'B', 'C'],
+#  'nuance_1': ['X', 'X', 'Z'],
+#  'votes_1': [12, 10, 7],
+#  'nuance_2': ['Y', 'Y', 'X'],
+#  'votes_2': [20, 5, 2],
+#  'nuance_3': ['Z', None, None],
+#  'votes_3': [5.0, np.nan, np.nan]})
+
+# print(df13)
+
+# print(df13.pivot_longer(index='commune', names_to = ('.value' , 'numbers') ,
+#                names_pattern = '(.*)_(.*)'))

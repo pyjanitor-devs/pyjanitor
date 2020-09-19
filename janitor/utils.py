@@ -705,7 +705,6 @@ def _pivot_longer_pattern_match(df, index, columns):
     return df, index, columns
 
 
-
 def _computations_pivot_longer(
     df, index, columns, names_sep, names_pattern, names_to, values_to
 ):
@@ -721,7 +720,7 @@ def _computations_pivot_longer(
             # introduce ignore_index argument when minimum version is 1.1
             # this will allow for easy sorting via the index
         )
-    # TODO : track data type when reshaped
+
     if any((names_pattern is not None, names_sep is not None)):
 
         # this ensures the wrong output is not provided for non-unique
@@ -729,7 +728,9 @@ def _computations_pivot_longer(
         if index is not None:
             if df.loc[:, index].duplicated().any():
                 raise ValueError(
-                    """The index variables need to uniquely identify each row."""
+                    """
+                    The index variables need to uniquely identify each row.
+                    """
                 )
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
@@ -781,59 +782,60 @@ def _computations_pivot_longer(
             # faster than np.unique.
             # Not that it matters really for one item.
             first_header = next(iter(first_header))
-            between = between.to_numpy()
-            # map `names_to` to `between`; this allows us to keep
-            # track of the underlying data in `between` when reshaping.
-            between_dict = dict(zip(names_to, [between[:, 0], between[:, -1]]))
-            # this will be our new headers ... sorted
-            value_headers = np.unique(between_dict[".value"])
-            sorter = np.argsort(between_dict[".value"])
-            # this becomes a column to add to the new dataframe
-            # and will have `first_header` as its column name
-            between = between_dict[first_header]
-            value_length = len(value_headers)
-            # get between to same height as `after`
-            between = np.reshape(between[sorter], (-1, value_length), order="F")
-            between = between[:,0, np.newaxis]
-            # the idea here is that the shape of after should match the number
-            # of new column names. The Fortran order ensures we get data in the
-            # right shape.
-            after = np.reshape(after[sorter].to_numpy(), (-1, value_length), order="F")
-            first_header = pd.Index([first_header])
+            between = between.set_axis(names_to, axis="columns")
+            # aim here is to get the new column names in their present order
+            # pd.unique does not sort, which serves our purpose
+            value_headers = pd.unique(between.loc[:, ".value"])
+            # reduced memory usage
+            # but more importantly, it allows us to use the current state
+            # to sort the data. This is necessary for reshaping later on.
+            first_header_dtype = pd.api.types.CategoricalDtype(
+                pd.unique(between.loc[:, first_header]), ordered=True
+            )
+            between.loc[:, first_header] = between.loc[:, first_header].astype(
+                first_header_dtype
+            )
+            between = between.sort_values([".value", first_header])
+            between_index = between.index
 
-            # position of uniq_name column. This kicks in if there is no
-            # index/columns supplied.
-            if position == 0:
+            len_value_headers = len(value_headers)
+            len_unique_first_header = len(set(between.loc[:, first_header]))
+            # this helps in getting the sorter, which will be used to ensure
+            # the data in `before`, `after` and `between` align.
+            number_of_columns = len_value_headers * len_unique_first_header
 
-                # this will serve as the column name for the new dataframe
-                new_columns = first_header.union(value_headers, sort=False)
-                # here we get unique values for before, and repeat it with
-                # the length of unique values in the last column from the
-                # between array. Note that ``np.tile`` is used, which assures
-                # exact matching with the rest of the array.
+            # this gets us alternates of the non `.value`,
+            # like `start,end,start,end` or `off, on, off, on`
+            # and ensures proper sync of data
+            sorter = np.reshape(
+                between_index, (-1, number_of_columns), order="F"
+            )
+            sorter = np.ravel(sorter)
 
-                new_data = np.hstack((between, after))
-                return pd.DataFrame(new_data, columns=new_columns)
+            # much easier and faster(I presume) to reorder using the index
+            between = between.reindex(sorter)
+            # this will serve as the headers for the after dataframe
+            after_columns = between.loc[:, ".value"]
+            between = between.loc[:, first_header]
+            after = after.to_numpy()[sorter]
 
-            # kicks in if index/columns is supplied
-            new_columns = before.columns
-            new_columns = new_columns.union(first_header, sort=False)
-            new_columns = new_columns.union(value_headers, sort=False)
-            # this entire section is messed up
-            # fix it
-            before = before.to_numpy()
-            if before.ndim > 1:
-                # need to test this idea 
-                before = before[sorter]
-                before = before[:len(before)//len(after)]
-            else:
-                before = before.to_numpy()[sorter]
-                before = np.reshape(before, (-1, value_length), order="F")
-                before = before[:, 0, np.newaxis]
-                # before_sorter = np.argsort(before, axis=None)
-            new_data = np.hstack((before, between, after)) # [before_sorter]         
+            from collections import defaultdict
 
-            return pd.DataFrame(new_data, columns=new_columns)
+            container = defaultdict(list)
+            for k, v in zip(after_columns.to_numpy(), after):
+                container[k].append(v)
+            after = pd.DataFrame(container).reindex(columns=value_headers)
+
+            if position == 0:  # or if index is None
+                between = np.resize(pd.unique(between), len(after))
+                after.insert(0, first_header, between)
+                return after
+
+            before = before.reindex(sorter)
+            before.loc[:, first_header] = between
+            before = before.drop_duplicates(ignore_index=True)
+
+            return pd.concat((before, after), axis=1)
 
         between = between.set_axis(names_to, axis="columns")
 

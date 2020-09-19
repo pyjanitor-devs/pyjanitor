@@ -676,12 +676,15 @@ def _data_checks_pivot_longer(
     return df
 
 
-def _computations_pivot_longer(
-    df, index, columns, names_sep, names_pattern, names_to, values_to
-):
-    # if columns is a regular expression
+def _pivot_longer_pattern_match(df, index, columns):
+    """
+    This checks if a pattern (regular expression) is supplied
+    to index or columns and extracts the columns that match.
+    """
+
     if isinstance(columns, str):
         columns = [columns]
+    # here we extract columns based on the regex passed
     if isinstance(columns, Pattern):
         columns = [col for col in df if columns.search(col)]
     elif isinstance(columns, Callable):
@@ -689,9 +692,9 @@ def _computations_pivot_longer(
             col for pattern, col in product(columns, df) if pattern.search(col)
         ]
 
-    # if index is a regular expression
     if index is None and (columns is not None):
         index = df.columns.difference(columns)
+    # if index is a regular expression
     elif isinstance(index, Pattern):
         index = [col for col in df if index.search(col)]
     elif isinstance(index, Callable):
@@ -699,6 +702,14 @@ def _computations_pivot_longer(
             col for pattern, col in product(index, df) if pattern.search(col)
         ]
 
+    return df, index, columns
+
+
+def _computations_pivot_longer(
+    df, index, columns, names_sep, names_pattern, names_to, values_to
+):
+
+    # no frills, just shoot to pandas melt
     if all((names_pattern is None, names_sep is None)):
         return pd.melt(
             df,
@@ -708,16 +719,23 @@ def _computations_pivot_longer(
             value_name=values_to,
             # introduce ignore_index argument when minimum version is 1.1
             # this will allow for easy sorting via the index
-            # on second thought, is it necessary? looks cleaner sorted, but
-            # does the end user care?
         )
+
     if any((names_pattern is not None, names_sep is not None)):
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
         df = pd.melt(df, id_vars=index, value_vars=columns, var_name=uniq_name)
-        # just before uniq_name column
-        before = df.iloc[:, :-2]
-        # melt returns uniq_name and value as the last columns
+
+        # melt returns uniq_name and value as the last columns. We can use
+        # that knowledge to get the data before( the index column(s)),
+        # the data between (our uniq_name column)
+        #  and the data after (our values column)
+        position = df.columns.get_loc(uniq_name)
+        if position == 0:
+            before = pd.DataFrame([], index=range(len(df)))
+        else:
+            # just before uniq_name column
+            before = df.iloc[:, :-2]
         after = df.iloc[:, -1]
         between = df.pop(uniq_name)
         if names_sep is not None:
@@ -736,56 +754,67 @@ def _computations_pivot_longer(
                 number of columns extracted.
                 """
             )
-        # if we need the `value` in the column names as the
-        # new headers. The `.value` signifies that that 
-        # particular value becomes a header
-        # it is also another way of achieving pandas wide_to_long
+
+        # we take a detour here to deal with paired columns, where the user
+        # might want one of the names in the paired column as part of the
+        # new column names. The `.value` indicates that that particular
+        # value becomes a header.It is also another way of achieving
+        # pandas wide_to_long.
+
         if all((len(names_to) > 1, ".value" in names_to)):
             if names_to.count(".value") > 1:
                 raise ValueError(
                     """Column name `.value` must not be duplicated."""
                 )
-
-            # the resulting columns will always be two
-            after = np.reshape(after.to_numpy(), (-1, 2), order="F")
-
-            # since names_to is a length of 2, the resulting shape
-            # here will be 4 columns. The Fortran order gets us the
+            # Get the name in names_to that is not `.value`
+            first_header = set(names_to).difference([".value"])
+            # should be a single value, plus this method is significantly
+            # faster than np.unique.
+            # Not that it matters really for one item.
+            first_header = next(iter(first_header))
+            between = between.to_numpy()
+            # map `names_to` to `between`; this allows us to keep
+            # track of the underlying data in `between` when reshaping.
+            between_dict = dict(zip(names_to, [between[:, 0], between[:, -1]]))
+            # this will be our new headers
+            # used np.unique here to keep the order
+            value_headers = np.unique(between_dict[".value"])
+            # this becomes a column to add to the new dataframe
+            # and will have `first_header` as its column name
+            indexer = between_dict[first_header]
+            value_length = len(value_headers)
+            # get indexer to same height as `after`
+            indexer = indexer[: len(indexer) // value_length]
+            # the idea here is that the shape of after should match the number
+            # of new column names. The Fortran order ensures we get data in the
             # right shape.
-            between = np.reshape(between.to_numpy(), (-1, 4), order="F")
-            middle_header, last_header, second, ignore = (
-                between[:, 0],
-                between[:, 1],
-                between[:, -2],
-                between[:, -1],
-            )
-            # here we extract the headers for the new dataframe
-            # stack overflow came in handy in deciphering the best
-            # way to pull a value from a set; luckily our set will
-            # always return a single value. I also chose set method,
-            # as it is faster than np.unique
-            second_header = set(names_to).difference([".value"])
-            second_header = next(iter(second_header))
-            middle_header = next(iter(set(middle_header)))
-            last_header = next(iter(set(last_header)))
+            after = np.reshape(after.to_numpy(), (-1, value_length), order="F")
+            first_header = pd.Index([first_header])
 
-            # this will serve as the column name for the new dataframe
-            # it will be index, followed by provided name, followed by
-            # the names extracted from the columns
-            new_columns = before.columns.union(
-                [second_header, middle_header, last_header], sort=False
-            )
+            # position of uniq_name column. This kicks in if there is no
+            # index/columns supplied.
+            if position == 0:
 
-            # here we get unique values for before, and repeat it with
-            # the length of unique values in the last column from the 
-            # between array. Note that ``np.tile`` is used, which assures
-            # exact matching with the rest of the array.
+                # this will serve as the column name for the new dataframe
+                new_columns = first_header.union(value_headers, sort=False)
+                # here we get unique values for before, and repeat it with
+                # the length of unique values in the last column from the
+                # between array. Note that ``np.tile`` is used, which assures
+                # exact matching with the rest of the array.
+
+                new_data = np.hstack((indexer[:, np.newaxis], after))
+                return pd.DataFrame(new_data, columns=new_columns)
+
+            # kicks in if index/columns is supplied
+            new_columns = before.columns
+            new_columns = new_columns.union(first_header, sort=False)
+            new_columns = new_columns.union(value_headers, sort=False)
             before = before.drop_duplicates().to_numpy()
             if before.ndim > 1:
-                before = np.tile(before, (len(set(ignore)), 1))
+                before = np.tile(before, (len(indexer)//len(before), 1))
             else:
-                before = np.tile(before, len(set(ignore)))[:, np.newaxis]
-            new_data = (before, second[:, np.newaxis], after)
+                before = np.tile(before, len(indexer)//len(before))[:, np.newaxis]
+            new_data = (before, indexer[:, np.newaxis], after)
             new_data = np.hstack(new_data)
 
             return pd.DataFrame(new_data, columns=new_columns)

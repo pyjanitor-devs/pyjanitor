@@ -39,6 +39,7 @@ from .utils import (
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
     _grid_computation,
+    _pivot_longer_pattern_match,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _strip_underscores,
@@ -4603,19 +4604,13 @@ def pivot_longer(
 ) -> pd.DataFrame:
     # copy docstrings from previous PR
 
-    # notes for myself
-    # delete later
-    # if names_sep, then no names_pattern and vice versa
-    # how do i include stubnames, suffix, i, j, ... pd.wide_to_long
-    # names_prefix for stubnames?
-    # change name_sep to sep
-    # for tidy data, should stubnames be there?
-
     df = df.copy()
 
     df = _data_checks_pivot_longer(
         df, index, columns, names_sep, names_pattern, names_to, values_to
     )
+
+    df, index, columns = _pivot_longer_pattern_match(df, index, columns)
 
     df = _computations_pivot_longer(
         df, index, columns, names_sep, names_pattern, names_to, values_to

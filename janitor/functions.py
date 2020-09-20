@@ -4593,6 +4593,30 @@ def complete(
     return df
 
 
+def patterns(word):
+    """
+    This function acts as a column selector in the index or columns_names
+    arguments of ``pivot_longer`` function, using regular expressions.
+    A single  regular expression, or a list/tuple of regular expressions
+    can be passed to the `word` argument.
+
+    A regular expression, or a list/tuple of regular expressions is returned.
+    """
+
+    if not isinstance(word, (str, list, tuple)):
+        raise TypeError(
+            """
+            pattern should be a single regular expression,
+            or a list/tuple of regular expressions.
+            """
+        )
+    if isinstance(word, (list, tuple)):
+        if not all(isinstance(w, str) for w in word):
+            raise TypeError("""value in sequence must be a string.""")
+        return [re.compile(w) for w in word]
+    return re.compile(word)
+
+
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
@@ -4639,17 +4663,20 @@ def pivot_longer(
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name as a string,
-        a list/tuple of strings, or a Pattern type.
+        a list/tuple of strings, or a Pattern type. You can dynamically
+        select column names by using a regular expression with the
+        `janitor.patterns` function.
     :param column_names: Name(s) of columns to unpivot. Should be either
         a single column name as a string, a list/tuple of strings,
-        or a Pattern type.
+        or a Pattern type. You can dynamically select column names by
+        using a regular expression with the `janitor.patterns` function.
     :param names_to: Name of new column as a string that will contain
          what were previously the column names in `column_names`. It can
          also be a list/tuple of strings that will serve as new column
          names, if `name_sep` or `names_pattern` is provided. If names_to
-         is a list/tuple of new column names, and contains the special 
-         `.value` string, new column names will be extracted from part of 
-         the existing column names and `values_to` will be replaced.          
+         is a list/tuple of new column names, and contains the special
+         `.value` string, new column names will be extracted from part of
+         the existing column names and `values_to` will be replaced.
     :names_sep: Determines how the column name is broken up, if `names_to`
         contains multiple values. It takes the same specification as pandas'
         `str.split` method, and can be a string or regular expression.
@@ -4660,16 +4687,26 @@ def pivot_longer(
         were previously the values of the columns in `column_names`.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
-    :raises: TypeError if `index` or `column_names` is not a string, or a 
+    :raises: TypeError if `index` or `column_names` is not a string, or a
         list/tuple of strings, or a Pattern type.
-    :raises: TypeError if `names_to` or `column_names` is not a string, or a 
+    :raises: TypeError if `janitor.patterns` function is used in the index`
+        or `column_names` arguments and the type is not a string/list/tuple.
+    :raises: TypeError if a list/tuple is supplied to the `janitor.patterns`
+        function and not all the contents in the list/tuple are strings.
+    :raises: TypeError if `names_to` or `column_names` is not a string, or a
         list/tuple of strings.
+    :raises: TypeError if `values_to` is not a string.
     :raises: ValueError if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
-    :raises: ValueError if `names_to` is a string or a single list/tuple, and 
+    :raises: ValueError if `names_to` is a string or a single list/tuple, and
         `names_sep` is provided.
-    :raises: TypeError if `names_sep` or `names_pattern` is not a string or 
+    :raises: TypeError if `names_sep` or `names_pattern` is not a string or
         regular expression.
+    :raises: ValueError if the `names_to` is a list/tuple,`names_sep` or
+        `names_pattern` is provided, and the `index`, if provided, is not
+        unique.
+    :raises: ValueError if `names_to` is a list/tuple, and its length does not
+        match the number of extracted columns.
     """
 
     # this code builds on the wonderful work of @benjaminjack’s PR
@@ -4690,24 +4727,3 @@ def pivot_longer(
     )
 
     return df
-
-
-def patterns(word):
-    """
-    This function acts as a regular expression selector in the index or columns
-    argument of ``pivot_longer`` function. A single  regular expression, or a
-    list/tuple of regular expressions can be passed to the `word` argument.
-    """
-
-    if not isinstance(word, (str, list, tuple)):
-        raise TypeError(
-            """
-            pattern should be a single regular expression,
-            or a list/tuple of regular expressions.
-            """
-        )
-    if isinstance(word, (list, tuple)):
-        if not all(isinstance(w, str) for w in word):
-            raise TypeError("""value in sequence must be a string.""")
-        return [re.compile(w) for w in word]
-    return re.compile(word)

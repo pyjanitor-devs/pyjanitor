@@ -242,3 +242,11 @@ import janitor
 
 # print(df13.pivot_longer(index='commune', names_to = ('.value' , 'numbers') ,
 #                names_pattern = '(.*)_(.*)'))
+
+# df14 = pd.DataFrame({'name': ['Wilbur', 'Petunia', 'Gregory'],
+#  'a': [67, 80, 64],
+#  'b': [56, 90, 50]})
+
+# print(df14)
+
+# print(df14.pivot_longer(column_names=['a', 'b'], names_to='drug',   values_to='heartrate'))

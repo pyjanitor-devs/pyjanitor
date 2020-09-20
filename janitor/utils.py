@@ -600,7 +600,7 @@ def _complete_groupings(df, list_of_columns):
 
 
 def _data_checks_pivot_longer(
-    df, index, columns, names_sep, names_pattern, names_to, values_to
+    df, index, column_names, names_sep, names_pattern, names_to, values_to
 ):
 
     # a better docstring is needed here
@@ -619,20 +619,21 @@ def _data_checks_pivot_longer(
         ),
     ):
         warnings.warn(
-            """pivot_longer is designed for single index dataframes;
-               for multiIndex dataframes, kindly use pandas.melt."""
+            """pivot_longer is designed for single index dataframes and
+               may produce unexpected results for multiIndex dataframes;
+               for such cases, kindly use pandas.melt."""
         )
     if index is not None:
         if not isinstance(index, (list, tuple, str, Pattern)):
             raise TypeError(
                 """index argument must be a list/tuple of columns,
-                   a string, or a `pattern` function."""
+                   a string, or a `patterns` function."""
             )
-    if columns is not None:
-        if not isinstance(columns, (list, tuple, str, Pattern)):
+    if column_names is not None:
+        if not isinstance(column_names, (list, tuple, str, Pattern)):
             raise TypeError(
-                """columns argument must be a list/tuple of columns,
-                   a string, or a `pattern` function."""
+                """column_names argument must be a list/tuple of columns,
+                   a string, or a `patterns` function."""
             )
     if names_to is not None:
         if not isinstance(names_to, (list, tuple, str)):
@@ -676,24 +677,26 @@ def _data_checks_pivot_longer(
     return df
 
 
-def _pivot_longer_pattern_match(df, index, columns):
+def _pivot_longer_pattern_match(df, index, column_names):
     """
     This checks if a pattern (regular expression) is supplied
     to index or columns and extracts the columns that match.
     """
 
-    if isinstance(columns, str):
-        columns = [columns]
+    if isinstance(column_names, str):
+        column_names = [column_names]
     # here we extract columns based on the regex passed
-    if isinstance(columns, Pattern):
-        columns = [col for col in df if columns.search(col)]
-    elif isinstance(columns, Callable):
-        columns = [
-            col for pattern, col in product(columns, df) if pattern.search(col)
+    if isinstance(column_names, Pattern):
+        column_names = [col for col in df if column_names.search(col)]
+    elif isinstance(column_names, Callable):
+        column_names = [
+            col
+            for pattern, col in product(column_names, df)
+            if pattern.search(col)
         ]
 
-    if index is None and (columns is not None):
-        index = df.columns.difference(columns)
+    if index is None and (column_names is not None):
+        index = df.columns.difference(column_names)
     # if index is a regular expression
     elif isinstance(index, Pattern):
         index = [col for col in df if index.search(col)]
@@ -702,11 +705,11 @@ def _pivot_longer_pattern_match(df, index, columns):
             col for pattern, col in product(index, df) if pattern.search(col)
         ]
 
-    return df, index, columns
+    return df, index, column_names
 
 
 def _computations_pivot_longer(
-    df, index, columns, names_sep, names_pattern, names_to, values_to
+    df, index, column_names, names_sep, names_pattern, names_to, values_to
 ):
 
     # no frills, just shoot to pandas melt
@@ -714,7 +717,7 @@ def _computations_pivot_longer(
         return pd.melt(
             df,
             id_vars=index,
-            value_vars=columns,
+            value_vars=column_names,
             var_name=names_to,
             value_name=values_to,
             # introduce ignore_index argument when minimum version is 1.1
@@ -734,7 +737,9 @@ def _computations_pivot_longer(
                 )
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
-        df = pd.melt(df, id_vars=index, value_vars=columns, var_name=uniq_name)
+        df = pd.melt(
+            df, id_vars=index, value_vars=column_names, var_name=uniq_name
+        )
 
         # melt returns uniq_name and value as the last columns. We can use
         # that knowledge to get the data before( the index column(s)),
@@ -764,6 +769,7 @@ def _computations_pivot_longer(
                 number of columns extracted.
                 """
             )
+        between = between.set_axis(names_to, axis="columns")
 
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the
@@ -782,7 +788,6 @@ def _computations_pivot_longer(
             # faster than np.unique.
             # Not that it matters really for one item.
             first_header = next(iter(first_header))
-            between = between.set_axis(names_to, axis="columns")
             # aim here is to get the new column names in their present order
             # pd.unique does not sort, which serves our purpose
             value_headers = pd.unique(between.loc[:, ".value"])
@@ -836,8 +841,6 @@ def _computations_pivot_longer(
             before = before.drop_duplicates(ignore_index=True)
 
             return pd.concat((before, after), axis=1)
-
-        between = between.set_axis(names_to, axis="columns")
 
         return pd.concat((before, between, after), axis=1)
 

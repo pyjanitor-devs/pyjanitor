@@ -19,6 +19,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    Pattern
 )
 
 import numpy as np
@@ -4595,25 +4596,97 @@ def complete(
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple, str, Callable]] = None,
-    columns: Optional[Union[List, Tuple, str, Callable]] = None,
+    index: Optional[Union[List, Tuple, str, Pattern]] = None,
+    column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_sep: Optional[str] = None,
     names_pattern: Optional[str] = None,
     names_to: Optional[Union[List, Tuple]] = None,
     values_to: Optional[Union[List, Tuple]] = "value",
 ) -> pd.DataFrame:
-    # copy docstrings from previous PR
+    """
+    Unpivot a DataFrame from 'wide' to 'long' format.
+    This method does not mutate the original DataFrame.
+    Intended to be the method-chaining alternative to pd.melt with
+    some syntactic sugar. This function is useful to massage a DataFrame into a
+    format where one or more columns are considered measured variables
+    (column_names), and all other columns are considered identifier variables.
+    All measured variables are “unpivoted” (and typically duplicated) along the
+    row axis.
+
+    Example: The following DataFrame contains heartrate data for patients
+    treated with two different drugs, 'a' and 'b'.
+    .. code-block::
+              name   a   b
+        0   Wilbur  67  56
+        1  Petunia  80  90
+        2  Gregory  64  50
+    The column names 'a' and 'b' are actually the names of a measured variable
+    (i.e. the name of a drug), but the values are a different measured variable
+    (heartrate). We would like to unpivot these 'a' and 'b' columns into a
+    'drug' column and a 'heartrate' column.
+    .. code-block:: python
+        df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
+                                            names_to='drug',
+                                            values_to='heartrate')
+    .. code-block::
+              name drug  heartrate
+        0   Wilbur    a         67
+        1  Petunia    a         80
+        2  Gregory    a         64
+        3   Wilbur    b         56
+        4  Petunia    b         90
+        5  Gregory    b         50
+    :param df: A pandas dataframe.
+    :param index: Name(s) of columns to use as identifier variables.
+        Should be either a single column name as a string,
+        a list/tuple of strings, or a Pattern type.
+    :param column_names: Name(s) of columns to unpivot. Should be either
+        a single column name as a string, a list/tuple of strings,
+        or a Pattern type.
+    :param names_to: Name of new column as a string that will contain
+         what were previously the column names in `column_names`. It can
+         also be a list/tuple of strings that will serve as new column
+         names, if `name_sep` or `names_pattern` is provided. If names_to
+         is a list/tuple of new column names, and contains the special 
+         `.value` string, new column names will be extracted from part of 
+         the existing column names and `values_to` will be replaced.          
+    :names_sep: Determines how the column name is broken up, if `names_to`
+        contains multiple values. It takes the same specification as pandas'
+        `str.split` method, and can be a string or regular expression.
+    :names_pattern: Determines how the column name is broken up. It takes
+        the same specification as pandas' `str.extractall` method, which is
+        a regular expression containing matching groups.
+    :param values_to: Name of new column as a string that will contain what
+        were previously the values of the columns in `column_names`.
+    :returns: A pandas DataFrame that has been unpivoted from wide to long
+        format.
+    :raises: TypeError if `index` or `column_names` is not a string, or a 
+        list/tuple of strings, or a Pattern type.
+    :raises: TypeError if `names_to` or `column_names` is not a string, or a 
+        list/tuple of strings.
+    :raises: ValueError if `names_to` is a list/tuple, and both `names_sep` and
+        `names_pattern` are provided.
+    :raises: ValueError if `names_to` is a string or a single list/tuple, and 
+        `names_sep` is provided.
+    :raises: TypeError if `names_sep` or `names_pattern` is not a string or 
+        regular expression.
+    """
+
+    # this code builds on the wonderful work of @benjaminjack’s PR
+    # https://github.com/benjaminjack/pyjanitor/commit/e3df817903c20dd21634461c8a92aec137963ed0
 
     df = df.copy()
 
     df = _data_checks_pivot_longer(
-        df, index, columns, names_sep, names_pattern, names_to, values_to
+        df, index, column_names, names_sep, names_pattern, names_to, values_to
     )
 
-    df, index, columns = _pivot_longer_pattern_match(df, index, columns)
+    df, index, column_names = _pivot_longer_pattern_match(
+        df, index, column_names
+    )
 
     df = _computations_pivot_longer(
-        df, index, columns, names_sep, names_pattern, names_to, values_to
+        df, index, column_names, names_sep, names_pattern, names_to, values_to
     )
 
     return df

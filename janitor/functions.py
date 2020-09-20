@@ -4603,7 +4603,7 @@ def patterns(word):
     A regular expression, or a list/tuple of regular expressions is returned.
     """
 
-    check("word", word, [str, Pattern, list, tuple])
+    check("`word`", word, [str, Pattern, list, tuple])
 
     if isinstance(word, (list, tuple)):
         if not all(isinstance(w, (str, Pattern)) for w in word):

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
+from janitor import patterns
 
 df_checks = pd.DataFrame(
     [
@@ -15,6 +16,7 @@ df_checks = pd.DataFrame(
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
 names_to_labels = [1, {12, "newnames"}]
+
 
 index_does_not_exist = ["Region", [2007, "region"]]
 column_does_not_exist = ["two thousand and seven", ("2007", 2009)]
@@ -30,6 +32,11 @@ column_error_checks = [
 names_to_error_checks = [
     (frame, names_to)
     for frame, names_to in product([df_checks], names_to_labels)
+]
+
+names_to_sub_type_checks = [
+    (df_checks, (1, "rar")),
+    (df_checks, [{"set"}, 20]),
 ]
 
 index_presence_checks = [
@@ -87,7 +94,6 @@ multi_index_df = [
     ),
 ]
 
-
 @pytest.mark.parametrize("df,index", index_error_checks)
 def test_type_index(df, index):
     """Raise TypeError if wrong type is provided for index label.'"""
@@ -105,6 +111,15 @@ def test_type_column_names(df, column):
 @pytest.mark.parametrize("df,names_to", names_to_error_checks)
 def test_type_names_to(df, names_to):
     """Raise TypeError if wrong type is provided for `names_to`."""
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to)
+
+
+@pytest.mark.parametrize("df,names_to", names_to_sub_type_checks)
+def test_subtype_names_to(df, names_to):
+    """
+    Raise TypeError if wrong type is provided for entries in
+    `names_to` list/tuple."""
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to)
 
@@ -149,11 +164,13 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
+
 @pytest.mark.parametrize("df", multi_index_df)
 def test_warning_multi_index(df):
     """Raise Warning if dataframe is a MultiIndex."""
     with pytest.warns(UserWarning):
         df.pivot_longer()
+
 
 def test_both_names_sep_and_pattern():
     """Raise ValueError if `names_sep` and `names_pattern` is provided."""
@@ -167,6 +184,8 @@ def test_values_to():
     """Raise TypeError if wrong type is provided for`values_to`."""
     with pytest.raises(TypeError):
         df_checks.pivot_longer(values_to=["salvo"])
+
+
 
 # print(df1.pivot_longer(names_to=["year"], index=janitor.patterns(r"[^\d+]")))
 

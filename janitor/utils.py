@@ -624,24 +624,19 @@ def _data_checks_pivot_longer(
                may produce unexpected results for multiIndex dataframes;
                for such cases, kindly use pandas.melt."""
         )
+
+  
     if index is not None:
-        if not isinstance(index, (list, tuple, str, Pattern)):
-            raise TypeError(
-                """index argument must be a list/tuple of columns,
-                   a string, or a `patterns` function."""
-            )
+        check('index', index, [list, tuple, str, Pattern])
+        check_column(df, index, present=True)
+
     if column_names is not None:
-        if not isinstance(column_names, (list, tuple, str, Pattern)):
-            raise TypeError(
-                """column_names argument must be a list/tuple of columns,
-                   a string, or a `patterns` function."""
-            )
+        check('column_names', column_names, [list, tuple, str, Pattern])
+        check_column(df, column_names, present=True)
+
     if names_to is not None:
-        if not isinstance(names_to, (list, tuple, str)):
-            raise TypeError(
-                """names_to argument must be a single string or
-                   a list/tuple of strings."""
-            )
+        check('names_to', names_to, [list, tuple, str])
+
         if isinstance(names_to, (list, tuple)) and (len(names_to) > 1):
             if all((names_pattern is not None, names_sep is not None)):
                 raise ValueError(
@@ -659,21 +654,12 @@ def _data_checks_pivot_longer(
                     """
                 )
     if names_pattern is not None:
-        if not isinstance(names_pattern, str):
-            raise TypeError(
-                """names_pattern argument should be a
-                   regular expression."""
-            )
+        check('names_pattern', names_pattern, [str])
+
     if names_sep is not None:
-        if not isinstance(names_sep, str):
-            raise TypeError(
-                """
-                names_sep argument should be a string or
-                regular expression.
-                """
-            )
-    if not isinstance(values_to, str):
-        raise TypeError("""values_to argument should be a string.""")
+        check('names_sep', names_sep, [str])
+
+    check('values_to', values_to, [str])
 
     return df
 

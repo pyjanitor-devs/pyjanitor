@@ -16,10 +16,10 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Pattern,
     Set,
     Tuple,
     Union,
-    Pattern
 )
 
 import numpy as np

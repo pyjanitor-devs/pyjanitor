@@ -1,9 +1,9 @@
-# import numpy as np
-# import pandas as pd
-# import pytest
-# from pandas.testing import assert_frame_equal
+import numpy as np
+import pandas as pd
+import pytest
+from pandas.testing import assert_frame_equal
 
-# import janitor
+import janitor
 
 # df1 = pd.DataFrame(
 #    [
@@ -177,17 +177,25 @@
 
 # print(df9.pivot_longer(index='X', names_to=(".value", "year"), names_pattern="([A-Z])(.+)"))
 
-# df10 = pd.DataFrame({
-#     'famid': [1, 1, 1, 2, 2, 2, 3, 3, 3],
-#     'birth': [1, 2, 3, 1, 2, 3, 1, 2, 3],
-#     'ht1': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
-#     'ht2': [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9]
-# })
+df10 = pd.DataFrame(
+    {
+        "famid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        "birth": [1, 2, 3, 1, 2, 3, 1, 2, 3],
+        "ht1": [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+        "ht2": [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9],
+    }
+)
 
 
-# print(df10)
+print(df10)
 
-# print(df10.pivot_longer(index=['famid','birth'], names_to=('.value','age'), names_pattern="(ht)(\d)"))
+print(
+    df10.pivot_longer(
+        index=["famid", "birth"],
+        names_to=(".value", "age"),
+        names_pattern="(ht)(\d)",
+    )
+)
 
 # df11 = pd.DataFrame(
 #     {

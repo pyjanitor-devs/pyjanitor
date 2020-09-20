@@ -4,10 +4,9 @@ import functools
 import os
 import sys
 import warnings
+from collections import defaultdict
 from itertools import chain, product
 from typing import Callable, Dict, List, Pattern, Union
-from collections import defaultdict
-
 
 import numpy as np
 import pandas as pd
@@ -776,21 +775,48 @@ def _computations_pivot_longer(
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the
         # new column names. The `.value` indicates that that particular
-        # value becomes a header.It is also another way of achieving
-        # pandas wide_to_long.
+        # value becomes a header.
+
+        # It is also another way of achieving pandas wide_to_long.
 
         # Let's see an example of a paired column
         # say we have this data :
-        #     id  a1  a2  a3  A1  A2  A3
-        # 0    1   a   b   c   A   B   C
+        # code is copied from pandas wide_to_long documentation
+        # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.wide_to_long.html
+        #     famid  birth  ht1  ht2
+        # 0      1      1  2.8  3.4
+        # 1      1      2  2.9  3.8
+        # 2      1      3  2.2  2.9
+        # 3      2      1  2.0  3.2
+        # 4      2      2  1.8  2.8
+        # 5      2      3  1.9  2.4
+        # 6      3      1  2.2  3.3
+        # 7      3      2  2.3  3.4
+        # 8      3      3  2.1  2.9
 
-        # and we want data that looks like this : 
-        #     id instance   a   A
-        # 0    1        1   a   A
-        # 1    1        2   b   B
-        # 2    1        3   c   C
+        # and we want to reshape into data that looks like this :
+        #      famid  birth age   ht
+        # 0       1      1   1  2.8
+        # 1       1      1   2  3.4
+        # 2       1      2   1  2.9
+        # 3       1      2   2  3.8
+        # 4       1      3   1  2.2
+        # 5       1      3   2  2.9
+        # 6       2      1   1  2.0
+        # 7       2      1   2  3.2
+        # 8       2      2   1  1.8
+        # 9       2      2   2  2.8
+        # 10      2      3   1  1.9
+        # 11      2      3   2  2.4
+        # 12      3      1   1  2.2
+        # 13      3      1   2  3.3
+        # 14      3      2   1  2.3
+        # 15      3      2   2  3.4
+        # 16      3      3   1  2.1
+        # 17      3      3   2  2.9
 
-        # In the reshaping process we need chunks where `a, b, c` is repeated
+        # In the reshaping process we need chunks where `1, 2` is repeated
+        # for the age column for each combination of `famid` and `birth`.
         # That way we get complete `chunks` of each extraction that can be
         # paired with the rest of the data, and be assured of complete/accurate
         # sync. The code below achieves that.
@@ -800,7 +826,7 @@ def _computations_pivot_longer(
                 raise ValueError(
                     """Column name `.value` must not be duplicated."""
                 )
-            # Get the name in names_to that is not `.value`
+            # Get the header in names_to that is not `.value`
             first_header = set(names_to).difference([".value"])
             # should be a single value, plus this method is significantly
             # faster than np.unique.
@@ -809,7 +835,7 @@ def _computations_pivot_longer(
             # aim here is to get the new column names in their present order
             # pd.unique does not sort, which serves our purpose
             value_headers = pd.unique(between.loc[:, ".value"])
-            # reduced memory usage
+            # Categorical dtype is used here for reduced memory usage
             # but more importantly, it allows us to use the current state
             # to sort the data. This is necessary for reshaping later on.
             first_header_dtype = pd.api.types.CategoricalDtype(
@@ -835,7 +861,8 @@ def _computations_pivot_longer(
             )
             sorter = np.ravel(sorter)
 
-            # much easier and faster(I presume) to reorder using the index
+            # now we can reorder `before`, `between` and `after`
+
             between = between.reindex(sorter)
             # this will serve as the headers for the after dataframe
             after_columns = between.loc[:, ".value"]
@@ -850,7 +877,7 @@ def _computations_pivot_longer(
                 container[k].append(v)
             after = pd.DataFrame(container).reindex(columns=value_headers)
 
-            if position == 0:  
+            if position == 0:  # if there is no `before` data
                 # pd.unique is used to ensure data is not sorted
                 # which we need since we are aiming for alternation
                 # `start, end`, `on,off`, `loc,lat,long` ...

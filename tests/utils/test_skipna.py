@@ -1,3 +1,4 @@
+"""Tests for skipna."""
 import numpy as np
 import pandas as pd
 import pytest
@@ -7,9 +8,15 @@ from janitor.utils import skipna
 
 @pytest.mark.functions
 def test_skipna():
+    """
+    Overall test for skipna.
+
+    TODO: Should be refactored into separate tests.
+    """
     df = pd.DataFrame({"x": ["a", "b", "c", np.nan], "y": [1, 2, 3, np.nan]})
 
     def func(s):
+        """Dummy helper func."""
         return s + "1"
 
     # Verify that applying function causes error

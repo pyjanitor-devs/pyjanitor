@@ -625,17 +625,20 @@ def _data_checks_pivot_longer(
                for such cases, kindly use pandas.melt."""
         )
 
-  
     if index is not None:
-        check('index', index, [list, tuple, str, Pattern])
+        if isinstance(index, (str, Pattern)):
+            index = [index]
+        check("index", index, [list, tuple])
         check_column(df, index, present=True)
 
     if column_names is not None:
-        check('column_names', column_names, [list, tuple, str, Pattern])
+        if isinstance(column_names, (str, Pattern)):
+            column_names = [column_names]
+        check("column_names", column_names, [list, tuple, str, Pattern])
         check_column(df, column_names, present=True)
 
     if names_to is not None:
-        check('names_to', names_to, [list, tuple, str])
+        check("names_to", names_to, [list, tuple, str])
 
         if isinstance(names_to, (list, tuple)) and (len(names_to) > 1):
             if all((names_pattern is not None, names_sep is not None)):
@@ -654,12 +657,12 @@ def _data_checks_pivot_longer(
                     """
                 )
     if names_pattern is not None:
-        check('names_pattern', names_pattern, [str])
+        check("names_pattern", names_pattern, [str, Pattern])
 
     if names_sep is not None:
-        check('names_sep', names_sep, [str])
+        check("names_sep", names_sep, [str, Pattern])
 
-    check('values_to', values_to, [str])
+    check("values_to", values_to, [str])
 
     return df
 
@@ -670,27 +673,24 @@ def _pivot_longer_pattern_match(df, index, column_names):
     to index or columns and extracts the columns that match.
     """
 
-    if isinstance(column_names, str):
-        column_names = [column_names]
-    # here we extract columns based on the regex passed
-    if isinstance(column_names, Pattern):
-        column_names = [col for col in df if column_names.search(col)]
-    elif isinstance(column_names, Callable):
-        column_names = [
-            col
-            for pattern, col in product(column_names, df)
-            if pattern.search(col)
-        ]
+    if isinstance(column_names, (list, tuple)):
+        if isinstance(column_names[0], Pattern):
+            column_names = [
+                col
+                for pattern, col in product(column_names, df)
+                if pattern.search(col)
+            ]
 
     if index is None and (column_names is not None):
         index = df.columns.difference(column_names)
-    # if index is a regular expression
-    elif isinstance(index, Pattern):
-        index = [col for col in df if index.search(col)]
-    elif isinstance(index, Callable):
-        index = [
-            col for pattern, col in product(index, df) if pattern.search(col)
-        ]
+
+    if isinstance(column_names, (list, tuple)):
+        if isinstance(column_names[0], Pattern):
+            index = [
+                col
+                for pattern, col in product(index, df)
+                if pattern.search(col)
+            ]
 
     return df, index, column_names
 

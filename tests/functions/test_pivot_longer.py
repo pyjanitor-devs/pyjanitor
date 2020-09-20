@@ -1,17 +1,172 @@
+from itertools import product
+
 import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-import janitor
+df_checks = pd.DataFrame(
+    [
+        {"region": "Pacific", "2007": 1039, "2009": 2587},
+        {"region": "Southwest", "2007": 51, "2009": 176},
+        {"region": "Rocky Mountains and Plains", "2007": 200, "2009": 338},
+    ]
+)
+index_labels = [pd.Index(["region"]), {"2007", "region"}]
+column_labels = [{"region": 2007}, {"2007", "2009"}]
+names_to_labels = [1, {12, "newnames"}]
 
-# df1 = pd.DataFrame(
-#    [
-#        {"region": "Pacific", "2007": 1039, "2009": 2587},
-#        {"region": "Southwest", "2007": 51, "2009": 176},
-#        {"region": "Rocky Mountains and Plains", "2007": 200, "2009": 338},
-#    ]
-# )
+index_does_not_exist = ["Region", [2007, "region"]]
+column_does_not_exist = ["two thousand and seven", ("2007", 2009)]
+
+
+index_error_checks = [
+    (frame, index) for frame, index in product([df_checks], index_labels)
+]
+column_error_checks = [
+    (frame, column_name)
+    for frame, column_name in product([df_checks], column_labels)
+]
+names_to_error_checks = [
+    (frame, names_to)
+    for frame, names_to in product([df_checks], names_to_labels)
+]
+
+index_presence_checks = [
+    (frame, index)
+    for frame, index in product([df_checks], index_does_not_exist)
+]
+column_presence_checks = [
+    (frame, column_name)
+    for frame, column_name in product([df_checks], column_does_not_exist)
+]
+
+names_sep_not_required = [
+    (df_checks, "rar", "_"),
+    (df_checks, ["blessed"], ","),
+]
+
+names_sep_type_check = [
+    (df_checks, ["rar", "bar"], 1),
+    (df_checks, ("rar", "ragnar"), ["\\d+"]),
+]
+names_pattern_type_check = [
+    (df_checks, "rar", 1),
+    (df_checks, ["rar"], ["\\d+"]),
+]
+
+multi_index_df = [
+    pd.DataFrame(
+        pd.DataFrame(
+            {
+                "name": {
+                    (67, 56): "Wilbur",
+                    (80, 90): "Petunia",
+                    (64, 50): "Gregory",
+                }
+            }
+        )
+    ),
+    pd.DataFrame(
+        {
+            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
+            ("names", "aa"): {0: 67, 1: 80, 2: 64},
+            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
+        }
+    ),
+    pd.DataFrame(
+        {
+            ("name", "a"): {
+                (0, 2): "Wilbur",
+                (1, 3): "Petunia",
+                (2, 4): "Gregory",
+            },
+            ("names", "aa"): {(0, 2): 67, (1, 3): 80, (2, 4): 64},
+            ("more_names", "aaa"): {(0, 2): 56, (1, 3): 90, (2, 4): 50},
+        }
+    ),
+]
+
+
+@pytest.mark.parametrize("df,index", index_error_checks)
+def test_type_index(df, index):
+    """Raise TypeError if wrong type is provided for index label.'"""
+    with pytest.raises(TypeError):
+        df.pivot_longer(index=index)
+
+
+@pytest.mark.parametrize("df,column", column_error_checks)
+def test_type_column_names(df, column):
+    """Raise TypeError if wrong type is provided for the column label.'"""
+    with pytest.raises(TypeError):
+        df.pivot_longer(column_names=column)
+
+
+@pytest.mark.parametrize("df,names_to", names_to_error_checks)
+def test_type_names_to(df, names_to):
+    """Raise TypeError if wrong type is provided for `names_to`."""
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to)
+
+
+@pytest.mark.parametrize("df,index", index_presence_checks)
+def test_presence_index(df, index):
+    """Raise ValueError if index does not exist."""
+    with pytest.raises(ValueError):
+        df.pivot_longer(index=index)
+
+
+@pytest.mark.parametrize("df,column", column_presence_checks)
+def test_presence_columns(df, column):
+    """Raise ValueError if column does not exist."""
+    with pytest.raises(ValueError):
+        df.pivot_longer(column_names=column)
+
+
+@pytest.mark.parametrize("df,names_to, names_sep", names_sep_not_required)
+def test_name_sep_names_to_len(df, names_to, names_sep):
+    """
+    Raise ValueError if the `names_to` is a string, or `names_to` is a
+    list/tuple and its length is one, and `names_sep` is provided."""
+    with pytest.raises(ValueError):
+        df.pivot_longer(names_to=names_to, names_sep=names_sep)
+
+
+@pytest.mark.parametrize("df,names_to, names_sep", names_sep_type_check)
+def test_name_sep_wrong_type(df, names_to, names_sep):
+    """
+    Raise TypeError if wrong type provided for `names_sep`."""
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to, names_sep=names_sep)
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern", names_pattern_type_check
+)
+def test_name_pattern_wrong_type(df, names_to, names_pattern):
+    """
+    Raise TypeError if wrong type provided for `names_pattern`."""
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
+
+@pytest.mark.parametrize("df", multi_index_df)
+def test_warning_multi_index(df):
+    """Raise Warning if dataframe is a MultiIndex."""
+    with pytest.warns(UserWarning):
+        df.pivot_longer()
+
+def test_both_names_sep_and_pattern():
+    """Raise ValueError if `names_sep` and `names_pattern` is provided."""
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["rar", "bar"], names_sep="-", names_pattern=r"\\d+"
+        )
+
+
+def test_values_to():
+    """Raise TypeError if wrong type is provided for`values_to`."""
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(values_to=["salvo"])
 
 # print(df1.pivot_longer(names_to=["year"], index=janitor.patterns(r"[^\d+]")))
 
@@ -177,25 +332,25 @@ import janitor
 
 # print(df9.pivot_longer(index='X', names_to=(".value", "year"), names_pattern="([A-Z])(.+)"))
 
-df10 = pd.DataFrame(
-    {
-        "famid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        "birth": [1, 2, 3, 1, 2, 3, 1, 2, 3],
-        "ht1": [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
-        "ht2": [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9],
-    }
-)
+# df10 = pd.DataFrame(
+#     {
+#         "famid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
+#         "birth": [1, 2, 3, 1, 2, 3, 1, 2, 3],
+#         "ht1": [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+#         "ht2": [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9],
+#     }
+# )
 
 
-print(df10)
+# print(df10)
 
-print(
-    df10.pivot_longer(
-        index=["famid", "birth"],
-        names_to=(".value", "age"),
-        names_pattern="(ht)(\d)",
-    )
-)
+# print(
+#     df10.pivot_longer(
+#         index=["famid", "birth"],
+#         names_to=(".value", "age"),
+#         names_pattern=r"(ht)(\d)",
+#     )
+# )
 
 # df11 = pd.DataFrame(
 #     {

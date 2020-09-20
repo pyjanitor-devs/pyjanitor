@@ -4603,15 +4603,10 @@ def patterns(word):
     A regular expression, or a list/tuple of regular expressions is returned.
     """
 
-    if not isinstance(word, (str, list, tuple)):
-        raise TypeError(
-            """
-            pattern should be a single regular expression,
-            or a list/tuple of regular expressions.
-            """
-        )
+    check("word", word, [str, Pattern, list, tuple])
+
     if isinstance(word, (list, tuple)):
-        if not all(isinstance(w, str) for w in word):
+        if not all(isinstance(w, (str, Pattern)) for w in word):
             raise TypeError("""value in sequence must be a string.""")
         return [re.compile(w) for w in word]
     return re.compile(word)
@@ -4622,8 +4617,8 @@ def pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
-    names_sep: Optional[str] = None,
-    names_pattern: Optional[str] = None,
+    names_sep: Optional[Union[str, Pattern]] = None,
+    names_pattern: Optional[Union[str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple]] = None,
     values_to: Optional[Union[List, Tuple]] = "value",
 ) -> pd.DataFrame:
@@ -4707,6 +4702,7 @@ def pivot_longer(
         unique.
     :raises: ValueError if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
+    :raises: Warning if `df` is a MultiIndex dataframe.
     """
 
     # this code builds on the wonderful work of @benjaminjack’s PR

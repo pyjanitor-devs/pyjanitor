@@ -1,3 +1,4 @@
+"""Tests for clone_using."""
 import numpy as np
 import pytest
 import xarray as xr
@@ -7,6 +8,7 @@ import janitor  # noqa: F401
 
 @pytest.mark.xarray
 def test_successful_cloning_coords(da):
+    """Test that clone_using coordinates works correctly."""
 
     # with copying coords
     new_da: xr.DataArray = da.clone_using(np.random.randn(*da.data.shape))
@@ -25,6 +27,7 @@ def test_successful_cloning_coords(da):
 
 @pytest.mark.xarray
 def test_successful_cloning_no_coords(da):
+    """Test that cloning works without coordinates."""
 
     new_da: xr.DataArray = da.clone_using(
         np.random.randn(*da.data.shape), use_coords=False
@@ -38,6 +41,7 @@ def test_successful_cloning_no_coords(da):
 
 @pytest.mark.xarray
 def test_metadata_cloning(da):
+    """Test that metadata gets cloned over."""
     new_da: xr.DataArray = da.clone_using(
         np.random.randn(*da.data.shape), use_attrs=True, new_name="new_name"
     )
@@ -48,6 +52,7 @@ def test_metadata_cloning(da):
 
 @pytest.mark.xarray
 def test_no_coords_errors(da: xr.DataArray):
+    """Test that errors are raised when dims do not match."""
     # number of dims should match
     with pytest.raises(ValueError):
         da.clone_using(np.random.randn(10, 10, 10), use_coords=False)

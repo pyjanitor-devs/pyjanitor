@@ -1,9 +1,9 @@
-import numpy as np
-import pandas as pd
-import pytest
-from pandas.testing import assert_frame_equal
+# import numpy as np
+# import pandas as pd
+# import pytest
+# from pandas.testing import assert_frame_equal
 
-import janitor
+# import janitor
 
 # df1 = pd.DataFrame(
 #    [
@@ -121,7 +121,7 @@ import janitor
 
 # print(df7)
 
-# print(df7.pivot_longer(columns= janitor.patterns("^a|^A"), names_to=(".value", "instance"), names_pattern = "(\\w)(\\d)"))
+# print(df7.pivot_longer(column_names= janitor.patterns("^a|^A"), names_to=(".value", "instance"), names_pattern = "(\\w)(\\d)"))
 
 
 # df8 = pd.DataFrame(

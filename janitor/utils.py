@@ -6,6 +6,8 @@ import sys
 import warnings
 from itertools import chain, product
 from typing import Callable, Dict, List, Pattern, Union
+from collections import defaultdict
+
 
 import numpy as np
 import pandas as pd
@@ -777,6 +779,22 @@ def _computations_pivot_longer(
         # value becomes a header.It is also another way of achieving
         # pandas wide_to_long.
 
+        # Let's see an example of a paired column
+        # say we have this data :
+        #     id  a1  a2  a3  A1  A2  A3
+        # 0    1   a   b   c   A   B   C
+
+        # and we want data that looks like this : 
+        #     id instance   a   A
+        # 0    1        1   a   A
+        # 1    1        2   b   B
+        # 2    1        3   c   C
+
+        # In the reshaping process we need chunks where `a, b, c` is repeated
+        # That way we get complete `chunks` of each extraction that can be
+        # paired with the rest of the data, and be assured of complete/accurate
+        # sync. The code below achieves that.
+
         if all((len(names_to) > 1, ".value" in names_to)):
             if names_to.count(".value") > 1:
                 raise ValueError(
@@ -821,17 +839,22 @@ def _computations_pivot_longer(
             between = between.reindex(sorter)
             # this will serve as the headers for the after dataframe
             after_columns = between.loc[:, ".value"]
+
             between = between.loc[:, first_header]
             after = after.to_numpy()[sorter]
 
-            from collections import defaultdict
-
+            # here we ensure correct pairing between the non `.value`
+            # and the `after` data
             container = defaultdict(list)
             for k, v in zip(after_columns.to_numpy(), after):
                 container[k].append(v)
             after = pd.DataFrame(container).reindex(columns=value_headers)
 
-            if position == 0:  # or if index is None
+            if position == 0:  
+                # pd.unique is used to ensure data is not sorted
+                # which we need since we are aiming for alternation
+                # `start, end`, `on,off`, `loc,lat,long` ...
+                # which gets us a complete `chunk`
                 between = np.resize(pd.unique(between), len(after))
                 after.insert(0, first_header, between)
                 return after

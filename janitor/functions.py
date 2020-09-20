@@ -4710,7 +4710,15 @@ def pivot_longer(
 
     df = df.copy()
 
-    df = _data_checks_pivot_longer(
+    (
+        df,
+        index,
+        column_names,
+        names_sep,
+        names_pattern,
+        names_to,
+        values_to,
+    ) = _data_checks_pivot_longer(
         df, index, column_names, names_sep, names_pattern, names_to, values_to
     )
 

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
+
 from janitor import patterns
 
 df_checks = pd.DataFrame(
@@ -13,6 +14,26 @@ df_checks = pd.DataFrame(
         {"region": "Rocky Mountains and Plains", "2007": 200, "2009": 338},
     ]
 )
+
+
+@pytest.fixture
+def df_checks_output():
+    return pd.DataFrame(
+        {
+            "region": [
+                "Pacific",
+                "Pacific",
+                "Southwest",
+                "Southwest",
+                "Rocky Mountains and Plains",
+                "Rocky Mountains and Plains",
+            ],
+            "year": [2007, 2009, 2007, 2009, 2007, 2009],
+            "num_nests": [1039, 2587, 51, 176, 200, 338],
+        }
+    )
+
+
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
 names_to_labels = [1, {12, "newnames"}]
@@ -22,14 +43,14 @@ index_does_not_exist = ["Region", [2007, "region"]]
 column_does_not_exist = ["two thousand and seven", ("2007", 2009)]
 
 
-index_error_checks = [
+index_type_checks = [
     (frame, index) for frame, index in product([df_checks], index_labels)
 ]
-column_error_checks = [
+column_type_checks = [
     (frame, column_name)
     for frame, column_name in product([df_checks], column_labels)
 ]
-names_to_error_checks = [
+names_to_type_checks = [
     (frame, names_to)
     for frame, names_to in product([df_checks], names_to_labels)
 ]
@@ -94,21 +115,22 @@ multi_index_df = [
     ),
 ]
 
-@pytest.mark.parametrize("df,index", index_error_checks)
+
+@pytest.mark.parametrize("df,index", index_type_checks)
 def test_type_index(df, index):
     """Raise TypeError if wrong type is provided for index label.'"""
     with pytest.raises(TypeError):
         df.pivot_longer(index=index)
 
 
-@pytest.mark.parametrize("df,column", column_error_checks)
+@pytest.mark.parametrize("df,column", column_type_checks)
 def test_type_column_names(df, column):
     """Raise TypeError if wrong type is provided for the column label.'"""
     with pytest.raises(TypeError):
         df.pivot_longer(column_names=column)
 
 
-@pytest.mark.parametrize("df,names_to", names_to_error_checks)
+@pytest.mark.parametrize("df,names_to", names_to_type_checks)
 def test_type_names_to(df, names_to):
     """Raise TypeError if wrong type is provided for `names_to`."""
     with pytest.raises(TypeError):
@@ -186,249 +208,276 @@ def test_values_to():
         df_checks.pivot_longer(values_to=["salvo"])
 
 
+def test_pivot_no_args_passed():
+    """Test output if no arguments are passed."""
+    df_no_args = pd.DataFrame({"name": ["Wilbur", "Petunia", "Gregory"]})
+    df_no_args_output = pd.DataFrame(
+        {
+            "variable": ["name", "name", "name"],
+            "value": ["Wilbur", "Petunia", "Gregory"],
+        }
+    )
+    result = df_no_args.pivot_longer()
 
-# print(df1.pivot_longer(names_to=["year"], index=janitor.patterns(r"[^\d+]")))
-
-
-# df2 = pd.DataFrame(
-#     {
-#         "country": ["United States", "Russia", "China"],
-#         "vault_2012": [48.132, 46.36600000000001, 44.266000000000005],
-#         "floor_2012": [45.36600000000001, 41.599, 40.833],
-#         "vault_2016": [46.86600000000001, 45.733000000000004, 44.332],
-#         "floor_2016": [45.998999999999995, 42.032, 42.066],
-#     }
-# )
-
-# print(df2)
-
-# print(
-#     df2.pivot_longer(
-#         index="country", names_to=("event", "year"), names_sep="_"
-#     )
-# )
-
-# df3 = pd.DataFrame({'country': ['United States', 'Russia', 'China'],
-# 'vault_2012_f': [48.132, 46.36600000000001, 44.266000000000005],
-# 'vault_2012_m': [46.632, 46.86600000000001, 48.316],
-# 'vault_2016_f': [46.86600000000001, 45.733000000000004, 44.332],
-# 'vault_2016_m': [45.865, 46.033, 45.0],
-# 'floor_2012_f': [45.36600000000001, 41.599, 40.833],
-# 'floor_2012_m': [45.266000000000005, 45.308, 45.133],
-# 'floor_2016_f': [45.998999999999995, 42.032, 42.066],
-# 'floor_2016_m': [43.757, 44.766000000000005, 43.799]})
-
-# print(df3)
-
-# print(
-#    df3.pivot_longer(
-#        index="country", names_to=("event", "year", "gender"), names_sep="_"
-#    )
-# )
-
-# df4 = pd.DataFrame(
-#    {
-#       "country": ["United States", "Russia", "China"],
-#     "floor2012": [45.36600000000001, 41.599, 40.833],
-#     "vault2016": [46.86600000000001, 45.733000000000004, 44.332],
-#    "floor2016": [45.998999999999995, 42.032, 42.066],
-# }
-# )
-
-# print(df4)
-
-# print(
-#    df4.pivot_longer(
-#        index="country",
-#        names_to=("event", "year"),
-#        names_sep="_",
-#        names_pattern="([A-Za-z]+)(\\d+)",
-#    )
-# )
-
-# df5 = pd.DataFrame({'country': ['United States', 'Russia', 'China'],
-# 'score_vault': [46.86600000000001, 45.733000000000004, 44.332],
-# 'score_floor': [45.998999999999995, 42.032, 42.066]})
-
-# print(df5)
-
-# print(df5.pivot_longer(index='country', names_to='event', names_sep="_")
+    assert_frame_equal(result, df_no_args_output)
 
 
-# df6 = pd.DataFrame(
-#     {
-#         "family": [1, 2, 3, 4, 5],
-#         "dob_child1": [
-#             "1998-11-26",
-#             "1996-06-22",
-#             "2002-07-11",
-#             "2004-10-10",
-#             "2000-12-05",
-#         ],
-#         "dob_child2": [
-#             "2000-01-29",
-#             np.nan,
-#             "2004-04-05",
-#             "2009-08-27",
-#             "2005-02-28",
-#         ],
-#         "gender_child1": [1, 2, 2, 1, 2],
-#         "gender_child2": [2.0, np.nan, 2.0, 1.0, 1.0],
-#     }
-# )
-
-# print(df6)
-
-# print(
-#     df6.pivot_longer(
-#         index="family", names_to=(".value", "child"), names_sep="_"
-#     )
-# )
-
-# df7 = pd.DataFrame([{' id': 1,
-#   'a1': ' a',
-#   'a2': ' b',
-#   'a3': ' c',
-#   'A1': ' A',
-#   'A2': ' B',
-#   'A3': ' C'}])
-
-# print(df7)
-
-# print(df7.pivot_longer(column_names= janitor.patterns("^a|^A"), names_to=(".value", "instance"), names_pattern = "(\\w)(\\d)"))
+def test_pivot_index_only(df_checks_output):
+    """Test output if only index is passed."""
+    result = df_checks.pivot_longer(
+        index="region", names_to="year", values_to="num_nests"
+    )
+    assert_frame_equal(result, df_checks_output)
 
 
-# df8 = pd.DataFrame(
-#     {
-#         "off_loc": ["A", "B", "C", "D", "E", "F"],
-#         "pt_loc": ["G", "H", "I", "J", "K", "L"],
-#         "pt_lat": [
-#             100.07548220000001,
-#             75.191326,
-#             122.65134479999999,
-#             124.13553329999999,
-#             124.13553329999999,
-#             124.01028909999998,
-#         ],
-#         "off_lat": [
-#             121.271083,
-#             75.93845266,
-#             135.043791,
-#             134.51128400000002,
-#             134.484374,
-#             137.962195,
-#         ],
-#         "pt_long": [
-#             4.472089953,
-#             -144.387785,
-#             -40.45611048,
-#             -46.07156181,
-#             -46.07156181,
-#             -46.01594293,
-#         ],
-#         "off_long": [
-#             -7.188632000000001,
-#             -143.2288569,
-#             21.242563,
-#             40.937416999999996,
-#             40.78472,
-#             22.905889000000002,
-#         ],
-#     }
-# )
-
-# print(df8)
-
-# print(df8.pivot_longer(names_to=("set", ".value"), names_pattern="(.+)_(.+)"))
-
-# df9 = pd.DataFrame({'A1970': ['a', 'b', 'c'],
-#  'A1980': ['d', 'e', 'f'],
-#  'B1970': [2.5, 1.2, 0.7],
-#  'B1980': [3.2, 1.3, 0.1],
-#  'X': [-1.085631, 0.997345, 0.282978]})
-
-# print(df9)
-
-# print(df9.pivot_longer(index='X', names_to=(".value", "year"), names_pattern="([A-Z])(.+)"))
-
-# df10 = pd.DataFrame(
-#     {
-#         "famid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
-#         "birth": [1, 2, 3, 1, 2, 3, 1, 2, 3],
-#         "ht1": [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
-#         "ht2": [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9],
-#     }
-# )
+def test_pivot_column_only(df_checks_output):
+    """Test output if only column is passed."""
+    result = df_checks.pivot_longer(
+        column_names=["2007", "2009"], names_to="year", values_to="num_nests"
+    )
+    assert_frame_equal(result, df_checks_output)
 
 
-# print(df10)
-
-# print(
-#     df10.pivot_longer(
-#         index=["famid", "birth"],
-#         names_to=(".value", "age"),
-#         names_pattern=r"(ht)(\d)",
-#     )
-# )
-
-# df11 = pd.DataFrame(
-#     {
-#         "A(weekly)-2010": [0.548814, 0.7151890000000001, 0.602763],
-#         "A(weekly)-2011": [0.544883, 0.423655, 0.645894],
-#         "B(weekly)-2010": [0.437587, 0.8917729999999999, 0.9636629999999999],
-#         "B(weekly)-2011": [0.383442, 0.791725, 0.528895],
-#         "X": [0, 1, 1],
-
-#     }
-# )
-
-# print(df11)
-
-# print(
-#     df11.pivot_longer(
-#         index=["X"], names_to=(".value", "year"), names_sep="-"
-#     )
-# )
-
-# df12 = pd.DataFrame({'id': ['A', 'B', 'C', 'D', 'E', 'F'],
-#  'f_start': ['p', 'i', 'i', 'p', 'p', 'i'],
-#  'd_start': ['2018-01-01',
-#   '2019-04-01',
-#   '2018-06-01',
-#   '2019-12-01',
-#   '2019-02-01',
-#   '2018-04-01'],
-#  'f_end': ['p', 'p', 'i', 'p', 'p', 'i'],
-#  'd_end': ['2018-02-01',
-#   '2020-01-01',
-#   '2019-03-01',
-#   '2020-05-01',
-#   '2019-05-01',
-#   '2018-07-01']})
-
-# print(df12)
-
-# print(df12.pivot_longer(index='id', names_to = ('.value' , 'status') ,
-#                names_pattern = '(.*)_(.*)'))
+def test_pivot_index_patterns_only(df_checks_output):
+    """Test output if the `patterns` function is passed to `index`."""
+    result = df_checks.pivot_longer(
+        index=patterns(r"[^\d+]"), names_to="year", values_to="num_nests"
+    )
+    assert_frame_equal(result, df_checks_output)
 
 
-# df13 = pd.DataFrame({'commune': ['A', 'B', 'C'],
-#  'nuance_1': ['X', 'X', 'Z'],
-#  'votes_1': [12, 10, 7],
-#  'nuance_2': ['Y', 'Y', 'X'],
-#  'votes_2': [20, 5, 2],
-#  'nuance_3': ['Z', None, None],
-#  'votes_3': [5.0, np.nan, np.nan]})
+def test_pivot_columns_patterns_only(df_checks_output):
+    """Test output if the `patterns` function is passed to `column_names`."""
+    result = df_checks.pivot_longer(
+        column_names=patterns(r"\d+"), names_to="year", values_to="num_nests"
+    )
+    assert_frame_equal(result, df_checks_output)
 
-# print(df13)
 
-# print(df13.pivot_longer(index='commune', names_to = ('.value' , 'numbers') ,
-#                names_pattern = '(.*)_(.*)'))
+names_special_value_pattern = [
+    (
+        pd.DataFrame(
+            [
+                {
+                    "id": 1,
+                    "a1": "a",
+                    "a2": "b",
+                    "a3": "c",
+                    "A1": "A",
+                    "A2": "B",
+                    "A3": "C",
+                }
+            ]
+        ),
+        pd.DataFrame(
+            {
+                "id": [1, 1, 1],
+                "instance": [1, 2, 3],
+                "a": ["a", "b", "c"],
+                "A": ["A", "B", "C"],
+            }
+        ),
+        "id",
+        (".value", "instance"),
+        r"(\w)(\d)",
+    ),
+    (
+        pd.DataFrame(
+            {
+                "A1970": ["a", "b", "c"],
+                "A1980": ["d", "e", "f"],
+                "B1970": [2.5, 1.2, 0.7],
+                "B1980": [3.2, 1.3, 0.1],
+                "X": [-1.085631, 0.997345, 0.282978],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "X": [
+                    -1.085631,
+                    -1.085631,
+                    0.997345,
+                    0.997345,
+                    0.282978,
+                    0.282978,
+                ],
+                "year": [1970, 1980, 1970, 1980, 1970, 1980],
+                "A": ["a", "d", "b", "e", "c", "f"],
+                "B": [2.5, 3.2, 1.2, 1.3, 0.7, 0.1],
+            }
+        ),
+        "X",
+        (".value", "year"),
+        "([A-Z])(.+)",
+    ),
+    (
+        pd.DataFrame(
+            {
+                "id": ["A", "B", "C", "D", "E", "F"],
+                "f_start": ["p", "i", "i", "p", "p", "i"],
+                "d_start": [
+                    "2018-01-01",
+                    "2019-04-01",
+                    "2018-06-01",
+                    "2019-12-01",
+                    "2019-02-01",
+                    "2018-04-01",
+                ],
+                "f_end": ["p", "p", "i", "p", "p", "i"],
+                "d_end": [
+                    "2018-02-01",
+                    "2020-01-01",
+                    "2019-03-01",
+                    "2020-05-01",
+                    "2019-05-01",
+                    "2018-07-01",
+                ],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {"id": "A", "status": "start", "f": "p", "d": "2018-01-01"},
+                {"id": "A", "status": "end", "f": "p", "d": "2018-02-01"},
+                {"id": "B", "status": "start", "f": "i", "d": "2019-04-01"},
+                {"id": "B", "status": "end", "f": "p", "d": "2020-01-01"},
+                {"id": "C", "status": "start", "f": "i", "d": "2018-06-01"},
+                {"id": "C", "status": "end", "f": "i", "d": "2019-03-01"},
+                {"id": "D", "status": "start", "f": "p", "d": "2019-12-01"},
+                {"id": "D", "status": "end", "f": "p", "d": "2020-05-01"},
+                {"id": "E", "status": "start", "f": "p", "d": "2019-02-01"},
+                {"id": "E", "status": "end", "f": "p", "d": "2019-05-01"},
+                {"id": "F", "status": "start", "f": "i", "d": "2018-04-01"},
+                {"id": "F", "status": "end", "f": "i", "d": "2018-07-01"},
+            ]
+        ),
+        "id",
+        (".value", "status"),
+        "(.*)_(.*)",
+    ),
+]
 
-# df14 = pd.DataFrame({'name': ['Wilbur', 'Petunia', 'Gregory'],
-#  'a': [67, 80, 64],
-#  'b': [56, 90, 50]})
+names_special_value_sep = [
+    (
+        pd.DataFrame(
+            {
+                "family": [1, 2, 3, 4, 5],
+                "dob_child1": [
+                    "1998-11-26",
+                    "1996-06-22",
+                    "2002-07-11",
+                    "2004-10-10",
+                    "2000-12-05",
+                ],
+                "dob_child2": [
+                    "2000-01-29",
+                    np.nan,
+                    "2004-04-05",
+                    "2009-08-27",
+                    "2005-02-28",
+                ],
+                "gender_child1": [1, 2, 2, 1, 2],
+                "gender_child2": [2.0, np.nan, 2.0, 1.0, 1.0],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "family": 1,
+                    "child": "child1",
+                    "dob": "1998-11-26",
+                    "gender": 1.0,
+                },
+                {
+                    "family": 1,
+                    "child": "child2",
+                    "dob": "2000-01-29",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 2,
+                    "child": "child1",
+                    "dob": "1996-06-22",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 2,
+                    "child": "child2",
+                    "dob": np.nan,
+                    "gender": np.nan,
+                },
+                {
+                    "family": 3,
+                    "child": "child1",
+                    "dob": "2002-07-11",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 3,
+                    "child": "child2",
+                    "dob": "2004-04-05",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 4,
+                    "child": "child1",
+                    "dob": "2004-10-10",
+                    "gender": 1.0,
+                },
+                {
+                    "family": 4,
+                    "child": "child2",
+                    "dob": "2009-08-27",
+                    "gender": 1.0,
+                },
+                {
+                    "family": 5,
+                    "child": "child1",
+                    "dob": "2000-12-05",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 5,
+                    "child": "child2",
+                    "dob": "2005-02-28",
+                    "gender": 1.0,
+                },
+            ]
+        ),
+        "family",
+        (".value", "child"),
+        "_",
+    ), (pd.DataFrame([{'id': 'A', 'Q1r1_pepsi': 1, 'Q1r1_cola': 0, 'Q1r2_pepsi': 1, 'Q1r2_cola': 0},
+ {'id': 'B', 'Q1r1_pepsi': 0, 'Q1r1_cola': 0, 'Q1r2_pepsi': 1, 'Q1r2_cola': 1},
+ {'id': 'C', 'Q1r1_pepsi': 1, 'Q1r1_cola': 1, 'Q1r2_pepsi': 1, 'Q1r2_cola': 1}]), pd.DataFrame([{'id': 'A', 'brand': 'pepsi', 'Q1r1': 1, 'Q1r2': 1},
+ {'id': 'A', 'brand': 'cola', 'Q1r1': 0, 'Q1r2': 0},
+ {'id': 'B', 'brand': 'pepsi', 'Q1r1': 0, 'Q1r2': 1},
+ {'id': 'B', 'brand': 'cola', 'Q1r1': 0, 'Q1r2': 1},
+ {'id': 'C', 'brand': 'pepsi', 'Q1r1': 1, 'Q1r2': 1},
+ {'id': 'C', 'brand': 'cola', 'Q1r1': 1, 'Q1r2': 1}]), 'id',('.value', 'brand'), "_" )
+]
 
-# print(df14)
 
-# print(df14.pivot_longer(column_names=['a', 'b'], names_to='drug',   values_to='heartrate'))
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_pattern", names_special_value_pattern
+)
+def test_extract_column_names_pattern(
+    df_in, df_out, index, names_to, names_pattern
+):
+    """Test function where `.value` is in the `names_to` argument and names_pattern is used."""
+    result = df_in.pivot_longer(
+        index=index, names_to=names_to, names_pattern=names_pattern
+    )
+    assert_frame_equal(result, df_out)
+
+
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_sep", names_special_value_sep
+)
+def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
+    """Test function where `.value` is in the `names_to` argument and names_sep is used."""
+    result = df_in.pivot_longer(
+        index=index, names_to=names_to, names_sep=names_sep
+    )
+    assert_frame_equal(result, df_out)
+
+

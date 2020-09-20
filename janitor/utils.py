@@ -10,6 +10,7 @@ from typing import Callable, Dict, List, Pattern, Union
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -629,13 +630,11 @@ def _data_checks_pivot_longer(
         if isinstance(index, (str, Pattern)):
             index = [index]
         check("index", index, [list, tuple])
-        check_column(df, index, present=True)
 
     if column_names is not None:
         if isinstance(column_names, (str, Pattern)):
             column_names = [column_names]
         check("column_names", column_names, [list, tuple, str, Pattern])
-        check_column(df, column_names, present=True)
 
     if names_to is not None:
         check("names_to", names_to, [list, tuple, str])
@@ -670,7 +669,15 @@ def _data_checks_pivot_longer(
 
     check("values_to", values_to, [str])
 
-    return df
+    return (
+        df,
+        index,
+        column_names,
+        names_sep,
+        names_pattern,
+        names_to,
+        values_to,
+    )
 
 
 def _pivot_longer_pattern_match(df, index, column_names):
@@ -690,8 +697,8 @@ def _pivot_longer_pattern_match(df, index, column_names):
     if index is None and (column_names is not None):
         index = df.columns.difference(column_names)
 
-    if isinstance(column_names, (list, tuple)):
-        if isinstance(column_names[0], Pattern):
+    if isinstance(index, (list, tuple)):
+        if isinstance(index[0], Pattern):
             index = [
                 col
                 for pattern, col in product(index, df)
@@ -705,9 +712,15 @@ def _computations_pivot_longer(
     df, index, column_names, names_sep, names_pattern, names_to, values_to
 ):
 
+    if index is not None:
+        check_column(df, index, present=True)
+
+    if column_names is not None:
+        check_column(df, column_names, present=True)
+
     # no frills, just shoot to pandas melt
     if all((names_pattern is None, names_sep is None)):
-        return pd.melt(
+        df = pd.melt(
             df,
             id_vars=index,
             value_vars=column_names,
@@ -716,6 +729,15 @@ def _computations_pivot_longer(
             # introduce ignore_index argument when minimum version is 1.1
             # this will allow for easy sorting via the index
         )
+
+        # reshape in the order that the data appears
+        if index is not None:
+            uniq_index_length = len(df.loc[:, index].drop_duplicates())
+            sorter = np.reshape(df.index, (-1, uniq_index_length))
+            sorter = np.ravel(sorter, order="F")
+            df = df.reindex(sorter).reset_index(drop=True)
+            return df.transform(pd.to_numeric, errors="ignore")
+        return df
 
     if any((names_pattern is not None, names_sep is not None)):
 
@@ -744,7 +766,7 @@ def _computations_pivot_longer(
         else:
             # just before uniq_name column
             before = df.iloc[:, :-2]
-        after = df.iloc[:, -1]
+        after = df.iloc[:, -1].rename(values_to)
         between = df.pop(uniq_name)
         if names_sep is not None:
             between = between.str.split(names_sep, expand=True)
@@ -830,7 +852,7 @@ def _computations_pivot_longer(
             # Categorical dtype is used here for reduced memory usage
             # but more importantly, it allows us to use the current state
             # to sort the data. This is necessary for reshaping later on.
-            first_header_dtype = pd.api.types.CategoricalDtype(
+            first_header_dtype = CategoricalDtype(
                 pd.unique(between.loc[:, first_header]), ordered=True
             )
             between.loc[:, first_header] = between.loc[:, first_header].astype(
@@ -876,14 +898,22 @@ def _computations_pivot_longer(
                 # which gets us a complete `chunk`
                 between = np.resize(pd.unique(between), len(after))
                 after.insert(0, first_header, between)
-                return after
+                return after.transform(pd.to_numeric, errors="ignore")
 
             before = before.reindex(sorter)
             before.loc[:, first_header] = between
             before = before.drop_duplicates(ignore_index=True)
 
-            return pd.concat((before, after), axis=1)
+            return pd.concat((before, after), axis=1).transform(
+                pd.to_numeric, errors="ignore"
+            )
 
-        return pd.concat((before, between, after), axis=1)
+        len_unique_before = len(before.drop_duplicates())
+        sorter = np.reshape(before.index, (-1, len_unique_before), order="C")
+        sorter = np.ravel(sorter, order="F")
+
+        df = pd.concat((before, between, after), axis=1)
+        df = df.reindex(sorter).reset_index(drop=True)
+        return df.transform(pd.numeric, errors="ignore")
 
     return df

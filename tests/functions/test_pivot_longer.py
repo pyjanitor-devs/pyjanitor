@@ -538,6 +538,16 @@ def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
 
 # https://dcl-wrangle.stanford.edu/pivot-advanced.html
 multiple_values_sep = [
+
+(pd.DataFrame({'index': [0, 1],
+ 'S_1': [1, 1],
+ 'S_2': [0, 1],
+ 'S_3': ['0', np.nan],
+ 'S_4': ['1', np.nan]}),   pd.DataFrame({'index': [0, 0, 0, 0, 1, 1, 1, 1],
+ 'num': [1, 2, 3, 4, 1, 2, 3, 4],
+ 'S': [1, 0, 0, 1, 1, 1, np.nan, np.nan]}),  'index', ('.value','num'), '_' ),
+
+
     (
         pd.DataFrame(
             {
@@ -1171,3 +1181,5 @@ def test_single_value(df_in, df_out, index, names_pattern):
     )
 
     assert_frame_equal(result, df_out)
+
+

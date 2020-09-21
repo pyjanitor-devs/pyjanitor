@@ -254,7 +254,7 @@ def test_pivot_columns_patterns_only(df_checks_output):
     assert_frame_equal(result, df_checks_output)
 
 
-names_special_value_pattern = [
+paired_columns_pattern = [
     (
         pd.DataFrame(
             [
@@ -356,7 +356,7 @@ names_special_value_pattern = [
     ),
 ]
 
-names_special_value_sep = [
+paired_columns_sep = [
     (
         pd.DataFrame(
             {
@@ -446,19 +446,74 @@ names_special_value_sep = [
         "family",
         (".value", "child"),
         "_",
-    ), (pd.DataFrame([{'id': 'A', 'Q1r1_pepsi': 1, 'Q1r1_cola': 0, 'Q1r2_pepsi': 1, 'Q1r2_cola': 0},
- {'id': 'B', 'Q1r1_pepsi': 0, 'Q1r1_cola': 0, 'Q1r2_pepsi': 1, 'Q1r2_cola': 1},
- {'id': 'C', 'Q1r1_pepsi': 1, 'Q1r1_cola': 1, 'Q1r2_pepsi': 1, 'Q1r2_cola': 1}]), pd.DataFrame([{'id': 'A', 'brand': 'pepsi', 'Q1r1': 1, 'Q1r2': 1},
- {'id': 'A', 'brand': 'cola', 'Q1r1': 0, 'Q1r2': 0},
- {'id': 'B', 'brand': 'pepsi', 'Q1r1': 0, 'Q1r2': 1},
- {'id': 'B', 'brand': 'cola', 'Q1r1': 0, 'Q1r2': 1},
- {'id': 'C', 'brand': 'pepsi', 'Q1r1': 1, 'Q1r2': 1},
- {'id': 'C', 'brand': 'cola', 'Q1r1': 1, 'Q1r2': 1}]), 'id',('.value', 'brand'), "_" )
+    ),
+    (
+        pd.DataFrame(
+            [
+                {
+                    "id": "A",
+                    "Q1r1_pepsi": 1,
+                    "Q1r1_cola": 0,
+                    "Q1r2_pepsi": 1,
+                    "Q1r2_cola": 0,
+                },
+                {
+                    "id": "B",
+                    "Q1r1_pepsi": 0,
+                    "Q1r1_cola": 0,
+                    "Q1r2_pepsi": 1,
+                    "Q1r2_cola": 1,
+                },
+                {
+                    "id": "C",
+                    "Q1r1_pepsi": 1,
+                    "Q1r1_cola": 1,
+                    "Q1r2_pepsi": 1,
+                    "Q1r2_cola": 1,
+                },
+            ]
+        ),
+        pd.DataFrame(
+            [
+                {"id": "A", "brand": "pepsi", "Q1r1": 1, "Q1r2": 1},
+                {"id": "A", "brand": "cola", "Q1r1": 0, "Q1r2": 0},
+                {"id": "B", "brand": "pepsi", "Q1r1": 0, "Q1r2": 1},
+                {"id": "B", "brand": "cola", "Q1r1": 0, "Q1r2": 1},
+                {"id": "C", "brand": "pepsi", "Q1r1": 1, "Q1r2": 1},
+                {"id": "C", "brand": "cola", "Q1r1": 1, "Q1r2": 1},
+            ]
+        ),
+        "id",
+        (".value", "brand"),
+        "_",
+    ),
+    (
+        pd.DataFrame(
+            {
+                "event": [1, 2],
+                "url_1": ["g1", "g3"],
+                "name_1": ["dc", "nyc"],
+                "url_2": ["g2", "g4"],
+                "name_2": ["sf", "la"],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "event": [1, 1, 2, 2],
+                "item": [1, 2, 1, 2],
+                "url": ["g1", "g2", "g3", "g4"],
+                "name": ["dc", "sf", "nyc", "la"],
+            }
+        ),
+        "event",
+        (".value", "item"),
+        "_",
+    ),
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", names_special_value_pattern
+    "df_in,df_out,index,names_to,names_pattern", paired_columns_pattern
 )
 def test_extract_column_names_pattern(
     df_in, df_out, index, names_to, names_pattern
@@ -471,7 +526,7 @@ def test_extract_column_names_pattern(
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep", names_special_value_sep
+    "df_in,df_out,index,names_to,names_sep", paired_columns_sep
 )
 def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
     """Test function where `.value` is in the `names_to` argument and names_sep is used."""
@@ -481,3 +536,668 @@ def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
     assert_frame_equal(result, df_out)
 
 
+# https://dcl-wrangle.stanford.edu/pivot-advanced.html
+multiple_values_sep = [
+    (
+        pd.DataFrame(
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault_2012": [48.1, 46.4, 44.3],
+                "floor_2012": [45.4, 41.6, 40.8],
+                "vault_2016": [46.9, 45.7, 44.3],
+                "floor_2016": [46.0, 42.0, 42.1],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2012,
+                    "score": 48.1,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2012,
+                    "score": 45.4,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2016,
+                    "score": 46.9,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2016,
+                    "score": 46.0,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2012,
+                    "score": 46.4,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2012,
+                    "score": 41.6,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2016,
+                    "score": 45.7,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2016,
+                    "score": 42.0,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2012,
+                    "score": 44.3,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2012,
+                    "score": 40.8,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2016,
+                    "score": 44.3,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2016,
+                    "score": 42.1,
+                },
+            ]
+        ),
+        "country",
+        ("event", "year"),
+        "_",
+    ),
+    (
+        pd.DataFrame(
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault_2012_f": [
+                    48.132,
+                    46.36600000000001,
+                    44.266000000000005,
+                ],
+                "vault_2012_m": [46.632, 46.86600000000001, 48.316],
+                "vault_2016_f": [
+                    46.86600000000001,
+                    45.733000000000004,
+                    44.332,
+                ],
+                "vault_2016_m": [45.865, 46.033, 45.0],
+                "floor_2012_f": [45.36600000000001, 41.599, 40.833],
+                "floor_2012_m": [45.266000000000005, 45.308, 45.133],
+                "floor_2016_f": [45.998999999999995, 42.032, 42.066],
+                "floor_2016_m": [43.757, 44.766000000000005, 43.799],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 48.132,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 46.632,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 46.86600000000001,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 45.865,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 45.36600000000001,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 45.266000000000005,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 45.998999999999995,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 43.757,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 46.36600000000001,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 46.86600000000001,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 45.733000000000004,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 46.033,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 41.599,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 45.308,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 42.032,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 44.766000000000005,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 44.266000000000005,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 48.316,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 44.332,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 45.0,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 40.833,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 45.133,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 42.066,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 43.799,
+                },
+            ]
+        ),
+        "country",
+        ("event", "year", "gender"),
+        "_",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_sep", multiple_values_sep
+)
+def test_multiple_values_sep(df_in, df_out, index, names_to, names_sep):
+    """Test function to extract multiple columns, using the `names_to` and names_sep arguments."""
+    result = df_in.pivot_longer(
+        index=index, names_to=names_to, names_sep=names_sep, values_to="score"
+    )
+    assert_frame_equal(result, df_out)
+
+
+# https://dcl-wrangle.stanford.edu/pivot-advanced.html
+multiple_values_pattern = [
+    (
+        pd.DataFrame(
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault2012": [48.132, 46.36600000000001, 44.266000000000005],
+                "floor2012": [45.36600000000001, 41.599, 40.833],
+                "vault2016": [46.86600000000001, 45.733000000000004, 44.332],
+                "floor2016": [45.998999999999995, 42.032, 42.066],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2012,
+                    "score": 48.132,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2012,
+                    "score": 45.36600000000001,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2016,
+                    "score": 46.86600000000001,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2016,
+                    "score": 45.998999999999995,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2012,
+                    "score": 46.36600000000001,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2012,
+                    "score": 41.599,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2016,
+                    "score": 45.733000000000004,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2016,
+                    "score": 42.032,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2012,
+                    "score": 44.266000000000005,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2012,
+                    "score": 40.833,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2016,
+                    "score": 44.332,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2016,
+                    "score": 42.066,
+                },
+            ]
+        ),
+        "country",
+        ("event", "year"),
+        r"([A-Za-z]+)(\d+)",
+    )
+]
+
+
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_pattern", multiple_values_pattern
+)
+def test_multiple_values_pattern(
+    df_in, df_out, index, names_to, names_pattern
+):
+    """Test function to extract multiple columns, using the `names_to` and names_pattern arguments."""
+    result = df_in.pivot_longer(
+        index=index,
+        names_to=names_to,
+        names_pattern=names_pattern,
+        values_to="score",
+    )
+    assert_frame_equal(result, df_out)
+
+
+# https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/10
+paired_columns_no_index_pattern = [
+    (
+        pd.DataFrame(
+            {
+                "off_loc": ["A", "B", "C", "D", "E", "F"],
+                "pt_loc": ["G", "H", "I", "J", "K", "L"],
+                "pt_lat": [
+                    100.07548220000001,
+                    75.191326,
+                    122.65134479999999,
+                    124.13553329999999,
+                    124.13553329999999,
+                    124.01028909999998,
+                ],
+                "off_lat": [
+                    121.271083,
+                    75.93845266,
+                    135.043791,
+                    134.51128400000002,
+                    134.484374,
+                    137.962195,
+                ],
+                "pt_long": [
+                    4.472089953,
+                    -144.387785,
+                    -40.45611048,
+                    -46.07156181,
+                    -46.07156181,
+                    -46.01594293,
+                ],
+                "off_long": [
+                    -7.188632000000001,
+                    -143.2288569,
+                    21.242563,
+                    40.937416999999996,
+                    40.78472,
+                    22.905889000000002,
+                ],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "set": "off",
+                    "loc": "A",
+                    "lat": 121.271083,
+                    "long": -7.188632000000001,
+                },
+                {
+                    "set": "pt",
+                    "loc": "G",
+                    "lat": 100.07548220000001,
+                    "long": 4.472089953,
+                },
+                {
+                    "set": "off",
+                    "loc": "B",
+                    "lat": 75.93845266,
+                    "long": -143.2288569,
+                },
+                {
+                    "set": "pt",
+                    "loc": "H",
+                    "lat": 75.191326,
+                    "long": -144.387785,
+                },
+                {
+                    "set": "off",
+                    "loc": "C",
+                    "lat": 135.043791,
+                    "long": 21.242563,
+                },
+                {
+                    "set": "pt",
+                    "loc": "I",
+                    "lat": 122.65134479999999,
+                    "long": -40.45611048,
+                },
+                {
+                    "set": "off",
+                    "loc": "D",
+                    "lat": 134.51128400000002,
+                    "long": 40.937416999999996,
+                },
+                {
+                    "set": "pt",
+                    "loc": "J",
+                    "lat": 124.13553329999999,
+                    "long": -46.07156181,
+                },
+                {
+                    "set": "off",
+                    "loc": "E",
+                    "lat": 134.484374,
+                    "long": 40.78472,
+                },
+                {
+                    "set": "pt",
+                    "loc": "K",
+                    "lat": 124.13553329999999,
+                    "long": -46.07156181,
+                },
+                {
+                    "set": "off",
+                    "loc": "F",
+                    "lat": 137.962195,
+                    "long": 22.905889000000002,
+                },
+                {
+                    "set": "pt",
+                    "loc": "L",
+                    "lat": 124.01028909999998,
+                    "long": -46.01594293,
+                },
+            ]
+        ),
+        ("set", ".value"),
+        "(.+)_(.+)",
+    )
+]
+
+
+@pytest.mark.parametrize(
+    "df_in,df_out,names_to,names_pattern", paired_columns_no_index_pattern
+)
+def test_paired_columns_no_index_pattern(
+    df_in, df_out, names_to, names_pattern
+):
+    """Test function where `.value` is in the `names_to` argument, names_pattern is used and no index is supplied."""
+    result = df_in.pivot_longer(names_to=names_to, names_pattern=names_pattern)
+    assert_frame_equal(result, df_out)
+
+
+# import janitor
+
+# df20 = pd.DataFrame({'county': [1001, 1003, 1005],
+#  'area': [275, 394, 312],
+#  'pop_2006': [1037, 2399, 1638],
+#  'pop_2007': [1052, 2424, 1647],
+#  'pop_2008': [1102, 2438, 1660]})
+
+# print(df20)
+
+# print(df20.pivot_longer(['county', 'area'], names_to=('.value', 'year'), names_sep='_'))
+
+
+#  (pd.DataFrame({'county': [1001, 1003, 1005],
+#  'area': [275, 394, 312],
+#  'pop_2006': [1037, 2399, 1638],
+#  'pop_2007': [1052, 2424, 1647],
+#  'pop_2008': [1102, 2438, 1660]}),    pd.DataFrame['county', 'area'], ('.value', 'year'),  '_'))
+
+
+# df21 = pd.DataFrame({'off_loc': ['A', 'B', 'C', 'D', 'E', 'F'],
+#  'pt_loc': ['G', 'H', 'I', 'J', 'K', 'L'],
+#  'pt_lat': [100.07548220000001,
+#   75.191326,
+#   122.65134479999999,
+#   124.13553329999999,
+#   124.13553329999999,
+#   124.01028909999998],
+#  'off_lat': [121.271083,
+#   75.93845266,
+#   135.043791,
+#   134.51128400000002,
+#   134.484374,
+#   137.962195],
+#  'pt_long': [4.472089953,
+#   -144.387785,
+#   -40.45611048,
+#   -46.07156181,
+#   -46.07156181,
+#   -46.01594293],
+#  'off_long': [-7.188632000000001,
+#   -143.2288569,
+#   21.242563,
+#   40.937416999999996,
+#   40.78472,
+#   22.905889000000002]})
+
+# print(df21)
+
+# print(df21.pivot_longer(names_to = ("set", ".value"),  names_pattern = "(.+)_(.+)"))
+
+
+# df22 = pd.DataFrame([{'id': 1,
+#   ' a1': ' a',
+#   ' a2': ' b',
+#   ' a3': ' c',
+#   ' A1': ' A',
+#   ' A2': ' B',
+#   ' A3': ' C'}])
+
+# print(df22)
+
+# print(df22.pivot_longer(index='id', names_to=(".value", "instance"),  names_pattern = "(\\w)(\\d)"))
+
+
+# df23 = pd.DataFrame({'id': [1, 2, 3],
+#  'x1': [4, 5, 6],
+#  'x2': [5, 6, 7],
+#  'y1': [7, 8, 9],
+#  'y2': [10, 11, 12]})
+
+# print(df23)
+
+# print(df23.pivot_longer('id', names_to = ".value", names_pattern = "(.)."))
+
+
+
+# df30 = pd.DataFrame(
+#             {
+#                 "country": ["United States", "Russia", "China"],
+#                 "vault2012": [48.132, 46.36600000000001, 44.266000000000005],
+#                 "floor2012": [45.36600000000001, 41.599, 40.833],
+#                 "vault2016": [46.86600000000001, 45.733000000000004, 44.332],
+#                 "floor2016": [45.998999999999995, 42.032, 42.066],
+#             }
+#         )
+
+# print(df30)
+
+# print(df30.pivot_longer(index="country",  names_to= ("event", "year"), names_pattern = r"([A-Za-z]+)(\d+)"))
+
+df31 = pd.DataFrame(
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault_2012_f": [
+                    48.132,
+                    46.36600000000001,
+                    44.266000000000005,
+                ],
+                "vault_2012_m": [46.632, 46.86600000000001, 48.316],
+                "vault_2016_f": [
+                    46.86600000000001,
+                    45.733000000000004,
+                    44.332,
+                ],
+                "vault_2016_m": [45.865, 46.033, 45.0],
+                "floor_2012_f": [45.36600000000001, 41.599, 40.833],
+                "floor_2012_m": [45.266000000000005, 45.308, 45.133],
+                "floor_2016_f": [45.998999999999995, 42.032, 42.066],
+                "floor_2016_m": [43.757, 44.766000000000005, 43.799],
+            }
+        )
+
+print(df31)
+
+print(df31.pivot_longer(index="country",names_to=("event", "year", "gender"),names_sep="_",))

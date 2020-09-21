@@ -739,7 +739,7 @@ def _computations_pivot_longer(
             return df.transform(pd.to_numeric, errors="ignore")
         return df
 
-    if any((names_pattern is not None, names_sep is not None)):
+    elif any((names_pattern is not None, names_sep is not None)):
 
         # this ensures the wrong output is not provided for non-unique
         # index column(s)
@@ -762,158 +762,84 @@ def _computations_pivot_longer(
         #  and the data after (our values column)
         position = df.columns.get_loc(uniq_name)
         if position == 0:
-            before = pd.DataFrame([], index=range(len(df)))
+            before_df = pd.DataFrame([], index=range(len(df)))
         else:
             # just before uniq_name column
-            before = df.iloc[:, :-2]
-        after = df.iloc[:, -1].rename(values_to)
-        between = df.pop(uniq_name)
+            before_df = df.iloc[:, :-2]
+        after_df = df.iloc[:, -1].rename(values_to)
+        between_df = df.pop(uniq_name)
         if names_sep is not None:
-            between = between.str.split(names_sep, expand=True)
-        else:
-            between = between.str.extractall(names_pattern).reset_index(
-                drop=True
+            between_df = between_df.str.split(
+                names_sep, expand=True
             )
+        else:
+            between_df = between_df.str.extractall(names_pattern).droplevel(-1)
         # set_axis function labels argument takes only list-like objects
         if isinstance(names_to, str):
             names_to = [names_to]
-        if len(names_to) != between.shape[-1]:
+
+        if len(names_to) != between_df.shape[-1]:
             raise ValueError(
                 """
                 Length of ``names_to`` does not match
                 number of columns extracted.
                 """
             )
-        between = between.set_axis(names_to, axis="columns")
 
-        # we take a detour here to deal with paired columns, where the user
-        # might want one of the names in the paired column as part of the
-        # new column names. The `.value` indicates that that particular
-        # value becomes a header.
+        between_df = between_df.set_axis(names_to, axis="columns")
 
-        # It is also another way of achieving pandas wide_to_long.
-
-        # Let's see an example of a paired column
-        # say we have this data :
-        # code is copied from pandas wide_to_long documentation
-        # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.wide_to_long.html
-        #     famid  birth  ht1  ht2
-        # 0      1      1  2.8  3.4
-        # 1      1      2  2.9  3.8
-        # 2      1      3  2.2  2.9
-        # 3      2      1  2.0  3.2
-        # 4      2      2  1.8  2.8
-        # 5      2      3  1.9  2.4
-        # 6      3      1  2.2  3.3
-        # 7      3      2  2.3  3.4
-        # 8      3      3  2.1  2.9
-
-        # and we want to reshape into data that looks like this :
-        #      famid  birth age   ht
-        # 0       1      1   1  2.8
-        # 1       1      1   2  3.4
-        # 2       1      2   1  2.9
-        # 3       1      2   2  3.8
-        # 4       1      3   1  2.2
-        # 5       1      3   2  2.9
-        # 6       2      1   1  2.0
-        # 7       2      1   2  3.2
-        # 8       2      2   1  1.8
-        # 9       2      2   2  2.8
-        # 10      2      3   1  1.9
-        # 11      2      3   2  2.4
-        # 12      3      1   1  2.2
-        # 13      3      1   2  3.3
-        # 14      3      2   1  2.3
-        # 15      3      2   2  3.4
-        # 16      3      3   1  2.1
-        # 17      3      3   2  2.9
-
-        # In the reshaping process we need chunks where `1, 2` is repeated
-        # for the age column for each combination of `famid` and `birth`.
-        # That way we get complete `chunks` of each extraction that can be
-        # paired with the rest of the data, and be assured of complete/accurate
-        # sync. The code below achieves that.
-
-        if all((len(names_to) > 1, ".value" in names_to)):
+        if ".value" in names_to:
             if names_to.count(".value") > 1:
                 raise ValueError(
                     """Column name `.value` must not be duplicated."""
                 )
-            # Get the header in names_to that is not `.value`
-            first_header = set(names_to).difference([".value"])
-            # should be a single value, plus this method is significantly
-            # faster than np.unique.
-            # Not that it matters really for one item.
-            first_header = next(iter(first_header))
-            # aim here is to get the new column names in their present order
-            # pd.unique does not sort, which serves our purpose
-            value_headers = pd.unique(between.loc[:, ".value"])
-            # Categorical dtype is used here for reduced memory usage
-            # but more importantly, it allows us to use the current state
-            # to sort the data. This is necessary for reshaping later on.
-            first_header_dtype = CategoricalDtype(
-                pd.unique(between.loc[:, first_header]), ordered=True
-            )
-            between.loc[:, first_header] = between.loc[:, first_header].astype(
-                first_header_dtype
-            )
-            between = between.sort_values([".value", first_header])
-            between_index = between.index
+            after_df_cols_actual = pd.unique(between_df.loc[:, ".value"])
+            if len(names_to) > 1:
+                first_header = set(names_to).difference([".value"])
+                first_header = next(iter(first_header))
+                first_header_dtype = CategoricalDtype(
+                    pd.unique(between_df.loc[:, first_header]), ordered=True
+                )
+                between_df = between_df.astype({first_header: first_header_dtype})
+                len_first_header = len(set(between_df.loc[:, first_header]))
+                between_df = between_df.sort_values([".value", first_header])
+            else:
+                between_df = between_df.sort_values(".value")
+            index_sorter = between_df.index
+            after_df_cols_temporary = pd.unique(between_df.loc[:, ".value"])
+            len_after_df_cols = len(after_df_cols_temporary)
 
-            len_value_headers = len(value_headers)
-            len_unique_first_header = len(set(between.loc[:, first_header]))
-            # this helps in getting the sorter, which will be used to ensure
-            # the data in `before`, `after` and `between` align.
-            number_of_columns = len_value_headers * len_unique_first_header
+            after_df_rows = len(after_df) // len_after_df_cols
+            after_index = np.reshape(index_sorter, (after_df_rows, -1), order='F')
+            after_index = after_index[:, 0]
 
-            # this gets us alternates of the non `.value`,
-            # like `start,end,start,end` or `off, on, off, on`
-            # and ensures proper sync of data
-            sorter = np.reshape(
-                between_index, (-1, number_of_columns), order="F"
-            )
-            sorter = np.ravel(sorter)
+            after_df = after_df.to_numpy()[index_sorter]
+            after_df = np.reshape(after_df, (-1, len_after_df_cols), order="F")
+            after_df = pd.DataFrame(after_df, columns=after_df_cols_temporary, index = after_index)
+            after_df = after_df.reindex(columns=after_df_cols_actual)
+            if len(between_df.columns) > 1:
+                first_header_index = np.reshape(after_index, (-1, len_first_header), order='F')
+                first_header_index = np.ravel(first_header_index)
+                between_df = between_df.loc[first_header_index, [first_header]]
+                before_df = before_df.loc[first_header_index]
+            else:
+                before_df = before_df.loc[after_index]
+            if len(names_to) == 1:
+                between_df = pd.DataFrame([], index=after_index) 
+                before_df = before_df.sort_values(index)
+            if position == 0:
+                df = pd.DataFrame.join(between_df, after_df)
+            else:                      
+                df = pd.DataFrame.join(before_df, [between_df, after_df])
+            return df.reset_index(drop=True).transform(pd.to_numeric, errors='ignore')       
 
-            # now we can reorder `before`, `between` and `after`
-
-            between = between.reindex(sorter)
-            # this will serve as the headers for the after dataframe
-            after_columns = between.loc[:, ".value"]
-
-            between = between.loc[:, first_header]
-            after = after.to_numpy()[sorter]
-
-            # here we ensure correct pairing between the non `.value`
-            # and the `after` data
-            container = defaultdict(list)
-            for k, v in zip(after_columns.to_numpy(), after):
-                container[k].append(v)
-            after = pd.DataFrame(container).reindex(columns=value_headers)
-
-            if position == 0:  # if there is no `before` data
-                # pd.unique is used to ensure data is not sorted
-                # which we need since we are aiming for alternation
-                # `start, end`, `on,off`, `loc,lat,long` ...
-                # which gets us a complete `chunk`
-                between = np.resize(pd.unique(between), len(after))
-                after.insert(0, first_header, between)
-                return after.transform(pd.to_numeric, errors="ignore")
-
-            before = before.reindex(sorter)
-            before.loc[:, first_header] = between
-            before = before.drop_duplicates(ignore_index=True)
-
-            return pd.concat((before, after), axis=1).transform(
-                pd.to_numeric, errors="ignore"
-            )
-
-        len_unique_before = len(before.drop_duplicates())
-        sorter = np.reshape(before.index, (-1, len_unique_before), order="C")
+        len_unique_before = len(before_df.drop_duplicates())
+        sorter = np.reshape(before_df.index, (-1, len_unique_before), order="C")
         sorter = np.ravel(sorter, order="F")
-
-        df = pd.concat((before, between, after), axis=1)
+        between_df = between_df.reset_index(drop=True)    
+        df = pd.concat((before_df, between_df, after_df), axis=1)
         df = df.reindex(sorter).reset_index(drop=True)
-        return df.transform(pd.numeric, errors="ignore")
+
+        return df.transform(pd.to_numeric, errors="ignore")
 
     return df

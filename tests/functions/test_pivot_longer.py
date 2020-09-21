@@ -541,6 +541,38 @@ multiple_values_sep = [
     (
         pd.DataFrame(
             {
+                "county": [1001, 1003, 1005],
+                "area": [275, 394, 312],
+                "pop_2006": [1037, 2399, 1638],
+                "pop_2007": [1052, 2424, 1647],
+                "pop_2008": [1102, 2438, 1660],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "county": [
+                    1001,
+                    1001,
+                    1001,
+                    1003,
+                    1003,
+                    1003,
+                    1005,
+                    1005,
+                    1005,
+                ],
+                "area": [275, 275, 275, 394, 394, 394, 312, 312, 312],
+                "year": [2006, 2007, 2008, 2006, 2007, 2008, 2006, 2007, 2008],
+                "pop": [1037, 1052, 1102, 2399, 2424, 2438, 1638, 1647, 1660],
+            }
+        ),
+        ["county", "area"],
+        (".value", "year"),
+        "_",
+    ),
+    (
+        pd.DataFrame(
+            {
                 "country": ["United States", "Russia", "China"],
                 "vault_2012": [48.1, 46.4, 44.3],
                 "floor_2012": [45.4, 41.6, 40.8],
@@ -1085,119 +1117,57 @@ def test_paired_columns_no_index_pattern(
     assert_frame_equal(result, df_out)
 
 
-# import janitor
-
-# df20 = pd.DataFrame({'county': [1001, 1003, 1005],
-#  'area': [275, 394, 312],
-#  'pop_2006': [1037, 2399, 1638],
-#  'pop_2007': [1052, 2424, 1647],
-#  'pop_2008': [1102, 2438, 1660]})
-
-# print(df20)
-
-# print(df20.pivot_longer(['county', 'area'], names_to=('.value', 'year'), names_sep='_'))
-
-
-#  (pd.DataFrame({'county': [1001, 1003, 1005],
-#  'area': [275, 394, 312],
-#  'pop_2006': [1037, 2399, 1638],
-#  'pop_2007': [1052, 2424, 1647],
-#  'pop_2008': [1102, 2438, 1660]}),    pd.DataFrame['county', 'area'], ('.value', 'year'),  '_'))
-
-
-# df21 = pd.DataFrame({'off_loc': ['A', 'B', 'C', 'D', 'E', 'F'],
-#  'pt_loc': ['G', 'H', 'I', 'J', 'K', 'L'],
-#  'pt_lat': [100.07548220000001,
-#   75.191326,
-#   122.65134479999999,
-#   124.13553329999999,
-#   124.13553329999999,
-#   124.01028909999998],
-#  'off_lat': [121.271083,
-#   75.93845266,
-#   135.043791,
-#   134.51128400000002,
-#   134.484374,
-#   137.962195],
-#  'pt_long': [4.472089953,
-#   -144.387785,
-#   -40.45611048,
-#   -46.07156181,
-#   -46.07156181,
-#   -46.01594293],
-#  'off_long': [-7.188632000000001,
-#   -143.2288569,
-#   21.242563,
-#   40.937416999999996,
-#   40.78472,
-#   22.905889000000002]})
-
-# print(df21)
-
-# print(df21.pivot_longer(names_to = ("set", ".value"),  names_pattern = "(.+)_(.+)"))
-
-
-# df22 = pd.DataFrame([{'id': 1,
-#   ' a1': ' a',
-#   ' a2': ' b',
-#   ' a3': ' c',
-#   ' A1': ' A',
-#   ' A2': ' B',
-#   ' A3': ' C'}])
-
-# print(df22)
-
-# print(df22.pivot_longer(index='id', names_to=(".value", "instance"),  names_pattern = "(\\w)(\\d)"))
-
-
-# df23 = pd.DataFrame({'id': [1, 2, 3],
-#  'x1': [4, 5, 6],
-#  'x2': [5, 6, 7],
-#  'y1': [7, 8, 9],
-#  'y2': [10, 11, 12]})
-
-# print(df23)
-
-# print(df23.pivot_longer('id', names_to = ".value", names_pattern = "(.)."))
-
-
-
-# df30 = pd.DataFrame(
-#             {
-#                 "country": ["United States", "Russia", "China"],
-#                 "vault2012": [48.132, 46.36600000000001, 44.266000000000005],
-#                 "floor2012": [45.36600000000001, 41.599, 40.833],
-#                 "vault2016": [46.86600000000001, 45.733000000000004, 44.332],
-#                 "floor2016": [45.998999999999995, 42.032, 42.066],
-#             }
-#         )
-
-# print(df30)
-
-# print(df30.pivot_longer(index="country",  names_to= ("event", "year"), names_pattern = r"([A-Za-z]+)(\d+)"))
-
-df31 = pd.DataFrame(
+names_single_value = [
+    (
+        pd.DataFrame(
             {
-                "country": ["United States", "Russia", "China"],
-                "vault_2012_f": [
-                    48.132,
-                    46.36600000000001,
-                    44.266000000000005,
-                ],
-                "vault_2012_m": [46.632, 46.86600000000001, 48.316],
-                "vault_2016_f": [
-                    46.86600000000001,
-                    45.733000000000004,
-                    44.332,
-                ],
-                "vault_2016_m": [45.865, 46.033, 45.0],
-                "floor_2012_f": [45.36600000000001, 41.599, 40.833],
-                "floor_2012_m": [45.266000000000005, 45.308, 45.133],
-                "floor_2016_f": [45.998999999999995, 42.032, 42.066],
-                "floor_2016_m": [43.757, 44.766000000000005, 43.799],
+                "event": [1, 2],
+                "url_1": ["g1", "g3"],
+                "name_1": ["dc", "nyc"],
+                "url_2": ["g2", "g4"],
+                "name_2": ["sf", "la"],
             }
-        )
+        ),
+        pd.DataFrame(
+            {
+                "event": [1, 1, 2, 2],
+                "url": ["g1", "g2", "g3", "g4"],
+                "name": ["dc", "sf", "nyc", "la"],
+            }
+        ),
+        "event",
+        "(.+)_.",
+    ),
+    (
+        pd.DataFrame(
+            {
+                "id": [1, 2, 3],
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "id": [1, 1, 2, 2, 3, 3],
+                "x": [4, 5, 5, 6, 6, 7],
+                "y": [7, 10, 8, 11, 9, 12],
+            }
+        ),
+        "id",
+        "(.).",
+    ),
+]
 
-print(df31)
 
-print(df31.pivot_longer(index="country",names_to=("event", "year", "gender"),names_sep="_",))
+@pytest.mark.parametrize(
+    "df_in,df_out,index, names_pattern", names_single_value
+)
+def test_single_value(df_in, df_out, index, names_pattern):
+    """Test function where names_to is `.value`."""
+    result = df_in.pivot_longer(
+        index=index, names_to=".value", names_pattern=names_pattern
+    )
+
+    assert_frame_equal(result, df_out)

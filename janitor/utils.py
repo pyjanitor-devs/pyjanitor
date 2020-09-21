@@ -769,9 +769,7 @@ def _computations_pivot_longer(
         after_df = df.iloc[:, -1].rename(values_to)
         between_df = df.pop(uniq_name)
         if names_sep is not None:
-            between_df = between_df.str.split(
-                names_sep, expand=True
-            )
+            between_df = between_df.str.split(names_sep, expand=True)
         else:
             between_df = between_df.str.extractall(names_pattern).droplevel(-1)
         # set_axis function labels argument takes only list-like objects
@@ -793,6 +791,7 @@ def _computations_pivot_longer(
                 raise ValueError(
                     """Column name `.value` must not be duplicated."""
                 )
+            # reindex columns to reflect direction of source data columns
             after_df_cols_actual = pd.unique(between_df.loc[:, ".value"])
             if len(names_to) > 1:
                 first_header = set(names_to).difference([".value"])
@@ -800,7 +799,9 @@ def _computations_pivot_longer(
                 first_header_dtype = CategoricalDtype(
                     pd.unique(between_df.loc[:, first_header]), ordered=True
                 )
-                between_df = between_df.astype({first_header: first_header_dtype})
+                between_df = between_df.astype(
+                    {first_header: first_header_dtype}
+                )
                 len_first_header = len(set(between_df.loc[:, first_header]))
                 between_df = between_df.sort_values([".value", first_header])
             else:
@@ -810,33 +811,54 @@ def _computations_pivot_longer(
             len_after_df_cols = len(after_df_cols_temporary)
 
             after_df_rows = len(after_df) // len_after_df_cols
-            after_index = np.reshape(index_sorter, (after_df_rows, -1), order='F')
+            after_index = np.reshape(
+                index_sorter, (after_df_rows, -1), order="F"
+            )
+            # use index to combine with between_df or before_df
+            # to get alternation. It also assures the right combination
             after_index = after_index[:, 0]
 
             after_df = after_df.to_numpy()[index_sorter]
+            # here data will have a shape that reflects the number of items
+            # in `.value` column; the contents of `.value` will become the
+            # new headers.
             after_df = np.reshape(after_df, (-1, len_after_df_cols), order="F")
-            after_df = pd.DataFrame(after_df, columns=after_df_cols_temporary, index = after_index)
+            after_df = pd.DataFrame(
+                after_df, columns=after_df_cols_temporary, index=after_index
+            )
             after_df = after_df.reindex(columns=after_df_cols_actual)
             if len(between_df.columns) > 1:
-                first_header_index = np.reshape(after_index, (-1, len_first_header), order='F')
+                first_header_index = np.reshape(
+                    after_index, (-1, len_first_header), order="F"
+                )
                 first_header_index = np.ravel(first_header_index)
+                # now we can use this to securely connect to after_df
+                # and also ensure we are referring to the same rows as
+                # from source data
                 between_df = between_df.loc[first_header_index, [first_header]]
                 before_df = before_df.loc[first_header_index]
             else:
                 before_df = before_df.loc[after_index]
             if len(names_to) == 1:
-                between_df = pd.DataFrame([], index=after_index) 
+                between_df = pd.DataFrame([], index=after_index)
                 before_df = before_df.sort_values(index)
             if position == 0:
                 df = pd.DataFrame.join(between_df, after_df)
-            else:                      
+            else:
                 df = pd.DataFrame.join(before_df, [between_df, after_df])
-            return df.reset_index(drop=True).transform(pd.to_numeric, errors='ignore')       
-
+            return df.reset_index(drop=True).transform(
+                pd.to_numeric, errors="ignore"
+            )
+        # maybe abstract into a function
+        # to prevent repitition
+        # more refactoring maybe?
+        # possibly arrange function to call pd.to_numeric only once?
         len_unique_before = len(before_df.drop_duplicates())
-        sorter = np.reshape(before_df.index, (-1, len_unique_before), order="C")
+        sorter = np.reshape(
+            before_df.index, (-1, len_unique_before), order="C"
+        )
         sorter = np.ravel(sorter, order="F")
-        between_df = between_df.reset_index(drop=True)    
+        between_df = between_df.reset_index(drop=True)
         df = pd.concat((before_df, between_df, after_df), axis=1)
         df = df.reindex(sorter).reset_index(drop=True)
 

@@ -4,7 +4,6 @@ import functools
 import os
 import sys
 import warnings
-from collections import defaultdict
 from itertools import chain, product
 from typing import Callable, Dict, List, Pattern, Union
 
@@ -786,6 +785,57 @@ def _computations_pivot_longer(
 
         between_df = between_df.set_axis(names_to, axis="columns")
 
+        # we take a detour here to deal with paired columns, where the user
+        # might want one of the names in the paired column as part of the
+        # new column names. The `.value` indicates that that particular
+        # value becomes a header.
+
+        # It is also another way of achieving pandas wide_to_long.
+
+        # Let's see an example of a paired column
+        # say we have this data :
+        # code is copied from pandas wide_to_long documentation
+        # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.wide_to_long.html
+        #     famid  birth  ht1  ht2
+        # 0      1      1  2.8  3.4
+        # 1      1      2  2.9  3.8
+        # 2      1      3  2.2  2.9
+        # 3      2      1  2.0  3.2
+        # 4      2      2  1.8  2.8
+        # 5      2      3  1.9  2.4
+        # 6      3      1  2.2  3.3
+        # 7      3      2  2.3  3.4
+        # 8      3      3  2.1  2.9
+
+        # and we want to reshape into data that looks like this :
+        #      famid  birth age   ht
+        # 0       1      1   1  2.8
+        # 1       1      1   2  3.4
+        # 2       1      2   1  2.9
+        # 3       1      2   2  3.8
+        # 4       1      3   1  2.2
+        # 5       1      3   2  2.9
+        # 6       2      1   1  2.0
+        # 7       2      1   2  3.2
+        # 8       2      2   1  1.8
+        # 9       2      2   2  2.8
+        # 10      2      3   1  1.9
+        # 11      2      3   2  2.4
+        # 12      3      1   1  2.2
+        # 13      3      1   2  3.3
+        # 14      3      2   1  2.3
+        # 15      3      2   2  3.4
+        # 16      3      3   1  2.1
+        # 17      3      3   2  2.9
+
+        # In the reshaping process we need chunks where `1, 2` is repeated
+        # for the age column for each combination of `famid` and `birth`.
+        # That way we get complete `chunks` of each extraction that can be
+        # paired with the rest of the data, and be assured of complete/accurate
+        # sync. The code below achieves that.
+
+        # Probably needs to be refactored, to make the code simpler
+        # and have less commentary.
         if ".value" in names_to:
             if names_to.count(".value") > 1:
                 raise ValueError(

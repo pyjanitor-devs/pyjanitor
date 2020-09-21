@@ -518,7 +518,10 @@ paired_columns_sep = [
 def test_extract_column_names_pattern(
     df_in, df_out, index, names_to, names_pattern
 ):
-    """Test function where `.value` is in the `names_to` argument and names_pattern is used."""
+    """
+    Test function where `.value` is in the `names_to` argument and
+    names_pattern is used.
+    """
     result = df_in.pivot_longer(
         index=index, names_to=names_to, names_pattern=names_pattern
     )
@@ -529,7 +532,10 @@ def test_extract_column_names_pattern(
     "df_in,df_out,index,names_to,names_sep", paired_columns_sep
 )
 def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
-    """Test function where `.value` is in the `names_to` argument and names_sep is used."""
+    """
+    Test function where `.value` is in the `names_to` argument and names_sep
+    is used.
+    """
     result = df_in.pivot_longer(
         index=index, names_to=names_to, names_sep=names_sep
     )
@@ -538,16 +544,27 @@ def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
 
 # https://dcl-wrangle.stanford.edu/pivot-advanced.html
 multiple_values_sep = [
-
-(pd.DataFrame({'index': [0, 1],
- 'S_1': [1, 1],
- 'S_2': [0, 1],
- 'S_3': ['0', np.nan],
- 'S_4': ['1', np.nan]}),   pd.DataFrame({'index': [0, 0, 0, 0, 1, 1, 1, 1],
- 'num': [1, 2, 3, 4, 1, 2, 3, 4],
- 'S': [1, 0, 0, 1, 1, 1, np.nan, np.nan]}),  'index', ('.value','num'), '_' ),
-
-
+    (
+        pd.DataFrame(
+            {
+                "index": [0, 1],
+                "S_1": [1, 1],
+                "S_2": [0, 1],
+                "S_3": ["0", np.nan],
+                "S_4": ["1", np.nan],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "index": [0, 0, 0, 0, 1, 1, 1, 1],
+                "num": [1, 2, 3, 4, 1, 2, 3, 4],
+                "S": [1, 0, 0, 1, 1, 1, np.nan, np.nan],
+            }
+        ),
+        "index",
+        (".value", "num"),
+        "_",
+    ),
     (
         pd.DataFrame(
             {
@@ -875,7 +892,10 @@ multiple_values_sep = [
     "df_in,df_out,index,names_to,names_sep", multiple_values_sep
 )
 def test_multiple_values_sep(df_in, df_out, index, names_to, names_sep):
-    """Test function to extract multiple columns, using the `names_to` and names_sep arguments."""
+    """
+    Test function to extract multiple columns, using the `names_to` and
+    names_sep arguments.
+    """
     result = df_in.pivot_longer(
         index=index, names_to=names_to, names_sep=names_sep, values_to="score"
     )
@@ -983,7 +1003,10 @@ multiple_values_pattern = [
 def test_multiple_values_pattern(
     df_in, df_out, index, names_to, names_pattern
 ):
-    """Test function to extract multiple columns, using the `names_to` and names_pattern arguments."""
+    """
+    Test function to extract multiple columns, using the `names_to` and
+    names_pattern arguments.
+    """
     result = df_in.pivot_longer(
         index=index,
         names_to=names_to,
@@ -1122,7 +1145,10 @@ paired_columns_no_index_pattern = [
 def test_paired_columns_no_index_pattern(
     df_in, df_out, names_to, names_pattern
 ):
-    """Test function where `.value` is in the `names_to` argument, names_pattern is used and no index is supplied."""
+    """
+    Test function where `.value` is in the `names_to` argument, names_pattern
+    is used and no index is supplied.
+    """
     result = df_in.pivot_longer(names_to=names_to, names_pattern=names_pattern)
     assert_frame_equal(result, df_out)
 
@@ -1181,5 +1207,3 @@ def test_single_value(df_in, df_out, index, names_pattern):
     )
 
     assert_frame_equal(result, df_out)
-
-

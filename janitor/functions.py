@@ -4623,16 +4623,17 @@ def pivot_longer(
     values_to: Optional[str] = "value",
 ) -> pd.DataFrame:
     """
-    Unpivot a DataFrame from 'wide' to 'long' format.
+    Unpivots a DataFrame from 'wide' to 'long' format.
     This method does not mutate the original DataFrame.
-    Intended to be the method-chaining alternative to pd.melt with
-    some syntactic sugar. This function is useful to massage a DataFrame into a
-    format where one or more columns are considered measured variables
-    (column_names), and all other columns are considered identifier variables.
+    It is a wrapper around pd.melt and is meant to be the method-chaining
+    alternative to pd.wide_to with some syntactic sugar. This function is
+    useful to massage a DataFrame into a format where one or more columns
+    are considered measured variables, and all other columns are considered
+    as identifier variables.
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
-    Example: The following DataFrame contains heartrate data for patients
+    Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
     .. code-block::
               name   a   b
@@ -4650,29 +4651,128 @@ def pivot_longer(
     .. code-block::
               name drug  heartrate
         0   Wilbur    a         67
-        1  Petunia    a         80
-        2  Gregory    a         64
-        3   Wilbur    b         56
-        4  Petunia    b         90
+        1   Wilbur    b         56
+        2  Petunia    a         80
+        3  Petunia    b         90
+        4  Gregory    a         64
         5  Gregory    b         50
+
+    Example 2: The dataframe below has year and month variables embedded within
+    the column names.
+
+    .. code-block::
+            col1	2019-12	     2020-01	 2020-02
+        0	a	   -1.085631	-1.506295	-2.426679
+        1	b	    0.997345	-0.578600	-0.428913
+        2	c	    0.282978	 1.651437	 1.265936
+
+    Pivot_longer can conveniently reshape the data, into long format, with new
+    columns for the year and month. We simply pass in the new column names to
+    `names_to`, along with the `-` to the `names_sep` argument.
+
+    .. code-block::
+
+        df = pd.DataFrame(...).pivot_longer(index='col1',
+                                            names_to=('year','month'),
+                                            names_sep='-')
+
+          col1  year   month      value
+        0    a  2019     12     -1.085631
+        1    a  2020      1     -1.506295
+        2    a  2020      2     -2.426679
+        3    b  2019     12      0.997345
+        4    b  2020      1     -0.578600
+        5    b  2020      2     -0.428913
+        6    c  2019     12      0.282978
+        7    c  2020      1      1.651437
+        8    c  2020      2      1.265936
+
+    Example 3: The dataframe below has names embedded in it(measure1, measure2)
+    that we would love to reuse as column names.
+
+    .. code-block::
+
+            treat1-measure1	treat1-measure2	treat2-measure1	treat2-measure2
+        0	         1	        4	            2	            5
+        1	         2	        5	            3	            4
+
+    For this, we take advantage of `.value`, which signals to `pivot_longer` to
+    treat the part of the column names corresponding to `.value` as new column
+    names.
+
+    .. code-block::
+
+        import janitor
+
+        df = pd.DataFrame(...).pivot_longer(names_to=("group",'.value'),
+                                            names_sep = '-')
+
+            group  measure1  measure2
+        0  treat1         1         4
+        1  treat2         2         5
+        2  treat1         2         5
+        3  treat2         3         4
+
+    Example 4: We can also pivot from wide to long using regular expressions
+
+    ..code-block::
+
+            n_1  n_2  n_3  pct_1  pct_2  pct_3
+        0   10   20   30   0.1    0.2    0.3
+
+        df = pd.DataFrame(...).pivot_longer(names_to = (".value", "name"),
+                                            names_pattern = "(.*)_(.)")
+
+            name    n  pct
+        0     1  10.0  0.1
+        1     2  20.0  0.2
+        2     3  30.0  0.3
+
+    You can also take advantage of `janitor.patterns` function, which allows
+    selection of columns via a regular expression, and can come in handy if
+    you do not want to type out all the column names.
+
+    .. code-block::
+             name    wk1   wk2   wk3   wk4
+        0    Alice     5     9    20    22
+        1    Bob       7    11    17    33
+        2    Carla     6    13    39    40
+
+        df = pd.DataFrame(...).pivot_longer(janitor.patterns("^(?!wk)"))
+
+             name variable  value
+        0   Alice      wk1      5
+        1   Alice      wk2      9
+        2   Alice      wk3     20
+        3   Alice      wk4     22
+        4     Bob      wk1      7
+        5     Bob      wk2     11
+        6     Bob      wk3     17
+        7     Bob      wk4     33
+        8   Carla      wk1      6
+        9   Carla      wk2     13
+        10  Carla      wk3     39
+        11  Carla      wk4     40
+
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
-        Should be either a single column name as a string,
-        a list/tuple of strings, or a Pattern type. You can dynamically
+        Should be either a single column name, a list/tuple of
+        column names, or a Pattern type. You can also dynamically
         select column names by using a regular expression with the
         `janitor.patterns` function.
     :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name as a string, a list/tuple of strings,
-        or a Pattern type. You can dynamically select column names by
+        a single column name, a list/tuple of column names, or a
+        Pattern type. You can also dynamically select column names by
         using a regular expression with the `janitor.patterns` function.
     :param names_to: Name of new column as a string that will contain
-         what were previously the column names in `column_names`.
-         The default is `variable` if no value is provided. It can
-         also be a list/tuple of strings that will serve as new column
-         names, if `name_sep` or `names_pattern` is provided. If names_to
-         is a list/tuple of new column names, and contains the special
-         `.value` string, new column names will be extracted from part of
-         the existing column names and `values_to` will be replaced.
+        what were previously the column names in `column_names`.
+        The default is `variable` if no value is provided. It can
+        also be a list/tuple of strings that will serve as new column
+        names, if `name_sep` or `names_pattern` is provided.
+        If `.value` is in `names_to`, new column names will be extracted
+        from part of the existing column names and `values_to` will be
+        replaced. It is similar to pandas' `wide_to_long` function, but
+        more flexible.
     :names_sep: Determines how the column name is broken up, if `names_to`
         contains multiple values. It takes the same specification as pandas'
         `str.split` method, and can be a string or regular expression.
@@ -4684,9 +4784,10 @@ def pivot_longer(
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
     :raises: TypeError if `index` or `column_names` is not a string, or a
-        list/tuple of strings, or a Pattern type.
+        list/tuple of strings or Pattern types, or a Pattern type.
     :raises: TypeError if `janitor.patterns` function is used in the index`
-        or `column_names` arguments and the type is not a string/list/tuple.
+        or `column_names` arguments and the type of the supplied values
+        within the function is not a string/list/tuple.
     :raises: TypeError if a list/tuple is supplied to the `janitor.patterns`
         function and not all the contents in the list/tuple are strings.
     :raises: TypeError if `names_to` or `column_names` is not a string, or a
@@ -4694,11 +4795,11 @@ def pivot_longer(
     :raises: TypeError if `values_to` is not a string.
     :raises: ValueError if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
-    :raises: ValueError if `names_to` is a string or a single list/tuple, and
-        `names_sep` is provided.
+    :raises: ValueError if `names_to` is a string or a list/tuple of length 1,
+        and `names_sep` is provided.
     :raises: TypeError if `names_sep` or `names_pattern` is not a string or
         regular expression.
-    :raises: ValueError if the `names_to` is a list/tuple,`names_sep` or
+    :raises: ValueError if `names_to` is a list/tuple,`names_sep` or
         `names_pattern` is provided, and the `index`, if provided, is not
         unique.
     :raises: ValueError if `names_to` is a list/tuple, and its length does not

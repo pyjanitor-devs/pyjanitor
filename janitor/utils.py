@@ -704,12 +704,16 @@ def _pivot_longer_pattern_match(df, index, column_names):
 
 def reindex_func(frame, indexer=None):
     """
-    Function to reshape dataframe in pivot_longer, to try and make it look similar to 
-    the source data in terms of direction of the columns. It is a temporary measure
-    until the minimum pandas version is 1.1, where we can take advantage of the `ignore_index`
-    argument in `pd.melt`. 
-    Example: if columns are `id, ht1, ht2, ht3`, then depending on the arguments passed, 
-    the reshaped dataframe, based on this function, will look like `1,2,3,1,2,3,1,2,3...`.
+    Function to reshape dataframe in pivot_longer, to try and make it look
+    similar to the source data in terms of direction of the columns. It is a
+    temporary measure until the minimum pandas version is 1.1, where we can
+    take advantage of the `ignore_index` argument in `pd.melt`.
+
+    Example: if columns are `id, ht1, ht2, ht3`, then depending on the
+    arguments passed, the column in the reshaped dataframe, based on this
+    function, will look like `1,2,3,1,2,3,1,2,3...`.
+
+    A reindexed dataframe is returned.
     """
 
     if indexer is None:
@@ -907,10 +911,10 @@ def _computations_pivot_longer(
                     pd.unique(between_df.loc[:, first_header]), ordered=True
                 )
                 # apart from improved memory usage, the primary reason
-                # is to ensure that sorting is not lexicographical,but 
-                # according to initial position. so if we have a column 
-                # containing `start, end, end, start`, without the categorical dtype
-                # the sort returns `end, end,start, start`.
+                # is to ensure that sorting is not lexicographical,but
+                # according to initial position. so if we have a column
+                # containing `start, end, end, start`, without the categorical
+                # dtype, the sort returns `end, end,start, start`.
                 between_df = between_df.astype(
                     {first_header: first_header_dtype}
                 )
@@ -919,8 +923,8 @@ def _computations_pivot_longer(
             else:
                 between_df = between_df.sort_values(".value")
             index_sorter = between_df.index
-            # need this to correctly align column names with reshaped `after_df`
-            # before reindexing with `after_df_cols_actual`
+            # need this to correctly align column names with reshaped
+            # `after_df`, before reindexing with `after_df_cols_actual`
             after_df_cols_temporary = pd.unique(between_df.loc[:, ".value"])
             len_after_df_cols = len(after_df_cols_temporary)
 

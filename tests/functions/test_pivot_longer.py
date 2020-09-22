@@ -998,7 +998,7 @@ def test_type_names_to(df, names_to):
 @pytest.mark.parametrize("df,names_to", names_to_sub_type_checks)
 def test_subtype_names_to(df, names_to):
     """
-    Raise TypeError if `names_to` is a list/tuple and the wrong type is 
+    Raise TypeError if `names_to` is a list/tuple and the wrong type is
     provided for entries in `names_to`.
     """
     with pytest.raises(TypeError):
@@ -1035,6 +1035,7 @@ def test_name_sep_wrong_type(df, names_to, names_sep):
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
 
+
 @pytest.mark.parametrize(
     "df,names_to, names_pattern", names_pattern_type_check
 )
@@ -1044,11 +1045,13 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
+
 @pytest.mark.parametrize("df", multi_index_df)
 def test_warning_multi_index(df):
     """Raise Warning if dataframe is a MultiIndex."""
     with pytest.warns(UserWarning):
         df.pivot_longer()
+
 
 def test_both_names_sep_and_pattern():
     """Raise ValueError if both `names_sep` and `names_pattern` is provided."""
@@ -1138,6 +1141,7 @@ def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
         index=index, names_to=names_to, names_sep=names_sep
     )
     assert_frame_equal(result, df_out)
+
 
 @pytest.mark.parametrize(
     "df_in,df_out,index,names_to,names_sep", multiple_values_sep

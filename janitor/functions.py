@@ -4731,8 +4731,9 @@ def pivot_longer(
         2     3  30.0  0.3
 
     You can also take advantage of `janitor.patterns` function, which allows
-    selection of columns via a regular expression, and can come in handy if
-    you do not want to type out all the column names.
+    selection of columns via a regular expression; this can come in handy if
+    you have a lot of column names to use as index, and do not wish to manually
+    type them all.
 
     .. code-block::
              name    wk1   wk2   wk3   wk4

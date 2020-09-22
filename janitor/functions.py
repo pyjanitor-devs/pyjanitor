@@ -4626,10 +4626,11 @@ def pivot_longer(
     Unpivots a DataFrame from 'wide' to 'long' format.
     This method does not mutate the original DataFrame.
     It is a wrapper around pd.melt and is meant to be the method-chaining
-    alternative to pd.wide_to with some syntactic sugar. This function is
-    useful to massage a DataFrame into a format where one or more columns
-    are considered measured variables, and all other columns are considered
-    as identifier variables.
+    alternative to pd.wide_to_long with some syntactic sugar. It is
+    modeled after the `pivot_longer` function in R's tidyr package.
+    This function is useful to massage a DataFrame into a format where
+    one or more columns are considered measured variables, and all other
+    columns are considered as identifier variables.
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
@@ -4668,7 +4669,8 @@ def pivot_longer(
 
     Pivot_longer can conveniently reshape the data, into long format, with new
     columns for the year and month. We simply pass in the new column names to
-    `names_to`, along with the `-` to the `names_sep` argument.
+    `names_to`, along with the `-` to the `names_sep` argument. Note how this
+    effectively replicates the pandas' `wide_to_long` function.
 
     .. code-block::
 
@@ -4753,6 +4755,34 @@ def pivot_longer(
         9   Carla      wk2     13
         10  Carla      wk3     39
         11  Carla      wk4     40
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.pivot_longer(
+            df = df,
+            index=[column1, column2, ...],
+            column_names=[column3, column4, ...],
+            names_to= new_column_name,
+            value_name= new_column_name,
+        )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .pivot_longer(df,
+                         index=[column1, column2, ...],
+                         column_names=[column3, column4, ...],
+                         names_to= new_column_name,
+                         value_name= new_column_name)
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.

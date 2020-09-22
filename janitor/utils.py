@@ -604,15 +604,12 @@ def _data_checks_pivot_longer(
     df, index, column_names, names_sep, names_pattern, names_to, values_to
 ):
 
-    # a better docstring is needed here
-
     """
-    This function checks that the arguments meet the requirements
-    before proceeding to the computation phase.
+    This function raises errors or warnings if the arguments have the wrong
+    python type, or if an unneeded argument is provided. This function is
+    executed before proceeding to the computation phase.
     """
 
-    # put good description/comments for the checks
-    # as well as the purpose/reason behind the checks
     if any(
         (
             isinstance(df.index, pd.MultiIndex),
@@ -633,7 +630,7 @@ def _data_checks_pivot_longer(
     if column_names is not None:
         if isinstance(column_names, (str, Pattern)):
             column_names = [column_names]
-        check("column_names", column_names, [list, tuple, str, Pattern])
+        check("column_names", column_names, [list, tuple])
 
     if names_to is not None:
         check("names_to", names_to, [list, tuple, str])
@@ -652,7 +649,7 @@ def _data_checks_pivot_longer(
                     )
         if isinstance(names_to, str) or (len(names_to) == 1):
             # names_sep creates more than one column
-            # whereas names_pattern can be limited to one column
+            # whereas regex with names_pattern can be limited to one column
             if names_sep is not None:
                 raise ValueError(
                     """
@@ -682,7 +679,8 @@ def _data_checks_pivot_longer(
 def _pivot_longer_pattern_match(df, index, column_names):
     """
     This checks if a pattern (regular expression) is supplied
-    to index or columns and extracts the columns that match.
+    to index or columns and extracts the names that match the
+    given regular expression or expressions.
     """
 
     if isinstance(column_names, (list, tuple)):
@@ -692,9 +690,6 @@ def _pivot_longer_pattern_match(df, index, column_names):
                 for pattern, col in product(column_names, df)
                 if pattern.search(col)
             ]
-
-    if index is None and (column_names is not None):
-        index = df.columns.difference(column_names)
 
     if isinstance(index, (list, tuple)):
         if isinstance(index[0], Pattern):
@@ -707,9 +702,64 @@ def _pivot_longer_pattern_match(df, index, column_names):
     return df, index, column_names
 
 
+def sorter_func(frame, indexer = None):
+    """
+    Function to reshape dataframe in pivot_longer, to try and make it look similar to 
+    the source data in terms of direction of the columns. It is a temporary measure
+    until the minimum pandas version is 1.1, where we can take advantage of the `ignore_index`
+    argument in `pd.melt`. 
+    Example: if columns are `id, ht1, ht2, ht3`, then depending on the arguments passed, 
+    the reshaped dataframe, based on this function, will look like `1,2,3,1,2,3,1,2,3...`.
+    """
+
+    if indexer is None:
+        uniq_index_length = len(frame.loc[:, slice(indexer)].drop_duplicates())
+    else: 
+         uniq_index_length = len(frame.loc[:, indexer].drop_duplicates())
+    sorter = np.reshape(frame.index, (-1, uniq_index_length))
+    # reshaped in Fortan order achieves the alternation 
+    return np.ravel(sorter, order='F') 
+
+
 def _computations_pivot_longer(
     df, index, column_names, names_sep, names_pattern, names_to, values_to
 ):
+    """
+    This is the main workhorse of the `pivot_longer` function.
+
+    There are a couple of scenarios that this function takes care of when
+    unpivoting :
+
+    1. Regular data unpivoting is covered with pandas melt.
+    2. if the length of `names_to` is > 1, the function unpivots the data,
+       using `pd.melt`, and then separate into individual columns, using
+       `str.split(expand=True)` if `names_sep` is provided or
+       `str.extractall()` if `names_pattern is provided. The labels in
+       `names_to` become the new column names.
+    3. If `names_to` contains `.value`, then the function replicates
+       `pd.wide_to_long`, using `pd.melt`. Unlike `pd.wide_to_long`, the
+       stubnames do not have to be prefixes, they just need to match the
+       position of `.value` in `names_to`. Just like in 2 above, the columns
+       are separated into individual columns. The labels in the column
+       corresponding to `.value` become the new column names, and override
+       `values_to` in the process. The other extracted column stays
+       (if len(`names_to`) is > 1), with the other name in `names_to` as
+       its column name.
+
+    The function also tries to emulate the way the source data is structured.
+    Say data looks like this :
+        id, a1, a2, a3, A1, A2, A3
+         1, a, b, c, A, B, C
+
+    when pivoted into long form, it will look like this :
+              id instance    a     A
+        0     1     1        a     A
+        1     1     2        b     B
+        2     1     3        c     C
+
+    where for the columns `a` comes before `A`, as it was in the source data,
+    and in column `a`, `a > b > c`, also as it was in the source data.
+    """
 
     if index is not None:
         check_column(df, index, present=True)
@@ -717,7 +767,10 @@ def _computations_pivot_longer(
     if column_names is not None:
         check_column(df, column_names, present=True)
 
-    # no frills, just shoot to pandas melt
+    if index is None and (column_names is not None):
+        index = df.columns.difference(column_names)
+
+    # scenario 1
     if all((names_pattern is None, names_sep is None)):
         df = pd.melt(
             df,
@@ -725,19 +778,17 @@ def _computations_pivot_longer(
             value_vars=column_names,
             var_name=names_to,
             value_name=values_to,
-            # introduce ignore_index argument when minimum version is 1.1
-            # this will allow for easy sorting via the index
         )
 
         # reshape in the order that the data appears
+        # this is much easier to do with ignore_index in pandas version 1.1
         if index is not None:
-            uniq_index_length = len(df.loc[:, index].drop_duplicates())
-            sorter = np.reshape(df.index, (-1, uniq_index_length))
-            sorter = np.ravel(sorter, order="F")
+            sorter = sorter_func(df, index)
             df = df.reindex(sorter).reset_index(drop=True)
             return df.transform(pd.to_numeric, errors="ignore")
         return df
 
+    # scenario 2
     elif any((names_pattern is not None, names_sep is not None)):
 
         # this ensures the wrong output is not provided for non-unique
@@ -755,9 +806,9 @@ def _computations_pivot_longer(
             df, id_vars=index, value_vars=column_names, var_name=uniq_name
         )
 
-        # melt returns uniq_name and value as the last columns. We can use
+        # pd.melt returns uniq_name and value as the last columns. We can use
         # that knowledge to get the data before( the index column(s)),
-        # the data between (our uniq_name column)
+        # the data between (our uniq_name column),
         #  and the data after (our values column)
         position = df.columns.get_loc(uniq_name)
         if position == 0:
@@ -830,20 +881,26 @@ def _computations_pivot_longer(
 
         # In the reshaping process we need chunks where `1, 2` is repeated
         # for the age column for each combination of `famid` and `birth`.
+        # The repeat of `1,2` also simulates how it looks in the source data :
+        # `ht1 > ht2`.
         # That way we get complete `chunks` of each extraction that can be
         # paired with the rest of the data, and be assured of complete/accurate
         # sync. The code below achieves that.
 
         # Probably needs to be refactored, to make the code simpler
         # and have less commentary.
+
+        # scenario 3
         if ".value" in names_to:
             if names_to.count(".value") > 1:
                 raise ValueError(
                     """Column name `.value` must not be duplicated."""
                 )
-            # reindex columns to reflect direction of source data columns
+            # get the new column names to reflect the direction
+            # of the source data columns
             after_df_cols_actual = pd.unique(between_df.loc[:, ".value"])
             if len(names_to) > 1:
+                # this will serve as the header of the other extracted column
                 first_header = set(names_to).difference([".value"])
                 first_header = next(iter(first_header))
                 first_header_dtype = CategoricalDtype(
@@ -899,15 +956,9 @@ def _computations_pivot_longer(
             return df.reset_index(drop=True).transform(
                 pd.to_numeric, errors="ignore"
             )
-        # maybe abstract into a function
-        # to prevent repitition
-        # more refactoring maybe?
         # possibly arrange function to call pd.to_numeric only once?
-        len_unique_before = len(before_df.drop_duplicates())
-        sorter = np.reshape(
-            before_df.index, (-1, len_unique_before), order="C"
-        )
-        sorter = np.ravel(sorter, order="F")
+        
+        sorter = sorter_func(before_df)
         between_df = between_df.reset_index(drop=True)
         df = pd.concat((before_df, between_df, after_df), axis=1)
         df = df.reindex(sorter).reset_index(drop=True)

@@ -4619,8 +4619,8 @@ def pivot_longer(
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[str, Pattern]] = None,
-    names_to: Optional[Union[List, Tuple]] = None,
-    values_to: Optional[Union[List, Tuple]] = "value",
+    names_to: Optional[Union[List, Tuple, str]] = None,
+    values_to: Optional[str] = "value",
 ) -> pd.DataFrame:
     """
     Unpivot a DataFrame from 'wide' to 'long' format.
@@ -4666,7 +4666,8 @@ def pivot_longer(
         or a Pattern type. You can dynamically select column names by
         using a regular expression with the `janitor.patterns` function.
     :param names_to: Name of new column as a string that will contain
-         what were previously the column names in `column_names`. It can
+         what were previously the column names in `column_names`.
+         The default is `variable` if no value is provided. It can
          also be a list/tuple of strings that will serve as new column
          names, if `name_sep` or `names_pattern` is provided. If names_to
          is a list/tuple of new column names, and contains the special

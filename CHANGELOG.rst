@@ -8,6 +8,8 @@ new version (on deck)
 - [ENH] Added `also` method for running functions in chain with no return values.
 - [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
 - [ENH] Fixed code to returns error if `fill_value` is not a dictionary. @samukweku
+- [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
+
 
 v0.20.9
 =======

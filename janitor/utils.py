@@ -702,7 +702,7 @@ def _pivot_longer_pattern_match(df, index, column_names):
     return df, index, column_names
 
 
-def sorter_func(frame, indexer = None):
+def reindex_func(frame, indexer=None):
     """
     Function to reshape dataframe in pivot_longer, to try and make it look similar to 
     the source data in terms of direction of the columns. It is a temporary measure
@@ -714,11 +714,12 @@ def sorter_func(frame, indexer = None):
 
     if indexer is None:
         uniq_index_length = len(frame.loc[:, slice(indexer)].drop_duplicates())
-    else: 
-         uniq_index_length = len(frame.loc[:, indexer].drop_duplicates())
+    else:
+        uniq_index_length = len(frame.loc[:, indexer].drop_duplicates())
     sorter = np.reshape(frame.index, (-1, uniq_index_length))
-    # reshaped in Fortan order achieves the alternation 
-    return np.ravel(sorter, order='F') 
+    # reshaped in Fortan order achieves the alternation
+    sorter = np.ravel(sorter, order="F")
+    return frame.reindex(sorter)
 
 
 def _computations_pivot_longer(
@@ -783,8 +784,7 @@ def _computations_pivot_longer(
         # reshape in the order that the data appears
         # this is much easier to do with ignore_index in pandas version 1.1
         if index is not None:
-            sorter = sorter_func(df, index)
-            df = df.reindex(sorter).reset_index(drop=True)
+            df = reindex_func(df, index).reset_index(drop=True)
             return df.transform(pd.to_numeric, errors="ignore")
         return df
 
@@ -897,7 +897,7 @@ def _computations_pivot_longer(
                     """Column name `.value` must not be duplicated."""
                 )
             # get the new column names to reflect the direction
-            # of the source data columns
+            # of the source data columns, effectively overriding `values_to`
             after_df_cols_actual = pd.unique(between_df.loc[:, ".value"])
             if len(names_to) > 1:
                 # this will serve as the header of the other extracted column
@@ -906,6 +906,11 @@ def _computations_pivot_longer(
                 first_header_dtype = CategoricalDtype(
                     pd.unique(between_df.loc[:, first_header]), ordered=True
                 )
+                # apart from improved memory usage, the primary reason
+                # is to ensure that sorting is not lexicographical,but 
+                # according to initial position. so if we have a column 
+                # containing `start, end, end, start`, without the categorical dtype
+                # the sort returns `end, end,start, start`.
                 between_df = between_df.astype(
                     {first_header: first_header_dtype}
                 )
@@ -914,6 +919,8 @@ def _computations_pivot_longer(
             else:
                 between_df = between_df.sort_values(".value")
             index_sorter = between_df.index
+            # need this to correctly align column names with reshaped `after_df`
+            # before reindexing with `after_df_cols_actual`
             after_df_cols_temporary = pd.unique(between_df.loc[:, ".value"])
             len_after_df_cols = len(after_df_cols_temporary)
 
@@ -928,7 +935,8 @@ def _computations_pivot_longer(
             after_df = after_df.to_numpy()[index_sorter]
             # here data will have a shape that reflects the number of items
             # in `.value` column; the contents of `.value` will become the
-            # new headers.
+            # new headers. Note the use of 'F' order which reshapes column wise
+            # and gets us our data in the correct pairs for each index
             after_df = np.reshape(after_df, (-1, len_after_df_cols), order="F")
             after_df = pd.DataFrame(
                 after_df, columns=after_df_cols_temporary, index=after_index
@@ -948,7 +956,8 @@ def _computations_pivot_longer(
                 before_df = before_df.loc[after_index]
             if len(names_to) == 1:
                 between_df = pd.DataFrame([], index=after_index)
-                before_df = before_df.sort_values(index)
+                # again, aim is to get that alternation right
+                before_df = reindex_func(before_df)
             if position == 0:
                 df = pd.DataFrame.join(between_df, after_df)
             else:
@@ -956,12 +965,14 @@ def _computations_pivot_longer(
             return df.reset_index(drop=True).transform(
                 pd.to_numeric, errors="ignore"
             )
-        # possibly arrange function to call pd.to_numeric only once?
-        
-        sorter = sorter_func(before_df)
-        between_df = between_df.reset_index(drop=True)
-        df = pd.concat((before_df, between_df, after_df), axis=1)
-        df = df.reindex(sorter).reset_index(drop=True)
+
+        # this kicks in if there is no `.value` in `names_to`
+        # here we reindex the before_df, to simulate the order of the columns
+        # in the source data.
+        before_df = reindex_func(before_df)
+        df = pd.DataFrame.join(before_df, [between_df, after_df]).reset_index(
+            drop=True
+        )
 
         return df.transform(pd.to_numeric, errors="ignore")
 

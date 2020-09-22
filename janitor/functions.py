@@ -4586,7 +4586,7 @@ def complete(
 
     if fill_value is not None:
         if not isinstance(fill_value, dict):
-            raise TypeError("""fill_value should be a dictionary.""")
+            raise TypeError("fill_value should be a dictionary.")
         df = df.fillna(fill_value)
 
     return df

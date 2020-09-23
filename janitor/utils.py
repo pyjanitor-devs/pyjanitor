@@ -24,7 +24,7 @@ def check(varname: str, value, expected_types: list):
     :param varname: The name of the variable.
     :param value: The value of the varname.
     :param expected_types: The types we expect the item to be.
-    :returns: TypeError if data is not the expected type.
+    :raises TypeError: if data is not the expected type.
     """
     is_expected_type = False
     for t in expected_types:
@@ -291,6 +291,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     """
     Used to update deprecated argument names with new names. Throws a
     TypeError if both arguments are provided, and warns if old alias is used.
+    Nothing is returned as the passed ``kwargs`` are modified directly.
 
     Implementation is inspired from `StackOverflow`_.
 
@@ -299,7 +300,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     :param func_name: name of decorated function.
     :param kwargs: Arguments supplied to the method.
     :param aliases: Dictionary of aliases for a function's arguments.
-    :return: Nothing; the passed `kwargs` are modified directly.
+    :raises TypeError: if both arguments are provided.
     """  # noqa: E501
     for old_alias, new_alias in aliases.items():
         if old_alias in kwargs:
@@ -330,7 +331,7 @@ def check_column(
     :param present: If True (default), checks to see if all of old_column_names
         are in df.columns. If False, checks that none of old_column_names are
         in df.columns.
-    :returns: ValueError if data is not the expected type.
+    :raises ValueError: if data is not the expected type.
     """
     for column_name in old_column_names:
         if present:

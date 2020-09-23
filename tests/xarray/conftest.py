@@ -12,6 +12,7 @@ def da():
     that are either linearly or log-spaced increments.
 
     Included is a simple metadata dictionary passed as ``attrs``.
+    # noqa: DAR201
     """
     da = xr.DataArray(
         np.random.randint(0, 100, size=(512, 1024)),

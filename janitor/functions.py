@@ -4622,13 +4622,17 @@ def pivot_longer(
 ) -> pd.DataFrame:
     """
     Unpivots a DataFrame from 'wide' to 'long' format.
+
     This method does not mutate the original DataFrame.
+
     It is a wrapper around `pd.melt` and is meant to be the method-chaining
     alternative to `pd.wide_to_long` with some syntactic sugar. It is
     modeled after the `pivot_longer` function in R's tidyr package.
+
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
     columns are considered as identifier variables.
+
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
@@ -4673,14 +4677,16 @@ def pivot_longer(
 
     Pivot_longer can conveniently reshape the data into long format, with new
     columns for the year and month. We simply pass in the new column names to
-    `names_to`, along with the `-` to the `names_sep` argument. Note how this
-    effectively replicates the pandas' `wide_to_long` function.
+    `names_to`, and pass the hyphen '-' to the `names_sep` argument. Note how
+    this effectively replicates the pandas' `wide_to_long` function.
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(index='col1',
-                                            names_to=('year','month'),
-                                            names_sep='-')
+        df = (pd.DataFrame(...)
+             .pivot_longer(index='col1',
+                           names_to=('year','month'),
+                           names_sep='-')
+              )
 
           col1  year   month      value
         0    a  2019     12     -1.085631
@@ -4703,14 +4709,16 @@ def pivot_longer(
         0	         1	        4	            2	            5
         1	         2	        5	            3	            4
 
-    For this, we take advantage of `.value`, which signals to `pivot_longer` to
-    treat the part of the column names corresponding to `.value` as new column
-    names.
+    For this, we take advantage of the `.value` variable, which signals to
+    `pivot_longer` to treat the part of the column names corresponding to
+    `.value` as new column names.
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(names_to=("group",'.value'),
-                                            names_sep = '-')
+        df = (pd.DataFrame(...)
+              .pivot_longer(names_to=("group",'.value'),
+                            names_sep = '-')
+              )
 
             group  measure1  measure2
         0  treat1         1         4
@@ -4720,13 +4728,15 @@ def pivot_longer(
 
     Example 4: We can also pivot from wide to long using regular expressions
 
-    ..code-block:: python
+    .. code-block:: python
 
             n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   10   20   30   0.1    0.2    0.3
 
-        df = pd.DataFrame(...).pivot_longer(names_to = (".value", "name"),
-                                            names_pattern = "(.*)_(.)")
+        df = (pd.DataFrame(...)
+              .pivot_longer(names_to = (".value", "name"),
+                            names_pattern = "(.*)_(.)")
+              )
 
             name    n  pct
         0     1  10.0  0.1
@@ -4771,10 +4781,12 @@ def pivot_longer(
         df = pd.DataFrame(...)
         df = jn.pivot_longer(
             df = df,
-            index=[column1, column2, ...],
-            column_names=[column3, column4, ...],
-            names_to= new_column_name,
-            value_name= new_column_name,
+            index = [column1, column2, ...],
+            column_names = [column3, column4, ...],
+            names_to = new_column_name,
+            names_sep = string or regular expression,
+            names_pattern =s tring or regular expression,
+            value_name = new_column_name
         )
 
     Method chaining syntax:
@@ -4784,9 +4796,11 @@ def pivot_longer(
         df = (
             pd.DataFrame(...)
             .pivot_longer(df,
-                         index=[column1, column2, ...],
-                         column_names=[column3, column4, ...],
-                         names_to= new_column_name,
+                         index = [column1, column2, ...],
+                         column_names = [column3, column4, ...],
+                         names_to = new_column_name,
+                         names_sep=string or regular expression,
+                         names_pattern=string or regular expression,
                          value_name= new_column_name)
 
     :param df: A pandas dataframe.
@@ -4808,10 +4822,11 @@ def pivot_longer(
         If `.value` is in `names_to`, new column names will be extracted
         from part of the existing column names and `values_to` will be
         replaced.
-    :names_sep: Determines how the column name is broken up, if `names_to`
-        contains multiple values. It takes the same specification as pandas'
-        `str.split` method, and can be a string or regular expression.
-    :names_pattern: Determines how the column name is broken up. It takes
+    :param names_sep: Determines how the column name is broken up, if
+        `names_to` contains multiple values. It takes the same
+        specification as pandas' `str.split` method, and can be a string
+        or regular expression.
+    :param names_pattern: Determines how the column name is broken up. It takes
         the same specification as pandas' `str.extractall` method, which is
         a regular expression containing matching groups.
     :param values_to: Name of new column as a string that will contain what

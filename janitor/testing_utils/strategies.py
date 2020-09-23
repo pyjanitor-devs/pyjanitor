@@ -28,6 +28,8 @@ def df_strategy():
         @given(df=dataframe())
         def test_function(df):
             # test goes here
+
+    # noqa: DAR201
     """
     return data_frames(
         columns=[

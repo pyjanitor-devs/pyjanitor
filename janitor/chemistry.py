@@ -134,6 +134,8 @@ def smiles2mol(
         constructed.
     :param progressbar: Whether to show a progressbar or not.
     :returns: A pandas DataFrame with new RDKIT Mol objects column.
+    :raises ValueError: if ``progressbar`` is not one of
+        ``"notebook"``, ``"terminal"``, or ``None``.
     """
     valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:

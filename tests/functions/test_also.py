@@ -27,6 +27,7 @@ def drop_inplace(df):
     the in-place modification of a dataframe
     doesn't get passed through in the `.also()` function.
     Hence, we tell Flake8 to skip checking `PD002` on that line.
+    # noqa: DAR101
     """
     df.drop(columns=[df.columns[0]], inplace=True)  # noqa: PD002
 

@@ -247,6 +247,8 @@ def morgan_fingerprint(
     :param nbits: The length of the fingerprints. Defaults to 2048.
     :param kind: Whether to return counts or bits. Defaults to counts.
     :returns: A new pandas DataFrame of Morgan fingerprints.
+    :raises ValueError: if ``kind`` is not one of
+        ``"counts"`` or ``"bits"``.
     """
     acceptable_kinds = ["counts", "bits"]
     if kind not in acceptable_kinds:

@@ -19,3 +19,4 @@ unyt
 xarray
 pandas-vet
 interrogate
+darglint

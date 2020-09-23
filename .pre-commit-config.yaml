@@ -21,5 +21,10 @@ repos:
 - repo: https://github.com/econchick/interrogate
   rev: 1.1.5
   hooks:
-   - id: interrogate
-     args: [-c, pyproject.toml]
+  - id: interrogate
+    args: [-c, pyproject.toml]
+- repo: https://github.com/terrencepreilly/darglint
+  rev: master
+  hooks:
+  - id: darglint
+    args: [-v 1]

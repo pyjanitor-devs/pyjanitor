@@ -7,15 +7,14 @@ new version (on deck)
 - [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
 - [ENH] Added `also` method for running functions in chain with no return values.
 - [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
+- [ENH] Fixed code to returns error if `fill_value` is not a dictionary. @samukweku
 - [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
-
 
 v0.20.9
 =======
 - [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
 - [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
-
 
 v0.20.8
 =======

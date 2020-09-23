@@ -4555,6 +4555,7 @@ def complete(
     :returns: A pandas dataframe with modified column(s).
     :raises: ValueError if `columns` is empty.
     :raises: TypeError if `columns` is not a list.
+    :raises: TypeError if `fill_value` is not a dictionary.
     :raises: ValueError if entry in `columns` is not a
         str/dict/list/tuple.
     :raises: ValueError if entry in `columns` is a dict/list/tuple
@@ -4583,7 +4584,9 @@ def complete(
     else:
         df = df.reindex(sorted(reindex_columns)).reset_index()
 
-    if fill_value:
+    if fill_value is not None:
+        if not isinstance(fill_value, dict):
+            raise TypeError("fill_value should be a dictionary.")
         df = df.fillna(fill_value)
 
     return df

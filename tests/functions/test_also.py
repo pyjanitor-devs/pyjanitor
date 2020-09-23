@@ -1,5 +1,6 @@
 """Unit tests for `.also()`."""
 from unittest.mock import Mock
+
 import pytest
 
 

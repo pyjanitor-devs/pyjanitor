@@ -398,7 +398,7 @@ def flag_jumps(
         dictionary.
     :raises: JanitorError if ``scale`` is not one of
         ``["absolute", "percentage"]``.
-    :raises: JanitorError if ``direction is not one of
+    :raises: JanitorError if ``direction`` is not one of
         ``["increasing", "decreasing", "any"]``.
     :raises: JanitorError if ``threshold`` is less than 0.0.
     """

@@ -577,6 +577,9 @@ def _complete_groupings(df, list_of_columns):
                     reindex_columns.extend(item_contents)
             else:
                 index_columns.extend(item)
+                # TODO : change this to read as a numpy instead
+                # instead of a list comprehension
+                # it should be faster
                 item = (df[sub_column].array for sub_column in item)
                 item = set(zip(*item))
                 reindex_columns.append(item)

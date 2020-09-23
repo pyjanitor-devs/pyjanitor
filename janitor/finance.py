@@ -433,6 +433,7 @@ def convert_currency(
         rates go back to Jan. 4, 1999.
     :param make_new_column: Generates new column for converted currency if
         True, otherwise, converts currency in place.
+    :returns: The dataframe with converted currency column.
 
     :Setup:
 
@@ -640,6 +641,7 @@ def inflate_currency(
         The year should be 1960 or later.
     :param make_new_column: Generates new column for inflated currency if
         True, otherwise, inflates currency in place.
+    :returns: The dataframe with inflated currency column.
     """
 
     inflator = _inflate_currency(country, currency_year, to_year)

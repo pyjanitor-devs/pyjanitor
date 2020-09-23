@@ -9,12 +9,13 @@ new version (on deck)
 - [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
 - [ENH] Added a `pivot_longer` function, a wrapper around ``pd.melt`` and similar to 
   tidyr's ``pivot_longer`` function. @samukweku
+- [ENH] Fixed code to returns error if `fill_value` is not a dictionary. @samukweku
+- [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
 
 v0.20.9
 =======
 - [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
 - [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
-
 
 v0.20.8
 =======

@@ -623,14 +623,14 @@ def _data_checks_pivot_longer(
         )
 
     if index is not None:
-        if isinstance(index, (str, Pattern)):
+        if isinstance(index, str):
             index = [index]
-        check("index", index, [list, tuple])
+        check("index", index, [list, tuple, Pattern])
 
     if column_names is not None:
-        if isinstance(column_names, (str, Pattern)):
+        if isinstance(column_names, str):
             column_names = [column_names]
-        check("column_names", column_names, [list, tuple])
+        check("column_names", column_names, [list, tuple, Pattern])
 
     if names_to is not None:
         check("names_to", names_to, [list, tuple, str])
@@ -638,7 +638,7 @@ def _data_checks_pivot_longer(
         if isinstance(names_to, (list, tuple)):
             if not all([isinstance(word, str) for word in names_to]):
                 raise TypeError(
-                    """All entries in `names_to` argument must be strings."""
+                    "All entries in `names_to` argument must be strings."
                 )
 
             if len(names_to) > 1:
@@ -680,24 +680,14 @@ def _pivot_longer_pattern_match(df, index, column_names):
     """
     This checks if a pattern (regular expression) is supplied
     to index or columns and extracts the names that match the
-    given regular expression or expressions.
+    given regular expression.
     """
 
-    if isinstance(column_names, (list, tuple)):
-        if isinstance(column_names[0], Pattern):
-            column_names = [
-                col
-                for pattern, col in product(column_names, df)
-                if pattern.search(col)
-            ]
+    if isinstance(column_names, Pattern):
+        column_names = [col for col in df if column_names.search(col)]
 
-    if isinstance(index, (list, tuple)):
-        if isinstance(index[0], Pattern):
-            index = [
-                col
-                for pattern, col in product(index, df)
-                if pattern.search(col)
-            ]
+    if isinstance(index, Pattern):
+        index = [col for col in df if index.search(col)]
 
     return df, index, column_names
 
@@ -711,13 +701,14 @@ def reindex_func(frame, indexer=None):
 
     Example: if columns are `id, ht1, ht2, ht3`, then depending on the
     arguments passed, the column in the reshaped dataframe, based on this
-    function, will look like `1,2,3,1,2,3,1,2,3...`.
+    function, will look like `1,2,3,1,2,3,1,2,3...`. This way, we ensure that
+    for every index, there is a complete set of the data.
 
     A reindexed dataframe is returned.
     """
 
     if indexer is None:
-        uniq_index_length = len(frame.loc[:, slice(indexer)].drop_duplicates())
+        uniq_index_length = len(frame.drop_duplicates())
     else:
         uniq_index_length = len(frame.loc[:, indexer].drop_duplicates())
     sorter = np.reshape(frame.index, (-1, uniq_index_length))
@@ -737,7 +728,7 @@ def _computations_pivot_longer(
 
     1. Regular data unpivoting is covered with pandas melt.
     2. if the length of `names_to` is > 1, the function unpivots the data,
-       using `pd.melt`, and then separate into individual columns, using
+       using `pd.melt`, and then separates into individual columns, using
        `str.split(expand=True)` if `names_sep` is provided or
        `str.extractall()` if `names_pattern is provided. The labels in
        `names_to` become the new column names.
@@ -762,8 +753,9 @@ def _computations_pivot_longer(
         1     1     2        b     B
         2     1     3        c     C
 
-    where for the columns `a` comes before `A`, as it was in the source data,
+    where the columns `a` comes before `A`, as it was in the source data,
     and in column `a`, `a > b > c`, also as it was in the source data.
+    This also visually creates a complete set of the data per index.
     """
 
     if index is not None:
@@ -786,7 +778,7 @@ def _computations_pivot_longer(
         )
 
         # reshape in the order that the data appears
-        # this is much easier to do with ignore_index in pandas version 1.1
+        # this should be easier to do with ignore_index in pandas version 1.1
         if index is not None:
             df = reindex_func(df, index).reset_index(drop=True)
             return df.transform(pd.to_numeric, errors="ignore")
@@ -794,16 +786,6 @@ def _computations_pivot_longer(
 
     # scenario 2
     elif any((names_pattern is not None, names_sep is not None)):
-
-        # this ensures the wrong output is not provided for non-unique
-        # index column(s)
-        if index is not None:
-            if df.loc[:, index].duplicated().any():
-                raise ValueError(
-                    """
-                    The index variables need to uniquely identify each row.
-                    """
-                )
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
         df = pd.melt(
@@ -883,22 +865,20 @@ def _computations_pivot_longer(
         # 16      3      3   1  2.1
         # 17      3      3   2  2.9
 
-        # In the reshaping process we need chunks where `1, 2` is repeated
-        # for the age column for each combination of `famid` and `birth`.
-        # The repeat of `1,2` also simulates how it looks in the source data :
-        # `ht1 > ht2`.
-        # That way we get complete `chunks` of each extraction that can be
-        # paired with the rest of the data, and be assured of complete/accurate
-        # sync. The code below achieves that.
-
-        # Probably needs to be refactored, to make the code simpler
-        # and have less commentary.
+        # we have height(`ht`) and age(`1,2`) paired in the column name.
+        # Note how `1, 2` is repeated for the extracted age column for each
+        # combination of `famid` and `birth`. The repeat of `1,2` also
+        # simulates how it looks in the source data : `ht1 > ht2`.
+        # As such, for every index, there is a complete set of the data;
+        # the user can visually see the unpivoted data for each index
+        # and be assured of complete/accurate sync.
+        # The code below achieves that.
 
         # scenario 3
         if ".value" in names_to:
             if names_to.count(".value") > 1:
                 raise ValueError(
-                    """Column name `.value` must not be duplicated."""
+                    "Column name `.value` must not be duplicated."
                 )
             # get the new column names to reflect the direction
             # of the source data columns, effectively overriding `values_to`
@@ -907,14 +887,15 @@ def _computations_pivot_longer(
                 # this will serve as the header of the other extracted column
                 first_header = set(names_to).difference([".value"])
                 first_header = next(iter(first_header))
+                # Apart from improved memory usage, the primary reason
+                # for converting to categorical dtype is to ensure that
+                # sorting is not lexicographical, but according to initial
+                # position. So if we have a column containing
+                # `start, end, end, start`, without the categorical dtype,
+                # the sort returns `end, end,start, start`.
                 first_header_dtype = CategoricalDtype(
                     pd.unique(between_df.loc[:, first_header]), ordered=True
                 )
-                # apart from improved memory usage, the primary reason
-                # is to ensure that sorting is not lexicographical,but
-                # according to initial position. so if we have a column
-                # containing `start, end, end, start`, without the categorical
-                # dtype, the sort returns `end, end,start, start`.
                 between_df = between_df.astype(
                     {first_header: first_header_dtype}
                 )
@@ -935,12 +916,12 @@ def _computations_pivot_longer(
             # use index to combine with between_df or before_df
             # to get alternation. It also assures the right combination
             after_index = after_index[:, 0]
-
             after_df = after_df.to_numpy()[index_sorter]
-            # here data will have a shape that reflects the number of items
-            # in `.value` column; the contents of `.value` will become the
-            # new headers. Note the use of 'F' order which reshapes column wise
-            # and gets us our data in the correct pairs for each index
+            # here data will have a shape that reflects the number of unique
+            # items in `.value` column; the contents of `.value` will become
+            # the new headers. Note the use of 'F' order which reshapes the
+            # data column wise and gets us our data in the correct pairs
+            # for each index
             after_df = np.reshape(after_df, (-1, len_after_df_cols), order="F")
             after_df = pd.DataFrame(
                 after_df, columns=after_df_cols_temporary, index=after_index
@@ -951,16 +932,16 @@ def _computations_pivot_longer(
                     after_index, (-1, len_first_header), order="F"
                 )
                 first_header_index = np.ravel(first_header_index)
-                # now we can use this to securely connect to after_df
+                # Now we can use this to securely connect to `after_df`
                 # and also ensure we are referring to the same rows as
-                # from source data
+                # from the source data
                 between_df = between_df.loc[first_header_index, [first_header]]
                 before_df = before_df.loc[first_header_index]
             else:
                 before_df = before_df.loc[after_index]
             if len(names_to) == 1:
                 between_df = pd.DataFrame([], index=after_index)
-                # again, aim is to get that alternation right
+                # Again, the aim is to get that alternation right
                 before_df = reindex_func(before_df)
             if position == 0:
                 df = pd.DataFrame.join(between_df, after_df)

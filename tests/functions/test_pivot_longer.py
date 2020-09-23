@@ -37,6 +37,35 @@ def df_checks_output():
 paired_columns_pattern = [
     (
         pd.DataFrame(
+            {
+                "person_id": [1, 2, 3],
+                "date1": ["12/31/2007", "11/25/2009", "10/06/2005"],
+                "val1": [2, 4, 6],
+                "date2": ["12/31/2017", "11/25/2019", "10/06/2015"],
+                "val2": [1, 3, 5],
+                "date3": ["12/31/2027", "11/25/2029", "10/06/2025"],
+                "val3": [7, 9, 11],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {"person_id": 1, "value": 1, "date": "12/31/2007", "val": 2},
+                {"person_id": 1, "value": 2, "date": "12/31/2017", "val": 1},
+                {"person_id": 1, "value": 3, "date": "12/31/2027", "val": 7},
+                {"person_id": 2, "value": 1, "date": "11/25/2009", "val": 4},
+                {"person_id": 2, "value": 2, "date": "11/25/2019", "val": 3},
+                {"person_id": 2, "value": 3, "date": "11/25/2029", "val": 9},
+                {"person_id": 3, "value": 1, "date": "10/06/2005", "val": 6},
+                {"person_id": 3, "value": 2, "date": "10/06/2015", "val": 5},
+                {"person_id": 3, "value": 3, "date": "10/06/2025", "val": 11},
+            ]
+        ),
+        patterns("^(?!(date|val))"),
+        (".value", "value"),
+        r"([a-z]+)(\d)",
+    ),
+    (
+        pd.DataFrame(
             [
                 {
                     "id": 1,
@@ -137,6 +166,47 @@ paired_columns_pattern = [
 ]
 
 paired_columns_sep = [
+    # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.wide_to_long.html
+    (
+        pd.DataFrame(
+            {
+                "A(weekly)-2010": [0.548814, 0.7151890000000001, 0.602763],
+                "A(weekly)-2011": [0.544883, 0.423655, 0.645894],
+                "B(weekly)-2010": [
+                    0.437587,
+                    0.8917729999999999,
+                    0.9636629999999999,
+                ],
+                "B(weekly)-2011": [0.383442, 0.791725, 0.528895],
+                "X": [0, 1, 1],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "X": [0, 0, 1, 1, 1, 1],
+                "year": [2010, 2011, 2010, 2011, 2010, 2011],
+                "A(weekly)": [
+                    0.548814,
+                    0.544883,
+                    0.7151890000000001,
+                    0.423655,
+                    0.602763,
+                    0.645894,
+                ],
+                "B(weekly)": [
+                    0.437587,
+                    0.383442,
+                    0.8917729999999999,
+                    0.791725,
+                    0.9636629999999999,
+                    0.528895,
+                ],
+            }
+        ),
+        "X",
+        (".value", "year"),
+        "-",
+    ),
     (
         pd.DataFrame(
             {
@@ -976,21 +1046,21 @@ names_pattern_type_check = [
 
 @pytest.mark.parametrize("df,index", index_type_checks)
 def test_type_index(df, index):
-    """Raise TypeError if wrong type is provided for the `index`.'"""
+    "Raise TypeError if wrong type is provided for the `index`."
     with pytest.raises(TypeError):
         df.pivot_longer(index=index)
 
 
 @pytest.mark.parametrize("df,column", column_type_checks)
 def test_type_column_names(df, column):
-    """Raise TypeError if wrong type is provided for `column_names`.'"""
+    "Raise TypeError if wrong type is provided for `column_names`."
     with pytest.raises(TypeError):
         df.pivot_longer(column_names=column)
 
 
 @pytest.mark.parametrize("df,names_to", names_to_type_checks)
 def test_type_names_to(df, names_to):
-    """Raise TypeError if wrong type is provided for `names_to`."""
+    "Raise TypeError if wrong type is provided for `names_to`."
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to)
 
@@ -1007,14 +1077,14 @@ def test_subtype_names_to(df, names_to):
 
 @pytest.mark.parametrize("df,index", index_presence_checks)
 def test_presence_index(df, index):
-    """Raise ValueError if labels in `index` do not exist."""
+    "Raise ValueError if labels in `index` do not exist."
     with pytest.raises(ValueError):
         df.pivot_longer(index=index)
 
 
 @pytest.mark.parametrize("df,column", column_presence_checks)
 def test_presence_columns(df, column):
-    """Raise ValueError if labels in `column_names` do not exist."""
+    "Raise ValueError if labels in `column_names` do not exist."
     with pytest.raises(ValueError):
         df.pivot_longer(column_names=column)
 
@@ -1023,15 +1093,15 @@ def test_presence_columns(df, column):
 def test_name_sep_names_to_len(df, names_to, names_sep):
     """
     Raise ValueError if the `names_to` is a string, or `names_to` is a
-    list/tuple, its length is one, and `names_sep` is provided."""
+    list/tuple, its length is one, and `names_sep` is provided.
+    """
     with pytest.raises(ValueError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
 
 
 @pytest.mark.parametrize("df,names_to, names_sep", names_sep_type_check)
 def test_name_sep_wrong_type(df, names_to, names_sep):
-    """
-    Raise TypeError if the wrong type provided for `names_sep`."""
+    "Raise TypeError if the wrong type provided for `names_sep`."
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
 
@@ -1040,21 +1110,20 @@ def test_name_sep_wrong_type(df, names_to, names_sep):
     "df,names_to, names_pattern", names_pattern_type_check
 )
 def test_name_pattern_wrong_type(df, names_to, names_pattern):
-    """
-    Raise TypeError if the wrong type provided for `names_pattern`."""
+    "Raise TypeError if the wrong type provided for `names_pattern`."
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
 
 @pytest.mark.parametrize("df", multi_index_df)
 def test_warning_multi_index(df):
-    """Raise Warning if dataframe is a MultiIndex."""
+    "Raise Warning if dataframe is a MultiIndex."
     with pytest.warns(UserWarning):
         df.pivot_longer()
 
 
 def test_both_names_sep_and_pattern():
-    """Raise ValueError if both `names_sep` and `names_pattern` is provided."""
+    "Raise ValueError if both `names_sep` and `names_pattern` is provided."
     with pytest.raises(ValueError):
         df_checks.pivot_longer(
             names_to=["rar", "bar"], names_sep="-", names_pattern=r"\\d+"
@@ -1062,13 +1131,13 @@ def test_both_names_sep_and_pattern():
 
 
 def test_values_to():
-    """Raise TypeError if the wrong type is provided for `values_to`."""
+    "Raise TypeError if the wrong type is provided for `values_to`."
     with pytest.raises(TypeError):
         df_checks.pivot_longer(values_to=["salvo"])
 
 
 def test_pivot_no_args_passed():
-    """Test output if no arguments are passed."""
+    "Test output if no arguments are passed."
     df_no_args = pd.DataFrame({"name": ["Wilbur", "Petunia", "Gregory"]})
     df_no_args_output = pd.DataFrame(
         {
@@ -1082,7 +1151,7 @@ def test_pivot_no_args_passed():
 
 
 def test_pivot_index_only(df_checks_output):
-    """Test output if only `index` is passed."""
+    "Test output if only `index` is passed."
     result = df_checks.pivot_longer(
         index="region", names_to="year", values_to="num_nests"
     )
@@ -1090,7 +1159,7 @@ def test_pivot_index_only(df_checks_output):
 
 
 def test_pivot_column_only(df_checks_output):
-    """Test output if only `column_names` is passed."""
+    "Test output if only `column_names` is passed."
     result = df_checks.pivot_longer(
         column_names=["2007", "2009"], names_to="year", values_to="num_nests"
     )
@@ -1098,7 +1167,7 @@ def test_pivot_column_only(df_checks_output):
 
 
 def test_pivot_index_patterns_only(df_checks_output):
-    """Test output if the `patterns` function is passed to `index`."""
+    "Test output if the `patterns` function is passed to `index`."
     result = df_checks.pivot_longer(
         index=patterns(r"[^\d+]"), names_to="year", values_to="num_nests"
     )
@@ -1106,7 +1175,7 @@ def test_pivot_index_patterns_only(df_checks_output):
 
 
 def test_pivot_columns_patterns_only(df_checks_output):
-    """Test output if the `patterns` function is passed to `column_names`."""
+    "Test output if the `patterns` function is passed to `column_names`."
     result = df_checks.pivot_longer(
         column_names=patterns(r"\d+"), names_to="year", values_to="num_nests"
     )
@@ -1194,7 +1263,7 @@ def test_paired_columns_no_index_pattern(
     "df_in,df_out,index, names_pattern", names_single_value
 )
 def test_single_value(df_in, df_out, index, names_pattern):
-    """Test function where names_to is a string and == `.value`."""
+    "Test function where names_to is a string and == `.value`."
     result = df_in.pivot_longer(
         index=index, names_to=".value", names_pattern=names_pattern
     )

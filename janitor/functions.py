@@ -177,10 +177,10 @@ def move(
     :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
     :returns: The dataframe with the Series moved.
-    :raises: ValueError if ``axis`` is not ``0`` or ``1``.
-    :raises: ValueError if ``position`` is not ``before`` or ``after``.
-    :raises: ValueError if  ``source`` row or column is not in dataframe.
-    :raises: ValueError if ``target`` row or column is not in dataframe.
+    :raises ValueError: if ``axis`` is not ``0`` or ``1``.
+    :raises ValueError: if ``position`` is not ``before`` or ``after``.
+    :raises ValueError: if  ``source`` row or column is not in dataframe.
+    :raises ValueError: if ``target`` row or column is not in dataframe.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")

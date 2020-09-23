@@ -1003,31 +1003,31 @@ names_to_labels = [1, {12, "newnames"}]
 index_does_not_exist = ["Region", [2007, "region"]]
 column_does_not_exist = ["two thousand and seven", ("2007", 2009)]
 
-index_type_checks = [
+index_type_checks = (
     (frame, index) for frame, index in product([df_checks], index_labels)
-]
-column_type_checks = [
+)
+column_type_checks = (
     (frame, column_name)
     for frame, column_name in product([df_checks], column_labels)
-]
-names_to_type_checks = [
+)
+names_to_type_checks = (
     (frame, names_to)
     for frame, names_to in product([df_checks], names_to_labels)
-]
+)
 
-names_to_sub_type_checks = [
+names_to_sub_type_checks = (
     (df_checks, (1, "rar")),
     (df_checks, [{"set"}, 20]),
-]
+)
 
-index_presence_checks = [
+index_presence_checks = (
     (frame, index)
     for frame, index in product([df_checks], index_does_not_exist)
-]
-column_presence_checks = [
+)
+column_presence_checks = (
     (frame, column_name)
     for frame, column_name in product([df_checks], column_does_not_exist)
-]
+)
 
 names_sep_not_required = [
     (df_checks, "rar", "_"),

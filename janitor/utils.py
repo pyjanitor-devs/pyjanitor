@@ -639,7 +639,7 @@ def _data_checks_pivot_longer(
         check("names_to", names_to, [list, tuple, str])
 
         if isinstance(names_to, (list, tuple)):
-            if not all([isinstance(word, str) for word in names_to]):
+            if not all(isinstance(word, str) for word in names_to):
                 raise TypeError(
                     "All entries in `names_to` argument must be strings."
                 )
@@ -788,7 +788,7 @@ def _computations_pivot_longer(
         return df
 
     # scenario 2
-    elif any((names_pattern is not None, names_sep is not None)):
+    if any((names_pattern is not None, names_sep is not None)):
         # should avoid conflict if index/columns has a string named `variable`
         uniq_name = "*^#variable!@?$%"
         df = pd.melt(

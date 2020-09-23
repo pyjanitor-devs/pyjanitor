@@ -147,15 +147,21 @@ def test_fill_value_all_years(df1):
 
 
 def test_type_columns(df1):
-    """Raise error if columns is not a list object.'"""
+    """Raise error if columns is not a list object."""
     with pytest.raises(TypeError):
         df1.complete(columns="Year")
 
 
 def test_empty_columns(df1):
-    """Raise error if columns is empty'"""
+    """Raise error if columns is empty"""
     with pytest.raises(ValueError):
         df1.complete(columns=[])
+
+
+def test_fill_value_is_a_dict(df1):
+    """Raise error if fill_value is not a dictionary"""
+    with pytest.raises(TypeError):
+        df1.complete(columns=["Year", "Taxon"], fill_value=0)
 
 
 frame = pd.DataFrame(

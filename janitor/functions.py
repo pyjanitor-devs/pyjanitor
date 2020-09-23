@@ -169,15 +169,18 @@ def move(
         axis=0)
 
     :param df: The pandas Dataframe object.
-    :param int or str source: column or row to move
-    :param str target: column or row to move adjacent to
-    :param str position: Specifies whether the Series is moved to before or
+    :param source: column or row to move
+    :param target: column or row to move adjacent to
+    :param position: Specifies whether the Series is moved to before or
         after the adjacent Series. Values can be either 'before' or 'after';
         defaults to 'before'.
-    :param int axis: Axis along which the function is applied. 0 to move a
+    :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
     :returns: The dataframe with the Series moved.
-
+    :raises: ValueError if ``axis`` is not ``0`` or ``1``.
+    :raises: ValueError if ``position`` is not ``before`` or ``after``.
+    :raises: ValueError if  ``source`` row or column is not in dataframe.
+    :raises: ValueError if ``target`` row or column is not in dataframe.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
@@ -1086,9 +1089,7 @@ def deconcatenate_column(
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:
         df_deconcat = pd.DataFrame(
-            df[column_name].to_list(),
-            columns=new_column_names,
-            index=df.index,
+            df[column_name].to_list(), columns=new_column_names, index=df.index
         )
 
     if preserve_position:

@@ -187,6 +187,8 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
     :returns: (x, y).
         x: sorted array of values.
         y: cumulative fraction of data points with value ``x`` or lower.
+    :raises TypeError: if series is not numeric.
+    :raises ValueError: if series contains nulls.
     """
     if not is_numeric_dtype(s):
         raise TypeError(f"series {s.name} must be numeric!")

@@ -22,7 +22,7 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
         entries. If "warn" then a RuntimeWarning is thrown. If "raise",
         then a RuntimeError is thrown. Otherwise, nothing is thrown and
         log of nonpositive values is np.nan; defaults to "warn"
-    :type error: str, optional # noqa: DAR103
+    :type error: str, optional  # noqa: DAR103
     :raises RuntimeError: Raised when there are nonpositive values in the
         Series and error="raise"
     :return: Transformed Series
@@ -71,7 +71,7 @@ def logit(s: pd.Series, error: str = "warn") -> pd.Series:
         "warn" then a RuntimeWarning is thrown. If "raise", then a RuntimeError
         is thrown. Otherwise, nothing is thrown and np.nan is returned
         for the problematic entries, defaults to "warn"
-    :type error: str, optional # noqa: DAR103
+    :type error: str, optional  # noqa: DAR103
     :return: Transformed Series
     :rtype: pd.Series
     :raises RuntimeError: if ``error`` is set to ``raise``.
@@ -146,7 +146,7 @@ def z_score(
         deviation used to compute the z-score transformation is
         saved as entries in moments_dict with keys determined by
         the keys argument, defaults to None
-    :type moments_dict: dict, optional # noqa: DAR103
+    :type moments_dict: dict, optional  # noqa: DAR103
     :param keys: Determines the keys saved in moments_dict
         if moments are saved, defaults to ("mean", "std")
     :type keys: Tuple[str], optional

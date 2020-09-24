@@ -3281,7 +3281,6 @@ def groupby_agg(
     :param new_column_name: Name of the aggregation output column.
     :param agg_column_name: Name of the column to aggregate over.
     :param agg: How to aggregate.
-    :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
     df = df.copy()

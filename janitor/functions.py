@@ -3103,6 +3103,7 @@ def find_replace(
     :param mappings: keyword arguments corresponding to column names
         that have dictionaries passed in indicating what to find (keys)
         and what to replace with (values).
+    :returns: A pandas DataFrame with replaced values.
     """  # noqa: E501
     for column_name, mapper in mappings.items():
         df = _find_replace(df, column_name, mapper, match=match)

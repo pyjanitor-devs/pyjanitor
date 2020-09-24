@@ -3351,6 +3351,8 @@ class DataDescription:
         """Update the description for each of the columns in the DataFrame.
 
         :param desc: The structure containing the descriptions to update
+        :raises ValueError: if length of description list does not match
+            number of columns in DataFrame.
         """
         if isinstance(desc, list):
             if len(desc) != len(self._data.columns):

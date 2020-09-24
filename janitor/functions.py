@@ -3852,6 +3852,11 @@ def jitter(
 
     :returns: A pandas DataFrame with a new column containing Gaussian-
         jittered values from another column.
+    :raises TypeError: if ``column_name`` is not numeric.
+    :raises ValueError: if ``scale`` is not a numerical value
+        greater than ``0``.
+    :raises ValueError: if ``clip`` is not an iterable of length ``2``.
+    :raises ValueError: if ``clip[0]`` is not less than ``clip[1]``.
     """
 
     # Check types

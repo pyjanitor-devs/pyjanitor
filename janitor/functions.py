@@ -2808,10 +2808,8 @@ def select_columns(
         This will result in selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    :raises:
-        TypeError: if input is not passed as a list.
-    :raises:
-        NameError: if one or more of the specified column names or
+    :raises TypeError: if input is not passed as a list.
+    :raises NameError: if one or more of the specified column names or
         search strings are not found in DataFrame columns.
     """
     if not isinstance(search_column_names, list):

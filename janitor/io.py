@@ -22,6 +22,11 @@ def read_csvs(
         for each CSV file.
     :param kwargs: Keyword arguments to pass into the
         original pandas `read_csv`.
+    :returns: dataframe of concatenated dataframes of dataframe dict.
+    :raises JanitorError: if ``None`` provided for ``files_path``.
+    :raises JanitorError: if length of ``files_path`` is ``0``.
+    :raises ValueError: if no ``CSV`` files exist in ``files_path``.
+    :raises ValueError: if columns in input ``CSV`` files do not match.
     """
     # Sanitize input
     if files_path is None:

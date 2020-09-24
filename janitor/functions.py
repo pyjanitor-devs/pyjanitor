@@ -4042,8 +4042,8 @@ def expand_grid(
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
     :returns: A pandas dataframe of all combinations of name value pairs.
-    :raises: TypeError if others is not a dictionary
-    :raises: KeyError if there is a dataframe and no key is provided.
+    :raises TypeError: if others is not a dictionary
+    :raises KeyError: if there is a dataframe and no key is provided.
     """
     # check if others is a dictionary
     if not isinstance(others, dict):

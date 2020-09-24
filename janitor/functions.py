@@ -2454,19 +2454,25 @@ def min_max_scale(
     gets scaled to approx. 0.69 instead.
 
     :param df: A pandas DataFrame.
-    :param old_min, old_max (optional): Overrides for the current minimum and
-        maximum values of the data to be transformed.
-    :param new_min, new_max (optional): The minimum and maximum values of the
-        data after it has been scaled.
-    :param column_name (optional): The column on which to perform scaling.
+    :param old_min: (optional) Overrides for the current minimum
+        value of the data to be transformed.
+    :param old_max: (optional) Overrides for the current maximum
+        value of the data to be transformed.
+    :param new_min: (optional) The minimum value of the data after
+        it has been scaled.
+    :param new_max: (optional) The maximum value of the data after
+        it has been scaled.
+    :param column_name: (optional) The column on which to perform scaling.
     :returns: A pandas DataFrame with scaled data.
+    :raises ValueError: if ``old_max`` is not greater than ``old_min``.
+    :raises ValueError: if ``new_max`` is not greater than ``new_min``.
     """
     if (
         (old_min is not None)
         and (old_max is not None)
         and (old_max <= old_min)
     ):
-        raise ValueError("`old_max` should be greater than `old_max`")
+        raise ValueError("`old_max` should be greater than `old_min`")
 
     if new_max <= new_min:
         raise ValueError("`new_max` should be greater than `new_min`")

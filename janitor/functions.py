@@ -4151,10 +4151,12 @@ def process_text(
 
     :param df: A pandas dataframe.
     :param column: String column to be operated on.
-    :param args, kwargs: Arguments for parameters.
+    :param string_function: Pandas string method to be applied.
+    :param args: Arguments for parameters.
+    :param kwargs: Keyword arguments for parameters.
     :returns: A pandas dataframe with modified column.
-    :raises: KeyError if ``string_function`` is not a Pandas string method.
-    :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
+    :raises KeyError: if ``string_function`` is not a Pandas string method.
+    :raises TypeError: if wrong ``arg`` or ``kwarg`` is supplied.  # noqa: DAR402
     """
     df = df.copy()
 

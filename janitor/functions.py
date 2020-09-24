@@ -4406,10 +4406,10 @@ def groupby_topk(
     :returns: A pandas dataframe with top `k` rows that are grouped by
         `groupby_column_name` column with each group sorted along the
         column `sort_column_name`.
-    :raises: ValueError if `k` is less than 1.
-    :raises: ValueError if `groupby_column_name` not in dataframe `df`.
-    :raises: ValueError if `sort_column_name` not in dataframe `df`.
-    :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
+    :raises ValueError: if `k` is less than 1.
+    :raises ValueError: if `groupby_column_name` not in dataframe `df`.
+    :raises ValueError: if `sort_column_name` not in dataframe `df`.
+    :raises KeyError: if `inplace:True` is present in `sort_values_kwargs`.
     """  # noqa: E501
 
     # Convert the default sort_values_kwargs from None to empty Dict

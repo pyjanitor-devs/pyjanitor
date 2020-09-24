@@ -5,7 +5,7 @@ import os
 import sys
 import warnings
 from itertools import chain, product
-from typing import Callable, Dict, List, Pattern, Union
+from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -609,10 +609,11 @@ def _data_checks_pivot_longer(
 
     """
     This function raises errors or warnings if the arguments have the wrong
-    python type, or if an unneeded argument is provided. 
+    python type, or if an unneeded argument is provided.
     This function is executed before proceeding to the computation phase.
-    
-    Type annotations are not provided because this function is where type checking happens.
+
+    Type annotations are not provided because this function is where type
+    checking happens.
     """
 
     if any(
@@ -681,7 +682,11 @@ def _data_checks_pivot_longer(
     )
 
 
-def _pivot_longer_pattern_match(df, index, column_names):
+def _pivot_longer_pattern_match(
+    df: pd.DataFrame,
+    index: Optional[Union[str, Pattern]] = None,
+    column_names: Optional[Union[str, Pattern]] = None,
+) -> Tuple:
     """
     This checks if a pattern (regular expression) is supplied
     to index or columns and extracts the names that match the
@@ -697,7 +702,7 @@ def _pivot_longer_pattern_match(df, index, column_names):
     return df, index, column_names
 
 
-def reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
+def _reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
     """
     Function to reshape dataframe in pivot_longer, to try and make it look
     similar to the source data in terms of direction of the columns. It is a
@@ -723,8 +728,14 @@ def reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
 
 
 def _computations_pivot_longer(
-    df, index, column_names, names_sep, names_pattern, names_to, values_to
-):
+    df: pd.DataFrame,
+    index: Optional[Union[List, Tuple]] = None,
+    column_names: Optional[Union[List, Tuple]] = None,
+    names_sep: Optional[Union[str, Pattern]] = None,
+    names_pattern: Optional[Union[str, Pattern]] = None,
+    names_to: Optional[Union[List, Tuple, str]] = None,
+    values_to: Optional[str] = "value",
+) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_longer` function.
 
@@ -785,7 +796,7 @@ def _computations_pivot_longer(
         # reshape in the order that the data appears
         # this should be easier to do with ignore_index in pandas version 1.1
         if index is not None:
-            df = reindex_func(df, index).reset_index(drop=True)
+            df = _reindex_func(df, index).reset_index(drop=True)
             return df.transform(pd.to_numeric, errors="ignore")
         return df
 
@@ -907,6 +918,8 @@ def _computations_pivot_longer(
                 len_first_header = len(set(between_df.loc[:, first_header]))
                 between_df = between_df.sort_values([".value", first_header])
             else:
+                first_header = None
+                len_first_header = None
                 between_df = between_df.sort_values(".value")
             index_sorter = between_df.index
             # need this to correctly align column names with reshaped
@@ -947,7 +960,7 @@ def _computations_pivot_longer(
             if len(names_to) == 1:
                 between_df = pd.DataFrame([], index=after_index)
                 # Again, the aim is to get that alternation right
-                before_df = reindex_func(before_df)
+                before_df = _reindex_func(before_df)
             if position == 0:
                 df = pd.DataFrame.join(between_df, after_df)
             else:
@@ -959,7 +972,7 @@ def _computations_pivot_longer(
         # this kicks in if there is no `.value` in `names_to`
         # here we reindex the before_df, to simulate the order of the columns
         # in the source data.
-        before_df = reindex_func(before_df)
+        before_df = _reindex_func(before_df)
         df = pd.DataFrame.join(before_df, [between_df, after_df]).reset_index(
             drop=True
         )

@@ -1122,6 +1122,74 @@ def test_warning_multi_index(df):
         df.pivot_longer()
 
 
+def test_length_mismatch():
+    """
+    Raise error if `names_to` is a list/tuple and its length
+    does not match the number of extracted columns.
+    """
+    data = pd.DataFrame(
+        {
+            "country": ["United States", "Russia", "China"],
+            "vault_2012_f": [48.132, 46.36600000000001, 44.266000000000005],
+            "vault_2012_m": [46.632, 46.86600000000001, 48.316],
+            "vault_2016_f": [46.86600000000001, 45.733000000000004, 44.332],
+            "vault_2016_m": [45.865, 46.033, 45.0],
+            "floor_2012_f": [45.36600000000001, 41.599, 40.833],
+            "floor_2012_m": [45.266000000000005, 45.308, 45.133],
+            "floor_2016_f": [45.998999999999995, 42.032, 42.066],
+            "floor_2016_m": [43.757, 44.766000000000005, 43.799],
+        }
+    )
+    with pytest.raises(ValueError):
+        data.pivot_longer(names_to=["event", "year"], names_sep="-")
+
+
+def test_duplicate_dot_value():
+    "Raise error if `names_to` contains more than 1 `.value."
+    data = pd.DataFrame(
+        {
+            "off_loc": ["A", "B", "C", "D", "E", "F"],
+            "pt_loc": ["G", "H", "I", "J", "K", "L"],
+            "pt_lat": [
+                100.07548220000001,
+                75.191326,
+                122.65134479999999,
+                124.13553329999999,
+                124.13553329999999,
+                124.01028909999998,
+            ],
+            "off_lat": [
+                121.271083,
+                75.93845266,
+                135.043791,
+                134.51128400000002,
+                134.484374,
+                137.962195,
+            ],
+            "pt_long": [
+                4.472089953,
+                -144.387785,
+                -40.45611048,
+                -46.07156181,
+                -46.07156181,
+                -46.01594293,
+            ],
+            "off_long": [
+                -7.188632000000001,
+                -143.2288569,
+                21.242563,
+                40.937416999999996,
+                40.78472,
+                22.905889000000002,
+            ],
+        }
+    )
+    with pytest.raises(ValueError):
+        data.pivot_longer(
+            names_to=["set", ".value", ".value"], names_pattern="(.+)_(.+)"
+        )
+
+
 def test_both_names_sep_and_pattern():
     "Raise ValueError if both `names_sep` and `names_pattern` is provided."
     with pytest.raises(ValueError):

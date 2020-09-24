@@ -4596,7 +4596,7 @@ def complete(
     return df
 
 
-def patterns(regex_pattern):
+def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     """
     This function converts a string into a compiled regular expression;
     it can be used to select columns in the index or columns_names

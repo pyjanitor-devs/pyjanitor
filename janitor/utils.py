@@ -975,8 +975,5 @@ def _computations_pivot_longer(
         before_df = _reindex_func(before_df)
         df = pd.DataFrame.join(before_df, [between_df, after_df]).reset_index(
             drop=True
-        )
-
+        )       
         return df.transform(pd.to_numeric, errors="ignore")
-
-    return df

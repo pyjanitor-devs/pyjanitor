@@ -1186,7 +1186,7 @@ def test_duplicate_dot_value():
     )
     with pytest.raises(ValueError):
         data.pivot_longer(
-            names_to=["set", ".value", ".value"], names_pattern="(.+)_(.+)"
+            names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
         )
 
 

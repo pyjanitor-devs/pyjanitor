@@ -2907,6 +2907,9 @@ def impute(
     :param value: (optional) The value to impute.
     :param statistic_column_name: (optional) The column statistic to impute.
     :returns: An imputed pandas DataFrame.
+    :raises ValueError: if both ``value`` and ``statistic`` are provided.
+    :raises KeyError: if ``statistic`` is not one of ``mean``, ``average``
+        ``median``, ``mode``, ``minimum``, ``min``, ``maximum``, or ``max``.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if value is not None and statistic_column_name is not None:

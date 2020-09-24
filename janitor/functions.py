@@ -4554,12 +4554,12 @@ def complete(
     :param fill_value: Dictionary pairing the columns with the null replacement
         value.
     :returns: A pandas dataframe with modified column(s).
-    :raises: ValueError if `columns` is empty.
-    :raises: TypeError if `columns` is not a list.
-    :raises: TypeError if `fill_value` is not a dictionary.
-    :raises: ValueError if entry in `columns` is not a
+    :raises ValueError: if `columns` is empty.
+    :raises TypeError: if `columns` is not a list.
+    :raises TypeError: if `fill_value` is not a dictionary.
+    :raises ValueError: if entry in `columns` is not a
         str/dict/list/tuple.
-    :raises: ValueError if entry in `columns` is a dict/list/tuple
+    :raises ValueError: if entry in `columns` is a dict/list/tuple
         and is empty.
     """
     df = df.copy()

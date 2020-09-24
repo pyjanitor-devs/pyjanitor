@@ -3530,6 +3530,7 @@ def shuffle(
     :param df: A pandas DataFrame
     :param random_state: (optional) A seed for the random number generator.
     :param reset_index: (optional) Resets index to default integers
+    :returns: A shuffled pandas DataFrame.
     """
     result = df.sample(frac=1, random_state=random_state)
     if reset_index:

@@ -4784,8 +4784,8 @@ def pivot_longer(
             index = [column1, column2, ...],
             column_names = [column3, column4, ...],
             names_to = new_column_name,
-            names_sep = string or regular expression,
-            names_pattern =s tring or regular expression,
+            names_sep = string/regular expression,
+            names_pattern = string/regular expression,
             value_name = new_column_name
         )
 
@@ -4800,8 +4800,8 @@ def pivot_longer(
                 index = [column1, column2, ...],
                 column_names = [column3, column4, ...],
                 names_to = new_column_name,
-                names_sep=string or regular expression,
-                names_pattern=string or regular expression,
+                names_sep = string/regular expression,
+                names_pattern = string/regular expression,
                 value_name= new_column_name
             )
         )

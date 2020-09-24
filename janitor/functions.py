@@ -3452,7 +3452,7 @@ def drop_duplicate_columns(
     :param df: A pandas DataFrame
     :param column_name: Column to be removed
     :param nth_index: Among the duplicated columns,
-      select the nth column to drop.
+        select the nth column to drop.
     :return: A pandas DataFrame
     """
     cols = df.columns.to_list()

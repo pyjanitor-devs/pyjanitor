@@ -3403,6 +3403,7 @@ def bin_numeric(
     :param labels: Optionally rename numeric bin ranges with labels. Number of
         label names must match number of bins specified.
     :return: A pandas DataFrame.
+    :raises ValueError: if number of labels do not match number of bins.
     """
     if not labels:
         df[str(to_column_name)] = pd.cut(

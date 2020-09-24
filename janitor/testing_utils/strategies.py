@@ -29,7 +29,7 @@ def df_strategy():
         def test_function(df):
             # test goes here
 
-    # noqa: DAR201
+    .. # noqa: DAR201
     """
     return data_frames(
         columns=[

@@ -65,8 +65,8 @@ def register_dataframe_accessor(name):
     ----
     Modified based on pandas.core.accessor.
 
-    # noqa: DAR101 name
-    # noqa: DAR201
+    .. # noqa: DAR101 name
+    .. # noqa: DAR201
     """
     try:
         from pyspark.sql import DataFrame
@@ -88,8 +88,8 @@ def register_dataframe_method(method):
     ----
     Modified based on pandas_flavor.register.
 
-    # noqa: DAR101 method
-    # noqa: DAR201
+    .. # noqa: DAR101 method
+    .. # noqa: DAR201
     """
 
     def inner(*args, **kwargs):

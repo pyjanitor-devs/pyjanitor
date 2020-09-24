@@ -4261,9 +4261,9 @@ def fill_direction(
     :param limit: number of consecutive null values to forward/backward fill.
         Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
-    :raises: ValueError if ``directions`` dictionary is empty.
-    :raises: ValueError if column supplied is not in the dataframe.
-    :raises: ValueError if direction supplied is not one of `down`,`up`,
+    :raises ValueError: if ``directions`` dictionary is empty.
+    :raises ValueError: if column supplied is not in the dataframe.
+    :raises ValueError: if direction supplied is not one of `down`,`up`,
         `updown`, or `downup`.
     """
     df = df.copy()

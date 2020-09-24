@@ -3580,6 +3580,7 @@ def join_apply(
     :param func: A function that is applied elementwise across all rows of the
         DataFrame.
     :param new_column_name: New column name.
+    :returns: A pandas DataFrame with new column appended.
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df

@@ -609,8 +609,10 @@ def _data_checks_pivot_longer(
 
     """
     This function raises errors or warnings if the arguments have the wrong
-    python type, or if an unneeded argument is provided. This function is
-    executed before proceeding to the computation phase.
+    python type, or if an unneeded argument is provided. 
+    This function is executed before proceeding to the computation phase.
+    
+    Type annotations are not provided because this function is where type checking happens.
     """
 
     if any(

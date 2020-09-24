@@ -697,7 +697,7 @@ def _pivot_longer_pattern_match(df, index, column_names):
     return df, index, column_names
 
 
-def reindex_func(frame, indexer=None):
+def reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
     """
     Function to reshape dataframe in pivot_longer, to try and make it look
     similar to the source data in terms of direction of the columns. It is a

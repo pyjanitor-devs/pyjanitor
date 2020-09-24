@@ -3884,7 +3884,7 @@ def jitter(
 def sort_naturally(
     df: pd.DataFrame, column_name: str, **natsorted_kwargs
 ) -> pd.DataFrame:
-    """Sort an DataFrame by a column using "natural" sorting.
+    """Sort a DataFrame by a column using "natural" sorting.
 
     Natural sorting is distinct from
     the default lexiographical sorting provided by ``pandas``.
@@ -3948,6 +3948,7 @@ def sort_naturally(
     :param column_name: The column on which natural sorting should take place.
     :param natsorted_kwargs: Keyword arguments to be passed
         to natsort's ``natsorted`` function.
+    :returns: A sorted pandas DataFrame.
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]

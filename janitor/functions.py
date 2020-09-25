@@ -760,7 +760,7 @@ def convert_excel_date(
         df = pd.DataFrame(...).convert_excel_date('date')
 
     :param df: A pandas DataFrame.
-    :param Hashable column_name: A column name.
+    :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     df[column_name] = pd.TimedeltaIndex(

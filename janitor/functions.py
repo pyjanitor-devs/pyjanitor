@@ -976,6 +976,8 @@ def concatenate_columns(
     :param new_column_name: The name of the new column.
     :param sep: The separator between each column's data.
     :returns: A pandas DataFrame with concatenated columns.
+    :raises JanitorError: if at least two columns are not provided
+        within ``column_names``.
     """
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")

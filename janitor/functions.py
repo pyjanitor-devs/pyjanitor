@@ -658,12 +658,14 @@ def reorder_columns(
     :param column_order: A list of column names or Pandas `Index`
         specifying their order in the returned `DataFrame`.
     :returns: A pandas DataFrame with reordered columns.
+    :raises IndeError: if a column within ``column_order`` is not found
+        within the DataFrame.
     """
     check("column_order", column_order, [list, tuple, pd.Index])
 
     if any(col not in df.columns for col in column_order):
         raise IndexError(
-            "A column in column_order was not found in the DataFrame."
+            "A column in ``column_order`` was not found in the DataFrame."
         )
 
     # if column_order is a Pandas index, needs conversion to list:

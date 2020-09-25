@@ -32,4 +32,4 @@ verbose = 2
 [tool.darglint]
 docstring_style='sphinx'
 strictness='short'
-ignore_regex='^(test_|_)(.*)''
+ignore_regex='^(test_|_)(.*)'

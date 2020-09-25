@@ -1514,6 +1514,8 @@ def filter_column_isin(
     :param complement: Whether to return the complement of the selection or
         not.
     :returns: A filtered pandas DataFrame.
+    :raises ValueError: if ``iterable`` does not have a length of ``1``
+        or greater.
     """
     if len(iterable) == 0:
         raise ValueError(

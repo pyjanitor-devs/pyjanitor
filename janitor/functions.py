@@ -441,7 +441,7 @@ def get_dupes(
         df = pd.DataFrame(...).get_dupes()
 
     :param df: The pandas DataFrame object.
-    :param str/iterable column_names: (optional) A column name or an iterable
+    :param column_names: (optional) A column name or an iterable
         (list or tuple) of column names. Following pandas API, this only
         considers certain columns for identifying duplicates. Defaults to using
         all columns.

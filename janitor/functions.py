@@ -799,7 +799,7 @@ def convert_matlab_date(
         df = pd.DataFrame(...).convert_matlab_date('date')
 
     :param df: A pandas DataFrame.
-    :param Hashable column_name: A column name.
+    :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])

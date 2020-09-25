@@ -532,19 +532,23 @@ def label_encode(
         df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param Hashable/iterable column_names: A column name or an iterable (list
+    :param column_names: A column name or an iterable (list
         or tuple) of column names.
     :returns: A pandas DataFrame.
+    :raises JanitorError: if a column specified within ``column_names``
+        is not found in the DataFrame.
+    :raises JanitorError: if ``column_names`` is not hashable
+        nor iterable.
     """
     le = LabelEncoder()
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             if col not in df.columns:
-                raise JanitorError(f"{col} missing from column_names")
+                raise JanitorError(f"{col} missing from DataFrame columns!")
             df[f"{col}_enc"] = le.fit_transform(df[col])
     elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
-            raise JanitorError(f"{column_names} missing from column_names")
+            raise JanitorError(f"{column_names} missing from DataFrame columns!")
         df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
         raise JanitorError(

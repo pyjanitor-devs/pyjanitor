@@ -836,7 +836,7 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_unix_date('date')
 
     :param df: A pandas DataFrame.
-    :param Hashable column_name: A column name.
+    :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
 

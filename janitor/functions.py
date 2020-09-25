@@ -1076,15 +1076,23 @@ def deconcatenate_column(
     :param preserve_position: Boolean for whether or not to preserve original
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
+    :raises ValueError: if ``column_name`` is not present in the
+        DataFrame.
+    :raises ValueError: if ``sep`` is not provided and the column values
+        are of type ``str``.
+    :raises ValueError: if either ``new_column_names`` or ``autoname``
+        is not supplied.
+    :raises JanitorError: if incorrect number of names is provided
+        within ``new_column_names``.
     """
 
     if column_name not in df.columns:
-        raise ValueError(f"column name {column_name} not present in dataframe")
+        raise ValueError(f"column name {column_name} not present in DataFrame")
 
     if isinstance(df[column_name].iloc[0], str):
         if sep is None:
             raise ValueError(
-                "`sep` must be specified if the column values are " "strings."
+                "`sep` must be specified if the column values are of type `str`."
             )
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:
@@ -1109,7 +1117,7 @@ def deconcatenate_column(
     if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
             f"you need to provide {len(df_deconcat.shape[1])} names "
-            "to new_column_names"
+            "to `new_column_names`"
         )
 
     df_deconcat.columns = new_column_names

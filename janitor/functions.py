@@ -1634,7 +1634,7 @@ def add_column(
         vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
         df = pd.DataFrame(...).add_column(column_name="new_column", vals)
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
@@ -1643,6 +1643,12 @@ def add_column(
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     :returns: A pandas DataFrame with an added column.
+    :raises ValueError: if attempting to add a column that already exists.
+    :raises ValueError: if ``value`` has more elements that number of
+        rows in the DataFrame.
+    :raises ValueError: if attempting to add an iterable of values with
+        a length not equal to the number of DataFrame rows.
+    :raises ValueError: if ``value`` has length of ``0``.
     """
     # TODO: Convert examples to notebook.
     # :Setup:
@@ -1741,7 +1747,7 @@ def add_column(
         # if `value` is a list, ndarray, etc.
         if len(value) > nrows:
             raise ValueError(
-                "`values` has more elements than number of rows "
+                "`value` has more elements than number of rows "
                 f"in your `DataFrame`. vals: {len(value)}, "
                 f"df: {nrows}"
             )
@@ -1753,7 +1759,7 @@ def add_column(
 
         if len(value) == 0:
             raise ValueError(
-                "Values has to be an iterable of minimum length 1"
+                "`value` has to be an iterable of minimum length 1"
             )
         len_value = len(value)
     elif fill_remaining:

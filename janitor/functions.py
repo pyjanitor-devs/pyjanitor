@@ -478,19 +478,23 @@ def encode_categorical(
         df = pd.DataFrame(...).encode_categorical(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param Hashable/iterable column_names: A column name or an iterable (list or
+    :param column_names: A column name or an iterable (list or
         tuple) of column names.
-    :returns: A pandas DataFrame
+    :returns: A pandas DataFrame.
+    :raises JanitorError: if a column specified within ``column_names``
+        is not found in the DataFrame.
+    :raises JanitorError: if ``column_names`` is not hashable
+        nor iterable.
     """  # noqa: E501
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             if col not in df.columns:
-                raise JanitorError(f"{col} missing from dataframe columns!")
+                raise JanitorError(f"{col} missing from DataFrame columns!")
             df[col] = pd.Categorical(df[col])
     elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
             raise JanitorError(
-                f"{column_names} missing from dataframe columns!"
+                f"{column_names} missing from DataFrame columns!"
             )
         df[column_names] = pd.Categorical(df[column_names])
     else:

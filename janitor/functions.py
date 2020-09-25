@@ -282,6 +282,8 @@ def clean_names(
         Default 'lower' makes all characters lowercase.
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
+    :param strip_accents: Whether or not to remove accents from
+        columns names.
     :param preserve_original_columns: (optional) Preserve original names.
         This is later retrievable using `df.original_columns`.
     :param enforce_string: Whether or not to convert all column names

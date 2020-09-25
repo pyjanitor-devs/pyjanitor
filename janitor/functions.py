@@ -87,6 +87,7 @@ def unionize_dataframe_categories(
     :param column_names: If supplied, only unionize this subset of columns.
     :returns: A list of the category-unioned dataframes in the same order they
         were provided.
+    :raises TypeError: if any inputs are not pandas DataFrames.
     """
 
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
@@ -554,7 +555,9 @@ def label_encode(
             df[f"{col}_enc"] = le.fit_transform(df[col])
     elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
-            raise JanitorError(f"{column_names} missing from DataFrame columns!")
+            raise JanitorError(
+                f"{column_names} missing from DataFrame columns!"
+            )
         df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
         raise JanitorError(

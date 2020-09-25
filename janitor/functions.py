@@ -2360,6 +2360,8 @@ def transform_columns(
     :param new_column_names: (optional) An explicit mapping of old column names
         to new column names.
     :returns: A pandas DataFrame with transformed columns.
+    :raises ValueError: if both ``suffix`` and ``new_column_names`` are
+        specified
     """
     dest_column_names = dict(zip(column_names, column_names))
 

@@ -715,8 +715,8 @@ def coalesce(
 
     :param df: A pandas DataFrame.
     :param column_names: A list of column names.
-    :param str new_column_name: The new column name after combining.
-    :param bool delete_columns: Whether to delete the columns being coalesced
+    :param new_column_name: The new column name after combining.
+    :param delete_columns: Whether to delete the columns being coalesced
     :returns: A pandas DataFrame with coalesced columns.
     """
     series = [df[c] for c in column_names]

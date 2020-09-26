@@ -948,7 +948,9 @@ def _computations_pivot_longer(
             # if, however, `names_to` is of length 1, then between_df
             # will be an empty dataframe, and its index will be the
             # same as the index of `after_df
-            # `
+            # once the indexes are assigned to before, after, and between
+            # we can recombine with a join to get the proper alternation
+            # and complete data per index/section
             if other_header:
                 other_header_index = np.reshape(
                     after_index, (-1, len(other_header_values)), order="F"
@@ -958,7 +960,7 @@ def _computations_pivot_longer(
             else:
                 other_header_index = None
                 between_df = pd.DataFrame([], index=after_index)
-            if position == 0: # no index or column_names supplied
+            if position == 0:  # no index or column_names supplied
                 df = pd.DataFrame.join(between_df, after_df, how="inner")
             else:
                 df = pd.DataFrame.join(

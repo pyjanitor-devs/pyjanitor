@@ -38,6 +38,40 @@ paired_columns_pattern = [
     (
         pd.DataFrame(
             {
+                "id": [1, 2, 3],
+                "M_start_date_1": [201709, 201709, 201709],
+                "M_end_date_1": [201905, 201905, 201905],
+                "M_start_date_2": [202004, 202004, 202004],
+                "M_end_date_2": [202005, 202005, 202005],
+                "F_start_date_1": [201803, 201803, 201803],
+                "F_end_date_1": [201904, 201904, 201904],
+                "F_start_date_2": [201912, 201912, 201912],
+                "F_end_date_2": [202007, 202007, 202007],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {"id": 1, "cod": "M", "start": 201709, "end": 201905},
+                {"id": 1, "cod": "M", "start": 202004, "end": 202005},
+                {"id": 1, "cod": "F", "start": 201803, "end": 201904},
+                {"id": 1, "cod": "F", "start": 201912, "end": 202007},
+                {"id": 2, "cod": "M", "start": 201709, "end": 201905},
+                {"id": 2, "cod": "M", "start": 202004, "end": 202005},
+                {"id": 2, "cod": "F", "start": 201803, "end": 201904},
+                {"id": 2, "cod": "F", "start": 201912, "end": 202007},
+                {"id": 3, "cod": "M", "start": 201709, "end": 201905},
+                {"id": 3, "cod": "M", "start": 202004, "end": 202005},
+                {"id": 3, "cod": "F", "start": 201803, "end": 201904},
+                {"id": 3, "cod": "F", "start": 201912, "end": 202007},
+            ]
+        ),
+        "id",
+        ("cod", ".value"),
+        "(M|F)_(start|end)_.+",
+    ),
+    (
+        pd.DataFrame(
+            {
                 "person_id": [1, 2, 3],
                 "date1": ["12/31/2007", "11/25/2009", "10/06/2005"],
                 "val1": [2, 4, 6],
@@ -210,7 +244,7 @@ paired_columns_sep = [
     (
         pd.DataFrame(
             {
-                "index": [0, 1],
+                "indexer": [0, 1],
                 "S_1": [1, 1],
                 "S_2": [0, 1],
                 "S_3": ["0", np.nan],
@@ -219,12 +253,12 @@ paired_columns_sep = [
         ),
         pd.DataFrame(
             {
-                "index": [0, 0, 0, 0, 1, 1, 1, 1],
+                "indexer": [0, 0, 0, 0, 1, 1, 1, 1],
                 "num": [1, 2, 3, 4, 1, 2, 3, 4],
                 "S": [1, 0, 0, 1, 1, 1, np.nan, np.nan],
             }
         ),
-        "index",
+        "indexer",
         (".value", "num"),
         "_",
     ),
@@ -1336,3 +1370,24 @@ def test_single_value(df_in, df_out, index, names_pattern):
         index=index, names_to=".value", names_pattern=names_pattern
     )
     assert_frame_equal(result, df_out)
+
+
+df = pd.DataFrame(
+    {
+        "id": [1, 2, 3],
+        "M_start_date_1": [201709, 201709, 201709],
+        "M_end_date_1": [201905, 201905, 201905],
+        "M_start_date_2": [202004, 202004, 202004],
+        "M_end_date_2": [202005, 202005, 202005],
+        "F_start_date_1": [201803, 201803, 201803],
+        "F_end_date_1": [201904, 201904, 201904],
+        "F_start_date_2": [201912, 201912, 201912],
+        "F_end_date_2": [202007, 202007, 202007],
+    }
+)
+
+print(
+    df.pivot_longer(
+        "id", names_to=("cod", ".value"), names_pattern="(M|F)_(start|end)_.+"
+    )
+)

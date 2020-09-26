@@ -721,6 +721,8 @@ def _reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
         uniq_index_length = len(frame.drop_duplicates())
     else:
         uniq_index_length = len(frame.loc[:, indexer].drop_duplicates())
+        if "index" in indexer:
+            frame = frame.drop("index", axis=1)
     sorter = np.reshape(frame.index, (-1, uniq_index_length))
     # reshaped in Fortan order achieves the alternation
     sorter = np.ravel(sorter, order="F")
@@ -776,6 +778,11 @@ def _computations_pivot_longer(
 
     if index is not None:
         check_column(df, index, present=True)
+        # this should take care of non unique index
+        # we'll get rid of the extra in _reindex_func
+        if df.loc[:, index].duplicated().any():
+            df = df.reset_index()
+            index = ["index"] + index
 
     if column_names is not None:
         check_column(df, column_names, present=True)
@@ -814,7 +821,7 @@ def _computations_pivot_longer(
         #  and the data after (our values column)
         position = df.columns.get_loc(uniq_name)
         if position == 0:
-            before_df = pd.DataFrame([], index=range(len(df)))
+            before_df = pd.DataFrame([], index=df.index)
         else:
             # just before uniq_name column
             before_df = df.iloc[:, :-2]
@@ -835,7 +842,7 @@ def _computations_pivot_longer(
                 number of columns extracted.
                 """
             )
-
+        before_df = _reindex_func(before_df, index)
         between_df = between_df.set_axis(names_to, axis="columns")
 
         # we take a detour here to deal with paired columns, where the user
@@ -896,75 +903,67 @@ def _computations_pivot_longer(
                 raise ValueError(
                     "Column name `.value` must not be duplicated."
                 )
-            # get the new column names to reflect the direction
-            # of the source data columns, effectively overriding `values_to`
-            after_df_cols_actual = pd.unique(between_df.loc[:, ".value"])
+            # extract new column names and assign category dtype
+            after_df_cols = pd.unique(between_df.loc[:, ".value"])
+            dot_value_dtype = CategoricalDtype(after_df_cols)
             if len(names_to) > 1:
-                # this will serve as the header of the other extracted column
-                first_header = set(names_to).difference([".value"])
-                first_header = next(iter(first_header))
-                # Apart from improved memory usage, the primary reason
-                # for converting to categorical dtype is to ensure that
-                # sorting is not lexicographical, but according to initial
-                # position. So if we have a column containing
-                # `start, end, end, start`, without the categorical dtype,
-                # the sort returns `end, end,start, start`.
-                first_header_dtype = CategoricalDtype(
-                    pd.unique(between_df.loc[:, first_header]), ordered=True
+                other_header = between_df.columns.difference([".value"])[0]
+                other_header_values = pd.unique(
+                    between_df.loc[:, other_header]
                 )
+                other_header_dtype = CategoricalDtype(other_header_values)
                 between_df = between_df.astype(
-                    {first_header: first_header_dtype}
+                    {
+                        ".value": dot_value_dtype,
+                        other_header: other_header_dtype,
+                    }
                 )
-                len_first_header = len(set(between_df.loc[:, first_header]))
-                between_df = between_df.sort_values([".value", first_header])
+                between_df = between_df.sort_values([".value", other_header])
             else:
-                first_header = None
-                len_first_header = None
-                between_df = between_df.sort_values(".value")
-            index_sorter = between_df.index
-            # need this to correctly align column names with reshaped
-            # `after_df`, before reindexing with `after_df_cols_actual`
-            after_df_cols_temporary = pd.unique(between_df.loc[:, ".value"])
-            len_after_df_cols = len(after_df_cols_temporary)
+                other_header = None
+                other_header_values = None
+                between_df = between_df.astype({".value": dot_value_dtype})
+                between_df = between_df.sort_values([".value"])
 
-            after_df_rows = len(after_df) // len_after_df_cols
+            # reshape index_sorter and use the first column as the index
+            # of the reshaped after_df. after_df will be reshaped into
+            # specific number of columns, based on the length of
+            # `after_df_cols`
+            index_sorter = between_df.index
+            after_df = after_df.reindex(index_sorter).to_numpy()
             after_index = np.reshape(
-                index_sorter, (after_df_rows, -1), order="F"
+                index_sorter, (-1, len(after_df_cols)), order="F"
             )
-            # use index to combine with between_df or before_df
-            # to get alternation. It also assures the right combination
             after_index = after_index[:, 0]
-            after_df = after_df.to_numpy()[index_sorter]
-            # here data will have a shape that reflects the number of unique
-            # items in `.value` column; the contents of `.value` will become
-            # the new headers. Note the use of 'F' order which reshapes the
-            # data column wise and gets us our data in the correct pairs
-            # for each index
-            after_df = np.reshape(after_df, (-1, len_after_df_cols), order="F")
-            after_df = pd.DataFrame(
-                after_df, columns=after_df_cols_temporary, index=after_index
+            after_df = np.reshape(
+                after_df, (-1, len(after_df_cols)), order="F"
             )
-            after_df = after_df.reindex(columns=after_df_cols_actual)
-            if len(between_df.columns) > 1:
-                first_header_index = np.reshape(
-                    after_index, (-1, len_first_header), order="F"
+            after_df = pd.DataFrame(
+                after_df, columns=after_df_cols, index=after_index
+            )
+            # if `names_to` has a length more than 1,
+            # then we need to sort the other header, so that there is
+            # an alternation, ensuring a complete representation of
+            # each value per index.
+            # if, however, `names_to` is of length 1, then between_df
+            # will be an empty dataframe, and its index will be the
+            # same as the index of `after_df
+            # `
+            if other_header:
+                other_header_index = np.reshape(
+                    after_index, (-1, len(other_header_values)), order="F"
                 )
-                first_header_index = np.ravel(first_header_index)
-                # Now we can use this to securely connect to `after_df`
-                # and also ensure we are referring to the same rows as
-                # from the source data
-                between_df = between_df.loc[first_header_index, [first_header]]
-                before_df = before_df.loc[first_header_index]
+                other_header_index = np.ravel(other_header_index)
+                between_df = between_df.loc[other_header_index, [other_header]]
             else:
-                before_df = before_df.loc[after_index]
-            if len(names_to) == 1:
+                other_header_index = None
                 between_df = pd.DataFrame([], index=after_index)
-                # Again, the aim is to get that alternation right
-                before_df = _reindex_func(before_df)
-            if position == 0:
-                df = pd.DataFrame.join(between_df, after_df)
+            if position == 0: # no index or column_names supplied
+                df = pd.DataFrame.join(between_df, after_df, how="inner")
             else:
-                df = pd.DataFrame.join(before_df, [between_df, after_df])
+                df = pd.DataFrame.join(
+                    before_df, [between_df, after_df], how="inner"
+                )
             return df.reset_index(drop=True).transform(
                 pd.to_numeric, errors="ignore"
             )
@@ -972,8 +971,7 @@ def _computations_pivot_longer(
         # this kicks in if there is no `.value` in `names_to`
         # here we reindex the before_df, to simulate the order of the columns
         # in the source data.
-        before_df = _reindex_func(before_df)
-        df = pd.DataFrame.join(before_df, [between_df, after_df]).reset_index(
-            drop=True
-        )
+        df = pd.DataFrame.join(
+            before_df, [between_df, after_df], how="inner"
+        ).reset_index(drop=True)
         return df.transform(pd.to_numeric, errors="ignore")

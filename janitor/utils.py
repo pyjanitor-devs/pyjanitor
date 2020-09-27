@@ -924,7 +924,10 @@ def _computations_pivot_longer(
             else:
                 other_header = None
                 other_header_values = None
-                between_df = between_df.sort_values([".value"])
+                # index order not assured if just .value and quicksort
+                between_df = between_df.sort_values(
+                    [".value"], kind="mergesort"
+                )
 
             # reshape index_sorter and use the first column as the index
             # of the reshaped after_df. after_df will be reshaped into

@@ -1370,3 +1370,8 @@ def test_single_value(df_in, df_out, index, names_pattern):
         index=index, names_to=".value", names_pattern=names_pattern
     )
     assert_frame_equal(result, df_out)
+
+
+df = pd.DataFrame(
+    [{"a_1": 2, "ab_1": 3, "ac_1": 4, "a_2": 5, "ab_2": 6, "ac_2": 7}]
+)

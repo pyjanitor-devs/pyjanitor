@@ -780,6 +780,8 @@ def _computations_pivot_longer(
         check_column(df, index, present=True)
         # this should take care of non unique index
         # we'll get rid of the extra in _reindex_func
+        # TODO: what happens if `index` is already a name
+        # in the columns?
         if df.loc[:, index].duplicated().any():
             df = df.reset_index()
             index = ["index"] + index
@@ -905,24 +907,23 @@ def _computations_pivot_longer(
                 )
             # extract new column names and assign category dtype
             after_df_cols = pd.unique(between_df.loc[:, ".value"])
-            dot_value_dtype = CategoricalDtype(after_df_cols)
+            dot_value_dtype = CategoricalDtype(after_df_cols, ordered=True)
+            between_df = between_df.astype({".value": dot_value_dtype})
             if len(names_to) > 1:
                 other_header = between_df.columns.difference([".value"])[0]
                 other_header_values = pd.unique(
                     between_df.loc[:, other_header]
                 )
-                other_header_dtype = CategoricalDtype(other_header_values)
+                other_header_dtype = CategoricalDtype(
+                    other_header_values, ordered=True
+                )
                 between_df = between_df.astype(
-                    {
-                        ".value": dot_value_dtype,
-                        other_header: other_header_dtype,
-                    }
+                    {other_header: other_header_dtype}
                 )
                 between_df = between_df.sort_values([".value", other_header])
             else:
                 other_header = None
                 other_header_values = None
-                between_df = between_df.astype({".value": dot_value_dtype})
                 between_df = between_df.sort_values([".value"])
 
             # reshape index_sorter and use the first column as the index
@@ -947,7 +948,7 @@ def _computations_pivot_longer(
             # each value per index.
             # if, however, `names_to` is of length 1, then between_df
             # will be an empty dataframe, and its index will be the
-            # same as the index of `after_df
+            # same as the index of `after_df`
             # once the indexes are assigned to before, after, and between
             # we can recombine with a join to get the proper alternation
             # and complete data per index/section

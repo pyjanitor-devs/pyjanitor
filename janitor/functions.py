@@ -4625,8 +4625,8 @@ def pivot_longer(
 
     This method does not mutate the original DataFrame.
 
-    It is a wrapper around `pd.melt` and is meant to be the method-chaining
-    alternative to `pd.wide_to_long` with some syntactic sugar. It is
+    It is a wrapper around `pd.melt` and is meant to serve as a single point
+    for transformations that require `pd.melt` or `pd.wide_to_long`. It is
     modeled after the `pivot_longer` function in R's tidyr package.
 
     This function is useful to massage a DataFrame into a format where

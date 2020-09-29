@@ -906,25 +906,24 @@ def _computations_pivot_longer(
                     "Column name `.value` must not be duplicated."
                 )
             # extract new column names and assign category dtype
-            after_df_cols = pd.unique(between_df.loc[:, ".value"])
-            dot_value_dtype = CategoricalDtype(after_df_cols, ordered=True)
-            between_df = between_df.astype({".value": dot_value_dtype})
+            between_df_unique_values = {
+                key: pd.unique(value) for key, value in between_df.items()
+            }
+            after_df_cols = between_df_unique_values[".value"]
+            between_df_dtypes = {
+                key: CategoricalDtype(value, ordered=True)
+                for key, value in between_df_unique_values.items()
+            }
+            between_df = between_df.astype(between_df_dtypes)
             if len(names_to) > 1:
-                other_header = between_df.columns.difference([".value"])[0]
-                other_header_values = pd.unique(
-                    between_df.loc[:, other_header]
+                other_headers = between_df.columns.difference(
+                    [".value"], sort=False
                 )
-                other_header_dtype = CategoricalDtype(
-                    other_header_values, ordered=True
-                )
-                between_df = between_df.astype(
-                    {other_header: other_header_dtype}
-                )
-                between_df = between_df.sort_values([".value", other_header])
+                other_headers = other_headers.tolist()
+                between_df = between_df.sort_values([".value"] + other_headers)
             else:
-                other_header = None
-                other_header_values = None
-                # index order not assured if just .value and quicksort
+                other_headers = None
+                # index order not assured if just ``.value` and quicksort
                 between_df = between_df.sort_values(
                     [".value"], kind="mergesort"
                 )
@@ -935,35 +934,26 @@ def _computations_pivot_longer(
             # `after_df_cols`
             index_sorter = between_df.index
             after_df = after_df.reindex(index_sorter).to_numpy()
-            after_index = np.reshape(
-                index_sorter, (-1, len(after_df_cols)), order="F"
-            )
-            after_index = after_index[:, 0]
-            after_df = np.reshape(
-                after_df, (-1, len(after_df_cols)), order="F"
-            )
+            # this will serve as the index for the `after_df` frame
+            # as well as the `between_df` frame
+            # it works because we reshaped the `after_df` into n
+            # number of columns, where n == len(after_df_cols)
+            # e.g if the dataframe initially was 24 rows, if it is
+            # reshaped to a 3 column dataframe, rows will become 8
+            # we then pick the first 8 rows from index_sorter as
+            # the index for both `after_df` and `between_df`
+            after_df_cols_len = len(after_df_cols)
+            index_sorter = index_sorter[
+                : index_sorter.size // after_df_cols_len
+            ]
+            after_df = np.reshape(after_df, (-1, after_df_cols_len), order="F")
             after_df = pd.DataFrame(
-                after_df, columns=after_df_cols, index=after_index
+                after_df, columns=after_df_cols, index=index_sorter
             )
-            # if `names_to` has a length more than 1,
-            # then we need to sort the other header, so that there is
-            # an alternation, ensuring a complete representation of
-            # each value per index.
-            # if, however, `names_to` is of length 1, then between_df
-            # will be an empty dataframe, and its index will be the
-            # same as the index of `after_df`
-            # once the indexes are assigned to before, after, and between
-            # we can recombine with a join to get the proper alternation
-            # and complete data per index/section
-            if other_header:
-                other_header_index = np.reshape(
-                    after_index, (-1, len(other_header_values)), order="F"
-                )
-                other_header_index = np.ravel(other_header_index)
-                between_df = between_df.loc[other_header_index, [other_header]]
+            if other_headers:
+                between_df = between_df.loc[index_sorter, other_headers]
             else:
-                other_header_index = None
-                between_df = pd.DataFrame([], index=after_index)
+                between_df = pd.DataFrame([], index=index_sorter)
             if position == 0:  # no index or column_names supplied
                 df = pd.DataFrame.join(between_df, after_df, how="inner")
             else:
@@ -981,3 +971,5 @@ def _computations_pivot_longer(
             before_df, [between_df, after_df], how="inner"
         ).reset_index(drop=True)
         return df.transform(pd.to_numeric, errors="ignore")
+
+# one more idea is to use names_pattern as a list; idea is from R's data.table

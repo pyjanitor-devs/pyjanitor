@@ -1,3 +1,4 @@
+"""Tests for skiperror."""
 import numpy as np
 import pandas as pd
 import pytest
@@ -7,9 +8,15 @@ from janitor.utils import skiperror
 
 @pytest.mark.functions
 def test_skiperror():
+    """
+    Overall test for skiperror.
+
+    TODO: I believe this test should be refactored into smaller "unit" tests.
+    """
     df = pd.DataFrame({"x": [1, 2, 3, "a"], "y": [1, 2, 3, "b"]})
 
     def func(s):
+        """Dummy helper function."""
         return s + 1
 
     # Verify that applying function causes error

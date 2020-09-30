@@ -1412,6 +1412,28 @@ def test_duplicate_dot_value():
         )
 
 
+def test_no_returns_from_regex():
+    "Raise error if there are no returns from the regex in ``names_pattern``."
+    data = pd.DataFrame(
+        {
+            "Sony|TV|Model|value": {0: "A222", 1: "A234", 2: "A4345"},
+            "Sony|TV|Quantity|value": {0: 5, 1: 5, 2: 4},
+            "Sony|TV|Max-quant|value": {0: 10, 1: 9, 2: 9},
+            "Panasonic|TV|Model|value": {0: "T232", 1: "S3424", 2: "X3421"},
+            "Panasonic|TV|Quantity|value": {0: 1, 1: 5, 2: 1},
+            "Panasonic|TV|Max-quant|value": {0: 10, 1: 12, 2: 11},
+            "Sanyo|Radio|Model|value": {0: "S111", 1: "S1s1", 2: "S1s2"},
+            "Sanyo|Radio|Quantity|value": {0: 4, 1: 2, 2: 4},
+            "Sanyo|Radio|Max-quant|value": {0: 9, 1: 9, 2: 10},
+        }
+    )
+    with pytest.raises(ValueError):
+        data.pivot_longer(
+            names_to=("manufacturer", "device", ".value"),
+            names_pattern=r"(\d+)(\d+)(\d+)",
+        )
+
+
 def test_both_names_sep_and_pattern():
     "Raise ValueError if both `names_sep` and `names_pattern` is provided."
     with pytest.raises(ValueError):

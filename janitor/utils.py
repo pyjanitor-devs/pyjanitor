@@ -726,6 +726,8 @@ def _pivot_longer_pattern_match(
     given regular expression.
     """
 
+    # TODO: allow `janitor.patterns` to accept a list/tuple 
+    # of regular expresssions.
     if isinstance(column_names, Pattern):
         column_names = [col for col in df if column_names.search(col)]
 
@@ -889,11 +891,22 @@ def _computations_pivot_longer(
         if isinstance(names_to, str):
             names_to = [names_to]
 
+        # check number of columns
+        # before assigning names_to as `between_df` new columns
         if len(names_to) != between_df.shape[-1]:
             raise ValueError(
                 """
                 Length of ``names_to`` does not match
                 number of columns extracted.
+                """
+            )
+
+        # safeguard for a regex that returns nothing
+        if between_df.empty:
+            raise ValueError(
+                """
+                The regular expression in ``names_pattern`` did not
+                return any matches.
                 """
             )
 
@@ -903,6 +916,8 @@ def _computations_pivot_longer(
         # TODO: What should be the appropriate error message
         # if an inappropriate regular expression is used, that returns
         # an incorrect number of rows? Where should it be detected?
+        # I think the onus lies on the user to provide the right
+        # regex.
 
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the

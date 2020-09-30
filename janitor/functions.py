@@ -4616,7 +4616,7 @@ def pivot_longer(
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[Union[str, Pattern]] = None,
+    names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
 ) -> pd.DataFrame:
@@ -4829,9 +4829,15 @@ def pivot_longer(
         `names_to` contains multiple values. It takes the same
         specification as pandas' `str.split` method, and can be a string
         or regular expression.
-    :param names_pattern: Determines how the column name is broken up. It takes
-        the same specification as pandas' `str.extractall` method, which is
-        a regular expression containing matching groups.
+    :param names_pattern: Determines how the column name is broken up.
+        It can be a regular expression containing matching groups, which
+        matching the same specification as pandas' `str.extractall` method,
+        or a list/tuple of regular expressions, which devolves to
+        ``numpy.select``. For a list of regular expressions, ``names_to``
+        must be a list/tuple and the lengths of both arguments must match.
+        The entries in both arguments must also match, i.e
+        `regex1` in `names_pattern` will be aligned to `new_column_name` in
+        `names_to`, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
@@ -4845,8 +4851,12 @@ def pivot_longer(
         `names_pattern` are provided.
     :raises: ValueError if `names_to` is a string or a list/tuple of length 1,
         and `names_sep` is provided.
-    :raises: TypeError if `names_sep` or `names_pattern` is not a string or
-        regular expression.
+    :raises: TypeError if `names_sep` is not a string or regular expression.
+    :raises: TypeError if `names_pattern` is not a string or a
+        regular expression,or a list/tuple of regular expressions.
+    :raises: ValueError if `names_pattern` is a list/tuple, ``names_to`` is not
+        a list/tuple, and the length of ``names_pattern`` does not  match the
+        length of ``names_to``.
     :raises: ValueError if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
     :raises: Warning if `df` is a MultiIndex dataframe.

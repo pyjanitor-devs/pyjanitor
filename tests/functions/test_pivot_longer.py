@@ -1030,6 +1030,54 @@ names_single_value = [
     ),
 ]
 
+
+names_pattern_list_regex = [
+    (
+        pd.DataFrame(
+            [
+                {
+                    "ID": 1,
+                    "DateRange1Start": "1/1/90",
+                    "DateRange1End": "3/1/90",
+                    "Value1": 4.4,
+                    "DateRange2Start": "4/5/91",
+                    "DateRange2End": "6/7/91",
+                    "Value2": 6.2,
+                    "DateRange3Start": "5/5/95",
+                    "DateRange3End": "6/6/96",
+                    "Value3": 3.3,
+                }
+            ]
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "ID": 1,
+                    "DateRangeStart": "1/1/90",
+                    "DateRangeEnd": "3/1/90",
+                    "Value": 4.4,
+                },
+                {
+                    "ID": 1,
+                    "DateRangeStart": "4/5/91",
+                    "DateRangeEnd": "6/7/91",
+                    "Value": 6.2,
+                },
+                {
+                    "ID": 1,
+                    "DateRangeStart": "5/5/95",
+                    "DateRangeEnd": "6/6/96",
+                    "Value": 3.3,
+                },
+            ]
+        ),
+        "ID",
+        ("DateRangeStart", "DateRangeEnd", "Value"),
+        ("Start$", "End$", "^Value"),
+    ),
+]
+
+
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
 names_to_labels = [1, {12, "newnames"}]
@@ -1072,9 +1120,30 @@ names_sep_type_check = [
     (df_checks, ["rar", "bar"], 1),
     (df_checks, ("rar", "ragnar"), ["\\d+"]),
 ]
+
 names_pattern_type_check = [
     (df_checks, "rar", 1),
-    (df_checks, ["rar"], ["\\d+"]),
+    (df_checks, {"rar"}, {"\\d+"}),
+]
+
+names_pattern_subtype_check = [
+    (df_checks, ["rar", "baz"], ["1", 1]),
+    (df_checks, ("rar", "baz"), ("\\w+", True)),
+]
+
+names_pattern_names_to_type_check = [
+    (df_checks, "rar", ["1"]),
+    (df_checks, {"rar"}, ("\\d+")),
+]
+
+names_pattern_len_type_check = [
+    (df_checks, ["rar", "baz"], ["1"]),
+    (df_checks, ("rar", "baz"), ("\\w+", "\\s+", "\\d+")),
+]
+
+names_pattern_names_to_dot_value_check = [
+    (df_checks, ["rar", ".value"], ["1", "2"]),
+    (df_checks, (".value", "baz"), ("\\w+", "\\s+")),
 ]
 
 
@@ -1147,6 +1216,64 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
     "Raise TypeError if the wrong type provided for `names_pattern`."
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_len", names_pattern_len_type_check
+)
+def test_name_pattern_wrong_len(df, names_to, names_pattern_len):
+    """
+    Raise ValueError if the length of `names_pattern` does not
+    match the length of ``names_to``.
+    """
+    with pytest.raises(ValueError):
+        df.pivot_longer(names_to=names_to, names_pattern=names_pattern_len)
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_subtype", names_pattern_subtype_check
+)
+def test_name_pattern_wrong_subtype(df, names_to, names_pattern_subtype):
+    """
+    Raise TypeError if the sub type in `names_pattern` is the
+    wrong type.
+    """
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to, names_pattern=names_pattern_subtype)
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_names_to_type",
+    names_pattern_names_to_type_check,
+)
+def test_names_pattern_names_to_type(
+    df, names_to, names_pattern_names_to_type
+):
+    """
+    Raise TypeError if `names_pattern` is a list/tuple and
+    names_to is not a list/tuple.
+    """
+    with pytest.raises(TypeError):
+        df.pivot_longer(
+            names_to=names_to, names_pattern=names_pattern_names_to_type
+        )
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_names_to_dot_value",
+    names_pattern_names_to_dot_value_check,
+)
+def test_names_pattern_names_to_dot_value(
+    df, names_to, names_pattern_names_to_dot_value
+):
+    """
+    Raise ValueError if ``names_pattern`` is a list/tuple
+    and '.value' is in ``names_to``.
+    """
+    with pytest.raises(ValueError):
+        df.pivot_longer(
+            names_to=names_to, names_pattern=names_pattern_names_to_dot_value
+        )
 
 
 @pytest.mark.parametrize("df", multi_index_df)
@@ -1343,6 +1470,23 @@ def test_multiple_values_pattern(
         names_to=names_to,
         names_pattern=names_pattern,
         values_to="score",
+    )
+    assert_frame_equal(result, df_out)
+
+
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_pattern", names_pattern_list_regex
+)
+def test_names_pattern_list_regex(
+    df_in, df_out, index, names_to, names_pattern
+):
+    """
+    Test function to extract multiple columns, using the `names_to` and
+    `names_pattern arguments`, if `names_pattern` is a list of regular
+    expressions.
+    """
+    result = df_in.pivot_longer(
+        index=index, names_to=names_to, names_pattern=names_pattern,
     )
     assert_frame_equal(result, df_out)
 

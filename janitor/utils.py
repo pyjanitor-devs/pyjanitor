@@ -609,7 +609,9 @@ def _data_checks_pivot_longer(
 
     """
     This function raises errors or warnings if the arguments have the wrong
-    python type, or if an unneeded argument is provided.
+    python type, or if an unneeded argument is provided. It also raises an
+    error message if `names_pattern` is a list/tuple of regular expressions,
+    and `names_to` is not a list/tuple, and the lengths do not match.
     This function is executed before proceeding to the computation phase.
 
     Type annotations are not provided because this function is where type
@@ -664,7 +666,38 @@ def _data_checks_pivot_longer(
                     """
                 )
     if names_pattern is not None:
-        check("names_pattern", names_pattern, [str, Pattern])
+        check("names_pattern", names_pattern, [str, Pattern, List, Tuple])
+        if isinstance(names_pattern, (List, Tuple)):
+            if not all(
+                isinstance(word, (str, Pattern)) for word in names_pattern
+            ):
+                raise TypeError(
+                    """
+                    All entries in ``names_pattern`` argument
+                    must be regular expressions.
+                    """
+                )
+            if not isinstance(names_to, (List, Tuple)):
+                raise TypeError(
+                    """
+                ``names_to`` must be a list or tuple.
+                """
+                )
+            if len(names_pattern) != len(names_to):
+                raise ValueError(
+                    """
+                    Length of ``names_to`` does not match
+                    number of patterns.
+                    """
+                )
+
+            if ".value" in names_to:
+                raise ValueError(
+                    """
+                    ``.value`` not accepted if ``names_pattern``
+                    is a list/tuple.
+                    """
+                )
 
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
@@ -709,10 +742,9 @@ def _reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
     temporary measure until the minimum pandas version is 1.1, where we can
     take advantage of the `ignore_index` argument in `pd.melt`.
 
-    Example: if columns are `id, ht1, ht2, ht3`, then depending on the
-    arguments passed, the column in the reshaped dataframe, based on this
-    function, will look like `1,2,3,1,2,3,1,2,3...`. This way, we ensure that
-    for every index, there is a complete set of the data.
+    Example: if the index column is `id`, and the values are :
+    [1,2,3,3,2,1,2,3], then when melted, the index column in the reshaped
+    dataframe, based on this function, will look like `1,1,1,2,2,2,3,3,3...`.
 
     A reindexed dataframe is returned.
     """
@@ -724,7 +756,6 @@ def _reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
         if "index" in indexer:
             frame = frame.drop("index", axis=1)
     sorter = np.reshape(frame.index, (-1, uniq_index_length))
-    # reshaped in Fortan order achieves the alternation
     sorter = np.ravel(sorter, order="F")
     return frame.reindex(sorter)
 
@@ -745,20 +776,29 @@ def _computations_pivot_longer(
     unpivoting :
 
     1. Regular data unpivoting is covered with pandas melt.
+    For the scenarios below, the dataframe is melted and separated into a
+    `before_df`, `between_df` and `after_df`.
     2. if the length of `names_to` is > 1, the function unpivots the data,
-       using `pd.melt`, and then separates into individual columns, using
-       `str.split(expand=True)` if `names_sep` is provided or
-       `str.extractall()` if `names_pattern is provided. The labels in
+       using `pd.melt`, and then separates `between_df` into individual
+       columns, using `str.split(expand=True)` if `names_sep` is provided
+       or `str.extractall()` if `names_pattern is provided. The labels in
        `names_to` become the new column names.
     3. If `names_to` contains `.value`, then the function replicates
        `pd.wide_to_long`, using `pd.melt`. Unlike `pd.wide_to_long`, the
        stubnames do not have to be prefixes, they just need to match the
        position of `.value` in `names_to`. Just like in 2 above, the columns
-       are separated into individual columns. The labels in the column
-       corresponding to `.value` become the new column names, and override
-       `values_to` in the process. The other extracted column stays
-       (if len(`names_to`) is > 1), with the other name in `names_to` as
-       its column name.
+       in `between_df` are separated into individual columns. The labels in
+       the column corresponding to `.value` become the new column names, and
+       override `values_to` in the process. The other extracted columns stay
+       (if len(`names_to`) > 1), with the other names in `names_to` as
+       its column names.
+    4. If `names_pattern` is a list/tuple of regular expressions, it is
+       paired with `names_to`, which should be a list/tuple of new column
+       names. `.value` is not permissible in this scenario.
+       `numpy select` is called, along with `pd.Series.str.contains`,
+       to get rows in the `between_df` column that matches the regular
+       expressions in `names_pattern`. The labels in `names_to` replaces
+       the matched rows and become the new column names in the new dataframe.
 
     The function also tries to emulate the way the source data is structured.
     Say data looks like this :
@@ -816,7 +856,6 @@ def _computations_pivot_longer(
         df = pd.melt(
             df, id_vars=index, value_vars=column_names, var_name=uniq_name
         )
-
         # pd.melt returns uniq_name and value as the last columns. We can use
         # that knowledge to get the data before( the index column(s)),
         # the data between (our uniq_name column),
@@ -832,7 +871,20 @@ def _computations_pivot_longer(
         if names_sep is not None:
             between_df = between_df.str.split(names_sep, expand=True)
         else:
-            between_df = between_df.str.extractall(names_pattern).droplevel(-1)
+            # this takes care of scenario 4
+            if isinstance(names_pattern, (list, tuple)):
+                condlist = [
+                    between_df.str.contains(regex) for regex in names_pattern
+                ]
+                between_df = np.select(condlist, names_to, None)
+                names_to = [".value"]
+                between_df = pd.DataFrame(between_df, columns=names_to)
+                if between_df.loc[:, ".value"].hasnans:
+                    between_df = between_df.dropna()
+            else:
+                between_df = between_df.str.extractall(
+                    names_pattern
+                ).droplevel(-1)
         # set_axis function labels argument takes only list-like objects
         if isinstance(names_to, str):
             names_to = [names_to]
@@ -844,8 +896,13 @@ def _computations_pivot_longer(
                 number of columns extracted.
                 """
             )
+
         before_df = _reindex_func(before_df, index)
         between_df = between_df.set_axis(names_to, axis="columns")
+
+        # TODO: What should be the appropriate error message
+        # if an inappropriate regular expression is used, that returns
+        # an incorrect number of rows? Where should it be detected?
 
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the
@@ -856,7 +913,7 @@ def _computations_pivot_longer(
 
         # Let's see an example of a paired column
         # say we have this data :
-        # code is copied from pandas wide_to_long documentation
+        # data is copied from pandas wide_to_long documentation
         # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.wide_to_long.html
         #     famid  birth  ht1  ht2
         # 0      1      1  2.8  3.4
@@ -971,5 +1028,6 @@ def _computations_pivot_longer(
             before_df, [between_df, after_df], how="inner"
         ).reset_index(drop=True)
         return df.transform(pd.to_numeric, errors="ignore")
+
 
 # one more idea is to use names_pattern as a list; idea is from R's data.table

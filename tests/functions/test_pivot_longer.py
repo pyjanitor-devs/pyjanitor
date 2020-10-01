@@ -1603,22 +1603,3 @@ def test_single_value(df_in, df_out, index, names_pattern):
         index=index, names_to=".value", names_pattern=names_pattern
     )
     assert_frame_equal(result, df_out)
-
-
-df = pd.DataFrame(
-    {
-        "Race": ["Elf", "Hobbit", "Man"],
-        "Female_FoTR": [1229, 14, 0],
-        "Male_FoTR": [971, 3644, 1995],
-        "Female_TT": [331, 0, 401],
-        "Male_TT": [513, 2463, 3589],
-        "Female_RoTK": [183, 2, 268],
-        "Male_RoTK": [510, 2673, 2459],
-    }
-)
-
-print(
-    df.pivot_longer(
-        "Race", names_pattern=("FoTR$", "TT$"), names_to=("FOTR", "TT")
-    )
-)

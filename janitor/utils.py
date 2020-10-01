@@ -782,7 +782,7 @@ def _computations_pivot_longer(
     `before_df`, `between_df` and `after_df`.
     2. if the length of `names_to` is > 1, the function unpivots the data,
        using `pd.melt`, and then separates `between_df` into individual
-       columns, using `str.split(expand=True)` if `names_sep` is provided
+       columns, using `str.split(expand=True)` if `names_sep` is provided,
        or `str.extractall()` if `names_pattern is provided. The labels in
        `names_to` become the new column names.
     3. If `names_to` contains `.value`, then the function replicates
@@ -1007,7 +1007,7 @@ def _computations_pivot_longer(
                 between_df = between_df.sort_values([".value"] + other_headers)
             else:
                 other_headers = None
-                # index order not assured if just ``.value` and quicksort
+                # index order not assured if just .value` and quicksort
                 between_df = between_df.sort_values(
                     [".value"], kind="mergesort"
                 )

@@ -726,7 +726,7 @@ def _pivot_longer_pattern_match(
     given regular expression.
     """
 
-    # TODO: allow `janitor.patterns` to accept a list/tuple 
+    # TODO: allow `janitor.patterns` to accept a list/tuple
     # of regular expresssions.
     if isinstance(column_names, Pattern):
         column_names = [col for col in df if column_names.search(col)]
@@ -746,7 +746,7 @@ def _reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
 
     Example: if the index column is `id`, and the values are :
     [1,2,3,3,2,1,2,3], then when melted, the index column in the reshaped
-    dataframe, based on this function, will look like `1,1,1,2,2,2,3,3,3...`.
+    dataframe, based on this function, will look like `1,1,1,2,2,2,3,3,3`.
 
     A reindexed dataframe is returned.
     """
@@ -874,6 +874,8 @@ def _computations_pivot_longer(
             between_df = between_df.str.split(names_sep, expand=True)
         else:
             # this takes care of scenario 4
+            # and reconfigures it so it takes the scenario 3 path
+            # with `.value`
             if isinstance(names_pattern, (list, tuple)):
                 condlist = [
                     between_df.str.contains(regex) for regex in names_pattern
@@ -913,11 +915,11 @@ def _computations_pivot_longer(
         before_df = _reindex_func(before_df, index)
         between_df = between_df.set_axis(names_to, axis="columns")
 
-        # TODO: What should be the appropriate error message
+        # What should be the appropriate error message
         # if an inappropriate regular expression is used, that returns
         # an incorrect number of rows? Where should it be detected?
-        # I think the onus lies on the user to provide the right
-        # regex.
+        # Personally, I think the onus lies on the user to provide
+        # the right regex.
 
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the
@@ -962,14 +964,21 @@ def _computations_pivot_longer(
         # 16      3      3   1  2.1
         # 17      3      3   2  2.9
 
-        # we have height(`ht`) and age(`1,2`) paired in the column name.
+        # We have height(`ht`) and age(`1,2`) paired in the column name.
+        # We pass ``names_to`` as ('.value', 'age'), and names_pattern
+        # as "(ht)(\d)". If ``names_to`` and ``names_pattern`` are paired,
+        # we get --> {".value":"ht", "age": "\d"}.
+        # This instructs the function to keep "ht" as a column name
+        # (since it is directly mapped to `.value`) in the new dataframe,
+        # and create a new `age` column, that contains all the numbers.
+        # Also, the code tries to ensure a complete collection for each index;
+        # sorted in their order of appearance in the source dataframe.
         # Note how `1, 2` is repeated for the extracted age column for each
         # combination of `famid` and `birth`. The repeat of `1,2` also
         # simulates how it looks in the source data : `ht1 > ht2`.
         # As such, for every index, there is a complete set of the data;
         # the user can visually see the unpivoted data for each index
         # and be assured of complete/accurate sync.
-        # The code below achieves that.
 
         # scenario 3
         if ".value" in names_to:
@@ -978,6 +987,9 @@ def _computations_pivot_longer(
                     "Column name `.value` must not be duplicated."
                 )
             # extract new column names and assign category dtype
+            # apart from memory usage, the primary aim of the category
+            # dtype is to ensure that the data is sorted in order of
+            # appearance in the source dataframe
             between_df_unique_values = {
                 key: pd.unique(value) for key, value in between_df.items()
             }
@@ -1043,6 +1055,3 @@ def _computations_pivot_longer(
             before_df, [between_df, after_df], how="inner"
         ).reset_index(drop=True)
         return df.transform(pd.to_numeric, errors="ignore")
-
-
-# one more idea is to use names_pattern as a list; idea is from R's data.table

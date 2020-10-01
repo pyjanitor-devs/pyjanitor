@@ -4726,6 +4726,13 @@ def pivot_longer(
         2  treat1         2         5
         3  treat2         3         4
 
+    Let's break down the `.value` idea a bit. When `.value` is used,
+    `pivot_longer` creates a pairing. In the example above, we get a pairing
+    {"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}. All
+    the values associated with `.value` become new column names, while those
+    not associated with `.value`(`treat1` and `treat2`) become values in a
+    new column `group`. `values_to` is overridden during this process.
+
     Example 4: We can also pivot from wide to long using regular expressions
 
     .. code-block:: python
@@ -4742,6 +4749,15 @@ def pivot_longer(
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
+
+    The same idea of `.value` works here as well. Based on the capturing groups
+    in the regex in `names_pattern`, we have two pairings -->
+    {".value":["n", "pct"], "name":[1,2,3]}. Just like in the previous example,
+    the values associated with `.value` become new column names, while those
+    not associated with `.value` become values in the new column ``name``.
+
+    Note that there are no limits to the pairing; however, you can only have
+    one `.value` in ``names_to``.
 
     You can also take advantage of `janitor.patterns` function, which allows
     selection of columns via a regular expression; this can come in handy if
@@ -4808,15 +4824,14 @@ def pivot_longer(
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
-        Should be either a single column name, a list/tuple of
-        column names, or a or a `janitor.patterns` function. You can
-        also dynamically select column names by using a regular
-        expression with the `janitor.patterns` function.
+        Should be either a single column name, or a list/tuple of
+        column names. You can also dynamically select column names
+        by using a regular expression with the `janitor.patterns`
+        function.
     :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name, a list/tuple of column names, or a
-        `janitor.patterns` function. You can also dynamically select
-        column names by using a regular expression with the
-        `janitor.patterns` function.
+        a single column name, a list/tuple of column names. You can also
+        dynamically select column names by using a regular expression
+        with the `janitor.patterns` function.
     :param names_to: Name of new column as a string that will contain
         what were previously the column names in `column_names`.
         The default is `variable` if no value is provided. It can
@@ -4830,32 +4845,35 @@ def pivot_longer(
         specification as pandas' `str.split` method, and can be a string
         or regular expression.
     :param names_pattern: Determines how the column name is broken up.
-        It can be a regular expression containing matching groups, which
+        It can be a regular expression containing matching groups
         matching the same specification as pandas' `str.extractall` method,
         or a list/tuple of regular expressions, which devolves to
-        ``numpy.select``. For a list of regular expressions, ``names_to``
-        must be a list/tuple and the lengths of both arguments must match.
-        The entries in both arguments must also match, i.e
-        `regex1` in `names_pattern` will be aligned to `new_column_name` in
-        `names_to`, and so on.
+        ``numpy.select`` and pandas' ``str.contains``. For a list of
+        regular expressions, ``names_to`` must be a list/tuple and the
+        lengths of both arguments must match. The entries in both arguments
+        must also match positionally, i.e  if `regex1` in `names_pattern` is
+        the first item, it will be aligned to `new_column_name_1` in `names_to`
+        if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
     :raises: TypeError if `index` or `column_names` is not a string, or a
         list/tuple of strings, or a `janitor.patterns` function.
-    :raises: TypeError if `names_to` or `column_names` is not a string, or a
-        list/tuple of strings.
+    :raises: TypeError if `names_to` is not a string, or a list/tuple of
+        strings.
     :raises: TypeError if `values_to` is not a string.
     :raises: ValueError if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
     :raises: ValueError if `names_to` is a string or a list/tuple of length 1,
         and `names_sep` is provided.
     :raises: TypeError if `names_sep` is not a string or regular expression.
-    :raises: TypeError if `names_pattern` is not a string or a
-        regular expression,or a list/tuple of regular expressions.
-    :raises: ValueError if `names_pattern` is a list/tuple, ``names_to`` is not
-        a list/tuple, and the length of ``names_pattern`` does not  match the
+    :raises: TypeError if `names_pattern` is not a string or a regular
+        expression, or a list/tuple of regular expressions.
+    :raises: ValueError if `names_pattern` is a list/tuple, and ``names_to`` is
+        not a list/tuple.
+    :raises: ValueError if `names_pattern` is a list/tuple, ``names_to`` is a
+        list/tuple, and the length of ``names_pattern`` does not  match the
         length of ``names_to``.
     :raises: ValueError if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.

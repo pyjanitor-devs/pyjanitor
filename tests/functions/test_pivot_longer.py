@@ -38,6 +38,125 @@ paired_columns_pattern = [
     (
         pd.DataFrame(
             {
+                "off_loc": ["A", "B", "C", "D", "E", "F"],
+                "pt_loc": ["G", "H", "I", "J", "K", "L"],
+                "pt_lat": [
+                    100.07548220000001,
+                    75.191326,
+                    122.65134479999999,
+                    124.13553329999999,
+                    124.13553329999999,
+                    124.01028909999998,
+                ],
+                "off_lat": [
+                    121.271083,
+                    75.93845266,
+                    135.043791,
+                    134.51128400000002,
+                    134.484374,
+                    137.962195,
+                ],
+                "pt_long": [
+                    4.472089953,
+                    -144.387785,
+                    -40.45611048,
+                    -46.07156181,
+                    -46.07156181,
+                    -46.01594293,
+                ],
+                "off_long": [
+                    -7.188632000000001,
+                    -143.2288569,
+                    21.242563,
+                    40.937416999999996,
+                    40.78472,
+                    22.905889000000002,
+                ],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "set": "off",
+                    "loc": "A",
+                    "lat": 121.271083,
+                    "long": -7.188632000000001,
+                },
+                {
+                    "set": "off",
+                    "loc": "B",
+                    "lat": 75.93845266,
+                    "long": -143.2288569,
+                },
+                {
+                    "set": "off",
+                    "loc": "C",
+                    "lat": 135.043791,
+                    "long": 21.242563,
+                },
+                {
+                    "set": "off",
+                    "loc": "D",
+                    "lat": 134.51128400000002,
+                    "long": 40.937416999999996,
+                },
+                {
+                    "set": "off",
+                    "loc": "E",
+                    "lat": 134.484374,
+                    "long": 40.78472,
+                },
+                {
+                    "set": "off",
+                    "loc": "F",
+                    "lat": 137.962195,
+                    "long": 22.905889000000002,
+                },
+                {
+                    "set": "pt",
+                    "loc": "G",
+                    "lat": 100.07548220000001,
+                    "long": 4.472089953,
+                },
+                {
+                    "set": "pt",
+                    "loc": "H",
+                    "lat": 75.191326,
+                    "long": -144.387785,
+                },
+                {
+                    "set": "pt",
+                    "loc": "I",
+                    "lat": 122.65134479999999,
+                    "long": -40.45611048,
+                },
+                {
+                    "set": "pt",
+                    "loc": "J",
+                    "lat": 124.13553329999999,
+                    "long": -46.07156181,
+                },
+                {
+                    "set": "pt",
+                    "loc": "K",
+                    "lat": 124.13553329999999,
+                    "long": -46.07156181,
+                },
+                {
+                    "set": "pt",
+                    "loc": "L",
+                    "lat": 124.01028909999998,
+                    "long": -46.01594293,
+                },
+            ]
+        ),
+        None,
+        ("set", ".value"),
+        "(.+)_(.+)",
+    ),
+    (
+        pd.DataFrame(
+            {
                 "id": [1, 2, 3],
                 "M_start_date_1": [201709, 201709, 201709],
                 "M_end_date_1": [201905, 201905, 201905],
@@ -926,128 +1045,6 @@ multiple_values_pattern = [
 ]
 
 
-# https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/10
-paired_columns_no_index_pattern = [
-    (
-        pd.DataFrame(
-            {
-                "off_loc": ["A", "B", "C", "D", "E", "F"],
-                "pt_loc": ["G", "H", "I", "J", "K", "L"],
-                "pt_lat": [
-                    100.07548220000001,
-                    75.191326,
-                    122.65134479999999,
-                    124.13553329999999,
-                    124.13553329999999,
-                    124.01028909999998,
-                ],
-                "off_lat": [
-                    121.271083,
-                    75.93845266,
-                    135.043791,
-                    134.51128400000002,
-                    134.484374,
-                    137.962195,
-                ],
-                "pt_long": [
-                    4.472089953,
-                    -144.387785,
-                    -40.45611048,
-                    -46.07156181,
-                    -46.07156181,
-                    -46.01594293,
-                ],
-                "off_long": [
-                    -7.188632000000001,
-                    -143.2288569,
-                    21.242563,
-                    40.937416999999996,
-                    40.78472,
-                    22.905889000000002,
-                ],
-            }
-        ),
-        pd.DataFrame(
-            [
-                {
-                    "set": "off",
-                    "loc": "A",
-                    "lat": 121.271083,
-                    "long": -7.188632000000001,
-                },
-                {
-                    "set": "off",
-                    "loc": "B",
-                    "lat": 75.93845266,
-                    "long": -143.2288569,
-                },
-                {
-                    "set": "off",
-                    "loc": "C",
-                    "lat": 135.043791,
-                    "long": 21.242563,
-                },
-                {
-                    "set": "off",
-                    "loc": "D",
-                    "lat": 134.51128400000002,
-                    "long": 40.937416999999996,
-                },
-                {
-                    "set": "off",
-                    "loc": "E",
-                    "lat": 134.484374,
-                    "long": 40.78472,
-                },
-                {
-                    "set": "off",
-                    "loc": "F",
-                    "lat": 137.962195,
-                    "long": 22.905889000000002,
-                },
-                {
-                    "set": "pt",
-                    "loc": "G",
-                    "lat": 100.07548220000001,
-                    "long": 4.472089953,
-                },
-                {
-                    "set": "pt",
-                    "loc": "H",
-                    "lat": 75.191326,
-                    "long": -144.387785,
-                },
-                {
-                    "set": "pt",
-                    "loc": "I",
-                    "lat": 122.65134479999999,
-                    "long": -40.45611048,
-                },
-                {
-                    "set": "pt",
-                    "loc": "J",
-                    "lat": 124.13553329999999,
-                    "long": -46.07156181,
-                },
-                {
-                    "set": "pt",
-                    "loc": "K",
-                    "lat": 124.13553329999999,
-                    "long": -46.07156181,
-                },
-                {
-                    "set": "pt",
-                    "loc": "L",
-                    "lat": 124.01028909999998,
-                    "long": -46.01594293,
-                },
-            ]
-        ),
-        ("set", ".value"),
-        "(.+)_(.+)",
-    )
-]
-
 names_single_value = [
     (
         pd.DataFrame(
@@ -1571,20 +1568,6 @@ def test_names_pattern_list_regex(
     result = df_in.pivot_longer(
         index=index, names_to=names_to, names_pattern=names_pattern,
     )
-    assert_frame_equal(result, df_out)
-
-
-@pytest.mark.parametrize(
-    "df_in,df_out,names_to,names_pattern", paired_columns_no_index_pattern
-)
-def test_paired_columns_no_index_pattern(
-    df_in, df_out, names_to, names_pattern
-):
-    """
-    Test function where `.value` is in the `names_to` argument, names_pattern
-    is used and no index is supplied.
-    """
-    result = df_in.pivot_longer(names_to=names_to, names_pattern=names_pattern)
     assert_frame_equal(result, df_out)
 
 

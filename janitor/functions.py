@@ -1115,7 +1115,8 @@ def deconcatenate_column(
     if isinstance(df[column_name].iloc[0], str):
         if sep is None:
             raise ValueError(
-                "`sep` must be specified if the column values are of type `str`."
+                "`sep` must be specified if the column values "
+                "are of type `str`."
             )
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:

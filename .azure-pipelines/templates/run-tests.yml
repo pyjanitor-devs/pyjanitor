@@ -14,7 +14,7 @@ steps:
   - script: |
       $(activate.command) pyjanitor-dev
       darglint janitor -v 2
-    displyName: 'Docstring linter: darglint'
+    displayName: 'Docstring linter: darglint'
   - script: |
       $(activate.command) pyjanitor-dev
       pytest

@@ -8,7 +8,7 @@ Every little bit helps, and credit will always be given.
 The following sections detail a variety of ways to contribute,
 as well as how to get started.
 
-.. note:: Please take a look at the `types of Contributions  <CONTRIBUTION_TYPES.html>`__  that we welcome,
+.. note:: Please take a look at the `types of Contributions  <https://ericmjl.github.io/pyjanitor/CONTRIBUTION_TYPES.html>`__  that we welcome,
     along with the guidelines.
 
 Get Started!

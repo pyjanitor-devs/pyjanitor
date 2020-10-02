@@ -27,4 +27,4 @@ repos:
   rev: master
   hooks:
   - id: darglint
-    args: [-v 2]
+    args: [-v 2]  # this config makes the error messages a bit less cryptic.

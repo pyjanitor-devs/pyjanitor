@@ -3183,7 +3183,9 @@ def _find_replace(
         regular-expression-based fuzzy match will be used for finding patterns.
         Default to "exact". Can only be "exact" or "regex".
     :returns: A pandas DataFrame.
-    :raises: ValueError
+    :raises ValueError: is trying to use null replacement. Kindly use
+        ``.fillna()`` instead.
+    :raises ValueError: if ``match`` is not one of 'exact' or 'regex'.
     """
     if any(map(pd.isna, mapper.keys())):
         raise ValueError(
@@ -3247,10 +3249,12 @@ def update_where(
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
-    :raises: IndexError if ``conditions`` does not have the same length as
+    :raises IndexError: if ``conditions`` does not have the same length as
         ``df``.
-    :raises: TypeError if ``conditions`` is not a pandas-compatible string
+    :raises TypeError: if ``conditions`` is not a pandas-compatible string
         query.
+
+    .. # noqa: DAR402
     """
 
     # use query mode if a string expression is passed
@@ -3657,29 +3661,29 @@ def flag_nulls(
         import pandas as pd
         import janitor as jn
 
-        data = pd.DataFrame(
+        df = pd.DataFrame(
             {'a': [1, 2, None, 4],
              'b': [5.0, None, 7.0, 8.0]})
 
         df.flag_nulls()
         #  'a' | 'b'  | 'null_flag'
         #   1  | 5.0  |   0
-        #   2  | None |   1
-        # None | 7.0  |   1
+        #   2  | NaN  |   1
+        #  NaN | 7.0  |   1
         #   4  | 8.0  |   0
 
-        jn.functions.flag_nulls(data)
+        jn.functions.flag_nulls(df)
         #  'a' | 'b'  | 'null_flag'
         #   1  | 5.0  |   0
-        #   2  | None |   1
-        # None | 7.0  |   1
+        #   2  | NaN  |   1
+        #  NaN | 7.0  |   1
         #   4  | 8.0  |   0
 
         df.flag_nulls(columns=['b'])
         #  'a' | 'b'  | 'null_flag'
         #   1  | 5.0  |   0
-        #   2  | None |   1
-        # None | 7.0  |   0
+        #   2  | NaN  |   1
+        #  NaN | 7.0  |   0
         #   4  | 8.0  |   0
 
 
@@ -3689,7 +3693,12 @@ def flag_nulls(
         only want to look at one column, you can simply give its name. If set
         to None (default), all DataFrame columns are used.
     :returns: Input dataframe with the null flag column.
-    :raises: ValueError
+    :raises ValueError: if ``column_name`` is already present in the
+        DataFrame.
+    :raises ValueError: if a column within ``columns`` is no present in
+        the DataFrame.
+
+    .. # noqa: DAR402
     """
     # Sort out columns input
     if isinstance(columns, str):
@@ -4902,20 +4911,22 @@ def pivot_longer(
         were previously the values of the columns in `column_names`.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
-    :raises: TypeError if `index` or `column_names` is not a string, or a
+    :raises TypeError: if `index` or `column_names` is not a string, or a
         list/tuple of strings, or a `janitor.patterns` function.
-    :raises: TypeError if `names_to` or `column_names` is not a string, or a
+    :raises TypeError: if `names_to` or `column_names` is not a string, or a
         list/tuple of strings.
-    :raises: TypeError if `values_to` is not a string.
-    :raises: ValueError if `names_to` is a list/tuple, and both `names_sep` and
+    :raises TypeError: if `values_to` is not a string.
+    :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
-    :raises: ValueError if `names_to` is a string or a list/tuple of length 1,
+    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
         and `names_sep` is provided.
-    :raises: TypeError if `names_sep` or `names_pattern` is not a string or
+    :raises TypeError: if `names_sep` or `names_pattern` is not a string or
         regular expression.
-    :raises: ValueError if `names_to` is a list/tuple, and its length does not
+    :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises: Warning if `df` is a MultiIndex dataframe.
+    :raises Warning: if `df` is a MultiIndex dataframe.
+
+    .. # noqa: DAR402
     """
 
     # this code builds on the wonderful work of @benjaminjack’s PR

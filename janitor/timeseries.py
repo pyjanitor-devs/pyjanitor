@@ -393,14 +393,14 @@ def flag_jumps(
              the defaults for each criteria is used.
         Defaults to False.
     :returns: Dataframe that has flag jump columns.
-    :raises: JanitorError if ``strict=True`` and at least one of
+    :raises JanitorError: if ``strict=True`` and at least one of
         ``scale``, ``direction``, or ``threshold`` inputs is not a
         dictionary.
-    :raises: JanitorError if ``scale`` is not one of
+    :raises JanitorError: if ``scale`` is not one of
         ``["absolute", "percentage"]``.
-    :raises: JanitorError if ``direction`` is not one of
+    :raises JanitorError: if ``direction`` is not one of
         ``["increasing", "decreasing", "any"]``.
-    :raises: JanitorError if ``threshold`` is less than 0.0.
+    :raises JanitorError: if ``threshold`` is less than 0.0.
     """
     df = df.copy()
 

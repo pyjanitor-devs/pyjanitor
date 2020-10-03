@@ -1,5 +1,7 @@
 black>=19.3b0
+darglint
 hypothesis>=4.4.0
+interrogate
 ipykernel
 isort>=4.3.18
 jupyter_client
@@ -17,5 +19,3 @@ setuptools>=38.5.2
 sphinxcontrib-fulltoc==1.2.0
 unyt
 xarray
-pandas-vet
-interrogate

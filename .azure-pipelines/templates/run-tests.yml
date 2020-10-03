@@ -10,7 +10,11 @@ steps:
   - script: |
       $(activate.command) pyjanitor-dev
       interrogate
-    displayName: 'Docstring coverage'
+    displayName: 'Docstring coverage: interrogate'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      darglint janitor -v 2
+    displayName: 'Docstring linter: darglint'
   - script: |
       $(activate.command) pyjanitor-dev
       pytest

@@ -91,6 +91,7 @@ def unionize_dataframe_categories(
     :param column_names: If supplied, only unionize this subset of columns.
     :returns: A list of the category-unioned dataframes in the same order they
         were provided.
+    :raises TypeError: if any inputs are not pandas DataFrames.
     """
 
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
@@ -173,15 +174,18 @@ def move(
         axis=0)
 
     :param df: The pandas Dataframe object.
-    :param int or str source: column or row to move
-    :param str target: column or row to move adjacent to
-    :param str position: Specifies whether the Series is moved to before or
+    :param source: column or row to move
+    :param target: column or row to move adjacent to
+    :param position: Specifies whether the Series is moved to before or
         after the adjacent Series. Values can be either 'before' or 'after';
         defaults to 'before'.
-    :param int axis: Axis along which the function is applied. 0 to move a
+    :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
     :returns: The dataframe with the Series moved.
-
+    :raises ValueError: if ``axis`` is not ``0`` or ``1``.
+    :raises ValueError: if ``position`` is not ``before`` or ``after``.
+    :raises ValueError: if  ``source`` row or column is not in dataframe.
+    :raises ValueError: if ``target`` row or column is not in dataframe.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
@@ -283,6 +287,8 @@ def clean_names(
         Default 'lower' makes all characters lowercase.
     :param remove_special: (optional) Remove special characters from columns.
         Only letters, numbers and underscores are preserved.
+    :param strip_accents: Whether or not to remove accents from
+        columns names.
     :param preserve_original_columns: (optional) Preserve original names.
         This is later retrievable using `df.original_columns`.
     :param enforce_string: Whether or not to convert all column names
@@ -442,7 +448,7 @@ def get_dupes(
         df = pd.DataFrame(...).get_dupes()
 
     :param df: The pandas DataFrame object.
-    :param str/iterable column_names: (optional) A column name or an iterable
+    :param column_names: (optional) A column name or an iterable
         (list or tuple) of column names. Following pandas API, this only
         considers certain columns for identifying duplicates. Defaults to using
         all columns.
@@ -479,19 +485,23 @@ def encode_categorical(
         df = pd.DataFrame(...).encode_categorical(columns=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param Hashable/iterable column_names: A column name or an iterable (list or
+    :param column_names: A column name or an iterable (list or
         tuple) of column names.
-    :returns: A pandas DataFrame
+    :returns: A pandas DataFrame.
+    :raises JanitorError: if a column specified within ``column_names``
+        is not found in the DataFrame.
+    :raises JanitorError: if ``column_names`` is not hashable
+        nor iterable.
     """  # noqa: E501
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             if col not in df.columns:
-                raise JanitorError(f"{col} missing from dataframe columns!")
+                raise JanitorError(f"{col} missing from DataFrame columns!")
             df[col] = pd.Categorical(df[col])
     elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
             raise JanitorError(
-                f"{column_names} missing from dataframe columns!"
+                f"{column_names} missing from DataFrame columns!"
             )
         df[column_names] = pd.Categorical(df[column_names])
     else:
@@ -533,19 +543,25 @@ def label_encode(
         df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
 
     :param df: The pandas DataFrame object.
-    :param Hashable/iterable column_names: A column name or an iterable (list
+    :param column_names: A column name or an iterable (list
         or tuple) of column names.
     :returns: A pandas DataFrame.
+    :raises JanitorError: if a column specified within ``column_names``
+        is not found in the DataFrame.
+    :raises JanitorError: if ``column_names`` is not hashable
+        nor iterable.
     """
     le = LabelEncoder()
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             if col not in df.columns:
-                raise JanitorError(f"{col} missing from column_names")
+                raise JanitorError(f"{col} missing from DataFrame columns!")
             df[f"{col}_enc"] = le.fit_transform(df[col])
     elif isinstance(column_names, Hashable):
         if column_names not in df.columns:
-            raise JanitorError(f"{column_names} missing from column_names")
+            raise JanitorError(
+                f"{column_names} missing from DataFrame columns!"
+            )
         df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     else:
         raise JanitorError(
@@ -659,12 +675,14 @@ def reorder_columns(
     :param column_order: A list of column names or Pandas `Index`
         specifying their order in the returned `DataFrame`.
     :returns: A pandas DataFrame with reordered columns.
+    :raises IndexError: if a column within ``column_order`` is not found
+        within the DataFrame.
     """
     check("column_order", column_order, [list, tuple, pd.Index])
 
     if any(col not in df.columns for col in column_order):
         raise IndexError(
-            "A column in column_order was not found in the DataFrame."
+            "A column in ``column_order`` was not found in the DataFrame."
         )
 
     # if column_order is a Pandas index, needs conversion to list:
@@ -716,8 +734,8 @@ def coalesce(
 
     :param df: A pandas DataFrame.
     :param column_names: A list of column names.
-    :param str new_column_name: The new column name after combining.
-    :param bool delete_columns: Whether to delete the columns being coalesced
+    :param new_column_name: The new column name after combining.
+    :param delete_columns: Whether to delete the columns being coalesced
     :returns: A pandas DataFrame with coalesced columns.
     """
     series = [df[c] for c in column_names]
@@ -761,7 +779,7 @@ def convert_excel_date(
         df = pd.DataFrame(...).convert_excel_date('date')
 
     :param df: A pandas DataFrame.
-    :param Hashable column_name: A column name.
+    :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     df[column_name] = pd.TimedeltaIndex(
@@ -800,7 +818,7 @@ def convert_matlab_date(
         df = pd.DataFrame(...).convert_matlab_date('date')
 
     :param df: A pandas DataFrame.
-    :param Hashable column_name: A column name.
+    :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """  # noqa: E501
     days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
@@ -837,7 +855,7 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         df = pd.DataFrame(...).convert_unix_date('date')
 
     :param df: A pandas DataFrame.
-    :param Hashable column_name: A column name.
+    :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
     """
 
@@ -880,16 +898,18 @@ def fill_empty(
         those columns will all be filled with the same value.
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `Nan` values filled.
+    :raises JanitorError: if a column specified within ``column_names``
+        is not found in the DataFrame.
     """
     if isinstance(column_names, list) or isinstance(column_names, tuple):
         for col in column_names:
             if col not in df.columns:
-                raise JanitorError(f"{col} missing from dataframe columns!")
+                raise JanitorError(f"{col} missing from DataFrame columns!")
             df[col] = df[col].fillna(value)
     else:
         if column_names not in df.columns:
             raise JanitorError(
-                f"{column_names} missing from dataframe columns!"
+                f"{column_names} missing from DataFrame columns!"
             )
         df[column_names] = df[column_names].fillna(value)
 
@@ -927,7 +947,7 @@ def expand_column(
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.
     :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
-    :param bool concat: Whether to return the expanded column concatenated to
+    :param concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).
     :returns: A pandas DataFrame with an expanded column.
@@ -977,6 +997,8 @@ def concatenate_columns(
     :param new_column_name: The name of the new column.
     :param sep: The separator between each column's data.
     :returns: A pandas DataFrame with concatenated columns.
+    :raises JanitorError: if at least two columns are not provided
+        within ``column_names``.
     """
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")
@@ -1077,22 +1099,29 @@ def deconcatenate_column(
     :param preserve_position: Boolean for whether or not to preserve original
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
+    :raises ValueError: if ``column_name`` is not present in the
+        DataFrame.
+    :raises ValueError: if ``sep`` is not provided and the column values
+        are of type ``str``.
+    :raises ValueError: if either ``new_column_names`` or ``autoname``
+        is not supplied.
+    :raises JanitorError: if incorrect number of names is provided
+        within ``new_column_names``.
     """
 
     if column_name not in df.columns:
-        raise ValueError(f"column name {column_name} not present in dataframe")
+        raise ValueError(f"column name {column_name} not present in DataFrame")
 
     if isinstance(df[column_name].iloc[0], str):
         if sep is None:
             raise ValueError(
-                "`sep` must be specified if the column values are " "strings."
+                "`sep` must be specified if the column values "
+                "are of type `str`."
             )
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:
         df_deconcat = pd.DataFrame(
-            df[column_name].to_list(),
-            columns=new_column_names,
-            index=df.index,
+            df[column_name].to_list(), columns=new_column_names, index=df.index
         )
 
     if preserve_position:
@@ -1112,7 +1141,7 @@ def deconcatenate_column(
     if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
             f"you need to provide {len(df_deconcat.shape[1])} names "
-            "to new_column_names"
+            "to `new_column_names`"
         )
 
     df_deconcat.columns = new_column_names
@@ -1517,6 +1546,8 @@ def filter_column_isin(
     :param complement: Whether to return the complement of the selection or
         not.
     :returns: A filtered pandas DataFrame.
+    :raises ValueError: if ``iterable`` does not have a length of ``1``
+        or greater.
     """
     if len(iterable) == 0:
         raise ValueError(
@@ -1587,6 +1618,8 @@ def change_type(
         Python types, or a numpy datatype.
     :param ignore_exception: one of ``{False, "fillna", "keep_values"}``.
     :returns: A pandas DataFrame with changed column types.
+    :raises ValueError: if unknown option provided for
+        ``ignore_exception``.
     """
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)
@@ -1637,7 +1670,7 @@ def add_column(
         vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
         df = pd.DataFrame(...).add_column(column_name="new_column", vals)
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of the new column. Should be a string, in order
         for the column name to be compatible with the Feather binary
         format (this is a useful thing to have).
@@ -1646,6 +1679,12 @@ def add_column(
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     :returns: A pandas DataFrame with an added column.
+    :raises ValueError: if attempting to add a column that already exists.
+    :raises ValueError: if ``value`` has more elements that number of
+        rows in the DataFrame.
+    :raises ValueError: if attempting to add an iterable of values with
+        a length not equal to the number of DataFrame rows.
+    :raises ValueError: if ``value`` has length of ``0``.
     """
     # TODO: Convert examples to notebook.
     # :Setup:
@@ -1744,7 +1783,7 @@ def add_column(
         # if `value` is a list, ndarray, etc.
         if len(value) > nrows:
             raise ValueError(
-                "`values` has more elements than number of rows "
+                "`value` has more elements than number of rows "
                 f"in your `DataFrame`. vals: {len(value)}, "
                 f"df: {nrows}"
             )
@@ -1756,7 +1795,7 @@ def add_column(
 
         if len(value) == 0:
             raise ValueError(
-                "Values has to be an iterable of minimum length 1"
+                "`value` has to be an iterable of minimum length 1"
             )
         len_value = len(value)
     elif fill_remaining:
@@ -2363,6 +2402,8 @@ def transform_columns(
     :param new_column_names: (optional) An explicit mapping of old column names
         to new column names.
     :returns: A pandas DataFrame with transformed columns.
+    :raises ValueError: if both ``suffix`` and ``new_column_names`` are
+        specified
     """
     dest_column_names = dict(zip(column_names, column_names))
 
@@ -2457,19 +2498,25 @@ def min_max_scale(
     gets scaled to approx. 0.69 instead.
 
     :param df: A pandas DataFrame.
-    :param old_min, old_max (optional): Overrides for the current minimum and
-        maximum values of the data to be transformed.
-    :param new_min, new_max (optional): The minimum and maximum values of the
-        data after it has been scaled.
-    :param column_name (optional): The column on which to perform scaling.
+    :param old_min: (optional) Overrides for the current minimum
+        value of the data to be transformed.
+    :param old_max: (optional) Overrides for the current maximum
+        value of the data to be transformed.
+    :param new_min: (optional) The minimum value of the data after
+        it has been scaled.
+    :param new_max: (optional) The maximum value of the data after
+        it has been scaled.
+    :param column_name: (optional) The column on which to perform scaling.
     :returns: A pandas DataFrame with scaled data.
+    :raises ValueError: if ``old_max`` is not greater than ``old_min``.
+    :raises ValueError: if ``new_max`` is not greater than ``new_min``.
     """
     if (
         (old_min is not None)
         and (old_max is not None)
         and (old_max <= old_min)
     ):
-        raise ValueError("`old_max` should be greater than `old_max`")
+        raise ValueError("`old_max` should be greater than `old_min`")
 
     if new_max <= new_min:
         raise ValueError("`new_max` should be greater than `new_min`")
@@ -2811,10 +2858,8 @@ def select_columns(
         This will result in selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    :raises:
-        TypeError: if input is not passed as a list.
-    :raises:
-        NameError: if one or more of the specified column names or
+    :raises TypeError: if input is not passed as a list.
+    :raises NameError: if one or more of the specified column names or
         search strings are not found in DataFrame columns.
     """
     if not isinstance(search_column_names, list):
@@ -2910,6 +2955,9 @@ def impute(
     :param value: (optional) The value to impute.
     :param statistic_column_name: (optional) The column statistic to impute.
     :returns: An imputed pandas DataFrame.
+    :raises ValueError: if both ``value`` and ``statistic`` are provided.
+    :raises KeyError: if ``statistic`` is not one of ``mean``, ``average``
+        ``median``, ``mode``, ``minimum``, ``min``, ``maximum``, or ``max``.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if value is not None and statistic_column_name is not None:
@@ -2997,7 +3045,8 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     :param func: A function you would like to run in the method chain.
         It should take one DataFrame object as a parameter and have no return.
         If there is a return, it will be ignored.
-    :param args, kwargs: Optional arguments and keyword arguments for `func`.
+    :param args: Optional arguments for ``func``.
+    :param kwargs: Optional keyword arguments for ``func``.
     :returns: The input pandas DataFrame.
     """  # noqa: E501
     func(df.copy(), *args, **kwargs)
@@ -3106,6 +3155,7 @@ def find_replace(
     :param mappings: keyword arguments corresponding to column names
         that have dictionaries passed in indicating what to find (keys)
         and what to replace with (values).
+    :returns: A pandas DataFrame with replaced values.
     """  # noqa: E501
     for column_name, mapper in mappings.items():
         df = _find_replace(df, column_name, mapper, match=match)
@@ -3284,7 +3334,6 @@ def groupby_agg(
     :param new_column_name: Name of the aggregation output column.
     :param agg_column_name: Name of the column to aggregate over.
     :param agg: How to aggregate.
-    :param axis: Split along rows (0) or columns (1).
     :returns: A pandas DataFrame.
     """
     df = df.copy()
@@ -3354,6 +3403,8 @@ class DataDescription:
         """Update the description for each of the columns in the DataFrame.
 
         :param desc: The structure containing the descriptions to update
+        :raises ValueError: if length of description list does not match
+            number of columns in DataFrame.
         """
         if isinstance(desc, list):
             if len(desc) != len(self._data.columns):
@@ -3406,6 +3457,7 @@ def bin_numeric(
     :param labels: Optionally rename numeric bin ranges with labels. Number of
         label names must match number of bins specified.
     :return: A pandas DataFrame.
+    :raises ValueError: if number of labels do not match number of bins.
     """
     if not labels:
         df[str(to_column_name)] = pd.cut(
@@ -3455,7 +3507,7 @@ def drop_duplicate_columns(
     :param df: A pandas DataFrame
     :param column_name: Column to be removed
     :param nth_index: Among the duplicated columns,
-      select the nth column to drop.
+        select the nth column to drop.
     :return: A pandas DataFrame
     """
     cols = df.columns.to_list()
@@ -3533,6 +3585,7 @@ def shuffle(
     :param df: A pandas DataFrame
     :param random_state: (optional) A seed for the random number generator.
     :param reset_index: (optional) Resets index to default integers
+    :returns: A shuffled pandas DataFrame.
     """
     result = df.sample(frac=1, random_state=random_state)
     if reset_index:
@@ -3583,6 +3636,7 @@ def join_apply(
     :param func: A function that is applied elementwise across all rows of the
         DataFrame.
     :param new_column_name: New column name.
+    :returns: A pandas DataFrame with new column appended.
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df
@@ -3855,6 +3909,11 @@ def jitter(
 
     :returns: A pandas DataFrame with a new column containing Gaussian-
         jittered values from another column.
+    :raises TypeError: if ``column_name`` is not numeric.
+    :raises ValueError: if ``scale`` is not a numerical value
+        greater than ``0``.
+    :raises ValueError: if ``clip`` is not an iterable of length ``2``.
+    :raises ValueError: if ``clip[0]`` is not less than ``clip[1]``.
     """
 
     # Check types
@@ -3887,7 +3946,7 @@ def jitter(
 def sort_naturally(
     df: pd.DataFrame, column_name: str, **natsorted_kwargs
 ) -> pd.DataFrame:
-    """Sort an DataFrame by a column using "natural" sorting.
+    """Sort a DataFrame by a column using "natural" sorting.
 
     Natural sorting is distinct from
     the default lexiographical sorting provided by ``pandas``.
@@ -3951,6 +4010,7 @@ def sort_naturally(
     :param column_name: The column on which natural sorting should take place.
     :param natsorted_kwargs: Keyword arguments to be passed
         to natsort's ``natsorted`` function.
+    :returns: A sorted pandas DataFrame.
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]
@@ -4045,8 +4105,8 @@ def expand_grid(
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
     :returns: A pandas dataframe of all combinations of name value pairs.
-    :raises: TypeError if others is not a dictionary
-    :raises: KeyError if there is a dataframe and no key is provided.
+    :raises TypeError: if others is not a dictionary
+    :raises KeyError: if there is a dataframe and no key is provided.
     """
     # check if others is a dictionary
     if not isinstance(others, dict):
@@ -4154,10 +4214,14 @@ def process_text(
 
     :param df: A pandas dataframe.
     :param column: String column to be operated on.
-    :param args, kwargs: Arguments for parameters.
+    :param string_function: Pandas string method to be applied.
+    :param args: Arguments for parameters.
+    :param kwargs: Keyword arguments for parameters.
     :returns: A pandas dataframe with modified column.
-    :raises: KeyError if ``string_function`` is not a Pandas string method.
-    :raises: TypeError if wrong ``arg`` or ``kwarg`` is supplied.
+    :raises KeyError: if ``string_function`` is not a Pandas string method.
+    :raises TypeError: if wrong ``arg`` or ``kwarg`` is supplied.
+
+    .. # noqa: DAR402
     """
     df = df.copy()
 
@@ -4264,9 +4328,9 @@ def fill_direction(
     :param limit: number of consecutive null values to forward/backward fill.
         Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
-    :raises: ValueError if ``directions`` dictionary is empty.
-    :raises: ValueError if column supplied is not in the dataframe.
-    :raises: ValueError if direction supplied is not one of `down`,`up`,
+    :raises ValueError: if ``directions`` dictionary is empty.
+    :raises ValueError: if column supplied is not in the dataframe.
+    :raises ValueError: if direction supplied is not one of `down`,`up`,
         `updown`, or `downup`.
     """
     df = df.copy()
@@ -4409,10 +4473,10 @@ def groupby_topk(
     :returns: A pandas dataframe with top `k` rows that are grouped by
         `groupby_column_name` column with each group sorted along the
         column `sort_column_name`.
-    :raises: ValueError if `k` is less than 1.
-    :raises: ValueError if `groupby_column_name` not in dataframe `df`.
-    :raises: ValueError if `sort_column_name` not in dataframe `df`.
-    :raises: KeyError if `inplace:True` is present in `sort_values_kwargs`.
+    :raises ValueError: if `k` is less than 1.
+    :raises ValueError: if `groupby_column_name` not in dataframe `df`.
+    :raises ValueError: if `sort_column_name` not in dataframe `df`.
+    :raises KeyError: if `inplace:True` is present in `sort_values_kwargs`.
     """  # noqa: E501
 
     # Convert the default sort_values_kwargs from None to empty Dict
@@ -4557,12 +4621,12 @@ def complete(
     :param fill_value: Dictionary pairing the columns with the null replacement
         value.
     :returns: A pandas dataframe with modified column(s).
-    :raises: ValueError if `columns` is empty.
-    :raises: TypeError if `columns` is not a list.
-    :raises: TypeError if `fill_value` is not a dictionary.
-    :raises: ValueError if entry in `columns` is not a
+    :raises ValueError: if `columns` is empty.
+    :raises TypeError: if `columns` is not a list.
+    :raises TypeError: if `fill_value` is not a dictionary.
+    :raises ValueError: if entry in `columns` is not a
         str/dict/list/tuple.
-    :raises: ValueError if entry in `columns` is a dict/list/tuple
+    :raises ValueError: if entry in `columns` is a dict/list/tuple
         and is empty.
     """
     df = df.copy()
@@ -4602,9 +4666,11 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     it can be used to select columns in the index or columns_names
     arguments of ``pivot_longer`` function.
 
-    A regular expression is returned.
+    :param regex_pattern: string to be converted to compiled regular
+        expression.
+    :returns: A compile regular expression from provided
+        ``regex_pattern``.
     """
-
     check("regular expression", regex_pattern, [str, Pattern])
 
     return re.compile(regex_pattern)

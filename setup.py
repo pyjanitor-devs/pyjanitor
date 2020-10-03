@@ -19,7 +19,9 @@ def generate_long_description() -> str:
     Target chunks must be contained within `.. pypi-doc` pair comments,
     so there must be an even number of comments in README.
 
-    :returns: Extracted description from README
+    :returns: Extracted description from README.
+    :raises Exception: if odd number of ``.. pypi-doc`` comments
+        in README.
     """
     # Read the contents of README file
     this_directory = Path(__file__).parent

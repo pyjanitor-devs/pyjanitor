@@ -87,6 +87,7 @@ def convert_units(
         converted values that will be created.
 
     :returns: A pandas DataFrame with a new column of unit-converted values.
+    :raises TypeError: if column is not numeric.
     """
 
     # Check all inputs are correct data type

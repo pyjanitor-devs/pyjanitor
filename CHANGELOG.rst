@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
 
 

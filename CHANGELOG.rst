@@ -1,5 +1,10 @@
 new version (on deck)
 =====================
+- [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
+
+
+v0.20.10
+=======
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
 - [ENH] Added the complete function for converting implicit missing values
   to explicit ones. @samukweku
@@ -11,12 +16,13 @@ new version (on deck)
   tidyr's ``pivot_longer`` function. Also added an example notebook. @samukweku
 - [ENH] Fixed code to returns error if `fill_value` is not a dictionary. @samukweku
 - [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
-- [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
+
 
 v0.20.9
 =======
 - [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku
 - [ENH] Added function ``groupby_topk`` to janitor functions @mphirke
+
 
 v0.20.8
 =======
@@ -37,7 +43,6 @@ v0.20.8
 - [ENH] Added ``fill_direction`` function for forward/backward fills on missing values
   for selected columns in a dataframe. @samukweku
 - [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
-
 
 
 v0.20.7
@@ -62,10 +67,12 @@ v0.20.5
 - [ENH] ``select_columns()`` now raises ``NameError`` if column label in
   ``search_columns_labels`` is missing from ``DataFrame`` columns. @smu095
 
+
 v0.20.1
 =======
 - [DOC] Added an example for groupby_agg in general functions @samukweku
 - [ENH] Contributed ``sort_naturally()`` function. @ericmjl
+
 
 v0.20.0
 =======
@@ -76,6 +83,7 @@ v0.20.0
 - [ENH] Enforce string conversion when cleaning names. @ericmjl
 - [ENH] Change ``find_replace`` implementation to use keyword arguments to specify columns to perform find and replace on. @ericmjl
 - [ENH] Add ``jitter()`` dataframe function by @rahosbach
+
 
 v0.19.0
 =======
@@ -97,6 +105,7 @@ v0.18.3
 - [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal
 - [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal
 
+
 v0.18.2
 =======
 - [INF] Make requirements.txt smaller @eyaltrabelsi
@@ -117,6 +126,7 @@ v0.18.2
 - [INF] ``import_message`` suggests python dist. appropriate installs by @hectormz
 - [ENH] Add count_cumulative_unique() method to janitor.functions submodule by @rahosbach
 - [ENH] Add ``update_where()`` method to ``janitor.spark.functions`` submodule by @zjpoh
+
 
 v0.18.1
 =======

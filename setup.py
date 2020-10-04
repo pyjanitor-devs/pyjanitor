@@ -1,16 +1,72 @@
 """Setup script."""
 
+import codecs
+import os
 import re
 from pathlib import Path
 
 from setuptools import find_packages, setup
 
 
-def requirements():
-    """Reader for requirements.txt"""
-    with open("requirements.txt", "r+") as f:
-        return f.read()
+HERE = os.path.abspath(os.path.dirname(__file__))
 
+def read(*parts):
+    # intentionally *not* adding an encoding option to open
+    return codecs.open(os.path.join(HERE, *parts), "r").read()
+
+
+def read_requirements(*parts):
+    """
+    Given a requirements.txt (or similar style file), returns a list of requirements.
+    Assumes anything after a single '#' on a line is a comment, and ignores
+    empty lines.
+    """
+    requirements = []
+    for line in read(*parts).splitlines():
+        new_line = re.sub(
+            "(\s*)?#.*$",  # the space immediately before the
+            # hash mark, the hash mark, and
+            # anything that follows it
+            "",  # replace with a blank string
+            line,
+        )
+        new_line = re.sub(
+            "-r.*$",  # the space immediately before the
+            # hash mark, the hash mark, and
+            # anything that follows it
+            "",  # replace with a blank string
+            line,
+        )
+        # print(line, "-->", new_line)
+        if new_line:  # i.e. we have a non-zero-length string
+            requirements.append(new_line)
+    return requirements
+
+
+# pull from requirements.IN, requirements.TXT is generated from this
+INSTALL_REQUIRES = read_requirements(".requirements/base.in")
+
+EXTRA_REQUIRES = {
+    "dev": read_requirements(".requirements/dev.in"),
+    'docs': read_requirements(".requirements/docs.in"),
+    'test': read_requirements(".requirements/testing.in"),
+    "biology": read_requirements(".requirements/biology.in"),
+    "chemistry": read_requirements(".requirements/chemistry.in"),
+    "engineering": read_requirements(".requirements/engineering.in"),
+    "spark": read_requirements(".requirements/spark.in"),
+}
+
+# add 'all' key to EXTRA_REQUIRES
+all_requires = []
+for k, v in EXTRA_REQUIRES.items():
+    all_requires.extend(v)
+EXTRA_REQUIRES["all"] = set(all_requires)
+
+for k1 in ['biology', 'chemistry', 'engineering', 'spark']:
+    for v2 in EXTRA_REQUIRES[k1]:
+        EXTRA_REQUIRES['docs'].append(v2)
+
+print(EXTRA_REQUIRES)
 
 def generate_long_description() -> str:
     """
@@ -42,12 +98,6 @@ def generate_long_description() -> str:
     return long_description
 
 
-extra_spark = ["pyspark"]
-extra_biology = ["biopython"]
-extra_chemistry = ["rdkit"]
-extra_engineering = ["unyt"]
-extra_all = extra_biology + extra_engineering + extra_spark
-
 setup(
     name="pyjanitor",
     version="0.20.10",
@@ -58,15 +108,8 @@ setup(
     license="MIT",
     # packages=["janitor", "janitor.xarray", "janitor.spark"],
     packages=find_packages(),
-    install_requires=requirements(),
-    extras_require={
-        "all": extra_all,
-        "biology": extra_biology,
-        # "chemistry": extra_chemistry, should be inserted once rdkit
-        # fixes https://github.com/rdkit/rdkit/issues/1812
-        "engineering": extra_engineering,
-        "spark": extra_spark,
-    },
+    install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRA_REQUIRES,
     python_requires=">=3.6",
     long_description=generate_long_description(),
     long_description_content_type="text/x-rst",

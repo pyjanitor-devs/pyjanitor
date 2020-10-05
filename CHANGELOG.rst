@@ -1,7 +1,8 @@
 new version (on deck)
 =====================
 - [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
-
+- [INF] Loosen dependency specifications. Switch to pip-tools for managing
+  dependencies. Issue #760. @MinchinWeb
 
 v0.20.10
 =======

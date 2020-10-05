@@ -7,8 +7,8 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-
 HERE = os.path.abspath(os.path.dirname(__file__))
+
 
 def read(*parts):
     # intentionally *not* adding an encoding option to open
@@ -48,8 +48,8 @@ INSTALL_REQUIRES = read_requirements(".requirements/base.in")
 
 EXTRA_REQUIRES = {
     "dev": read_requirements(".requirements/dev.in"),
-    'docs': read_requirements(".requirements/docs.in"),
-    'test': read_requirements(".requirements/testing.in"),
+    "docs": read_requirements(".requirements/docs.in"),
+    "test": read_requirements(".requirements/testing.in"),
     "biology": read_requirements(".requirements/biology.in"),
     "chemistry": read_requirements(".requirements/chemistry.in"),
     "engineering": read_requirements(".requirements/engineering.in"),
@@ -62,11 +62,12 @@ for k, v in EXTRA_REQUIRES.items():
     all_requires.extend(v)
 EXTRA_REQUIRES["all"] = set(all_requires)
 
-for k1 in ['biology', 'chemistry', 'engineering', 'spark']:
+for k1 in ["biology", "chemistry", "engineering", "spark"]:
     for v2 in EXTRA_REQUIRES[k1]:
-        EXTRA_REQUIRES['docs'].append(v2)
+        EXTRA_REQUIRES["docs"].append(v2)
 
 print(EXTRA_REQUIRES)
+
 
 def generate_long_description() -> str:
     """

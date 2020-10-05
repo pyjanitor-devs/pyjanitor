@@ -4,10 +4,6 @@
 #
 #    pip-compile '.\.requirements\all.in'
 #
---index-url http://william:bX693StETbAVTWNc@pypi.sorbonne.lan/simple/
---trusted-host pypi.sorbonne.lan
-
--e file:///E:/Code/pyjanitor  # via -r .\.requirements\all.in
 alabaster==0.7.12         # via sphinx
 appdirs==1.4.4            # via black, virtualenv
 async-generator==1.10     # via nbclient
@@ -29,7 +25,7 @@ distlib==0.3.1            # via virtualenv
 docutils==0.16            # via nbsphinx, sphinx
 entrypoints==0.3          # via nbconvert
 filelock==3.0.12          # via virtualenv
-flake8==3.8.4             # via pandas-vet
+flake8==3.8.4             # via -r .\.requirements\dev.in, pandas-vet
 hypothesis==5.37.0        # via -r .\.requirements\testing.in
 identify==1.5.5           # via pre-commit
 idna==2.10                # via requests
@@ -104,6 +100,7 @@ testpath==0.4.4           # via nbconvert
 threadpoolctl==2.1.0      # via scikit-learn
 toml==0.10.1              # via black, interrogate, pre-commit, pytest
 tornado==6.0.4            # via jupyter-client
+tqdm==4.50.0              # via -r .\.requirements\chemistry.in
 traitlets==5.0.4          # via jupyter-client, jupyter-core, nbclient, nbconvert, nbformat, nbsphinx
 typed-ast==1.4.1          # via black
 typing-extensions==3.7.4.3  # via black

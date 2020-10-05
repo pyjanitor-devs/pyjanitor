@@ -3,3 +3,4 @@ pre-commit
 isort>=4.3.18
 black>=19.3b0
 darglint
+flake8

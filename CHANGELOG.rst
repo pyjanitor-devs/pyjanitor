@@ -1,6 +1,7 @@
 new version (on deck)
 =====================
 - [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
+- [ENH] Added optional truncation to ``clean_names`` function. Issue #753. @richardqiu
 
 
 v0.20.10

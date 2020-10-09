@@ -27,6 +27,8 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
         Series and error="raise"
     :return: Transformed Series
     :rtype: pd.Series
+
+    .. # noqa: DAR103 error
     """
     s = s.copy()
     nonpositive = s <= 0
@@ -53,6 +55,9 @@ def sigmoid(s: pd.Series) -> pd.Series:
     """
     Take the sigmoid transform of the series where
     sigmoid(x) = 1 / (1 + exp(-x))
+
+    .. # noqa: DAR101
+    .. # noqa: DAR201
     """
     return expit(s)
 
@@ -72,6 +77,9 @@ def logit(s: pd.Series, error: str = "warn") -> pd.Series:
     :type error: str, optional
     :return: Transformed Series
     :rtype: pd.Series
+    :raises RuntimeError: if ``error`` is set to ``raise``.
+
+    .. # noqa: DAR103 error
     """
     s = s.copy()
     odds_ratio = s / (1 - s)
@@ -111,6 +119,8 @@ def probit(s: pd.Series, error: str = "warn") -> pd.Series:
         in the Series and error="raise"
     :return: Transformed Series
     :rtype: pd.Series
+
+    .. # noqa: DAR103 error
     """
     s = s.copy()
     outside_support = (s <= 0) | (s >= 1)
@@ -149,6 +159,8 @@ def z_score(
     :type keys: Tuple[str], optional
     :return: Transformed Series
     :rtype: pd.Series
+
+    .. # noqa: DAR103 moments_dict
     """
     mean = s.mean()
     std = s.std()
@@ -187,6 +199,8 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
     :returns: (x, y).
         x: sorted array of values.
         y: cumulative fraction of data points with value ``x`` or lower.
+    :raises TypeError: if series is not numeric.
+    :raises ValueError: if series contains nulls.
     """
     if not is_numeric_dtype(s):
         raise TypeError(f"series {s.name} must be numeric!")

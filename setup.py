@@ -19,7 +19,9 @@ def generate_long_description() -> str:
     Target chunks must be contained within `.. pypi-doc` pair comments,
     so there must be an even number of comments in README.
 
-    :returns: Extracted description from README
+    :returns: Extracted description from README.
+    :raises Exception: if odd number of ``.. pypi-doc`` comments
+        in README.
     """
     # Read the contents of README file
     this_directory = Path(__file__).parent
@@ -48,7 +50,7 @@ extra_all = extra_biology + extra_engineering + extra_spark
 
 setup(
     name="pyjanitor",
-    version="0.20.9",
+    version="0.20.10",
     description="Tools for cleaning pandas DataFrames",
     author="Eric J. Ma",
     author_email="ericmajinglong@gmail.com",

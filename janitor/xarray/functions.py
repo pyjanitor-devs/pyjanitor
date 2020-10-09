@@ -66,6 +66,10 @@ def clone_using(
         Otherwise, use the name of ``da``.
     :return: A ``DataArray`` styled like the input ``DataArray`` containing the
         NumPy array data.
+    :raises ValueError: if number of dimensions in ``NumPy`` array and
+        ``DataArray`` do not match.
+    :raises ValueError: if shape of ``NumPy`` array and ``DataArray``
+        do not match.
     """
 
     if np_arr.ndim != da.ndim:

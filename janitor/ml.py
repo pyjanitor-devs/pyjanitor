@@ -48,10 +48,10 @@ def get_features_targets(
         X, y = df.get_features_targets(target_column_names=target_cols)
 
     :param df: The pandas DataFrame object.
-    :param str/iterable target_column_names: Either a column name or an
+    :param target_column_names: Either a column name or an
         iterable (list or tuple) of column names that are the target(s) to be
         predicted.
-    :param str/iterable feature_column_names: (optional) The column name or
+    :param feature_column_names: (optional) The column name or
         iterable of column names that are the features (a.k.a. predictors)
         used to predict the targets.
     :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both

@@ -2,15 +2,23 @@ steps:
   - script: |
       $(activate.command) pyjanitor-dev
       flake8 . --exclude ./nbconvert_config.py
-    displayName: 'Code style check: flake8'
+    displayName: 'Code style: flake8'
   - script: |
       $(activate.command) pyjanitor-dev
       black
-    displayName: 'Code style check: black'
+    displayName: 'Code style: black'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      interrogate
+    displayName: 'Docstring coverage: interrogate'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      darglint janitor -v 2
+    displayName: 'Docstring linter: darglint'
   - script: |
       $(activate.command) pyjanitor-dev
       pytest
-    displayName: 'Run all pyjanitor tests.'
+    displayName: 'Unit tests.'
   - script: |
       $(activate.command) pyjanitor-dev
       python scripts/check-autodoc.py

@@ -1,5 +1,11 @@
 new version (on deck)
 =====================
+- [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
+- [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
+
+
+v0.20.10
+=======
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
 - [ENH] Added the complete function for converting implicit missing values
   to explicit ones. @samukweku
@@ -7,6 +13,11 @@ new version (on deck)
 - [BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku
 - [ENH] Added `also` method for running functions in chain with no return values.
 - [DOC] Added a ``timeseries`` module section to website docs. Issue #742. @loganthomas
+- [ENH] Added a `pivot_longer` function, a wrapper around ``pd.melt`` and similar to
+  tidyr's ``pivot_longer`` function. Also added an example notebook. @samukweku
+- [ENH] Fixed code to returns error if `fill_value` is not a dictionary. @samukweku
+- [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
+
 
 v0.20.9
 =======
@@ -35,7 +46,6 @@ v0.20.8
 - [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
 
 
-
 v0.20.7
 =======
 - [TST] Add a test for transform_column to check for nonmutation. @VPerrollaz
@@ -58,10 +68,12 @@ v0.20.5
 - [ENH] ``select_columns()`` now raises ``NameError`` if column label in
   ``search_columns_labels`` is missing from ``DataFrame`` columns. @smu095
 
+
 v0.20.1
 =======
 - [DOC] Added an example for groupby_agg in general functions @samukweku
 - [ENH] Contributed ``sort_naturally()`` function. @ericmjl
+
 
 v0.20.0
 =======
@@ -72,6 +84,7 @@ v0.20.0
 - [ENH] Enforce string conversion when cleaning names. @ericmjl
 - [ENH] Change ``find_replace`` implementation to use keyword arguments to specify columns to perform find and replace on. @ericmjl
 - [ENH] Add ``jitter()`` dataframe function by @rahosbach
+
 
 v0.19.0
 =======
@@ -93,6 +106,7 @@ v0.18.3
 - [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal
 - [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal
 
+
 v0.18.2
 =======
 - [INF] Make requirements.txt smaller @eyaltrabelsi
@@ -113,6 +127,7 @@ v0.18.2
 - [INF] ``import_message`` suggests python dist. appropriate installs by @hectormz
 - [ENH] Add count_cumulative_unique() method to janitor.functions submodule by @rahosbach
 - [ENH] Add ``update_where()`` method to ``janitor.spark.functions`` submodule by @zjpoh
+
 
 v0.18.1
 =======

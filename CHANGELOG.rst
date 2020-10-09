@@ -2,6 +2,8 @@ new version (on deck)
 =====================
 - [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
+- [ENH] Added a `pivot_wider` function, an inverse function of the ``pivot_longer``
+  function. @samukweku
 
 
 v0.20.10

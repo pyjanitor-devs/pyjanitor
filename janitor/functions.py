@@ -4955,3 +4955,75 @@ def pivot_longer(
     )
 
     return df
+
+
+
+@pf.register_dataframe_method
+def pivot_wider(
+    df: pd.DataFrame,
+    index: Optional[Union[List, Tuple, str, Pattern]] = None,
+    column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
+    names_sep: Optional[Union[str, Pattern]] = None,
+    names_pattern: Optional[Union[str, Pattern]] = None,
+    names_from: Optional[Union[List, Tuple, str]] = None,
+    values_from: Optional[str] = "value",
+    fill_value: Optional[Union[int, float]] = None
+) -> pd.DataFrame:
+    """
+
+
+    :param df: A pandas dataframe.
+    :param index: Name(s) of columns to use as identifier variables.
+        Should be either a single column name, a list/tuple of
+        column names, or a or a `janitor.patterns` function. You can
+        also dynamically select column names by using a regular
+        expression with the `janitor.patterns` function.
+    :param column_names: Name(s) of columns to unpivot. Should be either
+        a single column name, a list/tuple of column names, or a
+        `janitor.patterns` function. You can also dynamically select
+        column names by using a regular expression with the
+        `janitor.patterns` function.
+    :param names_to: Name of new column as a string that will contain
+        what were previously the column names in `column_names`.
+        The default is `variable` if no value is provided. It can
+        also be a list/tuple of strings that will serve as new column
+        names, if `name_sep` or `names_pattern` is provided.
+        If `.value` is in `names_to`, new column names will be extracted
+        from part of the existing column names and `values_to` will be
+        replaced.
+    :param names_sep: Determines how the column name is broken up, if
+        `names_to` contains multiple values. It takes the same
+        specification as pandas' `str.split` method, and can be a string
+        or regular expression.
+    :param names_pattern: Determines how the column name is broken up. It takes
+        the same specification as pandas' `str.extractall` method, which is
+        a regular expression containing matching groups.
+    :param values_to: Name of new column as a string that will contain what
+        were previously the values of the columns in `column_names`.
+    :returns: A pandas DataFrame that has been unpivoted from wide to long
+        format.
+    :raises TypeError: if `index` or `column_names` is not a string, or a
+        list/tuple of strings, or a `janitor.patterns` function.
+    :raises TypeError: if `names_to` or `column_names` is not a string, or a
+        list/tuple of strings.
+    :raises TypeError: if `values_to` is not a string.
+    :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
+        `names_pattern` are provided.
+    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
+        and `names_sep` is provided.
+    :raises TypeError: if `names_sep` or `names_pattern` is not a string or
+        regular expression.
+    :raises ValueError: if `names_to` is a list/tuple, and its length does not
+        match the number of extracted columns.
+    :raises Warning: if `df` is a MultiIndex dataframe.
+
+    .. # noqa: DAR402
+    """
+
+
+
+    df = df.copy()
+
+
+
+    return df

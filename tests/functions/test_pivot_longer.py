@@ -1603,4 +1603,3 @@ def test_single_value(df_in, df_out, index, names_pattern):
         index=index, names_to=".value", names_pattern=names_pattern
     )
     assert_frame_equal(result, df_out)
-

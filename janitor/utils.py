@@ -982,3 +982,157 @@ def _computations_pivot_longer(
             before_df, [between_df, after_df], how="inner"
         ).reset_index(drop=True)
         return df.transform(pd.to_numeric, errors="ignore")
+
+
+def _data_checks_pivot_wider(
+    df,
+    index,
+    names_from,
+    values_from,
+    names_sep,
+    fill_value,
+    custom_name_format,
+    names_sort,
+    aggfunc,
+):
+
+    """
+    This function raises errors if the arguments have the wrong
+    python type, or if the column does not exist in the dataframe.
+    This function is executed before proceeding to the computation phase.
+
+    Type annotations are not provided because this function is where type
+    checking happens.
+    """
+
+    if index is not None:
+        if isinstance(index, str):
+            index = [index]
+        check("index", index, [list])
+        check_column(df, index, present=True)
+
+    if names_from is None:
+        raise ValueError(
+            "pivot_wider() missing 1 required argument: 'names_from'"
+        )
+
+    if names_from is not None:
+        if isinstance(names_from, str):
+            names_from = [names_from]
+        check("names_from", names_from, [list])
+        check_column(df, names_from, present=True)
+
+    if values_from is not None:
+        check("values_from", values_from, [str, list])
+        if isinstance(values_from, str):
+            check_column(df, [values_from], present=True)
+        else:
+            check_column(df, values_from, present=True)
+
+    if names_sep is not None:
+        check("names_sep", names_sep, [str])
+
+    if fill_value is not None:
+        check("fill_value", fill_value, [int, float, str, dict])
+
+    if custom_name_format is not None:
+        check("custom_name_format", custom_name_format, [str])
+
+    if names_sort is not None:
+        check("names_sort", names_sort, [bool])
+
+    if aggfunc is not None:
+        check("aggfunc", aggfunc, [str, Callable, list, dict])
+
+    return (
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sep,
+        fill_value,
+        custom_name_format,
+        names_sort,
+        aggfunc,
+    )
+
+
+def _computations_pivot_wider(
+    df: pd.DataFrame,
+    index: Optional[Union[List, str]] = None,
+    names_from: Union[List, str] = None,
+    values_from: Optional[Union[List, str]] = None,
+    names_sep: Optional[str] = "_",
+    fill_value: Optional[Union[int, float, str, dict]] = None,
+    custom_name_format: Optional[str] = None,
+    names_sort: Optional[bool] = True,
+    aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
+) -> pd.DataFrame:
+    """
+    This is the main workhorse of the `pivot_wider` function.
+    There are a couple of scenarios that this function takes care of when
+    unpivoting :
+    1. Regular data unpivoting is covered with pandas melt.
+    2. if the length of `names_to` is > 1, the function unpivots the data,
+       using `pd.melt`, and then separates into individual columns, using
+       `str.split(expand=True)` if `names_sep` is provided or
+       `str.extractall()` if `names_pattern is provided. The labels in
+       `names_to` become the new column names.
+    3. If `names_to` contains `.value`, then the function replicates
+       `pd.wide_to_long`, using `pd.melt`. Unlike `pd.wide_to_long`, the
+       stubnames do not have to be prefixes, they just need to match the
+       position of `.value` in `names_to`. Just like in 2 above, the columns
+       are separated into individual columns. The labels in the column
+       corresponding to `.value` become the new column names, and override
+       `values_to` in the process. The other extracted column stays
+       (if len(`names_to`) is > 1), with the other name in `names_to` as
+       its column name.
+    The function also tries to emulate the way the source data is structured.
+    Say data looks like this :
+        id, a1, a2, a3, A1, A2, A3
+         1, a, b, c, A, B, C
+    when pivoted into long form, it will look like this :
+              id instance    a     A
+        0     1     1        a     A
+        1     1     2        b     B
+        2     1     3        c     C
+    where the columns `a` comes before `A`, as it was in the source data,
+    and in column `a`, `a > b > c`, also as it was in the source data.
+    This also visually creates a complete set of the data per index.
+    """
+
+    if df.loc[:, index + names_from].duplicated().any() and aggfunc is None:
+        raise ValueError(
+            """There are non-unique values in your combination
+                   of `index` and `names_from`. Kindly provide a 
+                   unique identifier for each row."""
+        )
+
+    index_sorter = df.loc[:, index[0]].unique()
+
+    mapping_names_from = {col: pd.unique(df.loc[:, col]) for col in names_from}
+
+    if aggfunc is None:
+        df = df.pivot_table(
+            index=index,
+            columns=names_from,
+            values=values_from,
+            fill_value=fill_value,
+        )
+
+    else:
+        df = df.pivot_table(
+            index=index,
+            columns=names_from,
+            values=values_from,
+            aggfunc=aggfunc,
+            fill_value=fill_value,
+        )
+
+
+    return (
+        df.sort_index(level=mapping_names_from, axis="columns")
+        .reindex(index_sorter)
+        .reset_index()
+        .rename_axis(columns=None, index=None)
+    )

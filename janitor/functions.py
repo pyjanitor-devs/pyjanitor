@@ -37,8 +37,10 @@ from .utils import (
     _clean_accounting_column,
     _complete_groupings,
     _computations_pivot_longer,
+    _computations_pivot_wider,
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
+    _data_checks_pivot_wider,
     _grid_computation,
     _pivot_longer_pattern_match,
     _replace_empty_string_with_none,
@@ -4957,73 +4959,100 @@ def pivot_longer(
     return df
 
 
-
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple, str, Pattern]] = None,
-    column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
-    names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[Union[str, Pattern]] = None,
-    names_from: Optional[Union[List, Tuple, str]] = None,
-    values_from: Optional[str] = "value",
-    fill_value: Optional[Union[int, float]] = None
+    index: Optional[Union[List, str]] = None,
+    names_from: Union[List, str] = None,
+    values_from: Optional[Union[List, str]] = None,
+    names_sep: Optional[str] = "_",
+    fill_value: Optional[Union[int, float, str, dict]] = None,
+    custom_name_format: Optional[str] = None,
+    names_sort: Optional[bool] = True,
+    aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
 ) -> pd.DataFrame:
     """
 
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
-        Should be either a single column name, a list/tuple of
-        column names, or a or a `janitor.patterns` function. You can
-        also dynamically select column names by using a regular
-        expression with the `janitor.patterns` function.
-    :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name, a list/tuple of column names, or a
-        `janitor.patterns` function. You can also dynamically select
-        column names by using a regular expression with the
-        `janitor.patterns` function.
-    :param names_to: Name of new column as a string that will contain
-        what were previously the column names in `column_names`.
-        The default is `variable` if no value is provided. It can
-        also be a list/tuple of strings that will serve as new column
-        names, if `name_sep` or `names_pattern` is provided.
-        If `.value` is in `names_to`, new column names will be extracted
-        from part of the existing column names and `values_to` will be
-        replaced.
-    :param names_sep: Determines how the column name is broken up, if
-        `names_to` contains multiple values. It takes the same
-        specification as pandas' `str.split` method, and can be a string
-        or regular expression.
-    :param names_pattern: Determines how the column name is broken up. It takes
-        the same specification as pandas' `str.extractall` method, which is
-        a regular expression containing matching groups.
-    :param values_to: Name of new column as a string that will contain what
-        were previously the values of the columns in `column_names`.
-    :returns: A pandas DataFrame that has been unpivoted from wide to long
+        Should be either a single column name, or a list of column names.
+        If `index` is not provided, the current frame's index is used.
+    :param names_from: Name(s) of columns to pivot. Should be either
+        a single column name, or a list of column names. A label or labels
+        must be provided for ``names_from``.
+    :param values_from: Name of column that will be used for populating new
+        frame's values. Should be either a single column name, or a list of
+        column names. If ``values_from`` contains multiple values, the value
+        will be added to the front of the output column. If not specified, 
+        all remaining columns will be used.
+    :param names_sep: If ``names_from`` or ``values_from`` contain multiple
+        variables, this will be used to join their values into a single string
+        to use as a column name. Default is ``_``.
+    :param custom_name_format: Instead of ``names_sep``, you can supply a
+        custom specification, using python's `f-strings` format, along with
+        the `names_from` columns (and special `.value`) to create custom names.
+        If `.value` is in the `custom_name_format`, it will refer to the values
+        from the ``values_from`` column(s).
+    :names_sort: Sorts the column names lexicographically. If ``False``, column
+        names will be ordered by first appearance. Default is ``True``.
+    :fill_value: Value to replace missing values with (after pivoting). It can
+        be a number, string, or a dictionary, where the keys are the
+        column_names, while the values are the values to replace the missing
+        values with.
+    :aggfunc: Single function or list of functions to aggregate values from
+        ``values_from``. It can also be a dictionary of functions, where the
+        key is the column to aggregate, and the values is the aggregating
+        function or functions.
+    :returns: A pandas DataFrame that has been unpivoted from long to wide
         format.
-    :raises TypeError: if `index` or `column_names` is not a string, or a
-        list/tuple of strings, or a `janitor.patterns` function.
-    :raises TypeError: if `names_to` or `column_names` is not a string, or a
-        list/tuple of strings.
-    :raises TypeError: if `values_to` is not a string.
-    :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
-        `names_pattern` are provided.
-    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
-        and `names_sep` is provided.
-    :raises TypeError: if `names_sep` or `names_pattern` is not a string or
-        regular expression.
-    :raises ValueError: if `names_to` is a list/tuple, and its length does not
-        match the number of extracted columns.
-    :raises Warning: if `df` is a MultiIndex dataframe.
+    :raises TypeError: if `index` or `names_from` is not a string, or a list of
+        strings.
+    :raises TypeError: if `names_sep` is not a string.
+    :raises TypeError: if `values_from` is not a string or a list of strings.
+    :raises ValueError: if values in `index` or `names_from` or `values_from`
+        do not exist in the dataframe.
+    :raises ValueError: if `names_from` is None.
+    :raises ValueError: if combination of `index` and `names_from` is not
+        unique.
 
     .. # noqa: DAR402
     """
 
-
-
     df = df.copy()
 
+    (
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sep,
+        fill_value,
+        custom_name_format,
+        names_sort,
+        aggfunc,
+    ) = _data_checks_pivot_wider(
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sep,
+        fill_value,
+        custom_name_format,
+        names_sort,
+        aggfunc,
+    )
 
+    df = _computations_pivot_wider(
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sep,
+        fill_value,
+        custom_name_format,
+        names_sort,
+        aggfunc,
+    )
 
     return df

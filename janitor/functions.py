@@ -242,6 +242,7 @@ def clean_names(
     strip_accents: bool = True,
     preserve_original_columns: bool = True,
     enforce_string: bool = True,
+    truncate_limit: int = None,
 ) -> pd.DataFrame:
     """
     Clean column names.
@@ -294,6 +295,8 @@ def clean_names(
     :param enforce_string: Whether or not to convert all column names
         to string type. Defaults to True, but can be turned off.
         Columns with >1 levels will not be converted by default.
+    :param truncate_limit: (optional) Truncates formatted column names to
+        the specified length. Default None does not truncate.
     :returns: A pandas DataFrame.
     """
     original_column_names = list(df.columns)
@@ -313,6 +316,8 @@ def clean_names(
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
     df = _strip_underscores(df, strip_underscores)
+
+    df = df.rename(columns=lambda x: x[:truncate_limit])
 
     # Store the original column names, if enabled by user
     if preserve_original_columns:

@@ -681,8 +681,8 @@ def _data_checks_pivot_longer(
             if not isinstance(names_to, (List, Tuple)):
                 raise TypeError(
                     """
-                ``names_to`` must be a list or tuple.
-                """
+                    ``names_to`` must be a list or tuple.
+                    """
                 )
             if len(names_pattern) != len(names_to):
                 raise ValueError(
@@ -915,12 +915,6 @@ def _computations_pivot_longer(
 
         before_df = _reindex_func(before_df, index)
         between_df = between_df.set_axis(names_to, axis="columns")
-
-        # What should be the appropriate error message
-        # if an inappropriate regular expression is used, that returns
-        # an incorrect number of rows? Where should it be detected?
-        # Personally, I think the onus lies on the user to provide
-        # the right regex.
 
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the

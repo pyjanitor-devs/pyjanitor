@@ -152,3 +152,5 @@ def pivot_longer_wider_longer():
     ).pivot_wider(index="name", names_from="drug", values_from="heartrate")
 
     assert_frame_equal(result, df)
+
+# write test if index is not unique

@@ -114,16 +114,6 @@ def test_custom_name_format(
         )
 
 
-def test_names_sort(
-    df_checks_output, names_from=["estimate", "variable"], names_sort=0
-):
-    "Raise TypeError if the wrong type is provided for `names_sort`."
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name", names_from=names_from, names_sort=names_sort
-        )
-
-
 def test_aggfunc(
     df_checks_output, names_from=["estimate", "variable"], aggfunc=0
 ):

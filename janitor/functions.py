@@ -4995,7 +4995,6 @@ def pivot_wider(
     names_sep: Optional[str] = "_",
     fill_value: Optional[Union[int, float, str, dict]] = None,
     custom_name_format: Optional[str] = None,
-    names_sort: Optional[bool] = True,
     aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
 ) -> pd.DataFrame:
     """
@@ -5021,8 +5020,6 @@ def pivot_wider(
         the `names_from` columns (and special `.value`) to create custom names.
         If `.value` is in the `custom_name_format`, it will refer to the values
         from the ``values_from`` column(s).
-    :names_sort: Sorts the column names lexicographically. If ``False``, column
-        names will be ordered by first appearance. Default is ``True``.
     :fill_value: Value to replace missing values with (after pivoting). It can
         be a number, string, or a dictionary, where the keys are the
         column_names, while the values are the values to replace the missing
@@ -5040,7 +5037,7 @@ def pivot_wider(
     :raises ValueError: if values in `index` or `names_from` or `values_from`
         do not exist in the dataframe.
     :raises ValueError: if `names_from` is None.
-    :raises ValueError: if combination of `index` and `names_from` is not
+    :raises ValueError: if the combination of `index` and `names_from` is not
         unique.
 
     .. # noqa: DAR402
@@ -5056,7 +5053,6 @@ def pivot_wider(
         names_sep,
         fill_value,
         custom_name_format,
-        names_sort,
         aggfunc,
     ) = _data_checks_pivot_wider(
         df,
@@ -5066,7 +5062,6 @@ def pivot_wider(
         names_sep,
         fill_value,
         custom_name_format,
-        names_sort,
         aggfunc,
     )
 
@@ -5078,7 +5073,6 @@ def pivot_wider(
         names_sep,
         fill_value,
         custom_name_format,
-        names_sort,
         aggfunc,
     )
 

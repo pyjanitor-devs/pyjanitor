@@ -1060,7 +1060,6 @@ def _data_checks_pivot_wider(
     names_sep,
     fill_value,
     custom_name_format,
-    names_sort,
     aggfunc,
 ):
 
@@ -1106,9 +1105,6 @@ def _data_checks_pivot_wider(
     if custom_name_format is not None:
         check("custom_name_format", custom_name_format, [str])
 
-    if names_sort is not None:
-        check("names_sort", names_sort, [bool])
-
     if aggfunc is not None:
         check("aggfunc", aggfunc, [str, Callable, list, dict])
 
@@ -1120,7 +1116,6 @@ def _data_checks_pivot_wider(
         names_sep,
         fill_value,
         custom_name_format,
-        names_sort,
         aggfunc,
     )
 
@@ -1133,7 +1128,6 @@ def _computations_pivot_wider(
     names_sep: Optional[str] = "_",
     fill_value: Optional[Union[int, float, str, dict]] = None,
     custom_name_format: Optional[str] = None,
-    names_sort: Optional[bool] = True,
     aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
 ) -> pd.DataFrame:
     """

@@ -5,8 +5,6 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-import janitor
-
 
 @pytest.fixture
 def df_checks_output():
@@ -80,6 +78,28 @@ def test_presence_names_from2(df_checks_output, names_from=["estimat"]):
         df_checks_output.pivot_wider(index="geoid", names_from=names_from)
 
 
+def test_values_from_first_wrong_type(
+    df_checks_output, names_from=["estimate", "variable"], values_from_first=2
+):
+    "Raise TypeError if the wrong type is provided for `values_from_first`."
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name",
+            names_from=names_from,
+            values_from_first=values_from_first,
+        )
+
+
+def test_name_prefix_wrong_type(
+    df_checks_output, names_from=["estimate", "variable"], names_prefix=1
+):
+    "Raise TypeError if the wrong type is provided for `names_prefix`."
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=names_from, names_prefix=names_prefix
+        )
+
+
 def test_name_sep_wrong_type(
     df_checks_output, names_from=["estimate", "variable"], names_sep=1
 ):
@@ -100,21 +120,7 @@ def test_fill_value_wrong_type(
         )
 
 
-def test_custom_name_format(
-    df_checks_output,
-    names_from=["estimate", "variable"],
-    custom_name_format={1},
-):
-    "Raise TypeError if the wrong type is provided for `custom_name_format`."
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name",
-            names_from=names_from,
-            ncustom_name_format=custom_name_format,
-        )
-
-
-def test_aggfunc(
+def test_aggfunc_wrong_type(
     df_checks_output, names_from=["estimate", "variable"], aggfunc=0
 ):
     "Raise TypeError if the wrong type is provided for `aggfunc`."
@@ -124,9 +130,31 @@ def test_aggfunc(
         )
 
 
+def test_dropna_wrong_type(
+    df_checks_output, names_from=["estimate", "variable"], dropna=0
+):
+    "Raise TypeError if the wrong type is provided for `dropna`."
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=names_from, dropna=dropna
+        )
+
+
+def test_non_unique_index_names_from_combination():
+    """
+    Raise ValueError for non-unique combination of
+    `index` and `names_from`.
+    """
+    df = pd.DataFrame(
+        {"A": ["A", "A", "A"], "L": ["L", "L", "L"], "numbers": [30, 54, 25]}
+    )
+    with pytest.raises(ValueError):
+        df.pivot_wider(index="A", names_from="L")
+
+
 def pivot_longer_wider_longer():
     """
-    Test that transformation from pivot_longer to wider and 
+    Test that transformation from pivot_longer to wider and
     back to longer returns the same source dataframe.
     """
     df = pd.DataFrame(
@@ -142,5 +170,3 @@ def pivot_longer_wider_longer():
     ).pivot_wider(index="name", names_from="drug", values_from="heartrate")
 
     assert_frame_equal(result, df)
-
-# write test if index is not unique

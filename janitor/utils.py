@@ -1057,10 +1057,12 @@ def _data_checks_pivot_wider(
     index,
     names_from,
     values_from,
+    values_from_first,
+    names_prefix,
     names_sep,
     fill_value,
-    custom_name_format,
     aggfunc,
+    dropna,
 ):
 
     """
@@ -1096,27 +1098,35 @@ def _data_checks_pivot_wider(
         else:
             check_column(df, values_from, present=True)
 
+    if values_from_first is not None:
+        check("values_from_first", values_from_first, [bool])
+
+    if names_prefix is not None:
+        check("names_prefix", names_prefix, [str])
+
     if names_sep is not None:
         check("names_sep", names_sep, [str])
 
     if fill_value is not None:
         check("fill_value", fill_value, [int, float, str, dict])
 
-    if custom_name_format is not None:
-        check("custom_name_format", custom_name_format, [str])
-
     if aggfunc is not None:
         check("aggfunc", aggfunc, [str, Callable, list, dict])
+
+    if dropna is not None:
+        check("dropna", dropna, [bool])
 
     return (
         df,
         index,
         names_from,
         values_from,
+        values_from_first,
+        names_prefix,
         names_sep,
         fill_value,
-        custom_name_format,
         aggfunc,
+        dropna,
     )
 
 
@@ -1125,54 +1135,51 @@ def _computations_pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Union[List, str] = None,
     values_from: Optional[Union[List, str]] = None,
+    values_from_first: Optional[bool] = True,
+    names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
     fill_value: Optional[Union[int, float, str, dict]] = None,
-    custom_name_format: Optional[str] = None,
     aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
+    dropna: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
-    There are a couple of scenarios that this function takes care of when
-    unpivoting :
-    1. Regular data unpivoting is covered with pandas melt.
-    2. if the length of `names_to` is > 1, the function unpivots the data,
-       using `pd.melt`, and then separates into individual columns, using
-       `str.split(expand=True)` if `names_sep` is provided or
-       `str.extractall()` if `names_pattern is provided. The labels in
-       `names_to` become the new column names.
-    3. If `names_to` contains `.value`, then the function replicates
-       `pd.wide_to_long`, using `pd.melt`. Unlike `pd.wide_to_long`, the
-       stubnames do not have to be prefixes, they just need to match the
-       position of `.value` in `names_to`. Just like in 2 above, the columns
-       are separated into individual columns. The labels in the column
-       corresponding to `.value` become the new column names, and override
-       `values_to` in the process. The other extracted column stays
-       (if len(`names_to`) is > 1), with the other name in `names_to` as
-       its column name.
-    The function also tries to emulate the way the source data is structured.
-    Say data looks like this :
-        id, a1, a2, a3, A1, A2, A3
-         1, a, b, c, A, B, C
-    when pivoted into long form, it will look like this :
-              id instance    a     A
-        0     1     1        a     A
-        1     1     2        b     B
-        2     1     3        c     C
-    where the columns `a` comes before `A`, as it was in the source data,
-    and in column `a`, `a > b > c`, also as it was in the source data.
-    This also visually creates a complete set of the data per index.
+    If `values_from` is a list, then every item in `values_from`
+    will be added to the front of each output column. This option
+    can be turned off with the `values_from_first` argument, in
+    which case, the `names_from` variables (or `names_prefix`, if
+    present) start each column.
+    If `aggfunc` is a list, then the name for each function is appended
+    to the tail of each output column.
+    The columns are sorted in the order of appearance from the
+    source data.
     """
 
     if df.loc[:, index + names_from].duplicated().any() and aggfunc is None:
         raise ValueError(
-            """There are non-unique values in your combination
-                   of `index` and `names_from`. Kindly provide a 
-                   unique identifier for each row."""
+            """
+            There are non-unique values in your combination
+            of `index` and `names_from`. Kindly provide a
+            unique identifier for each row.
+            """
         )
 
+    # this sorts the final output to match the form of the source data
     index_sorter = df.loc[:, index[0]].unique()
 
+    # use this to create categories for categorical index
+    # also comes in handy in sorting non MultiIndex dataframe
     mapping_names_from = {col: pd.unique(df.loc[:, col]) for col in names_from}
+
+    # with categorical dtypes, if the resulting pivot_table is a MultiIndex,
+    # the order of the column names will match the direction from the source
+    # data
+    df = df.astype(
+        {
+            key: CategoricalDtype(categories=value, ordered=True)
+            for key, value in mapping_names_from.items()
+        }
+    )
 
     if aggfunc is None:
         df = df.pivot_table(
@@ -1180,6 +1187,7 @@ def _computations_pivot_wider(
             columns=names_from,
             values=values_from,
             fill_value=fill_value,
+            dropna=dropna,
         )
 
     else:
@@ -1189,12 +1197,91 @@ def _computations_pivot_wider(
             values=values_from,
             aggfunc=aggfunc,
             fill_value=fill_value,
+            dropna=dropna,
         )
 
+    # checks if aggfunc has sequences as its values in a dict;
+    # this will generate a MultiIndex
+    aggfunc_true = None
+    if isinstance(aggfunc, dict):
+        aggfunc_true = any(
+            (
+                isinstance(value, (list, tuple, set))
+                for key, value in aggfunc.items()
+            )
+        )
 
-    return (
-        df.sort_index(level=mapping_names_from, axis="columns")
-        .reindex(index_sorter)
-        .reset_index()
-        .rename_axis(columns=None, index=None)
+    if isinstance(df.columns, pd.MultiIndex):
+        # a couple of checks within the MultiIndex
+        values_int_level = None
+        # this helps to get the integer level for values_from,
+        # allowing us to set a name
+        if isinstance(values_from, list):
+            # a way to check which levels have the values_from data
+            if df.columns.get_level_values(0).intersection(values_from).any():
+                values_int_level = 0
+            else:
+                values_int_level = 1
+            df.columns = df.columns.set_names(
+                "values_level", level=values_int_level
+            )
+            # reorder the level to match the order of the names in `values_from`
+            if len(values_from) > 1:
+                df = df.reindex(
+                    values_from, level="values_level", axis="columns"
+                )
+        aggfunc_list_like = None
+        if any((isinstance(aggfunc, (list, tuple, set)), aggfunc_true)):
+            aggfunc_list_like = True
+            # checks if `values_from` is not present (None),
+            # of if `values_from` is level 1
+            if any((values_int_level is None, values_int_level == 1)):
+                df.columns = df.columns.set_names("aggfunc_level", level=0)
+            else:
+                df.columns = df.columns.set_names("aggfunc_level", level=1)
+
+        # by default, if `values_from` is a list, it occupites the top
+        # position in the MultiIndex; as such, there is no need for a
+        # nested else statement after the nested if that checks for
+        # aggregation functions that might be a list.
+        if values_from_first:
+            if aggfunc_list_like:
+                df = df.reorder_levels(
+                    order=["values_level"] + names_from + ["aggfunc_level"],
+                    axis="columns",
+                )
+
+        # user does not want `values_from` to be at the front of
+        # each output column. This means the `names_from` values
+        # will be at the start of each column.
+        # aggfunc functions (if aggfunc is a list) will always be
+        # at the tail.
+        else:
+            if aggfunc_list_like:
+                df = df.reorder_levels(
+                    order=names_from + ["values_level", "aggfunc_level"],
+                    axis="columns",
+                )
+
+            else:
+                df = df.reorder_levels(
+                    order=names_from + ["values_level"], axis="columns",
+                )
+
+        df.columns = df.columns.to_flat_index().str.join(names_sep)
+        if names_prefix is not None:
+            return (
+                df.add_prefix(names_prefix)
+                .reindex(index_sorter, level=0)
+                .reset_index()
+            )
+        return df.reindex(index_sorter, level=0).reset_index()
+
+    # this kicks in if `df` is not a MultiIndex
+    df = df.sort_index(level=mapping_names_from, axis="columns").reindex(
+        index_sorter
     )
+    df.columns = df.columns.tolist()  # cannot reset with a categorical index
+    if names_prefix is not None:
+        return df.add_prefix(names_prefix).reset_index()
+    return df.reset_index()

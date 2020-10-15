@@ -4992,10 +4992,12 @@ def pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Union[List, str] = None,
     values_from: Optional[Union[List, str]] = None,
+    values_from_first: Optional[bool] = True,
+    names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
     fill_value: Optional[Union[int, float, str, dict]] = None,
-    custom_name_format: Optional[str] = None,
     aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
+    dropna: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
 
@@ -5009,17 +5011,17 @@ def pivot_wider(
         must be provided for ``names_from``.
     :param values_from: Name of column that will be used for populating new
         frame's values. Should be either a single column name, or a list of
-        column names. If ``values_from`` is a list, the value will be added 
-        to the front of the output column. If ``values_from`` is not 
+        column names. By default, if ``values_from`` is a list, the value 
+        will be added to the front of the output column; you can turn this 
+        off with the `values_from_first` argument. If ``values_from`` is not
         specified, all remaining columns will be used.
+    :param values_from_first: Determines if the values in `values_from` will
+        be at the front of the output column. Default is True.
+    :param names_prefix: String to be added to the front of each output column.
+        Can be handy if the values in ``names_from`` are numeric data types.
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
         to use as a column name. Default is ``_``.
-    :param custom_name_format: Instead of ``names_sep``, you can supply a
-        custom specification, using python's `f-strings` format, along with
-        the `names_from` columns (and special `.value`) to create custom names.
-        If `.value` is in the `custom_name_format`, it will refer to the values
-        from the ``values_from`` column(s).
     :fill_value: Value to replace missing values with (after pivoting). It can
         be a number, string, or a dictionary, where the keys are the
         column_names, while the values are the values to replace the missing
@@ -5028,6 +5030,7 @@ def pivot_wider(
         ``values_from``. It can also be a dictionary of functions, where the
         key is the column to aggregate, and the values is the aggregating
         function or functions.
+    :dropna: Default True. Do not include columns whose entries are all NaN.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         format.
     :raises TypeError: if `index` or `names_from` is not a string, or a list of
@@ -5050,19 +5053,23 @@ def pivot_wider(
         index,
         names_from,
         values_from,
+        values_from_first,
+        names_prefix,
         names_sep,
         fill_value,
-        custom_name_format,
         aggfunc,
+        dropna,
     ) = _data_checks_pivot_wider(
         df,
         index,
         names_from,
         values_from,
+        values_from_first,
+        names_prefix,
         names_sep,
         fill_value,
-        custom_name_format,
         aggfunc,
+        dropna,
     )
 
     df = _computations_pivot_wider(
@@ -5070,10 +5077,12 @@ def pivot_wider(
         index,
         names_from,
         values_from,
+        values_from_first,
+        names_prefix,
         names_sep,
         fill_value,
-        custom_name_format,
         aggfunc,
+        dropna,
     )
 
     return df

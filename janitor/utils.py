@@ -1217,7 +1217,7 @@ def _computations_pivot_wider(
         # this helps to get the integer level for values_from,
         # allowing us to set a name
         if isinstance(values_from, list):
-            # a way to check which levels have the values_from data
+            # a way to check which levels have the ``values_from``` data
             if df.columns.get_level_values(0).intersection(values_from).any():
                 values_int_level = 0
             else:
@@ -1226,21 +1226,21 @@ def _computations_pivot_wider(
                 "values_level", level=values_int_level
             )
             # reorder the level to match the order of the names in `values_from`
+            # no point reordering if it is a single entry in `values_from`
             if len(values_from) > 1:
                 df = df.reindex(
                     values_from, level="values_level", axis="columns"
                 )
         aggfunc_list_like = None
-        if any((isinstance(aggfunc, (list, tuple, set)), aggfunc_true)):
+        if values_int_level in (None, 1):
             aggfunc_list_like = True
-            # checks if `values_from` is not present (None),
-            # of if `values_from` is level 1
-            if any((values_int_level is None, values_int_level == 1)):
+
+            if values_int_level in (None, 1):
                 df.columns = df.columns.set_names("aggfunc_level", level=0)
             else:
                 df.columns = df.columns.set_names("aggfunc_level", level=1)
 
-        # by default, if `values_from` is a list, it occupites the top
+        # by default, if `values_from` is a list, it occupies the top
         # position in the MultiIndex; as such, there is no need for a
         # nested else statement after the nested if that checks for
         # aggregation functions that might be a list.

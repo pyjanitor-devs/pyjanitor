@@ -1044,8 +1044,6 @@ def _computations_pivot_longer(
             )
 
         # this kicks in if there is no `.value` in `names_to`
-        # here we reindex the before_df, to simulate the order of the columns
-        # in the source data.
         df = pd.DataFrame.join(
             before_df, [between_df, after_df], how="inner"
         ).reset_index(drop=True)
@@ -1092,14 +1090,22 @@ def _data_checks_pivot_wider(
         check_column(df, names_from, present=True)
 
     if values_from is not None:
-        check("values_from", values_from, [str, list])
         if isinstance(values_from, str):
-            check_column(df, [values_from], present=True)
-        else:
-            check_column(df, values_from, present=True)
+            values_from = [values_from]
+        check("values_from", values_from, [list])
+        check_column(df, values_from, present=True)
 
     if values_from_first is not None:
         check("values_from_first", values_from_first, [bool])
+        # create test for this
+        if isinstance(values_from, list):
+            if len(values_from) == 1 and (not values_from_first):
+                raise ValueError(
+                    """
+                    values_from_first is only applicable if the number
+                    of values in `values_from` is greater than 1.
+                    """
+                )
 
     if names_prefix is not None:
         check("names_prefix", names_prefix, [str])
@@ -1157,131 +1163,48 @@ def _computations_pivot_wider(
 
     if df.loc[:, index + names_from].duplicated().any() and aggfunc is None:
         raise ValueError(
-            """
-            There are non-unique values in your combination
-            of `index` and `names_from`. Kindly provide a
-            unique identifier for each row.
-            """
+            """There are non-unique values in your combination
+                   of `index` and `names_from`. Kindly provide a
+                   unique identifier for each row."""
         )
 
-    # this sorts the final output to match the form of the source data
-    index_sorter = df.loc[:, index[0]].unique()
-
-    # use this to create categories for categorical index
-    # also comes in handy in sorting non MultiIndex dataframe
-    mapping_names_from = {col: pd.unique(df.loc[:, col]) for col in names_from}
-
-    # with categorical dtypes, if the resulting pivot_table is a MultiIndex,
-    # the order of the column names will match the direction from the source
-    # data
-    df = df.astype(
-        {
-            key: CategoricalDtype(categories=value, ordered=True)
-            for key, value in mapping_names_from.items()
-        }
-    )
-
-    if aggfunc is None:
-        df = df.pivot_table(
-            index=index,
-            columns=names_from,
-            values=values_from,
-            fill_value=fill_value,
-            dropna=dropna,
-        )
-
+    # index_sorter is to ensure that the output has the same order
+    # as the input data
+    if len(index) == 1:
+        index_sorter = pd.unique(df.loc[:, index[0]])
     else:
-        df = df.pivot_table(
-            index=index,
-            columns=names_from,
-            values=values_from,
-            aggfunc=aggfunc,
-            fill_value=fill_value,
-            dropna=dropna,
-        )
+        index_sorter = df.loc[:, index].drop_duplicates()
+        index_sorter = pd.MultiIndex.from_frame(index_sorter)
 
-    # checks if aggfunc has sequences as its values in a dict;
-    # this will generate a MultiIndex
-    aggfunc_true = None
-    if isinstance(aggfunc, dict):
-        aggfunc_true = any(
-            (
-                isinstance(value, (list, tuple, set))
-                for key, value in aggfunc.items()
+    if isinstance(values_from, list):
+        to_delete = df.columns.difference(index + names_from + values_from)
+        if to_delete.any():
+            df = df.drop(to_delete, axis="columns")
+    to_delete = None
+
+    df = df.set_index(index + names_from).unstack(
+        names_from, fill_value=fill_value
+    )  # noqa PD010
+
+    if len(values_from) == 1:
+        df = df.droplevel(0, 1)
+    # reorder if user wants the values in `values_from` to be at the
+    # start of every output column. This kicks in only if the `values_from`
+    # is a list.
+    else:
+        df.columns = df.columns.set_names("values_level", level=0)
+        if not values_from_first:
+            df = df.reorder_levels(
+                order=names_from + ["values_level"], axis="columns"
             )
-        )
-
-    if isinstance(df.columns, pd.MultiIndex):
-        # a couple of checks within the MultiIndex
-        values_int_level = None
-        # this helps to get the integer level for values_from,
-        # allowing us to set a name
-        if isinstance(values_from, list):
-            # a way to check which levels have the ``values_from``` data
-            if df.columns.get_level_values(0).intersection(values_from).any():
-                values_int_level = 0
-            else:
-                values_int_level = 1
-            df.columns = df.columns.set_names(
-                "values_level", level=values_int_level
-            )
-            # reorder the level to match the order of the names in `values_from`
-            # no point reordering if it is a single entry in `values_from`
-            if len(values_from) > 1:
-                df = df.reindex(
-                    values_from, level="values_level", axis="columns"
-                )
-        aggfunc_list_like = None
-        if values_int_level in (None, 1):
-            aggfunc_list_like = True
-
-            if values_int_level in (None, 1):
-                df.columns = df.columns.set_names("aggfunc_level", level=0)
-            else:
-                df.columns = df.columns.set_names("aggfunc_level", level=1)
-
-        # by default, if `values_from` is a list, it occupies the top
-        # position in the MultiIndex; as such, there is no need for a
-        # nested else statement after the nested if that checks for
-        # aggregation functions that might be a list.
-        if values_from_first:
-            if aggfunc_list_like:
-                df = df.reorder_levels(
-                    order=["values_level"] + names_from + ["aggfunc_level"],
-                    axis="columns",
-                )
-
-        # user does not want `values_from` to be at the front of
-        # each output column. This means the `names_from` values
-        # will be at the start of each column.
-        # aggfunc functions (if aggfunc is a list) will always be
-        # at the tail.
-        else:
-            if aggfunc_list_like:
-                df = df.reorder_levels(
-                    order=names_from + ["values_level", "aggfunc_level"],
-                    axis="columns",
-                )
-
-            else:
-                df = df.reorder_levels(
-                    order=names_from + ["values_level"], axis="columns",
-                )
-
-        df.columns = df.columns.to_flat_index().str.join(names_sep)
-        if names_prefix is not None:
-            return (
-                df.add_prefix(names_prefix)
-                .reindex(index_sorter, level=0)
-                .reset_index()
-            )
-        return df.reindex(index_sorter, level=0).reset_index()
-
-    # this kicks in if `df` is not a MultiIndex
-    df = df.sort_index(level=mapping_names_from, axis="columns").reindex(
-        index_sorter
-    )
-    df.columns = df.columns.tolist()  # cannot reset with a categorical index
+    df = df.collapse_levels(sep=names_sep)
     if names_prefix is not None:
-        return df.add_prefix(names_prefix).reset_index()
-    return df.reset_index()
+        df = df.add_prefix(names_prefix)
+    # goal here is to make the output look like the source data in terms
+    #  of order if we have 'Wilbur, James, Ragnar, Wilbur, James, Ragnar'
+    #  in the source data, the pivoted data should have
+    # 'Wilbur, James, Ragnar' in that same order, and not sorted
+    # lexicographically.
+    if df.columns.names:
+        df.rename_axis(columns=None)
+    return df.loc[index_sorter].reset_index()

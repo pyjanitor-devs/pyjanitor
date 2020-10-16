@@ -110,6 +110,24 @@ def test_name_sep_wrong_type(
         )
 
 
+def test_values_from_len_equal_1(
+    df_checks_output,
+    names_from=["estimate", "variable"],
+    values_from_first=False,
+):
+    """
+    Raise ValueError if the length of `values_from` is 1 and
+    `values_from_first` is False.
+    """
+    with pytest.raises(ValueError):
+        df_checks_output.pivot_wider(
+            index="name",
+            names_from=names_from,
+            values_from="error",
+            values_from_first=False,
+        )
+
+
 def test_fill_value_wrong_type(
     df_checks_output, names_from=["estimate", "variable"], fill_value={2}
 ):

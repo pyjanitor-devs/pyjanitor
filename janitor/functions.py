@@ -5011,8 +5011,8 @@ def pivot_wider(
         must be provided for ``names_from``.
     :param values_from: Name of column that will be used for populating new
         frame's values. Should be either a single column name, or a list of
-        column names. By default, if ``values_from`` is a list, the value 
-        will be added to the front of the output column; you can turn this 
+        column names. By default, if ``values_from`` is a list, the value
+        will be added to the front of the output column; you can turn this
         off with the `values_from_first` argument. If ``values_from`` is not
         specified, all remaining columns will be used.
     :param values_from_first: Determines if the values in `values_from` will

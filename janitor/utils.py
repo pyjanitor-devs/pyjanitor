@@ -1158,7 +1158,7 @@ def _computations_pivot_wider(
     """
 
     # TODO : Change to pivot method once the minimum Pandas version
-    # is 1.1; should remove all this bloat and pass the buck to 
+    # is 1.1; should remove all this bloat and pass the buck to
     # Pandas
     if values_from is None:
         if index is not None:
@@ -1192,14 +1192,18 @@ def _computations_pivot_wider(
     if collapse_levels:
         column_reindex = pd.Index([])
         if len(names_from) == 1:
-            column_reindex = pd.unique(df.index.get_level_values(names_from[0]))
+            column_reindex = pd.unique(
+                df.index.get_level_values(names_from[0])
+            )
 
-        df = df.unstack(names_from, fill_value=fill_value) # noqa: PD010
+        df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
 
         df = df.reindex(index_sorter)
 
         if any(column_reindex):
-            df = df.reindex(column_reindex, level=names_from[0], axis="columns")
+            df = df.reindex(
+                column_reindex, level=names_from[0], axis="columns"
+            )
         column_reindex = None
 
         if len(values_from) == 1:
@@ -1222,9 +1226,11 @@ def _computations_pivot_wider(
         return df.reset_index()
 
     # MultiIndex rules!
-    df = df.unstack(names_from, fill_value=fill_value).reindex(index_sorter)  # noqa: PD010
+    df = df.unstack(names_from, fill_value=fill_value).reindex(
+        index_sorter
+    )  # noqa: PD010
 
     if len(values_from) == 1:
-            df = df.droplevel(0, 1)
+        df = df.droplevel(0, 1)
 
     return df

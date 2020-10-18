@@ -24,18 +24,16 @@ def read_requirements(*parts):
     requirements = []
     for line in read(*parts).splitlines():
         new_line = re.sub(
-            "(\s*)?#.*$",  # the space immediately before the
+            r"(\s*)?#.*$",  # the space immediately before the
             # hash mark, the hash mark, and
             # anything that follows it
             "",  # replace with a blank string
             line,
         )
         new_line = re.sub(
-            "-r.*$",  # the space immediately before the
-            # hash mark, the hash mark, and
-            # anything that follows it
+            r"-r.*$",  # link to another requirement file
             "",  # replace with a blank string
-            line,
+            new_line,
         )
         # print(line, "-->", new_line)
         if new_line:  # i.e. we have a non-zero-length string
@@ -66,7 +64,7 @@ for k1 in ["biology", "chemistry", "engineering", "spark"]:
     for v2 in EXTRA_REQUIRES[k1]:
         EXTRA_REQUIRES["docs"].append(v2)
 
-print(EXTRA_REQUIRES)
+# print(EXTRA_REQUIRES)
 
 
 def generate_long_description() -> str:

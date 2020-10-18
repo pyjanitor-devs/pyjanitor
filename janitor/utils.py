@@ -1055,12 +1055,11 @@ def _data_checks_pivot_wider(
     index,
     names_from,
     values_from,
+    collapse_levels,
     values_from_first,
     names_prefix,
     names_sep,
     fill_value,
-    aggfunc,
-    dropna,
 ):
 
     """
@@ -1097,7 +1096,6 @@ def _data_checks_pivot_wider(
 
     if values_from_first is not None:
         check("values_from_first", values_from_first, [bool])
-        # create test for this
         if isinstance(values_from, list):
             if len(values_from) == 1 and (not values_from_first):
                 raise ValueError(
@@ -1106,6 +1104,9 @@ def _data_checks_pivot_wider(
                     of values in `values_from` is greater than 1.
                     """
                 )
+
+    if collapse_levels is not None:
+        check("collapse_levels", collapse_levels, [bool])
 
     if names_prefix is not None:
         check("names_prefix", names_prefix, [str])
@@ -1116,37 +1117,29 @@ def _data_checks_pivot_wider(
     if fill_value is not None:
         check("fill_value", fill_value, [int, float, str, dict])
 
-    if aggfunc is not None:
-        check("aggfunc", aggfunc, [str, Callable, list, dict])
-
-    if dropna is not None:
-        check("dropna", dropna, [bool])
-
     return (
         df,
         index,
         names_from,
         values_from,
+        collapse_levels,
         values_from_first,
         names_prefix,
         names_sep,
         fill_value,
-        aggfunc,
-        dropna,
     )
 
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Union[List, str] = None,
-    values_from: Optional[Union[List, str]] = None,
+    names_from: List[str],
+    index: Optional[List] = None,
+    values_from: Optional[List] = None,
+    collapse_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
     fill_value: Optional[Union[int, float, str, dict]] = None,
-    aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
-    dropna: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
@@ -1155,56 +1148,83 @@ def _computations_pivot_wider(
     can be turned off with the `values_from_first` argument, in
     which case, the `names_from` variables (or `names_prefix`, if
     present) start each column.
-    If `aggfunc` is a list, then the name for each function is appended
-    to the tail of each output column.
+    The `unstack` method is used here, and not `pivot`; multiple
+    labels in the `index` or `names_from` are supported in the
+    `pivot` function for Pandas 1.1 and above. Also, the
+    `pivot_table` function is not used, because it is very slow,
+    compared to the `pivot` function and `unstack`.
     The columns are sorted in the order of appearance from the
     source data.
     """
 
-    if df.loc[:, index + names_from].duplicated().any() and aggfunc is None:
+    # TODO : Change to pivot method once the minimum Pandas version
+    # is 1.1; should remove all this bloat and pass the buck to 
+    # Pandas
+    if values_from is None:
+        if index is not None:
+            values_from = df.columns.difference(index + names_from)
+        else:
+            values_from = df.columns.difference(names_from)
+
+    if index is None:
+        df = df.set_index(names_from, append=True)
+
+    else:
+        df = df.set_index(index + names_from)
+
+    if not df.index.is_unique:
         raise ValueError(
             """There are non-unique values in your combination
                    of `index` and `names_from`. Kindly provide a
                    unique identifier for each row."""
         )
 
-    # index_sorter is to ensure that the output has the same order
-    # as the input data
-    if len(index) == 1:
-        index_sorter = pd.unique(df.loc[:, index[0]])
-    else:
-        index_sorter = df.loc[:, index].drop_duplicates()
-        index_sorter = pd.MultiIndex.from_frame(index_sorter)
-
-    if isinstance(values_from, list):
-        to_delete = df.columns.difference(index + names_from + values_from)
-        if to_delete.any():
-            df = df.drop(to_delete, axis="columns")
-    to_delete = None
-
-    df = df.set_index(index + names_from).unstack(
-        names_from, fill_value=fill_value
-    )  # noqa PD010
-
-    if len(values_from) == 1:
-        df = df.droplevel(0, 1)
-    # reorder if user wants the values in `values_from` to be at the
-    # start of every output column. This kicks in only if the `values_from`
-    # is a list.
-    else:
-        df.columns = df.columns.set_names("values_level", level=0)
-        if not values_from_first:
-            df = df.reorder_levels(
-                order=names_from + ["values_level"], axis="columns"
-            )
-    df = df.collapse_levels(sep=names_sep)
-    if names_prefix is not None:
-        df = df.add_prefix(names_prefix)
+    df = df.loc[:, values_from]
     # goal here is to make the output look like the source data in terms
     #  of order if we have 'Wilbur, James, Ragnar, Wilbur, James, Ragnar'
     #  in the source data, the pivoted data should have
     # 'Wilbur, James, Ragnar' in that same order, and not sorted
     # lexicographically.
-    if df.columns.names:
-        df.rename_axis(columns=None)
-    return df.loc[index_sorter].reset_index()
+    index_sorter = df.index.droplevel(names_from)
+    _, index_sorter = pd.factorize(index_sorter)
+    index_sorter = pd.unique(index_sorter)
+
+    if collapse_levels:
+        column_reindex = pd.Index([])
+        if len(names_from) == 1:
+            column_reindex = pd.unique(df.index.get_level_values(names_from[0]))
+
+        df = df.unstack(names_from, fill_value=fill_value) # noqa: PD010
+
+        df = df.reindex(index_sorter)
+
+        if any(column_reindex):
+            df = df.reindex(column_reindex, level=names_from[0], axis="columns")
+        column_reindex = None
+
+        if len(values_from) == 1:
+            df = df.droplevel(0, 1)
+        # reorder if user wants the values in `values_from` to be at the
+        # start of every output column.
+        else:
+            df.columns = df.columns.set_names("values_level", level=0)
+            if not values_from_first:
+                df = df.reorder_levels(
+                    order=names_from + ["values_level"], axis="columns"
+                )
+        df = df.collapse_levels(sep=names_sep)
+        if names_prefix is not None:
+            df = df.add_prefix(names_prefix)
+
+        if df.columns.names:
+            df = df.rename_axis(columns=None)
+
+        return df.reset_index()
+
+    # MultiIndex rules!
+    df = df.unstack(names_from, fill_value=fill_value).reindex(index_sorter)  # noqa: PD010
+
+    if len(values_from) == 1:
+            df = df.droplevel(0, 1)
+
+    return df

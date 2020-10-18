@@ -4989,15 +4989,14 @@ def pivot_longer(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
+    names_from: Union[List, str],
     index: Optional[Union[List, str]] = None,
-    names_from: Union[List, str] = None,
     values_from: Optional[Union[List, str]] = None,
+    collapse_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
     fill_value: Optional[Union[int, float, str, dict]] = None,
-    aggfunc: Optional[Union[Callable, str, List, Dict]] = None,
-    dropna: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
 
@@ -5015,22 +5014,24 @@ def pivot_wider(
         will be added to the front of the output column; you can turn this
         off with the `values_from_first` argument. If ``values_from`` is not
         specified, all remaining columns will be used.
+    :param collapse_levels: Default True. Determines if the dataframe stays
+        as a MultiIndex.
     :param values_from_first: Determines if the values in `values_from` will
-        be at the front of the output column. Default is True.
+        be at the front of the output column. This applies if the number of
+        items in ``values_from`` is more than one, and the levels are
+        collapsed. Default is True.
     :param names_prefix: String to be added to the front of each output column.
         Can be handy if the values in ``names_from`` are numeric data types.
+        Applicable only if the levels are collapsed.
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is ``_``.
+        to use as a column name. Default is ``_``. Applicable only if the
+        levels
+        are collapsed.
     :fill_value: Value to replace missing values with (after pivoting). It can
         be a number, string, or a dictionary, where the keys are the
         column_names, while the values are the values to replace the missing
         values with.
-    :aggfunc: Single function or list of functions to aggregate values from
-        ``values_from``. It can also be a dictionary of functions, where the
-        key is the column to aggregate, and the values is the aggregating
-        function or functions.
-    :dropna: Default True. Do not include columns whose entries are all NaN.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         format.
     :raises TypeError: if `index` or `names_from` is not a string, or a list of
@@ -5053,36 +5054,33 @@ def pivot_wider(
         index,
         names_from,
         values_from,
+        collapse_levels,
         values_from_first,
         names_prefix,
         names_sep,
         fill_value,
-        aggfunc,
-        dropna,
     ) = _data_checks_pivot_wider(
         df,
         index,
         names_from,
         values_from,
+        collapse_levels,
         values_from_first,
         names_prefix,
         names_sep,
         fill_value,
-        aggfunc,
-        dropna,
     )
 
     df = _computations_pivot_wider(
         df,
-        index,
         names_from,
+        index,
         values_from,
+        collapse_levels,
         values_from_first,
         names_prefix,
         names_sep,
         fill_value,
-        aggfunc,
-        dropna,
     )
 
     return df

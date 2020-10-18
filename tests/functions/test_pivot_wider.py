@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
@@ -74,6 +74,7 @@ combinations = [
         ["variable", "measure"],
         "value",
         None,
+        True,
     ),
     (
         pd.DataFrame(
@@ -126,6 +127,7 @@ combinations = [
         ["variable", "measure"],
         None,
         None,
+        True,
     ),
     (
         pd.DataFrame(
@@ -146,6 +148,7 @@ combinations = [
         "n",
         "name",
         None,
+        True,
     ),
     (
         pd.DataFrame(
@@ -166,6 +169,7 @@ combinations = [
         "n",
         "name",
         "name",
+        True,
     ),
     (
         pd.DataFrame(
@@ -196,12 +200,39 @@ combinations = [
         "variable",
         ["estimate", "error"],
         None,
+        True,
     ),
-
-
-
-
-
+    (
+        pd.DataFrame(
+            {
+                "geoid": [1, 1, 13, 13],
+                "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
+                "variable": [
+                    "pop_renter",
+                    "median_rent",
+                    "pop_renter",
+                    "median_rent",
+                ],
+                "estimate": [1434765, 747, 3592422, 927],
+                "error": [16736, 3, 33385, 3],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "geoid": {0: 1, 1: 13},
+                "name": {0: "Alabama", 1: "Georgia"},
+                "pop_renter_estimate": {0: 1434765, 1: 3592422},
+                "median_rent_estimate": {0: 747, 1: 927},
+                "pop_renter_error": {0: 16736, 1: 33385},
+                "median_rent_error": {0: 3, 1: 3},
+            }
+        ),
+        ["geoid", "name"],
+        "variable",
+        ["estimate", "error"],
+        None,
+        False,
+    ),
 ]
 
 
@@ -360,10 +391,17 @@ def pivot_longer_wider_longer():
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_from,values_from, names_prefix", combinations
+    "df_in,df_out,index,names_from,values_from, names_prefix,values_from_first",
+    combinations,
 )
 def test_pivot_wider_various(
-    df_in, df_out, index, names_from, values_from, names_prefix
+    df_in,
+    df_out,
+    index,
+    names_from,
+    values_from,
+    names_prefix,
+    values_from_first,
 ):
     """
     Test `pivot_wider` function with various combinations.
@@ -373,6 +411,7 @@ def test_pivot_wider_various(
         names_from=names_from,
         values_from=values_from,
         names_prefix=names_prefix,
+        values_from_first=values_from_first,
     )
     assert_frame_equal(result, df_out)
 
@@ -434,32 +473,31 @@ def test_fill_values():
         ),
         columns=pd.Int64Index([1, 2], dtype="int64", name="lev3"),
     )
-
     assert_frame_equal(result, expected_output)
 
 
 def test_no_index():
     "Test output if no index is supplied."
     df_in = pd.DataFrame(
-    {
-        "gender": ["Male", "Female", "Female", "Male", "Male"],
-        "contVar": [22379, 24523, 23421, 23831, 29234],
-    },
-    index=pd.Int64Index([0, 0, 1, 1, 2], dtype="int64"))
-
+        {
+            "gender": ["Male", "Female", "Female", "Male", "Male"],
+            "contVar": [22379, 24523, 23421, 23831, 29234],
+        },
+        index=pd.Int64Index([0, 0, 1, 1, 2], dtype="int64"),
+    )
 
     expected_output = pd.DataFrame(
     {
-        "Female": {0: 24523.0, 1: 23421.0, 2: np.nan},
         "Male": {0: 22379.0, 1: 23831.0, 2: 29234.0},
+        "Female": {0: 24523.0, 1: 23421.0, 2: np.nan},
     },
     index=pd.Int64Index([0, 1, 2], dtype="int64"),
 ).rename_axis(columns="gender")
 
-    result = df_in.pivot_wider(index=None, names_from='gender', values_from='contVar', collapse_levels=False)
-
+    result = df_in.pivot_wider(
+        index=None,
+        names_from="gender",
+        values_from="contVar",
+        collapse_levels=False,
+    )
     assert_frame_equal(result, expected_output)
-
-
-
-

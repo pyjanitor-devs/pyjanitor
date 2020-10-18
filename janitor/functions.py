@@ -4999,7 +4999,11 @@ def pivot_wider(
     fill_value: Optional[Union[int, float, str, dict]] = None,
 ) -> pd.DataFrame:
     """
+    Reshape data from long to wide form. The number of columns are
+    increased, while decreasing the number of rows. It is the inverse
+    of the `pivot_longer` method.
 
+    This method does not mutate the original DataFrame.
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
@@ -5014,8 +5018,8 @@ def pivot_wider(
         will be added to the front of the output column; you can turn this
         off with the `values_from_first` argument. If ``values_from`` is not
         specified, all remaining columns will be used.
-    :param collapse_levels: Default True. Determines if the dataframe stays
-        as a MultiIndex.
+    :param collapse_levels: Default True. Determines if the reshaped dataframe
+        stays as a MultiIndex.
     :param values_from_first: Determines if the values in `values_from` will
         be at the front of the output column. This applies if the number of
         items in ``values_from`` is more than one, and the levels are

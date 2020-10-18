@@ -1189,22 +1189,19 @@ def _computations_pivot_wider(
     _, index_sorter = pd.factorize(index_sorter)
     index_sorter = pd.unique(index_sorter)
 
+    # sorts the columns to match the order in `names_from`
+    column_reindex = pd.Index([])
+    if len(names_from) == 1:
+        column_reindex = pd.unique(df.index.get_level_values(names_from[0]))
+
     if collapse_levels:
-        column_reindex = pd.Index([])
-        if len(names_from) == 1:
-            column_reindex = pd.unique(
-                df.index.get_level_values(names_from[0])
-            )
-
         df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
-
         df = df.reindex(index_sorter)
 
         if any(column_reindex):
             df = df.reindex(
                 column_reindex, level=names_from[0], axis="columns"
             )
-        column_reindex = None
 
         if len(values_from) == 1:
             df = df.droplevel(0, 1)
@@ -1217,6 +1214,7 @@ def _computations_pivot_wider(
                     order=names_from + ["values_level"], axis="columns"
                 )
         df = df.collapse_levels(sep=names_sep)
+
         if names_prefix is not None:
             df = df.add_prefix(names_prefix)
 
@@ -1230,7 +1228,16 @@ def _computations_pivot_wider(
         index_sorter
     )  # noqa: PD010
 
+    # get the columns to match the order in `names_from`
+    # this should be executed before dropping the level
+    # if `names_from` length is 1
+    if any(column_reindex):
+            df = df.reindex(
+                column_reindex, level=names_from[0], axis="columns"
+            )
+
     if len(values_from) == 1:
-        df = df.droplevel(0, 1)
+            df = df.droplevel(0, 1)
+
 
     return df

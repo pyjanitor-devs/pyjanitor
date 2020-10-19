@@ -7,4 +7,4 @@
 mpmath==1.1.0             # via sympy
 numpy==1.19.2             # via unyt
 sympy==1.6.2              # via unyt
-unyt==2.7.2               # via -r ./.requirements/engineering.in
+unyt==2.8.0               # via -r ./.requirements/engineering.in

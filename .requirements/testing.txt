@@ -6,11 +6,11 @@
 #
 attrs==20.2.0             # via hypothesis, interrogate, pandas-vet, pytest
 click==7.1.2              # via interrogate
-colorama==0.4.3           # via interrogate
+colorama==0.4.4           # via interrogate
 coverage==5.3             # via pytest-cov
 flake8==3.8.4             # via pandas-vet
-hypothesis==5.37.0        # via -r ./.requirements/testing.in
-iniconfig==1.0.1          # via pytest
+hypothesis==5.37.3        # via -r ./.requirements/testing.in
+iniconfig==1.1.1          # via pytest
 interrogate==1.3.1        # via -r ./.requirements/testing.in
 mccabe==0.6.1             # via flake8
 packaging==20.4           # via pytest

@@ -30,9 +30,9 @@ jupyterlab-pygments==0.1.2  # via nbconvert
 markupsafe==1.1.1         # via jinja2
 mistune==0.8.4            # via nbconvert
 mpmath==1.1.0             # via sympy
-nbclient==0.5.0           # via nbconvert
+nbclient==0.5.1           # via nbconvert
 nbconvert==6.0.7          # via nbsphinx
-nbformat==5.0.7           # via nbclient, nbconvert, nbsphinx
+nbformat==5.0.8           # via nbclient, nbconvert, nbsphinx
 nbsphinx==0.7.1           # via -r ./.requirements/docs.in
 nest-asyncio==1.4.1       # via nbclient
 numpy==1.19.2             # via biopython, unyt
@@ -41,7 +41,7 @@ pandocfilters==1.4.2      # via nbconvert
 parso==0.7.1              # via jedi
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
-prompt-toolkit==3.0.7     # via ipython
+prompt-toolkit==3.0.8     # via ipython
 ptyprocess==0.6.0         # via pexpect
 py4j==0.10.9              # via pyspark
 pygments==2.7.1           # via ipython, jupyterlab-pygments, nbconvert, sphinx
@@ -65,9 +65,9 @@ sphinxcontrib-serializinghtml==1.1.4  # via sphinx
 sympy==1.6.2              # via unyt
 testpath==0.4.4           # via nbconvert
 tornado==6.0.4            # via jupyter-client
-tqdm==4.50.0              # via -r ./.requirements/chemistry.in
-traitlets==5.0.4          # via ipython, jupyter-client, jupyter-core, nbclient, nbconvert, nbformat, nbsphinx
-unyt==2.7.2               # via -r ./.requirements/engineering.in
+tqdm==4.50.2              # via -r ./.requirements/chemistry.in
+traitlets==5.0.5          # via ipython, jupyter-client, jupyter-core, nbclient, nbconvert, nbformat, nbsphinx
+unyt==2.8.0               # via -r ./.requirements/engineering.in
 urllib3==1.25.10          # via requests
 wcwidth==0.2.5            # via prompt-toolkit
 webencodings==0.5.1       # via bleach

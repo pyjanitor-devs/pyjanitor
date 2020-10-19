@@ -847,6 +847,9 @@ def _computations_pivot_longer(
 
         # reshape in the order that the data appears
         # this should be easier to do with ignore_index in pandas version 1.1
+        # TODO : Get the dtype of values and pass it to the final df
+        # way better and error proof than pd.to_numeric, which can
+        # muck dates up ... probably put it as a separate PR
         if index is not None:
             df = _reindex_func(df, index).reset_index(drop=True)
             return df.transform(pd.to_numeric, errors="ignore")
@@ -1189,19 +1192,24 @@ def _computations_pivot_wider(
     _, index_sorter = pd.factorize(index_sorter)
     index_sorter = pd.unique(index_sorter)
 
-    # sorts the columns to match the order in `names_from`
+    # Use this to get the columns to match the order in `names_from`
     column_reindex = pd.Index([])
     if len(names_from) == 1:
         column_reindex = pd.unique(df.index.get_level_values(names_from[0]))
 
-    if collapse_levels:
-        df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
-        df = df.reindex(index_sorter)
+    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
 
-        if any(column_reindex):
+    # get the columns to match the order in `names_from`
+    # this should be executed before dropping the level
+    # if `names_from` length is 1
+    if any(column_reindex):
             df = df.reindex(
                 column_reindex, level=names_from[0], axis="columns"
             )
+    
+    df = df.reindex(index_sorter)
+            
+    if collapse_levels:        
 
         if len(values_from) == 1:
             df = df.droplevel(0, 1)
@@ -1223,21 +1231,8 @@ def _computations_pivot_wider(
 
         return df.reset_index()
 
-    # MultiIndex rules!
-    df = df.unstack(names_from, fill_value=fill_value).reindex(
-        index_sorter
-    )  # noqa: PD010
-
-    # get the columns to match the order in `names_from`
-    # this should be executed before dropping the level
-    # if `names_from` length is 1
-    if any(column_reindex):
-            df = df.reindex(
-                column_reindex, level=names_from[0], axis="columns"
-            )
-
+    # MultiIndexes all the way!
     if len(values_from) == 1:
             df = df.droplevel(0, 1)
-
 
     return df

@@ -6,3 +6,4 @@ ipython
 -r chemistry.in
 -r engineering.in
 -r spark.in
+# -e .

@@ -35,6 +35,11 @@ def read_requirements(*parts):
             "",  # replace with a blank string
             new_line,
         )
+        new_line = re.sub(
+            r"-e \..*$",  # link to editable install
+            "",  # replace with a blank string
+            new_line,
+        )
         # print(line, "-->", new_line)
         if new_line:  # i.e. we have a non-zero-length string
             requirements.append(new_line)
@@ -64,7 +69,9 @@ for k1 in ["biology", "chemistry", "engineering", "spark"]:
     for v2 in EXTRA_REQUIRES[k1]:
         EXTRA_REQUIRES["docs"].append(v2)
 
-# print(EXTRA_REQUIRES)
+# this only prints when something breaks, and then it proves helpful in debugging
+from pprint import pprint
+pprint(EXTRA_REQUIRES)
 
 
 def generate_long_description() -> str:

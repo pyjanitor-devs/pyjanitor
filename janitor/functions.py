@@ -4995,7 +4995,7 @@ def pivot_wider(
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
-    fill_value: Optional[Union[int, float, str, dict]] = None,
+    fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
     Reshape data from long to wide form. The number of columns are

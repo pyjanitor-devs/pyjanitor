@@ -1099,14 +1099,6 @@ def _data_checks_pivot_wider(
 
     if values_from_first is not None:
         check("values_from_first", values_from_first, [bool])
-        if isinstance(values_from, list):
-            if len(values_from) == 1 and (not values_from_first):
-                raise ValueError(
-                    """
-                    values_from_first is only applicable if the number
-                    of values in `values_from` is greater than 1.
-                    """
-                )
 
     if flatten_levels is not None:
         check("flatten_levels", flatten_levels, [bool])
@@ -1118,7 +1110,7 @@ def _data_checks_pivot_wider(
         check("names_sep", names_sep, [str])
 
     if fill_value is not None:
-        check("fill_value", fill_value, [int, float, str, dict])
+        check("fill_value", fill_value, [int, float, str])
 
     return (
         df,
@@ -1135,14 +1127,14 @@ def _data_checks_pivot_wider(
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    index: Optional[List] = None,
+    index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
-    values_from: Optional[List] = None,
+    values_from: Optional[Union[List, str]] = None,
     flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
-    fill_value: Optional[Union[int, float, str, dict]] = None,
+    fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.

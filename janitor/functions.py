@@ -5117,14 +5117,13 @@ def pivot_wider(
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
         to use as a column name. Default is ``_``. Applicable only if the
-        levels
-        are collapsed.
+        levels are collapsed.
     :param fill_value: Value to replace missing values with (after pivoting).
         It can be a number, string, or a dictionary, where the keys are the
         column_names, while the values are the values to replace the missing
         values with.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
-        format.
+        form.
     :raises TypeError: if `index` or `names_from` is not a string, or a list of
         strings.
     :raises TypeError: if `names_sep` is not a string.

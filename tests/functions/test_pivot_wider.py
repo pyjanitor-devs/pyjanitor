@@ -236,109 +236,105 @@ combinations = [
 ]
 
 
-def test_type_index1(df_checks_output, index={"geoid"}):
+def test_type_index1(df_checks_output):
     "Raise TypeError if wrong type is provided for the `index`."
     with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(index=index, names_from="variable")
+        df_checks_output.pivot_wider(index={"geoid"}, names_from="variable")
 
 
-def test_type_index2(df_checks_output, index=("geoid", "name")):
+def test_type_index2(df_checks_output):
     "Raise TypeError if wrong type is provided for the `index`."
     with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(index=index, names_from="variable")
+        df_checks_output.pivot_wider(
+            index=("geoid", "name"), names_from="variable"
+        )
 
 
-def test_type_names_from1(df_checks_output, names_from={"variable"}):
+def test_type_names_from1(df_checks_output):
     "Raise TypeError if wrong type is provided for `names_from`."
     with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(index="geoid", names_from=names_from)
+        df_checks_output.pivot_wider(index="geoid", names_from={"variable"})
 
 
-def test_type_names_from2(df_checks_output, names_from=("variable",)):
+def test_type_names_from2(df_checks_output):
     "Raise TypeError if wrong type is provided for `names_from`."
     with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(index="geoid", names_from=names_from)
+        df_checks_output.pivot_wider(index="geoid", names_from=("variable",))
 
 
-def test_names_from_None(df_checks_output, names_from=None):
+def test_names_from_None(df_checks_output):
     "Raise ValueError if no value is provided for ``names_from``."
     with pytest.raises(ValueError):
-        df_checks_output.pivot_wider(index="geoid", names_from=names_from)
+        df_checks_output.pivot_wider(index="geoid", names_from=None)
 
 
-def test_presence_index1(df_checks_output, index="geo"):
+def test_presence_index1(df_checks_output):
     "Raise ValueError if labels in `index` do not exist."
     with pytest.raises(ValueError):
-        df_checks_output.pivot_wider(index=index, names_from="variable")
+        df_checks_output.pivot_wider(index="geo", names_from="variable")
 
 
-def test_presence_index2(df_checks_output, index=["geoid", "Name"]):
+def test_presence_index2(df_checks_output):
     "Raise ValueError if labels in `index` do not exist."
     with pytest.raises(ValueError):
-        df_checks_output.pivot_wider(index=index, names_from="variable")
+        df_checks_output.pivot_wider(
+            index=["geoid", "Name"], names_from="variable"
+        )
 
 
-def test_presence_names_from1(df_checks_output, names_from="estmt"):
+def test_presence_names_from1(df_checks_output):
     "Raise ValueError if labels in `names_from` do not exist."
     with pytest.raises(ValueError):
-        df_checks_output.pivot_wider(index="geoid", names_from=names_from)
+        df_checks_output.pivot_wider(index="geoid", names_from="estmt")
 
 
-def test_presence_names_from2(df_checks_output, names_from=["estimat"]):
+def test_presence_names_from2(df_checks_output):
     "Raise ValueError if labels in `names_from` do not exist."
     with pytest.raises(ValueError):
-        df_checks_output.pivot_wider(index="geoid", names_from=names_from)
+        df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
 
 
-def test_values_from_first_wrong_type(
-    df_checks_output, names_from=["estimate", "variable"], values_from_first=2
-):
+def test_values_from_first_wrong_type(df_checks_output):
     "Raise TypeError if the wrong type is provided for `values_from_first`."
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index="name",
-            names_from=names_from,
-            values_from_first=values_from_first,
+            names_from=["estimate", "variable"],
+            values_from_first=2,
         )
 
 
-def test_flatten_levels_wrong_type(
-    df_checks_output, names_from=["estimate", "variable"], flatten_levels=2
-):
+def test_flatten_levels_wrong_type(df_checks_output,):
     "Raise TypeError if the wrong type is provided for `flatten_levels`."
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
-            index="name", names_from=names_from, flatten_levels=flatten_levels,
+            index="name",
+            names_from=["estimate", "variable"],
+            flatten_levels=2,
         )
 
 
-def test_name_prefix_wrong_type(
-    df_checks_output, names_from=["estimate", "variable"], names_prefix=1
-):
+def test_name_prefix_wrong_type(df_checks_output):
     "Raise TypeError if the wrong type is provided for `names_prefix`."
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
-            index="name", names_from=names_from, names_prefix=names_prefix
+            index="name", names_from=["estimate", "variable"], names_prefix=1
         )
 
 
-def test_name_sep_wrong_type(
-    df_checks_output, names_from=["estimate", "variable"], names_sep=1
-):
+def test_name_sep_wrong_type(df_checks_output):
     "Raise TypeError if the wrong type is provided for `names_sep`."
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
-            index="name", names_from=names_from, names_sep=names_sep
+            index="name", names_from=["estimate", "variable"], names_sep=1
         )
 
 
-def test_fill_value_wrong_type(
-    df_checks_output, names_from=["estimate", "variable"], fill_value={2}
-):
+def test_fill_value_wrong_type(df_checks_output):
     "Raise TypeError if the wrong type is provided for `fill_value`."
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
-            index="name", names_from=names_from, fill_value=fill_value
+            index="name", names_from=["estimate", "variable"], fill_value={2}
         )
 
 

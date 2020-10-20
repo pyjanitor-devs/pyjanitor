@@ -5000,8 +5000,8 @@ def pivot_wider(
     """
     Reshape data from long to wide form. The number of columns are
     increased, while decreasing the number of rows. It is the inverse
-    of the `pivot_longer` method. It is a wrapper around Pandas'
-    ``unstack``method.
+    of the `pivot_longer` method. It is a wrapper around `pd.unstack` 
+    method.
 
     This method does not mutate the original DataFrame.
 

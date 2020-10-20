@@ -1298,7 +1298,7 @@ def test_pivot_index_patterns_only(df_checks_output):
 
 
 def test_pivot_columns_patterns_only(df_checks_output):
-    "Raise TypeError if `dtypes` is a wrong type."
+    "Test output if the `patterns` function is passed to `column_names`."
     result = df_checks.pivot_longer(
         column_names=patterns(r"\d+"), names_to="year", values_to="num_nests"
     )

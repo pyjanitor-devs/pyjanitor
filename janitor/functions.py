@@ -4941,8 +4941,8 @@ def pivot_longer(
         if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
-    :param dtypes: A dictionary mapping data types to the newly created
-        columns.
+    :param dtypes: A dictionary mapping data types to columns in the new
+        dataframe.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
     :raises TypeError: if `index` or `column_names` is not a string, or a

@@ -370,7 +370,43 @@ def test_non_unique_index_names_from_combination():
         df.pivot_wider(index="A", names_from="L")
 
 
-def pivot_longer_wider_longer():
+def test_pivot_long_wide_long():
+    """
+    Test transformation from long to wide and back to long form.
+    """
+
+    df_in = pd.DataFrame(
+        [
+            {
+                "a": 1,
+                "b": 2,
+                "name": "ben",
+                "points": 22,
+                "marks": 5,
+                "sets": 13,
+            },
+            {
+                "a": 1,
+                "b": 2,
+                "name": "dave",
+                "points": 23,
+                "marks": 4,
+                "sets": 11,
+            },
+        ]
+    )
+
+    result = df_in.pivot_wider(
+        index=["a", "b"], names_from="name", values_from_first=False
+    )
+
+    result = result.pivot_longer(
+        index=["a", "b"], names_to=("name", ".value"), names_sep="_"
+    )
+    assert_frame_equal(result, df_in)
+
+
+def pivot_wide_long_wide():
     """
     Test that transformation from pivot_longer to wider and
     back to longer returns the same source dataframe.
@@ -385,13 +421,20 @@ def pivot_longer_wider_longer():
 
     result = df.pivot_longer(
         column_names=["a", "b"], names_to="drug", values_to="heartrate"
-    ).pivot_wider(index="name", names_from="drug", values_from="heartrate")
+    )
+
+    result = result.pivot_wider(
+        index="name", names_from="drug", values_from="heartrate"
+    )
 
     assert_frame_equal(result, df)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_from,values_from, names_prefix,values_from_first",
+    """
+    df_in,df_out,index,names_from,
+    values_from, names_prefix,values_from_first
+    """,
     combinations,
 )
 def test_pivot_wider_various(
@@ -435,10 +478,12 @@ def test_collapse_levels_false():
         collapse_levels=False,
     )
 
+    expected_output = df_collapse.pivot(  # noqa: PD010
+        index="foo", columns="bar", values=["baz", "zoo"]
+    )
+
     assert_frame_equal(
-        result,
-        df_collapse.pivot(index="foo", columns="bar", values=["baz", "zoo"]),
-        check_dtype=False,
+        result, expected_output, check_dtype=False,
     )
 
 
@@ -487,12 +532,12 @@ def test_no_index():
     )
 
     expected_output = pd.DataFrame(
-    {
-        "Male": {0: 22379.0, 1: 23831.0, 2: 29234.0},
-        "Female": {0: 24523.0, 1: 23421.0, 2: np.nan},
-    },
-    index=pd.Int64Index([0, 1, 2], dtype="int64"),
-).rename_axis(columns="gender")
+        {
+            "Female": {0: 24523.0, 1: 23421.0, 2: np.nan},
+            "Male": {0: 22379.0, 1: 23831.0, 2: 29234.0},
+        },
+        index=pd.Int64Index([0, 1, 2], dtype="int64"),
+    ).rename_axis(columns="gender")
 
     result = df_in.pivot_wider(
         index=None,

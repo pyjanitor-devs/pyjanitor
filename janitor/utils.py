@@ -1165,9 +1165,11 @@ def _computations_pivot_wider(
     # Pandas
     if values_from is None:
         if index is not None:
-            values_from = df.columns.difference(index + names_from)
+            values_from = [
+                col for col in df.columns if col not in (index + names_from)
+            ]
         else:
-            values_from = df.columns.difference(names_from)
+            values_from = [col for col in df.columns if col not in names_from]
 
     if index is None:
         df = df.set_index(names_from, append=True)
@@ -1183,33 +1185,35 @@ def _computations_pivot_wider(
         )
 
     df = df.loc[:, values_from]
-    # goal here is to make the output look like the source data in terms
-    #  of order if we have 'Wilbur, James, Ragnar, Wilbur, James, Ragnar'
-    #  in the source data, the pivoted data should have
-    # 'Wilbur, James, Ragnar' in that same order, and not sorted
-    # lexicographically.
-    index_sorter = df.index.droplevel(names_from)
-    _, index_sorter = pd.factorize(index_sorter)
-    index_sorter = pd.unique(index_sorter)
 
-    # Use this to get the columns to match the order in `names_from`
-    column_reindex = pd.Index([])
-    if len(names_from) == 1:
-        column_reindex = pd.unique(df.index.get_level_values(names_from[0]))
+    if collapse_levels:
+        # goal here is to make the output look like the source data in terms
+        #  of order if we have 'Wilbur, James, Ragnar, Wilbur, James, Ragnar'
+        #  in the source data, the pivoted data should have
+        # 'Wilbur, James, Ragnar' in that same order, and not sorted
+        # lexicographically.
+        index_sorter = df.index.droplevel(names_from)
+        _, index_sorter = pd.factorize(index_sorter)
+        index_sorter = pd.unique(index_sorter)
 
-    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
+        # Use this to get the columns to match the order in `names_from`
+        column_reindex = pd.Index([])
+        if len(names_from) == 1:
+            column_reindex = pd.unique(
+                df.index.get_level_values(names_from[0])
+            )
 
-    # get the columns to match the order in `names_from`
-    # this should be executed before dropping the level
-    # if `names_from` length is 1
-    if any(column_reindex):
+        df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
+
+        # get the columns to match the order in `names_from`
+        # this should be executed before dropping the level
+        # if `names_from` length is 1
+        if any(column_reindex):
             df = df.reindex(
                 column_reindex, level=names_from[0], axis="columns"
             )
-    
-    df = df.reindex(index_sorter)
-            
-    if collapse_levels:        
+
+        df = df.reindex(index_sorter)
 
         if len(values_from) == 1:
             df = df.droplevel(0, 1)
@@ -1231,8 +1235,10 @@ def _computations_pivot_wider(
 
         return df.reset_index()
 
-    # MultiIndexes all the way!
+    # if not flattened, the resulting dataframe might be a MultiIndex
+    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
+
     if len(values_from) == 1:
-            df = df.droplevel(0, 1)
+        df = df.droplevel(0, 1)
 
     return df

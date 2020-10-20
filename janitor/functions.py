@@ -5001,9 +5001,47 @@ def pivot_wider(
     """
     Reshape data from long to wide form. The number of columns are
     increased, while decreasing the number of rows. It is the inverse
-    of the `pivot_longer` method.
+    of the `pivot_longer` method. It is a wrapper around the ``unstack``
+    method.
 
     This method does not mutate the original DataFrame.
+
+    Example 1: The dataframe below is from the ``dcldata`` package in R.
+
+    .. code-block:: python
+
+        a	b	name	points	marks	sets
+    0	1	2	ben	    22	    5	    13
+    1	1	2	dave	23	    4	    11
+
+    Reshaping to wide form :
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).pivot_wider(index=['name', 'initials'],
+                                           names_from='subject')
+
+
+
+    a	b	ben_points	dave_points	ben_marks	dave_marks	ben_sets	dave_sets
+    0	1	2	22	23	5	4	13	11
+
+    We can add a prefix to the column names :
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).pivot_wider(index='family',
+                                           names_from='n',
+                                           names_prefix="twin_")
+
+        family	twin_1	twin_2
+    0	Kelly	Mark	Scott
+    1  	Quin	Tegan	Sara
+
+    We can also prevent collapsing the levels with the `collapse_levels`
+    argument:
+
+
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.

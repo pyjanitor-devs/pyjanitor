@@ -4989,7 +4989,7 @@ def pivot_longer(
 def pivot_wider(
     df: pd.DataFrame,
     index: Optional[Union[List, str]] = None,
-    names_from: Union[List, str] = None,
+    names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
     flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,

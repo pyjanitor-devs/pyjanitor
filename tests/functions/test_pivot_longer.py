@@ -38,6 +38,125 @@ paired_columns_pattern = [
     (
         pd.DataFrame(
             {
+                "off_loc": ["A", "B", "C", "D", "E", "F"],
+                "pt_loc": ["G", "H", "I", "J", "K", "L"],
+                "pt_lat": [
+                    100.07548220000001,
+                    75.191326,
+                    122.65134479999999,
+                    124.13553329999999,
+                    124.13553329999999,
+                    124.01028909999998,
+                ],
+                "off_lat": [
+                    121.271083,
+                    75.93845266,
+                    135.043791,
+                    134.51128400000002,
+                    134.484374,
+                    137.962195,
+                ],
+                "pt_long": [
+                    4.472089953,
+                    -144.387785,
+                    -40.45611048,
+                    -46.07156181,
+                    -46.07156181,
+                    -46.01594293,
+                ],
+                "off_long": [
+                    -7.188632000000001,
+                    -143.2288569,
+                    21.242563,
+                    40.937416999999996,
+                    40.78472,
+                    22.905889000000002,
+                ],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "set": "off",
+                    "loc": "A",
+                    "lat": 121.271083,
+                    "long": -7.188632000000001,
+                },
+                {
+                    "set": "off",
+                    "loc": "B",
+                    "lat": 75.93845266,
+                    "long": -143.2288569,
+                },
+                {
+                    "set": "off",
+                    "loc": "C",
+                    "lat": 135.043791,
+                    "long": 21.242563,
+                },
+                {
+                    "set": "off",
+                    "loc": "D",
+                    "lat": 134.51128400000002,
+                    "long": 40.937416999999996,
+                },
+                {
+                    "set": "off",
+                    "loc": "E",
+                    "lat": 134.484374,
+                    "long": 40.78472,
+                },
+                {
+                    "set": "off",
+                    "loc": "F",
+                    "lat": 137.962195,
+                    "long": 22.905889000000002,
+                },
+                {
+                    "set": "pt",
+                    "loc": "G",
+                    "lat": 100.07548220000001,
+                    "long": 4.472089953,
+                },
+                {
+                    "set": "pt",
+                    "loc": "H",
+                    "lat": 75.191326,
+                    "long": -144.387785,
+                },
+                {
+                    "set": "pt",
+                    "loc": "I",
+                    "lat": 122.65134479999999,
+                    "long": -40.45611048,
+                },
+                {
+                    "set": "pt",
+                    "loc": "J",
+                    "lat": 124.13553329999999,
+                    "long": -46.07156181,
+                },
+                {
+                    "set": "pt",
+                    "loc": "K",
+                    "lat": 124.13553329999999,
+                    "long": -46.07156181,
+                },
+                {
+                    "set": "pt",
+                    "loc": "L",
+                    "lat": 124.01028909999998,
+                    "long": -46.01594293,
+                },
+            ]
+        ),
+        None,
+        ("set", ".value"),
+        "(.+)_(.+)",
+    ),
+    (
+        pd.DataFrame(
+            {
                 "id": [1, 2, 3],
                 "M_start_date_1": [201709, 201709, 201709],
                 "M_end_date_1": [201905, 201905, 201905],
@@ -201,6 +320,67 @@ paired_columns_pattern = [
         (".value", "status"),
         "(.*)_(.*)",
         {"status": str},
+    ),
+    (
+        pd.DataFrame(
+            {
+                "Sony|TV|Model|value": {0: "A222", 1: "A234", 2: "A4345"},
+                "Sony|TV|Quantity|value": {0: 5, 1: 5, 2: 4},
+                "Sony|TV|Max-quant|value": {0: 10, 1: 9, 2: 9},
+                "Panasonic|TV|Model|value": {
+                    0: "T232",
+                    1: "S3424",
+                    2: "X3421",
+                },
+                "Panasonic|TV|Quantity|value": {0: 1, 1: 5, 2: 1},
+                "Panasonic|TV|Max-quant|value": {0: 10, 1: 12, 2: 11},
+                "Sanyo|Radio|Model|value": {0: "S111", 1: "S1s1", 2: "S1s2"},
+                "Sanyo|Radio|Quantity|value": {0: 4, 1: 2, 2: 4},
+                "Sanyo|Radio|Max-quant|value": {0: 9, 1: 9, 2: 10},
+            }
+        ),
+        pd.DataFrame(
+            {
+                "Manufacturer": [
+                    "Sony",
+                    "Sony",
+                    "Sony",
+                    "Panasonic",
+                    "Panasonic",
+                    "Panasonic",
+                    "Sanyo",
+                    "Sanyo",
+                    "Sanyo",
+                ],
+                "Device": [
+                    "TV",
+                    "TV",
+                    "TV",
+                    "TV",
+                    "TV",
+                    "TV",
+                    "Radio",
+                    "Radio",
+                    "Radio",
+                ],
+                "Model": [
+                    "A222",
+                    "A234",
+                    "A4345",
+                    "T232",
+                    "S3424",
+                    "X3421",
+                    "S111",
+                    "S1s1",
+                    "S1s2",
+                ],
+                "Quantity": [5, 5, 4, 1, 5, 1, 4, 2, 4],
+                "Max-quant": [10, 9, 9, 10, 12, 11, 9, 9, 10],
+            }
+        ),
+        None,
+        ("Manufacturer", "Device", ".value"),
+        r"(.+)\|(.+)\|(.+)\|.*",
     ),
 ]
 
@@ -879,6 +1059,7 @@ multiple_values_pattern = [
 ]
 
 
+<<<<<<< HEAD
 # https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/10
 paired_columns_no_index_pattern = [
     (
@@ -1002,6 +1183,8 @@ paired_columns_no_index_pattern = [
     )
 ]
 
+=======
+>>>>>>> aa3150e7b8e2adc4733ea206ea9c3093e21d4025
 names_single_value = [
     (
         pd.DataFrame(
@@ -1045,6 +1228,77 @@ names_single_value = [
     ),
 ]
 
+
+names_pattern_list_regex = [
+    (
+        pd.DataFrame(
+            [
+                {
+                    "ID": 1,
+                    "DateRange1Start": "1/1/90",
+                    "DateRange1End": "3/1/90",
+                    "Value1": 4.4,
+                    "DateRange2Start": "4/5/91",
+                    "DateRange2End": "6/7/91",
+                    "Value2": 6.2,
+                    "DateRange3Start": "5/5/95",
+                    "DateRange3End": "6/6/96",
+                    "Value3": 3.3,
+                }
+            ]
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "ID": 1,
+                    "DateRangeStart": "1/1/90",
+                    "DateRangeEnd": "3/1/90",
+                    "Value": 4.4,
+                },
+                {
+                    "ID": 1,
+                    "DateRangeStart": "4/5/91",
+                    "DateRangeEnd": "6/7/91",
+                    "Value": 6.2,
+                },
+                {
+                    "ID": 1,
+                    "DateRangeStart": "5/5/95",
+                    "DateRangeEnd": "6/6/96",
+                    "Value": 3.3,
+                },
+            ]
+        ),
+        "ID",
+        ("DateRangeStart", "DateRangeEnd", "Value"),
+        ("Start$", "End$", "^Value"),
+    ),
+    (
+        pd.DataFrame(
+            {
+                "Race": ["Elf", "Hobbit", "Man"],
+                "Female_FoTR": [1229, 14, 0],
+                "Male_FoTR": [971, 3644, 1995],
+                "Female_TT": [331, 0, 401],
+                "Male_TT": [513, 2463, 3589],
+                "Female_RoTK": [183, 2, 268],
+                "Male_RoTK": [510, 2673, 2459],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "Race": ["Elf", "Elf", "Hobbit", "Hobbit", "Man", "Man"],
+                "FOTR": [1229, 971, 14, 3644, 0, 1995],
+                "TT": [331, 513, 0, 2463, 401, 3589],
+            }
+        ),
+        "Race",
+        ("FOTR", "TT"),
+        ("FoTR$", "TT$"),
+    ),
+]
+
+
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
 names_to_labels = [1, {12, "newnames"}]
@@ -1087,9 +1341,30 @@ names_sep_type_check = [
     (df_checks, ["rar", "bar"], 1),
     (df_checks, ("rar", "ragnar"), ["\\d+"]),
 ]
+
 names_pattern_type_check = [
     (df_checks, "rar", 1),
-    (df_checks, ["rar"], ["\\d+"]),
+    (df_checks, {"rar"}, {"\\d+"}),
+]
+
+names_pattern_subtype_check = [
+    (df_checks, ["rar", "baz"], ["1", 1]),
+    (df_checks, ("rar", "baz"), ("\\w+", True)),
+]
+
+names_pattern_names_to_type_check = [
+    (df_checks, "rar", ["1"]),
+    (df_checks, {"rar"}, ("\\d+")),
+]
+
+names_pattern_len_type_check = [
+    (df_checks, ["rar", "baz"], ["1"]),
+    (df_checks, ("rar", "baz"), ("\\w+", "\\s+", "\\d+")),
+]
+
+names_pattern_names_to_dot_value_check = [
+    (df_checks, ["rar", ".value"], ["1", "2"]),
+    (df_checks, (".value", "baz"), ("\\w+", "\\s+")),
 ]
 
 
@@ -1164,6 +1439,64 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
 
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_len", names_pattern_len_type_check
+)
+def test_name_pattern_wrong_len(df, names_to, names_pattern_len):
+    """
+    Raise ValueError if the length of `names_pattern` does not
+    match the length of ``names_to``.
+    """
+    with pytest.raises(ValueError):
+        df.pivot_longer(names_to=names_to, names_pattern=names_pattern_len)
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_subtype", names_pattern_subtype_check
+)
+def test_name_pattern_wrong_subtype(df, names_to, names_pattern_subtype):
+    """
+    Raise TypeError if the sub type in `names_pattern` is the
+    wrong type.
+    """
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to, names_pattern=names_pattern_subtype)
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_names_to_type",
+    names_pattern_names_to_type_check,
+)
+def test_names_pattern_names_to_type(
+    df, names_to, names_pattern_names_to_type
+):
+    """
+    Raise TypeError if `names_pattern` is a list/tuple and
+    names_to is not a list/tuple.
+    """
+    with pytest.raises(TypeError):
+        df.pivot_longer(
+            names_to=names_to, names_pattern=names_pattern_names_to_type
+        )
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern_names_to_dot_value",
+    names_pattern_names_to_dot_value_check,
+)
+def test_names_pattern_names_to_dot_value(
+    df, names_to, names_pattern_names_to_dot_value
+):
+    """
+    Raise ValueError if ``names_pattern`` is a list/tuple
+    and '.value' is in ``names_to``.
+    """
+    with pytest.raises(ValueError):
+        df.pivot_longer(
+            names_to=names_to, names_pattern=names_pattern_names_to_dot_value
+        )
+
+
 @pytest.mark.parametrize("df", multi_index_df)
 def test_warning_multi_index(df):
     "Raise Warning if dataframe is a MultiIndex."
@@ -1236,6 +1569,28 @@ def test_duplicate_dot_value():
     with pytest.raises(ValueError):
         data.pivot_longer(
             names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
+        )
+
+
+def test_no_returns_from_regex():
+    "Raise error if there are no returns from the regex in ``names_pattern``."
+    data = pd.DataFrame(
+        {
+            "Sony|TV|Model|value": {0: "A222", 1: "A234", 2: "A4345"},
+            "Sony|TV|Quantity|value": {0: 5, 1: 5, 2: 4},
+            "Sony|TV|Max-quant|value": {0: 10, 1: 9, 2: 9},
+            "Panasonic|TV|Model|value": {0: "T232", 1: "S3424", 2: "X3421"},
+            "Panasonic|TV|Quantity|value": {0: 1, 1: 5, 2: 1},
+            "Panasonic|TV|Max-quant|value": {0: 10, 1: 12, 2: 11},
+            "Sanyo|Radio|Model|value": {0: "S111", 1: "S1s1", 2: "S1s2"},
+            "Sanyo|Radio|Quantity|value": {0: 4, 1: 2, 2: 4},
+            "Sanyo|Radio|Max-quant|value": {0: 9, 1: 9, 2: 10},
+        }
+    )
+    with pytest.raises(ValueError):
+        data.pivot_longer(
+            names_to=("manufacturer", "device", ".value"),
+            names_pattern=r"(\d+)(\d+)(\d+)",
         )
 
 
@@ -1381,18 +1736,30 @@ def test_multiple_values_pattern(
 
 
 @pytest.mark.parametrize(
+<<<<<<< HEAD
     "df_in,df_out,names_to,names_pattern,dtypes",
     paired_columns_no_index_pattern,
 )
 def test_paired_columns_no_index_pattern(
     df_in, df_out, names_to, names_pattern, dtypes
+=======
+    "df_in,df_out,index,names_to,names_pattern", names_pattern_list_regex
+)
+def test_names_pattern_list_regex(
+    df_in, df_out, index, names_to, names_pattern
+>>>>>>> aa3150e7b8e2adc4733ea206ea9c3093e21d4025
 ):
     """
-    Test function where `.value` is in the `names_to` argument, names_pattern
-    is used and no index is supplied.
+    Test function to extract multiple columns, using the `names_to` and
+    `names_pattern arguments`, if `names_pattern` is a list of regular
+    expressions.
     """
     result = df_in.pivot_longer(
+<<<<<<< HEAD
         names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
+=======
+        index=index, names_to=names_to, names_pattern=names_pattern,
+>>>>>>> aa3150e7b8e2adc4733ea206ea9c3093e21d4025
     )
     assert_frame_equal(result, df_out)
 

@@ -530,3 +530,30 @@ def test_no_index():
         flatten_levels=False,
     )
     assert_frame_equal(result, expected_output)
+
+
+def test_no_index_values_from():
+    "Test output if neither `index` nor `values_from` is supplied."
+    df_in = pd.DataFrame(
+        {
+            "gender": ["Male", "Female", "Female", "Male", "Male"],
+            "contVar": [22379, 24523, 23421, 23831, 29234],
+        },
+        index=pd.Int64Index([0, 0, 1, 1, 2], dtype="int64"),
+    )
+
+    expected_output = pd.DataFrame(
+        {
+            "Female": {0: 24523.0, 1: 23421.0, 2: np.nan},
+            "Male": {0: 22379.0, 1: 23831.0, 2: 29234.0},
+        },
+        index=pd.Int64Index([0, 1, 2], dtype="int64"),
+    ).rename_axis(columns="gender")
+
+    result = df_in.pivot_wider(
+        index=None,
+        names_from="gender",
+        values_from=None,
+        flatten_levels=False,
+    )
+    assert_frame_equal(result, expected_output)

@@ -4932,7 +4932,7 @@ def pivot_longer(
         specification as pandas' `str.split` method, and can be a string
         or regular expression.
     :param names_pattern: Determines how the column name is broken up.
-        It can be a regular expression containing matching groups, or a 
+        It can be a regular expression containing matching groups, or a
         list/tuple of regular expressions, which devolves to
         ``numpy.select`` and pandas' ``str.contains``. For a list/tuple of
         regular expressions, ``names_to`` must also be a list/tuple and the

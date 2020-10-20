@@ -4894,7 +4894,6 @@ def pivot_longer(
         df = (
             pd.DataFrame(...)
             .pivot_longer(
-                df,
                 index = [column1, column2, ...],
                 column_names = [column3, column4, ...],
                 names_to = new_column_name,
@@ -5001,46 +5000,96 @@ def pivot_wider(
     """
     Reshape data from long to wide form. The number of columns are
     increased, while decreasing the number of rows. It is the inverse
-    of the `pivot_longer` method. It is a wrapper around the ``unstack``
-    method.
+    of the `pivot_longer` method. It is a wrapper around Pandas'
+    ``unstack``method.
 
     This method does not mutate the original DataFrame.
 
-    Example 1: The dataframe below is from the ``dcldata`` package in R.
-
-    .. code-block:: python
-
-        a	b	name	points	marks	sets
-    0	1	2	ben	    22	    5	    13
-    1	1	2	dave	23	    4	    11
 
     Reshaping to wide form :
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_wider(index=['name', 'initials'],
-                                           names_from='subject')
+             name variable  value
+        0   Alice      wk1      5
+        1   Alice      wk2      9
+        2   Alice      wk3     20
+        3   Alice      wk4     22
+        4     Bob      wk1      7
+        5     Bob      wk2     11
+        6     Bob      wk3     17
+        7     Bob      wk4     33
+        8   Carla      wk1      6
+        9   Carla      wk2     13
+        10  Carla      wk3     39
+        11  Carla      wk4     40
 
+        df = pd.DataFrame(...).pivot_wider(index="name",
+                                           names_from="variable",
+                                           values_from="value")
 
+             name    wk1   wk2   wk3   wk4
+        0    Alice     5     9    20    22
+        1    Bob       7    11    17    33
+        2    Carla     6    13    39    40
 
-    a	b	ben_points	dave_points	ben_marks	dave_marks	ben_sets	dave_sets
-    0	1	2	22	23	5	4	13	11
-
-    We can add a prefix to the column names :
+    Pivoting on multiple columns is possible :
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_wider(index='family',
-                                           names_from='n',
-                                           names_prefix="twin_")
+            name    n  pct
+        0     1  10.0  0.1
+        1     2  20.0  0.2
+        2     3  30.0  0.3
 
-        family	twin_1	twin_2
-    0	Kelly	Mark	Scott
-    1  	Quin	Tegan	Sara
+        df = (pd.DataFrame(...).assign(num=0)
+                               .pivot_wider(index='num',
+                                            names_from="name",
+                                            values_from=["n", "pct"]))
 
-    We can also prevent collapsing the levels with the `collapse_levels`
-    argument:
+            num n_1  n_2  n_3  pct_1  pct_2  pct_3
+        0   0   10   20   30   0.1    0.2    0.3
 
+    .. note:: You may choose not to collapse the levels by passing `False`
+        to the ``collapse_levels`` argument
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        df = jn.pivot_wider(
+            df = df,
+            index = [column1, column2, ...],
+            names_from = [column3, column4, ...],
+            value_from = [column5, column6, ...],
+            names_prefix = string,
+            names_sep = string,
+            collapse_levels=True/False,
+            values_from_first=True/False,
+            fill_value=fill_value
+        )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = (
+            pd.DataFrame(...)
+            .pivot_wider(
+                index = [column1, column2, ...],
+                names_from = [column3, column4, ...],
+                value_from = [column5, column6, ...],
+                names_prefix = string,
+                names_sep = string,
+                collapse_levels=True/False,
+                values_from_first=True/False,
+                fill_value=fill_value
+                )
+        )
 
 
     :param df: A pandas dataframe.
@@ -5070,8 +5119,8 @@ def pivot_wider(
         to use as a column name. Default is ``_``. Applicable only if the
         levels
         are collapsed.
-    :fill_value: Value to replace missing values with (after pivoting). It can
-        be a number, string, or a dictionary, where the keys are the
+    :param fill_value: Value to replace missing values with (after pivoting).
+        It can be a number, string, or a dictionary, where the keys are the
         column_names, while the values are the values to replace the missing
         values with.
     :returns: A pandas DataFrame that has been unpivoted from long to wide

@@ -331,6 +331,7 @@ def test_name_sep_wrong_type(
             index="name", names_from=names_from, names_sep=names_sep
         )
 
+
 def test_fill_value_wrong_type(
     df_checks_output, names_from=["estimate", "variable"], fill_value={2}
 ):

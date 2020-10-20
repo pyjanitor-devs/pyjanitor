@@ -1281,12 +1281,34 @@ def test_pivot_index_only(df_checks_output):
     assert_frame_equal(result, df_checks_output)
 
 
+def test_pivot_index_only_dtypes(df_checks_output):
+    "Test output if only `index` is passed, with a dtype."
+    result = df_checks.pivot_longer(
+        index="region",
+        names_to="year",
+        values_to="num_nests",
+        dtypes={"year": int},
+    )
+    assert_frame_equal(result, df_checks_output.astype({"year": int}))
+
+
 def test_pivot_column_only(df_checks_output):
     "Test output if only `column_names` is passed."
     result = df_checks.pivot_longer(
-        column_names=["2007", "2009"], names_to="year", values_to="num_nests"
+        column_names=["2007", "2009"], names_to="year", values_to="num_nests",
     )
     assert_frame_equal(result, df_checks_output)
+
+
+def test_pivot_column_only_dtypes(df_checks_output):
+    "Test output if only `column_names` is passed, with a dtype."
+    result = df_checks.pivot_longer(
+        column_names=["2007", "2009"],
+        names_to="year",
+        values_to="num_nests",
+        dtypes={"year": int},
+    )
+    assert_frame_equal(result, df_checks_output.astype({"year": int}))
 
 
 def test_pivot_index_patterns_only(df_checks_output):

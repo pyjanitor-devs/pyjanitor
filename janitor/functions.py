@@ -4887,7 +4887,8 @@ def pivot_longer(
             names_to = new_column_name,
             names_sep = string/regular expression,
             names_pattern = string/regular expression,
-            value_name = new_column_name
+            value_name = new_column_name,
+            dtypes = dtypes
         )
 
     Method chaining syntax:
@@ -4903,7 +4904,8 @@ def pivot_longer(
                 names_to = new_column_name,
                 names_sep = string/regular expression,
                 names_pattern = string/regular expression,
-                value_name= new_column_name
+                value_name= new_column_name,
+                dtypes = dtypes
             )
         )
 
@@ -4930,11 +4932,10 @@ def pivot_longer(
         specification as pandas' `str.split` method, and can be a string
         or regular expression.
     :param names_pattern: Determines how the column name is broken up.
-        It can be a regular expression containing matching groups
-        matching the same specification as pandas' `str.extractall` method,
-        or a list/tuple of regular expressions, which devolves to
-        ``numpy.select`` and pandas' ``str.contains``. For a list of
-        regular expressions, ``names_to`` must be a list/tuple and the
+        It can be a regular expression containing matching groups, or a 
+        list/tuple of regular expressions, which devolves to
+        ``numpy.select`` and pandas' ``str.contains``. For a list/tuple of
+        regular expressions, ``names_to`` must also be a list/tuple and the
         lengths of both arguments must match. The entries in both arguments
         must also match positionally, i.e  if `regex1` in `names_pattern` is
         the first item, it will be aligned to `new_column_name_1` in `names_to`

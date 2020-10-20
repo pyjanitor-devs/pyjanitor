@@ -845,7 +845,7 @@ def _computations_pivot_longer(
         check_column(df, column_names, present=True)
 
     if index is None and (column_names is not None):
-        index = [col for col in df.columns if col not in column_names]
+        index = [col for col in df if col not in column_names]
 
     # scenario 1
     if all((names_pattern is None, names_sep is None)):
@@ -928,7 +928,8 @@ def _computations_pivot_longer(
                 return any matches.
                 """
             )
-
+        # here we reindex the before_df, to simulate the order of the columns
+        # in the source data.
         before_df = _reindex_func(before_df, index)
         between_df = between_df.set_axis(names_to, axis="columns")
 
@@ -1060,8 +1061,6 @@ def _computations_pivot_longer(
             return df.reset_index(drop=True)
 
         # this kicks in if there is no `.value` in `names_to`
-        # here we reindex the before_df, to simulate the order of the columns
-        # in the source data.
         df = pd.DataFrame.join(before_df, [between_df, after_df], how="inner")
         if dtypes:
             df = df.astype(dtypes)

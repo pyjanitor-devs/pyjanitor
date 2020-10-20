@@ -302,15 +302,13 @@ def test_values_from_first_wrong_type(
         )
 
 
-def test_collapse_levels_wrong_type(
-    df_checks_output, names_from=["estimate", "variable"], collapse_levels=2
+def test_flatten_levels_wrong_type(
+    df_checks_output, names_from=["estimate", "variable"], flatten_levels=2
 ):
-    "Raise TypeError if the wrong type is provided for `collapse_levels`."
+    "Raise TypeError if the wrong type is provided for `flatten_levels`."
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
-            index="name",
-            names_from=names_from,
-            collapse_levels=collapse_levels,
+            index="name", names_from=names_from, flatten_levels=flatten_levels,
         )
 
 
@@ -459,8 +457,8 @@ def test_pivot_wider_various(
     assert_frame_equal(result, df_out)
 
 
-def test_collapse_levels_false():
-    "Test output if `collapse_levels` is False."
+def test_flatten_levels_false():
+    "Test output if `flatten_levels` is False."
 
     df_collapse = pd.DataFrame(
         {
@@ -475,7 +473,7 @@ def test_collapse_levels_false():
         index="foo",
         names_from="bar",
         values_from=["baz", "zoo"],
-        collapse_levels=False,
+        flatten_levels=False,
     )
 
     expected_output = df_collapse.pivot(  # noqa: PD010
@@ -504,7 +502,7 @@ def test_fill_values():
         index=["lev1", "lev2"],
         names_from=["lev3"],
         values_from="values",
-        collapse_levels=False,
+        flatten_levels=False,
         fill_value=0,
     )
 
@@ -543,6 +541,6 @@ def test_no_index():
         index=None,
         names_from="gender",
         values_from="contVar",
-        collapse_levels=False,
+        flatten_levels=False,
     )
     assert_frame_equal(result, expected_output)

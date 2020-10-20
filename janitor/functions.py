@@ -4988,10 +4988,10 @@ def pivot_longer(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    names_from: Union[List, str],
     index: Optional[Union[List, str]] = None,
+    names_from: Union[List, str] = None,
     values_from: Optional[Union[List, str]] = None,
-    collapse_levels: Optional[bool] = True,
+    flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
@@ -5105,7 +5105,7 @@ def pivot_wider(
         will be added to the front of the output column; you can turn this
         off with the `values_from_first` argument. If ``values_from`` is not
         specified, all remaining columns will be used.
-    :param collapse_levels: Default True. Determines if the reshaped dataframe
+    :param flatten_levels: Default True. Determines if the reshaped dataframe
         stays as a MultiIndex.
     :param values_from_first: Determines if the values in `values_from` will
         be at the front of the output column. This applies if the number of
@@ -5145,7 +5145,7 @@ def pivot_wider(
         index,
         names_from,
         values_from,
-        collapse_levels,
+        flatten_levels,
         values_from_first,
         names_prefix,
         names_sep,
@@ -5155,7 +5155,7 @@ def pivot_wider(
         index,
         names_from,
         values_from,
-        collapse_levels,
+        flatten_levels,
         values_from_first,
         names_prefix,
         names_sep,
@@ -5164,10 +5164,10 @@ def pivot_wider(
 
     df = _computations_pivot_wider(
         df,
-        names_from,
         index,
+        names_from,
         values_from,
-        collapse_levels,
+        flatten_levels,
         values_from_first,
         names_prefix,
         names_sep,

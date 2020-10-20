@@ -1058,7 +1058,7 @@ def _data_checks_pivot_wider(
     index,
     names_from,
     values_from,
-    collapse_levels,
+    flatten_levels,
     values_from_first,
     names_prefix,
     names_sep,
@@ -1108,8 +1108,8 @@ def _data_checks_pivot_wider(
                     """
                 )
 
-    if collapse_levels is not None:
-        check("collapse_levels", collapse_levels, [bool])
+    if flatten_levels is not None:
+        check("flatten_levels", flatten_levels, [bool])
 
     if names_prefix is not None:
         check("names_prefix", names_prefix, [str])
@@ -1125,7 +1125,7 @@ def _data_checks_pivot_wider(
         index,
         names_from,
         values_from,
-        collapse_levels,
+        flatten_levels,
         values_from_first,
         names_prefix,
         names_sep,
@@ -1135,10 +1135,10 @@ def _data_checks_pivot_wider(
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    names_from: List[str],
     index: Optional[List] = None,
+    names_from: Union[List, str] = None,
     values_from: Optional[List] = None,
-    collapse_levels: Optional[bool] = True,
+    flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
@@ -1186,7 +1186,7 @@ def _computations_pivot_wider(
 
     df = df.loc[:, values_from]
 
-    if collapse_levels:
+    if flatten_levels:
         # goal here is to make the output look like the source data in terms
         #  of order if we have 'Wilbur, James, Ragnar, Wilbur, James, Ragnar'
         #  in the source data, the pivoted data should have

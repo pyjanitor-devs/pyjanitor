@@ -2,13 +2,13 @@
 Unit tests for `.flag_jumps()`.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 import janitor.timeseries  # noqa: F401
-from janitor.timeseries import _flag_jumps_single_col
 from janitor.errors import JanitorError
+from janitor.timeseries import _flag_jumps_single_col
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def timeseries_dataframe() -> pd.DataFrame:
 
 @pytest.mark.timeseries
 def test__flag_jumps_single_col_raises_error_for_bad_scale_type(
-    timeseries_dataframe
+    timeseries_dataframe,
 ):
     """Test that invalid scale argument raises a JanitorError."""
     # Setup
@@ -53,7 +53,7 @@ def test__flag_jumps_single_col_raises_error_for_bad_scale_type(
 
 @pytest.mark.timeseries
 def test__flag_jumps_single_col_raises_error_for_bad_direction_type(
-    timeseries_dataframe
+    timeseries_dataframe,
 ):
     """Test that invalid direction argument raises a JanitorError."""
     # Setup
@@ -81,7 +81,7 @@ def test__flag_jumps_single_col_raises_error_for_bad_direction_type(
 
 @pytest.mark.timeseries
 def test__flag_jumps_single_col_raises_error_for_bad_threshold_value(
-    timeseries_dataframe
+    timeseries_dataframe,
 ):
     """Test that invalid threshold argument raises a JanitorError."""
     # Setup
@@ -198,7 +198,7 @@ def test__flag_jumps_single_col_absolute_scale_any_direction(
 
 @pytest.mark.timeseries
 def test__flag_jumps_single_col_absolute_scale_flags_large_jump(
-    timeseries_dataframe
+    timeseries_dataframe,
 ):
     """
     Test utility function for flagging jumps with absolute scale.
@@ -336,7 +336,7 @@ def test__flag_jumps_single_col_percentage_scale_any_direction(
 
 @pytest.mark.timeseries
 def test__flag_jumps_single_col_percentage_scale_flags_large_jump(
-    timeseries_dataframe
+    timeseries_dataframe,
 ):
     """
     Test utility function for flagging jumps with percentage scale and
@@ -511,7 +511,7 @@ def test_flag_jumps_strict_with_both_cols_in_all_args(timeseries_dataframe):
 
 @pytest.mark.timeseries
 def test_flag_jumps_strict_with_both_cols_in_at_least_one_args(
-    timeseries_dataframe
+    timeseries_dataframe,
 ):
     """
     Test provided strict behaves as expected

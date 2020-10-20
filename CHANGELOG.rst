@@ -2,6 +2,8 @@ new version (on deck)
 =====================
 - [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
+- [ENH] Replaced default numeric conversion of dataframe with a `dtypes` argument,
+  allowing the user to control the data types. - @samukweku
 
 
 v0.20.10

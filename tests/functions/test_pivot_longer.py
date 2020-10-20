@@ -28,7 +28,7 @@ def df_checks_output():
                 "Rocky Mountains and Plains",
                 "Rocky Mountains and Plains",
             ],
-            "year": [2007, 2009, 2007, 2009, 2007, 2009],
+            "year": ["2007", "2009", "2007", "2009", "2007", "2009"],
             "num_nests": [1039, 2587, 51, 176, 200, 338],
         }
     )
@@ -68,6 +68,7 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
+        {"cod": "str"},
     ),
     (
         pd.DataFrame(
@@ -97,6 +98,7 @@ paired_columns_pattern = [
         patterns("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
+        {"val": int, "value": int},
     ),
     (
         pd.DataFrame(
@@ -123,6 +125,7 @@ paired_columns_pattern = [
         "id",
         (".value", "instance"),
         r"(\w)(\d)",
+        {"instance": "int"},
     ),
     (
         pd.DataFrame(
@@ -152,6 +155,7 @@ paired_columns_pattern = [
         "X",
         (".value", "year"),
         "([A-Z])(.+)",
+        {"year": "int", "B": float},
     ),
     (
         pd.DataFrame(
@@ -196,6 +200,7 @@ paired_columns_pattern = [
         "id",
         (".value", "status"),
         "(.*)_(.*)",
+        {"status": str},
     ),
 ]
 
@@ -240,6 +245,7 @@ paired_columns_sep = [
         "X",
         (".value", "year"),
         "-",
+        {"year": int},
     ),
     (
         pd.DataFrame(
@@ -261,6 +267,7 @@ paired_columns_sep = [
         "indexer",
         (".value", "num"),
         "_",
+        {"num": int, "S": float},
     ),
     (
         pd.DataFrame(
@@ -293,6 +300,7 @@ paired_columns_sep = [
         ["county", "area"],
         (".value", "year"),
         "_",
+        {"year": int},
     ),
     (
         pd.DataFrame(
@@ -383,6 +391,7 @@ paired_columns_sep = [
         "family",
         (".value", "child"),
         "_",
+        {"child": str, "gender": float},
     ),
     (
         pd.DataFrame(
@@ -423,6 +432,7 @@ paired_columns_sep = [
         "id",
         (".value", "brand"),
         "_",
+        {"brand": str},
     ),
     (
         pd.DataFrame(
@@ -445,6 +455,7 @@ paired_columns_sep = [
         "event",
         (".value", "item"),
         "_",
+        {"item": int},
     ),
 ]
 
@@ -570,6 +581,7 @@ multiple_values_sep = [
         "country",
         ("event", "year"),
         "_",
+        {"year": int},
     ),
     (
         pd.DataFrame(
@@ -768,6 +780,7 @@ multiple_values_sep = [
         "country",
         ("event", "year", "gender"),
         "_",
+        {"year": int},
     ),
 ]
 
@@ -861,6 +874,7 @@ multiple_values_pattern = [
         "country",
         ("event", "year"),
         r"([A-Za-z]+)(\d+)",
+        {"year": int},
     )
 ]
 
@@ -984,6 +998,7 @@ paired_columns_no_index_pattern = [
         ),
         ("set", ".value"),
         "(.+)_(.+)",
+        {"set": str, "lat": float, "long": float, "loc": str},
     )
 ]
 
@@ -1238,6 +1253,12 @@ def test_values_to():
         df_checks.pivot_longer(values_to=["salvo"])
 
 
+def test_wrong_dtypes():
+    "Raise TypeError if the wrong type is provided for `dtypes`."
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(dtypes="int")
+
+
 def test_pivot_no_args_passed():
     "Test output if no arguments are passed."
     df_no_args = pd.DataFrame({"name": ["Wilbur", "Petunia", "Gregory"]})
@@ -1277,7 +1298,7 @@ def test_pivot_index_patterns_only(df_checks_output):
 
 
 def test_pivot_columns_patterns_only(df_checks_output):
-    "Test output if the `patterns` function is passed to `column_names`."
+    "Raise TypeError if `dtypes` is a wrong type."
     result = df_checks.pivot_longer(
         column_names=patterns(r"\d+"), names_to="year", values_to="num_nests"
     )
@@ -1285,54 +1306,65 @@ def test_pivot_columns_patterns_only(df_checks_output):
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", paired_columns_pattern
+    "df_in,df_out,index,names_to,names_pattern, dtypes", paired_columns_pattern
 )
 def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern
+    df_in, df_out, index, names_to, names_pattern, dtypes
 ):
     """
     Test output if `.value` is in the `names_to` argument and
     names_pattern is used.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_pattern=names_pattern
+        index=index,
+        names_to=names_to,
+        names_pattern=names_pattern,
+        dtypes=dtypes,
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep", paired_columns_sep
+    "df_in,df_out,index,names_to,names_sep, dtypes", paired_columns_sep
 )
-def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
+def test_extract_column_names_sep(
+    df_in, df_out, index, names_to, names_sep, dtypes
+):
     """
     Test output if `.value` is in the `names_to` argument and names_sep
     is used.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_sep=names_sep
+        index=index, names_to=names_to, names_sep=names_sep, dtypes=dtypes
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep", multiple_values_sep
+    "df_in,df_out,index,names_to,names_sep,dtypes", multiple_values_sep
 )
-def test_multiple_values_sep(df_in, df_out, index, names_to, names_sep):
+def test_multiple_values_sep(
+    df_in, df_out, index, names_to, names_sep, dtypes
+):
     """
     Test function to extract multiple columns, using the `names_to` and
     names_sep arguments.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_sep=names_sep, values_to="score"
+        index=index,
+        names_to=names_to,
+        names_sep=names_sep,
+        dtypes=dtypes,
+        values_to="score",
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", multiple_values_pattern
+    "df_in,df_out,index,names_to,names_pattern,dtypes", multiple_values_pattern
 )
 def test_multiple_values_pattern(
-    df_in, df_out, index, names_to, names_pattern
+    df_in, df_out, index, names_to, names_pattern, dtypes
 ):
     """
     Test function to extract multiple columns, using the `names_to` and
@@ -1342,22 +1374,26 @@ def test_multiple_values_pattern(
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,
+        dtypes=dtypes,
         values_to="score",
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,names_to,names_pattern", paired_columns_no_index_pattern
+    "df_in,df_out,names_to,names_pattern,dtypes",
+    paired_columns_no_index_pattern,
 )
 def test_paired_columns_no_index_pattern(
-    df_in, df_out, names_to, names_pattern
+    df_in, df_out, names_to, names_pattern, dtypes
 ):
     """
     Test function where `.value` is in the `names_to` argument, names_pattern
     is used and no index is supplied.
     """
-    result = df_in.pivot_longer(names_to=names_to, names_pattern=names_pattern)
+    result = df_in.pivot_longer(
+        names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
+    )
     assert_frame_equal(result, df_out)
 
 

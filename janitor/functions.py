@@ -4694,6 +4694,7 @@ def pivot_longer(
     names_pattern: Optional[Union[str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
+    dtypes: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
     Unpivots a DataFrame from 'wide' to 'long' format.
@@ -4846,6 +4847,10 @@ def pivot_longer(
         10  Carla      wk3     39
         11  Carla      wk4     40
 
+    Note that you can determine the data type of the resulting columns with
+    the `dtypes` argument, which accepts a dictionary, pairing the column
+    names with the expected types.
+
     Functional usage syntax:
 
     .. code-block:: python
@@ -4909,6 +4914,8 @@ def pivot_longer(
         a regular expression containing matching groups.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
+    :param dtypes: A dictionary mapping data types to the newly created
+        columns.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
     :raises TypeError: if `index` or `column_names` is not a string, or a
@@ -4916,6 +4923,7 @@ def pivot_longer(
     :raises TypeError: if `names_to` or `column_names` is not a string, or a
         list/tuple of strings.
     :raises TypeError: if `values_to` is not a string.
+    :raises TypeError: if `dtypes` is not a dictionary.
     :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
     :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
@@ -4942,8 +4950,16 @@ def pivot_longer(
         names_pattern,
         names_to,
         values_to,
+        dtypes,
     ) = _data_checks_pivot_longer(
-        df, index, column_names, names_sep, names_pattern, names_to, values_to
+        df,
+        index,
+        column_names,
+        names_sep,
+        names_pattern,
+        names_to,
+        values_to,
+        dtypes,
     )
 
     df, index, column_names = _pivot_longer_pattern_match(
@@ -4951,7 +4967,14 @@ def pivot_longer(
     )
 
     df = _computations_pivot_longer(
-        df, index, column_names, names_sep, names_pattern, names_to, values_to
+        df,
+        index,
+        column_names,
+        names_sep,
+        names_pattern,
+        names_to,
+        values_to,
+        dtypes,
     )
 
     return df

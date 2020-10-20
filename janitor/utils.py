@@ -605,7 +605,14 @@ def _complete_groupings(df, list_of_columns):
 
 
 def _data_checks_pivot_longer(
-    df, index, column_names, names_sep, names_pattern, names_to, values_to
+    df,
+    index,
+    column_names,
+    names_sep,
+    names_pattern,
+    names_to,
+    values_to,
+    dtypes,
 ):
 
     """
@@ -670,6 +677,9 @@ def _data_checks_pivot_longer(
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
 
+    if dtypes is not None:
+        check("dtypes", dtypes, [dict])
+
     check("values_to", values_to, [str])
 
     return (
@@ -680,6 +690,7 @@ def _data_checks_pivot_longer(
         names_pattern,
         names_to,
         values_to,
+        dtypes,
     )
 
 
@@ -738,6 +749,7 @@ def _computations_pivot_longer(
     names_pattern: Optional[Union[str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
+    dtypes: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_longer` function.
@@ -791,7 +803,7 @@ def _computations_pivot_longer(
         check_column(df, column_names, present=True)
 
     if index is None and (column_names is not None):
-        index = df.columns.difference(column_names)
+        index = [col for col in df.columns if col not in column_names]
 
     # scenario 1
     if all((names_pattern is None, names_sep is None)):
@@ -807,7 +819,11 @@ def _computations_pivot_longer(
         # this should be easier to do with ignore_index in pandas version 1.1
         if index is not None:
             df = _reindex_func(df, index).reset_index(drop=True)
-            return df.transform(pd.to_numeric, errors="ignore")
+            if dtypes:
+                df = df.astype(dtypes)
+            return df
+        if dtypes:
+            df = df.astype(dtypes)
         return df
 
     # scenario 2
@@ -971,14 +987,14 @@ def _computations_pivot_longer(
                 df = pd.DataFrame.join(
                     before_df, [between_df, after_df], how="inner"
                 )
-            return df.reset_index(drop=True).transform(
-                pd.to_numeric, errors="ignore"
-            )
+            if dtypes:
+                df = df.astype(dtypes)
+            return df.reset_index(drop=True)
 
         # this kicks in if there is no `.value` in `names_to`
         # here we reindex the before_df, to simulate the order of the columns
         # in the source data.
-        df = pd.DataFrame.join(
-            before_df, [between_df, after_df], how="inner"
-        ).reset_index(drop=True)
-        return df.transform(pd.to_numeric, errors="ignore")
+        df = pd.DataFrame.join(before_df, [between_df, after_df], how="inner")
+        if dtypes:
+            df = df.astype(dtypes)
+        return df.reset_index(drop=True)

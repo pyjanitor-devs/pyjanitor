@@ -1319,6 +1319,16 @@ def test_pivot_index_patterns_only(df_checks_output):
     assert_frame_equal(result, df_checks_output)
 
 
+def test_pivot_no_index_dtypes():
+    "Test output if neither `index`/`columns_names` is passed, with dtypes."
+    test = pd.DataFrame(
+        {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
+    )
+    result = test.pivot_longer(dtypes={"variable": int})
+    expected_output = test.melt().astype({"variable": int})
+    assert_frame_equal(result, expected_output)
+
+
 def test_pivot_columns_patterns_only(df_checks_output):
     "Test output if the `patterns` function is passed to `column_names`."
     result = df_checks.pivot_longer(

@@ -1438,3 +1438,21 @@ def test_single_value(df_in, df_out, index, names_pattern):
         index=index, names_to=".value", names_pattern=names_pattern
     )
     assert_frame_equal(result, df_out)
+
+
+
+
+df = pd.DataFrame(
+{'Location': ['Madrid', 'Madrid', 'Rome', 'Rome'],
+ 'Account': ['ABC', 'XYX', 'ABC', 'XYX'],
+ 'Y2019:MTD:January:Expense': [4354, 769867, 434654, 632556456],
+ 'Y2019:MTD:January:Income': [56456, 32556456, 5214, 46724423],
+ 'Y2019:MTD:February:Expense': [235423, 6785423, 235423, 46588]})
+
+print(df)
+
+print(df.pivot_longer(
+    ["Location", "Account"],
+    names_to=("Year_Month", ".value"),
+    names_pattern="(.+):(Income|Expense)",
+))

@@ -663,6 +663,12 @@ def _data_checks_pivot_longer(
                         """Only one of names_pattern or names_sep
                        should be provided."""
                     )
+
+                if ".value" in names_to:
+                    if names_to.count(".value") > 1:
+                        raise ValueError(
+                    "Column name `.value` must not be duplicated."
+                )
         if isinstance(names_to, str) or (len(names_to) == 1):
             # names_sep creates more than one column
             # whereas regex with names_pattern can be limited to one column
@@ -879,16 +885,19 @@ def _computations_pivot_longer(
         # that knowledge to get the data before( the index column(s)),
         # the data between (our uniq_name column),
         #  and the data after (our values column)
-        position = df.columns.get_loc(uniq_name)
-        if position == 0:
-            before_df = pd.DataFrame([], index=df.index)
-        else:
-            # just before uniq_name column
-            before_df = df.iloc[:, :-2]
-        after_df = df.iloc[:, -1].rename(values_to)
-        between_df = df.pop(uniq_name)
+
+        between_df = df.iloc[:, -2]
         if names_sep is not None:
             between_df = between_df.str.split(names_sep, expand=True)
+            if len(names_to) !=  len(between_df.columns):
+                raise ValueError(
+                """
+                Length of ``names_to`` does not match
+                number of columns extracted.
+                """
+            )
+            between_df = zip(names_to, between_df.items())
+            between_df = [col.rename(name) for name, (_, col) in between_df]
         else:
             # this takes care of scenario 4
             # and reconfigures it so it takes the scenario 3 path
@@ -897,42 +906,54 @@ def _computations_pivot_longer(
                 condlist = [
                     between_df.str.contains(regex) for regex in names_pattern
                 ]
-                between_df = np.select(condlist, names_to, None)
-                names_to = [".value"]
-                between_df = pd.DataFrame(between_df, columns=names_to)
-                if between_df.loc[:, ".value"].hasnans:
-                    between_df = between_df.dropna()
-            else:
-                between_df = between_df.str.extractall(
-                    names_pattern
-                ).droplevel(-1)
-        # set_axis function labels argument takes only list-like objects
-        if isinstance(names_to, str):
-            names_to = [names_to]
-
-        # check number of columns
-        # before assigning names_to as `between_df` new columns
-        if len(names_to) != between_df.shape[-1]:
-            raise ValueError(
-                """
-                Length of ``names_to`` does not match
-                number of columns extracted.
-                """
-            )
-
-        # safeguard for a regex that returns nothing
-        if between_df.empty:
-            raise ValueError(
+                if not condlist:
+                    raise ValueError(
                 """
                 The regular expression in ``names_pattern`` did not
                 return any matches.
                 """
             )
-        # here we reindex the before_df, to simulate the order of the columns
-        # in the source data.
-        before_df = _reindex_func(before_df, index)
-        between_df = between_df.set_axis(names_to, axis="columns")
+                between_df = np.select(condlist, names_to, None)
+                between_df = [pd.Series(between_df, name='.value')]
 
+            else: # names_pattern is a regular expression
+                between_df = between_df.str.extractall(
+                    names_pattern
+                )
+                if between_df.empty:
+                    raise ValueError(
+                """
+                The regular expression in ``names_pattern`` did not
+                return any matches.
+                """
+            )
+                between_df = between_df.droplevel(-1)
+                if isinstance(names_to, str):
+                    names_to = [names_to]
+                if len(names_to) !=  len(between_df.columns):
+                    raise ValueError(
+                """
+                Length of ``names_to`` does not match
+                number of columns extracted.
+                """
+            )
+                between_df = zip(names_to, between_df.items())
+                between_df = [col.rename(name) for name, (_, col) in between_df]
+
+        before_df = None
+        after_df = df.iloc[:, -1].array
+
+        if len(df.columns) > 2:
+            before_df = df.iloc[:, :-2]
+            before_df = zip(index, before_df.items())
+            before_df = [col.rename(name) for name, (_, col) in before_df]
+
+        if before_df is not None:
+            df = pd.DataFrame(after_df, index = before_df + between_df)
+        else:
+            df = pd.DataFrame(after_df, index = between_df)
+        
+        return df
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the
         # new column names. The `.value` indicates that that particular
@@ -993,75 +1014,17 @@ def _computations_pivot_longer(
         # and be assured of complete/accurate sync.
 
         # scenario 3
-        if ".value" in names_to:
-            if names_to.count(".value") > 1:
-                raise ValueError(
-                    "Column name `.value` must not be duplicated."
-                )
+        
             # extract new column names and assign category dtype
             # apart from memory usage, the primary aim of the category
             # dtype is to ensure that the data is sorted in order of
             # appearance in the source dataframe
-            between_df_unique_values = {
-                key: pd.unique(value) for key, value in between_df.items()
-            }
-            after_df_cols = between_df_unique_values[".value"]
-            between_df_dtypes = {
-                key: CategoricalDtype(value, ordered=True)
-                for key, value in between_df_unique_values.items()
-            }
-            between_df = between_df.astype(between_df_dtypes)
-            if len(names_to) > 1:
-                other_headers = between_df.columns.difference(
-                    [".value"], sort=False
-                )
-                other_headers = other_headers.tolist()
-                between_df = between_df.sort_values([".value"] + other_headers)
-            else:
-                other_headers = None
-                # index order not assured if just .value` and quicksort
-                between_df = between_df.sort_values(
-                    [".value"], kind="mergesort"
-                )
+            
 
             # reshape index_sorter and use the first column as the index
             # of the reshaped after_df. after_df will be reshaped into
             # specific number of columns, based on the length of
             # `after_df_cols`
-            index_sorter = between_df.index
-            after_df = after_df.reindex(index_sorter).to_numpy()
-            # this will serve as the index for the `after_df` frame
-            # as well as the `between_df` frame
-            # it works because we reshaped the `after_df` into n
-            # number of columns, where n == len(after_df_cols)
-            # e.g if the dataframe initially was 24 rows, if it is
-            # reshaped to a 3 column dataframe, rows will become 8
-            # we then pick the first 8 rows from index_sorter as
-            # the index for both `after_df` and `between_df`
-            after_df_cols_len = len(after_df_cols)
-            index_sorter = index_sorter[
-                : index_sorter.size // after_df_cols_len
-            ]
-            after_df = np.reshape(after_df, (-1, after_df_cols_len), order="F")
-            after_df = pd.DataFrame(
-                after_df, columns=after_df_cols, index=index_sorter
-            )
-            if other_headers:
-                between_df = between_df.loc[index_sorter, other_headers]
-            else:
-                between_df = pd.DataFrame([], index=index_sorter)
-            if position == 0:  # no index or column_names supplied
-                df = pd.DataFrame.join(between_df, after_df, how="inner")
-            else:
-                df = pd.DataFrame.join(
-                    before_df, [between_df, after_df], how="inner"
-                )
-            if dtypes:
-                df = df.astype(dtypes)
-            return df.reset_index(drop=True)
 
         # this kicks in if there is no `.value` in `names_to`
-        df = pd.DataFrame.join(before_df, [between_df, after_df], how="inner")
-        if dtypes:
-            df = df.astype(dtypes)
-        return df.reset_index(drop=True)
+

@@ -787,89 +787,25 @@ multiple_values_sep = [
 multiple_values_pattern = [
     (
         pd.DataFrame(
-            {
-                "country": ["United States", "Russia", "China"],
-                "vault2012": [48.132, 46.36600000000001, 44.266000000000005],
-                "floor2012": [45.36600000000001, 41.599, 40.833],
-                "vault2016": [46.86600000000001, 45.733000000000004, 44.332],
-                "floor2016": [45.998999999999995, 42.032, 42.066],
-            }
+            {'country': ['United States', 'Russia', 'China'],
+ 'vault2012': [48.1, 46.4, 44.3],
+ 'floor2012': [45.4, 41.6, 40.8],
+ 'vault2016': [46.9, 45.7, 44.3],
+ 'floor2016': [46.0, 42.0, 42.1]}
         ),
         pd.DataFrame(
-            [
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 48.132,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 45.36600000000001,
-                },
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 46.86600000000001,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 45.998999999999995,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 46.36600000000001,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 41.599,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 45.733000000000004,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 42.032,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 44.266000000000005,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 40.833,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 44.332,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 42.066,
-                },
-            ]
+            [{'country': 'United States', 'event': 'vault', 'year': 2012, 'score': 48.1},
+ {'country': 'United States', 'event': 'floor', 'year': 2012, 'score': 45.4},
+ {'country': 'United States', 'event': 'vault', 'year': 2016, 'score': 46.9},
+ {'country': 'United States', 'event': 'floor', 'year': 2016, 'score': 46.0},
+ {'country': 'Russia', 'event': 'vault', 'year': 2012, 'score': 46.4},
+ {'country': 'Russia', 'event': 'floor', 'year': 2012, 'score': 41.6},
+ {'country': 'Russia', 'event': 'vault', 'year': 2016, 'score': 45.7},
+ {'country': 'Russia', 'event': 'floor', 'year': 2016, 'score': 42.0},
+ {'country': 'China', 'event': 'vault', 'year': 2012, 'score': 44.3},
+ {'country': 'China', 'event': 'floor', 'year': 2012, 'score': 40.8},
+ {'country': 'China', 'event': 'vault', 'year': 2016, 'score': 44.3},
+ {'country': 'China', 'event': 'floor', 'year': 2016, 'score': 42.1}]
         ),
         "country",
         ("event", "year"),
@@ -1439,20 +1375,3 @@ def test_single_value(df_in, df_out, index, names_pattern):
     )
     assert_frame_equal(result, df_out)
 
-
-
-
-df = pd.DataFrame(
-{'Location': ['Madrid', 'Madrid', 'Rome', 'Rome'],
- 'Account': ['ABC', 'XYX', 'ABC', 'XYX'],
- 'Y2019:MTD:January:Expense': [4354, 769867, 434654, 632556456],
- 'Y2019:MTD:January:Income': [56456, 32556456, 5214, 46724423],
- 'Y2019:MTD:February:Expense': [235423, 6785423, 235423, 46588]})
-
-print(df)
-
-print(df.pivot_longer(
-    ["Location", "Account"],
-    names_to=("Year_Month", ".value"),
-    names_pattern="(.+):(Income|Expense)",
-))

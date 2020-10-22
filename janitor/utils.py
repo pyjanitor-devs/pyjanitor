@@ -612,6 +612,7 @@ def _data_checks_pivot_longer(
     names_pattern,
     names_to,
     values_to,
+    order_by_appearance,
     dtypes,
 ):
 
@@ -719,6 +720,8 @@ def _data_checks_pivot_longer(
     if dtypes is not None:
         check("dtypes", dtypes, [dict])
 
+    check("order_by_appearance", order_by_appearance, [bool])
+
     check("values_to", values_to, [str])
 
     return (
@@ -729,6 +732,7 @@ def _data_checks_pivot_longer(
         names_pattern,
         names_to,
         values_to,
+        order_by_appearance,
         dtypes,
     )
 
@@ -754,32 +758,6 @@ def _pivot_longer_pattern_match(
 
     return df, index, column_names
 
-
-def _reindex_func(frame: pd.DataFrame, indexer=None) -> pd.DataFrame:
-    """
-    Function to reshape dataframe in pivot_longer, to try and make it look
-    similar to the source data in terms of direction of the columns. It is a
-    temporary measure until the minimum pandas version is 1.1, where we can
-    take advantage of the `ignore_index` argument in `pd.melt`.
-
-    Example: if the index column is `id`, and the values are :
-    [1,2,3,3,2,1,2,3], then when melted, the index column in the reshaped
-    dataframe, based on this function, will look like `1,1,1,2,2,2,3,3,3`.
-
-    A reindexed dataframe is returned.
-    """
-
-    if indexer is None:
-        uniq_index_length = len(frame.drop_duplicates())
-    else:
-        uniq_index_length = len(frame.loc[:, indexer].drop_duplicates())
-        if "index" in indexer:
-            frame = frame.drop("index", axis=1)
-    sorter = np.reshape(frame.index, (-1, uniq_index_length))
-    sorter = np.ravel(sorter, order="F")
-    return frame.reindex(sorter)
-
-
 def _computations_pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple]] = None,
@@ -788,6 +766,7 @@ def _computations_pivot_longer(
     names_pattern: Optional[Union[str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
+    order_by_appearance: Optional[bool] = True,
     dtypes: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
@@ -865,11 +844,11 @@ def _computations_pivot_longer(
 
         # reshape in the order that the data appears
         # this should be easier to do with ignore_index in pandas version 1.1
-        if index is not None:
-            df = _reindex_func(df, index).reset_index(drop=True)
-            if dtypes:
-                df = df.astype(dtypes)
-            return df
+        index_unique = None
+        if order_by_appearance:
+            index_unique = pd.unique(df.iloc[:, 0])            
+            df = [df.loc[df.iloc[:, 0] == value] for value in index_unique]
+            df = pd.concat(df, ignore_index=True)
         if dtypes:
             df = df.astype(dtypes)
         return df
@@ -885,7 +864,8 @@ def _computations_pivot_longer(
         # that knowledge to get the data before( the index column(s)),
         # the data between (our uniq_name column),
         #  and the data after (our values column)
-
+        
+        after_df = df.iloc[:, -1].rename(values_to)
         between_df = df.iloc[:, -2]
         if names_sep is not None:
             between_df = between_df.str.split(names_sep, expand=True)
@@ -896,8 +876,9 @@ def _computations_pivot_longer(
                 number of columns extracted.
                 """
             )
-            between_df = zip(names_to, between_df.items())
-            between_df = [col.rename(name) for name, (_, col) in between_df]
+            
+            between_df.columns = names_to
+
         else:
             # this takes care of scenario 4
             # and reconfigures it so it takes the scenario 3 path
@@ -937,23 +918,35 @@ def _computations_pivot_longer(
                 number of columns extracted.
                 """
             )
-                between_df = zip(names_to, between_df.items())
-                between_df = [col.rename(name) for name, (_, col) in between_df]
+                between_df.columns = names_to
 
-        before_df = None
-        after_df = df.iloc[:, -1].array
+        if '.value' not in between_df.columns:  
+            before_df = None
+            before_df_unique = None         
+            if len(df.columns) > 2:
+                before_df = df.iloc[:, :-2]
+                df = pd.concat([before_df, between_df, after_df], axis=1)
+                if order_by_appearance:
+                    before_df_unique = pd.unique(before_df.iloc[:, 0])
+                    df = [df.loc[df.iloc[:, 0]==value] for value in before_df_unique]
+                    df = pd.concat(df, ignore_index=True)
+                if dtypes:
+                    df = df.astype(dtypes)
+                return df
 
-        if len(df.columns) > 2:
-            before_df = df.iloc[:, :-2]
-            before_df = zip(index, before_df.items())
-            before_df = [col.rename(name) for name, (_, col) in before_df]
+            between_df_unique = None
+            df = pd.concat([between_df, after_df], axis=1)
+            if order_by_appearance:
+                between_df_unique = pd.unique(between_df.iloc[:, 0])
+                df = [df.loc[df.iloc[:, 0]==value] for value in between_df_unique]
+                df = pd.concat(df, ignore_index=True)
+            if dtypes:
+                df = df.astype(dtypes)
+            return df
 
-        if before_df is not None:
-            df = pd.DataFrame(after_df, index = before_df + between_df)
-        else:
-            df = pd.DataFrame(after_df, index = between_df)
+
+
         
-        return df
         # we take a detour here to deal with paired columns, where the user
         # might want one of the names in the paired column as part of the
         # new column names. The `.value` indicates that that particular

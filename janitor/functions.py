@@ -4699,6 +4699,7 @@ def pivot_longer(
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
+    order_by_appearance: Optional[bool] = True,
     dtypes: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
@@ -4978,6 +4979,7 @@ def pivot_longer(
         names_pattern,
         names_to,
         values_to,
+        order_by_appearance,
         dtypes,
     ) = _data_checks_pivot_longer(
         df,
@@ -4987,6 +4989,7 @@ def pivot_longer(
         names_pattern,
         names_to,
         values_to,
+        order_by_appearance,
         dtypes,
     )
 
@@ -5002,6 +5005,7 @@ def pivot_longer(
         names_pattern,
         names_to,
         values_to,
+        order_by_appearance,
         dtypes,
     )
 

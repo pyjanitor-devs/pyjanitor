@@ -1403,17 +1403,13 @@ def test_single_value(df_in, df_out, index, dtypes, names_pattern):
 
 df = pd.DataFrame(
             {
-                "A(weekly)-2010": [0.548814, 0.7151890000000001, 0.602763],
-                "A(weekly)-2011": [0.544883, 0.423655, 0.645894],
-                "B(weekly)-2010": [
-                    0.437587,
-                    0.8917729999999999,
-                    0.9636629999999999,
-                ],
-                "B(weekly)-2011": [0.383442, 0.791725, 0.528895],
-                "X": [0, 1, 1],
+                "country": ["United States", "Russia", "China"],
+                "vault_2012": [48.1, 46.4, 44.3],
+                "floor_2012": [45.4, 41.6, 40.8],
+                "vault_2016": [46.9, 45.7, 44.3],
+                "floor_2016": [46.0, 42.0, 42.1],
             }
         )
 print(df)
 
-print(df.pivot_longer("X", names_to=(".value", "year"), names_sep= "-").to_dict('list'))
+print(df.pivot_longer('country', names_to=("event", "year"), names_sep="_"))

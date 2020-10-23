@@ -612,11 +612,10 @@ def _data_checks_pivot_longer(
     df,
     index,
     column_names,
-    names_sep,
-    names_pattern,
     names_to,
     values_to,
-    order_by_appearance,
+    names_sep,
+    names_pattern,
     dtypes,
 ):
 
@@ -639,7 +638,7 @@ def _data_checks_pivot_longer(
     ):
         raise ValueError(
             """pivot_longer is designed for single index dataframes;
-               for MultiIndex dataframes, kindly use pandas.melt."""
+               for MultiIndex , kindly use pandas.melt."""
         )
 
     if index is not None:
@@ -652,28 +651,30 @@ def _data_checks_pivot_longer(
             column_names = [column_names]
         check("column_names", column_names, [list, tuple, Pattern])
 
-    if names_to is not None:
-        check("names_to", names_to, [list, tuple, str])
+    check("names_to", names_to, [list, tuple, str])
 
-        if isinstance(names_to, (list, tuple)):
-            if not all(isinstance(word, str) for word in names_to):
-                raise TypeError(
+    if isinstance(names_to, str):
+        names_to = [names_to]
+
+    if isinstance(names_to, (list, tuple)):
+        if not all(isinstance(word, str) for word in names_to):
+            raise TypeError(
                     "All entries in `names_to` argument must be strings."
                 )
 
-            if len(names_to) > 1:
-                if all((names_pattern is not None, names_sep is not None)):
+        if len(names_to) > 1:
+            if all((names_pattern is not None, names_sep is not None)):
                     raise ValueError(
                         """Only one of names_pattern or names_sep
                        should be provided."""
                     )
 
-                if ".value" in names_to:
-                    if names_to.count(".value") > 1:
+            if ".value" in names_to:
+                if names_to.count(".value") > 1:
                         raise ValueError(
                             "Column name `.value` must not be duplicated."
                         )
-        if isinstance(names_to, str) or (len(names_to) == 1):
+        if len(names_to) == 1:
             # names_sep creates more than one column
             # whereas regex with names_pattern can be limited to one column
             if names_sep is not None:
@@ -723,19 +724,16 @@ def _data_checks_pivot_longer(
     if dtypes is not None:
         check("dtypes", dtypes, [dict])
 
-    check("order_by_appearance", order_by_appearance, [bool])
-
     check("values_to", values_to, [str])
 
     return (
         df,
         index,
         column_names,
-        names_sep,
-        names_pattern,
         names_to,
         values_to,
-        order_by_appearance,
+        names_sep,
+        names_pattern,       
         dtypes,
     )
 
@@ -766,11 +764,10 @@ def _computations_pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple]] = None,
     column_names: Optional[Union[List, Tuple]] = None,
-    names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[Union[str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
-    order_by_appearance: Optional[bool] = True,
+    names_sep: Optional[Union[str, Pattern]] = None,
+    names_pattern: Optional[Union[str, Pattern]] = None,
     dtypes: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
@@ -779,7 +776,8 @@ def _computations_pivot_longer(
     There are a couple of scenarios that this function takes care of when
     unpivoting :
 
-    1. Regular data unpivoting is covered with pandas melt.
+    #certainly has to be reworded.
+    1. Regular data unpivoting is covered with pandas stack.
     For the scenarios below, the dataframe is melted and separated into a
     `before_df`, `between_df` and `after_df`.
     2. if the length of `names_to` is > 1, the function unpivots the data,
@@ -822,10 +820,6 @@ def _computations_pivot_longer(
 
     if index is not None:
         check_column(df, index, present=True)
-        # this should take care of non unique index
-        # we'll get rid of the extra in _reindex_func
-        # TODO: what happens if `index` is already a name
-        # in the columns?
 
     if column_names is not None:
         check_column(df, column_names, present=True)
@@ -833,179 +827,40 @@ def _computations_pivot_longer(
     if index is None and (column_names is not None):
         index = [col for col in df if col not in column_names]
 
+    if index:
+        df = df.set_index(index)
+    if column_names:
+        df = df.filter(column_names)
+    df = df.stack()
     # scenario 1
     if all((names_pattern is None, names_sep is None)):
-        df = pd.melt(
-            df,
-            id_vars=index,
-            value_vars=column_names,
-            var_name=names_to,
-            value_name=values_to,
-        )
-
-        # order by appearance only makes sense if there is an index???
-        # more tests needed for this
-        index_dtypes = None
-        if order_by_appearance and (len(df.columns) > 2):
-            index_dtypes = dtype_by_appearance(df.loc[:, index])
-            df = order_if_true(df, data_types=index_dtypes, grouper=index)
-            df = df.reset_index(drop=True)
+        df = df.reset_index()
+        if index:
+            df.columns = index + names_to + [values_to]
+        else:
+            df = df.iloc[:, 1:]
+            df.columns = names_to + [values_to]
         if dtypes:
             df = df.astype(dtypes)
+            
         return df
 
     # scenario 2
     if any((names_pattern is not None, names_sep is not None)):
-        # should avoid conflict if index/columns has a string named `variable`
-        uniq_name = "*^#variable!@?$%"
-        df = pd.melt(
-            df, id_vars=index, value_vars=column_names, var_name=uniq_name
-        )
-        # pd.melt returns uniq_name and value as the last columns. We can use
-        # that knowledge to get the data before( the index column(s)),
-        # the data between (our uniq_name column),
-        #  and the data after (our values column)
-
-        before_df = None
-        after_df = df.iloc[:, -1].rename(values_to)
-        between_df = df.iloc[:, -2]
-        if names_sep is not None:
-            between_df = between_df.str.split(names_sep, expand=True)
-            if len(names_to) != len(between_df.columns):
-                raise ValueError(
-                    """
-                Length of ``names_to`` does not match
-                number of columns extracted.
-                """
-                )
-
-            between_df.columns = names_to
-
-        else:
-            # this takes care of scenario 4
-            # and reconfigures it so it takes the scenario 3 path
-            # with `.value`
-            if isinstance(names_pattern, (list, tuple)):
-                condlist = [
-                    between_df.str.contains(regex) for regex in names_pattern
-                ]
-                if not condlist:
-                    raise ValueError(
-                        """
-                The regular expression in ``names_pattern`` did not
-                return any matches.
-                """
-                    )
-                between_df = np.select(condlist, names_to, None)
-                between_df = [pd.Series(between_df, name=".value")]
-
-            else:  # names_pattern is a regular expression
-                between_df = between_df.str.extractall(names_pattern)
-                if between_df.empty:
-                    raise ValueError(
-                        """
-                The regular expression in ``names_pattern`` did not
-                return any matches.
-                """
-                    )
-                between_df = between_df.droplevel(-1)
-                if isinstance(names_to, str):
-                    names_to = [names_to]
-                if len(names_to) != len(between_df.columns):
-                    raise ValueError(
-                        """
-                Length of ``names_to`` does not match
-                number of columns extracted.
-                """
-                    )
-                between_df.columns = names_to
-
-        boolean_col_len = len(df.columns) > 2
-        grouper = None
-        df_dtypes = None
-        before_df = None
-        if boolean_col_len:
-            grouper = index
-            before_df = df.iloc[:, :-2]
-        else:
-            grouper = names_to
-
-        if ".value" not in between_df.columns:
-            # set dtype here? to maintain categories?
-            if boolean_col_len:
-                df = pd.concat([before_df, between_df, after_df], axis=1)
-            else:
-                df = pd.concat([between_df, after_df], axis=1)
-
-            if order_by_appearance:
-                if boolean_col_len:
-                    df_dtypes = dtype_by_appearance(before_df)
-                else:
-                    df_dtypes = dtype_by_appearance(between_df)
-                df = order_if_true(df, data_types=df_dtypes, grouper=grouper)
-                df = df.reset_index(drop=True)
-
-            if dtypes:
-                df = df.astype(dtypes)
-            return df
-
-        # '.value' present
-        if order_by_appearance:
-            if boolean_col_len:
-                before_df = before_df.astype(dtype_by_appearance(before_df))
-            between_df = between_df.astype(dtype_by_appearance(between_df))
-
-        if boolean_col_len:
-            before_df = [col for _, col in before_df.items()]
-
-        between_df = [col for _, col in between_df.items()]
-
-        if boolean_col_len:
-            df = pd.DataFrame(after_df.array, index=before_df + between_df)
-        else:
-            df = pd.DataFrame(after_df.array, index = between_df)
-        
-        if df.index.duplicated().any():
-            df = duplicated_index_fix(df)
-            df = df.unstack('.value').droplevel(0,1).droplevel(-1)       
-        else:
-            df = df.unstack('.value').droplevel(0,1)
-        # if column is a categorical index
-        # this will fix it before reset index
-        # also gets rid of column axis name if present
-        df.columns = list(df.columns)
-        df = df.reset_index()
-        if dtypes:
-            df = df.astype(dtypes) 
+        mapping = df.index.get_level_values(-1)
+        if names_sep:
+            mapping = mapping.str.split(names_sep, expand=True)
+            mapping.names = names_to
+        df.index = df.index.droplevel(-1)
+        mapping = [mapping.get_level_values(name) for name in mapping.names]
+        new_index = [df.index.get_level_values(ind) for ind in range(df.index.nlevels)]
+        new_index.extend(mapping)
+        new_index = pd.MultiIndex.from_arrays(new_index)
+        df = pd.Series(df.array, index = new_index)
+        df = df.reset_index(name = values_to)
         return df
 
 
-
-
-def duplicated_index_fix(df):
-    mapping = df.groupby('.value')
-    keys = [np.arange(len(value)) for _, value in mapping]
-    keys = np.concatenate(keys)
-    df = df.sort_index(level='.value').set_index(keys, append=True)    
-    return  df
-
-def dtype_by_appearance(df):
-    df_dtypes = {
-        name: CategoricalDtype(pd.unique(col), ordered=True)
-        for name, col in df.items()
-    }
-
-    return df_dtypes
-
-
-def order_if_true(df, data_types, grouper):
-    if data_types:
-        df = df.astype(data_types)
-    temp = df.groupby(grouper, sort=False).indices
-    temp = np.concatenate([value for _, value in temp.items()])
-    df = df.iloc[temp]
-
-    return df
 
     # we take a detour here to deal with paired columns, where the user
     # might want one of the names in the paired column as part of the

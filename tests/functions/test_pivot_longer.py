@@ -68,7 +68,7 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
-        {"cod": "str"},
+        {"cod": "str", "id":int},
     ),
     (
         pd.DataFrame(
@@ -98,7 +98,7 @@ paired_columns_pattern = [
         patterns("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
-        {"val": int, "value": int},
+        {"val": int, "value": int, "person_id":int},
     ),
     (
         pd.DataFrame(
@@ -125,7 +125,7 @@ paired_columns_pattern = [
         "id",
         (".value", "instance"),
         r"(\w)(\d)",
-        {"instance": "int"},
+        {"instance": "int", "id":int},
     ),
     (
         pd.DataFrame(
@@ -155,7 +155,7 @@ paired_columns_pattern = [
         "X",
         (".value", "year"),
         "([A-Z])(.+)",
-        {"year": "int", "B": float},
+        {"year": "int", "B": float, "X":float},
     ),
     (
         pd.DataFrame(
@@ -200,7 +200,7 @@ paired_columns_pattern = [
         "id",
         (".value", "status"),
         "(.*)_(.*)",
-        {"status": str},
+        {"status": str, "id": str},
     ),
 ]
 
@@ -221,31 +221,12 @@ paired_columns_sep = [
             }
         ),
         pd.DataFrame(
-            {
-                "X": [0, 0, 1, 1, 1, 1],
-                "year": [2010, 2011, 2010, 2011, 2010, 2011],
-                "A(weekly)": [
-                    0.548814,
-                    0.544883,
-                    0.7151890000000001,
-                    0.423655,
-                    0.602763,
-                    0.645894,
-                ],
-                "B(weekly)": [
-                    0.437587,
-                    0.383442,
-                    0.8917729999999999,
-                    0.791725,
-                    0.9636629999999999,
-                    0.528895,
-                ],
-            }
+            {'X': [0, 0, 1, 1, 1, 1], 'year': ['2010', '2011', '2010', '2010', '2011', '2011'], 'A(weekly)': [0.548814, 0.544883, 0.7151890000000001, 0.602763, 0.423655, 0.645894], 'B(weekly)': [0.437587, 0.383442, 0.8917729999999999, 0.9636629999999999, 0.791725, 0.528895]}
         ),
         "X",
         (".value", "year"),
         "-",
-        {"year": int},
+        {"year": str, "X":int},
     ),
     (
         pd.DataFrame(
@@ -267,7 +248,7 @@ paired_columns_sep = [
         "indexer",
         (".value", "num"),
         "_",
-        {"num": int, "S": float},
+        {"num": int, "S": float, "indexer":int},
     ),
     (
         pd.DataFrame(
@@ -300,7 +281,7 @@ paired_columns_sep = [
         ["county", "area"],
         (".value", "year"),
         "_",
-        {"year": int},
+        {"year": int, 'county':int, "area":int},
     ),
     (
         pd.DataFrame(
@@ -391,7 +372,7 @@ paired_columns_sep = [
         "family",
         (".value", "child"),
         "_",
-        {"child": str, "gender": float},
+        {"child": str, "gender": float, "family": int},
     ),
     (
         pd.DataFrame(
@@ -432,7 +413,7 @@ paired_columns_sep = [
         "id",
         (".value", "brand"),
         "_",
-        {"brand": str},
+        {"brand": str, "id": str},
     ),
     (
         pd.DataFrame(
@@ -455,7 +436,7 @@ paired_columns_sep = [
         "event",
         (".value", "item"),
         "_",
-        {"item": int},
+        {"item": int, "event": int},
     ),
 ]
 
@@ -1022,6 +1003,7 @@ names_single_value = [
         ),
         "event",
         "(.+)_.",
+        {"event": int}
     ),
     (
         pd.DataFrame(
@@ -1042,6 +1024,7 @@ names_single_value = [
         ),
         "id",
         "(.).",
+        {"id":int}
     ),
 ]
 
@@ -1167,7 +1150,7 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
 @pytest.mark.parametrize("df", multi_index_df)
 def test_warning_multi_index(df):
     "Raise Warning if dataframe is a MultiIndex."
-    with pytest.warns(UserWarning):
+    with pytest.raises(ValueError):
         df.pivot_longer()
 
 
@@ -1276,50 +1259,28 @@ def test_pivot_no_args_passed():
 def test_pivot_index_only(df_checks_output):
     "Test output if only `index` is passed."
     result = df_checks.pivot_longer(
-        index="region", names_to="year", values_to="num_nests"
+        index="region", names_to="year", values_to="num_nests", dtypes={"region":str}
     )
     assert_frame_equal(result, df_checks_output)
-
-
-def test_pivot_index_only_dtypes(df_checks_output):
-    "Test output if only `index` is passed, with a dtype."
-    result = df_checks.pivot_longer(
-        index="region",
-        names_to="year",
-        values_to="num_nests",
-        dtypes={"year": int},
-    )
-    assert_frame_equal(result, df_checks_output.astype({"year": int}))
 
 
 def test_pivot_column_only(df_checks_output):
     "Test output if only `column_names` is passed."
     result = df_checks.pivot_longer(
-        column_names=["2007", "2009"], names_to="year", values_to="num_nests",
+        column_names=["2007", "2009"], names_to="year", values_to="num_nests", dtypes={"region":str}
     )
     assert_frame_equal(result, df_checks_output)
-
-
-def test_pivot_column_only_dtypes(df_checks_output):
-    "Test output if only `column_names` is passed, with a dtype."
-    result = df_checks.pivot_longer(
-        column_names=["2007", "2009"],
-        names_to="year",
-        values_to="num_nests",
-        dtypes={"year": int},
-    )
-    assert_frame_equal(result, df_checks_output.astype({"year": int}))
 
 
 def test_pivot_index_patterns_only(df_checks_output):
     "Test output if the `patterns` function is passed to `index`."
     result = df_checks.pivot_longer(
-        index=patterns(r"[^\d+]"), names_to="year", values_to="num_nests"
+        index=patterns(r"[^\d+]"), names_to="year", values_to="num_nests", dtypes={"region":str}
     )
     assert_frame_equal(result, df_checks_output)
 
 
-def test_pivot_no_index_dtypes():
+def test_pivot_no_index_dtypes(): # check this test if it makes sense
     "Test output if neither `index`/`columns_names` is passed, with dtypes."
     test = pd.DataFrame(
         {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
@@ -1332,7 +1293,7 @@ def test_pivot_no_index_dtypes():
 def test_pivot_columns_patterns_only(df_checks_output):
     "Test output if the `patterns` function is passed to `column_names`."
     result = df_checks.pivot_longer(
-        column_names=patterns(r"\d+"), names_to="year", values_to="num_nests"
+        column_names=patterns(r"\d+"), names_to="year", values_to="num_nests", dtypes={"region":str}
     )
     assert_frame_equal(result, df_checks_output)
 
@@ -1430,29 +1391,29 @@ def test_paired_columns_no_index_pattern(
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index, names_pattern", names_single_value
+    "df_in,df_out,index, names_pattern, dtypes", names_single_value
 )
-def test_single_value(df_in, df_out, index, names_pattern):
+def test_single_value(df_in, df_out, index, dtypes, names_pattern):
     "Test function where names_to is a string and == `.value`."
     result = df_in.pivot_longer(
-        index=index, names_to=".value", names_pattern=names_pattern
+        index=index, names_to=".value", names_pattern=names_pattern, dtypes=dtypes
     )
     assert_frame_equal(result, df_out)
 
 
 df = pd.DataFrame(
-    {'Location': ['Madrid', 'Madrid', 'Rome', 'Rome'],
- 'Account': ['ABC', 'XYX', 'ABC', 'XYX'],
- 'Y2019:MTD:January:Expense': [4354, 769867, 434654, 632556456],
- 'Y2019:MTD:January:Income': [56456, 32556456, 5214, 46724423],
- 'Y2019:MTD:February:Expense': [235423, 6785423, 235423, 46588]}
-
-)
-
+            {
+                "A(weekly)-2010": [0.548814, 0.7151890000000001, 0.602763],
+                "A(weekly)-2011": [0.544883, 0.423655, 0.645894],
+                "B(weekly)-2010": [
+                    0.437587,
+                    0.8917729999999999,
+                    0.9636629999999999,
+                ],
+                "B(weekly)-2011": [0.383442, 0.791725, 0.528895],
+                "X": [0, 1, 1],
+            }
+        )
 print(df)
 
-print(
-    df.pivot_longer(
-        ["Location", "Account"],names_to = ("year_month", ".value"), names_pattern = "(.+):(Income|Expense)$", order_by_appearance=True
-    )
-)
+print(df.pivot_longer("X", names_to=(".value", "year"), names_sep= "-").to_dict('list'))

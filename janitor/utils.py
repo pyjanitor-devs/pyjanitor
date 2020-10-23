@@ -2,6 +2,7 @@
 
 import functools
 import os
+from os import dup
 import sys
 import warnings
 from itertools import chain, product
@@ -10,7 +11,9 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
+from pandas.core.algorithms import duplicated
 from pandas.core.arrays import boolean
+from pandas.core.arrays.sparse import dtype
 
 from .errors import JanitorError
 
@@ -634,10 +637,9 @@ def _data_checks_pivot_longer(
             isinstance(df.columns, pd.MultiIndex),
         ),
     ):
-        warnings.warn(
-            """pivot_longer is designed for single index dataframes and
-               may produce unexpected results for multiIndex dataframes;
-               for such cases, kindly use pandas.melt."""
+        raise ValueError(
+            """pivot_longer is designed for single index dataframes;
+               for MultiIndex dataframes, kindly use pandas.melt."""
         )
 
     if index is not None:
@@ -921,12 +923,12 @@ def _computations_pivot_longer(
         boolean_col_len = len(df.columns) > 2
         grouper = None
         df_dtypes = None
+        before_df = None
         if boolean_col_len:
             grouper = index
             before_df = df.iloc[:, :-2]
         else:
             grouper = names_to
-            before_df = None
 
         if ".value" not in between_df.columns:
             # set dtype here? to maintain categories?
@@ -948,69 +950,44 @@ def _computations_pivot_longer(
             return df
 
         # '.value' present
-
-        # comes in handy if index is duplicated
         if order_by_appearance:
-            df_dtypes = dtype_by_appearance(between_df)
-            between_df = between_df.astype(df_dtypes)
-            between_df = [col for _, col in between_df.items()]            
             if boolean_col_len:
-                df_dtypes = dtype_by_appearance(before_df)
-                before_df = before_df.astype(df_dtypes)
-                before_df = [col for _, col in before_df.items()]
-                df = pd.DataFrame(after_df.array, index=before_df + between_df)
-            else:
-                df = pd.DataFrame(after_df.array, index=between_df)
+                before_df = before_df.astype(dtype_by_appearance(before_df))
+            between_df = between_df.astype(dtype_by_appearance(between_df))
 
-            # need tests to see if this is needed if index is not duplicated
-            # get data with multiple values for between_df('.value' and 'other cols')
-            df = order_if_true(df, data_types=None, grouper=grouper)
-
-            if df.index.duplicated().any():
-                df = duplicated_index_fix(df)
-                df = df.unstack(".value").droplevel(0, 1).droplevel(-1)
-
-            else:
-                df = df.unstack(".value").droplevel(0, 1)
-            df.columns = list(df.columns)
-            df = df.reset_index().rename_axis(columns=None)
-            if dtypes:
-                df = df.astype(dtypes)
-            return df
-
-        between_df = [col for _, col in between_df.items()]
         if boolean_col_len:
             before_df = [col for _, col in before_df.items()]
+
+        between_df = [col for _, col in between_df.items()]
+
+        if boolean_col_len:
             df = pd.DataFrame(after_df.array, index=before_df + between_df)
         else:
-            df = pd.DataFrame(after_df.array, index=between_df)
-
+            df = pd.DataFrame(after_df.array, index = between_df)
+        
         if df.index.duplicated().any():
-            df = order_if_true(df, data_types=None, grouper=grouper)
             df = duplicated_index_fix(df)
-            df = df.unstack('.value').droplevel(0,1).droplevel(-1)
-        else: 
-            df = df.unstack(".value").droplevel(0,1)
+            df = df.unstack('.value').droplevel(0,1).droplevel(-1)       
+        else:
+            df = df.unstack('.value').droplevel(0,1)
+        # if column is a categorical index
+        # this will fix it before reset index
+        # also gets rid of column axis name if present
         df.columns = list(df.columns)
-        df = df.reset_index().rename_axis(columns=None)
+        df = df.reset_index()
         if dtypes:
-            df = df.astype(dtypes)
-
-
+            df = df.astype(dtypes) 
         return df
 
 
 
 
 def duplicated_index_fix(df):
-    dot_values = df.index.get_level_values(".value")
-    num = (
-                    dot_values
-                    == dot_values[0]
-                )
-    num = np.cumsum(num)
-    return df.set_index(num, append=True)
-
+    mapping = df.groupby('.value')
+    keys = [np.arange(len(value)) for _, value in mapping]
+    keys = np.concatenate(keys)
+    df = df.sort_index(level='.value').set_index(keys, append=True)    
+    return  df
 
 def dtype_by_appearance(df):
     df_dtypes = {

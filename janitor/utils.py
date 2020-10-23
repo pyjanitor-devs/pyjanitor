@@ -11,7 +11,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
-from pandas.core.algorithms import duplicated
+from pandas.core.algorithms import duplicated, isin
 from pandas.core.arrays import boolean
 from pandas.core.arrays.sparse import dtype
 
@@ -725,6 +725,7 @@ def _data_checks_pivot_longer(
         check("dtypes", dtypes, [dict])
 
     check("values_to", values_to, [str])
+    values_to = [values_to]
 
     return (
         df,
@@ -836,10 +837,10 @@ def _computations_pivot_longer(
     if all((names_pattern is None, names_sep is None)):
         df = df.reset_index()
         if index:
-            df.columns = index + names_to + [values_to]
+            df.columns = index + names_to + values_to
         else:
             df = df.iloc[:, 1:]
-            df.columns = names_to + [values_to]
+            df.columns = names_to + values_to
         if dtypes:
             df = df.astype(dtypes)
             
@@ -850,87 +851,76 @@ def _computations_pivot_longer(
         mapping = df.index.get_level_values(-1)
         if names_sep:
             mapping = mapping.str.split(names_sep, expand=True)
+            if len(names_to) != len(mapping.names):
+                raise ValueError(
+                    """
+                Length of ``names_to`` does not match
+                number of columns extracted.
+                """
+                )
             mapping.names = names_to
-        df.index = df.index.droplevel(-1)
-        mapping = [mapping.get_level_values(name) for name in mapping.names]
+        else:
+            if isinstance(names_pattern, str):
+                mapping = mapping.str.extractall(names_pattern)
+                if mapping.empty:
+                    raise ValueError(
+                        """
+                The regular expression in ``names_pattern`` did not
+                return any matches.
+                """
+                    )
+                mapping = mapping.droplevel(-1)
+                mapping.columns = names_to
+            else:
+                condlist = [
+                    mapping.str.contains(regex) for regex in names_pattern
+                ]
+                if not condlist:
+                    raise ValueError(
+                        """
+                The regular expression in ``names_pattern`` did not
+                return any matches.
+                """
+                    )
+                mapping = np.select(condlist, names_to, None)
+                mapping = pd.Series(mapping, name=".value")
+
+            df.index = df.index.droplevel(-1)
+        if isinstance(mapping, pd.MultiIndex):
+            mapping = [mapping.get_level_values(name) for name in mapping.names]
+        elif isinstance(mapping, pd.DataFrame):
+            mapping = [col for _, col in mapping.items()]
+        else:
+            mapping = [mapping]
+            
         new_index = [df.index.get_level_values(ind) for ind in range(df.index.nlevels)]
         new_index.extend(mapping)
         new_index = pd.MultiIndex.from_arrays(new_index)
-        df = pd.Series(df.array, index = new_index)
-        df = df.reset_index(name = values_to)
+        df = pd.DataFrame(df.array, index = new_index)
+
+        if '.value' not in df.index.names:
+            df.columns = values_to
+            df = df.reset_index()
+            if dtypes:
+                df = df.astype(dtypes)
+            return df
+        
+        columns_sorter = pd.unique(df.index.get_level_values(".value"))
+        if df.index.duplicated().any():
+            mapping = list(range(df.index.nlevels))
+            mapping = df.groupby(level = mapping).cumcount().array
+            df = df.set_index(pd.Index(mapping), append=True)
+            df = df.unstack(".value").droplevel(0,1).droplevel(-1)
+        else:
+            df = df.unstack(".value").droplevel(0,1)
+        df.columns = list(df.columns)
+        df = df.reindex(columns=columns_sorter).reset_index()
+
+        if not index:
+            df = df.iloc[:, 1:]
+
+        if dtypes:
+            df = df.astype(dtypes)
+            
         return df
 
-
-
-    # we take a detour here to deal with paired columns, where the user
-    # might want one of the names in the paired column as part of the
-    # new column names. The `.value` indicates that that particular
-    # value becomes a header.
-
-    # It is also another way of achieving pandas wide_to_long.
-
-    # Let's see an example of a paired column
-    # say we have this data :
-    # data is copied from pandas wide_to_long documentation
-    # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.wide_to_long.html
-    #     famid  birth  ht1  ht2
-    # 0      1      1  2.8  3.4
-    # 1      1      2  2.9  3.8
-    # 2      1      3  2.2  2.9
-    # 3      2      1  2.0  3.2
-    # 4      2      2  1.8  2.8
-    # 5      2      3  1.9  2.4
-    # 6      3      1  2.2  3.3
-    # 7      3      2  2.3  3.4
-    # 8      3      3  2.1  2.9
-
-    # and we want to reshape into data that looks like this :
-    #      famid  birth age   ht
-    # 0       1      1   1  2.8
-    # 1       1      1   2  3.4
-    # 2       1      2   1  2.9
-    # 3       1      2   2  3.8
-    # 4       1      3   1  2.2
-    # 5       1      3   2  2.9
-    # 6       2      1   1  2.0
-    # 7       2      1   2  3.2
-    # 8       2      2   1  1.8
-    # 9       2      2   2  2.8
-    # 10      2      3   1  1.9
-    # 11      2      3   2  2.4
-    # 12      3      1   1  2.2
-    # 13      3      1   2  3.3
-    # 14      3      2   1  2.3
-    # 15      3      2   2  3.4
-    # 16      3      3   1  2.1
-    # 17      3      3   2  2.9
-
-    # We have height(`ht`) and age(`1,2`) paired in the column name.
-    # We pass ``names_to`` as ('.value', 'age'), and names_pattern
-    # as "(ht)(\d)". If ``names_to`` and ``names_pattern`` are paired,
-    # we get --> {".value":"ht", "age": "\d"}.
-    # This instructs the function to keep "ht" as a column name
-    # (since it is directly mapped to `.value`) in the new dataframe,
-    # and create a new `age` column, that contains all the numbers.
-    # Also, the code tries to ensure a complete collection for each index;
-    # sorted in their order of appearance in the source dataframe.
-    # Note how `1, 2` is repeated for the extracted age column for each
-    # combination of `famid` and `birth`. The repeat of `1,2` also
-    # simulates how it looks in the source data : `ht1 > ht2`.
-    # As such, for every index, there is a complete set of the data;
-    # the user can visually see the unpivoted data for each index
-    # and be assured of complete/accurate sync.
-
-    # scenario 3
-
-    # extract new column names and assign category dtype
-    # apart from memory usage, the primary aim of the category
-    # dtype is to ensure that the data is sorted in order of
-    # appearance in the source dataframe
-
-    # reshape index_sorter and use the first column as the index
-    # of the reshaped after_df. after_df will be reshaped into
-    # specific number of columns, based on the length of
-    # `after_df_cols`
-
-    # this kicks in if there is no `.value` in `names_to`

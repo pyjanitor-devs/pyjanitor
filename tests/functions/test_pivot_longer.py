@@ -1402,14 +1402,14 @@ def test_single_value(df_in, df_out, index, dtypes, names_pattern):
 
 
 df = pd.DataFrame(
-            {
-                "country": ["United States", "Russia", "China"],
-                "vault_2012": [48.1, 46.4, 44.3],
-                "floor_2012": [45.4, 41.6, 40.8],
-                "vault_2016": [46.9, 45.7, 44.3],
-                "floor_2016": [46.0, 42.0, 42.1],
-            }
-        )
-print(df)
+    {
+        "id": [1, 2, 3],
+        "x1": [4, 5, 6],
+        "x2": [5, 6, 7],
+        "y1": [7, 8, 9],
+        "y2": [10, 11, 12],
+    }
+)
 
-print(df.pivot_longer('country', names_to=("event", "year"), names_sep="_"))
+
+print(df.pivot_longer(names_to=(".value"),   index="id",      names_pattern="(.)."    ))

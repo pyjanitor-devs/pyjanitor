@@ -33,6 +33,7 @@ def df_checks_output():
         }
     )
 
+
 @pytest.fixture
 def test_df():
     return pd.DataFrame(
@@ -74,23 +75,25 @@ def test_df():
         }
     )
 
+
 @pytest.fixture
 def names_pattern_list_df():
     return pd.DataFrame(
-            [
-                {
-                    "ID": 1,
-                    "DateRange1Start": "1/1/90",
-                    "DateRange1End": "3/1/90",
-                    "Value1": 4.4,
-                    "DateRange2Start": "4/5/91",
-                    "DateRange2End": "6/7/91",
-                    "Value2": 6.2,
-                    "DateRange3Start": "5/5/95",
-                    "DateRange3End": "6/6/96",
-                    "Value3": 3.3,
-                }
-            ])
+        [
+            {
+                "ID": 1,
+                "DateRange1Start": "1/1/90",
+                "DateRange1End": "3/1/90",
+                "Value1": 4.4,
+                "DateRange2Start": "4/5/91",
+                "DateRange2End": "6/7/91",
+                "Value2": 6.2,
+                "DateRange3Start": "5/5/95",
+                "DateRange3End": "6/6/96",
+                "Value3": 3.3,
+            }
+        ]
+    )
 
 
 paired_columns_pattern = [
@@ -1208,25 +1211,49 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
+
 def test_names_pattern_wrong_subtype():
-    "Raise TypeError if `names_pattern` is a list/tuple and wrong subtype is supplied."
+    """
+    Raise TypeError if `names_pattern` is a list/tuple
+    and wrong subtype is supplied.
+    """
     with pytest.raises(TypeError):
-        df_checks.pivot_longer(names_to=["variable", "value"], names_pattern=[1, "rar"])
+        df_checks.pivot_longer(
+            names_to=["variable", "value"], names_pattern=[1, "rar"]
+        )
+
 
 def test_names_pattern_names_to_wrong_type():
-    "Raise TypeError if `names_pattern` is a list/tuple and wrong type is supplied for `names_to`."
+    """
+    Raise TypeError if `names_pattern` is a list/tuple
+    and wrong type is supplied for `names_to`.
+    """
     with pytest.raises(TypeError):
-        df_checks.pivot_longer(names_to={"variable", "value"}, names_pattern=["1", "rar"])
+        df_checks.pivot_longer(
+            names_to={"variable", "value"}, names_pattern=["1", "rar"]
+        )
+
 
 def test_names_pattern_names_to_unequal_length():
-    "Raise ValueError if `names_pattern` is a list/tuple and wrong number of items in `names_to`."
+    """
+    Raise ValueError if `names_pattern` is a list/tuple
+    and wrong number of items in `names_to`.
+    """
     with pytest.raises(ValueError):
-        df_checks.pivot_longer(names_to=["variable"], names_pattern=['1', "rar"])
+        df_checks.pivot_longer(
+            names_to=["variable"], names_pattern=["1", "rar"]
+        )
+
 
 def test_names_pattern_names_to_dot_value():
-    "Raise Error if `names_pattern` is a list/tuple and `.value` in `names_to`."
+    """
+    Raise Error if `names_pattern` is a list/tuple and
+    `.value` in `names_to`.
+    """
     with pytest.raises(ValueError):
-        df_checks.pivot_longer(names_to=["variable", ".value"], names_pattern=['1', "rar"])
+        df_checks.pivot_longer(
+            names_to=["variable", ".value"], names_pattern=["1", "rar"]
+        )
 
 
 @pytest.mark.parametrize("df", multi_index_df)
@@ -1273,9 +1300,10 @@ def test_empty_mapping(test_df):
             names_to=[".value", "value"], names_pattern=r"(\d+)([A-Z])"
         )
 
+
 def test_len_mapping_gt_len_names_to(test_df):
     """
-    Raise error if `names_pattern` is a regex and returns number of 
+    Raise error if `names_pattern` is a regex and returns number of
     matches more than length of `names_to`.
     """
     with pytest.raises(ValueError):
@@ -1485,27 +1513,33 @@ def test_single_value(df_in, df_out, index, dtypes, names_pattern):
 
 def test_names_pattern_list(names_pattern_list_df):
     "Test output if `names_pattern` is a list."
-    result = names_pattern_list_df.pivot_longer(index='ID',
+    result = names_pattern_list_df.pivot_longer(
+        index="ID",
         names_to=("DateRangeStart", "DateRangeEnd", "Value"),
         names_pattern=("Start$", "End$", "^Value"),
-        dtypes={"ID":int, "Value": float}
+        dtypes={"ID": int, "Value": float},
     )
 
-    expected_output = pd.DataFrame({'ID': [1, 1, 1],
- 'DateRangeStart': ['1/1/90', '4/5/91', '5/5/95'],
- 'DateRangeEnd': ['3/1/90', '6/7/91', '6/6/96'],
- 'Value': [4.4, 6.2, 3.3]})
+    expected_output = pd.DataFrame(
+        {
+            "ID": [1, 1, 1],
+            "DateRangeStart": ["1/1/90", "4/5/91", "5/5/95"],
+            "DateRangeEnd": ["3/1/90", "6/7/91", "6/6/96"],
+            "Value": [4.4, 6.2, 3.3],
+        }
+    )
 
     assert_frame_equal(result, expected_output)
 
 
 def test_names_pattern_list_empty(names_pattern_list_df):
     """
-    Raise ValueError if `names_pattern` is a list, 
+    Raise ValueError if `names_pattern` is a list,
     and nothing is returned.
     """
     with pytest.raises(ValueError):
-       names_pattern_list_df.pivot_longer(index='ID',
-        names_to=("DateRangeStart", "DateRangeEnd", "Value"),
-        names_pattern=("^Start", "^End", "Value$"),
-    )
+        names_pattern_list_df.pivot_longer(
+            index="ID",
+            names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+            names_pattern=("^Start", "^End", "Value$"),
+        )

@@ -4706,8 +4706,8 @@ def pivot_longer(
 
     This method does not mutate the original DataFrame.
 
-    It is a wrapper around `pd.melt` and is meant to serve as a single point
-    for transformations that require `pd.melt` or `pd.wide_to_long`. It is
+    It is meant to make it easy to unpivot a dataframe from wide to long
+    form, as well as providing extra convenience features. It is
     modeled after the `pivot_longer` function in R's tidyr package.
 
     This function is useful to massage a DataFrame into a format where
@@ -4716,6 +4716,9 @@ def pivot_longer(
 
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
+
+    Note that the unpivoted data is returned in order of appearance; as such,
+    some columns can be of category dtype.
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.

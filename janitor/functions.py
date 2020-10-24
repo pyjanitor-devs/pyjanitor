@@ -4977,7 +4977,7 @@ def pivot_longer(
         names_to,
         values_to,
         names_sep,
-        names_pattern,        
+        names_pattern,
         dtypes,
     ) = _data_checks_pivot_longer(
         df,

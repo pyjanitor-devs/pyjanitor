@@ -2,10 +2,10 @@
 
 import functools
 import os
-from os import dup
 import sys
 import warnings
 from itertools import chain, product
+from os import dup
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
@@ -659,21 +659,21 @@ def _data_checks_pivot_longer(
     if isinstance(names_to, (list, tuple)):
         if not all(isinstance(word, str) for word in names_to):
             raise TypeError(
-                    "All entries in `names_to` argument must be strings."
-                )
+                "All entries in `names_to` argument must be strings."
+            )
 
         if len(names_to) > 1:
             if all((names_pattern is not None, names_sep is not None)):
-                    raise ValueError(
-                        """Only one of names_pattern or names_sep
+                raise ValueError(
+                    """Only one of names_pattern or names_sep
                        should be provided."""
-                    )
+                )
 
             if ".value" in names_to:
                 if names_to.count(".value") > 1:
-                        raise ValueError(
-                            "Column name `.value` must not be duplicated."
-                        )
+                    raise ValueError(
+                        "Column name `.value` must not be duplicated."
+                    )
         if len(names_to) == 1:
             # names_sep creates more than one column
             # whereas regex with names_pattern can be limited to one column
@@ -734,7 +734,7 @@ def _data_checks_pivot_longer(
         names_to,
         values_to,
         names_sep,
-        names_pattern,       
+        names_pattern,
         dtypes,
     )
 
@@ -843,14 +843,14 @@ def _computations_pivot_longer(
             df.columns = names_to + values_to
         if dtypes:
             df = df.astype(dtypes)
-            
+
         return df
 
     # scenario 2
     if any((names_pattern is not None, names_sep is not None)):
         mapping = df.index.get_level_values(-1)
         if names_sep:
-            mapping = mapping.str.split(names_sep, expand=True)
+            mapping = pd.Series(mapping).str.split(names_sep, expand=True)
             if len(names_to) != len(mapping.names):
                 raise ValueError(
                     """
@@ -869,9 +869,16 @@ def _computations_pivot_longer(
                 return any matches.
                 """
                     )
+                if len(names_to) != len(mapping.columns):
+                    raise ValueError(
+                        """
+                Length of ``names_to`` does not match
+                number of columns extracted.
+                """
+                    )
                 mapping = mapping.droplevel(-1)
                 mapping.columns = names_to
-            else:
+            else:  # list/tuple of regular expressions
                 condlist = [
                     mapping.str.contains(regex) for regex in names_pattern
                 ]
@@ -883,44 +890,50 @@ def _computations_pivot_longer(
                 """
                     )
                 mapping = np.select(condlist, names_to, None)
-                mapping = pd.Series(mapping, name=".value")
+                mapping = pd.DataFrame(mapping, columns=[".value"])
 
-            df.index = df.index.droplevel(-1)
-        if isinstance(mapping, pd.MultiIndex):
-            mapping = [mapping.get_level_values(name) for name in mapping.names]
-        elif isinstance(mapping, pd.DataFrame):
+        df.index = df.index.droplevel(-1)
+
+        if index:
+            new_index = [
+                df.index.get_level_values(ind)
+                for ind in range(df.index.nlevels)
+            ]
+        else:
+            new_index = df.index
+
+        if ".value" in mapping.columns:
+            mapping = [
+                pd.CategoricalIndex(
+                    col, categories=pd.unique(col), ordered=True
+                )
+                for _, col in mapping.items()
+            ]
+            if index:
+                new_index = [
+                    pd.CategoricalIndex(
+                        index, categories=pd.unique(index), ordered=True
+                    )
+                    for index in new_index
+                ]
+        else:
             mapping = [col for _, col in mapping.items()]
-        else:
-            mapping = [mapping]
-            
-        new_index = [df.index.get_level_values(ind) for ind in range(df.index.nlevels)]
+
         new_index.extend(mapping)
-        new_index = pd.MultiIndex.from_arrays(new_index)
-        df = pd.DataFrame(df.array, index = new_index)
 
-        if '.value' not in df.index.names:
-            df.columns = values_to
-            df = df.reset_index()
-            if dtypes:
-                df = df.astype(dtypes)
-            return df
-        
-        columns_sorter = pd.unique(df.index.get_level_values(".value"))
-        if df.index.duplicated().any():
-            mapping = list(range(df.index.nlevels))
-            mapping = df.groupby(level = mapping).cumcount().array
-            df = df.set_index(pd.Index(mapping), append=True)
-            df = df.unstack(".value").droplevel(0,1).droplevel(-1)
-        else:
-            df = df.unstack(".value").droplevel(0,1)
-        df.columns = list(df.columns)
-        df = df.reindex(columns=columns_sorter).reset_index()
+        df = pd.DataFrame(df.array, index=new_index, columns=values_to)
 
-        if not index:
-            df = df.iloc[:, 1:]
-
+        if '.value' in df.index.names:
+            if df.index.duplicated().any():
+                mapping = list(range(df.index.nlevels))
+                mapping = df.groupby(level = mapping).cumcount()
+                df = df.set_index(pd.Index(mapping), append=True)
+                df = df.unstack(".value").droplevel(0, 1).droplevel(-1)
+            else:
+                df = df.unstack(".value").droplevel(0, 1)
+            df.columns = list(df.columns) # gets rid of the categories, and allows index reset
+        df = df.reset_index()
         if dtypes:
             df = df.astype(dtypes)
-            
-        return df
 
+        return df

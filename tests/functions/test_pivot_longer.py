@@ -33,6 +33,65 @@ def df_checks_output():
         }
     )
 
+@pytest.fixture
+def test_df():
+    return pd.DataFrame(
+        {
+            "off_loc": ["A", "B", "C", "D", "E", "F"],
+            "pt_loc": ["G", "H", "I", "J", "K", "L"],
+            "pt_lat": [
+                100.07548220000001,
+                75.191326,
+                122.65134479999999,
+                124.13553329999999,
+                124.13553329999999,
+                124.01028909999998,
+            ],
+            "off_lat": [
+                121.271083,
+                75.93845266,
+                135.043791,
+                134.51128400000002,
+                134.484374,
+                137.962195,
+            ],
+            "pt_long": [
+                4.472089953,
+                -144.387785,
+                -40.45611048,
+                -46.07156181,
+                -46.07156181,
+                -46.01594293,
+            ],
+            "off_long": [
+                -7.188632000000001,
+                -143.2288569,
+                21.242563,
+                40.937416999999996,
+                40.78472,
+                22.905889000000002,
+            ],
+        }
+    )
+
+@pytest.fixture
+def names_pattern_list_df():
+    return pd.DataFrame(
+            [
+                {
+                    "ID": 1,
+                    "DateRange1Start": "1/1/90",
+                    "DateRange1End": "3/1/90",
+                    "Value1": 4.4,
+                    "DateRange2Start": "4/5/91",
+                    "DateRange2End": "6/7/91",
+                    "Value2": 6.2,
+                    "DateRange3Start": "5/5/95",
+                    "DateRange3End": "6/6/96",
+                    "Value3": 3.3,
+                }
+            ])
+
 
 paired_columns_pattern = [
     (
@@ -68,7 +127,7 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
-        {"id":int, "cod":str}
+        {"id": int, "cod": str},
     ),
     (
         pd.DataFrame(
@@ -98,7 +157,7 @@ paired_columns_pattern = [
         patterns("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
-        {"person_id":int, "value":int, "val":int}
+        {"person_id": int, "value": int, "val": int},
     ),
     (
         pd.DataFrame(
@@ -125,7 +184,7 @@ paired_columns_pattern = [
         "id",
         (".value", "instance"),
         r"(\w)(\d)",
-        {"id":int, "instance":int}
+        {"id": int, "instance": int},
     ),
     (
         pd.DataFrame(
@@ -155,7 +214,7 @@ paired_columns_pattern = [
         "X",
         (".value", "year"),
         "([A-Z])(.+)",
-        {"X":float, "year":int, "B":float}
+        {"X": float, "year": int, "B": float},
     ),
     (
         pd.DataFrame(
@@ -200,7 +259,7 @@ paired_columns_pattern = [
         "id",
         (".value", "status"),
         "(.*)_(.*)",
-        {"id":str, "status":str}
+        {"id": str, "status": str},
     ),
 ]
 
@@ -921,7 +980,64 @@ paired_columns_no_index_pattern = [
             }
         ),
         pd.DataFrame(
-            {'set': ['off', 'pt', 'off', 'pt', 'off', 'pt', 'off', 'pt', 'off', 'pt', 'off', 'pt'], 'loc': ['A', 'G', 'B', 'H', 'C', 'I', 'D', 'J', 'E', 'K', 'F', 'L'], 'lat': [121.271083, 100.07548220000001, 75.93845266, 75.191326, 135.043791, 122.65134479999999, 134.51128400000002, 124.13553329999999, 134.484374, 124.13553329999999, 137.962195, 124.01028909999998], 'long': [-7.188632000000001, 4.472089953, -143.2288569, -144.387785, 21.242563, -40.45611048, 40.937416999999996, -46.07156181, 40.78472, -46.07156181, 22.905889000000002, -46.01594293]}
+            {
+                "set": [
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                ],
+                "loc": [
+                    "A",
+                    "G",
+                    "B",
+                    "H",
+                    "C",
+                    "I",
+                    "D",
+                    "J",
+                    "E",
+                    "K",
+                    "F",
+                    "L",
+                ],
+                "lat": [
+                    121.271083,
+                    100.07548220000001,
+                    75.93845266,
+                    75.191326,
+                    135.043791,
+                    122.65134479999999,
+                    134.51128400000002,
+                    124.13553329999999,
+                    134.484374,
+                    124.13553329999999,
+                    137.962195,
+                    124.01028909999998,
+                ],
+                "long": [
+                    -7.188632000000001,
+                    4.472089953,
+                    -143.2288569,
+                    -144.387785,
+                    21.242563,
+                    -40.45611048,
+                    40.937416999999996,
+                    -46.07156181,
+                    40.78472,
+                    -46.07156181,
+                    22.905889000000002,
+                    -46.01594293,
+                ],
+            }
         ),
         ("set", ".value"),
         "(.+)_(.+)",
@@ -1079,7 +1195,7 @@ def test_name_sep_names_to_len(df, names_to, names_sep):
 
 @pytest.mark.parametrize("df,names_to, names_sep", names_sep_type_check)
 def test_name_sep_wrong_type(df, names_to, names_sep):
-    "Raise TypeError if the wrong type provided for `names_sep`."
+    "Raise TypeError if the wrong type is provided for `names_sep`."
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
 
@@ -1092,10 +1208,30 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
+def test_names_pattern_wrong_subtype():
+    "Raise TypeError if `names_pattern` is a list/tuple and wrong subtype is supplied."
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(names_to=["variable", "value"], names_pattern=[1, "rar"])
+
+def test_names_pattern_names_to_wrong_type():
+    "Raise TypeError if `names_pattern` is a list/tuple and wrong type is supplied for `names_to`."
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(names_to={"variable", "value"}, names_pattern=["1", "rar"])
+
+def test_names_pattern_names_to_unequal_length():
+    "Raise ValueError if `names_pattern` is a list/tuple and wrong number of items in `names_to`."
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(names_to=["variable"], names_pattern=['1', "rar"])
+
+def test_names_pattern_names_to_dot_value():
+    "Raise Error if `names_pattern` is a list/tuple and `.value` in `names_to`."
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(names_to=["variable", ".value"], names_pattern=['1', "rar"])
+
 
 @pytest.mark.parametrize("df", multi_index_df)
 def test_warning_multi_index(df):
-    "Raise Warning if dataframe is a MultiIndex."
+    "Raise ValueError if dataframe is a MultiIndex."
     with pytest.raises(ValueError):
         df.pivot_longer()
 
@@ -1122,49 +1258,29 @@ def test_length_mismatch():
         data.pivot_longer(names_to=["event", "year"], names_sep="-")
 
 
-def test_duplicate_dot_value():
+def test_duplicate_dot_value(test_df):
     "Raise error if `names_to` contains more than 1 `.value."
-    data = pd.DataFrame(
-        {
-            "off_loc": ["A", "B", "C", "D", "E", "F"],
-            "pt_loc": ["G", "H", "I", "J", "K", "L"],
-            "pt_lat": [
-                100.07548220000001,
-                75.191326,
-                122.65134479999999,
-                124.13553329999999,
-                124.13553329999999,
-                124.01028909999998,
-            ],
-            "off_lat": [
-                121.271083,
-                75.93845266,
-                135.043791,
-                134.51128400000002,
-                134.484374,
-                137.962195,
-            ],
-            "pt_long": [
-                4.472089953,
-                -144.387785,
-                -40.45611048,
-                -46.07156181,
-                -46.07156181,
-                -46.01594293,
-            ],
-            "off_long": [
-                -7.188632000000001,
-                -143.2288569,
-                21.242563,
-                40.937416999999996,
-                40.78472,
-                22.905889000000002,
-            ],
-        }
-    )
     with pytest.raises(ValueError):
-        data.pivot_longer(
+        test_df.pivot_longer(
             names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
+        )
+
+
+def test_empty_mapping(test_df):
+    "Raise error if `names_pattern` is a regex and returns no matches."
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern=r"(\d+)([A-Z])"
+        )
+
+def test_len_mapping_gt_len_names_to(test_df):
+    """
+    Raise error if `names_pattern` is a regex and returns number of 
+    matches more than length of `names_to`.
+    """
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern="(.+)(_)(.+)"
         )
 
 
@@ -1241,8 +1357,12 @@ def test_pivot_no_index_dtypes():  # check this test if it makes sense
         {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
     )
     result = test.pivot_longer()
-    expected_output = pd.DataFrame({'variable': ['1', '2', '3', '1', '2', '3'],
- 'value': ['fur', 'car', 'nsw', 'lace', 'plane', 'vic']})
+    expected_output = pd.DataFrame(
+        {
+            "variable": ["1", "2", "3", "1", "2", "3"],
+            "value": ["fur", "car", "nsw", "lace", "plane", "vic"],
+        }
+    )
     assert_frame_equal(result, expected_output)
 
 
@@ -1268,7 +1388,10 @@ def test_extract_column_names_pattern(
     names_pattern is used.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
+        index=index,
+        names_to=names_to,
+        names_pattern=names_pattern,
+        dtypes=dtypes,
     )
     assert_frame_equal(result, df_out)
 
@@ -1360,10 +1483,29 @@ def test_single_value(df_in, df_out, index, dtypes, names_pattern):
     assert_frame_equal(result, df_out)
 
 
-test = pd.DataFrame(
-        {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
+def test_names_pattern_list(names_pattern_list_df):
+    "Test output if `names_pattern` is a list."
+    result = names_pattern_list_df.pivot_longer(index='ID',
+        names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+        names_pattern=("Start$", "End$", "^Value"),
+        dtypes={"ID":int, "Value": float}
     )
 
-print(test)
+    expected_output = pd.DataFrame({'ID': [1, 1, 1],
+ 'DateRangeStart': ['1/1/90', '4/5/91', '5/5/95'],
+ 'DateRangeEnd': ['3/1/90', '6/7/91', '6/6/96'],
+ 'Value': [4.4, 6.2, 3.3]})
 
-print(test.pivot_longer())
+    assert_frame_equal(result, expected_output)
+
+
+def test_names_pattern_list_empty(names_pattern_list_df):
+    """
+    Raise ValueError if `names_pattern` is a list, 
+    and nothing is returned.
+    """
+    with pytest.raises(ValueError):
+       names_pattern_list_df.pivot_longer(index='ID',
+        names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+        names_pattern=("^Start", "^End", "Value$"),
+    )

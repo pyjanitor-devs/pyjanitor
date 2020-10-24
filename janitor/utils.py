@@ -5,15 +5,10 @@ import os
 import sys
 import warnings
 from itertools import chain, product
-from os import dup
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import CategoricalDtype
-from pandas.core.algorithms import duplicated, isin
-from pandas.core.arrays import boolean
-from pandas.core.arrays.sparse import dtype
 
 from .errors import JanitorError
 
@@ -665,8 +660,10 @@ def _data_checks_pivot_longer(
         if len(names_to) > 1:
             if all((names_pattern is not None, names_sep is not None)):
                 raise ValueError(
-                    """Only one of names_pattern or names_sep
-                       should be provided."""
+                    """
+                    Only one of names_pattern or names_sep
+                    should be provided.
+                    """
                 )
 
             if ".value" in names_to:
@@ -773,50 +770,21 @@ def _computations_pivot_longer(
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_longer` function.
+    The data is stacked, using pd.DataFrame.unstack, to ensure
+    that the order of appearance from the source data is maintained.
 
-    There are a couple of scenarios that this function takes care of when
-    unpivoting :
+    If the length of `names_to` is > 1, or '.value' is in `names_to`,
+    then the last level in the unpivoted dataframe's index is split,
+    using `str.split(expand=True)`, if `names_sep` is provided.
+    If `names_pattern` is provided, then either `pd.Series.str.extractall`
+    or `pd.Series.str.contains` is used instead.
 
-    #certainly has to be reworded.
-    1. Regular data unpivoting is covered with pandas stack.
-    For the scenarios below, the dataframe is melted and separated into a
-    `before_df`, `between_df` and `after_df`.
-    2. if the length of `names_to` is > 1, the function unpivots the data,
-       using `pd.melt`, and then separates `between_df` into individual
-       columns, using `str.split(expand=True)` if `names_sep` is provided,
-       or `str.extractall()` if `names_pattern is provided. The labels in
-       `names_to` become the new column names.
-    3. If `names_to` contains `.value`, then the function replicates
-       `pd.wide_to_long`, using `pd.melt`. Unlike `pd.wide_to_long`, the
-       stubnames do not have to be prefixes, they just need to match the
-       position of `.value` in `names_to`. Just like in 2 above, the columns
-       in `between_df` are separated into individual columns. The labels in
-       the column corresponding to `.value` become the new column names, and
-       override `values_to` in the process. The other extracted columns stay
-       (if len(`names_to`) > 1), with the other names in `names_to` as
-       its column names.
-    4. If `names_pattern` is a list/tuple of regular expressions, it is
-       paired with `names_to`, which should be a list/tuple of new column
-       names. `.value` is not permissible in this scenario.
-       `numpy select` is called, along with `pd.Series.str.contains`,
-       to get rows in the `between_df` column that matches the regular
-       expressions in `names_pattern`. The labels in `names_to` replaces
-       the matched rows and become the new column names in the new dataframe.
+    If `names_to` contains `.value`, then categorical index is created,
+    and a new dataframe created with this new index. The index level with
+    the name `.value` is unstacked and becomes column names of the new
+    dataframe.
 
-    The function also tries to emulate the way the source data is structured.
-    Say data looks like this :
-        id, a1, a2, a3, A1, A2, A3
-         1, a, b, c, A, B, C
-
-    when pivoted into long form, it will look like this :
-              id instance    a     A
-        0     1     1        a     A
-        1     1     2        b     B
-        2     1     3        c     C
-
-    where the columns `a` comes before `A`, as it was in the source data,
-    and in column `a`, `a > b > c`, also as it was in the source data.
-    This also visually creates a complete set of the data per index.
+    A dataframe is returned, with the index reset.
     """
 
     if index is not None:
@@ -832,8 +800,10 @@ def _computations_pivot_longer(
         df = df.set_index(index)
     if column_names:
         df = df.filter(column_names)
-    df = df.stack(dropna=False)
-    # scenario 1
+    # this ensures explicit missing variables are shown
+    # in the final dataframe
+    df = df.stack(dropna=False)  # noqa: PD013
+
     if all((names_pattern is None, names_sep is None)):
         df = df.reset_index()
         if index:
@@ -846,17 +816,19 @@ def _computations_pivot_longer(
 
         return df
 
-    # scenario 2
     if any((names_pattern is not None, names_sep is not None)):
         mapping = df.index.get_level_values(-1)
         if names_sep:
+            # Convert index to series, to ensure the output is a dataframe
+            # removes need to check if the type of the transformation output
+            # is an index or Series or dataframe; slightly faster too
             mapping = pd.Series(mapping).str.split(names_sep, expand=True)
             if len(names_to) != len(mapping.columns):
                 raise ValueError(
                     """
-                Length of ``names_to`` does not match
-                number of columns extracted.
-                """
+                    Length of ``names_to`` does not match
+                    number of columns extracted.
+                    """
                 )
             mapping.columns = names_to
         else:
@@ -865,16 +837,16 @@ def _computations_pivot_longer(
                 if mapping.empty:
                     raise ValueError(
                         """
-                The regular expression in ``names_pattern`` did not
-                return any matches.
-                """
+                        The regular expression in ``names_pattern``
+                        did not return any matches.
+                        """
                     )
                 if len(names_to) != len(mapping.columns):
                     raise ValueError(
                         """
-                Length of ``names_to`` does not match
-                number of columns extracted.
-                """
+                        Length of ``names_to`` does not match
+                        number of columns extracted.
+                        """
                     )
                 mapping = mapping.droplevel(-1)
                 mapping.columns = names_to
@@ -882,12 +854,12 @@ def _computations_pivot_longer(
                 condlist = [
                     mapping.str.contains(regex) for regex in names_pattern
                 ]
-                if not condlist:
+                if not np.any(condlist):
                     raise ValueError(
                         """
-                The regular expression in ``names_pattern`` did not
-                return any matches.
-                """
+                        No match was returned for the regular expression
+                        in `names_pattern`.
+                        """
                     )
                 mapping = np.select(condlist, names_to, None)
                 mapping = pd.DataFrame(mapping, columns=[".value"])
@@ -903,11 +875,12 @@ def _computations_pivot_longer(
             new_index = [df.index]
 
         if ".value" in mapping.columns:
+            # categories ensure that order is maintained during unstacking
             mapping = [
                 pd.CategoricalIndex(
                     col, categories=pd.unique(col), ordered=True
-                ) 
-                for _, col in mapping.items() 
+                )
+                for _, col in mapping.items()
             ]
             if index:
                 new_index = [
@@ -923,17 +896,26 @@ def _computations_pivot_longer(
 
         df = pd.DataFrame(df.array, index=new_index, columns=values_to)
 
-        if '.value' in df.index.names:
+        if ".value" in df.index.names:
+            # unstack fails for non unique index
             if df.index.duplicated().any():
                 mapping = list(range(df.index.nlevels))
-                mapping = df.groupby(level = mapping).cumcount()
+                mapping = df.groupby(level=mapping).cumcount()
                 df = df.set_index(pd.Index(mapping), append=True)
-                df = df.unstack(".value").droplevel(0, 1).droplevel(-1)
+                df = (
+                    df.unstack(".value")  # noqa: PD010
+                    .droplevel(0, 1)
+                    .droplevel(-1)
+                )
             else:
-                df = df.unstack(".value").droplevel(0, 1)
-            df.columns = list(df.columns) # gets rid of the categories, and allows index reset
+                df = df.unstack(".value").droplevel(0, 1)  # noqa: PD010
+            df.columns = list(
+                df.columns
+            )  # gets rid of the categories, and allows index reset
+
         df = df.reset_index()
         if not index:
+            # gets rid of the unnecessary index that was added to the columns
             df = df.iloc[:, 1:]
         if dtypes:
             df = df.astype(dtypes)

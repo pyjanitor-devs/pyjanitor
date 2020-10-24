@@ -832,7 +832,7 @@ def _computations_pivot_longer(
         df = df.set_index(index)
     if column_names:
         df = df.filter(column_names)
-    df = df.stack()
+    df = df.stack(dropna=False)
     # scenario 1
     if all((names_pattern is None, names_sep is None)):
         df = df.reset_index()
@@ -851,14 +851,14 @@ def _computations_pivot_longer(
         mapping = df.index.get_level_values(-1)
         if names_sep:
             mapping = pd.Series(mapping).str.split(names_sep, expand=True)
-            if len(names_to) != len(mapping.names):
+            if len(names_to) != len(mapping.columns):
                 raise ValueError(
                     """
                 Length of ``names_to`` does not match
                 number of columns extracted.
                 """
                 )
-            mapping.names = names_to
+            mapping.columns = names_to
         else:
             if isinstance(names_pattern, str):
                 mapping = mapping.str.extractall(names_pattern)
@@ -900,14 +900,14 @@ def _computations_pivot_longer(
                 for ind in range(df.index.nlevels)
             ]
         else:
-            new_index = df.index
+            new_index = [df.index]
 
         if ".value" in mapping.columns:
             mapping = [
                 pd.CategoricalIndex(
                     col, categories=pd.unique(col), ordered=True
-                )
-                for _, col in mapping.items()
+                ) 
+                for _, col in mapping.items() 
             ]
             if index:
                 new_index = [
@@ -933,6 +933,8 @@ def _computations_pivot_longer(
                 df = df.unstack(".value").droplevel(0, 1)
             df.columns = list(df.columns) # gets rid of the categories, and allows index reset
         df = df.reset_index()
+        if not index:
+            df = df.iloc[:, 1:]
         if dtypes:
             df = df.astype(dtypes)
 

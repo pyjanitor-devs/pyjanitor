@@ -68,6 +68,7 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
+        {"id":int, "cod":str}
     ),
     (
         pd.DataFrame(
@@ -97,6 +98,7 @@ paired_columns_pattern = [
         patterns("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
+        {"person_id":int, "value":int, "val":int}
     ),
     (
         pd.DataFrame(
@@ -123,6 +125,7 @@ paired_columns_pattern = [
         "id",
         (".value", "instance"),
         r"(\w)(\d)",
+        {"id":int, "instance":int}
     ),
     (
         pd.DataFrame(
@@ -152,6 +155,7 @@ paired_columns_pattern = [
         "X",
         (".value", "year"),
         "([A-Z])(.+)",
+        {"X":float, "year":int, "B":float}
     ),
     (
         pd.DataFrame(
@@ -196,6 +200,7 @@ paired_columns_pattern = [
         "id",
         (".value", "status"),
         "(.*)_(.*)",
+        {"id":str, "status":str}
     ),
 ]
 
@@ -916,80 +921,7 @@ paired_columns_no_index_pattern = [
             }
         ),
         pd.DataFrame(
-            [
-                {
-                    "set": "off",
-                    "loc": "A",
-                    "lat": 121.271083,
-                    "long": -7.188632000000001,
-                },
-                {
-                    "set": "off",
-                    "loc": "B",
-                    "lat": 75.93845266,
-                    "long": -143.2288569,
-                },
-                {
-                    "set": "off",
-                    "loc": "C",
-                    "lat": 135.043791,
-                    "long": 21.242563,
-                },
-                {
-                    "set": "off",
-                    "loc": "D",
-                    "lat": 134.51128400000002,
-                    "long": 40.937416999999996,
-                },
-                {
-                    "set": "off",
-                    "loc": "E",
-                    "lat": 134.484374,
-                    "long": 40.78472,
-                },
-                {
-                    "set": "off",
-                    "loc": "F",
-                    "lat": 137.962195,
-                    "long": 22.905889000000002,
-                },
-                {
-                    "set": "pt",
-                    "loc": "G",
-                    "lat": 100.07548220000001,
-                    "long": 4.472089953,
-                },
-                {
-                    "set": "pt",
-                    "loc": "H",
-                    "lat": 75.191326,
-                    "long": -144.387785,
-                },
-                {
-                    "set": "pt",
-                    "loc": "I",
-                    "lat": 122.65134479999999,
-                    "long": -40.45611048,
-                },
-                {
-                    "set": "pt",
-                    "loc": "J",
-                    "lat": 124.13553329999999,
-                    "long": -46.07156181,
-                },
-                {
-                    "set": "pt",
-                    "loc": "K",
-                    "lat": 124.13553329999999,
-                    "long": -46.07156181,
-                },
-                {
-                    "set": "pt",
-                    "loc": "L",
-                    "lat": 124.01028909999998,
-                    "long": -46.01594293,
-                },
-            ]
+            {'set': ['off', 'pt', 'off', 'pt', 'off', 'pt', 'off', 'pt', 'off', 'pt', 'off', 'pt'], 'loc': ['A', 'G', 'B', 'H', 'C', 'I', 'D', 'J', 'E', 'K', 'F', 'L'], 'lat': [121.271083, 100.07548220000001, 75.93845266, 75.191326, 135.043791, 122.65134479999999, 134.51128400000002, 124.13553329999999, 134.484374, 124.13553329999999, 137.962195, 124.01028909999998], 'long': [-7.188632000000001, 4.472089953, -143.2288569, -144.387785, 21.242563, -40.45611048, 40.937416999999996, -46.07156181, 40.78472, -46.07156181, 22.905889000000002, -46.01594293]}
         ),
         ("set", ".value"),
         "(.+)_(.+)",
@@ -1308,8 +1240,9 @@ def test_pivot_no_index_dtypes():  # check this test if it makes sense
     test = pd.DataFrame(
         {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
     )
-    result = test.pivot_longer(dtypes={"variable": int})
-    expected_output = test.melt().astype({"variable": int})
+    result = test.pivot_longer()
+    expected_output = pd.DataFrame({'variable': ['1', '2', '3', '1', '2', '3'],
+ 'value': ['fur', 'car', 'nsw', 'lace', 'plane', 'vic']})
     assert_frame_equal(result, expected_output)
 
 
@@ -1325,17 +1258,17 @@ def test_pivot_columns_patterns_only(df_checks_output):
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", paired_columns_pattern
+    "df_in,df_out,index,names_to,names_pattern,dtypes", paired_columns_pattern
 )
 def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern
+    df_in, df_out, index, names_to, names_pattern, dtypes
 ):
     """
     Test output if `.value` is in the `names_to` argument and
     names_pattern is used.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_pattern=names_pattern,
+        index=index, names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
     )
     assert_frame_equal(result, df_out)
 
@@ -1427,24 +1360,10 @@ def test_single_value(df_in, df_out, index, dtypes, names_pattern):
     assert_frame_equal(result, df_out)
 
 
-df = pd.DataFrame(
-    {
-        "id": [1, 2, 3],
-        "M_start_date_1": [201709, 201709, 201709],
-        "M_end_date_1": [201905, 201905, 201905],
-        "M_start_date_2": [202004, 202004, 202004],
-        "M_end_date_2": [202005, 202005, 202005],
-        "F_start_date_1": [201803, 201803, 201803],
-        "F_end_date_1": [201904, 201904, 201904],
-        "F_start_date_2": [201912, 201912, 201912],
-        "F_end_date_2": [202007, 202007, 202007],
-    }
-)
-
-print(df)
-
-print(
-    df.pivot_longer(
-        "id", names_to=("cod", ".value"), names_pattern="(M|F)_(start|end)_.+"
+test = pd.DataFrame(
+        {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
     )
-)
+
+print(test)
+
+print(test.pivot_longer())

@@ -649,6 +649,12 @@ def _data_checks_pivot_longer(
     check("names_to", names_to, [list, tuple, str])
 
     if isinstance(names_to, str):
+        if isinstance(names_pattern, (list, tuple)):
+            raise TypeError(
+                """
+                    ``names_to`` must be a list or tuple.
+                    """
+            )
         names_to = [names_to]
 
     if isinstance(names_to, (list, tuple)):
@@ -683,7 +689,7 @@ def _data_checks_pivot_longer(
                 )
     if names_pattern is not None:
         check("names_pattern", names_pattern, [str, Pattern, List, Tuple])
-        if isinstance(names_pattern, (List, Tuple)):
+        if isinstance(names_pattern, (list, tuple)):
             if not all(
                 isinstance(word, (str, Pattern)) for word in names_pattern
             ):
@@ -693,12 +699,7 @@ def _data_checks_pivot_longer(
                     must be regular expressions.
                     """
                 )
-            if not isinstance(names_to, (List, Tuple)):
-                raise TypeError(
-                    """
-                    ``names_to`` must be a list or tuple.
-                    """
-                )
+
             if len(names_pattern) != len(names_to):
                 raise ValueError(
                     """

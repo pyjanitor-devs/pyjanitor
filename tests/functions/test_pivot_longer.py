@@ -1230,7 +1230,7 @@ def test_names_pattern_names_to_wrong_type():
     """
     with pytest.raises(TypeError):
         df_checks.pivot_longer(
-            names_to={"variable", "value"}, names_pattern=["1", "rar"]
+            names_to="variable, value", names_pattern=["1", "rar"]
         )
 
 

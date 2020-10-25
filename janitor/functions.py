@@ -4706,9 +4706,10 @@ def pivot_longer(
 
     This method does not mutate the original DataFrame.
 
-    It is meant to make it easy to unpivot a dataframe from wide to long
-    form, as well as providing extra convenience features. It is
-    modeled after the `pivot_longer` function in R's tidyr package.
+    It is meant to serve as a single point for transformations of dataframes
+    from wide to long form. It also offers more functionality and flexibility 
+    than `pd.wide_to_long`. It is modeled after the `pivot_longer` function in 
+    R's tidyr package.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -4717,8 +4718,11 @@ def pivot_longer(
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
-    Note that the unpivoted data is returned in order of appearance; as such,
-    some columns can be of category dtype.
+    Note that the unpivoted dataframe is returned in order of appearance in the 
+    source dataframe.
+
+    Also, depending on the transformation, some columns can be of category
+    dtype.
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
@@ -4754,7 +4758,7 @@ def pivot_longer(
 
     .. code-block:: python
 
-            col1	2019-12	     2020-01	 2020-02
+            col1	    2019-12	     2020-01	 2020-02
         0	a	   -1.085631	-1.506295	-2.426679
         1	b	    0.997345	-0.578600	-0.428913
         2	c	    0.282978	 1.651437	 1.265936
@@ -4774,14 +4778,14 @@ def pivot_longer(
 
           col1  year   month      value
         0    a  2019     12     -1.085631
-        1    a  2020      1     -1.506295
-        2    a  2020      2     -2.426679
+        1    a  2020     01     -1.506295
+        2    a  2020     02     -2.426679
         3    b  2019     12      0.997345
-        4    b  2020      1     -0.578600
-        5    b  2020      2     -0.428913
+        4    b  2020     01     -0.578600
+        5    b  2020     02     -0.428913
         6    c  2019     12      0.282978
-        7    c  2020      1      1.651437
-        8    c  2020      2      1.265936
+        7    c  2020     01      1.651437
+        8    c  2020     02      1.265936
 
     Example 3: The dataframe below has names embedded in it
     ('measure1', 'measure2') that we would love to reuse as
@@ -4871,7 +4875,7 @@ def pivot_longer(
         10  Carla      wk3     39
         11  Carla      wk4     40
 
-    Note that you can determine the data type of the resulting columns with
+    You can determine the data type of the resulting columns with
     the `dtypes` argument, which accepts a dictionary, pairing the column
     names with the expected types.
 

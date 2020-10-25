@@ -1058,6 +1058,7 @@ def _data_checks_pivot_wider(
     index,
     names_from,
     values_from,
+    names_sort,
     flatten_levels,
     values_from_first,
     names_prefix,
@@ -1092,13 +1093,16 @@ def _data_checks_pivot_wider(
         check_column(df, names_from, present=True)
 
     if values_from is not None:
+        check("values_from", values_from, [list, str])
         if isinstance(values_from, str):
-            values_from = [values_from]
-        check("values_from", values_from, [list])
-        check_column(df, values_from, present=True)
+            check_column(df, [values_from], present=True)
+        else:
+            check_column(df, values_from, present=True)
 
     if values_from_first is not None:
         check("values_from_first", values_from_first, [bool])
+
+    check("names_sort", names_sort, [bool])
 
     if flatten_levels is not None:
         check("flatten_levels", flatten_levels, [bool])
@@ -1117,6 +1121,7 @@ def _data_checks_pivot_wider(
         index,
         names_from,
         values_from,
+        names_sort,
         flatten_levels,
         values_from_first,
         names_prefix,
@@ -1130,6 +1135,7 @@ def _computations_pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
+    names_sort: Optional[bool] = False,
     flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
@@ -1146,7 +1152,7 @@ def _computations_pivot_wider(
     The `unstack` method is used here, and not `pivot`; multiple
     labels in the `index` or `names_from` are supported in the
     `pivot` function for Pandas 1.1 and above. Also, the
-    `pivot_table` function is not used, because it is very slow,
+    `pivot_table` function is not used, because it is quite slow,
     compared to the `pivot` function and `unstack`.
     The columns are sorted in the order of appearance from the
     source data.
@@ -1163,74 +1169,48 @@ def _computations_pivot_wider(
         else:
             values_from = [col for col in df.columns if col not in names_from]
 
-    if index is None:
-        df = df.set_index(names_from, append=True)
+    if not names_sort: 
+        if index is None:
+            dtypes = {
+                key: CategoricalDtype(categories=pd.unique(ent), ordered=True)
+                for key, ent in df.filter(names_from).items()
+            }
+        else:
+            dtypes = {
+                key: CategoricalDtype(categories=pd.unique(ent), ordered=True)
+                for key, ent in df.filter(index + names_from).items()
+            }
 
+        df = df.astype(dtypes)
+    else:
+        dtypes = None
+
+    if index is None:  # use existing index
+        df = df.set_index(names_from, append=True)
     else:
         df = df.set_index(index + names_from)
 
     if not df.index.is_unique:
         raise ValueError(
-            """There are non-unique values in your combination
-                   of `index` and `names_from`. Kindly provide a
-                   unique identifier for each row."""
+            """
+            There are non-unique values in your combination
+            of `index` and `names_from`. Kindly provide a
+            unique identifier for each row.
+            """
         )
 
-    df = df.loc[:, values_from]
+    df = df.loc[:, values_from].unstack(names_from, fill_value=fill_value)
+
 
     if flatten_levels:
-        # goal here is to make the output look like the source data in terms
-        #  of order if we have 'Wilbur, James, Ragnar, Wilbur, James, Ragnar'
-        #  in the source data, the pivoted data should have
-        # 'Wilbur, James, Ragnar' in that same order, and not sorted
-        # lexicographically.
-        index_sorter = df.index.droplevel(names_from)
-        _, index_sorter = pd.factorize(index_sorter)
-        index_sorter = pd.unique(index_sorter)
-
-        # Use this to get the columns to match the order in `names_from`
-        column_reindex = pd.Index([])
-        if len(names_from) == 1:
-            column_reindex = pd.unique(
-                df.index.get_level_values(names_from[0])
-            )
-
-        df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
-
-        # get the columns to match the order in `names_from`
-        # this should be executed before dropping the level
-        # if `names_from` length is 1
-        if any(column_reindex):
-            df = df.reindex(
-                column_reindex, level=names_from[0], axis="columns"
-            )
-
-        df = df.reindex(index_sorter)
-
-        if len(values_from) == 1:
-            df = df.droplevel(0, 1)
-        # reorder if user wants the values in `values_from` to be at the
-        # start of every output column.
-        else:
-            df.columns = df.columns.set_names("values_level", level=0)
+        if isinstance(values_from, list):
+            df.columns = df.columns.set_names(level=0, names="values_from")
             if not values_from_first:
-                df = df.reorder_levels(
-                    order=names_from + ["values_level"], axis="columns"
-                )
-        df = df.collapse_levels(sep=names_sep)
-
-        if names_prefix is not None:
+                df = df.reorder_levels(names_from + ["values_from"], axis=1)
+        if df.columns.nlevels > 1:
+            df.columns = [names_sep.join(entry) for entry in df]
+        if names_prefix : 
             df = df.add_prefix(names_prefix)
-
-        if df.columns.names:
-            df = df.rename_axis(columns=None)
-
         return df.reset_index()
-
-    # if not flattened, the resulting dataframe might be a MultiIndex
-    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
-
-    if len(values_from) == 1:
-        df = df.droplevel(0, 1)
 
     return df

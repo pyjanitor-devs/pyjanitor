@@ -3,6 +3,8 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+import janitor
+
 
 @pytest.fixture
 def df_checks_output():
@@ -303,6 +305,15 @@ def test_values_from_first_wrong_type(df_checks_output):
             values_from_first=2,
         )
 
+def test_names_sort_wrong_type(df_checks_output):
+    "Raise TypeError if the wrong type is provided for `names_sort`."
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name",
+            names_from=["estimate", "variable"],
+            names_sort=2,
+        )
+
 
 def test_flatten_levels_wrong_type(df_checks_output,):
     "Raise TypeError if the wrong type is provided for `flatten_levels`."
@@ -348,6 +359,7 @@ def test_non_unique_index_names_from_combination():
     )
     with pytest.raises(ValueError):
         df.pivot_wider(index="A", names_from="L")
+
 
 
 def test_pivot_long_wide_long():
@@ -553,3 +565,22 @@ def test_no_index_values_from():
         flatten_levels=False,
     )
     assert_frame_equal(result, expected_output)
+
+df = pd.DataFrame(
+            {
+                "geoid": [1, 1, 13, 13],
+                "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
+                "variable": [
+                    "pop_renter",
+                    "median_rent",
+                    "pop_renter",
+                    "median_rent",
+                ],
+                "estimate": [1434765, 747, 3592422, 927],
+                "error": [16736, 3, 33385, 3],
+            }
+        )
+
+print(df)
+
+print(df.pivot_wider(index=["geoid","name"], names_from="variable", values_from=["estimate","error"], names_sort=True, values_from_first=False, flatten_levels=True))

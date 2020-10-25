@@ -874,6 +874,11 @@ def _computations_pivot_longer(
 
         df.index = df.index.droplevel(-1)
 
+        # TODO : Improve code to remove for-loops (creation of new index, including Categoricals)
+        # this should substantially improve the speed
+        # right now it is a O(n) operation; so for small sizes, it is faster
+        # than pd.wide_to_long (which seems to be a O(1) operation); as the 
+        # dataframe's size grows, it becomes slower.
         if index:
             new_index = [
                 df.index.get_level_values(ind)

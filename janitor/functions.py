@@ -4707,9 +4707,9 @@ def pivot_longer(
     This method does not mutate the original DataFrame.
 
     It is meant to serve as a single point for transformations of dataframes
-    from wide to long form. It also offers more functionality and flexibility 
-    than `pd.wide_to_long`. It is modeled after the `pivot_longer` function in 
-    R's tidyr package.
+    from wide to long form. It also offers more functionality and flexibility
+    than `pd.wide_to_long`. It is modeled after the `pivot_longer` function in
+    R's `tidyr` package.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -4718,11 +4718,15 @@ def pivot_longer(
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
-    Note that the unpivoted dataframe is returned in order of appearance in the 
+    Note that the unpivoted dataframe is returned in order of appearance in the
     source dataframe.
 
     Also, depending on the transformation, some columns can be of category
     dtype.
+
+    This function is designed to work primarily with single indexed dataframes;
+    If you have to unpivot MultiIndexed dataframes, then `pd.DataFrame.stack`
+    or `pd.melt` are better options.
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
@@ -4758,7 +4762,7 @@ def pivot_longer(
 
     .. code-block:: python
 
-            col1	    2019-12	     2020-01	 2020-02
+            col1	    2019-12	 2020-01	 2020-02
         0	a	   -1.085631	-1.506295	-2.426679
         1	b	    0.997345	-0.578600	-0.428913
         2	c	    0.282978	 1.651437	 1.265936
@@ -4905,7 +4909,6 @@ def pivot_longer(
         df = (
             pd.DataFrame(...)
             .pivot_longer(
-                df,
                 index = [column1, column2, ...],
                 column_names = [column3, column4, ...],
                 names_to = new_column_name,
@@ -4923,7 +4926,7 @@ def pivot_longer(
         by using a regular expression with the `janitor.patterns`
         function.
     :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name, a list/tuple of column names. You can also
+        a single column name or a list/tuple of column names. You can also
         dynamically select column names by using a regular expression
         with the `janitor.patterns` function.
     :param names_to: Name of new column as a string that will contain
@@ -4940,8 +4943,7 @@ def pivot_longer(
         or regular expression.
     :param names_pattern: Determines how the column name is broken up.
         It can be a regular expression containing matching groups, or a
-        list/tuple of regular expressions, which devolves to
-        ``numpy.select`` and pandas' ``str.contains``. For a list/tuple of
+        list/tuple of regular expressions. For a list/tuple of
         regular expressions, ``names_to`` must also be a list/tuple and the
         lengths of both arguments must match. The entries in both arguments
         must also match positionally, i.e  if `regex1` in `names_pattern` is

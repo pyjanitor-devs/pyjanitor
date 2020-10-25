@@ -745,6 +745,9 @@ def _pivot_longer_pattern_match(
     This checks if a pattern (regular expression) is supplied
     to index or columns and extracts the names that match the
     given regular expression.
+
+    A dataframe, along with the `index` and `column_names` are
+    returned.
     """
 
     # TODO: allow `janitor.patterns` to accept a list/tuple
@@ -801,7 +804,8 @@ def _computations_pivot_longer(
     if column_names:
         df = df.filter(column_names)
     # this ensures explicit missing variables are shown
-    # in the final dataframe
+    # in the final dataframe; comes in handy if there
+    # are nulls in the original dataframe
     df = df.stack(dropna=False)  # noqa: PD013
 
     if all((names_pattern is None, names_sep is None)):
@@ -809,6 +813,8 @@ def _computations_pivot_longer(
         if index:
             df.columns = index + names_to + values_to
         else:
+            # this is necessary to exclude the reset index from
+            # the final dataframe.
             df = df.iloc[:, 1:]
             df.columns = names_to + values_to
         if dtypes:
@@ -816,12 +822,13 @@ def _computations_pivot_longer(
 
         return df
 
-    if any((names_pattern is not None, names_sep is not None)):
+    if any((names_pattern, names_sep)):
         mapping = df.index.get_level_values(-1)
         if names_sep:
             # Convert index to series, to ensure the output is a dataframe
             # removes need to check if the type of the transformation output
-            # is an index or Series or dataframe; slightly faster too
+            # is an index or Series or dataframe; slightly faster to return
+            # a dataframe than a MultiIndex
             mapping = pd.Series(mapping).str.split(names_sep, expand=True)
             if len(names_to) != len(mapping.columns):
                 raise ValueError(
@@ -857,7 +864,7 @@ def _computations_pivot_longer(
                 if not np.any(condlist):
                     raise ValueError(
                         """
-                        No match was returned for the regular expression
+                        No match was returned for the regular expressions
                         in `names_pattern`.
                         """
                     )
@@ -904,7 +911,7 @@ def _computations_pivot_longer(
                 df = df.set_index(pd.Index(mapping), append=True)
                 df = (
                     df.unstack(".value")  # noqa: PD010
-                    .droplevel(0, 1)
+                    .droplevel(0, 1)  # gets rid of top column level
                     .droplevel(-1)
                 )
             else:

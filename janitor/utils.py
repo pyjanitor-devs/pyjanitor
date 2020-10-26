@@ -1224,6 +1224,7 @@ def _computations_pivot_wider(
             else:
                 df = df.reset_index()
         else:
+            # remove default index, since it is irrelevant
             df = df.reset_index().iloc[:, 1:]
 
         return df

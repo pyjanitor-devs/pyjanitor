@@ -1,7 +1,7 @@
+"""Tests for smiles2mol."""
 import importlib
 
 import pytest
-
 from helpers import running_on_ci
 
 # Skip all tests if rdkit not installed

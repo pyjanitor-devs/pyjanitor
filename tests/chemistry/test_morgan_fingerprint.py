@@ -1,9 +1,10 @@
+"""Tests for Morgan Fingerprint generator."""
 import importlib
 
 import pytest
+from helpers import running_on_ci
 
 import janitor.chemistry  # noqa: disable=unused-import
-from helpers import running_on_ci
 
 # Skip all tests if rdkit not installed
 pytestmark = pytest.mark.skipif(

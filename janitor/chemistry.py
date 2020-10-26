@@ -13,8 +13,6 @@ from .utils import deprecated_alias, import_message
 try:
     from rdkit import Chem, DataStructs
     from rdkit.Chem.rdMolDescriptors import (
-        GetHashedMorganFingerprint,
-        GetMorganFingerprintAsBitVect,
         CalcChi0n,
         CalcChi0v,
         CalcChi1n,
@@ -54,7 +52,9 @@ try:
         CalcNumSpiroAtoms,
         CalcNumUnspecifiedAtomStereoCenters,
         CalcTPSA,
+        GetHashedMorganFingerprint,
         GetMACCSKeysFingerprint,
+        GetMorganFingerprintAsBitVect,
     )
 except ImportError:
     import_message(

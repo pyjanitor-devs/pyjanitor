@@ -1,6 +1,7 @@
+"""Tests for clean_names."""
 import pytest
-
 from helpers import running_on_ci
+
 from janitor.errors import JanitorError
 
 if running_on_ci():
@@ -12,6 +13,7 @@ import janitor.spark  # noqa: F401 isort:skip
 
 @pytest.mark.spark_functions
 def test_clean_names_method_chain(spark_df):
+    """Test method chaining of clean_names."""
     spark_df = spark_df.clean_names()
     expected_columns = [
         "a",
@@ -25,6 +27,7 @@ def test_clean_names_method_chain(spark_df):
 
 @pytest.mark.spark_functions
 def test_clean_names_special_characters(spark_df):
+    """Tests for special characters."""
     spark_df = spark_df.clean_names(remove_special=True)
     expected_columns = [
         "a",
@@ -38,6 +41,7 @@ def test_clean_names_special_characters(spark_df):
 
 @pytest.mark.spark_functions
 def test_clean_names_case_type_uppercase(spark_df):
+    """Tests for uppercase column names."""
     spark_df = spark_df.clean_names(case_type="upper")
     expected_columns = [
         "A",
@@ -51,6 +55,7 @@ def test_clean_names_case_type_uppercase(spark_df):
 
 @pytest.mark.spark_functions
 def test_clean_names_case_type_preserve(spark_df):
+    """Tests for `preserve` kwarg."""
     spark_df = spark_df.clean_names(case_type="preserve")
     expected_columns = [
         "a",
@@ -64,12 +69,14 @@ def test_clean_names_case_type_preserve(spark_df):
 
 @pytest.mark.spark_functions
 def test_clean_names_case_type_invalid(spark_df):
+    """Test for invalid cases."""
     with pytest.raises(JanitorError, match=r"case_type must be one of:"):
         spark_df = spark_df.clean_names(case_type="foo")
 
 
 @pytest.mark.spark_functions
 def test_clean_names_camelcase_to_snake(spark_df):
+    """Test for camelcase to snake case conversion."""
     spark_df = spark_df.selectExpr("a AS AColumnName").clean_names(
         case_type="snake"
     )
@@ -81,6 +88,7 @@ def test_clean_names_camelcase_to_snake(spark_df):
     "strip_underscores", ["both", True, "right", "r", "left", "l"]
 )
 def test_clean_names_strip_underscores(spark_df, strip_underscores):
+    """Test for strip_underscores option."""
     if strip_underscores in ["right", "r"]:
         spark_df = spark_df.selectExpr(
             *[f"`{col}` AS `{col}_`" for col in spark_df.columns]

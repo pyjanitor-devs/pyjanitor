@@ -1,7 +1,7 @@
+"""Tests for update_where."""
 import pytest
-from pandas.testing import assert_frame_equal
-
 from helpers import running_on_ci
+from pandas.testing import assert_frame_equal
 
 if running_on_ci():
     import pyspark

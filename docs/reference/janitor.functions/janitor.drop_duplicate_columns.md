@@ -1,4 +1,4 @@
-janitor.drop\_duplicate\_columns
+﻿janitor.drop\_duplicate\_columns
 ================================
 
 .. currentmodule:: janitor

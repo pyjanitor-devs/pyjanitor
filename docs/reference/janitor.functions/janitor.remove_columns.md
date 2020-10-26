@@ -1,4 +1,4 @@
-janitor.remove\_columns
+﻿janitor.remove\_columns
 =======================
 
 .. currentmodule:: janitor

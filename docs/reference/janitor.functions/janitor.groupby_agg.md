@@ -1,4 +1,4 @@
-janitor.groupby\_agg
+﻿janitor.groupby\_agg
 ====================
 
 .. currentmodule:: janitor

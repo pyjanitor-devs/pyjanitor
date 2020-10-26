@@ -9,7 +9,7 @@ The following sections detail a variety of ways to contribute,
 as well as how to get started.
 
 .. note:: Please take a look at the `types of Contributions  <CONTRIBUTION_TYPES.html>`__  that we welcome,
-   along with the guidelines.
+    along with the guidelines.
 
 Get Started!
 ------------
@@ -32,8 +32,8 @@ To get started:
 2. Ensure you have Docker running on your local machine.
 3. Ensure you have VSCode running on your local machine.
 4. In Visual Studio Code,
-   click on the quick actions Status Bar item in the lower left corner.
-5. Then select "Remote Containers: Open Repository In Container".
+    click on the quick actions Status Bar item in the lower left corner.
+5. Then select "Remote Containers: Clone Repository In Container Volume".
 6. Enter in the URL of your fork of ``pyjanitor``.
 
 VSCode will pull down the prebuilt Docker container,
@@ -62,8 +62,8 @@ Manual Setup
     $ git clone git@github.com:your_name_here/pyjanitor.git
 
 3. Install your local copy into a conda environment.
-   Assuming you have conda installed,
-   this is how you set up your fork for local development::
+    Assuming you have conda installed,
+    this is how you set up your fork for local development::
 
     $ cd pyjanitor/
     $ make install
@@ -73,15 +73,15 @@ To run correctly inside the environment,
 make sure you select the correct kernel from the top right corner of JupyterLab!
 
 .. note:: If you are on Windows,
-   you may need to install ``make`` before you can run the install.
-   You can get it from ``conda-forge``::
+    you may need to install ``make`` before you can run the install.
+    You can get it from ``conda-forge``::
 
     $ conda install -c defaults -c conda-forge make
 
     You should be able to run `make` now. The command above installs `make` to the `~/Anaconda3/Library/bin` directory.
 
 .. note:: For PyCharm users,
-   here are some `instructions <PYCHARM_USERS.html>`__  to get your Conda environment set up.
+    here are some `instructions <PYCHARM_USERS.html>`__  to get your Conda environment set up.
 
 4. (Optional) Install the pre-commit hooks.
 
@@ -96,7 +96,7 @@ run the following commands::
     $ pre-commit install-hooks
 
 5. You should also be able to build the docs locally.
-   To do this, from the main ``pyjanitor`` directory::
+    To do this, from the main ``pyjanitor`` directory::
 
     $ make docs
 
@@ -107,8 +107,8 @@ and then you can find the correct html file.
 To see the main pyjanitor page,
 open the ``index.html`` file.
 
-.. note:: If you get any errors related to Importing modules when running `make docs`,
-   first activate the development environment::
+.. note:: If you get any errors related to Importing modules when running ``make docs``,
+    first activate the development environment::
 
     $ source activate pyjanitor-dev
 
@@ -130,19 +130,17 @@ This helps us keep track of who is working on what.
 7. Create a branch for local development:
 
 New features added to ``pyjanitor`` should be done in a new branch you have based off the latest version of the ``dev`` branch.
-The protocol for ``pyjanitor`` branches for new development is that the ``master`` branch mirrors the current version of ``pyjanitor`` on PyPI,
-whereas the ``dev`` branch is for additional features for an eventual new official version of the package which might be deemed slightly less stable.
-Once more confident in the reliability/suitability for introducing a batch of changes into the official version,
-the ``dev`` branch is then merged into ``master`` and the PyPI package is subsequently updated.
 
-To base a branch directly off ``dev`` instead of ``master``, create a new one as follows::
+Releases are made off the ``dev`` branch.
+
+To create a new branch::
 
     $ git checkout -b name-of-your-bugfix-or-feature dev
 
 Now you can make your changes locally.
 
 8. When you're done making changes,
-   check that your changes are properly formatted and that all tests still pass::
+    check that your changes are properly formatted and that all tests still pass::
 
     $ make check
 
@@ -172,7 +170,13 @@ the tests in ``chemistry.py``, ``biology.py``, ``spark.py`` are automatically sk
     When you are picking out which branch to merge into,
     be sure to select ``dev`` (not ``master``).
 
+11. Let the continuous integration (CI) system on Azure Pipelines check your code.
 
+If there are any issues, the pipeline will fail out.
+We check for code style, docstring coverage, test coverage, and doc discovery.
+If you're comfortable looking at the pipeline logs, feel free to do so;
+they are open to all to view.
+Otherwise, one of the dev team members can help you with reviewing the code checks.
 
 Code Compatibility
 ------------------
@@ -180,21 +184,9 @@ Code Compatibility
 pyjanitor supports Python 3.6+,
 so all contributed code must maintain this compatibility.
 
-
-Tip
+Tips
 ----
 
 To run a subset of tests::
 
     $ py.test tests.test_functions
-
-
-Pull Request Guidelines
------------------------
-
-Before you submit a pull request, check that it meets these guidelines:
-
-1. The pull request should include tests.
-2. If the pull request adds functionality, the docs should be updated. Put
-   your new functionality into a function with a docstring and add the
-   feature to the list in ``README.rst``.

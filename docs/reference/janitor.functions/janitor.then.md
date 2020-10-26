@@ -1,4 +1,4 @@
-janitor.then
+﻿janitor.then
 ============
 
 .. currentmodule:: janitor

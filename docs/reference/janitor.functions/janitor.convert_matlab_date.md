@@ -1,4 +1,4 @@
-janitor.convert\_matlab\_date
+﻿janitor.convert\_matlab\_date
 =============================
 
 .. currentmodule:: janitor

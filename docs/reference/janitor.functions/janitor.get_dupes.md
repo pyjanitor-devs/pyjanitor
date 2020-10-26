@@ -1,4 +1,4 @@
-janitor.get\_dupes
+﻿janitor.get\_dupes
 ==================
 
 .. currentmodule:: janitor

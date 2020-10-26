@@ -48,10 +48,7 @@ def path_does_not_contain(path: Path, names: List[str]) -> bool:
 
 
 def extract_folder_names(test_dir: Path) -> Tuple[Path, str]:
-    """Extract folder names.
-
-    This function could be used later.
-    """
+    """Extract folder names. This function could be used later."""
     # folder_names = []
     for name in test_dir.iterdir():
         if name.is_dir() and path_does_not_contain(
@@ -70,5 +67,7 @@ missing_funcs = set(function_names).difference(doc_functions)
 
 if len(missing_funcs) > 0:
     raise Exception(
-        f"The following functions have not yet been added: {missing_funcs}"
+        f"""The following functions have not yet been added: {missing_funcs}.
+         Please add the function names to docs/reference/general_functions.rst
+         under an appropriate section."""
     )

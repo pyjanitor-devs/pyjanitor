@@ -1,4 +1,4 @@
-janitor.round\_to\_fraction
+﻿janitor.round\_to\_fraction
 ===========================
 
 .. currentmodule:: janitor

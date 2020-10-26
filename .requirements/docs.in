@@ -1,0 +1,9 @@
+sphinx
+nbsphinx>=0.4.2
+sphinxcontrib-fulltoc==1.2.0
+ipython
+-r biology.in
+-r chemistry.in
+-r engineering.in
+-r spark.in
+# -e .

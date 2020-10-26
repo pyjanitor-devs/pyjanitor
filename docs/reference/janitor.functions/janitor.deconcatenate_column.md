@@ -1,4 +1,4 @@
-janitor.deconcatenate\_column
+﻿janitor.deconcatenate\_column
 =============================
 
 .. currentmodule:: janitor

@@ -16,6 +16,7 @@ methods.
    engineering
    finance
    ml
+   timeseries
    general_functions
    pyspark
    xarray
@@ -26,6 +27,7 @@ methods.
       janitor.engineering
       janitor.finance
       janitor.ml
+      janitor.timeseries
       janitor.functions
       janitor.spark.functions
       janitor.xarray.functions

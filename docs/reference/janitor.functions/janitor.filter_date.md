@@ -1,4 +1,4 @@
-janitor.filter\_date
+﻿janitor.filter\_date
 ====================
 
 .. currentmodule:: janitor

@@ -1211,6 +1211,7 @@ def _computations_pivot_wider(
             df.columns = [names_sep.join(entry) for entry in df]
         if names_prefix : 
             df = df.add_prefix(names_prefix)
+        df.columns = list(df.columns)
         return df.reset_index()
 
     return df

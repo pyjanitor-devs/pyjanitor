@@ -5004,7 +5004,7 @@ def pivot_wider(
     of the `pivot_longer` method. It is a wrapper around `pd.unstack`
     method.
 
-    This method does not mutate the original DataFrame. 
+    This method does not mutate the original DataFrame.
 
 
     Reshaping to wide form :

@@ -524,3 +524,18 @@ def test_index_names_sort_True():
     )
 
     assert_frame_equal(result, expected_output)
+
+
+df_in = pd.DataFrame(
+    [
+        {"a": 1, "b": 2, "name": "ben", "points": 22, "marks": 5, "sets": 13},
+        {
+            "a": 1,
+            "b": 2,
+            "name": "dave",
+            "points": 23,
+            "marks": 4,
+            "sets": 11,
+        },
+    ]
+)

@@ -4805,9 +4805,9 @@ def pivot_longer(
 
         # Our dataframe:
         #
-        #     treat1-measure1  treat1-measure2  treat2-measure1  treat2-measure2
-        # 0                 1                4                2                5
-        # 1                 2                5                3                4
+        #    treat1-measure1 treat1-measure2 treat2-measure1 treat2-measure2
+        # 0                1               4               2               5
+        # 1                2               5               3               4
 
     For this, we take advantage of the `.value` variable, which signals to
     `pivot_longer` to treat the part of the column names corresponding to

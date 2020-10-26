@@ -1155,7 +1155,7 @@ def _computations_pivot_wider(
     `pivot_table` function is not used, because it is quite slow,
     compared to the `pivot` function and `unstack`.
     The columns are sorted in the order of appearance from the
-    source data.
+    source data. This only occurs if `flatten_levels` is True.
     """
 
     if values_from is None:
@@ -1217,14 +1217,14 @@ def _computations_pivot_wider(
         if index:
             # this way we avoid having to convert index
             # from category to original dtype
-            if names_sort is False:  
+            if names_sort is False:
                 df = before.merge(
                     df, how="left", left_on=index, right_index=True
                 ).reset_index(drop=True)
             else:
                 df = df.reset_index()
         else:
-            df = df.reset_index()
+            df = df.reset_index().iloc[:, 1:]
 
         return df
 

@@ -5067,7 +5067,7 @@ def pivot_wider(
             index = [column1, column2, ...],
             names_from = [column3, column4, ...],
             value_from = [column5, column6, ...],
-            names_sort = True,
+            names_sort = True/False,
             names_prefix = string,
             names_sep = string,
             flatten_levels=True/False,
@@ -5085,10 +5085,10 @@ def pivot_wider(
                 index = [column1, column2, ...],
                 names_from = [column3, column4, ...],
                 value_from = [column5, column6, ...],
-                names_sort = True,
+                names_sort = True/False,
                 names_prefix = string,
                 names_sep = string,
-                collapse_levels=True/False,
+                flatten_levels=True/False,
                 values_from_first=True/False,
                 fill_value=fill_value
                 )
@@ -5108,19 +5108,20 @@ def pivot_wider(
         will be added to the front of the output column; you can turn this
         off with the `values_from_first` argument. If ``values_from`` is not
         specified, all remaining columns will be used.
-    :param flatten_levels: Default True. Determines if the reshaped dataframe
-        stays as a MultiIndex.
-    :param values_from_first: Determines if the values in `values_from` will
-        be at the front of the output column. This applies if the number of
-        items in ``values_from`` is more than one, and the levels are
-        collapsed. Default is True.
+    :param names_sort: Default is `False`. Sorts columns by order of
+        appearance. Applicable only if ``flatten_levels`` is `True`.
+    :param flatten_levels: Default is `True`. Determines if the reshaped
+        dataframe stays as a MultiIndex.
+    :param values_from_first: Determines if the values in ``values_from`` will
+        be at the front of the output column. This applies if ``values_from``
+        is a list, and the levels are flattened. Default is True.
     :param names_prefix: String to be added to the front of each output column.
         Can be handy if the values in ``names_from`` are numeric data types.
-        Applicable only if the levels are collapsed.
+        Applicable only if the levels are flattened.
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
         to use as a column name. Default is ``_``. Applicable only if the
-        levels are collapsed.
+        levels are flattened.
     :param fill_value: Value to replace missing values with (after pivoting).
         It can be a number, string, or a dictionary, where the keys are the
         column_names, while the values are the values to replace the missing
@@ -5131,6 +5132,8 @@ def pivot_wider(
         strings.
     :raises TypeError: if `names_sep` is not a string.
     :raises TypeError: if `values_from` is not a string or a list of strings.
+    :raises TypeError: if `names_sort` is not a boolean.
+    :raises TypeError: if `flatten_levels` is not a boolean.
     :raises ValueError: if values in `index` or `names_from` or `values_from`
         do not exist in the dataframe.
     :raises ValueError: if `names_from` is None.

@@ -3,8 +3,6 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-import janitor
-
 
 @pytest.fixture
 def df_checks_output():
@@ -461,7 +459,7 @@ def test_fill_values():
 
 
 def test_no_index():
-    "Test output if no index is supplied."
+    "Test output if no `index` is supplied."
     df_in = pd.DataFrame(
         {
             "gender": ["Male", "Female", "Female", "Male", "Male"],
@@ -472,21 +470,57 @@ def test_no_index():
 
     expected_output = pd.DataFrame(
         {
-            "Female": {0: 24523.0, 1: 23421.0, 2: np.nan},
-            "Male": {0: 22379.0, 1: 23831.0, 2: 29234.0},
-        },
-        index=pd.Int64Index([0, 1, 2], dtype="int64"),
-    ).rename_axis(columns="gender")
-
-    result = df_in.pivot_wider(
-        index=None,
-        names_from="gender",
-        values_from="contVar",
-        flatten_levels=False,
-        names_sort=True,
+            "contVar_Male": [22379.0, 23831.0, 29234.0],
+            "contVar_Female": [24523.0, 23421.0, np.nan],
+        }
     )
+
+    result = df_in.pivot_wider(names_from="gender")
+
     assert_frame_equal(result, expected_output)
 
 
-# def test_no_index_values_from():
-#  "Test output if neither `index` nor `values_from` is supplied."
+def test_no_index_names_sort_True():
+    "Test output if no `index` is supplied and `names_sort` is True."
+    df_in = pd.DataFrame(
+        {
+            "gender": ["Male", "Female", "Female", "Male", "Male"],
+            "contVar": [22379, 24523, 23421, 23831, 29234],
+        },
+        index=pd.Int64Index([0, 0, 1, 1, 2], dtype="int64"),
+    )
+
+    expected_output = pd.DataFrame(
+        {
+            "contVar_Female": [24523.0, 23421.0, np.nan],
+            "contVar_Male": [22379.0, 23831.0, 29234.0],
+        }
+    )
+
+    result = df_in.pivot_wider(names_from="gender", names_sort=True)
+
+    assert_frame_equal(result, expected_output)
+
+
+def test_index_names_sort_True():
+    "Test output if index is supplied and `names_sort ` is True."
+    df = pd.DataFrame(
+        [
+            {"stat": "mean", "score": 4, "var": "var1"},
+            {"stat": "sd", "score": 7, "var": "var1"},
+            {"stat": "mean", "score": 1, "var": "var2"},
+            {"stat": "sd", "score": 2, "var": "var2"},
+            {"stat": "mean", "score": 11, "var": "var3"},
+            {"stat": "sd", "score": 14, "var": "var3"},
+        ]
+    )
+
+    expected_output = pd.DataFrame(
+        {"var": ["var1", "var2", "var3"], "mean": [4, 1, 11], "sd": [7, 2, 14]}
+    )
+
+    result = df.pivot_wider(
+        index="var", names_from="stat", values_from="score", names_sort=True
+    )
+
+    assert_frame_equal(result, expected_output)

@@ -5025,9 +5025,13 @@ def pivot_wider(
         10  Carla      wk3     39
         11  Carla      wk4     40
 
-        df = pd.DataFrame(...).pivot_wider(index="name",
-                                           names_from="variable",
-                                           values_from="value")
+        df = (
+            pd.DataFrame(...)
+            .pivot_wider(
+                index="name",
+                names_from="variable",
+                values_from="value"
+            )
 
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
@@ -5043,10 +5047,15 @@ def pivot_wider(
         1     2  20.0  0.2
         2     3  30.0  0.3
 
-        df = (pd.DataFrame(...).assign(num=0)
-                               .pivot_wider(index='num',
-                                            names_from="name",
-                                            values_from=["n", "pct"]))
+        df = (
+            pd.DataFrame(...)
+            .assign(num=0)
+            .pivot_wider(
+                index='num',
+                names_from="name",
+                values_from=["n", "pct"]
+             )
+         )
 
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3

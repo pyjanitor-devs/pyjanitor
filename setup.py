@@ -23,6 +23,10 @@ def read_requirements(*parts):
     returns a list of requirements.
     Assumes anything after a single '#' on a line is a comment, and ignores
     empty lines.
+
+    :param parts: list of filenames which contain the installation "parts",
+        i.e. submodule-specific installation requirements
+    :returns: A compiled list of requirements.
     """
     requirements = []
     for line in read(*parts).splitlines():

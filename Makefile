@@ -16,7 +16,15 @@ release:
 
 format:
 	@echo "Applying Black Python code formatting..."
-	black -l 79 .
+	black .
+
+blackcheck:
+	@echo "Checking code style against black."
+	black . --check
+
+checkautodoc:
+	@echo "Check that all general functions have been added to docs."
+	python scripts/check-autodoc.py
 
 test:
 	@echo "Running test suite..."

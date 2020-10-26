@@ -1,24 +1,20 @@
 steps:
   - script: |
       $(activate.command) pyjanitor-dev
-      flake8 . --exclude ./nbconvert_config.py
+      make lint
     displayName: 'Code style check: flake8'
   - script: |
       $(activate.command) pyjanitor-dev
-      black
+      make blackecheck
     displayName: 'Code style check: black'
   - script: |
       $(activate.command) pyjanitor-dev
-      pytest
+      make test
     displayName: 'Run all pyjanitor tests.'
   - script: |
       $(activate.command) pyjanitor-dev
-      python scripts/check-autodoc.py
+      checkautodoc
     displayName: 'Check that all general functions have been added to docs.'
-  - script: |
-      $(activate.command) pyjanitor-dev
-      bash <(curl -s https://codecov.io/bash) -t c4aaeb6c-be8f-44b2-a529-6871f3537261
-    displayName: 'Upload code coverage.'
   - script: |
       $(activate.command) pyjanitor-dev
       python -m ipykernel install --user --name pyjanitor-dev
@@ -26,5 +22,9 @@ steps:
     displayName: 'Test that all notebooks execute correctly.'
   - script: |
       $(activate.command) pyjanitor-dev
-      cd docs && make html
+      make docs
     displayName: 'Test that HTML docs all build correctly.'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      bash <(curl -s https://codecov.io/bash) -t c4aaeb6c-be8f-44b2-a529-6871f3537261
+    displayName: 'Upload code coverage.'

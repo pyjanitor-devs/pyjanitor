@@ -36,10 +36,13 @@ install:
   # Build development container
   # - docker build -t ericmjl/pyjanitor:devcontainer -f .devcontainer/Dockerfile .
 
-# We use TravisCI to build docs and not run tests.
-# Tests are covered on Azure.
+# We use TravisCI to build docs and trigger Netlify build previews.
+# Tests are primarily covered on Azure,
+# but we run the tests here anyways so that if any of the tests fail,
+# then the deploy preview is not triggered.
 # Travis, however, has saner deploy syntax.
 script:
+  - make test
   - make docs
 
 deploy:

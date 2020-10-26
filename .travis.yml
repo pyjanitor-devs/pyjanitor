@@ -47,8 +47,6 @@ script:
   - make checkautodoc
   - make test
   - make docs
-  # Trigger Netlify build preview
-  - curl -X POST -d '{}' $NETLIFY_BUILD_HOOK_URL?trigger_branch=$TRAVIS_PULL_REQUEST_BRANCH
 
 deploy:
   # Publish to github pages
@@ -69,6 +67,8 @@ deploy:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+  # Trigger Netlify build preview
+  - curl -X POST -d '{}' $NETLIFY_BUILD_HOOK_URL?trigger_branch=$TRAVIS_PULL_REQUEST_BRANCH
 
 notifications:
   email: true

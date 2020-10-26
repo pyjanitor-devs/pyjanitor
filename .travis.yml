@@ -42,8 +42,13 @@ install:
 # then the deploy preview is not triggered.
 # Travis, however, has saner deploy syntax.
 script:
+  - make lint
+  - make blackecheck
   - make test
+  - make checkautodoc
   - make docs
+  # Trigger Netlify build preview
+  - curl -X POST -d '{}' $NETLIFY_BUILD_HOOK_URL?trigger_branch=$TRAVIS_PULL_REQUEST_BRANCH
 
 deploy:
   # Publish to github pages

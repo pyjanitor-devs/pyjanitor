@@ -13,7 +13,7 @@ steps:
     displayName: 'Run all pyjanitor tests.'
   - script: |
       $(activate.command) pyjanitor-dev
-      checkautodoc
+      make checkautodoc
     displayName: 'Check that all general functions have been added to docs.'
   - script: |
       $(activate.command) pyjanitor-dev

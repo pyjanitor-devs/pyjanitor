@@ -4999,12 +4999,12 @@ def pivot_wider(
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
-    Reshape data from long to wide form. The number of columns are
+    Reshapes data from long to wide form. The number of columns are
     increased, while decreasing the number of rows. It is the inverse
     of the `pivot_longer` method. It is a wrapper around `pd.unstack`
     method.
 
-    This method does not mutate the original DataFrame.
+    This method does not mutate the original DataFrame. 
 
 
     Reshaping to wide form :
@@ -5052,7 +5052,9 @@ def pivot_wider(
         0   0   10   20   30   0.1    0.2    0.3
 
     .. note:: You may choose not to collapse the levels by passing `False`
-        to the ``collapse_levels`` argument
+        to the ``collapse_levels`` argument.
+
+    .. note:: An error is raised if the index is not unique.
 
     Functional usage syntax:
 

@@ -1135,7 +1135,7 @@ def _computations_pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = True,
+    names_sort: Optional[bool] = False,
     flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
@@ -1169,7 +1169,7 @@ def _computations_pivot_wider(
     dtypes = None
     before = None
     # ensure `names_sort` is in combination with `flatten_levels`
-    if (not names_sort) and flatten_levels:
+    if all((names_sort is False, flatten_levels)):
         # dtypes only needed for names_from
         # since that is what will become the new column names
         dtypes = {
@@ -1215,10 +1215,9 @@ def _computations_pivot_wider(
         )  # blanket approach that covers categories
 
         if index:
-            if (
-                not names_sort
-            ):  # this way we avoic having to convert index
-                # from category to original dtype
+            # this way we avoid having to convert index
+            # from category to original dtype
+            if names_sort is False:  
                 df = before.merge(
                     df, how="left", left_on=index, right_index=True
                 ).reset_index(drop=True)

@@ -490,32 +490,3 @@ def test_no_index():
 
 # def test_no_index_values_from():
 #  "Test output if neither `index` nor `values_from` is supplied."
-
-
-df = pd.DataFrame(
-    {
-        "geoid": [1, 1, 13, 13],
-        "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
-        "variable": [
-            "pop_renter",
-            "median_rent",
-            "pop_renter",
-            "median_rent",
-        ],
-        "estimate": [1434765, 747, 3592422, 927],
-        "error": [16736, 3, 33385, 3],
-    }
-)
-
-print(df)
-
-print(
-    df.pivot_wider(
-        index=["geoid", "name"],
-        names_from=["variable"],
-        values_from=["estimate", "error"],
-        names_sort=False,
-        values_from_first=False,
-        flatten_levels=True,
-    )
-)

@@ -4705,55 +4705,68 @@ def pivot_longer(
 
     This method does not mutate the original DataFrame.
 
-    It is a wrapper around `pd.melt` and is meant to serve as a single point
-    for transformations that require `pd.melt` or `pd.wide_to_long`. It is
-    modeled after the `pivot_longer` function in R's tidyr package.
+    It is a wrapper around `pd.melt` and is meant to serve
+    as a single point for transformations
+    that require `pd.melt` or `pd.wide_to_long`.
+    It is modeled after the `pivot_longer` function in R's tidyr package.
 
     This function is useful to massage a DataFrame into a format where
-    one or more columns are considered measured variables, and all other
-    columns are considered as identifier variables.
+    one or more columns are considered measured variables,
+    and all other columns are considered as identifier variables.
 
-    All measured variables are “unpivoted” (and typically duplicated) along the
-    row axis.
+    All measured variables are “unpivoted” (and typically duplicated)
+    along the row axis.
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
 
     .. code-block:: python
 
-              name   a   b
-        0   Wilbur  67  56
-        1  Petunia  80  90
-        2  Gregory  64  50
+        # Our dataframe:
+        #
+        #       name   a   b
+        # 0   Wilbur  67  56
+        # 1  Petunia  80  90
+        # 2  Gregory  64  50
 
     The column names 'a' and 'b' are actually the names of a measured variable
-    (i.e. the name of a drug), but the values are a different measured variable
-    (heartrate). We would like to unpivot these 'a' and 'b' columns into a
-    'drug' column and a 'heartrate' column.
+    (i.e. the name of a drug),
+    but the values are a different measured variable (heartrate).
+    We would like to unpivot these 'a' and 'b' columns
+    into a 'drug' column and a 'heartrate' column.
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
-                                            names_to='drug',
-                                            values_to='heartrate')
+        df = (
+            pd.DataFrame(...).
+            pivot_longer(
+                column_names=['a', 'b'],
+                names_to='drug',
+                values_to='heartrate'
+            )
+        )
 
-              name drug  heartrate
-        0   Wilbur    a         67
-        1   Wilbur    b         56
-        2  Petunia    a         80
-        3  Petunia    b         90
-        4  Gregory    a         64
-        5  Gregory    b         50
+        # Output:
+        #
+        #       name drug  heartrate
+        # 0   Wilbur    a         67
+        # 1   Wilbur    b         56
+        # 2  Petunia    a         80
+        # 3  Petunia    b         90
+        # 4  Gregory    a         64
+        # 5  Gregory    b         50
 
     Example 2: The dataframe below has year and month variables embedded within
     the column names.
 
     .. code-block:: python
 
-            col1	2019-12	     2020-01	 2020-02
-        0	a	   -1.085631	-1.506295	-2.426679
-        1	b	    0.997345	-0.578600	-0.428913
-        2	c	    0.282978	 1.651437	 1.265936
+        # Our dataframe:
+        #
+        #    col1          2019-12      2020-01         2020-02
+        # 0	a        -1.085631    -1.506295       -2.426679
+        # 1	b	  0.997345    -0.578600       -0.428913
+        # 2	c	  0.282978     1.651437        1.265936
 
     Pivot_longer can conveniently reshape the data into long format, with new
     columns for the year and month. We simply pass in the new column names to
@@ -4762,22 +4775,27 @@ def pivot_longer(
 
     .. code-block:: python
 
-        df = (pd.DataFrame(...)
-             .pivot_longer(index='col1',
-                           names_to=('year','month'),
-                           names_sep='-')
-              )
+        df = (
+            pd.DataFrame(...)
+            .pivot_longer(
+                index='col1',
+                names_to=('year','month'),
+                names_sep='-'
+            )
+        )
 
-          col1  year   month      value
-        0    a  2019     12     -1.085631
-        1    a  2020      1     -1.506295
-        2    a  2020      2     -2.426679
-        3    b  2019     12      0.997345
-        4    b  2020      1     -0.578600
-        5    b  2020      2     -0.428913
-        6    c  2019     12      0.282978
-        7    c  2020      1      1.651437
-        8    c  2020      2      1.265936
+        # Output:
+        #
+        #   col1  year   month      value
+        # 0    a  2019     12     -1.085631
+        # 1    a  2020      1     -1.506295
+        # 2    a  2020      2     -2.426679
+        # 3    b  2019     12      0.997345
+        # 4    b  2020      1     -0.578600
+        # 5    b  2020      2     -0.428913
+        # 6    c  2019     12      0.282978
+        # 7    c  2020      1      1.651437
+        # 8    c  2020      2      1.265936
 
     Example 3: The dataframe below has names embedded in it
     ('measure1', 'measure2') that we would love to reuse as
@@ -4785,9 +4803,11 @@ def pivot_longer(
 
     .. code-block:: python
 
-            treat1-measure1	treat1-measure2	treat2-measure1	treat2-measure2
-        0	         1	        4	            2	            5
-        1	         2	        5	            3	            4
+        # Our dataframe:
+        #
+        #     treat1-measure1  treat1-measure2  treat2-measure1  treat2-measure2
+        # 0                 1                4                2                5
+        # 1                 2                5                3                4
 
     For this, we take advantage of the `.value` variable, which signals to
     `pivot_longer` to treat the part of the column names corresponding to
@@ -4795,16 +4815,22 @@ def pivot_longer(
 
     .. code-block:: python
 
-        df = (pd.DataFrame(...)
-              .pivot_longer(names_to=("group",'.value'),
-                            names_sep = '-')
-              )
+        df = (
+            pd.DataFrame(...)
+            .pivot_longer(
+                names_to=("group",'.value'),
+                names_sep = '-'
+            )
+        )
 
-            group  measure1  measure2
-        0  treat1         1         4
-        1  treat2         2         5
-        2  treat1         2         5
-        3  treat2         3         4
+
+        # Output:
+        #
+        #     group  measure1  measure2
+        # 0  treat1         1         4
+        # 1  treat2         2         5
+        # 2  treat1         2         5
+        # 3  treat2         3         4
 
     Let's break down the `.value` idea a bit. When `.value` is used,
     `pivot_longer` creates a pairing. In the example above, we get a pairing
@@ -4817,55 +4843,70 @@ def pivot_longer(
 
     .. code-block:: python
 
-            n_1  n_2  n_3  pct_1  pct_2  pct_3
-        0   10   20   30   0.1    0.2    0.3
+        # Our dataframe:
+        #
+        #     n_1  n_2  n_3  pct_1  pct_2  pct_3
+        # 0    10   20   30    0.1    0.2    0.3
 
-        df = (pd.DataFrame(...)
-              .pivot_longer(names_to = (".value", "name"),
-                            names_pattern = "(.*)_(.)")
-              )
+        df = (
+            pd.DataFrame(...)
+            .pivot_longer(
+                names_to = (".value", "name"),
+                names_pattern = "(.*)_(.)"
+            )
+        )
 
-            name    n  pct
-        0     1  10.0  0.1
-        1     2  20.0  0.2
-        2     3  30.0  0.3
 
-    The same idea of `.value` works here as well. Based on the capturing groups
-    in the regex in `names_pattern`, we have two pairings -->
-    {".value":["n", "pct"], "name":[1,2,3]}. Just like in the previous example,
-    the values associated with `.value` become new column names, while those
-    not associated with `.value` become values in the new column ``name``.
+        # Output:
+        #
+        #     name     n  pct
+        # 0      1  10.0  0.1
+        # 1      2  20.0  0.2
+        # 2      3  30.0  0.3
 
-    Note that there are no limits to the pairing; however, you can only have
-    one `.value` in ``names_to``.
+    The same idea of `.value` works here as well.
+    Based on the capturing groups
+    in the regex in `names_pattern`,
+    we have two pairings --> {".value":["n", "pct"], "name":[1,2,3]}.
+    Just like in the previous example,
+    the values associated with `.value` become new column names,
+    while those not associated with `.value`
+    become values in the new column ``name``.
 
-    You can also take advantage of `janitor.patterns` function, which allows
-    selection of columns via a regular expression; this can come in handy if
-    you have a lot of column names to use as index, and do not wish to manually
-    type them all.
+    Note that there are no limits to the pairing;
+    however, you can only have one `.value` in ``names_to``.
+
+    You can also take advantage of `janitor.patterns` function,
+    which allows selection of columns via a regular expression;
+    this can come in handy if you have a lot of column names to use as index,
+    and do not wish to manually type them all.
 
     .. code-block:: python
 
-             name    wk1   wk2   wk3   wk4
-        0    Alice     5     9    20    22
-        1    Bob       7    11    17    33
-        2    Carla     6    13    39    40
+        # Our dataframe:
+        #
+        #      name    wk1   wk2   wk3   wk4
+        # 0    Alice     5     9    20    22
+        # 1    Bob       7    11    17    33
+        # 2    Carla     6    13    39    40
 
         df = pd.DataFrame(...).pivot_longer(janitor.patterns("^(?!wk)"))
 
-             name variable  value
-        0   Alice      wk1      5
-        1   Alice      wk2      9
-        2   Alice      wk3     20
-        3   Alice      wk4     22
-        4     Bob      wk1      7
-        5     Bob      wk2     11
-        6     Bob      wk3     17
-        7     Bob      wk4     33
-        8   Carla      wk1      6
-        9   Carla      wk2     13
-        10  Carla      wk3     39
-        11  Carla      wk4     40
+        # Output:
+        #
+        #      name variable  value
+        # 0   Alice      wk1      5
+        # 1   Alice      wk2      9
+        # 2   Alice      wk3     20
+        # 3   Alice      wk4     22
+        # 4     Bob      wk1      7
+        # 5     Bob      wk2     11
+        # 6     Bob      wk3     17
+        # 7     Bob      wk4     33
+        # 8   Carla      wk1      6
+        # 9   Carla      wk2     13
+        # 10  Carla      wk3     39
+        # 11  Carla      wk4     40
 
     Functional usage syntax:
 

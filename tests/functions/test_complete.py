@@ -137,10 +137,7 @@ def test_fill_value_all_years(df1):
     )
 
     result = df1.complete(
-        columns=[
-            {"Year": range(df1.Year.min(), df1.Year.max() + 1)},
-            "Taxon",
-        ],
+        columns=[{"Year": range(df1.Year.min(), df1.Year.max() + 1)}, "Taxon"],
         fill_value={"Abundance": 0},
     )
     assert_frame_equal(result, output1)
@@ -210,7 +207,7 @@ def test_empty_subcols(frame, empty_sub_cols):
 # how-do-i-use-tidyr-to-fill-in-completed-rows-within-each-value-of-a-grouping-var
 def test_grouping_first_columns():
     """Test complete function when the first entry in columns is
-        a grouping."""
+    a grouping."""
 
     df2 = pd.DataFrame(
         {

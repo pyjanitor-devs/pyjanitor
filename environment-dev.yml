@@ -3,9 +3,10 @@ channels:
 - conda-forge
 - rdkit
 dependencies:
-- python>=3.6
+- python=3.7
 - biopython
-- black
+# Pinning black to 19.10b0 because of unexpected docstring formatting issues
+- black<=19.10b0
 - bumpversion
 - cairo
 - conda

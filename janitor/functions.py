@@ -242,6 +242,7 @@ def clean_names(
     strip_accents: bool = True,
     preserve_original_columns: bool = True,
     enforce_string: bool = True,
+    truncate_limit: int = None,
 ) -> pd.DataFrame:
     """
     Clean column names.
@@ -294,6 +295,8 @@ def clean_names(
     :param enforce_string: Whether or not to convert all column names
         to string type. Defaults to True, but can be turned off.
         Columns with >1 levels will not be converted by default.
+    :param truncate_limit: (optional) Truncates formatted column names to
+        the specified length. Default None does not truncate.
     :returns: A pandas DataFrame.
     """
     original_column_names = list(df.columns)
@@ -313,6 +316,8 @@ def clean_names(
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
     df = _strip_underscores(df, strip_underscores)
+
+    df = df.rename(columns=lambda x: x[:truncate_limit])
 
     # Store the original column names, if enabled by user
     if preserve_original_columns:
@@ -3183,7 +3188,9 @@ def _find_replace(
         regular-expression-based fuzzy match will be used for finding patterns.
         Default to "exact". Can only be "exact" or "regex".
     :returns: A pandas DataFrame.
-    :raises: ValueError
+    :raises ValueError: is trying to use null replacement. Kindly use
+        ``.fillna()`` instead.
+    :raises ValueError: if ``match`` is not one of 'exact' or 'regex'.
     """
     if any(map(pd.isna, mapper.keys())):
         raise ValueError(
@@ -3247,10 +3254,12 @@ def update_where(
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: An updated pandas DataFrame.
-    :raises: IndexError if ``conditions`` does not have the same length as
+    :raises IndexError: if ``conditions`` does not have the same length as
         ``df``.
-    :raises: TypeError if ``conditions`` is not a pandas-compatible string
+    :raises TypeError: if ``conditions`` is not a pandas-compatible string
         query.
+
+    .. # noqa: DAR402
     """
 
     # use query mode if a string expression is passed
@@ -3657,29 +3666,29 @@ def flag_nulls(
         import pandas as pd
         import janitor as jn
 
-        data = pd.DataFrame(
+        df = pd.DataFrame(
             {'a': [1, 2, None, 4],
              'b': [5.0, None, 7.0, 8.0]})
 
         df.flag_nulls()
         #  'a' | 'b'  | 'null_flag'
         #   1  | 5.0  |   0
-        #   2  | None |   1
-        # None | 7.0  |   1
+        #   2  | NaN  |   1
+        #  NaN | 7.0  |   1
         #   4  | 8.0  |   0
 
-        jn.functions.flag_nulls(data)
+        jn.functions.flag_nulls(df)
         #  'a' | 'b'  | 'null_flag'
         #   1  | 5.0  |   0
-        #   2  | None |   1
-        # None | 7.0  |   1
+        #   2  | NaN  |   1
+        #  NaN | 7.0  |   1
         #   4  | 8.0  |   0
 
         df.flag_nulls(columns=['b'])
         #  'a' | 'b'  | 'null_flag'
         #   1  | 5.0  |   0
-        #   2  | None |   1
-        # None | 7.0  |   0
+        #   2  | NaN  |   1
+        #  NaN | 7.0  |   0
         #   4  | 8.0  |   0
 
 
@@ -3689,7 +3698,12 @@ def flag_nulls(
         only want to look at one column, you can simply give its name. If set
         to None (default), all DataFrame columns are used.
     :returns: Input dataframe with the null flag column.
-    :raises: ValueError
+    :raises ValueError: if ``column_name`` is already present in the
+        DataFrame.
+    :raises ValueError: if a column within ``columns`` is no present in
+        the DataFrame.
+
+    .. # noqa: DAR402
     """
     # Sort out columns input
     if isinstance(columns, str):
@@ -4682,7 +4696,7 @@ def pivot_longer(
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[Union[str, Pattern]] = None,
+    names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
 ) -> pd.DataFrame:
@@ -4792,6 +4806,13 @@ def pivot_longer(
         2  treat1         2         5
         3  treat2         3         4
 
+    Let's break down the `.value` idea a bit. When `.value` is used,
+    `pivot_longer` creates a pairing. In the example above, we get a pairing
+    {"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}. All
+    the values associated with `.value` become new column names, while those
+    not associated with `.value`(`treat1` and `treat2`) become values in a
+    new column `group`. `values_to` is overridden during this process.
+
     Example 4: We can also pivot from wide to long using regular expressions
 
     .. code-block:: python
@@ -4808,6 +4829,15 @@ def pivot_longer(
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
+
+    The same idea of `.value` works here as well. Based on the capturing groups
+    in the regex in `names_pattern`, we have two pairings -->
+    {".value":["n", "pct"], "name":[1,2,3]}. Just like in the previous example,
+    the values associated with `.value` become new column names, while those
+    not associated with `.value` become values in the new column ``name``.
+
+    Note that there are no limits to the pairing; however, you can only have
+    one `.value` in ``names_to``.
 
     You can also take advantage of `janitor.patterns` function, which allows
     selection of columns via a regular expression; this can come in handy if
@@ -4874,15 +4904,14 @@ def pivot_longer(
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
-        Should be either a single column name, a list/tuple of
-        column names, or a or a `janitor.patterns` function. You can
-        also dynamically select column names by using a regular
-        expression with the `janitor.patterns` function.
+        Should be either a single column name, or a list/tuple of
+        column names. You can also dynamically select column names
+        by using a regular expression with the `janitor.patterns`
+        function.
     :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name, a list/tuple of column names, or a
-        `janitor.patterns` function. You can also dynamically select
-        column names by using a regular expression with the
-        `janitor.patterns` function.
+        a single column name, a list/tuple of column names. You can also
+        dynamically select column names by using a regular expression
+        with the `janitor.patterns` function.
     :param names_to: Name of new column as a string that will contain
         what were previously the column names in `column_names`.
         The default is `variable` if no value is provided. It can
@@ -4895,27 +4924,36 @@ def pivot_longer(
         `names_to` contains multiple values. It takes the same
         specification as pandas' `str.split` method, and can be a string
         or regular expression.
-    :param names_pattern: Determines how the column name is broken up. It takes
-        the same specification as pandas' `str.extractall` method, which is
-        a regular expression containing matching groups.
+    :param names_pattern: Determines how the column name is broken up.
+        It can be a regular expression containing matching groups
+        matching the same specification as pandas' `str.extractall` method,
+        or a list/tuple of regular expressions, which devolves to
+        ``numpy.select`` and pandas' ``str.contains``. For a list of
+        regular expressions, ``names_to`` must be a list/tuple and the
+        lengths of both arguments must match. The entries in both arguments
+        must also match positionally, i.e  if `regex1` in `names_pattern` is
+        the first item, it will be aligned to `new_column_name_1` in `names_to`
+        if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
-    :raises: TypeError if `index` or `column_names` is not a string, or a
+    :raises TypeError: if `index` or `column_names` is not a string, or a
         list/tuple of strings, or a `janitor.patterns` function.
-    :raises: TypeError if `names_to` or `column_names` is not a string, or a
+    :raises TypeError: if `names_to` or `column_names` is not a string, or a
         list/tuple of strings.
-    :raises: TypeError if `values_to` is not a string.
-    :raises: ValueError if `names_to` is a list/tuple, and both `names_sep` and
+    :raises TypeError: if `values_to` is not a string.
+    :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
-    :raises: ValueError if `names_to` is a string or a list/tuple of length 1,
+    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
         and `names_sep` is provided.
-    :raises: TypeError if `names_sep` or `names_pattern` is not a string or
+    :raises TypeError: if `names_sep` or `names_pattern` is not a string or
         regular expression.
-    :raises: ValueError if `names_to` is a list/tuple, and its length does not
+    :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises: Warning if `df` is a MultiIndex dataframe.
+    :raises Warning: if `df` is a MultiIndex dataframe.
+
+    .. # noqa: DAR402
     """
 
     # this code builds on the wonderful work of @benjaminjack’s PR

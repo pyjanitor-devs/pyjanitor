@@ -1,6 +1,10 @@
 new version (on deck)
 =====================
 - [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
+- [ENH] Added optional truncation to ``clean_names`` function. Issue #753. @richardqiu
+- [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
+- [ENH] ``pivot_longer`` can handle multiple values in paired columns, and can reshape
+  using a list/tuple of regular expressions in ``names_pattern``. @samukweku
 - [INF] Loosen dependency specifications. Switch to pip-tools for managing
   dependencies. Issue #760. @MinchinWeb
 
@@ -17,6 +21,7 @@ v0.20.10
   tidyr's ``pivot_longer`` function. Also added an example notebook. @samukweku
 - [ENH] Fixed code to returns error if `fill_value` is not a dictionary. @samukweku
 - [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
+
 
 
 v0.20.9

@@ -1135,7 +1135,7 @@ def _computations_pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
+    names_sort: Optional[bool] = True,
     flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
@@ -1158,32 +1158,32 @@ def _computations_pivot_wider(
     source data.
     """
 
-    # TODO : Change to pivot method once the minimum Pandas version
-    # is 1.1; should remove all this bloat and pass the buck to
-    # Pandas
     if values_from is None:
-        if index is not None:
+        if index:
             values_from = [
                 col for col in df.columns if col not in (index + names_from)
             ]
         else:
             values_from = [col for col in df.columns if col not in names_from]
 
-    if not names_sort: 
-        if index is None:
-            dtypes = {
-                key: CategoricalDtype(categories=pd.unique(ent), ordered=True)
-                for key, ent in df.filter(names_from).items()
-            }
-        else:
-            dtypes = {
-                key: CategoricalDtype(categories=pd.unique(ent), ordered=True)
-                for key, ent in df.filter(index + names_from).items()
-            }
+    dtypes = None
+    before = None
+    # ensure `names_sort` is in combination with `flatten_levels`
+    if (not names_sort) and flatten_levels:
+        # dtypes only needed for names_from
+        # since that is what will become the new column names
+        dtypes = {
+            column_name: CategoricalDtype(
+                categories=pd.unique(column), ordered=True
+            )
+            for column_name, column in df.filter(names_from).items()
+        }
+        if index is not None:
+            before = df.filter(index)
+            if before.duplicated().any():
+                before = before.drop_duplicates()
 
         df = df.astype(dtypes)
-    else:
-        dtypes = None
 
     if index is None:  # use existing index
         df = df.set_index(names_from, append=True)
@@ -1199,9 +1199,8 @@ def _computations_pivot_wider(
             """
         )
 
-    df = df.loc[:, values_from].unstack(names_from, fill_value=fill_value)
-
-
+    df = df.loc[:, values_from]
+    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
     if flatten_levels:
         if isinstance(values_from, list):
             df.columns = df.columns.set_names(level=0, names="values_from")
@@ -1209,9 +1208,25 @@ def _computations_pivot_wider(
                 df = df.reorder_levels(names_from + ["values_from"], axis=1)
         if df.columns.nlevels > 1:
             df.columns = [names_sep.join(entry) for entry in df]
-        if names_prefix : 
+        if names_prefix:
             df = df.add_prefix(names_prefix)
-        df.columns = list(df.columns)
-        return df.reset_index()
+        df.columns = list(
+            df.columns
+        )  # blanket approach that covers categories
+
+        if index:
+            if (
+                not names_sort
+            ):  # this way we avoic having to convert index
+                # from category to original dtype
+                df = before.merge(
+                    df, how="left", left_on=index, right_index=True
+                ).reset_index(drop=True)
+            else:
+                df = df.reset_index()
+        else:
+            df = df.reset_index()
+
+        return df
 
     return df

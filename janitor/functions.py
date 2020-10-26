@@ -4991,7 +4991,7 @@ def pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
+    names_sort: Optional[bool] = True,
     flatten_levels: Optional[bool] = True,
     values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,

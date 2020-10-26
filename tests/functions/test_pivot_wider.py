@@ -120,7 +120,7 @@ combinations = [
         "name",
         True,
     ),
-       (
+    (
         pd.DataFrame(
             {
                 "geoid": [1, 1, 13, 13],
@@ -134,7 +134,7 @@ combinations = [
                 "estimate": [1434765, 747, 3592422, 927],
                 "error": [16736, 3, 33385, 3],
             }
-        ) ,
+        ),
         pd.DataFrame(
             {
                 "geoid": [1, 13],
@@ -181,8 +181,7 @@ combinations = [
         ["estimate", "error"],
         None,
         False,
-    )
-
+    ),
 ]
 
 
@@ -253,13 +252,12 @@ def test_values_from_first_wrong_type(df_checks_output):
             values_from_first=2,
         )
 
+
 def test_names_sort_wrong_type(df_checks_output):
     "Raise TypeError if the wrong type is provided for `names_sort`."
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
-            index="name",
-            names_from=["estimate", "variable"],
-            names_sort=2,
+            index="name", names_from=["estimate", "variable"], names_sort=2,
         )
 
 
@@ -307,7 +305,6 @@ def test_non_unique_index_names_from_combination():
     )
     with pytest.raises(ValueError):
         df.pivot_wider(index="A", names_from="L")
-
 
 
 def test_pivot_long_wide_long():
@@ -396,7 +393,7 @@ def test_pivot_wider_various(
         names_prefix=names_prefix,
         values_from_first=values_from_first,
     )
-    assert_frame_equal(result, df_out, check_dtype=False, check_categorical=False)
+    assert_frame_equal(result, df_out)
 
 
 def test_flatten_levels_false():
@@ -416,7 +413,7 @@ def test_flatten_levels_false():
         names_from="bar",
         values_from=["baz", "zoo"],
         flatten_levels=False,
-        names_sort=True
+        names_sort=True,
     )
 
     expected_output = df_collapse.pivot(  # noqa: PD010
@@ -424,7 +421,7 @@ def test_flatten_levels_false():
     )
 
     assert_frame_equal(
-        result, expected_output, check_dtype=False, 
+        result, expected_output, check_dtype=False,
     )
 
 
@@ -447,7 +444,7 @@ def test_fill_values():
         values_from="values",
         flatten_levels=False,
         fill_value=0,
-        names_sort=True
+        names_sort=True,
     )
 
     expected_output = pd.DataFrame(
@@ -486,21 +483,39 @@ def test_no_index():
         names_from="gender",
         values_from="contVar",
         flatten_levels=False,
-        names_sort = True
+        names_sort=True,
     )
     assert_frame_equal(result, expected_output)
 
 
 # def test_no_index_values_from():
-  #  "Test output if neither `index` nor `values_from` is supplied."
-    
+#  "Test output if neither `index` nor `values_from` is supplied."
+
 
 df = pd.DataFrame(
-        {
-            "gender": ["Male", "Female", "Female", "Male", "Male"],
-            "contVar": [22379, 24523, 23421, 23831, 29234],
-        })
+    {
+        "geoid": [1, 1, 13, 13],
+        "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
+        "variable": [
+            "pop_renter",
+            "median_rent",
+            "pop_renter",
+            "median_rent",
+        ],
+        "estimate": [1434765, 747, 3592422, 927],
+        "error": [16736, 3, 33385, 3],
+    }
+)
 
 print(df)
 
-print(df.pivot_wider(index=None, names_from="gender", names_sort=True, values_from_first=False, flatten_levels=False))
+print(
+    df.pivot_wider(
+        index=["geoid", "name"],
+        names_from=["variable"],
+        values_from=["estimate", "error"],
+        names_sort=False,
+        values_from_first=False,
+        flatten_levels=True,
+    )
+)

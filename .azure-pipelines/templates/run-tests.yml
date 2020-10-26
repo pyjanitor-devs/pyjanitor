@@ -5,7 +5,7 @@ steps:
     displayName: 'Code style check: flake8'
   - script: |
       $(activate.command) pyjanitor-dev
-      make blackecheck
+      make blackcheck
     displayName: 'Code style check: black'
   - script: |
       $(activate.command) pyjanitor-dev

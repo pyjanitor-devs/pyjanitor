@@ -1,9 +1,9 @@
 """Setup script."""
-
 import codecs
 import os
 import re
 from pathlib import Path
+from pprint import pprint
 
 from setuptools import find_packages, setup
 
@@ -17,25 +17,28 @@ def read(*parts):
 
 def read_requirements(*parts):
     """
-    Given a requirements.txt (or similar style file), returns a list of requirements.
+    Return requirements from parts.
+
+    Given a requirements.txt (or similar style file),
+    returns a list of requirements.
     Assumes anything after a single '#' on a line is a comment, and ignores
     empty lines.
     """
     requirements = []
     for line in read(*parts).splitlines():
-        new_line = re.sub(
+        new_line = re.sub(  # noqa: PD005
             r"(\s*)?#.*$",  # the space immediately before the
             # hash mark, the hash mark, and
             # anything that follows it
             "",  # replace with a blank string
             line,
         )
-        new_line = re.sub(
+        new_line = re.sub(  # noqa: PD005
             r"-r.*$",  # link to another requirement file
             "",  # replace with a blank string
             new_line,
         )
-        new_line = re.sub(
+        new_line = re.sub(  # noqa: PD005
             r"-e \..*$",  # link to editable install
             "",  # replace with a blank string
             new_line,
@@ -69,8 +72,6 @@ for k1 in ["biology", "chemistry", "engineering", "spark"]:
     for v2 in EXTRA_REQUIRES[k1]:
         EXTRA_REQUIRES["docs"].append(v2)
 
-# this only prints when something breaks, and then it proves helpful in debugging
-from pprint import pprint
 pprint(EXTRA_REQUIRES)
 
 

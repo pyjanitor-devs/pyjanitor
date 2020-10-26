@@ -36,11 +36,10 @@ install:
   # Build development container
   # - docker build -t ericmjl/pyjanitor:devcontainer -f .devcontainer/Dockerfile .
 
-# We use TravisCI to build docs and trigger Netlify build previews.
+# We use TravisCI to build backup docs.
 # Tests are primarily covered on Azure,
 # but we run the tests here anyways so that if any of the tests fail,
-# then the deploy preview is not triggered.
-# Travis, however, has saner deploy syntax.
+# backup docs are not deployed.
 script:
   - make lint
   - make blackcheck
@@ -67,8 +66,6 @@ deploy:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  # Trigger Netlify build preview
-  - curl -X POST -d '{}' $NETLIFY_BUILD_HOOK_URL?trigger_branch=$TRAVIS_PULL_REQUEST_BRANCH
 
 notifications:
   email: true

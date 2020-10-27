@@ -1564,3 +1564,4 @@ print(df.pivot_longer(index = 'country',
         names_pattern = '([A-Za-z]+)(\\d+)'
     )
 )
+

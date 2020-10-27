@@ -839,7 +839,6 @@ def _computations_pivot_longer(
     cum_count = None
     mapping_dtypes = None
     return_dtypes = None
-    len_mapping = None
     if any((names_pattern, names_sep)):
         if names_sep:
             # introduce categorical dtype to ensure order of appearance
@@ -938,7 +937,7 @@ def _computations_pivot_longer(
             df = df.reset_index()        
 
         else:
-            df = df.stack(df.columns.names, dropna=False).reset_index(name = values_to)
+            df = df.stack(df.columns.names, dropna=False).reset_index(name=values_to)      
 
         if return_dtypes:
             df = df.astype(return_dtypes)
@@ -948,7 +947,7 @@ def _computations_pivot_longer(
 
         if not index:
             df = df.iloc[:, 1:]
-            
+
         return df
         
 
@@ -978,8 +977,5 @@ def return_mapping_dtypes(mapping):
             }
     else:
         return_dtypes = dict(mapping.dtypes)
-
-
-
 
     return mapping_dtypes, return_dtypes

@@ -1546,12 +1546,21 @@ def test_names_pattern_list_empty(names_pattern_list_df):
 
 
 df = pd.DataFrame(
-    {'Location': ['Madrid', 'Madrid', 'Rome', 'Rome'],
- 'Account': ['ABC', 'XYX', 'ABC', 'XYX'],
- 'Y2019:MTD:January:Expense': [4354, 769867, 434654, 632556456],
- 'Y2019:MTD:January:Income': [56456, 32556456, 5214, 46724423],
- 'Y2019:MTD:February:Expense': [235423, 6785423, 235423, 46588]}
-)
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault2012": [48.1, 46.4, 44.3],
+                "floor2012": [45.4, 41.6, 40.8],
+                "vault2016": [46.9, 45.7, 44.3],
+                "floor2016": [46.0, 42.0, 42.1],
+            }
+        )
+
 print(df)
 
-print(df.pivot_longer(index=["Location","Account"], names_to=("Year_Month", ".value"), names_pattern="(2019.+):(Income|Expense)$" ))
+
+
+print(df.pivot_longer(index = 'country',
+        names_to = ["event","year"],
+        names_pattern = '([A-Za-z]+)(\\d+)'
+    )
+)

@@ -1543,3 +1543,15 @@ def test_names_pattern_list_empty(names_pattern_list_df):
             names_to=("DateRangeStart", "DateRangeEnd", "Value"),
             names_pattern=("^Start", "^End", "Value$"),
         )
+
+
+df = pd.DataFrame(
+    {'Location': ['Madrid', 'Madrid', 'Rome', 'Rome'],
+ 'Account': ['ABC', 'XYX', 'ABC', 'XYX'],
+ 'Y2019:MTD:January:Expense': [4354, 769867, 434654, 632556456],
+ 'Y2019:MTD:January:Income': [56456, 32556456, 5214, 46724423],
+ 'Y2019:MTD:February:Expense': [235423, 6785423, 235423, 46588]}
+)
+print(df)
+
+print(df.pivot_longer(index=["Location","Account"], names_to=("Year_Month", ".value"), names_pattern="(2019.+):(Income|Expense)$" ))

@@ -9,6 +9,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -800,8 +801,16 @@ def _computations_pivot_longer(
     if index is None and (column_names is not None):
         index = [col for col in df if col not in column_names]
 
+    before = None
     if index:
         df = df.set_index(index)
+        if any(
+            (".value" in names_to, isinstance(names_pattern, (list, tuple)))
+        ):
+        # ensures order of appearance, and will be used to merge reshaped data
+            before = df.index.drop_duplicates()
+            before = before.to_frame(index=False)
+
     if column_names:
         df = df.filter(column_names)
     # this ensures explicit missing variables are shown
@@ -872,65 +881,62 @@ def _computations_pivot_longer(
                 mapping = np.select(condlist, names_to, None)
                 mapping = pd.DataFrame(mapping, columns=[".value"])
 
-        df.index = df.index.droplevel(-1)
+        if ".value" in mapping.columns:
+            mapping_dtypes = {
+                column_name: CategoricalDtype(
+                    categories=column.unique(), ordered=True
+                )
+                for column_name, column in mapping.items()
+                if column.nunique() > 1
+            }
 
-        # TODO : Improve code to remove for-loops
-        # (creation of new index, including Categoricals)
-        # this should substantially improve the speed
-        # right now it is a O(n) operation; so for small sizes, it is faster
-        # than pd.wide_to_long (which seems to be a O(1) operation); as the
-        # dataframe's size grows, it becomes slower.
+        else:
+            mapping_dtypes = None
+        if mapping_dtypes:
+            return_dtypes = mapping_dtypes.keys() - {".value"}
+            # use this to restore original data type
+            return_dtypes = {
+                column_name: dtype
+                for column_name, dtype in dict(mapping.dtypes).items()
+                if column_name in return_dtypes
+            }
+
+            mapping = mapping.astype(mapping_dtypes)
+        else:
+            return_dtypes = None
+
+        df = df.droplevel(-1)
         if index:
-            new_index = [
-                df.index.get_level_values(ind)
-                for ind in range(df.index.nlevels)
-            ]
+            new_index = [df.index.get_level_values(name) for name in index]
         else:
             new_index = [df.index]
-
-        if ".value" in mapping.columns:
-            # categories ensure that order is maintained during unstacking
-            mapping = [
-                pd.CategoricalIndex(
-                    col, categories=pd.unique(col), ordered=True
-                )
-                for _, col in mapping.items()
-            ]
-            if index:
-                new_index = [
-                    pd.CategoricalIndex(
-                        index, categories=pd.unique(index), ordered=True
-                    )
-                    for index in new_index
-                ]
-        else:
-            mapping = [col for _, col in mapping.items()]
+        mapping = [column for _, column in mapping.items()]
 
         new_index.extend(mapping)
 
         df = pd.DataFrame(df.array, index=new_index, columns=values_to)
 
         if ".value" in df.index.names:
-            # unstack fails for non unique index
             if df.index.duplicated().any():
+                # this creates unique indices
                 mapping = list(range(df.index.nlevels))
                 mapping = df.groupby(level=mapping).cumcount()
-                df = df.set_index(pd.Index(mapping), append=True)
-                df = (
-                    df.unstack(".value")  # noqa: PD010
-                    .droplevel(0, 1)  # gets rid of top column level
-                    .droplevel(-1)
-                )
-            else:
-                df = df.unstack(".value").droplevel(0, 1)  # noqa: PD010
-            df.columns = list(
-                df.columns
-            )  # gets rid of the categories, and allows index reset
+                df = df.set_index(mapping, append=True)
+                df = (df.unstack(".value")  # noqa: PD010
+                        .droplevel(0, 1).droplevel(-1))
 
-        df = df.reset_index()
+            else:
+                df = (df.unstack(".value")  #noqa: 010
+                        .droplevel(0, 1))
+            df.columns = list(df.columns)
+            df = df.reset_index()            
+            if return_dtypes:
+                df = df.astype(return_dtypes)
+        else:  # values_to name is retained
+            df = df.reset_index()
         if not index:
-            # gets rid of the unnecessary index that was added to the columns
             df = df.iloc[:, 1:]
+
         if dtypes:
             df = df.astype(dtypes)
 

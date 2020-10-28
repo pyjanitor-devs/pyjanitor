@@ -9,8 +9,6 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from numpy.lib.function_base import append
-from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -651,28 +649,12 @@ def _data_checks_pivot_longer(
     check("names_to", names_to, [list, tuple, str])
 
     if isinstance(names_to, str):
-        if isinstance(names_pattern, (list, tuple)):
-            raise TypeError(
-                """
-                    ``names_to`` must be a list or tuple.
-                    """
-            )
         names_to = [names_to]
 
     if isinstance(names_to, (list, tuple)):
         if not all(isinstance(word, str) for word in names_to):
             raise TypeError(
                 "All entries in `names_to` argument must be strings."
-            )
-
-        if all(
-            (names_pattern is None, names_sep is None)
-        ):  # write test for this
-            raise ValueError(
-                """
-                If `names_to` is a list/tuple, then either 
-                `names_sep` or `names_pattern` must be supplied.
-                """
             )
 
         if len(names_to) > 1:
@@ -682,6 +664,16 @@ def _data_checks_pivot_longer(
                     Only one of names_pattern or names_sep
                     should be provided.
                     """
+                )
+
+            if all(
+                (names_pattern is None, names_sep is None)
+            ):  # write test for this
+                raise ValueError(
+                    """
+                If `names_to` is a list/tuple, then either
+                `names_sep` or `names_pattern` must be supplied.
+                """
                 )
 
             if ".value" in names_to:
@@ -835,16 +827,15 @@ def _computations_pivot_longer(
 
         return df
 
+    # necessary to keep track of original data type
+    # comes in handy if type changes due to a stack transformation
     mapping = None
-    cum_count = None
-    mapping_dtypes = None
-    return_dtypes = None
+    column_reindexer = None
+    mapping_dtypes = df.stack().dtypes  # noqa: PD013
     if any((names_pattern, names_sep)):
         if names_sep:
             # introduce categorical dtype to ensure order of appearance
-            mapping = pd.Series(df.columns).str.split(
-                    names_sep, expand=True
-                )
+            mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
 
             if len(mapping.columns) != len(names_to):
                 raise ValueError(
@@ -855,15 +846,10 @@ def _computations_pivot_longer(
                 )
 
             mapping.columns = names_to
-            mapping_dtypes, return_dtypes = return_mapping_dtypes(mapping)
-            if mapping_dtypes:
-                mapping = mapping.astype(mapping_dtypes)
-            if '.value' in names_to:
-                names_to = mapping.loc[:, '.value'].unique()                                
-            mapping = pd.MultiIndex.from_frame(mapping)
+            mapping, column_reindexer = dot_value_cumcount(mapping, index)
 
-            df.columns = mapping
-            
+            df.columns = pd.MultiIndex.from_frame(mapping)
+
         else:
             if isinstance(names_pattern, str):
                 mapping = df.columns.str.extract(names_pattern)
@@ -881,19 +867,10 @@ def _computations_pivot_longer(
                         number of columns extracted.
                         """
                     )
-                  
-                mapping.columns = names_to
-                
-                mapping_dtypes, return_dtypes = return_mapping_dtypes(mapping)
-                if mapping_dtypes:
-                    mapping = mapping.astype(mapping_dtypes)
 
-                if '.value' in mapping.columns:
-                    names_to = mapping.loc[:, '.value'].unique()
-                    
-                    if len(mapping.columns) == 1:
-                        # get rid of this after unstacking
-                       mapping['.drop'] = mapping.groupby('.value').cumcount()
+                mapping.columns = names_to
+                mapping, column_reindexer = dot_value_cumcount(mapping, index)
+
                 df.columns = pd.MultiIndex.from_frame(mapping)
 
             else:  # list/tuple of regular expressions
@@ -907,75 +884,113 @@ def _computations_pivot_longer(
                         in `names_pattern`.
                         """
                     )
-                mapping = pd.Series(np.select(mapping, names_to, None))
-                mapping_dtypes = CategoricalDtype(categories = mapping.unique(), ordered=True)
-                mapping = pd.Series(mapping).astype(mapping_dtypes)
-                cum_count = mapping.groupby(mapping).cumcount()
-                df.columns = pd.MultiIndex.from_arrays(
-                    [cum_count, mapping], names=[".drop", ".value"]
-                )
+                mapping = pd.DataFrame(np.select(mapping, names_to, None))
+                mapping.columns = [".value"]
+                mapping, column_reindexer = dot_value_cumcount(mapping, index)
+                df.columns = pd.MultiIndex.from_frame(mapping)
+
         others = None
-        dot_values = None
-        if '.value' in df.columns.names:
+        temp = None
+        if ".value" in df.columns.names:
             others = [name for name in df.columns.names if name != ".value"]
-            try:
-                df = df.stack(others, dropna=False).reindex(names_to, axis=1)
-            except ValueError:
-                dot_values = df.columns.get_level_values('.value')
-                dot_values = np.cumsum(dot_values == dot_values[0])
-                mapping = [df.columns.get_level_values(name) for name in df.columns.names]
-                mapping.extend([dot_values])
-                others.append(None)
-                df.columns = pd.MultiIndex.from_arrays(mapping)
+            # I am of the opinion that if nulls exist in the source data
+            # then it should be propagated to the unpivoted dataframe
+            # and the user can choose to drop it
+            # this however leads me into some code that could be better
+            # and makes we ponder on the practicality of my opinion
+            if any(col.hasnans for _, col in df.items()):
+                if index:
+                    # use this to create a mapping to sort the index on
+                    temp = np.arange(len(df))
+                    temp = dict(zip(df.index, temp))
 
-                df = df.stack(others, dropna=False).reindex(names_to, axis=1).droplevel(-1)
+                # cannot use stack here, as it creates a null row for every
+                # combination. Unstack however, manages the nulls pretty well
+                df = df.unstack(df.index.names).unstack(  # noqa: PD010
+                    ".value"
+                )
+                df = df.reset_index(level=others)
+                if index:
+                    temp = df.index.map(temp)
+                    # here we sort on the index, to make it match
+                    # order of appearance in source data
+                    df = (
+                        df.set_index(temp, append=True)
+                        .sort_index(level=-1)
+                        .droplevel(-1)
+                    )
+                    df = (
+                        df.reset_index()
+                        .drop("._index", axis=1)
+                        .rename_axis(columns=None)
+                    )
+                else:
+                    df = (
+                        df.sort_index()
+                        .rename_axis(columns=None, index=None)
+                        .reset_index()
+                        .drop("._index", axis=1)
+                    )
 
-            df.columns = list(df.columns)
+            else:
+                df = df.stack(others)  # noqa: PD013
 
-            if '.drop' in df.index.names:
-                df = df.droplevel('.drop')
-            df = df.reset_index()        
+                # if nulls are generated,
+                # then there is no need to restore data type
+                if not df.isna().any().any():
+                    df = df.astype(mapping_dtypes)
+
+                df = (
+                    df.reindex(column_reindexer, axis=1)
+                    .droplevel("._index")
+                    .reset_index()
+                    .rename_axis(columns=None)
+                )
 
         else:
-            df = df.stack(df.columns.names, dropna=False).reset_index(name=values_to)      
-
-        if return_dtypes:
-            df = df.astype(return_dtypes)
-
-        if dtypes:
-            df = df.astype(dtypes)
+            df = (
+                df.stack(df.columns.names)  # noqa: PD013
+                .droplevel("._index")
+                .reset_index(name=values_to)
+            )
 
         if not index:
             df = df.iloc[:, 1:]
 
+        if dtypes:
+            df = df.astype(dtypes)
+
         return df
-        
 
 
-def return_mapping_dtypes(mapping):
+def dot_value_cumcount(mapping, index):
     """
-    Creates category data type,  which  is used in 
-    the `pivot_longer` func, to ensure data is in 
+    Create a mapping to the source data columns, if
+    `.value` is present in `names_to`. This ensures
+    that during stacking, the data is presented in
     order of appearance.
+    If `.value` is not present, then the mapping is
+    the range of the dataframe's length.
+    A `column_reindexer` is also generated to get
+    the columns in order of appearance as well.
+
+    A dataframe(`mapping`) and an array (`column_reindexer`)
+    is returned.
     """
-    mapping_dtypes = {
-        column_name: CategoricalDtype(categories=column.unique(), ordered=True)
-        for column_name, column in mapping.items()
-        if column.nunique() > 1
-    }
 
-    return_dtypes = None
-    if '.value' in mapping.columns:
-        if len(mapping.columns) > 1:
-            return_dtypes = mapping_dtypes.keys() - {".value"}
-            # use this to restore original data type
-
-            return_dtypes = {
-                column_name: dtype
-                for column_name, dtype in dict(mapping.dtypes).items()
-                if column_name in return_dtypes
-            }
+    if ".value" in mapping.columns:
+        column_reindexer = mapping.loc[:, ".value"].unique()
+        if not index:
+            if len(mapping.columns) > 1:
+                others = [name for name in mapping.columns if name != ".value"]
+            else:
+                others = ".value"
+            cum_count = mapping.groupby(others, sort=False).ngroup()
+        else:
+            cum_count = mapping.groupby(".value", sort=False).cumcount()
+        mapping.insert(0, "._index", cum_count)
     else:
-        return_dtypes = dict(mapping.dtypes)
+        mapping = mapping.rename_axis(index="._index").reset_index()
+        column_reindexer = None
 
-    return mapping_dtypes, return_dtypes
+    return mapping, column_reindexer

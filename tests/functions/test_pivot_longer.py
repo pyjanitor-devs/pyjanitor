@@ -285,21 +285,21 @@ paired_columns_sep = [
         pd.DataFrame(
             {
                 "X": [0, 0, 1, 1, 1, 1],
-                "year": ["2010", "2011", "2010", "2010", "2011", "2011"],
+                "year": ["2010", "2011", "2010", "2011", "2010", "2011"],
                 "A(weekly)": [
                     0.548814,
                     0.544883,
                     0.7151890000000001,
-                    0.602763,
                     0.423655,
+                    0.602763,
                     0.645894,
                 ],
                 "B(weekly)": [
                     0.437587,
                     0.383442,
                     0.8917729999999999,
-                    0.9636629999999999,
                     0.791725,
+                    0.9636629999999999,
                     0.528895,
                 ],
             }
@@ -1230,7 +1230,7 @@ def test_names_pattern_names_to_wrong_type():
     """
     with pytest.raises(TypeError):
         df_checks.pivot_longer(
-            names_to="variable, value", names_pattern=["1", "rar"]
+            names_to={"variable, value"}, names_pattern=["1", "rar"]
         )
 
 
@@ -1543,25 +1543,3 @@ def test_names_pattern_list_empty(names_pattern_list_df):
             names_to=("DateRangeStart", "DateRangeEnd", "Value"),
             names_pattern=("^Start", "^End", "Value$"),
         )
-
-
-df = pd.DataFrame(
-            {
-                "country": ["United States", "Russia", "China"],
-                "vault2012": [48.1, 46.4, 44.3],
-                "floor2012": [45.4, 41.6, 40.8],
-                "vault2016": [46.9, 45.7, 44.3],
-                "floor2016": [46.0, 42.0, 42.1],
-            }
-        )
-
-print(df)
-
-
-
-print(df.pivot_longer(index = 'country',
-        names_to = ["event","year"],
-        names_pattern = '([A-Za-z]+)(\\d+)'
-    )
-)
-

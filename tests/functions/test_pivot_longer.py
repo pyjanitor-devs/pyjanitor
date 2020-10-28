@@ -2,6 +2,7 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
+from pandas.core.frame import DataFrame
 import pytest
 from pandas.testing import assert_frame_equal
 
@@ -130,7 +131,7 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
-        {"id": int, "cod": str},
+        None
     ),
     (
         pd.DataFrame(
@@ -160,7 +161,7 @@ paired_columns_pattern = [
         patterns("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
-        {"person_id": int, "value": int, "val": int},
+        {"value":int, "val":int}
     ),
     (
         pd.DataFrame(
@@ -187,7 +188,7 @@ paired_columns_pattern = [
         "id",
         (".value", "instance"),
         r"(\w)(\d)",
-        {"id": int, "instance": int},
+        {"instance":int}
     ),
     (
         pd.DataFrame(
@@ -217,7 +218,7 @@ paired_columns_pattern = [
         "X",
         (".value", "year"),
         "([A-Z])(.+)",
-        {"X": float, "year": int, "B": float},
+        {"year": int, "B":float},
     ),
     (
         pd.DataFrame(
@@ -262,7 +263,7 @@ paired_columns_pattern = [
         "id",
         (".value", "status"),
         "(.*)_(.*)",
-        {"id": str, "status": str},
+        None,
     ),
 ]
 
@@ -307,7 +308,7 @@ paired_columns_sep = [
         "X",
         (".value", "year"),
         "-",
-        {"year": str, "X": int},
+        None,
     ),
     (
         pd.DataFrame(
@@ -329,7 +330,7 @@ paired_columns_sep = [
         "indexer",
         (".value", "num"),
         "_",
-        {"num": int, "S": float, "indexer": int},
+        {"num":int, "S":float},
     ),
     (
         pd.DataFrame(
@@ -362,7 +363,7 @@ paired_columns_sep = [
         ["county", "area"],
         (".value", "year"),
         "_",
-        {"year": int, "county": int, "area": int},
+        {"year":int},
     ),
     (
         pd.DataFrame(
@@ -453,8 +454,29 @@ paired_columns_sep = [
         "family",
         (".value", "child"),
         "_",
-        {"child": str, "gender": float, "family": int},
+        {"gender":float},
     ),
+
+(
+pd.DataFrame(
+    {
+        "dob_child2": ["2000-01-29", np.nan, "2004-04-05", "2009-08-27", "2005-02-28",],
+        "gender_child1": [1, 2, 2, 1, 2],
+        "gender_child2": [2.0, np.nan, 2.0, 1.0, 1.0],
+        "dob_child1": [
+            "1998-11-26",
+            "1996-06-22",
+            "2002-07-11",
+            "2004-10-10",
+            "2000-12-05",
+        ],
+    }
+)
+
+    ,pd.DataFrame({'child': ['child2', 'child1', 'child2', 'child1', 'child2', 'child1', 'child2', 'child1', 'child2', 'child1'], 'dob': ['2000-01-29', '1998-11-26', np.nan, '1996-06-22', '2004-04-05', '2002-07-11', '2009-08-27', '2004-10-10', '2005-02-28', '2000-12-05'], 'gender': [2.0, 1, np.nan, 2, 2.0, 2, 1.0, 1, 1.0, 2]}),
+    None, (".value","child"), "_", {"gender":float}
+),
+
     (
         pd.DataFrame(
             [
@@ -494,7 +516,7 @@ paired_columns_sep = [
         "id",
         (".value", "brand"),
         "_",
-        {"brand": str, "id": str},
+        None,
     ),
     (
         pd.DataFrame(
@@ -517,7 +539,7 @@ paired_columns_sep = [
         "event",
         (".value", "item"),
         "_",
-        {"item": int, "event": int},
+        {"item":int},
     ),
 ]
 
@@ -643,7 +665,7 @@ multiple_values_sep = [
         "country",
         ("event", "year"),
         "_",
-        {"year": int, "country": str},
+        {"year": int},
     ),
     (
         pd.DataFrame(
@@ -842,7 +864,7 @@ multiple_values_sep = [
         "country",
         ("event", "year", "gender"),
         "_",
-        {"year": int, "country": str},
+        {"year": int},
     ),
 ]
 
@@ -936,7 +958,7 @@ multiple_values_pattern = [
         "country",
         ("event", "year"),
         r"([A-Za-z]+)(\d+)",
-        {"year": int, "country": str},
+        {"year": int},
     )
 ]
 
@@ -1044,7 +1066,7 @@ paired_columns_no_index_pattern = [
         ),
         ("set", ".value"),
         "(.+)_(.+)",
-        {"set": str, "lat": float, "long": float, "loc": str},
+        {"lat":float, "long":float},
     )
 ]
 
@@ -1068,7 +1090,7 @@ names_single_value = [
         ),
         "event",
         "(.+)_.",
-        {"event": int},
+       None,
     ),
     (
         pd.DataFrame(
@@ -1089,8 +1111,26 @@ names_single_value = [
         ),
         "id",
         "(.).",
-        {"id": int},
+        None,
     ),
+    (pd.DataFrame(
+            {
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "x": [4, 5, 5, 6, 6, 7],
+                "y": [7, 10, 8, 11, 9, 12],
+            }
+        ),
+        None,
+        "(.).",
+        None,
+    )
 ]
 
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
@@ -1320,6 +1360,14 @@ def test_both_names_sep_and_pattern():
         )
 
 
+def test_neither_names_sep_and_pattern():
+    "Raise ValueError if neither `names_sep` nor `names_pattern` is provided."
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["rar", "bar"], names_sep=None, names_pattern=None
+        )
+
+
 def test_values_to():
     "Raise TypeError if the wrong type is provided for `values_to`."
     with pytest.raises(TypeError):
@@ -1543,3 +1591,24 @@ def test_names_pattern_list_empty(names_pattern_list_df):
             names_to=("DateRangeStart", "DateRangeEnd", "Value"),
             names_pattern=("^Start", "^End", "Value$"),
         )
+
+
+df = pd.DataFrame(
+    {
+        "dob_child2": ["2000-01-29", np.nan, "2004-04-05", "2009-08-27", "2005-02-28",],
+        "gender_child1": [1, 2, 2, 1, 2],
+        "gender_child2": [2.0, np.nan, 2.0, 1.0, 1.0],
+        "dob_child1": [
+            "1998-11-26",
+            "1996-06-22",
+            "2002-07-11",
+            "2004-10-10",
+            "2000-12-05",
+        ],
+    }
+)
+
+print(df)
+
+
+print(df.pivot_longer( names_to=[".value", 'child'], names_sep="_").to_dict('list'))

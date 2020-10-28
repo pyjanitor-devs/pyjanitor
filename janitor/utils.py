@@ -658,7 +658,7 @@ def _data_checks_pivot_longer(
             )
 
         if len(names_to) > 1:
-            if all((names_pattern is not None, names_sep is not None)):
+            if all((names_pattern, names_sep)):
                 raise ValueError(
                     """
                     Only one of names_pattern or names_sep
@@ -671,9 +671,9 @@ def _data_checks_pivot_longer(
             ):  # write test for this
                 raise ValueError(
                     """
-                If `names_to` is a list/tuple, then either
-                `names_sep` or `names_pattern` must be supplied.
-                """
+                    If `names_to` is a list/tuple, then either
+                    `names_sep` or `names_pattern` must be supplied.
+                    """
                 )
 
             if ".value" in names_to:
@@ -827,11 +827,20 @@ def _computations_pivot_longer(
 
         return df
 
-    # necessary to keep track of original data type
-    # comes in handy if type changes due to a stack transformation
+
     mapping = None
     column_reindexer = None
+    # necessary to keep track of original data type
+    # comes in handy if type changes due to a stack transformation
     mapping_dtypes = df.stack().dtypes  # noqa: PD013
+
+    # splitting the columns before flipping is more efficient
+    # if flipped before splitting, you have to deal with more rows
+    # and string manipulations in Pandas are run within Python
+    # so the larger the number of items the slowe it will be.
+    # however, if the columns are split before flipping,
+    # we can take advantage of `stack`, which is vectorized
+    # stack is built on top of Numpy
     if any((names_pattern, names_sep)):
         if names_sep:
             # introduce categorical dtype to ensure order of appearance
@@ -846,7 +855,7 @@ def _computations_pivot_longer(
                 )
 
             mapping.columns = names_to
-            mapping, column_reindexer = dot_value_cumcount(mapping, index)
+            mapping, column_reindexer = __dot_value_cumcount(mapping, index)
 
             df.columns = pd.MultiIndex.from_frame(mapping)
 
@@ -869,7 +878,8 @@ def _computations_pivot_longer(
                     )
 
                 mapping.columns = names_to
-                mapping, column_reindexer = dot_value_cumcount(mapping, index)
+                print(len(mapping.columns))
+                mapping, column_reindexer = __dot_value_cumcount(mapping, index)
 
                 df.columns = pd.MultiIndex.from_frame(mapping)
 
@@ -886,7 +896,7 @@ def _computations_pivot_longer(
                     )
                 mapping = pd.DataFrame(np.select(mapping, names_to, None))
                 mapping.columns = [".value"]
-                mapping, column_reindexer = dot_value_cumcount(mapping, index)
+                mapping, column_reindexer = __dot_value_cumcount(mapping, index)
                 df.columns = pd.MultiIndex.from_frame(mapping)
 
         others = None
@@ -898,7 +908,7 @@ def _computations_pivot_longer(
             # and the user can choose to drop it
             # this however leads me into some code that could be better
             # and makes we ponder on the practicality of my opinion
-            if any(col.hasnans for _, col in df.items()):
+            if df.isna().any().any():
                 if index:
                     # use this to create a mapping to sort the index on
                     temp = np.arange(len(df))
@@ -963,12 +973,14 @@ def _computations_pivot_longer(
         return df
 
 
-def dot_value_cumcount(mapping, index):
+def __dot_value_cumcount(mapping, index):
     """
-    Create a mapping to the source data columns, if
-    `.value` is present in `names_to`. This ensures
+    Creates a mapping to the source data columns,
+    using either `groupby.cumcount` or `groupby.ngroup`,
+    if `.value` is present in `names_to`. This ensures
     that during stacking, the data is presented in
     order of appearance.
+
     If `.value` is not present, then the mapping is
     the range of the dataframe's length.
     A `column_reindexer` is also generated to get

@@ -827,7 +827,6 @@ def _computations_pivot_longer(
 
         return df
 
-
     mapping = None
     column_reindexer = None
     # necessary to keep track of original data type
@@ -879,7 +878,9 @@ def _computations_pivot_longer(
 
                 mapping.columns = names_to
                 print(len(mapping.columns))
-                mapping, column_reindexer = __dot_value_cumcount(mapping, index)
+                mapping, column_reindexer = __dot_value_cumcount(
+                    mapping, index
+                )
 
                 df.columns = pd.MultiIndex.from_frame(mapping)
 
@@ -896,7 +897,9 @@ def _computations_pivot_longer(
                     )
                 mapping = pd.DataFrame(np.select(mapping, names_to, None))
                 mapping.columns = [".value"]
-                mapping, column_reindexer = __dot_value_cumcount(mapping, index)
+                mapping, column_reindexer = __dot_value_cumcount(
+                    mapping, index
+                )
                 df.columns = pd.MultiIndex.from_frame(mapping)
 
         others = None
@@ -907,7 +910,7 @@ def _computations_pivot_longer(
             # then it should be propagated to the unpivoted dataframe
             # and the user can choose to drop it
             # this however leads me into some code that could be better
-            # and makes we ponder on the practicality of my opinion
+            # and got me pondering on the practicality of my opinion
             if df.isna().any().any():
                 if index:
                     # use this to create a mapping to sort the index on
@@ -926,15 +929,14 @@ def _computations_pivot_longer(
                     # order of appearance in source data
                     df = (
                         df.set_index(temp, append=True)
-                        .sort_index(level=-1)
-                        .droplevel(-1)
-                    )
-                    df = (
-                        df.reset_index()
-                        .drop("._index", axis=1)
+                        .sort_index(level=-1)  # match order of appearance
+                        .droplevel(-1)  # served its purpose so bye bye
+                        .reset_index()
+                        .drop("._index", axis=1)  # served its purpose as well
                         .rename_axis(columns=None)
                     )
-                else:
+                else: # in the absence of index, we use the default index
+                    # and sort on it
                     df = (
                         df.sort_index()
                         .rename_axis(columns=None, index=None)
@@ -957,6 +959,7 @@ def _computations_pivot_longer(
                     .rename_axis(columns=None)
                 )
 
+        # no `.value` present
         else:
             df = (
                 df.stack(df.columns.names)  # noqa: PD013
@@ -964,6 +967,7 @@ def _computations_pivot_longer(
                 .reset_index(name=values_to)
             )
 
+        # gets rid of the redundant level_0 added to columns
         if not index:
             df = df.iloc[:, 1:]
 
@@ -997,11 +1001,18 @@ def __dot_value_cumcount(mapping, index):
                 others = [name for name in mapping.columns if name != ".value"]
             else:
                 others = ".value"
+            # in the absence of an index, the `ngroup` function
+            # ensures an effective one to one mapping, that assures
+            # that the unpivoted data is returned in order of appearance.
             cum_count = mapping.groupby(others, sort=False).ngroup()
         else:
+            # since we have an index here, cumcount does the one-to-one
+            # mapping fine.
             cum_count = mapping.groupby(".value", sort=False).cumcount()
         mapping.insert(0, "._index", cum_count)
     else:
+        # no need for a one-to-one mapping here, since it is just
+        # extraction into new columns.
         mapping = mapping.rename_axis(index="._index").reset_index()
         column_reindexer = None
 

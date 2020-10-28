@@ -4719,14 +4719,11 @@ def pivot_longer(
     row axis.
 
     Note that the unpivoted dataframe is returned in order of appearance in the
-    source dataframe.
-
-    Also, depending on the transformation, some columns can be of category
-    dtype.
+    source dataframe. This may change in a future release.
 
     This function is designed to work primarily with single indexed dataframes;
-    If you have to unpivot MultiIndexed dataframes, then `pd.DataFrame.stack`
-    or `pd.melt` are better options.
+    If you wish to unpivot MultiIndexed dataframes, `pd.melt` is a very apt
+    function.
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.

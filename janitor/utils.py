@@ -8,7 +8,10 @@ from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
+from numpy.core.defchararray import index
+from numpy.core.multiarray import dot
 import pandas as pd
+from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -828,11 +831,9 @@ def _computations_pivot_longer(
         return df
 
     mapping = None
-    column_reindexer = None
-    # necessary to keep track of original data type
-    # comes in handy if type changes due to a stack transformation
-    mapping_dtypes = df.stack().dtypes  # noqa: PD013
-
+    index_sorter = None
+    columns_sorter = None
+    extra_index = pd.Index([])
     # splitting the columns before flipping is more efficient
     # if flipped before splitting, you have to deal with more rows
     # and string manipulations in Pandas are run within Python
@@ -841,6 +842,7 @@ def _computations_pivot_longer(
     # we can take advantage of `stack`, which is vectorized
     # stack is built on top of Numpy
     if any((names_pattern, names_sep)):
+        df.columns.names = ['._variable']
         if names_sep:
             # introduce categorical dtype to ensure order of appearance
             mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
@@ -852,11 +854,6 @@ def _computations_pivot_longer(
                     number of columns extracted.
                     """
                 )
-
-            mapping.columns = names_to
-            mapping, column_reindexer = __dot_value_cumcount(mapping, index)
-
-            df.columns = pd.MultiIndex.from_frame(mapping)
 
         else:
             if isinstance(names_pattern, str):
@@ -875,15 +872,6 @@ def _computations_pivot_longer(
                         number of columns extracted.
                         """
                     )
-
-                mapping.columns = names_to
-                print(len(mapping.columns))
-                mapping, column_reindexer = __dot_value_cumcount(
-                    mapping, index
-                )
-
-                df.columns = pd.MultiIndex.from_frame(mapping)
-
             else:  # list/tuple of regular expressions
                 mapping = [
                     df.columns.str.contains(regex) for regex in names_pattern
@@ -897,123 +885,45 @@ def _computations_pivot_longer(
                     )
                 mapping = pd.DataFrame(np.select(mapping, names_to, None))
                 mapping.columns = [".value"]
-                mapping, column_reindexer = __dot_value_cumcount(
-                    mapping, index
-                )
-                df.columns = pd.MultiIndex.from_frame(mapping)
 
-        others = None
-        temp = None
-        if ".value" in df.columns.names:
-            others = [name for name in df.columns.names if name != ".value"]
-            # I am of the opinion that if nulls exist in the source data
-            # then it should be propagated to the unpivoted dataframe
-            # and the user can choose to drop it
-            # this however leads me into some code that could be better
-            # and got me pondering on the practicality of my opinion
-            if df.isna().any().any():
-                if index:
-                    # use this to create a mapping to sort the index on
-                    temp = np.arange(len(df))
-                    temp = dict(zip(df.index, temp))
+        if not isinstance(names_pattern, (list, tuple)):
+            mapping.columns = names_to
+        mapping.index = df.columns
 
-                # cannot use stack here, as it creates a null row for every
-                # combination. Unstack however, manages the nulls pretty well
-                df = df.unstack(df.index.names).unstack(  # noqa: PD010
-                    ".value"
-                )
-                df = df.reset_index(level=others)
-                if index:
-                    temp = df.index.map(temp)
-                    # here we sort on the index, to make it match
-                    # order of appearance in source data
-                    df = (
-                        df.set_index(temp, append=True)
-                        .sort_index(level=-1)  # match order of appearance
-                        .droplevel(-1)  # served its purpose so bye bye
-                        .reset_index()
-                        .drop("._index", axis=1)  # served its purpose as well
-                        .rename_axis(columns=None)
-                    )
-                else: # in the absence of index, we use the default index
-                    # and sort on it
-                    df = (
-                        df.sort_index()
-                        .rename_axis(columns=None, index=None)
-                        .reset_index()
-                        .drop("._index", axis=1)
-                    )
+        if '.value' not in mapping.columns:
+            df = mapping.join(df.stack(dropna=False).rename(values_to), how='right', sort=False)
+            df = df.droplevel("._variable").reset_index()
+            if dtypes:
+                df = df.astype(dtypes)
+            return df
 
-            else:
-                df = df.stack(others)  # noqa: PD013
+        if df.index.duplicated().any():
+            extra_index = pd.Index(np.arange(len(df)), name='._extra_index')
+            df = df.set_index(extra_index, append=True)    
 
-                # if nulls are generated,
-                # then there is no need to restore data type
-                if not df.isna().any().any():
-                    df = df.astype(mapping_dtypes)
+        if mapping.duplicated().any():
+            mapping['._cumcount'] = mapping.groupby('.value').cumcount()
 
-                df = (
-                    df.reindex(column_reindexer, axis=1)
-                    .droplevel("._index")
-                    .reset_index()
-                    .rename_axis(columns=None)
-                )
+        df = mapping.join(df.stack(dropna=False).rename(values_to), how='right', sort=False)
+        df = df.set_index(list(mapping.columns),append=True).droplevel("._variable")
 
-        # no `.value` present
-        else:
-            df = (
-                df.stack(df.columns.names)  # noqa: PD013
-                .droplevel("._index")
-                .reset_index(name=values_to)
-            )
+        columns_sorter = mapping.loc[:, '.value'].unique()
+        index_sorter = df.index.droplevel(".value")
+        if index_sorter.duplicated().any():
+            index_sorter = index_sorter.drop_duplicates()
 
-        # gets rid of the redundant level_0 added to columns
+        df = df.unstack(".value").droplevel(level=0, axis=1).loc[index_sorter, columns_sorter].rename_axis(columns=None).reset_index()
+
+        if extra_index.any():
+            df = df.drop("._extra_index", axis=1)
+
+        if '._cumcount' in df.columns:
+            df = df.drop("._cumcount", axis=1)
         if not index:
-            df = df.iloc[:, 1:]
-
+            df = df.iloc[:, 1:] 
         if dtypes:
             df = df.astype(dtypes)
 
         return df
 
-
-def __dot_value_cumcount(mapping, index):
-    """
-    Creates a mapping to the source data columns,
-    using either `groupby.cumcount` or `groupby.ngroup`,
-    if `.value` is present in `names_to`. This ensures
-    that during stacking, the data is presented in
-    order of appearance.
-
-    If `.value` is not present, then the mapping is
-    the range of the dataframe's length.
-    A `column_reindexer` is also generated to get
-    the columns in order of appearance as well.
-
-    A dataframe(`mapping`) and an array (`column_reindexer`)
-    is returned.
-    """
-
-    if ".value" in mapping.columns:
-        column_reindexer = mapping.loc[:, ".value"].unique()
-        if not index:
-            if len(mapping.columns) > 1:
-                others = [name for name in mapping.columns if name != ".value"]
-            else:
-                others = ".value"
-            # in the absence of an index, the `ngroup` function
-            # ensures an effective one to one mapping, that assures
-            # that the unpivoted data is returned in order of appearance.
-            cum_count = mapping.groupby(others, sort=False).ngroup()
-        else:
-            # since we have an index here, cumcount does the one-to-one
-            # mapping fine.
-            cum_count = mapping.groupby(".value", sort=False).cumcount()
-        mapping.insert(0, "._index", cum_count)
-    else:
-        # no need for a one-to-one mapping here, since it is just
-        # extraction into new columns.
-        mapping = mapping.rename_axis(index="._index").reset_index()
-        column_reindexer = None
-
-    return mapping, column_reindexer
+# works fine ... much better code than before ... what is left is speed

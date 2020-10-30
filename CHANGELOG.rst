@@ -5,8 +5,9 @@ new version (on deck)
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
 - [ENH] ``pivot_longer`` can handle multiple values in paired columns, and can reshape
   using a list/tuple of regular expressions in ``names_pattern``. @samukweku
+- [INF] Loosen dependency specifications. Switch to pip-tools for managing
+  dependencies. Issue #760. @MinchinWeb
 - [DOC]: added pipenv installation instructions @evan-anderson
-
 
 v0.20.10
 =======

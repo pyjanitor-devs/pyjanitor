@@ -9,6 +9,7 @@ dependencies:
 - bumpversion
 - cairo
 - conda
+- darglint
 - doc8
 - flake8
 - hypothesis>=4.4.0

@@ -8,10 +8,7 @@ from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
-from numpy.core.defchararray import index
-from numpy.core.multiarray import dot
 import pandas as pd
-from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -780,7 +777,7 @@ def _computations_pivot_longer(
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_longer` function.
-    The data is stacked, using pd.DataFrame.unstack, to ensure
+    The data is stacked, using ``pd.DataFrame.unstack``, to ensure
     that the order of appearance from the source data is maintained.
 
     If the length of `names_to` is > 1, or '.value' is in `names_to`,
@@ -833,18 +830,17 @@ def _computations_pivot_longer(
     mapping = None
     index_sorter = None
     columns_sorter = None
-    extra_index = pd.Index([])
+    extra_index = None
+    drop_cols = None
     # splitting the columns before flipping is more efficient
     # if flipped before splitting, you have to deal with more rows
     # and string manipulations in Pandas are run within Python
-    # so the larger the number of items the slowe it will be.
+    # so the larger the number of items the slower it will be.
     # however, if the columns are split before flipping,
     # we can take advantage of `stack`, which is vectorized
-    # stack is built on top of Numpy
     if any((names_pattern, names_sep)):
-        df.columns.names = ['._variable']
+        df.columns.names = ["._variable"]
         if names_sep:
-            # introduce categorical dtype to ensure order of appearance
             mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
 
             if len(mapping.columns) != len(names_to):
@@ -888,42 +884,71 @@ def _computations_pivot_longer(
 
         if not isinstance(names_pattern, (list, tuple)):
             mapping.columns = names_to
+
+        # attach to mapping, as it will be used as a join key
+        # to preserve order of appearance
         mapping.index = df.columns
 
-        if '.value' not in mapping.columns:
-            df = mapping.join(df.stack(dropna=False).rename(values_to), how='right', sort=False)
+        if ".value" not in mapping.columns:
+            # join keeps data in order of appearance
+            df = mapping.join(
+                df.stack(dropna=False).rename(values_to),  # noqa: PD013
+                how="right",
+                sort=False,
+            )
             df = df.droplevel("._variable").reset_index()
             if dtypes:
                 df = df.astype(dtypes)
             return df
 
+        # '.value' kicks off here
         if df.index.duplicated().any():
-            extra_index = pd.Index(np.arange(len(df)), name='._extra_index')
-            df = df.set_index(extra_index, append=True)    
+            extra_index = pd.Index(np.arange(len(df)), name="._extra_index")
+            df = df.set_index(extra_index, append=True)
+
+        # avoids conflict in joins due to overlapping column names
+        if values_to in mapping.columns:
+            values_to = values_to + "_x"
 
         if mapping.duplicated().any():
-            mapping['._cumcount'] = mapping.groupby('.value').cumcount()
+            # creates unique indices so that unstack can occur
+            mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
-        df = mapping.join(df.stack(dropna=False).rename(values_to), how='right', sort=False)
-        df = df.set_index(list(mapping.columns),append=True).droplevel("._variable")
+        # join keeps data in order of appearance
+        df = mapping.join(
+            df.stack(dropna=False).rename(values_to),  # noqa: PD013
+            how="right",
+            sort=False,
+        )
+        df = df.set_index(list(mapping.columns), append=True).droplevel(
+            "._variable"
+        )
 
-        columns_sorter = mapping.loc[:, '.value'].unique()
+        columns_sorter = mapping.loc[:, ".value"].unique()
         index_sorter = df.index.droplevel(".value")
         if index_sorter.duplicated().any():
             index_sorter = index_sorter.drop_duplicates()
 
-        df = df.unstack(".value").droplevel(level=0, axis=1).loc[index_sorter, columns_sorter].rename_axis(columns=None).reset_index()
+        # unstack has an impact on performance as the data grows
+        # possible touch point for improvement in the code
+        df = (
+            df.unstack(".value")  # noqa: PD010
+            .droplevel(level=0, axis=1)
+            .loc[index_sorter, columns_sorter]
+            .rename_axis(columns=None)
+            .reset_index()
+        )
 
-        if extra_index.any():
-            df = df.drop("._extra_index", axis=1)
+        drop_cols = [
+            col for col in df if col in ("._extra_index", "._cumcount")
+        ]
+        if drop_cols:
+            df = df.drop(drop_cols, axis=1)
 
-        if '._cumcount' in df.columns:
-            df = df.drop("._cumcount", axis=1)
         if not index:
-            df = df.iloc[:, 1:] 
+            df = df.iloc[:, 1:]
+
         if dtypes:
             df = df.astype(dtypes)
 
         return df
-
-# works fine ... much better code than before ... what is left is speed

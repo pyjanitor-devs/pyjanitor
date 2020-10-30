@@ -387,19 +387,69 @@ paired_columns_sep = [
             }
         ),
         pd.DataFrame(
-    [
-        {"family": 1, "child": "child1", "dob": "1998-11-26", "gender": 1.0,},
-        {"family": 1, "child": "child2", "dob": "2000-01-29", "gender": 2.0,},
-        {"family": 2, "child": "child1", "dob": "1996-06-22", "gender": 2.0,},
-        {"family": 2, "child": "child2", "dob": np.nan, "gender": np.nan,},
-        {"family": 3, "child": "child1", "dob": "2002-07-11", "gender": 2.0,},
-        {"family": 3, "child": "child2", "dob": "2004-04-05", "gender": 2.0,},
-        {"family": 4, "child": "child1", "dob": "2004-10-10", "gender": 1.0,},
-        {"family": 4, "child": "child2", "dob": "2009-08-27", "gender": 1.0,},
-        {"family": 5, "child": "child1", "dob": "2000-12-05", "gender": 2.0,},
-        {"family": 5, "child": "child2", "dob": "2005-02-28", "gender": 1.0,},
-    ]
-),
+            [
+                {
+                    "family": 1,
+                    "child": "child1",
+                    "dob": "1998-11-26",
+                    "gender": 1.0,
+                },
+                {
+                    "family": 1,
+                    "child": "child2",
+                    "dob": "2000-01-29",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 2,
+                    "child": "child1",
+                    "dob": "1996-06-22",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 2,
+                    "child": "child2",
+                    "dob": np.nan,
+                    "gender": np.nan,
+                },
+                {
+                    "family": 3,
+                    "child": "child1",
+                    "dob": "2002-07-11",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 3,
+                    "child": "child2",
+                    "dob": "2004-04-05",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 4,
+                    "child": "child1",
+                    "dob": "2004-10-10",
+                    "gender": 1.0,
+                },
+                {
+                    "family": 4,
+                    "child": "child2",
+                    "dob": "2009-08-27",
+                    "gender": 1.0,
+                },
+                {
+                    "family": 5,
+                    "child": "child1",
+                    "dob": "2000-12-05",
+                    "gender": 2.0,
+                },
+                {
+                    "family": 5,
+                    "child": "child2",
+                    "dob": "2005-02-28",
+                    "gender": 1.0,
+                },
+            ]
+        ),
         "family",
         (".value", "child"),
         "_",
@@ -1570,52 +1620,3 @@ def test_names_pattern_list_empty(names_pattern_list_df):
             names_to=("DateRangeStart", "DateRangeEnd", "Value"),
             names_pattern=("^Start", "^End", "Value$"),
         )
-
-
-df = pd.DataFrame(
-    {
-        "off_loc": ["A", "B", "C", "D", "E", "F"],
-        "pt_loc": ["G", "H", "I", "J", "K", "L"],
-        "pt_lat": [
-            100.07548220000001,
-            75.191326,
-            122.65134479999999,
-            124.13553329999999,
-            124.13553329999999,
-            124.01028909999998,
-        ],
-        "off_lat": [
-            121.271083,
-            75.93845266,
-            135.043791,
-            134.51128400000002,
-            134.484374,
-            137.962195,
-        ],
-        "pt_long": [
-            4.472089953,
-            -144.387785,
-            -40.45611048,
-            -46.07156181,
-            -46.07156181,
-            -46.01594293,
-        ],
-        "off_long": [
-            -7.188632000000001,
-            -143.2288569,
-            21.242563,
-            40.937416999999996,
-            40.78472,
-            22.905889000000002,
-        ],
-    }
-)
-
-print(df)
-
-
-print(
-    df.pivot_longer(names_to=["set", ".value"],
-                names_sep="_")
-
-)

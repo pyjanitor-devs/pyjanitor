@@ -7,6 +7,8 @@ new version (on deck)
   using a list/tuple of regular expressions in ``names_pattern``. @samukweku
 - [ENH] Replaced default numeric conversion of dataframe with a `dtypes` argument,
   allowing the user to control the data types. - @samukweku
+- [INF] Loosen dependency specifications. Switch to pip-tools for managing
+  dependencies. Issue #760. @MinchinWeb
 
 v0.20.10
 =======

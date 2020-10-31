@@ -934,6 +934,8 @@ def _computations_pivot_longer(
 
         # unstack has an impact on performance as the data grows
         # possible touch point for improvement in the code
+        # also possibly add a reset_index option, which may be
+        # useful to users who prefer having an index
         df = (
             df.unstack(".value")  # noqa: PD010
             .droplevel(level=0, axis=1)

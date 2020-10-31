@@ -886,11 +886,10 @@ def _computations_pivot_longer(
             mapping.columns = names_to
 
         # attach to mapping, as it will be used as a join key
-        # to preserve order of appearance
+        # to ensure a one to one mapping
         mapping.index = df.columns
 
         if ".value" not in mapping.columns:
-            # join keeps data in order of appearance
             df = mapping.join(
                 df.stack(dropna=False).rename(values_to),  # noqa: PD013
                 how="right",
@@ -914,7 +913,8 @@ def _computations_pivot_longer(
             # creates unique indices so that unstack can occur
             mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
-        # join keeps data in order of appearance
+        # join keeps data in order of appearance column wise 
+        # of the original dataframe
         df = mapping.join(
             df.stack(dropna=False).rename(values_to),  # noqa: PD013
             how="right",

@@ -4963,7 +4963,7 @@ def pivot_longer(
         regular expression.
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises Warning: if `df` is a MultiIndex dataframe.
+    :raises ValueError: if `df` is a MultiIndex dataframe.
 
     .. # noqa: DAR402
     """

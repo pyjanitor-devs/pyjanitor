@@ -632,8 +632,10 @@ def _data_checks_pivot_longer(
         ),
     ):
         raise ValueError(
-            """pivot_longer is designed for single index dataframes;
-               for MultiIndex , kindly use pandas.melt."""
+            """
+            pivot_longer is designed for single index dataframes;
+            for MultiIndex , kindly use pandas.melt.
+            """
         )
 
     if index is not None:

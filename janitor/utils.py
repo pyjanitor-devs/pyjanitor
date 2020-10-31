@@ -913,7 +913,7 @@ def _computations_pivot_longer(
             # creates unique indices so that unstack can occur
             mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
-        # join keeps data in order of appearance column wise 
+        # join keeps data in order of appearance column wise
         # of the original dataframe
         df = mapping.join(
             df.stack(dropna=False).rename(values_to),  # noqa: PD013

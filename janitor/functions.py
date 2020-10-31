@@ -4718,12 +4718,9 @@ def pivot_longer(
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
-    Note that the unpivoted dataframe is returned in order of appearance in the
-    source dataframe. This may change in a future release.
-
     This function is designed to work primarily with single indexed dataframes;
-    If you wish to unpivot MultiIndexed dataframes, `pd.melt` is a very apt
-    function.
+    If you wish to unpivot MultiIndexed dataframes, `pd.melt` is more than
+    adequate.
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.

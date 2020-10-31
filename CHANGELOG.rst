@@ -5,6 +5,8 @@ new version (on deck)
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
 - [ENH] ``pivot_longer`` can handle multiple values in paired columns, and can reshape
   using a list/tuple of regular expressions in ``names_pattern``. @samukweku
+- [ENH] Replaced default numeric conversion of dataframe with a `dtypes` argument,
+  allowing the user to control the data types. - @samukweku
 - [INF] Loosen dependency specifications. Switch to pip-tools for managing
   dependencies. Issue #760. @MinchinWeb
 

@@ -4695,19 +4695,21 @@ def pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
+    names_to: Optional[Union[List, Tuple, str]] = "variable",
+    values_to: Optional[str] = "value",
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
-    names_to: Optional[Union[List, Tuple, str]] = None,
-    values_to: Optional[str] = "value",
+    dtypes: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
     Unpivots a DataFrame from 'wide' to 'long' format.
 
     This method does not mutate the original DataFrame.
 
-    It is a wrapper around `pd.melt` and is meant to serve as a single point
-    for transformations that require `pd.melt` or `pd.wide_to_long`. It is
-    modeled after the `pivot_longer` function in R's tidyr package.
+    It is meant to serve as a single point for transformations of dataframes
+    from wide to long form. It also offers more functionality and flexibility
+    than `pd.wide_to_long`. It is modeled after the `pivot_longer` function in
+    R's `tidyr` package.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -4715,6 +4717,10 @@ def pivot_longer(
 
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
+
+    This function is designed to work primarily with single indexed dataframes;
+    If you wish to unpivot MultiIndexed dataframes, `pd.melt` is more than
+    adequate.
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
@@ -4750,7 +4756,7 @@ def pivot_longer(
 
     .. code-block:: python
 
-            col1	2019-12	     2020-01	 2020-02
+            col1	    2019-12	 2020-01	 2020-02
         0	a	   -1.085631	-1.506295	-2.426679
         1	b	    0.997345	-0.578600	-0.428913
         2	c	    0.282978	 1.651437	 1.265936
@@ -4770,14 +4776,14 @@ def pivot_longer(
 
           col1  year   month      value
         0    a  2019     12     -1.085631
-        1    a  2020      1     -1.506295
-        2    a  2020      2     -2.426679
+        1    a  2020     01     -1.506295
+        2    a  2020     02     -2.426679
         3    b  2019     12      0.997345
-        4    b  2020      1     -0.578600
-        5    b  2020      2     -0.428913
+        4    b  2020     01     -0.578600
+        5    b  2020     02     -0.428913
         6    c  2019     12      0.282978
-        7    c  2020      1      1.651437
-        8    c  2020      2      1.265936
+        7    c  2020     01      1.651437
+        8    c  2020     02      1.265936
 
     Example 3: The dataframe below has names embedded in it
     ('measure1', 'measure2') that we would love to reuse as
@@ -4867,6 +4873,10 @@ def pivot_longer(
         10  Carla      wk3     39
         11  Carla      wk4     40
 
+    You can determine the data type of the resulting columns with
+    the `dtypes` argument, which accepts a dictionary, pairing the column
+    names with the expected types.
+
     Functional usage syntax:
 
     .. code-block:: python
@@ -4882,7 +4892,8 @@ def pivot_longer(
             names_to = new_column_name,
             names_sep = string/regular expression,
             names_pattern = string/regular expression,
-            value_name = new_column_name
+            value_name = new_column_name,
+            dtypes = dtypes
         )
 
     Method chaining syntax:
@@ -4892,13 +4903,13 @@ def pivot_longer(
         df = (
             pd.DataFrame(...)
             .pivot_longer(
-                df,
                 index = [column1, column2, ...],
                 column_names = [column3, column4, ...],
                 names_to = new_column_name,
                 names_sep = string/regular expression,
                 names_pattern = string/regular expression,
-                value_name= new_column_name
+                value_name= new_column_name,
+                dtypes = dtypes
             )
         )
 
@@ -4909,7 +4920,7 @@ def pivot_longer(
         by using a regular expression with the `janitor.patterns`
         function.
     :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name, a list/tuple of column names. You can also
+        a single column name or a list/tuple of column names. You can also
         dynamically select column names by using a regular expression
         with the `janitor.patterns` function.
     :param names_to: Name of new column as a string that will contain
@@ -4925,17 +4936,17 @@ def pivot_longer(
         specification as pandas' `str.split` method, and can be a string
         or regular expression.
     :param names_pattern: Determines how the column name is broken up.
-        It can be a regular expression containing matching groups
-        matching the same specification as pandas' `str.extractall` method,
-        or a list/tuple of regular expressions, which devolves to
-        ``numpy.select`` and pandas' ``str.contains``. For a list of
-        regular expressions, ``names_to`` must be a list/tuple and the
+        It can be a regular expression containing matching groups, or a
+        list/tuple of regular expressions. For a list/tuple of
+        regular expressions, ``names_to`` must also be a list/tuple and the
         lengths of both arguments must match. The entries in both arguments
         must also match positionally, i.e  if `regex1` in `names_pattern` is
         the first item, it will be aligned to `new_column_name_1` in `names_to`
         if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
+    :param dtypes: A dictionary mapping data types to columns in the new
+        dataframe.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
     :raises TypeError: if `index` or `column_names` is not a string, or a
@@ -4943,6 +4954,7 @@ def pivot_longer(
     :raises TypeError: if `names_to` or `column_names` is not a string, or a
         list/tuple of strings.
     :raises TypeError: if `values_to` is not a string.
+    :raises TypeError: if `dtypes` is not a dictionary.
     :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
     :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
@@ -4951,7 +4963,7 @@ def pivot_longer(
         regular expression.
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises Warning: if `df` is a MultiIndex dataframe.
+    :raises ValueError: if `df` is a MultiIndex dataframe.
 
     .. # noqa: DAR402
     """
@@ -4965,12 +4977,20 @@ def pivot_longer(
         df,
         index,
         column_names,
-        names_sep,
-        names_pattern,
         names_to,
         values_to,
+        names_sep,
+        names_pattern,
+        dtypes,
     ) = _data_checks_pivot_longer(
-        df, index, column_names, names_sep, names_pattern, names_to, values_to
+        df,
+        index,
+        column_names,
+        names_to,
+        values_to,
+        names_sep,
+        names_pattern,
+        dtypes,
     )
 
     df, index, column_names = _pivot_longer_pattern_match(
@@ -4978,7 +4998,14 @@ def pivot_longer(
     )
 
     df = _computations_pivot_longer(
-        df, index, column_names, names_sep, names_pattern, names_to, values_to
+        df,
+        index,
+        column_names,
+        names_to,
+        values_to,
+        names_sep,
+        names_pattern,
+        dtypes,
     )
 
     return df

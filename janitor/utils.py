@@ -914,7 +914,8 @@ def _computations_pivot_longer(
             mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
         # join keeps data in order of appearance column wise
-        # of the original dataframe
+        # of the original dataframe, and also ensures a one-to-one
+        # mapping of extract to source
         df = mapping.join(
             df.stack(dropna=False).rename(values_to),  # noqa: PD013
             how="right",
@@ -945,7 +946,7 @@ def _computations_pivot_longer(
         if drop_cols:
             df = df.drop(drop_cols, axis=1)
 
-        if not index:
+        if not index:  # gets rid of default index
             df = df.iloc[:, 1:]
 
         if dtypes:

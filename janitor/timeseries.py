@@ -1,12 +1,13 @@
 """ Time series-specific data cleaning functions. """
 
 import itertools
-from typing import Union, Dict
+from typing import Dict, Union
 
 import pandas as pd
 import pandas_flavor as pf
 
 from janitor import check
+
 from .errors import JanitorError
 
 

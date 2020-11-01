@@ -1111,11 +1111,7 @@ def _computations_pivot_wider(
         if isinstance(values_from, list):
             df.columns = df.columns.set_names(level=0, names="values_from")
             if not values_from_first:
-                df = df.reorder_levels(
-                    names_from + ["values_from"], axis=1
-                ).sort_index(level=names_from, axis=1)
-                # allows order of appearance
-                df = df.reindex(values_from, level="values_from", axis=1)
+                df = df.reorder_levels(names_from + ["values_from"], axis=1)
         if df.columns.nlevels > 1:
             df.columns = [names_sep.join(entry) for entry in df]
         if names_prefix:

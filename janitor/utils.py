@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from .errors import JanitorError
+from pandas.api.types import CategoricalDtype
 
 
 def check(varname: str, value, expected_types: list):
@@ -957,3 +958,181 @@ def _computations_pivot_longer(
             df = df.astype(dtypes)
 
         return df
+
+
+def _data_checks_pivot_wider(
+    df,
+    index,
+    names_from,
+    values_from,
+    names_sort,
+    flatten_levels,
+    values_from_first,
+    names_prefix,
+    names_sep,
+    fill_value,
+):
+
+    """
+    This function raises errors if the arguments have the wrong
+    python type, or if the column does not exist in the dataframe.
+    This function is executed before proceeding to the computation phase.
+    Type annotations are not provided because this function is where type
+    checking happens.
+    """
+
+    if index is not None:
+        if isinstance(index, str):
+            index = [index]
+        check("index", index, [list])
+        check_column(df, index, present=True)
+
+    if names_from is None:
+        raise ValueError(
+            "pivot_wider() missing 1 required argument: 'names_from'"
+        )
+
+    if names_from is not None:
+        if isinstance(names_from, str):
+            names_from = [names_from]
+        check("names_from", names_from, [list])
+        check_column(df, names_from, present=True)
+
+    if values_from is not None:
+        check("values_from", values_from, [list, str])
+        if isinstance(values_from, str):
+            check_column(df, [values_from], present=True)
+        else:
+            check_column(df, values_from, present=True)
+
+    if values_from_first is not None:
+        check("values_from_first", values_from_first, [bool])
+
+    check("names_sort", names_sort, [bool])
+
+    if flatten_levels is not None:
+        check("flatten_levels", flatten_levels, [bool])
+
+    if names_prefix is not None:
+        check("names_prefix", names_prefix, [str])
+
+    if names_sep is not None:
+        check("names_sep", names_sep, [str])
+
+    if fill_value is not None:
+        check("fill_value", fill_value, [int, float, str])
+
+    return (
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sort,
+        flatten_levels,
+        values_from_first,
+        names_prefix,
+        names_sep,
+        fill_value,
+    )
+
+
+def _computations_pivot_wider(
+    df: pd.DataFrame,
+    index: Optional[Union[List, str]] = None,
+    names_from: Optional[Union[List, str]] = None,
+    values_from: Optional[Union[List, str]] = None,
+    names_sort: Optional[bool] = False,
+    flatten_levels: Optional[bool] = True,
+    values_from_first: Optional[bool] = True,
+    names_prefix: Optional[str] = None,
+    names_sep: Optional[str] = "_",
+    fill_value: Optional[Union[int, float, str]] = None,
+) -> pd.DataFrame:
+    """
+    This is the main workhorse of the `pivot_wider` function.
+    If `values_from` is a list, then every item in `values_from`
+    will be added to the front of each output column. This option
+    can be turned off with the `values_from_first` argument, in
+    which case, the `names_from` variables (or `names_prefix`, if
+    present) start each column.
+    The `unstack` method is used here, and not `pivot`; multiple
+    labels in the `index` or `names_from` are supported in the
+    `pivot` function for Pandas 1.1 and above. Also, the
+    `pivot_table` function is not used, because it is quite slow,
+    compared to the `pivot` function and `unstack`.
+    The columns are sorted in the order of appearance from the
+    source data. This only occurs if `flatten_levels` is True.
+    """
+
+    if values_from is None:
+        if index:
+            values_from = [
+                col for col in df.columns if col not in (index + names_from)
+            ]
+        else:
+            values_from = [col for col in df.columns if col not in names_from]
+
+    dtypes = None
+    before = None
+    # ensure `names_sort` is in combination with `flatten_levels`
+    if all((names_sort is False, flatten_levels)):
+        # dtypes only needed for names_from
+        # since that is what will become the new column names
+        dtypes = {
+            column_name: CategoricalDtype(
+                categories=pd.unique(column), ordered=True
+            )
+            for column_name, column in df.filter(names_from).items()
+        }
+        if index is not None:
+            before = df.filter(index)
+            if before.duplicated().any():
+                before = before.drop_duplicates()
+
+        df = df.astype(dtypes)
+
+    if index is None:  # use existing index
+        df = df.set_index(names_from, append=True)
+    else:
+        df = df.set_index(index + names_from)
+
+    if not df.index.is_unique:
+        raise ValueError(
+            """
+            There are non-unique values in your combination
+            of `index` and `names_from`. Kindly provide a
+            unique identifier for each row.
+            """
+        )
+
+    df = df.loc[:, values_from]
+    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
+    if flatten_levels:
+        if isinstance(values_from, list):
+            df.columns = df.columns.set_names(level=0, names="values_from")
+            if not values_from_first:
+                df = df.reorder_levels(names_from + ["values_from"], axis=1)
+        if df.columns.nlevels > 1:
+            df.columns = [names_sep.join(entry) for entry in df]
+        if names_prefix:
+            df = df.add_prefix(names_prefix)
+        df.columns = list(
+            df.columns
+        )  # blanket approach that covers categories
+
+        if index:
+            # this way we avoid having to convert index
+            # from category to original dtype
+            if names_sort is False:
+                df = before.merge(
+                    df, how="left", left_on=index, right_index=True
+                ).reset_index(drop=True)
+            else:
+                df = df.reset_index()
+        else:
+            # remove default index, since it is irrelevant
+            df = df.reset_index().iloc[:, 1:]
+
+        return df
+
+    return df

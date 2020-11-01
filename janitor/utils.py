@@ -1065,7 +1065,6 @@ def _computations_pivot_wider(
     """
 
     # TODO : include an aggfunc argument
-    
     if values_from is None:
         if index:
             values_from = [

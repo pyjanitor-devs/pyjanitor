@@ -37,8 +37,10 @@ from .utils import (
     _clean_accounting_column,
     _complete_groupings,
     _computations_pivot_longer,
+    _computations_pivot_wider,
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
+    _data_checks_pivot_wider,
     _grid_computation,
     _pivot_longer_pattern_match,
     _replace_empty_string_with_none,
@@ -47,9 +49,6 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    _data_checks_pivot_wider,
-    _computations_pivot_wider
-
 )
 
 

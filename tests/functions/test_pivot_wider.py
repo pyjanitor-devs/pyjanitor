@@ -3,6 +3,8 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+import janitor
+
 
 @pytest.fixture
 def df_checks_output():
@@ -539,3 +541,16 @@ df_in = pd.DataFrame(
         },
     ]
 )
+
+
+import janitor
+
+df = pd.DataFrame({'Group': [1, 1, 2, 2],
+ 'Date': ['2020/06/28', '2020/06/28', '2020/06/17', '2020/06/17'],
+ 'Type': ['A', 'B', 'A', 'B'],
+ 'Over': [1.01, 1.09, 1.02, 1.2],
+ 'Under': [19.15, 6.81, 12.24, 4.32]})
+
+print(df)
+
+print(df.pivot_wider(index=['Group', 'Date'], names_from='Type'))

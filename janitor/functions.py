@@ -5146,15 +5146,17 @@ def pivot_wider(
         form.
     :raises TypeError: if `index` or `names_from` is not a string, or a list of
         strings.
+    :raises ValueError: if `names_from` is None.
     :raises TypeError: if `names_sep` is not a string.
     :raises TypeError: if `values_from` is not a string or a list of strings.
     :raises TypeError: if `names_sort` is not a boolean.
     :raises TypeError: if `flatten_levels` is not a boolean.
     :raises ValueError: if values in `index` or `names_from` or `values_from`
         do not exist in the dataframe.
-    :raises ValueError: if `names_from` is None.
     :raises ValueError: if the combination of `index` and `names_from` is not
         unique.
+
+
     .. # noqa: DAR402
     """
 

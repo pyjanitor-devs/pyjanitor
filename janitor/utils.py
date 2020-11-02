@@ -1010,8 +1010,7 @@ def _data_checks_pivot_wider(
 
     check("names_sort", names_sort, [bool])
 
-    if flatten_levels is not None:
-        check("flatten_levels", flatten_levels, [bool])
+    check("flatten_levels", flatten_levels, [bool])
 
     if names_prefix is not None:
         check("names_prefix", names_prefix, [str])

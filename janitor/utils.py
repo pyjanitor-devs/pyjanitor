@@ -1080,7 +1080,7 @@ def _computations_pivot_wider(
         # since that is what will become the new column names
         dtypes = {
             column_name: CategoricalDtype(
-                categories=pd.unique(column), ordered=True
+                categories=column.unique(), ordered=True
             )
             for column_name, column in df.filter(names_from).items()
         }
@@ -1123,6 +1123,7 @@ def _computations_pivot_wider(
         if index:
             # this way we avoid having to convert index
             # from category to original dtype
+            # while still maintaining order of appearance
             if names_sort is False:
                 df = before.merge(
                     df, how="left", left_on=index, right_index=True

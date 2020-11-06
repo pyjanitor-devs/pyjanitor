@@ -37,8 +37,10 @@ from .utils import (
     _clean_accounting_column,
     _complete_groupings,
     _computations_pivot_longer,
+    _computations_pivot_wider,
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
+    _data_checks_pivot_wider,
     _grid_computation,
     _pivot_longer_pattern_match,
     _replace_empty_string_with_none,
@@ -5006,6 +5008,196 @@ def pivot_longer(
         names_sep,
         names_pattern,
         dtypes,
+    )
+
+    return df
+
+
+@pf.register_dataframe_method
+def pivot_wider(
+    df: pd.DataFrame,
+    index: Optional[Union[List, str]] = None,
+    names_from: Optional[Union[List, str]] = None,
+    values_from: Optional[Union[List, str]] = None,
+    names_sort: Optional[bool] = False,
+    flatten_levels: Optional[bool] = True,
+    values_from_first: Optional[bool] = True,
+    names_prefix: Optional[str] = None,
+    names_sep: Optional[str] = "_",
+    fill_value: Optional[Union[int, float, str]] = None,
+) -> pd.DataFrame:
+    """
+    Reshapes data from long to wide form. The number of columns are
+    increased, while decreasing the number of rows. It is the inverse
+    of the `pivot_longer` method, and is a wrapper around
+    `pd.DataFrame.unstack`
+    method.
+    This method does not mutate the original DataFrame.
+    Reshaping to wide form :
+    .. code-block:: python
+             name variable  value
+        0   Alice      wk1      5
+        1   Alice      wk2      9
+        2   Alice      wk3     20
+        3   Alice      wk4     22
+        4     Bob      wk1      7
+        5     Bob      wk2     11
+        6     Bob      wk3     17
+        7     Bob      wk4     33
+        8   Carla      wk1      6
+        9   Carla      wk2     13
+        10  Carla      wk3     39
+        11  Carla      wk4     40
+        df = (
+            pd.DataFrame(...)
+            .pivot_wider(
+                index="name",
+                names_from="variable",
+                values_from="value"
+            )
+             name    wk1   wk2   wk3   wk4
+        0    Alice     5     9    20    22
+        1    Bob       7    11    17    33
+        2    Carla     6    13    39    40
+    Pivoting on multiple columns is possible :
+    .. code-block:: python
+            name    n  pct
+        0     1  10.0  0.1
+        1     2  20.0  0.2
+        2     3  30.0  0.3
+        df = (
+            pd.DataFrame(...)
+            .assign(num=0)
+            .pivot_wider(
+                index='num',
+                names_from="name",
+                values_from=["n", "pct"]
+             )
+         )
+            num n_1  n_2  n_3  pct_1  pct_2  pct_3
+        0   0   10   20   30   0.1    0.2    0.3
+    .. note:: You may choose not to collapse the levels by passing `False`
+        to the ``collapse_levels`` argument.
+    .. note:: An error is raised if the index is not unique.
+    Functional usage syntax:
+    .. code-block:: python
+        import pandas as pd
+        import janitor as jn
+        df = pd.DataFrame(...)
+        df = jn.pivot_wider(
+            df = df,
+            index = [column1, column2, ...],
+            names_from = [column3, column4, ...],
+            value_from = [column5, column6, ...],
+            names_sort = True/False,
+            names_prefix = string,
+            names_sep = string,
+            flatten_levels=True/False,
+            values_from_first=True/False,
+            fill_value=fill_value
+        )
+    Method chaining syntax:
+    .. code-block:: python
+        df = (
+            pd.DataFrame(...)
+            .pivot_wider(
+                index = [column1, column2, ...],
+                names_from = [column3, column4, ...],
+                value_from = [column5, column6, ...],
+                names_sort = True/False,
+                names_prefix = string,
+                names_sep = string,
+                flatten_levels=True/False,
+                values_from_first=True/False,
+                fill_value=fill_value
+                )
+        )
+    :param df: A pandas dataframe.
+    :param index: Name(s) of columns to use as identifier variables.
+        Should be either a single column name, or a list of column names.
+        If `index` is not provided, the current frame's index is used.
+    :param names_from: Name(s) of columns to pivot. Should be either
+        a single column name, or a list of column names. A label or labels
+        must be provided for ``names_from``.
+    :param values_from: Name of column that will be used for populating new
+        frame's values. Should be either a single column name, or a list of
+        column names. By default, if ``values_from`` is a list, the value
+        will be added to the front of the output column; you can turn this
+        off with the `values_from_first` argument. If ``values_from`` is not
+        specified, all remaining columns will be used.
+    :param names_sort: Default is `False`. Sorts columns by order of
+        appearance. Applicable only if ``flatten_levels`` is `True`.
+    :param flatten_levels: Default is `True`. Determines if the reshaped
+        dataframe stays as a MultiIndex.
+    :param values_from_first: Determines if the values in ``values_from`` will
+        be at the front of the output column. This applies if ``values_from``
+        is a list, and the levels are flattened. Default is True.
+    :param names_prefix: String to be added to the front of each output column.
+        Can be handy if the values in ``names_from`` are numeric data types.
+        Applicable only if the levels are flattened.
+    :param names_sep: If ``names_from`` or ``values_from`` contain multiple
+        variables, this will be used to join their values into a single string
+        to use as a column name. Default is ``_``. Applicable only if the
+        levels are flattened.
+    :param fill_value: Value to replace missing values with (after pivoting).
+        It can be a number, string, or a dictionary, where the keys are the
+        column_names, while the values are the values to replace the missing
+        values with.
+    :returns: A pandas DataFrame that has been unpivoted from long to wide
+        form.
+    :raises TypeError: if `index` or `names_from` is not a string, or a list of
+        strings.
+    :raises ValueError: if `names_from` is None.
+    :raises TypeError: if `names_sep` is not a string.
+    :raises TypeError: if `values_from` is not a string or a list of strings.
+    :raises TypeError: if `names_sort` is not a boolean.
+    :raises TypeError: if `flatten_levels` is not a boolean.
+    :raises ValueError: if values in `index` or `names_from` or `values_from`
+        do not exist in the dataframe.
+    :raises ValueError: if the combination of `index` and `names_from` is not
+        unique.
+
+
+    .. # noqa: DAR402
+    """
+
+    df = df.copy()
+
+    (
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sort,
+        flatten_levels,
+        values_from_first,
+        names_prefix,
+        names_sep,
+        fill_value,
+    ) = _data_checks_pivot_wider(
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sort,
+        flatten_levels,
+        values_from_first,
+        names_prefix,
+        names_sep,
+        fill_value,
+    )
+
+    df = _computations_pivot_wider(
+        df,
+        index,
+        names_from,
+        values_from,
+        names_sort,
+        flatten_levels,
+        values_from_first,
+        names_prefix,
+        names_sep,
+        fill_value,
     )
 
     return df

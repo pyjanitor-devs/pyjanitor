@@ -167,3 +167,10 @@ def test_clean_names_enforce_string(dataframe):
     df = dataframe.rename(columns={"a": 1}).clean_names(enforce_string=True)
     for c in df.columns:
         assert isinstance(c, str)
+
+
+@pytest.mark.functions
+def test_clean_names_truncate_limit(dataframe):
+    df = dataframe.clean_names(truncate_limit=7)
+    expected_columns = ["a", "bell_ch", "decorat", "animals", "cities"]
+    assert set(df.columns) == set(expected_columns)

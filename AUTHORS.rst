@@ -64,7 +64,7 @@ Contributors
 - `@rebeccawperry <https://github.com/rebeccawperry>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Arebeccawperry>`_
 - `@TomMonks <https://github.com/TomMonks>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Atommonks>`_
 - `@benjaminjack <https://github.com/benjaminjack>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Abenjaminjack>`_
-- `@loganthomas <https://github.com/loganthomas>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aloganthomas>`_
+- `@loganthomas <https://github.com/loganthomas>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Aloganthomas>`_
     - Helped others with ``git`` issues at SciPy 2019.
 - `@kulini <https://github.com/kulini>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Akulini>`_
 - `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Adwgoltra>`_
@@ -90,6 +90,8 @@ Contributors
 - `@evan-anderson <https://github.com/evan-anderson>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3evan-anderson>`_
 - `@smu095 <https://github.com/smu095>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3smu095>`_
 - `@VPerrollaz <https://github.com/VPerrollaz>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AVPerrollaz>`_
-- `@UGuntupalli <https://github.com/UGuntupalli>`_ | `contributions < https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AUGuntupalli >`_
+- `@UGuntupalli <https://github.com/UGuntupalli>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AUGuntupalli>`_
 - `@mphirke <https://github.com/mphirke>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Amphirke>`_
-- `@sauln <https://github.com/sauln>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Asauln`_
+- `@sauln <https://github.com/sauln>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Asauln>`_
+- `@richardqiu <https://github.com/richardqiu>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Arichardqiu>`_
+- `@MinchinWeb <https://github.com/MinchinWeb>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AMinchinWeb>`_

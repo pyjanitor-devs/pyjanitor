@@ -29,9 +29,8 @@ v0.20.9
 v0.20.8
 =======
 - [ENH] Upgraded ``update_where`` function to use either the pandas query style,
-  or boolean indexing via the ``loc`` method.
-  Also updated ``find_replace`` function to use the ``loc`` method directly,
-  instead of routing it through the ``update_where`` function. @samukweku
+  or boolean indexing via the ``loc`` method. Also updated ``find_replace`` function to use the ``loc``
+  method directly, instead of routing it through the ``update_where`` function. @samukweku
 - [INF] Update ``pandas`` minimum version to 1.0.0. @hectormz
 - [DOC] Updated the general functions API page to show all available functions. @samukweku
 - [DOC] Fix the few lacking type annotations of functions. @VPerrollaz

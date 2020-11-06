@@ -4955,3 +4955,27 @@ def pivot_longer(
     )
 
     return df
+
+@pf.register_dataframe_method
+def as_categorical(
+    df: pd.DataFrame,
+    column_name: Optional[str] = None,
+    categories: Optional[list] = None,
+    ordered: Optional[str]=None
+) -> pd.DataFrame:
+    """
+    Converts a column into a Categorical column.
+
+    This method does not mutate the original DataFrame.
+
+    It is syntactic sugar around `pd.Categorical`.
+    """
+
+    df = df.copy()
+
+    check("df", df, [pd.DataFrame])
+
+    if column_name:
+        check("column_name", column_name, [str])
+
+    return df

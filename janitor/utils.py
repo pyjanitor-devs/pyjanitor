@@ -1024,13 +1024,13 @@ def _data_checks_as_categorical(
                         """
                     )
 
-            if len(column_names) != len(categories):
-                raise ValueError(
-                    """
+                if len(column_names) != len(categories):
+                    raise ValueError(
+                        """
                     The length of `categories` argument does not match the length
                     of `column_names`.
                     """
-                )
+                    )
 
             if isinstance(ordered, str):
                 raise ValueError(
@@ -1039,7 +1039,9 @@ def _data_checks_as_categorical(
                     """
                 )
 
-            if len(column_names) != len(ordered):
+            if isinstance(ordered, list) and (
+                len(column_names) != len(ordered)
+            ):
                 raise ValueError(
                     """
                     Length of `ordered` argument does not match the length of
@@ -1099,7 +1101,7 @@ def _computations_as_categorical(
     if column_names is None:
         if ordered is None:
             df = df.astype("category")
-        else: # drop nulls if they exist
+        else:  # drop nulls if they exist
             if ordered == "sort":
                 dtypes = {
                     col_name: CategoricalDtype(
@@ -1107,7 +1109,7 @@ def _computations_as_categorical(
                     )
                     for col_name, col in df.items()
                 }
-            else: # "appearance"
+            else:  # "appearance"
                 dtypes = {
                     col_name: CategoricalDtype(
                         categories=pd.unique(col.dropna()), ordered=True
@@ -1122,9 +1124,24 @@ def _computations_as_categorical(
     zipped = None
     if categories is None:
         if ordered is None:
-            df = df.astype({col:"category" for col in column_names})
+            df = df.astype({col: "category" for col in column_names})
         else:
-            zipped = zip(column_names, categories)
-
+            zipped = zip(column_names, ordered)
+            df = df.astype(
+                {
+                    col_name: "category"
+                    if order is None
+                    else CategoricalDtype(
+                        categories=np.unique(df.loc[:, col_name].dropna()),
+                        ordered=True,
+                    )
+                    if order == "sort"
+                    else CategoricalDtype(
+                        categories=pd.unique(df.loc[:, col_name].dropna()),
+                        ordered=True,
+                    )
+                    for col_name, order in zipped
+                }
+            )
 
         return df

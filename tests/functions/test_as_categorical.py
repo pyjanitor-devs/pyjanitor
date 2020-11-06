@@ -1,9 +1,11 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
-
+from _pytest.mark import param
 from pandas.api.types import CategoricalDtype
 from pandas.testing import assert_frame_equal
+
+import janitor
 
 
 def test_check_type_column_names():
@@ -143,6 +145,175 @@ test_df = [
                 "col2": ["a", "b", "c", "d"],
                 "col3": pd.date_range("1/1/2020", periods=4),
             }
+        ).astype({"col1": "category", "col2": "category"}),
+        ["col1", "col2"],
+        None,
+        None,
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ).astype({"col3": "category"}),
+        "col3",
+        None,
+        None,
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ).astype(
+            {
+                "col3": CategoricalDtype(
+                    categories=pd.to_datetime(
+                        [
+                            "2020-01-01",
+                            "2020-01-02",
+                            "2020-01-03",
+                            "2020-01-04",
+                        ]
+                    ),
+                    ordered=True,
+                ),
+            }
+        ),
+        "col3",
+        None,
+        "sort",
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(categories=[1, 2, 3], ordered=True),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=True
+                ),
+            }
+        ),
+        ["col1", "col2"],
+        None,
+        ["sort", "sort"],
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(categories=[2, 1, 3], ordered=True),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=True
+                ),
+            }
+        ),
+        ["col1", "col2"],
+        None,
+        ["appearance", "sort"],
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(categories=[2, 1, 3], ordered=True),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=True
+                ),
+                "col3": "category",
+            }
+        ),
+        ["col1", "col2", "col3"],
+        None,
+        ["appearance", "sort", None],
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ).astype({"col3": "category"}),
+        ["col3"],
+        None,
+        None,
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
         ).astype("category"),
         None,
         None,
@@ -238,7 +409,9 @@ test_df = [
             }
         ).astype(
             {
-                "col1": CategoricalDtype(categories=[1.0, 2.0, 3.0                                                      ], ordered=True),
+                "col1": CategoricalDtype(
+                    categories=[1.0, 2.0, 3.0], ordered=True
+                ),
                 "col2": CategoricalDtype(
                     categories=["a", "b", "c", "d"], ordered=True
                 ),
@@ -260,6 +433,34 @@ test_df = [
         None,
         "sort",
     ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(
+                    categories=[2.0, 1.0, 3.0], ordered=True
+                ),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=True
+                ),
+            }
+        ),
+        ["col1", "col2"],
+        None,
+        ["appearance", "sort"],
+    ),
 ]
 
 
@@ -276,8 +477,6 @@ def test_various(df_in, df_out, column_names, categories, ordered):
     assert_frame_equal(result, df_out)
 
 
-import janitor
-
 df = pd.DataFrame(
     {
         "col1": [2, 1, 3, 1, np.nan],
@@ -291,4 +490,3 @@ print(df)
 
 
 print(df.as_categorical(ordered="sort").dtypes)
-

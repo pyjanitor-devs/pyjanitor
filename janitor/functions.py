@@ -36,8 +36,10 @@ from .utils import (
     _check_instance,
     _clean_accounting_column,
     _complete_groupings,
+    _computations_as_categorical,
     _computations_pivot_longer,
     _currency_column_to_numeric,
+    _data_checks_as_categorical,
     _data_checks_pivot_longer,
     _grid_computation,
     _pivot_longer_pattern_match,
@@ -47,8 +49,6 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    _data_checks_as_categorical,
-    _computations_as_categorical,
 )
 
 
@@ -5017,7 +5017,7 @@ def pivot_longer(
 def as_categorical(
     df: pd.DataFrame,
     column_names: Optional[Union[list, str]] = None,
-    categories: Optional[list] = None,
+    categories: Optional[Union[list, tuple, pd.Series, np.array]] = None,
     ordered: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """

@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.dtypes import CategoricalDtype
+from pandas.api.types import CategoricalDtype, is_list_like
 
 from .errors import JanitorError
 
@@ -977,6 +977,8 @@ def _data_checks_as_categorical(
     """
 
     if categories:
+        if is_list_like(categories):
+            categories = list(categories)
         check("categories", categories, [list])
 
     if ordered:
@@ -987,7 +989,7 @@ def _data_checks_as_categorical(
                     """
                     `ordered` argument should be either "appearance" or "sort".
                     """
-            )
+                )
 
     if column_names is None:
         if isinstance(categories, list):
@@ -1097,18 +1099,18 @@ def _computations_as_categorical(
     if column_names is None:
         if ordered is None:
             df = df.astype("category")
-        else:
+        else: # drop nulls if they exist
             if ordered == "sort":
                 dtypes = {
                     col_name: CategoricalDtype(
-                        categories=np.unique(col), ordered=True
+                        categories=np.unique(col.dropna()), ordered=True
                     )
                     for col_name, col in df.items()
                 }
-            else:
+            else: # "appearance"
                 dtypes = {
                     col_name: CategoricalDtype(
-                        categories=pd.unique(col), ordered=True
+                        categories=pd.unique(col.dropna()), ordered=True
                     )
                     for col_name, col in df.items()
                 }
@@ -1117,7 +1119,12 @@ def _computations_as_categorical(
 
         return df
 
-    if column_names:
+    zipped = None
+    if categories is None:
+        if ordered is None:
+            df = df.astype({col:"category" for col in column_names})
+        else:
+            zipped = zip(column_names, categories)
+
 
         return df
-

@@ -1,8 +1,9 @@
 import pandas as pd
+import numpy as np
 import pytest
 
-from pandas.testing import assert_frame_equal
 from pandas.api.types import CategoricalDtype
+from pandas.testing import assert_frame_equal
 
 
 def test_check_type_column_names():
@@ -184,8 +185,6 @@ test_df = [
         None,
         "appearance",
     ),
-
-
     (
         pd.DataFrame(
             {
@@ -222,7 +221,45 @@ test_df = [
         None,
         None,
         "sort",
-    )
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(categories=[1.0, 2.0, 3.0                                                      ], ordered=True),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=True
+                ),
+                "col3": CategoricalDtype(
+                    categories=pd.to_datetime(
+                        [
+                            "2020-01-01",
+                            "2020-01-02",
+                            "2020-01-03",
+                            "2020-01-04",
+                            "2020-01-05",
+                        ]
+                    ),
+                    ordered=True,
+                ),
+            }
+        ),
+        None,
+        None,
+        "sort",
+    ),
 ]
 
 
@@ -243,9 +280,9 @@ import janitor
 
 df = pd.DataFrame(
     {
-        "col1": [1, 2, 3, 1],
-        "col2": ["a", "b", "c", "d"],
-        "col3": pd.date_range("1/1/2020", periods=4),
+        "col1": [2, 1, 3, 1, np.nan],
+        "col2": ["a", "b", "c", "d", "a"],
+        "col3": pd.date_range("1/1/2020", periods=5),
     }
 )
 
@@ -253,4 +290,5 @@ df = pd.DataFrame(
 print(df)
 
 
+print(df.as_categorical(ordered="sort").dtypes)
 

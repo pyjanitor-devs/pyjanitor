@@ -3,17 +3,14 @@ new version (on deck)
 - [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
 - [ENH] Added optional truncation to ``clean_names`` function. Issue #753. @richardqiu
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
-<<<<<<< HEAD
-- [ENH] Add `as_categorical` method to create Categorical columns. @samukweku
-
-=======
 - [ENH] ``pivot_longer`` can handle multiple values in paired columns, and can reshape
   using a list/tuple of regular expressions in ``names_pattern``. @samukweku
 - [ENH] Replaced default numeric conversion of dataframe with a `dtypes` argument,
   allowing the user to control the data types. - @samukweku
 - [INF] Loosen dependency specifications. Switch to pip-tools for managing
   dependencies. Issue #760. @MinchinWeb
->>>>>>> 262ec913b8e0c0f29a4c349422d8a72a0d8a132e
+- [ENH] Add `as_categorical` method to create Categorical columns. @samukweku
+
 
 v0.20.10
 =======

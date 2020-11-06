@@ -9,6 +9,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from pandas.core.dtypes.dtypes import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -957,3 +958,166 @@ def _computations_pivot_longer(
             df = df.astype(dtypes)
 
         return df
+
+
+def _data_checks_as_categorical(
+    df, column_names, categories, ordered,
+):
+
+    """
+    This function raises errors if the arguments have the wrong python type.
+    It also raises an error message if `names_pattern` is a list/tuple of
+    regular expressions, and `names_to` is not a list/tuple, and the lengths
+    do not match.
+
+    This function is executed before proceeding to the computation phase.
+
+    Type annotations are not provided because this function is where type
+    checking happens.
+    """
+
+    if categories:
+        check("categories", categories, [list])
+
+    if ordered:
+        check("ordered", ordered, [list, str])
+        if isinstance(ordered, str):
+            if ordered not in ("appearance", "sort"):
+                raise ValueError(
+                    """
+                    `ordered` argument should be either "appearance" or "sort".
+                    """
+            )
+
+    if column_names is None:
+        if isinstance(categories, list):
+            raise ValueError(
+                """
+                `categories` cannot be a list if `column_names` is `None`.
+                Kindly set as `None`.
+                """
+            )
+        if isinstance(ordered, list):
+            raise ValueError(
+                """
+                `ordered` cannot be a list if `column_names` is `None`.
+                Kindly set as `None`, or provide one of the following options:
+                'sorted', 'appearance'.
+                """
+            )
+
+    else:
+        if isinstance(column_names, str):
+            column_names = [column_names]
+        check("column_name", column_names, [list])
+        check_column(df, column_names, present=True)
+        # if more than one column name is supplied, then categories should be
+        # a collection of lists.
+        if len(column_names) > 1:
+            if isinstance(categories, list):
+                if not all([isinstance(entry, list) for entry in categories]):
+                    raise ValueError(
+                        """
+                        categories for each column should be of `list` type.
+                        """
+                    )
+
+            if len(column_names) != len(categories):
+                raise ValueError(
+                    """
+                    The length of `categories` argument does not match the length
+                    of `column_names`.
+                    """
+                )
+
+            if isinstance(ordered, str):
+                raise ValueError(
+                    """
+                    `ordered` should be a list.
+                    """
+                )
+
+            if len(column_names) != len(ordered):
+                raise ValueError(
+                    """
+                    Length of `ordered` argument does not match the length of
+                    `column_names`.
+                    """
+                )
+
+        else:  # len(column_names)==1
+            if isinstance(categories, list):
+                if any([isinstance(entry, list) for entry in categories]):
+                    raise ValueError(
+                        """
+                        There should be no sub-lists in the `categories`,
+                        since only one `column_names` is supplied.
+                        """
+                    )
+                categories = [categories]
+            if isinstance(ordered, list):
+                raise ValueError(
+                    """
+                    `ordered` should be either None, 'sorted', or 'appearance',
+                    since only one `column_names` is supplied.
+                    """
+                )
+            if isinstance(ordered, str):
+                ordered = [ordered]
+
+    return (
+        df,
+        column_names,
+        categories,
+        ordered,
+    )
+
+
+def _computations_as_categorical(
+    df: pd.DataFrame,
+    column_names: Optional[list] = None,
+    categories: Optional[list] = None,
+    ordered: Optional[list] = None,
+) -> pd.DataFrame:
+    """
+    This is the main workhorse of the `as_categorical` function.
+
+    if `column_names` is ``None``, then all the columns in the
+    dataframe will be converted to a Categorical dtype. It is
+    expected that in this scenario, `categories` will be `None`,
+    while `ordered` will either be `None`, or "sort", or "appearance".
+    If `ordered` is 'sort', the categories will be sorted in
+    ascending order (using np.unique); if it is 'appearance', the categories will be in
+    order of appearance (using pandas' unique function.)
+
+    A dataframe is returned, with the index reset.
+    """
+
+    dtypes = None
+    if column_names is None:
+        if ordered is None:
+            df = df.astype("category")
+        else:
+            if ordered == "sort":
+                dtypes = {
+                    col_name: CategoricalDtype(
+                        categories=np.unique(col), ordered=True
+                    )
+                    for col_name, col in df.items()
+                }
+            else:
+                dtypes = {
+                    col_name: CategoricalDtype(
+                        categories=pd.unique(col), ordered=True
+                    )
+                    for col_name, col in df.items()
+                }
+
+            df = df.astype(dtypes)
+
+        return df
+
+    if column_names:
+
+        return df
+

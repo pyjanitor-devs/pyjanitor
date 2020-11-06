@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from natsort import index_natsorted
-from pandas.api.types import CategoricalDtype, union_categoricals
+from pandas.api.types import union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
@@ -47,6 +47,8 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
+    _data_checks_as_categorical,
+    _computations_as_categorical,
 )
 
 
@@ -5030,85 +5032,10 @@ def as_categorical(
 
     df = df.copy()
 
-    check("df", df, [pd.DataFrame])
+    (df, column_names, categories, ordered,) = _data_checks_as_categorical(
+        df, column_names, categories, ordered,
+    )
 
-    if categories:
-        check("categories", categories, [list])
-
-    if ordered:
-        check("ordered", ordered, [list, str])
-
-    if column_names is None:
-        if isinstance(categories, list):
-            raise ValueError(
-                """
-                `categories` cannot be a list if `column_names` is `None`.
-                Kindly set as `None`.
-                """
-            )
-        if isinstance(ordered, list):
-            raise ValueError(
-                """
-                `ordered` cannot be a list if `column_names` is `None`.
-                Kindly set as `None`, or provide one of the following options:
-                'sorted', 'appearance'.
-                """
-            )
-
-    else:
-        if isinstance(column_names, str):
-            column_names = [column_names]
-        check("column_name", column_names, [list])
-        check_column(df, column_names, present=True)
-        # if more than one column name is supplied, then categories should be
-        # a collection of lists.
-        if len(column_names) > 1:
-            if isinstance(categories, list):
-                if not all([isinstance(entry, list) for entry in categories]):
-                    raise ValueError(
-                        """
-                        categories for each column should be of `list` type.
-                        """
-                    )
-
-            if len(column_names) != len(categories):
-                raise ValueError(
-                    """
-                    The length of `categories` argument does not match the length
-                    of `column_names`.
-                    """
-                )
-
-            if isinstance(ordered, str):
-                raise ValueError(
-                    """
-                    `ordered` should be a list.
-                    """
-                )
-
-            if len(column_names) != len(ordered):
-                raise ValueError(
-                    """
-                    Length of `ordered` argument does not match the length of
-                    `column_names`.
-                    """
-                )
-
-        else:
-            if isinstance(categories, list):
-                if any([isinstance(entry, list) for entry in categories]):
-                    raise ValueError(
-                        """
-                        There should be no sub-lists in the `categories`,
-                        since only one `column_names` is supplied.
-                        """
-                    )
-            if isinstance(ordered, list):
-                raise ValueError(
-                    """
-                    `ordered` should be either None, 'sorted', or 'appearance',
-                    since only one `column_names` is supplied.
-                    """
-                )
+    df = _computations_as_categorical(df, column_names, categories, ordered,)
 
     return df

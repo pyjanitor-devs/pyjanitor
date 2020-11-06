@@ -9,7 +9,7 @@ new version (on deck)
   allowing the user to control the data types. - @samukweku
 - [INF] Loosen dependency specifications. Switch to pip-tools for managing
   dependencies. Issue #760. @MinchinWeb
-- [ENH] Add pivot_wider function, which is roughly the inverse of the `pivot_longer`
+- [ENH] Add ``pivot_wider`` function, which is the inverse of the `pivot_longer`
   function. @samukweku
 
 v0.20.10

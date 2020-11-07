@@ -1,22 +1,19 @@
 import numpy as np
 import pandas as pd
 import pytest
-from _pytest.mark import param
 from pandas.api.types import CategoricalDtype
 from pandas.testing import assert_frame_equal
 
-import janitor
-
 
 def test_check_type_column_names():
-    "Raise TypeError if `column_names` is not a list type."
+    "Raise TypeError if `column_names` is not a string/list type."
     df = pd.DataFrame({"col1": [60, 70]})
     with pytest.raises(TypeError):
         df.as_categorical(column_names=1)
 
 
 def test_check_type_categories():
-    "Raise TypeError if `categories` is not a list type."
+    "Raise TypeError if `categories` is not a list-like type."
     df = pd.DataFrame({"col1": [60, 70]})
     with pytest.raises(TypeError):
         df.as_categorical(categories=1)
@@ -81,7 +78,7 @@ def test_check_categories_length_if_column_names_gt_1():
 def test_check_ordered_if_column_names_gt_1():
     """
     Raise ValueError if `column_names` is a list, more than one,
-    and `ordered` is not a list.
+    and `ordered` is a list.
     """
     df = pd.DataFrame({"col1": [60, 70], "col2": [80, 90]})
     with pytest.raises(ValueError):
@@ -489,4 +486,10 @@ df = pd.DataFrame(
 print(df)
 
 
-print(df.as_categorical(ordered="sort").dtypes)
+print(
+    df.as_categorical(
+        column_names=["col1", "col2"],
+        categories=[[3, 2, 1], ["a", "b", "d", "c"]],
+        ordered=["sort", None],
+    )
+)

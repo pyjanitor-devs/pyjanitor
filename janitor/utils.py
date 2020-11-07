@@ -976,11 +976,6 @@ def _data_checks_as_categorical(
     checking happens.
     """
 
-    if categories:
-        if is_list_like(categories):
-            categories = list(categories)
-        check("categories", categories, [list])
-
     if ordered:
         check("ordered", ordered, [list, str])
         if isinstance(ordered, str):
@@ -991,7 +986,12 @@ def _data_checks_as_categorical(
                     """
                 )
 
-    if column_names is None:
+    if categories:
+        if is_list_like(categories):
+            categories = list(categories)
+        check("categories", categories, [list])
+
+    if not column_names:
         if isinstance(categories, list):
             raise ValueError(
                 """
@@ -1027,15 +1027,16 @@ def _data_checks_as_categorical(
                 if len(column_names) != len(categories):
                     raise ValueError(
                         """
-                    The length of `categories` argument does not match the length
-                    of `column_names`.
+                    The length of `categories` argument does not match the
+                    length of `column_names`.
                     """
                     )
 
             if isinstance(ordered, str):
                 raise ValueError(
                     """
-                    `ordered` should be a list.
+                    `ordered` should be a list since more than one
+                    column is provided in `column_names`.
                     """
                 )
 
@@ -1044,8 +1045,8 @@ def _data_checks_as_categorical(
             ):
                 raise ValueError(
                     """
-                    Length of `ordered` argument does not match the length of
-                    `column_names`.
+                    Length of `ordered` argument does not match the
+                    length of `column_names`.
                     """
                 )
 
@@ -1062,8 +1063,9 @@ def _data_checks_as_categorical(
             if isinstance(ordered, list):
                 raise ValueError(
                     """
-                    `ordered` should be either None, 'sorted', or 'appearance',
-                    since only one `column_names` is supplied.
+                    `ordered` should be either None, 'sorted',
+                    or 'appearance', since only one `column_names`
+                    is supplied.
                     """
                 )
             if isinstance(ordered, str):
@@ -1098,8 +1100,8 @@ def _computations_as_categorical(
     """
 
     dtypes = None
-    if column_names is None:
-        if ordered is None:
+    if not column_names:
+        if not ordered:
             df = df.astype("category")
         else:  # drop nulls if they exist
             if ordered == "sort":
@@ -1122,25 +1124,79 @@ def _computations_as_categorical(
         return df
 
     zipped = None
-    if categories is None:
-        if ordered is None:
+    col_categories_set_difference = None
+    if not categories:
+        if not ordered:
             df = df.astype({col: "category" for col in column_names})
         else:
             zipped = zip(column_names, ordered)
             df = df.astype(
                 {
-                    col_name: "category"
+                    column_name: "category"
                     if order is None
                     else CategoricalDtype(
-                        categories=np.unique(df.loc[:, col_name].dropna()),
+                        categories=np.unique(df.loc[:, column_name].dropna()),
                         ordered=True,
                     )
                     if order == "sort"
                     else CategoricalDtype(
-                        categories=pd.unique(df.loc[:, col_name].dropna()),
+                        categories=pd.unique(df.loc[:, column_name].dropna()),
                         ordered=True,
                     )
-                    for col_name, order in zipped
+                    for column_name, order in zipped
+                }
+            )
+
+        return df
+
+    if categories:
+        zipped = tuple(zip([column for _, column in df.items()], categories))
+        for column, category in zipped:
+            col_categories_set_difference = set(column.dropna()).difference(
+                category
+            )
+            if col_categories_set_difference:
+                if col_categories_set_difference == set(column.dropna()):
+                    warnings.warn(
+                        f"""None of the values in {column.name} is in {category};
+                        you likely will have nulls for all your values
+                        in the new categorical column""",
+                        UserWarning,
+                    )
+                else:
+                    warnings.warn(
+                        f"""Values {*col_categories_set_difference,}
+                        are missing from categories {category}
+                        for {column.name}, you likely will have some
+                        nulls in your categorical column""",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+
+        if not ordered:
+            df = df.astype(
+                {
+                    column.name: CategoricalDtype(
+                        categories=category, ordered=False
+                    )
+                    for column, category in zipped
+                }
+            )
+
+        else:
+            zipped = zip(
+                [column_name for column_name, _ in df.items()],
+                categories,
+                ordered,
+            )
+            df = df.astype(
+                {
+                    column_name: CategoricalDtype(
+                        categories=category, ordered=False
+                    )
+                    if order is None
+                    else CategoricalDtype(categories=category, ordered=True,)
+                    for column_name, category, order in zipped
                 }
             )
 

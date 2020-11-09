@@ -11,8 +11,12 @@ new version (on deck)
   dependencies. Issue #760. @MinchinWeb
 - [ENH] Add ``pivot_wider`` function, which is the inverse of the `pivot_longer`
   function. @samukweku
+<<<<<<< HEAD
 - [ENH] Add `as_categorical` method to create Categorical columns. @samukweku
 
+=======
+- [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
+>>>>>>> 782eb1f4ba7d35828bfb24d815a22243c8fbd14c
 
 v0.20.10
 =======

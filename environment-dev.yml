@@ -26,6 +26,7 @@ dependencies:
 - nbsphinx
 - nox
 - numpy>=1.16
+- openpyxl
 - pandas-flavor
 - pandas-vet
 - pandas>=1.0.0

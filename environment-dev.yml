@@ -3,7 +3,7 @@ channels:
 - conda-forge
 - rdkit
 dependencies:
-- python>=3.6
+- python>=3.6, <3.9
 - biopython
 - black
 - bumpversion

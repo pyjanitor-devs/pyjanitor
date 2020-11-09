@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 
-@pytest.mark.skip(reason="xlrd issues")
+@pytest.mark.functions
 def test_convert_excel_date():
     df = (
         pd.read_excel(

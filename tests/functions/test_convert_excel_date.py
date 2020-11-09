@@ -8,7 +8,7 @@ import pytest
 def test_convert_excel_date():
     df = (
         pd.read_excel(
-            Path(pytest.EXAMPLES_DIR) / "notebooks" / "dirty_data.xlsx"
+            Path(pytest.EXAMPLES_DIR) / "notebooks" / "dirty_data.xlsx", engine='openpyxl'
         )
         .clean_names()
         .convert_excel_date("hire_date")

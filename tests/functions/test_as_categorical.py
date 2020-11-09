@@ -78,14 +78,14 @@ def test_check_categories_length_if_column_names_gt_1():
 def test_check_ordered_if_column_names_gt_1():
     """
     Raise ValueError if `column_names` is a list, more than one,
-    and `ordered` is a list.
+    and `ordered` is not a list.
     """
     df = pd.DataFrame({"col1": [60, 70], "col2": [80, 90]})
     with pytest.raises(ValueError):
         df.as_categorical(
             column_names=["col1", "col2"],
             categories=[[70, 60], [80, 90]],
-            ordered="sorted",
+            ordered="sort",
         )
 
 
@@ -99,7 +99,7 @@ def test_check_ordered_length_if_column_names_gt_1():
         df.as_categorical(
             column_names=["col1", "col2"],
             categories=[[70, 60], [80, 90]],
-            ordered=["sorted"],
+            ordered=["sort"],
         )
 
 
@@ -458,6 +458,90 @@ test_df = [
         None,
         ["appearance", "sort"],
     ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(
+                    categories=[2.0, 1.0, 3.0], ordered=True
+                ),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=True
+                ),
+            }
+        ),
+        ["col1", "col2"],
+        [[2.0, 1.0, 3.0], ["a", "b", "c", "d"]],
+        ["appearance", "sort"],
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(
+                    categories=[2.0, 1.0, 3.0], ordered=True
+                ),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=False
+                ),
+            }
+        ),
+        ["col1", "col2"],
+        [[2.0, 1.0, 3.0], ["a", "b", "c", "d"]],
+        ["appearance", None],
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(
+                    categories=[2.0, 1.0, 3.0], ordered=False
+                ),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=False
+                ),
+            }
+        ),
+        ["col1", "col2"],
+        [[2.0, 1.0, 3.0], ["a", "b", "c", "d"]],
+        None,
+    ),
 ]
 
 
@@ -474,22 +558,43 @@ def test_various(df_in, df_out, column_names, categories, ordered):
     assert_frame_equal(result, df_out)
 
 
-df = pd.DataFrame(
-    {
-        "col1": [2, 1, 3, 1, np.nan],
-        "col2": ["a", "b", "c", "d", "a"],
-        "col3": pd.date_range("1/1/2020", periods=5),
-    }
-)
+df_warnings = [
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        ["col1", "col2"],
+        [[4, 5, 6], ["a", "b", "c", "d"]],
+        ["appearance", "sort"],
+    ),
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        ["col1", "col2"],
+        [[2.0, 1.0, 3.0], ["a", "b", "c"]],
+        ["appearance", "sort"],
+    ),
+]
 
 
-print(df)
+@pytest.mark.parametrize("df_in,column_names,categories,ordered", df_warnings)
+def test_warnings(df_in, column_names, categories, ordered):
+    """
+    Test that warnings are raised if `categories` is provided, and
+    the categories do not match the unique values in the column, or
+    some values in the column are missing in `categories`.
+    """
 
-
-print(
-    df.as_categorical(
-        column_names=["col1", "col2"],
-        categories=[[3, 2, 1], ["a", "b", "d", "c"]],
-        ordered=["sort", None],
-    )
-)
+    with pytest.warns(UserWarning):
+        df_in.as_categorical(
+            column_names=column_names, categories=categories, ordered=ordered,
+        )

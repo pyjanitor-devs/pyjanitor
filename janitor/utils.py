@@ -1063,9 +1063,9 @@ def _data_checks_as_categorical(
             if isinstance(ordered, list):
                 raise ValueError(
                     """
-                    `ordered` should be either None, 'sorted',
-                    or 'appearance', since only one `column_names`
-                    is supplied.
+                    `ordered` cannot be a list, but should either be
+                    None, 'sorted',or 'appearance', since only one
+                    `column_names` is supplied.
                     """
                 )
             if isinstance(ordered, str):
@@ -1089,17 +1089,32 @@ def _computations_as_categorical(
     This is the main workhorse of the `as_categorical` function.
 
     if `column_names` is ``None``, then all the columns in the
-    dataframe will be converted to a Categorical dtype. It is
+    dataframe will be converted to Categorical dtypes. It is
     expected that in this scenario, `categories` will be `None`,
     while `ordered` will either be `None`, or "sort", or "appearance".
     If `ordered` is 'sort', the categories will be sorted in
-    ascending order (using np.unique); if it is 'appearance', the categories will be in
-    order of appearance (using pandas' unique function.)
+    ascending order (using np.unique); if it is 'appearance', the
+    categories will be in order of appearance (using pandas' unique function.)
 
-    A dataframe is returned, with the index reset.
+    If, however, `column_names` is not None, then, only the columns
+    in `column_names` will be converted to Categorical dtypes. If
+    `categories` is not provided,then category type will be applied, the
+    categories will be pulled from the unique values of the columns(using
+    either `np.unique` if ``ordered==sort``, or `pd.unique` if
+    ``ordered==appearance``, or the category dtype if `ordered` is ``None``).
+    If `categories` is provided, then some checks will be conducted and user
+    warnings generated if some or all unique values in the column are not found
+    in `categories`.The columns is then converted to categorical column using
+    the same approach as earlier ( either `np.unique` if ``ordered==sort``,
+    or `pd.unique` if ``ordered==appearance``, or the category dtype if
+    `ordered` is ``None``).
+
+    A dataframe is returned with one or more categorical columns.
     """
 
     dtypes = None
+    zipped = None
+    column_category_set_difference = None
     if not column_names:
         if not ordered:
             df = df.astype("category")
@@ -1123,52 +1138,51 @@ def _computations_as_categorical(
 
         return df
 
-    zipped = None
-    col_categories_set_difference = None
     if not categories:
         if not ordered:
             df = df.astype({col: "category" for col in column_names})
         else:
             zipped = zip(column_names, ordered)
-            df = df.astype(
-                {
-                    column_name: "category"
-                    if order is None
-                    else CategoricalDtype(
-                        categories=np.unique(df.loc[:, column_name].dropna()),
-                        ordered=True,
-                    )
-                    if order == "sort"
-                    else CategoricalDtype(
-                        categories=pd.unique(df.loc[:, column_name].dropna()),
-                        ordered=True,
-                    )
-                    for column_name, order in zipped
-                }
-            )
+            dtypes = {
+                column_name: "category"
+                if order is None
+                else CategoricalDtype(
+                    categories=np.unique(df.loc[:, column_name].dropna()),
+                    ordered=True,
+                )
+                if order == "sort"
+                else CategoricalDtype(
+                    categories=pd.unique(df.loc[:, column_name].dropna()),
+                    ordered=True,
+                )
+                for column_name, order in zipped
+            }
+
+            df = df.astype(dtypes)
 
         return df
 
     if categories:
         zipped = tuple(zip([column for _, column in df.items()], categories))
         for column, category in zipped:
-            col_categories_set_difference = set(column.dropna()).difference(
+            column_category_set_difference = set(column.dropna()).difference(
                 category
             )
-            if col_categories_set_difference:
-                if col_categories_set_difference == set(column.dropna()):
+            if column_category_set_difference:
+                if column_category_set_difference == set(column.dropna()):
                     warnings.warn(
-                        f"""None of the values in {column.name} is in {category};
-                        you likely will have nulls for all your values
-                        in the new categorical column""",
+                        f"""None of the values in {column.name} are in {category};
+                        you might have nulls for all your values
+                        in the new categorical column.""",
                         UserWarning,
+                        stacklevel=2,
                     )
                 else:
                     warnings.warn(
-                        f"""Values {*col_categories_set_difference,}
+                        f"""Values {tuple(column_category_set_difference)}
                         are missing from categories {category}
-                        for {column.name}, you likely will have some
-                        nulls in your categorical column""",
+                        for {column.name}, you might have nulls in
+                        the new categorical column.""",
                         UserWarning,
                         stacklevel=2,
                     )
@@ -1189,15 +1203,19 @@ def _computations_as_categorical(
                 categories,
                 ordered,
             )
-            df = df.astype(
-                {
-                    column_name: CategoricalDtype(
-                        categories=category, ordered=False
-                    )
-                    if order is None
-                    else CategoricalDtype(categories=category, ordered=True,)
-                    for column_name, category, order in zipped
-                }
-            )
+            dtypes = {
+                column_name: CategoricalDtype(
+                    categories=category, ordered=False
+                )
+                if order is None
+                else CategoricalDtype(
+                    categories=sorted(category), ordered=True
+                )
+                if order == "sort"
+                else CategoricalDtype(categories=category, ordered=True)
+                for column_name, category, order in zipped
+            }
+
+            df = df.astype(dtypes)
 
         return df

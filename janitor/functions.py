@@ -5017,7 +5017,7 @@ def pivot_longer(
 def as_categorical(
     df: pd.DataFrame,
     column_names: Optional[Union[list, str]] = None,
-    categories: Optional[Union[list, tuple, pd.Series, np.array]] = None,
+    categories: Optional[Union[list, tuple, set, pd.Series, np.array]] = None,
     ordered: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -5050,9 +5050,11 @@ def as_categorical(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-                .as_categorical(columns=['col1', 'col2', 'col3'],
-                                categories=None,
-                                ordered=['appearance','sort',None])
+                .as_categorical(
+                    columns=['col1', 'col2', 'col3'],
+                    categories=None,
+                    ordered=['appearance', 'sort', None]
+                    )
             )
 
         df.dtypes
@@ -5113,9 +5115,11 @@ def as_categorical(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-                .as_categorical(column_names=["col1","col2"],
-                                categories=[[3, 2, 1, 4],['a','d','c','b']],
-                                ordered=["appearance","sort"])
+                .as_categorical(
+                    column_names=["col1","col2"],
+                    categories=[[3, 2, 1, 4],['a','d','c','b']],
+                    ordered=["appearance", "sort"]
+                    )
             )
 
         df['col1']
@@ -5145,9 +5149,11 @@ def as_categorical(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-                .as_categorical(column_names="col1",
-                                categories=[4, 5, 6],
-                                ordered="appearance")
+                .as_categorical(
+                    column_names="col1",
+                    categories=[4, 5, 6],
+                    ordered="appearance"
+                    )
             )
 
         UserWarning: None of the values in col1 are in [4, 5, 6];
@@ -5195,7 +5201,9 @@ def as_categorical(
 
     :param df: A pandas dataframe.
     :param column_names: Name(s) of columns to convert to categorical
-        dtype. Can be a single column or list of columns.
+        dtype. Can be a single column or list of columns or `None`.
+        `None` implies that all the columns in the dataframe should be
+        converted to categorical columns.
     :param categories: array-like of categories for the new categorical
         column. Can be `None`, in which case the categories are based on
         the unique values in the column. If `categories` is provided,

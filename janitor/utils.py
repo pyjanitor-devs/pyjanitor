@@ -966,9 +966,6 @@ def _data_checks_as_categorical(
 
     """
     This function raises errors if the arguments have the wrong python type.
-    It also raises an error message if `names_pattern` is a list/tuple of
-    regular expressions, and `names_to` is not a list/tuple, and the lengths
-    do not match.
 
     This function is executed before proceeding to the computation phase.
 
@@ -1017,20 +1014,24 @@ def _data_checks_as_categorical(
         # a collection of lists.
         if len(column_names) > 1:
             if isinstance(categories, list):
-                if not all([isinstance(entry, list) for entry in categories]):
+                if not all([is_list_like(entry) for entry in categories]):
                     raise ValueError(
                         """
-                        categories for each column should be of `list` type.
+                        categories for each column should be array-like.
                         """
                     )
 
                 if len(column_names) != len(categories):
                     raise ValueError(
                         """
-                    The length of `categories` argument does not match the
-                    length of `column_names`.
-                    """
+                        The length of `categories` argument does not match the
+                        length of `column_names`.
+                        """
                     )
+
+                # helpful for situations where a set is passed
+                # this way we ensure uniform type is passed to categories parameter
+                categories = [list(entry) for entry in categories]
 
             if isinstance(ordered, str):
                 raise ValueError(
@@ -1052,7 +1053,7 @@ def _data_checks_as_categorical(
 
         else:  # len(column_names)==1
             if isinstance(categories, list):
-                if any([isinstance(entry, list) for entry in categories]):
+                if any([is_list_like(entry) for entry in categories]):
                     raise ValueError(
                         """
                         There should be no sub-lists in the `categories`,
@@ -1064,7 +1065,7 @@ def _data_checks_as_categorical(
                 raise ValueError(
                     """
                     `ordered` cannot be a list, but should either be
-                    None, 'sorted',or 'appearance', since only one
+                    None, 'sort',or 'appearance', since only one
                     `column_names` is supplied.
                     """
                 )

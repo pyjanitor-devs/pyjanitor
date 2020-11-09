@@ -30,10 +30,8 @@
     "import pandas as pd\n",
     "import janitor"
    ],
-   "cell_type": "code",
-   "metadata": {},
-   "execution_count": 1,
-   "outputs": []
+   "cell_type": "markdown",
+   "metadata": {}
   },
   {
    "cell_type": "markdown",
@@ -44,13 +42,11 @@
   },
   {
    "source": [
-    "# df = pd.read_excel('dirty_data.xlsx')\n",
-    "# df"
+    "df = pd.read_excel('dirty_data.xlsx')\n",
+    "df"
    ],
-   "cell_type": "code",
-   "metadata": {},
-   "execution_count": 2,
-   "outputs": []
+   "cell_type": "markdown",
+   "metadata": {}
   },
   {
    "cell_type": "markdown",
@@ -139,11 +135,11 @@
    ]
   },
   {
-   "cell_type": "markdown",
-   "metadata": {},
    "source": [
     "df_clean[['certification', 'certification_1']]"
-   ]
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
   },
   {
    "cell_type": "markdown",

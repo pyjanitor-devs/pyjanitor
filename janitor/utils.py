@@ -1190,7 +1190,7 @@ def _data_checks_as_categorical(
         # a collection of lists.
         if len(column_names) > 1:
             if isinstance(categories, list):
-                if not all([is_list_like(entry) for entry in categories]):
+                if not all((is_list_like(entry) for entry in categories)):
                     raise ValueError(
                         """
                         categories for each column should be array-like.
@@ -1230,7 +1230,7 @@ def _data_checks_as_categorical(
 
         else:  # len(column_names)==1
             if isinstance(categories, list):
-                if any([is_list_like(entry) for entry in categories]):
+                if any((is_list_like(entry) for entry in categories)):
                     raise ValueError(
                         """
                         There should be no sub-lists in the `categories`,

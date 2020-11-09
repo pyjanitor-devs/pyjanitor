@@ -5209,15 +5209,15 @@ def as_categorical(
         the unique values in the column. If `categories` is provided,
         then these values are used to create the categories for the column.
     :param ordered: Order of the categories. Can be `None`(default), 'sort'
-        or 'appearance'. None returns an unordered categories, 'sort' returns
-        a sorted categories in ascending order, while 'appearance' returns
-        the categories as they appear. For multiple columns, a list is
+        or 'appearance'. None returns an unordered `categories`, 'sort' returns
+        a sorted `categories` in ascending order, while 'appearance' returns
+        the `categories` as they appear. For multiple columns, a list is
         required, containing the order for each respective column.
     :returns: A pandas DataFrame with one or more categorical columns.
     :raises TypeError: if `column_names` is not a string or list of strings.
     :raises TypeError: if `categories` is not array-like.
     :raises TypeError: if `ordered` is not a string or list of strings.
-    :raises ValueError: if `ordered` is not None, or 'sort' or 'appearance'.
+    :raises ValueError: if `ordered` is neither `None`, nor 'sort' nor 'appearance'.
     :raises ValueError: if a single `column_names` is provided, and `ordered`
         is a list.
     :raises ValueError: if the length of `column_names` is greater than one,

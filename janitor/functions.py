@@ -5223,7 +5223,7 @@ def as_categorical(
 
     .. code-block:: python
 
-            col1	col2	col3
+               col1	col2	col3
         0	2.0	a	2020-01-01
         1	1.0	b	2020-01-02
         2	3.0	c	2020-01-03
@@ -5289,7 +5289,7 @@ def as_categorical(
     The `None` argument returns the unique values in the column as categories,
     without any order
 
-    ..code-block:: python
+    .. code-block:: python
 
         df['col3']
 
@@ -5409,14 +5409,15 @@ def as_categorical(
     :raises TypeError: if `column_names` is not a string or list of strings.
     :raises TypeError: if `categories` is not array-like.
     :raises TypeError: if `ordered` is not a string or list of strings.
-    :raises ValueError: if `ordered` is neither `None`, nor 'sort' nor 'appearance'.
+    :raises ValueError: if `ordered` is neither `None`, nor 'sort' nor
+        'appearance'.
     :raises ValueError: if a single `column_names` is provided, and `ordered`
         is a list.
     :raises ValueError: if the length of `column_names` is greater than one,
         and it does not match the length of `categories` or the length of
         `ordered`.
     :raises ValueError: if `column_names` is `None` and `categories` is not
-        None, or `ordered` is a list.
+        `None`, or `ordered` is a list.
 
     .. # noqa: DAR402
     """
@@ -5426,3 +5427,5 @@ def as_categorical(
     )
 
     df = _computations_as_categorical(df, column_names, categories, ordered,)
+
+    return df

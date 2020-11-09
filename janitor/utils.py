@@ -1030,7 +1030,8 @@ def _data_checks_as_categorical(
                     )
 
                 # helpful for situations where a set is passed
-                # this way we ensure uniform type is passed to categories parameter
+                # this way we ensure uniform type is passed to
+                # categories parameter
                 categories = [list(entry) for entry in categories]
 
             if isinstance(ordered, str):

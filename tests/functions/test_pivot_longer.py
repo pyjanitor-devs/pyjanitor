@@ -28,132 +28,75 @@ def df_checks_output():
                 "Rocky Mountains and Plains",
                 "Rocky Mountains and Plains",
             ],
-            "year": [2007, 2009, 2007, 2009, 2007, 2009],
+            "year": ["2007", "2009", "2007", "2009", "2007", "2009"],
             "num_nests": [1039, 2587, 51, 176, 200, 338],
         }
     )
 
 
-paired_columns_pattern = [
-    (
-        pd.DataFrame(
+@pytest.fixture
+def test_df():
+    return pd.DataFrame(
+        {
+            "off_loc": ["A", "B", "C", "D", "E", "F"],
+            "pt_loc": ["G", "H", "I", "J", "K", "L"],
+            "pt_lat": [
+                100.07548220000001,
+                75.191326,
+                122.65134479999999,
+                124.13553329999999,
+                124.13553329999999,
+                124.01028909999998,
+            ],
+            "off_lat": [
+                121.271083,
+                75.93845266,
+                135.043791,
+                134.51128400000002,
+                134.484374,
+                137.962195,
+            ],
+            "pt_long": [
+                4.472089953,
+                -144.387785,
+                -40.45611048,
+                -46.07156181,
+                -46.07156181,
+                -46.01594293,
+            ],
+            "off_long": [
+                -7.188632000000001,
+                -143.2288569,
+                21.242563,
+                40.937416999999996,
+                40.78472,
+                22.905889000000002,
+            ],
+        }
+    )
+
+
+@pytest.fixture
+def names_pattern_list_df():
+    return pd.DataFrame(
+        [
             {
-                "off_loc": ["A", "B", "C", "D", "E", "F"],
-                "pt_loc": ["G", "H", "I", "J", "K", "L"],
-                "pt_lat": [
-                    100.07548220000001,
-                    75.191326,
-                    122.65134479999999,
-                    124.13553329999999,
-                    124.13553329999999,
-                    124.01028909999998,
-                ],
-                "off_lat": [
-                    121.271083,
-                    75.93845266,
-                    135.043791,
-                    134.51128400000002,
-                    134.484374,
-                    137.962195,
-                ],
-                "pt_long": [
-                    4.472089953,
-                    -144.387785,
-                    -40.45611048,
-                    -46.07156181,
-                    -46.07156181,
-                    -46.01594293,
-                ],
-                "off_long": [
-                    -7.188632000000001,
-                    -143.2288569,
-                    21.242563,
-                    40.937416999999996,
-                    40.78472,
-                    22.905889000000002,
-                ],
+                "ID": 1,
+                "DateRange1Start": "1/1/90",
+                "DateRange1End": "3/1/90",
+                "Value1": 4.4,
+                "DateRange2Start": "4/5/91",
+                "DateRange2End": "6/7/91",
+                "Value2": 6.2,
+                "DateRange3Start": "5/5/95",
+                "DateRange3End": "6/6/96",
+                "Value3": 3.3,
             }
-        ),
-        pd.DataFrame(
-            [
-                {
-                    "set": "off",
-                    "loc": "A",
-                    "lat": 121.271083,
-                    "long": -7.188632000000001,
-                },
-                {
-                    "set": "off",
-                    "loc": "B",
-                    "lat": 75.93845266,
-                    "long": -143.2288569,
-                },
-                {
-                    "set": "off",
-                    "loc": "C",
-                    "lat": 135.043791,
-                    "long": 21.242563,
-                },
-                {
-                    "set": "off",
-                    "loc": "D",
-                    "lat": 134.51128400000002,
-                    "long": 40.937416999999996,
-                },
-                {
-                    "set": "off",
-                    "loc": "E",
-                    "lat": 134.484374,
-                    "long": 40.78472,
-                },
-                {
-                    "set": "off",
-                    "loc": "F",
-                    "lat": 137.962195,
-                    "long": 22.905889000000002,
-                },
-                {
-                    "set": "pt",
-                    "loc": "G",
-                    "lat": 100.07548220000001,
-                    "long": 4.472089953,
-                },
-                {
-                    "set": "pt",
-                    "loc": "H",
-                    "lat": 75.191326,
-                    "long": -144.387785,
-                },
-                {
-                    "set": "pt",
-                    "loc": "I",
-                    "lat": 122.65134479999999,
-                    "long": -40.45611048,
-                },
-                {
-                    "set": "pt",
-                    "loc": "J",
-                    "lat": 124.13553329999999,
-                    "long": -46.07156181,
-                },
-                {
-                    "set": "pt",
-                    "loc": "K",
-                    "lat": 124.13553329999999,
-                    "long": -46.07156181,
-                },
-                {
-                    "set": "pt",
-                    "loc": "L",
-                    "lat": 124.01028909999998,
-                    "long": -46.01594293,
-                },
-            ]
-        ),
-        None,
-        ("set", ".value"),
-        "(.+)_(.+)",
-    ),
+        ]
+    )
+
+
+paired_columns_pattern = [
     (
         pd.DataFrame(
             {
@@ -187,6 +130,7 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
+        None,
     ),
     (
         pd.DataFrame(
@@ -216,6 +160,7 @@ paired_columns_pattern = [
         patterns("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
+        {"value": int, "val": int},
     ),
     (
         pd.DataFrame(
@@ -242,6 +187,7 @@ paired_columns_pattern = [
         "id",
         (".value", "instance"),
         r"(\w)(\d)",
+        {"instance": int},
     ),
     (
         pd.DataFrame(
@@ -271,6 +217,7 @@ paired_columns_pattern = [
         "X",
         (".value", "year"),
         "([A-Z])(.+)",
+        {"year": int, "B": float},
     ),
     (
         pd.DataFrame(
@@ -315,67 +262,7 @@ paired_columns_pattern = [
         "id",
         (".value", "status"),
         "(.*)_(.*)",
-    ),
-    (
-        pd.DataFrame(
-            {
-                "Sony|TV|Model|value": {0: "A222", 1: "A234", 2: "A4345"},
-                "Sony|TV|Quantity|value": {0: 5, 1: 5, 2: 4},
-                "Sony|TV|Max-quant|value": {0: 10, 1: 9, 2: 9},
-                "Panasonic|TV|Model|value": {
-                    0: "T232",
-                    1: "S3424",
-                    2: "X3421",
-                },
-                "Panasonic|TV|Quantity|value": {0: 1, 1: 5, 2: 1},
-                "Panasonic|TV|Max-quant|value": {0: 10, 1: 12, 2: 11},
-                "Sanyo|Radio|Model|value": {0: "S111", 1: "S1s1", 2: "S1s2"},
-                "Sanyo|Radio|Quantity|value": {0: 4, 1: 2, 2: 4},
-                "Sanyo|Radio|Max-quant|value": {0: 9, 1: 9, 2: 10},
-            }
-        ),
-        pd.DataFrame(
-            {
-                "Manufacturer": [
-                    "Sony",
-                    "Sony",
-                    "Sony",
-                    "Panasonic",
-                    "Panasonic",
-                    "Panasonic",
-                    "Sanyo",
-                    "Sanyo",
-                    "Sanyo",
-                ],
-                "Device": [
-                    "TV",
-                    "TV",
-                    "TV",
-                    "TV",
-                    "TV",
-                    "TV",
-                    "Radio",
-                    "Radio",
-                    "Radio",
-                ],
-                "Model": [
-                    "A222",
-                    "A234",
-                    "A4345",
-                    "T232",
-                    "S3424",
-                    "X3421",
-                    "S111",
-                    "S1s1",
-                    "S1s2",
-                ],
-                "Quantity": [5, 5, 4, 1, 5, 1, 4, 2, 4],
-                "Max-quant": [10, 9, 9, 10, 12, 11, 9, 9, 10],
-            }
-        ),
         None,
-        ("Manufacturer", "Device", ".value"),
-        r"(.+)\|(.+)\|(.+)\|.*",
     ),
 ]
 
@@ -398,7 +285,7 @@ paired_columns_sep = [
         pd.DataFrame(
             {
                 "X": [0, 0, 1, 1, 1, 1],
-                "year": [2010, 2011, 2010, 2011, 2010, 2011],
+                "year": ["2010", "2011", "2010", "2011", "2010", "2011"],
                 "A(weekly)": [
                     0.548814,
                     0.544883,
@@ -420,6 +307,7 @@ paired_columns_sep = [
         "X",
         (".value", "year"),
         "-",
+        None,
     ),
     (
         pd.DataFrame(
@@ -441,6 +329,7 @@ paired_columns_sep = [
         "indexer",
         (".value", "num"),
         "_",
+        {"num": int, "S": float},
     ),
     (
         pd.DataFrame(
@@ -473,6 +362,7 @@ paired_columns_sep = [
         ["county", "area"],
         (".value", "year"),
         "_",
+        {"year": int},
     ),
     (
         pd.DataFrame(
@@ -563,6 +453,62 @@ paired_columns_sep = [
         "family",
         (".value", "child"),
         "_",
+        {"gender": float},
+    ),
+    (
+        pd.DataFrame(
+            {
+                "dob_child2": [
+                    "2000-01-29",
+                    np.nan,
+                    "2004-04-05",
+                    "2009-08-27",
+                    "2005-02-28",
+                ],
+                "gender_child1": [1, 2, 2, 1, 2],
+                "gender_child2": [2.0, np.nan, 2.0, 1.0, 1.0],
+                "dob_child1": [
+                    "1998-11-26",
+                    "1996-06-22",
+                    "2002-07-11",
+                    "2004-10-10",
+                    "2000-12-05",
+                ],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "child": [
+                    "child2",
+                    "child1",
+                    "child2",
+                    "child1",
+                    "child2",
+                    "child1",
+                    "child2",
+                    "child1",
+                    "child2",
+                    "child1",
+                ],
+                "dob": [
+                    "2000-01-29",
+                    "1998-11-26",
+                    np.nan,
+                    "1996-06-22",
+                    "2004-04-05",
+                    "2002-07-11",
+                    "2009-08-27",
+                    "2004-10-10",
+                    "2005-02-28",
+                    "2000-12-05",
+                ],
+                "gender": [2.0, 1, np.nan, 2, 2.0, 2, 1.0, 1, 1.0, 2],
+            }
+        ),
+        None,
+        (".value", "child"),
+        "_",
+        {"gender": float},
     ),
     (
         pd.DataFrame(
@@ -603,6 +549,7 @@ paired_columns_sep = [
         "id",
         (".value", "brand"),
         "_",
+        None,
     ),
     (
         pd.DataFrame(
@@ -625,6 +572,7 @@ paired_columns_sep = [
         "event",
         (".value", "item"),
         "_",
+        {"item": int},
     ),
 ]
 
@@ -750,6 +698,7 @@ multiple_values_sep = [
         "country",
         ("event", "year"),
         "_",
+        {"year": int},
     ),
     (
         pd.DataFrame(
@@ -948,6 +897,7 @@ multiple_values_sep = [
         "country",
         ("event", "year", "gender"),
         "_",
+        {"year": int},
     ),
 ]
 
@@ -956,10 +906,10 @@ multiple_values_pattern = [
         pd.DataFrame(
             {
                 "country": ["United States", "Russia", "China"],
-                "vault2012": [48.132, 46.36600000000001, 44.266000000000005],
-                "floor2012": [45.36600000000001, 41.599, 40.833],
-                "vault2016": [46.86600000000001, 45.733000000000004, 44.332],
-                "floor2016": [45.998999999999995, 42.032, 42.066],
+                "vault2012": [48.1, 46.4, 44.3],
+                "floor2012": [45.4, 41.6, 40.8],
+                "vault2016": [46.9, 45.7, 44.3],
+                "floor2016": [46.0, 42.0, 42.1],
             }
         ),
         pd.DataFrame(
@@ -968,82 +918,190 @@ multiple_values_pattern = [
                     "country": "United States",
                     "event": "vault",
                     "year": 2012,
-                    "score": 48.132,
+                    "score": 48.1,
                 },
                 {
                     "country": "United States",
                     "event": "floor",
                     "year": 2012,
-                    "score": 45.36600000000001,
+                    "score": 45.4,
                 },
                 {
                     "country": "United States",
                     "event": "vault",
                     "year": 2016,
-                    "score": 46.86600000000001,
+                    "score": 46.9,
                 },
                 {
                     "country": "United States",
                     "event": "floor",
                     "year": 2016,
-                    "score": 45.998999999999995,
+                    "score": 46.0,
                 },
                 {
                     "country": "Russia",
                     "event": "vault",
                     "year": 2012,
-                    "score": 46.36600000000001,
+                    "score": 46.4,
                 },
                 {
                     "country": "Russia",
                     "event": "floor",
                     "year": 2012,
-                    "score": 41.599,
+                    "score": 41.6,
                 },
                 {
                     "country": "Russia",
                     "event": "vault",
                     "year": 2016,
-                    "score": 45.733000000000004,
+                    "score": 45.7,
                 },
                 {
                     "country": "Russia",
                     "event": "floor",
                     "year": 2016,
-                    "score": 42.032,
+                    "score": 42.0,
                 },
                 {
                     "country": "China",
                     "event": "vault",
                     "year": 2012,
-                    "score": 44.266000000000005,
+                    "score": 44.3,
                 },
                 {
                     "country": "China",
                     "event": "floor",
                     "year": 2012,
-                    "score": 40.833,
+                    "score": 40.8,
                 },
                 {
                     "country": "China",
                     "event": "vault",
                     "year": 2016,
-                    "score": 44.332,
+                    "score": 44.3,
                 },
                 {
                     "country": "China",
                     "event": "floor",
                     "year": 2016,
-                    "score": 42.066,
+                    "score": 42.1,
                 },
             ]
         ),
         "country",
         ("event", "year"),
         r"([A-Za-z]+)(\d+)",
+        {"year": int},
     )
 ]
 
+
+# https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/10
+paired_columns_no_index_pattern = [
+    (
+        pd.DataFrame(
+            {
+                "off_loc": ["A", "B", "C", "D", "E", "F"],
+                "pt_loc": ["G", "H", "I", "J", "K", "L"],
+                "pt_lat": [
+                    100.07548220000001,
+                    75.191326,
+                    122.65134479999999,
+                    124.13553329999999,
+                    124.13553329999999,
+                    124.01028909999998,
+                ],
+                "off_lat": [
+                    121.271083,
+                    75.93845266,
+                    135.043791,
+                    134.51128400000002,
+                    134.484374,
+                    137.962195,
+                ],
+                "pt_long": [
+                    4.472089953,
+                    -144.387785,
+                    -40.45611048,
+                    -46.07156181,
+                    -46.07156181,
+                    -46.01594293,
+                ],
+                "off_long": [
+                    -7.188632000000001,
+                    -143.2288569,
+                    21.242563,
+                    40.937416999999996,
+                    40.78472,
+                    22.905889000000002,
+                ],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "set": [
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                    "off",
+                    "pt",
+                ],
+                "loc": [
+                    "A",
+                    "G",
+                    "B",
+                    "H",
+                    "C",
+                    "I",
+                    "D",
+                    "J",
+                    "E",
+                    "K",
+                    "F",
+                    "L",
+                ],
+                "lat": [
+                    121.271083,
+                    100.07548220000001,
+                    75.93845266,
+                    75.191326,
+                    135.043791,
+                    122.65134479999999,
+                    134.51128400000002,
+                    124.13553329999999,
+                    134.484374,
+                    124.13553329999999,
+                    137.962195,
+                    124.01028909999998,
+                ],
+                "long": [
+                    -7.188632000000001,
+                    4.472089953,
+                    -143.2288569,
+                    -144.387785,
+                    21.242563,
+                    -40.45611048,
+                    40.937416999999996,
+                    -46.07156181,
+                    40.78472,
+                    -46.07156181,
+                    22.905889000000002,
+                    -46.01594293,
+                ],
+            }
+        ),
+        ("set", ".value"),
+        "(.+)_(.+)",
+        {"lat": float, "long": float},
+    )
+]
 
 names_single_value = [
     (
@@ -1065,6 +1123,7 @@ names_single_value = [
         ),
         "event",
         "(.+)_.",
+        None,
     ),
     (
         pd.DataFrame(
@@ -1085,79 +1144,23 @@ names_single_value = [
         ),
         "id",
         "(.).",
-    ),
-]
-
-
-names_pattern_list_regex = [
-    (
-        pd.DataFrame(
-            [
-                {
-                    "ID": 1,
-                    "DateRange1Start": "1/1/90",
-                    "DateRange1End": "3/1/90",
-                    "Value1": 4.4,
-                    "DateRange2Start": "4/5/91",
-                    "DateRange2End": "6/7/91",
-                    "Value2": 6.2,
-                    "DateRange3Start": "5/5/95",
-                    "DateRange3End": "6/6/96",
-                    "Value3": 3.3,
-                }
-            ]
-        ),
-        pd.DataFrame(
-            [
-                {
-                    "ID": 1,
-                    "DateRangeStart": "1/1/90",
-                    "DateRangeEnd": "3/1/90",
-                    "Value": 4.4,
-                },
-                {
-                    "ID": 1,
-                    "DateRangeStart": "4/5/91",
-                    "DateRangeEnd": "6/7/91",
-                    "Value": 6.2,
-                },
-                {
-                    "ID": 1,
-                    "DateRangeStart": "5/5/95",
-                    "DateRangeEnd": "6/6/96",
-                    "Value": 3.3,
-                },
-            ]
-        ),
-        "ID",
-        ("DateRangeStart", "DateRangeEnd", "Value"),
-        ("Start$", "End$", "^Value"),
+        None,
     ),
     (
         pd.DataFrame(
             {
-                "Race": ["Elf", "Hobbit", "Man"],
-                "Female_FoTR": [1229, 14, 0],
-                "Male_FoTR": [971, 3644, 1995],
-                "Female_TT": [331, 0, 401],
-                "Male_TT": [513, 2463, 3589],
-                "Female_RoTK": [183, 2, 268],
-                "Male_RoTK": [510, 2673, 2459],
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
             }
         ),
-        pd.DataFrame(
-            {
-                "Race": ["Elf", "Elf", "Hobbit", "Hobbit", "Man", "Man"],
-                "FOTR": [1229, 971, 14, 3644, 0, 1995],
-                "TT": [331, 513, 0, 2463, 401, 3589],
-            }
-        ),
-        "Race",
-        ("FOTR", "TT"),
-        ("FoTR$", "TT$"),
+        pd.DataFrame({"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]}),
+        None,
+        "(.).",
+        None,
     ),
 ]
-
 
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
@@ -1201,30 +1204,9 @@ names_sep_type_check = [
     (df_checks, ["rar", "bar"], 1),
     (df_checks, ("rar", "ragnar"), ["\\d+"]),
 ]
-
 names_pattern_type_check = [
     (df_checks, "rar", 1),
-    (df_checks, {"rar"}, {"\\d+"}),
-]
-
-names_pattern_subtype_check = [
-    (df_checks, ["rar", "baz"], ["1", 1]),
-    (df_checks, ("rar", "baz"), ("\\w+", True)),
-]
-
-names_pattern_names_to_type_check = [
-    (df_checks, "rar", ["1"]),
-    (df_checks, {"rar"}, ("\\d+")),
-]
-
-names_pattern_len_type_check = [
-    (df_checks, ["rar", "baz"], ["1"]),
-    (df_checks, ("rar", "baz"), ("\\w+", "\\s+", "\\d+")),
-]
-
-names_pattern_names_to_dot_value_check = [
-    (df_checks, ["rar", ".value"], ["1", "2"]),
-    (df_checks, (".value", "baz"), ("\\w+", "\\s+")),
+    (df_checks, {1: "rar"}, {"\\d+"}),
 ]
 
 
@@ -1285,7 +1267,7 @@ def test_name_sep_names_to_len(df, names_to, names_sep):
 
 @pytest.mark.parametrize("df,names_to, names_sep", names_sep_type_check)
 def test_name_sep_wrong_type(df, names_to, names_sep):
-    "Raise TypeError if the wrong type provided for `names_sep`."
+    "Raise TypeError if the wrong type is provided for `names_sep`."
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
 
@@ -1299,68 +1281,54 @@ def test_name_pattern_wrong_type(df, names_to, names_pattern):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
 
-@pytest.mark.parametrize(
-    "df,names_to, names_pattern_len", names_pattern_len_type_check
-)
-def test_name_pattern_wrong_len(df, names_to, names_pattern_len):
+def test_names_pattern_wrong_subtype():
     """
-    Raise ValueError if the length of `names_pattern` does not
-    match the length of ``names_to``.
-    """
-    with pytest.raises(ValueError):
-        df.pivot_longer(names_to=names_to, names_pattern=names_pattern_len)
-
-
-@pytest.mark.parametrize(
-    "df,names_to, names_pattern_subtype", names_pattern_subtype_check
-)
-def test_name_pattern_wrong_subtype(df, names_to, names_pattern_subtype):
-    """
-    Raise TypeError if the sub type in `names_pattern` is the
-    wrong type.
+    Raise TypeError if `names_pattern` is a list/tuple
+    and wrong subtype is supplied.
     """
     with pytest.raises(TypeError):
-        df.pivot_longer(names_to=names_to, names_pattern=names_pattern_subtype)
-
-
-@pytest.mark.parametrize(
-    "df,names_to, names_pattern_names_to_type",
-    names_pattern_names_to_type_check,
-)
-def test_names_pattern_names_to_type(
-    df, names_to, names_pattern_names_to_type
-):
-    """
-    Raise TypeError if `names_pattern` is a list/tuple and
-    names_to is not a list/tuple.
-    """
-    with pytest.raises(TypeError):
-        df.pivot_longer(
-            names_to=names_to, names_pattern=names_pattern_names_to_type
+        df_checks.pivot_longer(
+            names_to=["variable", "value"], names_pattern=[1, "rar"]
         )
 
 
-@pytest.mark.parametrize(
-    "df,names_to, names_pattern_names_to_dot_value",
-    names_pattern_names_to_dot_value_check,
-)
-def test_names_pattern_names_to_dot_value(
-    df, names_to, names_pattern_names_to_dot_value
-):
+def test_names_pattern_names_to_wrong_type():
     """
-    Raise ValueError if ``names_pattern`` is a list/tuple
-    and '.value' is in ``names_to``.
+    Raise TypeError if `names_pattern` is a list/tuple
+    and wrong type is supplied for `names_to`.
+    """
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(
+            names_to={"variable, value"}, names_pattern=["1", "rar"]
+        )
+
+
+def test_names_pattern_names_to_unequal_length():
+    """
+    Raise ValueError if `names_pattern` is a list/tuple
+    and wrong number of items in `names_to`.
     """
     with pytest.raises(ValueError):
-        df.pivot_longer(
-            names_to=names_to, names_pattern=names_pattern_names_to_dot_value
+        df_checks.pivot_longer(
+            names_to=["variable"], names_pattern=["1", "rar"]
+        )
+
+
+def test_names_pattern_names_to_dot_value():
+    """
+    Raise Error if `names_pattern` is a list/tuple and
+    `.value` in `names_to`.
+    """
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["variable", ".value"], names_pattern=["1", "rar"]
         )
 
 
 @pytest.mark.parametrize("df", multi_index_df)
 def test_warning_multi_index(df):
-    "Raise Warning if dataframe is a MultiIndex."
-    with pytest.warns(UserWarning):
+    "Raise ValueError if dataframe is a MultiIndex."
+    with pytest.raises(ValueError):
         df.pivot_longer()
 
 
@@ -1386,71 +1354,30 @@ def test_length_mismatch():
         data.pivot_longer(names_to=["event", "year"], names_sep="-")
 
 
-def test_duplicate_dot_value():
+def test_duplicate_dot_value(test_df):
     "Raise error if `names_to` contains more than 1 `.value."
-    data = pd.DataFrame(
-        {
-            "off_loc": ["A", "B", "C", "D", "E", "F"],
-            "pt_loc": ["G", "H", "I", "J", "K", "L"],
-            "pt_lat": [
-                100.07548220000001,
-                75.191326,
-                122.65134479999999,
-                124.13553329999999,
-                124.13553329999999,
-                124.01028909999998,
-            ],
-            "off_lat": [
-                121.271083,
-                75.93845266,
-                135.043791,
-                134.51128400000002,
-                134.484374,
-                137.962195,
-            ],
-            "pt_long": [
-                4.472089953,
-                -144.387785,
-                -40.45611048,
-                -46.07156181,
-                -46.07156181,
-                -46.01594293,
-            ],
-            "off_long": [
-                -7.188632000000001,
-                -143.2288569,
-                21.242563,
-                40.937416999999996,
-                40.78472,
-                22.905889000000002,
-            ],
-        }
-    )
     with pytest.raises(ValueError):
-        data.pivot_longer(
+        test_df.pivot_longer(
             names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
         )
 
 
-def test_no_returns_from_regex():
-    "Raise error if there are no returns from the regex in ``names_pattern``."
-    data = pd.DataFrame(
-        {
-            "Sony|TV|Model|value": {0: "A222", 1: "A234", 2: "A4345"},
-            "Sony|TV|Quantity|value": {0: 5, 1: 5, 2: 4},
-            "Sony|TV|Max-quant|value": {0: 10, 1: 9, 2: 9},
-            "Panasonic|TV|Model|value": {0: "T232", 1: "S3424", 2: "X3421"},
-            "Panasonic|TV|Quantity|value": {0: 1, 1: 5, 2: 1},
-            "Panasonic|TV|Max-quant|value": {0: 10, 1: 12, 2: 11},
-            "Sanyo|Radio|Model|value": {0: "S111", 1: "S1s1", 2: "S1s2"},
-            "Sanyo|Radio|Quantity|value": {0: 4, 1: 2, 2: 4},
-            "Sanyo|Radio|Max-quant|value": {0: 9, 1: 9, 2: 10},
-        }
-    )
+def test_empty_mapping(test_df):
+    "Raise error if `names_pattern` is a regex and returns no matches."
     with pytest.raises(ValueError):
-        data.pivot_longer(
-            names_to=("manufacturer", "device", ".value"),
-            names_pattern=r"(\d+)(\d+)(\d+)",
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern=r"(\d+)([A-Z])"
+        )
+
+
+def test_len_mapping_gt_len_names_to(test_df):
+    """
+    Raise error if `names_pattern` is a regex and returns number of
+    matches more than length of `names_to`.
+    """
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern="(.+)(_)(.+)"
         )
 
 
@@ -1462,10 +1389,24 @@ def test_both_names_sep_and_pattern():
         )
 
 
+def test_neither_names_sep_and_pattern():
+    "Raise ValueError if neither `names_sep` nor `names_pattern` is provided."
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["rar", "bar"], names_sep=None, names_pattern=None
+        )
+
+
 def test_values_to():
     "Raise TypeError if the wrong type is provided for `values_to`."
     with pytest.raises(TypeError):
         df_checks.pivot_longer(values_to=["salvo"])
+
+
+def test_wrong_dtypes():
+    "Raise TypeError if the wrong type is provided for `dtypes`."
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(dtypes="int")
 
 
 def test_pivot_no_args_passed():
@@ -1485,7 +1426,10 @@ def test_pivot_no_args_passed():
 def test_pivot_index_only(df_checks_output):
     "Test output if only `index` is passed."
     result = df_checks.pivot_longer(
-        index="region", names_to="year", values_to="num_nests"
+        index="region",
+        names_to="year",
+        values_to="num_nests",
+        dtypes={"region": str},
     )
     assert_frame_equal(result, df_checks_output)
 
@@ -1493,7 +1437,10 @@ def test_pivot_index_only(df_checks_output):
 def test_pivot_column_only(df_checks_output):
     "Test output if only `column_names` is passed."
     result = df_checks.pivot_longer(
-        column_names=["2007", "2009"], names_to="year", values_to="num_nests"
+        column_names=["2007", "2009"],
+        names_to="year",
+        values_to="num_nests",
+        dtypes={"region": str},
     )
     assert_frame_equal(result, df_checks_output)
 
@@ -1501,68 +1448,100 @@ def test_pivot_column_only(df_checks_output):
 def test_pivot_index_patterns_only(df_checks_output):
     "Test output if the `patterns` function is passed to `index`."
     result = df_checks.pivot_longer(
-        index=patterns(r"[^\d+]"), names_to="year", values_to="num_nests"
+        index=patterns(r"[^\d+]"),
+        names_to="year",
+        values_to="num_nests",
+        dtypes={"region": str},
     )
     assert_frame_equal(result, df_checks_output)
+
+
+def test_pivot_no_index_dtypes():  # check this test if it makes sense
+    "Test output if neither `index`/`columns_names` is passed, with dtypes."
+    test = pd.DataFrame(
+        {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
+    )
+    result = test.pivot_longer()
+    expected_output = pd.DataFrame(
+        {
+            "variable": ["1", "2", "3", "1", "2", "3"],
+            "value": ["fur", "car", "nsw", "lace", "plane", "vic"],
+        }
+    )
+    assert_frame_equal(result, expected_output)
 
 
 def test_pivot_columns_patterns_only(df_checks_output):
     "Test output if the `patterns` function is passed to `column_names`."
     result = df_checks.pivot_longer(
-        column_names=patterns(r"\d+"), names_to="year", values_to="num_nests"
+        column_names=patterns(r"\d+"),
+        names_to="year",
+        values_to="num_nests",
+        dtypes={"region": str},
     )
     assert_frame_equal(result, df_checks_output)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", paired_columns_pattern
+    "df_in,df_out,index,names_to,names_pattern,dtypes", paired_columns_pattern
 )
 def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern
+    df_in, df_out, index, names_to, names_pattern, dtypes
 ):
     """
     Test output if `.value` is in the `names_to` argument and
     names_pattern is used.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_pattern=names_pattern
+        index=index,
+        names_to=names_to,
+        names_pattern=names_pattern,
+        dtypes=dtypes,
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep", paired_columns_sep
+    "df_in,df_out,index,names_to,names_sep, dtypes", paired_columns_sep
 )
-def test_extract_column_names_sep(df_in, df_out, index, names_to, names_sep):
+def test_extract_column_names_sep(
+    df_in, df_out, index, names_to, names_sep, dtypes
+):
     """
     Test output if `.value` is in the `names_to` argument and names_sep
     is used.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_sep=names_sep
+        index=index, names_to=names_to, names_sep=names_sep, dtypes=dtypes
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep", multiple_values_sep
+    "df_in,df_out,index,names_to,names_sep,dtypes", multiple_values_sep
 )
-def test_multiple_values_sep(df_in, df_out, index, names_to, names_sep):
+def test_multiple_values_sep(
+    df_in, df_out, index, names_to, names_sep, dtypes
+):
     """
     Test function to extract multiple columns, using the `names_to` and
     names_sep arguments.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_sep=names_sep, values_to="score"
+        index=index,
+        names_to=names_to,
+        names_sep=names_sep,
+        dtypes=dtypes,
+        values_to="score",
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", multiple_values_pattern
+    "df_in,df_out,index,names_to,names_pattern,dtypes", multiple_values_pattern
 )
 def test_multiple_values_pattern(
-    df_in, df_out, index, names_to, names_pattern
+    df_in, df_out, index, names_to, names_pattern, dtypes
 ):
     """
     Test function to extract multiple columns, using the `names_to` and
@@ -1572,34 +1551,72 @@ def test_multiple_values_pattern(
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,
+        dtypes=dtypes,
         values_to="score",
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", names_pattern_list_regex
+    "df_in,df_out,names_to,names_pattern,dtypes",
+    paired_columns_no_index_pattern,
 )
-def test_names_pattern_list_regex(
-    df_in, df_out, index, names_to, names_pattern
+def test_paired_columns_no_index_pattern(
+    df_in, df_out, names_to, names_pattern, dtypes
 ):
     """
-    Test function to extract multiple columns, using the `names_to` and
-    `names_pattern arguments`, if `names_pattern` is a list of regular
-    expressions.
+    Test function where `.value` is in the `names_to` argument, names_pattern
+    is used and no index is supplied.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_pattern=names_pattern,
+        names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
     )
     assert_frame_equal(result, df_out)
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index, names_pattern", names_single_value
+    "df_in,df_out,index, names_pattern, dtypes", names_single_value
 )
-def test_single_value(df_in, df_out, index, names_pattern):
+def test_single_value(df_in, df_out, index, dtypes, names_pattern):
     "Test function where names_to is a string and == `.value`."
     result = df_in.pivot_longer(
-        index=index, names_to=".value", names_pattern=names_pattern
+        index=index,
+        names_to=".value",
+        names_pattern=names_pattern,
+        dtypes=dtypes,
     )
     assert_frame_equal(result, df_out)
+
+
+def test_names_pattern_list(names_pattern_list_df):
+    "Test output if `names_pattern` is a list."
+    result = names_pattern_list_df.pivot_longer(
+        index="ID",
+        names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+        names_pattern=("Start$", "End$", "^Value"),
+        dtypes={"ID": int, "Value": float},
+    )
+
+    expected_output = pd.DataFrame(
+        {
+            "ID": [1, 1, 1],
+            "DateRangeStart": ["1/1/90", "4/5/91", "5/5/95"],
+            "DateRangeEnd": ["3/1/90", "6/7/91", "6/6/96"],
+            "Value": [4.4, 6.2, 3.3],
+        }
+    )
+
+    assert_frame_equal(result, expected_output)
+
+
+def test_names_pattern_list_empty(names_pattern_list_df):
+    """
+    Raise ValueError if `names_pattern` is a list,
+    and nothing is returned.
+    """
+    with pytest.raises(ValueError):
+        names_pattern_list_df.pivot_longer(
+            index="ID",
+            names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+            names_pattern=("^Start", "^End", "Value$"),
+        )

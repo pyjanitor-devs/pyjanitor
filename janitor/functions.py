@@ -5030,13 +5030,17 @@ def pivot_wider(
 ) -> pd.DataFrame:
     """
     Reshapes data from long to wide form. The number of columns are
-    increased, while decreasing the number of rows. It is the inverse
-    of the `pivot_longer` method, and is a wrapper around
-    `pd.DataFrame.unstack`
-    method.
+    increased, while decreasing the number of rows.
+
+    It is the inverse of the `pivot_longer` method, and is a wrapper
+    around the `pd.DataFrame.unstack` method.
+
     This method does not mutate the original DataFrame.
+
     Reshaping to wide form :
+
     .. code-block:: python
+
              name variable  value
         0   Alice      wk1      5
         1   Alice      wk2      9
@@ -5050,6 +5054,7 @@ def pivot_wider(
         9   Carla      wk2     13
         10  Carla      wk3     39
         11  Carla      wk4     40
+
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -5057,16 +5062,21 @@ def pivot_wider(
                 names_from="variable",
                 values_from="value"
             )
+
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
+
     Pivoting on multiple columns is possible :
+
     .. code-block:: python
+
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
+
         df = (
             pd.DataFrame(...)
             .assign(num=0)
@@ -5076,15 +5086,22 @@ def pivot_wider(
                 values_from=["n", "pct"]
              )
          )
+
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
+
     .. note:: You may choose not to collapse the levels by passing `False`
         to the ``collapse_levels`` argument.
+
     .. note:: An error is raised if the index is not unique.
+
     Functional usage syntax:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor as jn
+
         df = pd.DataFrame(...)
         df = jn.pivot_wider(
             df = df,
@@ -5098,8 +5115,12 @@ def pivot_wider(
             values_from_first=True/False,
             fill_value=fill_value
         )
+
+
     Method chaining syntax:
+
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -5114,6 +5135,7 @@ def pivot_wider(
                 fill_value=fill_value
                 )
         )
+
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list of column names.
@@ -5400,7 +5422,7 @@ def as_categorical(
         column. Can be `None`, in which case the categories are based on
         the unique values in the column. If `categories` is provided,
         then these values are used to create the categories for the column.
-    :param ordered: Order of the categories. Can be `None`(default), 'sort'
+    :param ordered: Order of the categories. Can be `None` (default), 'sort'
         or 'appearance'. None returns an unordered `categories`, 'sort' returns
         a sorted `categories` in ascending order, while 'appearance' returns
         the `categories` as they appear. For multiple columns, a list is

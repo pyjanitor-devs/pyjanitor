@@ -9,11 +9,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-<<<<<<< HEAD
 from pandas.api.types import CategoricalDtype, is_list_like
-=======
-from pandas.api.types import CategoricalDtype
->>>>>>> d2991bc40b3e681eaffa9e448d97629b9b7e8ab3
 
 from .errors import JanitorError
 
@@ -1143,8 +1139,6 @@ def _computations_pivot_wider(
     return df
 
 
-
-
 def _data_checks_as_categorical(
     df, column_names, categories, ordered,
 ):
@@ -1154,7 +1148,6 @@ def _data_checks_as_categorical(
 
     This function is executed before proceeding to the computation phase.
     """
-
 
     if ordered:
         check("ordered", ordered, [list, str])
@@ -1262,6 +1255,7 @@ def _data_checks_as_categorical(
         categories,
         ordered,
     )
+
 
 def _computations_as_categorical(
     df: pd.DataFrame,

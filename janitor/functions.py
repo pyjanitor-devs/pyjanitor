@@ -5204,6 +5204,7 @@ def pivot_wider(
 
     return df
 
+
 @pf.register_dataframe_method
 def as_categorical(
     df: pd.DataFrame,
@@ -5418,8 +5419,9 @@ def as_categorical(
         None, or `ordered` is a list.
 
     .. # noqa: DAR402
+    """
 
-(df, column_names, categories, ordered,) = _data_checks_as_categorical(
+    (df, column_names, categories, ordered,) = _data_checks_as_categorical(
         df, column_names, categories, ordered,
     )
 

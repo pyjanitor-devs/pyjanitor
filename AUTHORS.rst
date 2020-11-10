@@ -95,3 +95,4 @@ Contributors
 - `@sauln <https://github.com/sauln>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Asauln>`_
 - `@richardqiu <https://github.com/richardqiu>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Arichardqiu>`_
 - `@MinchinWeb <https://github.com/MinchinWeb>`_ | `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3AMinchinWeb>`_
+- `@robertmitchellv <https://github.com/robertmitchellv>`_ | `contributions <https://github.com/ericmjl/pyjanitor/pulls?q=is%3Aclosed+mentions%3Arobertmitchellv>`_

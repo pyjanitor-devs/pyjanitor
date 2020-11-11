@@ -1723,23 +1723,19 @@ def test_single_value(df_in, df_out, index, names_pattern, dtypes, ignore_index)
 
 
 
-df = pd.DataFrame(
-            {
-                "x1": [4, 5, 6],
-                "x2": [5, 6, 7],
-                "y1": [7, 8, 9],
-                "y2": [10, 11, 12],
-            }
-        )
+df = pd.DataFrame({
+    'famid': [1, 1, 1, 2, 2, 2, 3, 3, 3],
+    'birth': [1, 2, 3, 1, 2, 3, 1, 2, 3],
+    'ht1': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+    'ht2': [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9]
+})
 
 
 print(df)
 print()
 
 print(
-    df.pivot_longer(index=None,
-        names_to=(".value"),
-        names_pattern="(.).",
-        ignore_index=False
-    )
+    df.pivot_longer(index=['famid','birth'],
+                names_to=('.value', 'age'),
+                names_pattern=r"(ht)(\d)")
 )

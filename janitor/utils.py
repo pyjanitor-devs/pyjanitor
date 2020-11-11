@@ -945,27 +945,17 @@ def _computations_pivot_longer(
     columns_sorter = None
     columns_not_eq_values_to = None
     temporary_index = None
+
     ########################################################################
     # this section here deals with the extraction of values from the columns
     ########################################################################
-    
-    # scenario 2
+
     if any((names_pattern, names_sep)):
 
         # use this later to determine if unique index will be created
         # unique index is required for unstacking
         if index: 
             duplicated_index = df.duplicated(subset=index).any()
-
-        # this covers scenarios where not all (may be rare)
-        # the columns need to be unpivoted
-        # need tests for this
-        # possibly look at Stack Overflow for any test cases
-        if column_names:
-            if index:
-                df = df.filter(index + column_names)
-            else:
-                df = df.filter(column_names)
 
         if names_sep:
             mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
@@ -984,7 +974,7 @@ def _computations_pivot_longer(
             if isinstance(names_pattern, str):
                 mapping = df.columns.str.extract(names_pattern)
 
-                if mapping.dropna().empty:
+                if mapping.isna().all().all():
                     raise ValueError(
                         """
                         The regular expression in ``names_pattern``
@@ -1041,6 +1031,7 @@ def _computations_pivot_longer(
 
         df.columns = pd.MultiIndex.from_frame(mapping)
 
+
         # if `values_to` is in column names, during melt
         # the original values in the `values_to` column is overriden
         # with the values from values_to in `mapping`, which
@@ -1085,6 +1076,7 @@ def _computations_pivot_longer(
                 index = [temporary_index]
         df = df.melt(id_vars=index, value_name=values_to)
 
+
         columns_not_eq_values_to = [column for column in df if column != values_to]
 
         if not ignore_index:
@@ -1103,6 +1095,7 @@ def _computations_pivot_longer(
                 .droplevel([-1, df.index.names.index(".value")])
                 .index.drop_duplicates()
             )
+
             columns_sorter = df.index.get_level_values(".value").unique()
 
         df = df.unstack(".value").droplevel(level=0, axis=1)

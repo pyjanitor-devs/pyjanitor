@@ -4954,7 +4954,8 @@ def pivot_longer(
     :param dtypes: A dictionary mapping data types to columns in the new
         dataframe.
     :param sort_by_appearance: Default `True`. Boolean value that determines 
-        if the new dataframe will be sorted in order of appearance.
+        if the new dataframe will be sorted in order of appearance. Significant
+        performance improvement if set to `False`.
     :param ignore_index: Default `True`. If True, original index is ignored. 
         If False, the original index is retained. Index labels will be 
         repeated as necessary.

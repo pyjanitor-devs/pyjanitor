@@ -4704,18 +4704,18 @@ def pivot_longer(
     dtypes: Optional[Dict] = None,
     sort_by_appearance: Optional[bool] = True,
     ignore_index: Optional[bool] = True,
-    flatten_levels: Optional[bool] = True
+    flatten_levels: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
     Unpivots a DataFrame from 'wide' to 'long' format.
 
     This method does not mutate the original DataFrame.
 
-    It is meant to serve as a single point for transformations of dataframes
-    from wide to long form, and is a wrapper around `pd.DataFrame.melt`. It 
-    also offers more functionality and flexibility than `pd.wide_to_long`. 
-    
-    It is modeled after the `pivot_longer` function in R's `tidyr` package.
+    IIt is a wrapper around `pd.melt` and is meant to serve as a single point
+    for transformations that require `pd.melt` or `pd.wide_to_long`. 
+
+    It is modeled after the `pivot_longer` function in R's tidyr package, and 
+    offers more functionality and flexibility than `pd.wide_to_long`.     
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -5001,7 +5001,7 @@ def pivot_longer(
         dtypes,
         sort_by_appearance,
         ignore_index,
-        flatten_levels
+        flatten_levels,
     ) = _data_checks_pivot_longer(
         df,
         index,
@@ -5013,7 +5013,7 @@ def pivot_longer(
         dtypes,
         sort_by_appearance,
         ignore_index,
-        flatten_levels
+        flatten_levels,
     )
 
     df, index, column_names = _pivot_longer_pattern_match(
@@ -5031,7 +5031,7 @@ def pivot_longer(
         dtypes,
         sort_by_appearance,
         ignore_index,
-        flatten_levels
+        flatten_levels,
     )
 
     return df

@@ -332,6 +332,7 @@ def test_wrong_dtypes():
     with pytest.raises(TypeError):
         df_checks.pivot_longer(dtypes="int")
 
+
 def test_flatten_levels_type():
     "Raise TypeError if the wrong type is provided for `flatten_levels`."
     with pytest.raises(TypeError):
@@ -1154,6 +1155,7 @@ paired_columns_pattern = [
     ),
 ]
 
+
 @pytest.mark.parametrize(
     "df_in,df_out,index,names_to,names_pattern,dtypes", paired_columns_pattern
 )
@@ -1171,7 +1173,6 @@ def test_extract_column_names_pattern(
         dtypes=dtypes,
     )
     assert_frame_equal(result, df_out)
-
 
 
 paired_columns_sep = [
@@ -1485,7 +1486,6 @@ paired_columns_sep = [
 ]
 
 
-
 @pytest.mark.parametrize(
     "df_in,df_out,index,names_to,names_sep, dtypes", paired_columns_sep
 )
@@ -1500,7 +1500,6 @@ def test_extract_column_names_sep(
         index=index, names_to=names_to, names_sep=names_sep, dtypes=dtypes
     )
     assert_frame_equal(result, df_out)
-
 
 
 # https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/10
@@ -1628,7 +1627,6 @@ def test_paired_columns_no_index_pattern(
     assert_frame_equal(result, df_out)
 
 
-
 names_single_value = [
     (
         pd.DataFrame(
@@ -1649,7 +1647,8 @@ names_single_value = [
         ),
         "event",
         "(.+)_.",
-        None, True
+        None,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1670,7 +1669,8 @@ names_single_value = [
         ),
         "id",
         "(.).",
-        None, True
+        None,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1685,9 +1685,8 @@ names_single_value = [
         None,
         "(.).",
         None,
-        True
+        True,
     ),
-
     (
         pd.DataFrame(
             {
@@ -1697,45 +1696,54 @@ names_single_value = [
                 "y2": [10, 11, 12],
             }
         ),
-        pd.DataFrame({"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]}, index=[0,0,1,1,2,2]),
+        pd.DataFrame(
+            {"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]},
+            index=[0, 0, 1, 1, 2, 2],
+        ),
         None,
         "(.).",
         None,
-        False
+        False,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index, names_pattern, dtypes, ignore_index", names_single_value
+    "df_in,df_out,index, names_pattern, dtypes, ignore_index",
+    names_single_value,
 )
-def test_single_value(df_in, df_out, index, names_pattern, dtypes, ignore_index):
+def test_single_value(
+    df_in, df_out, index, names_pattern, dtypes, ignore_index
+):
     "Test function where names_to is a string and == `.value`."
     result = df_in.pivot_longer(
         index=index,
         names_to=".value",
         names_pattern=names_pattern,
-        dtypes=dtypes, ignore_index = ignore_index
+        dtypes=dtypes,
+        ignore_index=ignore_index,
     )
     assert_frame_equal(result, df_out)
 
 
-
-
-
-df = pd.DataFrame({
-    'famid': [1, 1, 1, 2, 2, 2, 3, 3, 3],
-    'birth': [1, 2, 3, 1, 2, 3, 1, 2, 3],
-    'ht1': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
-    'ht2': [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9]
-})
-
+df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "M_start_date_1": [201709, 201709, 201709],
+            "M_end_date_1": [201905, 201905, 201905],
+            "M_start_date_2": [202004, 202004, 202004],
+            "M_end_date_2": [202005, 202005, 202005],
+            "F_start_date_1": [201803, 201803, 201803],
+            "F_end_date_1": [201904, 201904, 201904],
+            "F_start_date_2": [201912, 201912, 201912],
+            "F_end_date_2": [202007, 202007, 202007],
+        }
+    )
 
 print(df)
 print()
 
-print(
-    df.pivot_longer(index=['famid','birth'],
-                names_to=('.value', 'age'),
-                names_pattern=r"(ht)(\d)")
-)
+print(df.pivot_longer(index="id",
+        names_to=("cod", ".value"),
+        names_pattern="(M|F)_(start|end)_.+"
+    ))

@@ -8,10 +8,10 @@ from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
-from numpy.testing._private.utils import tempdir
 import pandas as pd
 from numpy.core.defchararray import add
 from numpy.core.multiarray import dot
+from numpy.testing._private.utils import tempdir
 from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
@@ -618,7 +618,7 @@ def _data_checks_pivot_longer(
     dtypes,
     sort_by_appearance,
     ignore_index,
-    flatten_levels
+    flatten_levels,
 ):
 
     """
@@ -754,7 +754,7 @@ def _data_checks_pivot_longer(
         dtypes,
         sort_by_appearance,
         ignore_index,
-        flatten_levels
+        flatten_levels,
     )
 
 
@@ -861,7 +861,7 @@ def _computations_pivot_longer(
     dtypes: Optional[Dict] = None,
     sort_by_appearance: Optional[bool] = True,
     ignore_index: Optional[bool] = True,
-    flatten_levels:Optional[bool] = True
+    flatten_levels: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
      This is the main workhorse of the `pivot_longer` function.
@@ -954,7 +954,7 @@ def _computations_pivot_longer(
 
         # use this later to determine if unique index will be created
         # unique index is required for unstacking
-        if index: 
+        if index:
             duplicated_index = df.duplicated(subset=index).any()
 
         if names_sep:
@@ -1009,8 +1009,8 @@ def _computations_pivot_longer(
         if ".value" in mapping.columns:
             if mapping.duplicated().any():
                 # creates unique indices so that unstack can occur
-                # again, more efficient to create cumulative count 
-                # here than on the entire dataframe... since cumcount 
+                # again, more efficient to create cumulative count
+                # here than on the entire dataframe... since cumcount
                 # is dependent on the length of the grouping
                 mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
@@ -1018,7 +1018,7 @@ def _computations_pivot_longer(
         # an alternative would have been to set the index on the dataframe,
         # run the extractions, then reset index to add the index back to the
         # dataframe. Not effective; since at some point if there is '.value'
-        # in the labels, we would have to set the index again, before 
+        # in the labels, we would have to set the index again, before
         # unstacking.
         if index:
             # get the position of the index labels
@@ -1031,7 +1031,6 @@ def _computations_pivot_longer(
 
         df.columns = pd.MultiIndex.from_frame(mapping)
 
-
         # if `values_to` is in column names, during melt
         # the original values in the `values_to` column is overriden
         # with the values from values_to in `mapping`, which
@@ -1042,9 +1041,8 @@ def _computations_pivot_longer(
         ####################################################################
         # extraction is complete. Next phase is either to flip the extracts
         # as column names (if '.value' is present) or simply create new
-        # columns. 
+        # columns.
         ####################################################################
-
 
         # no flipping here since '.value' is not present
         if ".value" not in df.columns.names:
@@ -1062,10 +1060,10 @@ def _computations_pivot_longer(
             return df
 
         # flipping begins here, since '.value' is present
-        if any((index is None, duplicated_index)):
+        if any((index is None, duplicated_index, sort_by_appearance)):
             # this creates a unique index, which is needed
             # for unstacking later
-            temporary_index = '._temp*index'
+            temporary_index = "._temp*index"
             # should be a rare ocurrence
             if temporary_index in df.columns:
                 temporary_index = temporary_index + "_1"
@@ -1075,9 +1073,9 @@ def _computations_pivot_longer(
             else:
                 index = [temporary_index]
         df = df.melt(id_vars=index, value_name=values_to)
-
-
-        columns_not_eq_values_to = [column for column in df if column != values_to]
+        columns_not_eq_values_to = [
+            column for column in df if column != values_to
+        ]
 
         if not ignore_index:
             df.index = np.resize(df_index, len(df))
@@ -1086,22 +1084,28 @@ def _computations_pivot_longer(
             df = df.set_index(columns_not_eq_values_to)
 
         if sort_by_appearance:
-            add_index = np.resize(np.arange(len(df_index)), len(df))
+            # sort_remaining=False ensures other levels
+            # are not tampered with; this, along with 
+            # `mergesort` ensures that we get the right
+            # order of appearance.
+            # also getting the index numbers via argsort
+            # improves performance when sorting by appearance
             index_sorter = (
-                df.set_index(add_index, append=True)
-                # sort_remaining=False ensures the other levels are not sorted
-                # which is needed to keep data in order of appearance
-                .sort_index(level=-1, kind="mergesort", sort_remaining=False)
-                .droplevel([-1, df.index.names.index(".value")])
-                .index.drop_duplicates()
+                df.droplevel(".value")
+                .sort_index(
+                    level=temporary_index,
+                    kind="mergesort",
+                    sort_remaining=False,
+                )
+                .index.drop_duplicates().argsort()
             )
 
-            columns_sorter = df.index.get_level_values(".value").unique()
+            columns_sorter = df.index.get_level_values(".value").unique().argsort()
 
         df = df.unstack(".value").droplevel(level=0, axis=1)
 
         if sort_by_appearance:
-            df = df.loc[index_sorter, columns_sorter]
+            df = df.iloc[index_sorter, columns_sorter]
 
         if "._cumcount" in df.index.names:
             df = df.droplevel("._cumcount")
@@ -1119,7 +1123,7 @@ def _computations_pivot_longer(
         if flatten_levels:
             if ignore_index:
                 # reset_index is not required
-                # if there is no index and 
+                # if there is no index and
                 # names_to is just '.value'.
                 if df.index.names != [None]:
                     df = df.reset_index()

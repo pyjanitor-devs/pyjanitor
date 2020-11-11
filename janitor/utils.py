@@ -8,7 +8,10 @@ from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
+from numpy.testing._private.utils import tempdir
 import pandas as pd
+from numpy.core.defchararray import add
+from numpy.core.multiarray import dot
 from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
@@ -613,6 +616,9 @@ def _data_checks_pivot_longer(
     names_sep,
     names_pattern,
     dtypes,
+    sort_by_appearance,
+    ignore_index,
+    flatten_levels
 ):
 
     """
@@ -731,6 +737,12 @@ def _data_checks_pivot_longer(
 
     check("values_to", values_to, [str])
 
+    check("sort_by_appearance", sort_by_appearance, [bool])
+
+    check("ignore_index", ignore_index, [bool])
+
+    check("flatten_levels", flatten_levels, [bool])
+
     return (
         df,
         index,
@@ -740,6 +752,9 @@ def _data_checks_pivot_longer(
         names_sep,
         names_pattern,
         dtypes,
+        sort_by_appearance,
+        ignore_index,
+        flatten_levels
     )
 
 
@@ -768,6 +783,73 @@ def _pivot_longer_pattern_match(
     return df, index, column_names
 
 
+def _reindex_func(
+    df: pd.DataFrame, ignore_index, sort_by_appearance, df_index
+) -> pd.DataFrame:
+    """
+    This function restores the original index if requested, via the `ignore_index`
+    parameter, and sorts the resulting dataframe by appearance, via the 
+    `sort_by_appearance` parameter. It is meant for sections in 
+    `_computations_pivot_longer` function that does not have `.value` in the dataframe's
+    columns.
+
+    An example for `ignore_index`:
+
+    Say we have data like below:
+           A  B  C
+        0  a  1  2
+        1  b  3  4
+        2  c  5  6
+
+    If `ignore_index` is False (this means the original index will be reused),
+    then the resulting dataframe will look like below:
+
+           A  variable  value
+        0  a        B      1
+        1  b        B      3
+        2  c        B      5
+        0  a        C      2
+        1  b        C      4
+        2  c        C      6
+    
+    Note how the index is repeated ([0,1,2,0,1,2])
+
+    An example for `sort_appearance` : 
+    
+    Say data looks like this :
+        id, a1, a2, a3, A1, A2, A3
+         1, a, b, c, A, B, C
+
+    when pivoted into long form, it will look like this :
+              id instance    a     A
+        0     1     1        a     A
+        1     1     2        b     B
+        2     1     3        c     C
+
+    where the columns `a` comes before `A`, as it was in the source data,
+    and in column `a`, `a > b > c`, also as it was in the source data.
+
+    A reindexed dataframe is returned.
+    """
+
+    # no need for this when the minimum version is Pandas 1.1
+    if not ignore_index:
+        df.index = np.resize(df_index, len(df))
+
+    if sort_by_appearance:
+        add_index = np.resize(np.arange(len(df_index)), len(df))
+        df = (
+            df.set_index(add_index, append=True)
+            .sort_index(kind="mergesort", level=-1, sort_remaining=False)
+            .droplevel(level=-1)
+        )
+
+        if ignore_index:
+            df = df.reset_index(drop=True)
+
+    return df
+
+
 def _computations_pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple]] = None,
@@ -777,24 +859,50 @@ def _computations_pivot_longer(
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[str, Pattern]] = None,
     dtypes: Optional[Dict] = None,
+    sort_by_appearance: Optional[bool] = True,
+    ignore_index: Optional[bool] = True,
+    flatten_levels:Optional[bool] = True
 ) -> pd.DataFrame:
     """
-    This is the main workhorse of the `pivot_longer` function.
-    The data is stacked, using ``pd.DataFrame.unstack``, to ensure
-    that the order of appearance from the source data is maintained.
+     This is the main workhorse of the `pivot_longer` function.
+    There are a couple of scenarios that this function takes care of when
+    unpivoting :
 
-    If the length of `names_to` is > 1, or '.value' is in `names_to`,
-    then the last level in the unpivoted dataframe's index is split,
-    using `str.split(expand=True)`, if `names_sep` is provided.
-    If `names_pattern` is provided, then either `pd.Series.str.extractall`
-    or `pd.Series.str.contains` is used instead.
+    1. Regular data unpivoting is covered with pandas melt.
 
-    If `names_to` contains `.value`, then categorical index is created,
-    and a new dataframe created with this new index. The index level with
-    the name `.value` is unstacked and becomes column names of the new
-    dataframe.
+    2. if the length of `names_to` is > 1, the function unpivots the data,
+       using `pd.melt`, and then separates into individual columns, using
+       `str.split(expand=True)` if `names_sep` is provided or
+       `str.extractall()` if `names_pattern is provided. The labels in
+       `names_to` become the new column names.
 
-    A dataframe is returned, with the index reset.
+    3. If `names_to` contains `.value`, then the function replicates
+       `pd.wide_to_long`, using `pd.melt`. Unlike `pd.wide_to_long`, the
+       stubnames do not have to be prefixes, they just need to match the
+       position of `.value` in `names_to`. Just like in 2 above, the columns
+       are separated into individual columns. The labels in the column
+       corresponding to `.value` become the new column names, and override
+       `values_to` in the process. The other extracted column stays
+       (if len(`names_to`) is > 1), with the other name in `names_to` as
+       its column name.
+
+    The function also tries to emulate the way the source data is structured.
+    Say data looks like this :
+        id, a1, a2, a3, A1, A2, A3
+         1, a, b, c, A, B, C
+
+    when pivoted into long form, it will look like this :
+              id instance    a     A
+        0     1     1        a     A
+        1     1     2        b     B
+        2     1     3        c     C
+
+    where the columns `a` comes before `A`, as it was in the source data,
+    and in column `a`, `a > b > c`, also as it was in the source data.
+    This also visually creates a complete set of the data per index. This
+    is only applied if `sort_by_appearance` is `True`.
+    
+    A dataframe is returned with new index is `ignore_index` is `True`.
     """
 
     if index is not None:
@@ -806,43 +914,59 @@ def _computations_pivot_longer(
     if index is None and (column_names is not None):
         index = [col for col in df if col not in column_names]
 
-    if index:
-        df = df.set_index(index)
-
-    if column_names:
-        df = df.filter(column_names)
-
+    df_index = df.index
+    # scenario 1
     if all((names_pattern is None, names_sep is None)):
-        # this ensures explicit missing variables are shown
-        # in the final dataframe; comes in handy if there
-        # are nulls in the original dataframe
-        df = df.stack(dropna=False)  # noqa: PD013
-        df = df.reset_index()
-        if index:
-            df.columns = index + names_to + [values_to]
-        else:
-            # this is necessary to exclude the reset index from
-            # the final dataframe.
-            df = df.iloc[:, 1:]
-            df.columns = names_to + [values_to]
-        if dtypes:
-            df = df.astype(dtypes)
+        df = pd.melt(
+            df,
+            id_vars=index,
+            value_vars=column_names,
+            var_name=names_to,
+            value_name=values_to,
+        )
+
+        df = _reindex_func(
+            df=df,
+            ignore_index=ignore_index,
+            sort_by_appearance=sort_by_appearance,
+            df_index=df_index,
+        )
 
         return df
 
-    mapping = None
-    index_sorter = None
-    columns_sorter = None
-    extra_index = None
-    drop_cols = None
     # splitting the columns before flipping is more efficient
     # if flipped before splitting, you have to deal with more rows
     # and string manipulations in Pandas are run within Python
     # so the larger the number of items the slower it will be.
-    # however, if the columns are split before flipping,
-    # we can take advantage of `stack`, which is vectorized
+
+    mapping = None
+    duplicated_index = None
+    index_sorter = None
+    columns_sorter = None
+    columns_not_eq_values_to = None
+    temporary_index = None
+    ########################################################################
+    # this section here deals with the extraction of values from the columns
+    ########################################################################
+    
+    # scenario 2
     if any((names_pattern, names_sep)):
-        df.columns.names = ["._variable"]
+
+        # use this later to determine if unique index will be created
+        # unique index is required for unstacking
+        if index: 
+            duplicated_index = df.duplicated(subset=index).any()
+
+        # this covers scenarios where not all (may be rare)
+        # the columns need to be unpivoted
+        # need tests for this
+        # possibly look at Stack Overflow for any test cases
+        if column_names:
+            if index:
+                df = df.filter(index + column_names)
+            else:
+                df = df.filter(column_names)
+
         if names_sep:
             mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
 
@@ -854,9 +978,12 @@ def _computations_pivot_longer(
                     """
                 )
 
+            mapping.columns = names_to
+
         else:
             if isinstance(names_pattern, str):
                 mapping = df.columns.str.extract(names_pattern)
+
                 if mapping.dropna().empty:
                     raise ValueError(
                         """
@@ -871,10 +998,14 @@ def _computations_pivot_longer(
                         number of columns extracted.
                         """
                     )
+
+                mapping.columns = names_to
+
             else:  # list/tuple of regular expressions
                 mapping = [
                     df.columns.str.contains(regex) for regex in names_pattern
                 ]
+
                 if not np.any(mapping):
                     raise ValueError(
                         """
@@ -882,77 +1013,125 @@ def _computations_pivot_longer(
                         in `names_pattern`.
                         """
                     )
-                mapping = pd.DataFrame(np.select(mapping, names_to, None))
-                mapping.columns = [".value"]
+                mapping = np.select(mapping, names_to, None)
+                mapping = pd.DataFrame(mapping, columns=[".value"])
 
-        if not isinstance(names_pattern, (list, tuple)):
-            mapping.columns = names_to
+        if ".value" in mapping.columns:
+            if mapping.duplicated().any():
+                # creates unique indices so that unstack can occur
+                # again, more efficient to create cumulative count 
+                # here than on the entire dataframe... since cumcount 
+                # is dependent on the length of the grouping
+                mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
-        # attach to mapping, as it will be used as a join key
-        # to ensure a one to one mapping
-        mapping.index = df.columns
+        # the idea behind this is to preserve the index, if it exists.
+        # an alternative would have been to set the index on the dataframe,
+        # run the extractions, then reset index to add the index back to the
+        # dataframe. Not effective; since at some point if there is '.value'
+        # in the labels, we would have to set the index again, before 
+        # unstacking.
+        if index:
+            # get the position of the index labels
+            positions = df.columns.get_indexer(index)
+            # replace the cells in the first column with the index labels
+            # and replace the remaining cells with empty string;
+            # this allows for easy melting
+            mapping.iloc[positions, 0] = index
+            mapping.iloc[positions, 1:] = ""
 
-        if ".value" not in mapping.columns:
-            df = mapping.join(
-                df.stack(dropna=False).rename(values_to),  # noqa: PD013
-                how="right",
-                sort=False,
+        df.columns = pd.MultiIndex.from_frame(mapping)
+
+        # if `values_to` is in column names, during melt
+        # the original values in the `values_to` column is overriden
+        # with the values from values_to in `mapping`, which
+        # is certainly not what we want.
+        if values_to in df.columns.names:
+            values_to = values_to + "_1"
+
+        ####################################################################
+        # extraction is complete. Next phase is either to flip the extracts
+        # as column names (if '.value' is present) or simply create new
+        # columns. 
+        ####################################################################
+
+
+        # no flipping here since '.value' is not present
+        if ".value" not in df.columns.names:
+            df = df.melt(id_vars=index, value_name=values_to)
+            df = _reindex_func(
+                df=df,
+                ignore_index=ignore_index,
+                sort_by_appearance=sort_by_appearance,
+                df_index=df_index,
             )
-            df = df.droplevel("._variable").reset_index()
+
             if dtypes:
                 df = df.astype(dtypes)
+
             return df
 
-        # '.value' kicks off here
-        if df.index.duplicated().any():
-            extra_index = pd.Index(np.arange(len(df)), name="._extra_index")
-            df = df.set_index(extra_index, append=True)
+        # flipping begins here, since '.value' is present
+        if any((index is None, duplicated_index)):
+            # this creates a unique index, which is needed
+            # for unstacking later
+            temporary_index = '._temp*index'
+            # should be a rare ocurrence
+            if temporary_index in df.columns:
+                temporary_index = temporary_index + "_1"
+            df.insert(0, temporary_index, np.arange(len(df_index)))
+            if index:
+                index = index + [temporary_index]
+            else:
+                index = [temporary_index]
+        df = df.melt(id_vars=index, value_name=values_to)
 
-        # avoids conflict in joins due to overlapping column names
-        if values_to in mapping.columns:
-            values_to = values_to + "_x"
+        columns_not_eq_values_to = [column for column in df if column != values_to]
 
-        if mapping.duplicated().any():
-            # creates unique indices so that unstack can occur
-            mapping["._cumcount"] = mapping.groupby(".value").cumcount()
+        if not ignore_index:
+            df.index = np.resize(df_index, len(df))
+            df = df.set_index(columns_not_eq_values_to, append=True)
+        else:
+            df = df.set_index(columns_not_eq_values_to)
 
-        # join keeps data in order of appearance column wise
-        # of the original dataframe, and also ensures a one-to-one
-        # mapping of extract to source
-        df = mapping.join(
-            df.stack(dropna=False).rename(values_to),  # noqa: PD013
-            how="right",
-            sort=False,
-        )
-        df = df.set_index(list(mapping.columns), append=True).droplevel(
-            "._variable"
-        )
+        if sort_by_appearance:
+            add_index = np.resize(np.arange(len(df_index)), len(df))
+            index_sorter = (
+                df.set_index(add_index, append=True)
+                # sort_remaining=False ensures the other levels are not sorted
+                # which is needed to keep data in order of appearance
+                .sort_index(level=-1, kind="mergesort", sort_remaining=False)
+                .droplevel([-1, df.index.names.index(".value")])
+                .index.drop_duplicates()
+            )
+            columns_sorter = df.index.get_level_values(".value").unique()
 
-        columns_sorter = mapping.loc[:, ".value"].unique()
-        index_sorter = df.index.droplevel(".value")
-        if index_sorter.duplicated().any():
-            index_sorter = index_sorter.drop_duplicates()
+        df = df.unstack(".value").droplevel(level=0, axis=1)
 
-        # unstack has an impact on performance as the data grows
-        # possible touch point for improvement in the code
-        # also possibly add a reset_index option, which may be
-        # useful to users who prefer having an index
-        df = (
-            df.unstack(".value")  # noqa: PD010
-            .droplevel(level=0, axis=1)
-            .loc[index_sorter, columns_sorter]
-            .rename_axis(columns=None)
-            .reset_index()
-        )
+        if sort_by_appearance:
+            df = df.loc[index_sorter, columns_sorter]
 
-        drop_cols = [
-            col for col in df if col in ("._extra_index", "._cumcount")
-        ]
-        if drop_cols:
-            df = df.drop(drop_cols, axis=1)
+        if "._cumcount" in df.index.names:
+            df = df.droplevel("._cumcount")
 
-        if not index:  # gets rid of default index
-            df = df.iloc[:, 1:]
+        if temporary_index in df.index.names:
+            # if there is only one level, droplevel
+            # will not work.
+            if df.index.names == [temporary_index]:
+                df.index = np.arange(len(df))
+            else:
+                df = df.droplevel(temporary_index)
+
+        df = df.rename_axis(columns=None)
+
+        if flatten_levels:
+            if ignore_index:
+                # reset_index is not required
+                # if there is no index and 
+                # names_to is just '.value'.
+                if df.index.names != [None]:
+                    df = df.reset_index()
+            else:
+                df = df.reset_index(df.index.names[1:])
 
         if dtypes:
             df = df.astype(dtypes)

@@ -4702,6 +4702,9 @@ def pivot_longer(
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
     dtypes: Optional[Dict] = None,
+    sort_by_appearance: Optional[bool] = True,
+    ignore_index: Optional[bool] = True,
+    flatten_levels: Optional[bool] = True
 ) -> pd.DataFrame:
     """
     Unpivots a DataFrame from 'wide' to 'long' format.
@@ -4709,9 +4712,10 @@ def pivot_longer(
     This method does not mutate the original DataFrame.
 
     It is meant to serve as a single point for transformations of dataframes
-    from wide to long form. It also offers more functionality and flexibility
-    than `pd.wide_to_long`. It is modeled after the `pivot_longer` function in
-    R's `tidyr` package.
+    from wide to long form, and is a wrapper around `pd.DataFrame.melt`. It 
+    also offers more functionality and flexibility than `pd.wide_to_long`. 
+    
+    It is modeled after the `pivot_longer` function in R's `tidyr` package.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -4949,6 +4953,14 @@ def pivot_longer(
         were previously the values of the columns in `column_names`.
     :param dtypes: A dictionary mapping data types to columns in the new
         dataframe.
+    :param sort_by_appearance: Default `True`. Boolean value that determines 
+        if the new dataframe will be sorted in order of appearance.
+    :param ignore_index: Default `True`. If True, original index is ignored. 
+        If False, the original index is retained. Index labels will be 
+        repeated as necessary.
+    :param flatten_levels: Default `True`. Whether or not to reset the index.
+        This usually applies to scenarios where `.value` is in `names_to`, or
+        `names_pattern` is a list/tuple of regular expressions.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
     :raises TypeError: if `index` or `column_names` is not a string, or a
@@ -4959,6 +4971,8 @@ def pivot_longer(
     :raises TypeError: if `dtypes` is not a dictionary.
     :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
+    :raises TypeError: if `sort_by_appearance` is not a boolean.
+    :raises TypeError: if `ignore_index` is not a boolean.
     :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
         and `names_sep` is provided.
     :raises TypeError: if `names_sep` or `names_pattern` is not a string or
@@ -4984,6 +4998,9 @@ def pivot_longer(
         names_sep,
         names_pattern,
         dtypes,
+        sort_by_appearance,
+        ignore_index,
+        flatten_levels
     ) = _data_checks_pivot_longer(
         df,
         index,
@@ -4993,6 +5010,9 @@ def pivot_longer(
         names_sep,
         names_pattern,
         dtypes,
+        sort_by_appearance,
+        ignore_index,
+        flatten_levels
     )
 
     df, index, column_names = _pivot_longer_pattern_match(
@@ -5008,6 +5028,9 @@ def pivot_longer(
         names_sep,
         names_pattern,
         dtypes,
+        sort_by_appearance,
+        ignore_index,
+        flatten_levels
     )
 
     return df

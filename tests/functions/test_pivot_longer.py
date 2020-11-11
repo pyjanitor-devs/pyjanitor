@@ -76,6 +76,432 @@ def test_df():
     )
 
 
+multi_index_df = [
+    pd.DataFrame(
+        pd.DataFrame(
+            {
+                "name": {
+                    (67, 56): "Wilbur",
+                    (80, 90): "Petunia",
+                    (64, 50): "Gregory",
+                }
+            }
+        )
+    ),
+    pd.DataFrame(
+        {
+            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
+            ("names", "aa"): {0: 67, 1: 80, 2: 64},
+            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
+        }
+    ),
+    pd.DataFrame(
+        {
+            ("name", "a"): {
+                (0, 2): "Wilbur",
+                (1, 3): "Petunia",
+                (2, 4): "Gregory",
+            },
+            ("names", "aa"): {(0, 2): 67, (1, 3): 80, (2, 4): 64},
+            ("more_names", "aaa"): {(0, 2): 56, (1, 3): 90, (2, 4): 50},
+        }
+    ),
+]
+
+
+index_labels = [pd.Index(["region"]), {"2007", "region"}]
+column_labels = [{"region": 2007}, {"2007", "2009"}]
+names_to_labels = [1, {12, "newnames"}]
+
+index_does_not_exist = ["Region", [2007, "region"]]
+column_does_not_exist = ["two thousand and seven", ("2007", 2009)]
+
+index_type_checks = (
+    (frame, index) for frame, index in product([df_checks], index_labels)
+)
+column_type_checks = (
+    (frame, column_name)
+    for frame, column_name in product([df_checks], column_labels)
+)
+names_to_type_checks = (
+    (frame, names_to)
+    for frame, names_to in product([df_checks], names_to_labels)
+)
+
+names_to_sub_type_checks = (
+    (df_checks, (1, "rar")),
+    (df_checks, [{"set"}, 20]),
+)
+
+index_presence_checks = (
+    (frame, index)
+    for frame, index in product([df_checks], index_does_not_exist)
+)
+column_presence_checks = (
+    (frame, column_name)
+    for frame, column_name in product([df_checks], column_does_not_exist)
+)
+
+names_sep_not_required = [
+    (df_checks, "rar", "_"),
+    (df_checks, ["blessed"], ","),
+]
+
+names_sep_type_check = [
+    (df_checks, ["rar", "bar"], 1),
+    (df_checks, ("rar", "ragnar"), ["\\d+"]),
+]
+names_pattern_type_check = [
+    (df_checks, "rar", 1),
+    (df_checks, {1: "rar"}, {"\\d+"}),
+]
+
+
+@pytest.mark.parametrize("df,index", index_type_checks)
+def test_type_index(df, index):
+    "Raise TypeError if wrong type is provided for the `index`."
+    with pytest.raises(TypeError):
+        df.pivot_longer(index=index)
+
+
+@pytest.mark.parametrize("df,column", column_type_checks)
+def test_type_column_names(df, column):
+    "Raise TypeError if wrong type is provided for `column_names`."
+    with pytest.raises(TypeError):
+        df.pivot_longer(column_names=column)
+
+
+@pytest.mark.parametrize("df,names_to", names_to_type_checks)
+def test_type_names_to(df, names_to):
+    "Raise TypeError if wrong type is provided for `names_to`."
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to)
+
+
+@pytest.mark.parametrize("df,names_to", names_to_sub_type_checks)
+def test_subtype_names_to(df, names_to):
+    """
+    Raise TypeError if `names_to` is a list/tuple and the wrong type is
+    provided for entries in `names_to`.
+    """
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to)
+
+
+@pytest.mark.parametrize("df,index", index_presence_checks)
+def test_presence_index(df, index):
+    "Raise ValueError if labels in `index` do not exist."
+    with pytest.raises(ValueError):
+        df.pivot_longer(index=index)
+
+
+@pytest.mark.parametrize("df,column", column_presence_checks)
+def test_presence_columns(df, column):
+    "Raise ValueError if labels in `column_names` do not exist."
+    with pytest.raises(ValueError):
+        df.pivot_longer(column_names=column)
+
+
+@pytest.mark.parametrize("df,names_to, names_sep", names_sep_not_required)
+def test_name_sep_names_to_len(df, names_to, names_sep):
+    """
+    Raise ValueError if the `names_to` is a string, or `names_to` is a
+    list/tuple, its length is one, and `names_sep` is provided.
+    """
+    with pytest.raises(ValueError):
+        df.pivot_longer(names_to=names_to, names_sep=names_sep)
+
+
+@pytest.mark.parametrize("df,names_to, names_sep", names_sep_type_check)
+def test_name_sep_wrong_type(df, names_to, names_sep):
+    "Raise TypeError if the wrong type is provided for `names_sep`."
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to, names_sep=names_sep)
+
+
+@pytest.mark.parametrize(
+    "df,names_to, names_pattern", names_pattern_type_check
+)
+def test_name_pattern_wrong_type(df, names_to, names_pattern):
+    "Raise TypeError if the wrong type provided for `names_pattern`."
+    with pytest.raises(TypeError):
+        df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
+
+
+def test_names_pattern_wrong_subtype():
+    """
+    Raise TypeError if `names_pattern` is a list/tuple
+    and wrong subtype is supplied.
+    """
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(
+            names_to=["variable", "value"], names_pattern=[1, "rar"]
+        )
+
+
+def test_names_pattern_names_to_wrong_type():
+    """
+    Raise TypeError if `names_pattern` is a list/tuple
+    and wrong type is supplied for `names_to`.
+    """
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(
+            names_to={"variable, value"}, names_pattern=["1", "rar"]
+        )
+
+
+@pytest.mark.parametrize("df", multi_index_df)
+def test_warning_multi_index(df):
+    "Raise ValueError if dataframe is a MultiIndex."
+    with pytest.raises(ValueError):
+        df.pivot_longer()
+
+
+def test_sort_by_appearance(test_df):
+    "Raise error if `sort_by_appearance` is not boolean."
+    with pytest.raises(TypeError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"],
+            names_sep="_",
+            sort_by_appearance="TRUE",
+        )
+
+
+def test_ignore_index(test_df):
+    "Raise error if `ignore_index` is not boolean."
+    with pytest.raises(TypeError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_sep="_", ignore_index="TRUE"
+        )
+
+
+def test_duplicate_dot_value(test_df):
+    "Raise error if `names_to` contains more than 1 `.value."
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
+        )
+
+
+def test_names_pattern_names_to_unequal_length():
+    """
+    Raise ValueError if `names_pattern` is a list/tuple
+    and wrong number of items in `names_to`.
+    """
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["variable"], names_pattern=["1", "rar"]
+        )
+
+
+def test_names_pattern_names_to_dot_value():
+    """
+    Raise Error if `names_pattern` is a list/tuple and
+    `.value` in `names_to`.
+    """
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["variable", ".value"], names_pattern=["1", "rar"]
+        )
+
+
+def test_both_names_sep_and_pattern():
+    "Raise ValueError if both `names_sep` and `names_pattern` is provided."
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["rar", "bar"], names_sep="-", names_pattern=r"\\d+"
+        )
+
+
+def test_neither_names_sep_and_pattern():
+    "Raise ValueError if neither `names_sep` nor `names_pattern` is provided."
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(
+            names_to=["rar", "bar"], names_sep=None, names_pattern=None
+        )
+
+
+def test_values_to():
+    "Raise TypeError if the wrong type is provided for `values_to`."
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(values_to=["salvo"])
+
+
+def test_wrong_dtypes():
+    "Raise TypeError if the wrong type is provided for `dtypes`."
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(dtypes="int")
+
+def test_flatten_levels_type():
+    "Raise TypeError if the wrong type is provided for `flatten_levels`."
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(flatten_levels="TRUE")
+
+
+def test_pivot_no_args_passed():
+    "Test output if no arguments are passed."
+    df_no_args = pd.DataFrame({"name": ["Wilbur", "Petunia", "Gregory"]})
+    df_no_args_output = pd.DataFrame(
+        {
+            "variable": ["name", "name", "name"],
+            "value": ["Wilbur", "Petunia", "Gregory"],
+        }
+    )
+    result = df_no_args.pivot_longer()
+
+    assert_frame_equal(result, df_no_args_output)
+
+
+def test_pivot_index_only(df_checks_output):
+    "Test output if only `index` is passed."
+    result = df_checks.pivot_longer(
+        index="region", names_to="year", values_to="num_nests",
+    )
+    assert_frame_equal(result, df_checks_output)
+
+
+def test_pivot_index_only_not_sort_by_appearance():
+    """
+    Test output if only `index` is passed, and
+    `sort_by_appearance` is False.
+    """
+    result = df_checks.pivot_longer(
+        index="region",
+        names_to="year",
+        values_to="num_nests",
+        sort_by_appearance=False,
+    )
+
+    df_out = pd.DataFrame(
+        {
+            "region": [
+                "Pacific",
+                "Southwest",
+                "Rocky Mountains and Plains",
+                "Pacific",
+                "Southwest",
+                "Rocky Mountains and Plains",
+            ],
+            "year": ["2007", "2007", "2007", "2009", "2009", "2009"],
+            "num_nests": [1039, 51, 200, 2587, 176, 338],
+        }
+    )
+
+    assert_frame_equal(result, df_out)
+
+
+def test_ignore_index_False():
+    """
+    Test dataframe output if `ignore_index` is False, 
+    and `sort_by_appearance` is False.
+    """
+    df_in = pd.DataFrame(
+        {
+            "A": {0: "a", 1: "b", 2: "c"},
+            "B": {0: 1, 1: 3, 2: 5},
+            "C": {0: 2, 1: 4, 2: 6},
+        }
+    )
+
+    result = df_in.pivot_longer(
+        index="A",
+        column_names=["B", "C"],
+        ignore_index=False,
+        sort_by_appearance=False,
+    )
+
+    df_out = pd.DataFrame(
+        {
+            "A": ["a", "b", "c", "a", "b", "c"],
+            "variable": ["B", "B", "B", "C", "C", "C"],
+            "value": [1, 3, 5, 2, 4, 6],
+        },
+        index=pd.Int64Index([0, 1, 2, 0, 1, 2], dtype="int64"),
+    )
+
+    assert_frame_equal(result, df_out)
+
+
+def test_pivot_column_only(df_checks_output):
+    "Test output if only `column_names` is passed."
+    result = df_checks.pivot_longer(
+        column_names=["2007", "2009"], names_to="year", values_to="num_nests",
+    )
+    assert_frame_equal(result, df_checks_output)
+
+
+def test_pivot_index_patterns_only(df_checks_output):
+    "Test output if the `patterns` function is passed to `index`."
+    result = df_checks.pivot_longer(
+        index=patterns(r"[^\d+]"), names_to="year", values_to="num_nests",
+    )
+    assert_frame_equal(result, df_checks_output)
+
+
+def test_pivot_no_index_no_columns():  # check this test if it makes sense
+    "Test output if neither `index`/`columns_names` is passed, with dtypes."
+    test = pd.DataFrame(
+        {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
+    )
+    result = test.pivot_longer()
+    expected_output = pd.DataFrame(
+        {
+            "variable": ["1", "2", "3", "1", "2", "3"],
+            "value": ["fur", "car", "nsw", "lace", "plane", "vic"],
+        }
+    )
+    assert_frame_equal(result, expected_output)
+
+
+def test_pivot_columns_patterns_only(df_checks_output):
+    "Test output if the `patterns` function is passed to `column_names`."
+    result = df_checks.pivot_longer(
+        column_names=patterns(r"\d+"), names_to="year", values_to="num_nests",
+    )
+    assert_frame_equal(result, df_checks_output)
+
+
+def test_length_mismatch():
+    """
+    Raise error if `names_to` is a list/tuple and its length
+    does not match the number of extracted columns.
+    """
+    data = pd.DataFrame(
+        {
+            "country": ["United States", "Russia", "China"],
+            "vault_2012_f": [48.132, 46.36600000000001, 44.266000000000005],
+            "vault_2012_m": [46.632, 46.86600000000001, 48.316],
+            "vault_2016_f": [46.86600000000001, 45.733000000000004, 44.332],
+            "vault_2016_m": [45.865, 46.033, 45.0],
+            "floor_2012_f": [45.36600000000001, 41.599, 40.833],
+            "floor_2012_m": [45.266000000000005, 45.308, 45.133],
+            "floor_2016_f": [45.998999999999995, 42.032, 42.066],
+            "floor_2016_m": [43.757, 44.766000000000005, 43.799],
+        }
+    )
+    with pytest.raises(ValueError):
+        data.pivot_longer(names_to=["event", "year"], names_sep="-")
+
+
+def test_empty_mapping(test_df):
+    "Raise error if `names_pattern` is a regex and returns no matches."
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern=r"(\d+)([A-Z])"
+        )
+
+
+def test_len_mapping_gt_len_names_to(test_df):
+    """
+    Raise error if `names_pattern` is a regex and returns number of
+    matches more than length of `names_to`.
+    """
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern="(.+)(_)(.+)"
+        )
+
+
 @pytest.fixture
 def names_pattern_list_df():
     return pd.DataFrame(
@@ -94,6 +520,468 @@ def names_pattern_list_df():
             }
         ]
     )
+
+
+def test_names_pattern_list_empty(names_pattern_list_df):
+    """
+    Raise ValueError if `names_pattern` is a list,
+    and nothing is returned.
+    """
+    with pytest.raises(ValueError):
+        names_pattern_list_df.pivot_longer(
+            index="ID",
+            names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+            names_pattern=("^Start", "^End", "Value$"),
+        )
+
+
+def test_names_pattern_list(names_pattern_list_df):
+    "Test output if `names_pattern` is a list."
+    result = names_pattern_list_df.pivot_longer(
+        index="ID",
+        names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+        names_pattern=("Start$", "End$", "^Value"),
+        dtypes={"ID": int, "Value": float},
+    )
+
+    expected_output = pd.DataFrame(
+        {
+            "ID": [1, 1, 1],
+            "DateRangeStart": ["1/1/90", "4/5/91", "5/5/95"],
+            "DateRangeEnd": ["3/1/90", "6/7/91", "6/6/96"],
+            "Value": [4.4, 6.2, 3.3],
+        }
+    )
+
+    assert_frame_equal(result, expected_output)
+
+
+multiple_values_pattern = [
+    (
+        pd.DataFrame(
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault2012": [48.1, 46.4, 44.3],
+                "floor2012": [45.4, 41.6, 40.8],
+                "vault2016": [46.9, 45.7, 44.3],
+                "floor2016": [46.0, 42.0, 42.1],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": "2012",
+                    "score": 48.1,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": "2012",
+                    "score": 45.4,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": "2016",
+                    "score": 46.9,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": "2016",
+                    "score": 46.0,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": "2012",
+                    "score": 46.4,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": "2012",
+                    "score": 41.6,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": "2016",
+                    "score": 45.7,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": "2016",
+                    "score": 42.0,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": "2012",
+                    "score": 44.3,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": "2012",
+                    "score": 40.8,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": "2016",
+                    "score": 44.3,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": "2016",
+                    "score": 42.1,
+                },
+            ]
+        ),
+        "country",
+        ("event", "year"),
+        r"([A-Za-z]+)(\d+)",
+    )
+]
+
+# probably unneccesary as it is just one item
+# the idea is that more tests may be added for this
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_pattern", multiple_values_pattern
+)
+def test_multiple_values_pattern(
+    df_in, df_out, index, names_to, names_pattern
+):
+    """
+    Test function to extract multiple columns, using the `names_to` and
+    names_pattern arguments.
+    """
+    result = df_in.pivot_longer(
+        index=index,
+        names_to=names_to,
+        names_pattern=names_pattern,
+        values_to="score",
+    )
+    assert_frame_equal(result, df_out)
+
+
+multiple_values_sep = [
+    (
+        pd.DataFrame(
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault_2012": [48.1, 46.4, 44.3],
+                "floor_2012": [45.4, 41.6, 40.8],
+                "vault_2016": [46.9, 45.7, 44.3],
+                "floor_2016": [46.0, 42.0, 42.1],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": "2012",
+                    "score": 48.1,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": "2012",
+                    "score": 45.4,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": "2016",
+                    "score": 46.9,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": "2016",
+                    "score": 46.0,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": "2012",
+                    "score": 46.4,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": "2012",
+                    "score": 41.6,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": "2016",
+                    "score": 45.7,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": "2016",
+                    "score": 42.0,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": "2012",
+                    "score": 44.3,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": "2012",
+                    "score": 40.8,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": "2016",
+                    "score": 44.3,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": "2016",
+                    "score": 42.1,
+                },
+            ]
+        ),
+        "country",
+        ("event", "year"),
+        "_",
+        None,
+    ),
+    (
+        pd.DataFrame(
+            {
+                "country": ["United States", "Russia", "China"],
+                "vault_2012_f": [
+                    48.132,
+                    46.36600000000001,
+                    44.266000000000005,
+                ],
+                "vault_2012_m": [46.632, 46.86600000000001, 48.316],
+                "vault_2016_f": [
+                    46.86600000000001,
+                    45.733000000000004,
+                    44.332,
+                ],
+                "vault_2016_m": [45.865, 46.033, 45.0],
+                "floor_2012_f": [45.36600000000001, 41.599, 40.833],
+                "floor_2012_m": [45.266000000000005, 45.308, 45.133],
+                "floor_2016_f": [45.998999999999995, 42.032, 42.066],
+                "floor_2016_m": [43.757, 44.766000000000005, 43.799],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 48.132,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 46.632,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 46.86600000000001,
+                },
+                {
+                    "country": "United States",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 45.865,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 45.36600000000001,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 45.266000000000005,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 45.998999999999995,
+                },
+                {
+                    "country": "United States",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 43.757,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 46.36600000000001,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 46.86600000000001,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 45.733000000000004,
+                },
+                {
+                    "country": "Russia",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 46.033,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 41.599,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 45.308,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 42.032,
+                },
+                {
+                    "country": "Russia",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 44.766000000000005,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 44.266000000000005,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 48.316,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 44.332,
+                },
+                {
+                    "country": "China",
+                    "event": "vault",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 45.0,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "f",
+                    "score": 40.833,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2012,
+                    "gender": "m",
+                    "score": 45.133,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "f",
+                    "score": 42.066,
+                },
+                {
+                    "country": "China",
+                    "event": "floor",
+                    "year": 2016,
+                    "gender": "m",
+                    "score": 43.799,
+                },
+            ]
+        ),
+        "country",
+        ("event", "year", "gender"),
+        "_",
+        {"year": int},
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_sep,dtypes", multiple_values_sep
+)
+def test_multiple_values_sep(
+    df_in, df_out, index, names_to, names_sep, dtypes
+):
+    """
+    Test function to extract multiple columns, using the `names_to` and
+    names_sep arguments.
+    """
+    result = df_in.pivot_longer(
+        index=index,
+        names_to=names_to,
+        names_sep=names_sep,
+        values_to="score",
+        dtypes=dtypes,
+    )
+    assert_frame_equal(result, df_out)
 
 
 paired_columns_pattern = [
@@ -265,6 +1153,26 @@ paired_columns_pattern = [
         None,
     ),
 ]
+
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_pattern,dtypes", paired_columns_pattern
+)
+def test_extract_column_names_pattern(
+    df_in, df_out, index, names_to, names_pattern, dtypes
+):
+    """
+    Test output if `.value` is in the `names_to` argument and
+    names_pattern is used.
+    """
+    result = df_in.pivot_longer(
+        index=index,
+        names_to=names_to,
+        names_pattern=names_pattern,
+        dtypes=dtypes,
+    )
+    assert_frame_equal(result, df_out)
+
+
 
 paired_columns_sep = [
     # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.wide_to_long.html
@@ -576,424 +1484,23 @@ paired_columns_sep = [
     ),
 ]
 
-multi_index_df = [
-    pd.DataFrame(
-        pd.DataFrame(
-            {
-                "name": {
-                    (67, 56): "Wilbur",
-                    (80, 90): "Petunia",
-                    (64, 50): "Gregory",
-                }
-            }
-        )
-    ),
-    pd.DataFrame(
-        {
-            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
-            ("names", "aa"): {0: 67, 1: 80, 2: 64},
-            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
-        }
-    ),
-    pd.DataFrame(
-        {
-            ("name", "a"): {
-                (0, 2): "Wilbur",
-                (1, 3): "Petunia",
-                (2, 4): "Gregory",
-            },
-            ("names", "aa"): {(0, 2): 67, (1, 3): 80, (2, 4): 64},
-            ("more_names", "aaa"): {(0, 2): 56, (1, 3): 90, (2, 4): 50},
-        }
-    ),
-]
 
-multiple_values_sep = [
-    (
-        pd.DataFrame(
-            {
-                "country": ["United States", "Russia", "China"],
-                "vault_2012": [48.1, 46.4, 44.3],
-                "floor_2012": [45.4, 41.6, 40.8],
-                "vault_2016": [46.9, 45.7, 44.3],
-                "floor_2016": [46.0, 42.0, 42.1],
-            }
-        ),
-        pd.DataFrame(
-            [
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 48.1,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 45.4,
-                },
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 46.9,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 46.0,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 46.4,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 41.6,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 45.7,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 42.0,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 44.3,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 40.8,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 44.3,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 42.1,
-                },
-            ]
-        ),
-        "country",
-        ("event", "year"),
-        "_",
-        {"year": int},
-    ),
-    (
-        pd.DataFrame(
-            {
-                "country": ["United States", "Russia", "China"],
-                "vault_2012_f": [
-                    48.132,
-                    46.36600000000001,
-                    44.266000000000005,
-                ],
-                "vault_2012_m": [46.632, 46.86600000000001, 48.316],
-                "vault_2016_f": [
-                    46.86600000000001,
-                    45.733000000000004,
-                    44.332,
-                ],
-                "vault_2016_m": [45.865, 46.033, 45.0],
-                "floor_2012_f": [45.36600000000001, 41.599, 40.833],
-                "floor_2012_m": [45.266000000000005, 45.308, 45.133],
-                "floor_2016_f": [45.998999999999995, 42.032, 42.066],
-                "floor_2016_m": [43.757, 44.766000000000005, 43.799],
-            }
-        ),
-        pd.DataFrame(
-            [
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2012,
-                    "gender": "f",
-                    "score": 48.132,
-                },
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2012,
-                    "gender": "m",
-                    "score": 46.632,
-                },
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2016,
-                    "gender": "f",
-                    "score": 46.86600000000001,
-                },
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2016,
-                    "gender": "m",
-                    "score": 45.865,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2012,
-                    "gender": "f",
-                    "score": 45.36600000000001,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2012,
-                    "gender": "m",
-                    "score": 45.266000000000005,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2016,
-                    "gender": "f",
-                    "score": 45.998999999999995,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2016,
-                    "gender": "m",
-                    "score": 43.757,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2012,
-                    "gender": "f",
-                    "score": 46.36600000000001,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2012,
-                    "gender": "m",
-                    "score": 46.86600000000001,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2016,
-                    "gender": "f",
-                    "score": 45.733000000000004,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2016,
-                    "gender": "m",
-                    "score": 46.033,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2012,
-                    "gender": "f",
-                    "score": 41.599,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2012,
-                    "gender": "m",
-                    "score": 45.308,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2016,
-                    "gender": "f",
-                    "score": 42.032,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2016,
-                    "gender": "m",
-                    "score": 44.766000000000005,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2012,
-                    "gender": "f",
-                    "score": 44.266000000000005,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2012,
-                    "gender": "m",
-                    "score": 48.316,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2016,
-                    "gender": "f",
-                    "score": 44.332,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2016,
-                    "gender": "m",
-                    "score": 45.0,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2012,
-                    "gender": "f",
-                    "score": 40.833,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2012,
-                    "gender": "m",
-                    "score": 45.133,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2016,
-                    "gender": "f",
-                    "score": 42.066,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2016,
-                    "gender": "m",
-                    "score": 43.799,
-                },
-            ]
-        ),
-        "country",
-        ("event", "year", "gender"),
-        "_",
-        {"year": int},
-    ),
-]
 
-multiple_values_pattern = [
-    (
-        pd.DataFrame(
-            {
-                "country": ["United States", "Russia", "China"],
-                "vault2012": [48.1, 46.4, 44.3],
-                "floor2012": [45.4, 41.6, 40.8],
-                "vault2016": [46.9, 45.7, 44.3],
-                "floor2016": [46.0, 42.0, 42.1],
-            }
-        ),
-        pd.DataFrame(
-            [
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 48.1,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 45.4,
-                },
-                {
-                    "country": "United States",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 46.9,
-                },
-                {
-                    "country": "United States",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 46.0,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 46.4,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 41.6,
-                },
-                {
-                    "country": "Russia",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 45.7,
-                },
-                {
-                    "country": "Russia",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 42.0,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2012,
-                    "score": 44.3,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2012,
-                    "score": 40.8,
-                },
-                {
-                    "country": "China",
-                    "event": "vault",
-                    "year": 2016,
-                    "score": 44.3,
-                },
-                {
-                    "country": "China",
-                    "event": "floor",
-                    "year": 2016,
-                    "score": 42.1,
-                },
-            ]
-        ),
-        "country",
-        ("event", "year"),
-        r"([A-Za-z]+)(\d+)",
-        {"year": int},
+@pytest.mark.parametrize(
+    "df_in,df_out,index,names_to,names_sep, dtypes", paired_columns_sep
+)
+def test_extract_column_names_sep(
+    df_in, df_out, index, names_to, names_sep, dtypes
+):
+    """
+    Test output if `.value` is in the `names_to` argument and names_sep
+    is used.
+    """
+    result = df_in.pivot_longer(
+        index=index, names_to=names_to, names_sep=names_sep, dtypes=dtypes
     )
-]
+    assert_frame_equal(result, df_out)
+
 
 
 # https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/10
@@ -1103,6 +1610,25 @@ paired_columns_no_index_pattern = [
     )
 ]
 
+
+@pytest.mark.parametrize(
+    "df_in,df_out,names_to,names_pattern,dtypes",
+    paired_columns_no_index_pattern,
+)
+def test_paired_columns_no_index_pattern(
+    df_in, df_out, names_to, names_pattern, dtypes
+):
+    """
+    Test function where `.value` is in the `names_to` argument, names_pattern
+    is used and no index is supplied.
+    """
+    result = df_in.pivot_longer(
+        names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
+    )
+    assert_frame_equal(result, df_out)
+
+
+
 names_single_value = [
     (
         pd.DataFrame(
@@ -1123,7 +1649,7 @@ names_single_value = [
         ),
         "event",
         "(.+)_.",
-        None,
+        None, True
     ),
     (
         pd.DataFrame(
@@ -1144,7 +1670,7 @@ names_single_value = [
         ),
         "id",
         "(.).",
-        None,
+        None, True
     ),
     (
         pd.DataFrame(
@@ -1159,464 +1685,61 @@ names_single_value = [
         None,
         "(.).",
         None,
+        True
+    ),
+
+    (
+        pd.DataFrame(
+            {
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
+            }
+        ),
+        pd.DataFrame({"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]}, index=[0,0,1,1,2,2]),
+        None,
+        "(.).",
+        None,
+        False
     ),
 ]
 
-index_labels = [pd.Index(["region"]), {"2007", "region"}]
-column_labels = [{"region": 2007}, {"2007", "2009"}]
-names_to_labels = [1, {12, "newnames"}]
-
-index_does_not_exist = ["Region", [2007, "region"]]
-column_does_not_exist = ["two thousand and seven", ("2007", 2009)]
-
-index_type_checks = (
-    (frame, index) for frame, index in product([df_checks], index_labels)
-)
-column_type_checks = (
-    (frame, column_name)
-    for frame, column_name in product([df_checks], column_labels)
-)
-names_to_type_checks = (
-    (frame, names_to)
-    for frame, names_to in product([df_checks], names_to_labels)
-)
-
-names_to_sub_type_checks = (
-    (df_checks, (1, "rar")),
-    (df_checks, [{"set"}, 20]),
-)
-
-index_presence_checks = (
-    (frame, index)
-    for frame, index in product([df_checks], index_does_not_exist)
-)
-column_presence_checks = (
-    (frame, column_name)
-    for frame, column_name in product([df_checks], column_does_not_exist)
-)
-
-names_sep_not_required = [
-    (df_checks, "rar", "_"),
-    (df_checks, ["blessed"], ","),
-]
-
-names_sep_type_check = [
-    (df_checks, ["rar", "bar"], 1),
-    (df_checks, ("rar", "ragnar"), ["\\d+"]),
-]
-names_pattern_type_check = [
-    (df_checks, "rar", 1),
-    (df_checks, {1: "rar"}, {"\\d+"}),
-]
-
-
-@pytest.mark.parametrize("df,index", index_type_checks)
-def test_type_index(df, index):
-    "Raise TypeError if wrong type is provided for the `index`."
-    with pytest.raises(TypeError):
-        df.pivot_longer(index=index)
-
-
-@pytest.mark.parametrize("df,column", column_type_checks)
-def test_type_column_names(df, column):
-    "Raise TypeError if wrong type is provided for `column_names`."
-    with pytest.raises(TypeError):
-        df.pivot_longer(column_names=column)
-
-
-@pytest.mark.parametrize("df,names_to", names_to_type_checks)
-def test_type_names_to(df, names_to):
-    "Raise TypeError if wrong type is provided for `names_to`."
-    with pytest.raises(TypeError):
-        df.pivot_longer(names_to=names_to)
-
-
-@pytest.mark.parametrize("df,names_to", names_to_sub_type_checks)
-def test_subtype_names_to(df, names_to):
-    """
-    Raise TypeError if `names_to` is a list/tuple and the wrong type is
-    provided for entries in `names_to`.
-    """
-    with pytest.raises(TypeError):
-        df.pivot_longer(names_to=names_to)
-
-
-@pytest.mark.parametrize("df,index", index_presence_checks)
-def test_presence_index(df, index):
-    "Raise ValueError if labels in `index` do not exist."
-    with pytest.raises(ValueError):
-        df.pivot_longer(index=index)
-
-
-@pytest.mark.parametrize("df,column", column_presence_checks)
-def test_presence_columns(df, column):
-    "Raise ValueError if labels in `column_names` do not exist."
-    with pytest.raises(ValueError):
-        df.pivot_longer(column_names=column)
-
-
-@pytest.mark.parametrize("df,names_to, names_sep", names_sep_not_required)
-def test_name_sep_names_to_len(df, names_to, names_sep):
-    """
-    Raise ValueError if the `names_to` is a string, or `names_to` is a
-    list/tuple, its length is one, and `names_sep` is provided.
-    """
-    with pytest.raises(ValueError):
-        df.pivot_longer(names_to=names_to, names_sep=names_sep)
-
-
-@pytest.mark.parametrize("df,names_to, names_sep", names_sep_type_check)
-def test_name_sep_wrong_type(df, names_to, names_sep):
-    "Raise TypeError if the wrong type is provided for `names_sep`."
-    with pytest.raises(TypeError):
-        df.pivot_longer(names_to=names_to, names_sep=names_sep)
-
 
 @pytest.mark.parametrize(
-    "df,names_to, names_pattern", names_pattern_type_check
+    "df_in,df_out,index, names_pattern, dtypes, ignore_index", names_single_value
 )
-def test_name_pattern_wrong_type(df, names_to, names_pattern):
-    "Raise TypeError if the wrong type provided for `names_pattern`."
-    with pytest.raises(TypeError):
-        df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
-
-
-def test_names_pattern_wrong_subtype():
-    """
-    Raise TypeError if `names_pattern` is a list/tuple
-    and wrong subtype is supplied.
-    """
-    with pytest.raises(TypeError):
-        df_checks.pivot_longer(
-            names_to=["variable", "value"], names_pattern=[1, "rar"]
-        )
-
-
-def test_names_pattern_names_to_wrong_type():
-    """
-    Raise TypeError if `names_pattern` is a list/tuple
-    and wrong type is supplied for `names_to`.
-    """
-    with pytest.raises(TypeError):
-        df_checks.pivot_longer(
-            names_to={"variable, value"}, names_pattern=["1", "rar"]
-        )
-
-
-def test_names_pattern_names_to_unequal_length():
-    """
-    Raise ValueError if `names_pattern` is a list/tuple
-    and wrong number of items in `names_to`.
-    """
-    with pytest.raises(ValueError):
-        df_checks.pivot_longer(
-            names_to=["variable"], names_pattern=["1", "rar"]
-        )
-
-
-def test_names_pattern_names_to_dot_value():
-    """
-    Raise Error if `names_pattern` is a list/tuple and
-    `.value` in `names_to`.
-    """
-    with pytest.raises(ValueError):
-        df_checks.pivot_longer(
-            names_to=["variable", ".value"], names_pattern=["1", "rar"]
-        )
-
-
-@pytest.mark.parametrize("df", multi_index_df)
-def test_warning_multi_index(df):
-    "Raise ValueError if dataframe is a MultiIndex."
-    with pytest.raises(ValueError):
-        df.pivot_longer()
-
-
-def test_length_mismatch():
-    """
-    Raise error if `names_to` is a list/tuple and its length
-    does not match the number of extracted columns.
-    """
-    data = pd.DataFrame(
-        {
-            "country": ["United States", "Russia", "China"],
-            "vault_2012_f": [48.132, 46.36600000000001, 44.266000000000005],
-            "vault_2012_m": [46.632, 46.86600000000001, 48.316],
-            "vault_2016_f": [46.86600000000001, 45.733000000000004, 44.332],
-            "vault_2016_m": [45.865, 46.033, 45.0],
-            "floor_2012_f": [45.36600000000001, 41.599, 40.833],
-            "floor_2012_m": [45.266000000000005, 45.308, 45.133],
-            "floor_2016_f": [45.998999999999995, 42.032, 42.066],
-            "floor_2016_m": [43.757, 44.766000000000005, 43.799],
-        }
-    )
-    with pytest.raises(ValueError):
-        data.pivot_longer(names_to=["event", "year"], names_sep="-")
-
-
-def test_duplicate_dot_value(test_df):
-    "Raise error if `names_to` contains more than 1 `.value."
-    with pytest.raises(ValueError):
-        test_df.pivot_longer(
-            names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
-        )
-
-
-def test_empty_mapping(test_df):
-    "Raise error if `names_pattern` is a regex and returns no matches."
-    with pytest.raises(ValueError):
-        test_df.pivot_longer(
-            names_to=[".value", "value"], names_pattern=r"(\d+)([A-Z])"
-        )
-
-
-def test_len_mapping_gt_len_names_to(test_df):
-    """
-    Raise error if `names_pattern` is a regex and returns number of
-    matches more than length of `names_to`.
-    """
-    with pytest.raises(ValueError):
-        test_df.pivot_longer(
-            names_to=[".value", "value"], names_pattern="(.+)(_)(.+)"
-        )
-
-
-def test_both_names_sep_and_pattern():
-    "Raise ValueError if both `names_sep` and `names_pattern` is provided."
-    with pytest.raises(ValueError):
-        df_checks.pivot_longer(
-            names_to=["rar", "bar"], names_sep="-", names_pattern=r"\\d+"
-        )
-
-
-def test_neither_names_sep_and_pattern():
-    "Raise ValueError if neither `names_sep` nor `names_pattern` is provided."
-    with pytest.raises(ValueError):
-        df_checks.pivot_longer(
-            names_to=["rar", "bar"], names_sep=None, names_pattern=None
-        )
-
-
-def test_values_to():
-    "Raise TypeError if the wrong type is provided for `values_to`."
-    with pytest.raises(TypeError):
-        df_checks.pivot_longer(values_to=["salvo"])
-
-
-def test_wrong_dtypes():
-    "Raise TypeError if the wrong type is provided for `dtypes`."
-    with pytest.raises(TypeError):
-        df_checks.pivot_longer(dtypes="int")
-
-
-def test_pivot_no_args_passed():
-    "Test output if no arguments are passed."
-    df_no_args = pd.DataFrame({"name": ["Wilbur", "Petunia", "Gregory"]})
-    df_no_args_output = pd.DataFrame(
-        {
-            "variable": ["name", "name", "name"],
-            "value": ["Wilbur", "Petunia", "Gregory"],
-        }
-    )
-    result = df_no_args.pivot_longer()
-
-    assert_frame_equal(result, df_no_args_output)
-
-
-def test_pivot_index_only(df_checks_output):
-    "Test output if only `index` is passed."
-    result = df_checks.pivot_longer(
-        index="region",
-        names_to="year",
-        values_to="num_nests",
-        dtypes={"region": str},
-    )
-    assert_frame_equal(result, df_checks_output)
-
-
-def test_pivot_column_only(df_checks_output):
-    "Test output if only `column_names` is passed."
-    result = df_checks.pivot_longer(
-        column_names=["2007", "2009"],
-        names_to="year",
-        values_to="num_nests",
-        dtypes={"region": str},
-    )
-    assert_frame_equal(result, df_checks_output)
-
-
-def test_pivot_index_patterns_only(df_checks_output):
-    "Test output if the `patterns` function is passed to `index`."
-    result = df_checks.pivot_longer(
-        index=patterns(r"[^\d+]"),
-        names_to="year",
-        values_to="num_nests",
-        dtypes={"region": str},
-    )
-    assert_frame_equal(result, df_checks_output)
-
-
-def test_pivot_no_index_dtypes():  # check this test if it makes sense
-    "Test output if neither `index`/`columns_names` is passed, with dtypes."
-    test = pd.DataFrame(
-        {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
-    )
-    result = test.pivot_longer()
-    expected_output = pd.DataFrame(
-        {
-            "variable": ["1", "2", "3", "1", "2", "3"],
-            "value": ["fur", "car", "nsw", "lace", "plane", "vic"],
-        }
-    )
-    assert_frame_equal(result, expected_output)
-
-
-def test_pivot_columns_patterns_only(df_checks_output):
-    "Test output if the `patterns` function is passed to `column_names`."
-    result = df_checks.pivot_longer(
-        column_names=patterns(r"\d+"),
-        names_to="year",
-        values_to="num_nests",
-        dtypes={"region": str},
-    )
-    assert_frame_equal(result, df_checks_output)
-
-
-@pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern,dtypes", paired_columns_pattern
-)
-def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern, dtypes
-):
-    """
-    Test output if `.value` is in the `names_to` argument and
-    names_pattern is used.
-    """
-    result = df_in.pivot_longer(
-        index=index,
-        names_to=names_to,
-        names_pattern=names_pattern,
-        dtypes=dtypes,
-    )
-    assert_frame_equal(result, df_out)
-
-
-@pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep, dtypes", paired_columns_sep
-)
-def test_extract_column_names_sep(
-    df_in, df_out, index, names_to, names_sep, dtypes
-):
-    """
-    Test output if `.value` is in the `names_to` argument and names_sep
-    is used.
-    """
-    result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_sep=names_sep, dtypes=dtypes
-    )
-    assert_frame_equal(result, df_out)
-
-
-@pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep,dtypes", multiple_values_sep
-)
-def test_multiple_values_sep(
-    df_in, df_out, index, names_to, names_sep, dtypes
-):
-    """
-    Test function to extract multiple columns, using the `names_to` and
-    names_sep arguments.
-    """
-    result = df_in.pivot_longer(
-        index=index,
-        names_to=names_to,
-        names_sep=names_sep,
-        dtypes=dtypes,
-        values_to="score",
-    )
-    assert_frame_equal(result, df_out)
-
-
-@pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern,dtypes", multiple_values_pattern
-)
-def test_multiple_values_pattern(
-    df_in, df_out, index, names_to, names_pattern, dtypes
-):
-    """
-    Test function to extract multiple columns, using the `names_to` and
-    names_pattern arguments.
-    """
-    result = df_in.pivot_longer(
-        index=index,
-        names_to=names_to,
-        names_pattern=names_pattern,
-        dtypes=dtypes,
-        values_to="score",
-    )
-    assert_frame_equal(result, df_out)
-
-
-@pytest.mark.parametrize(
-    "df_in,df_out,names_to,names_pattern,dtypes",
-    paired_columns_no_index_pattern,
-)
-def test_paired_columns_no_index_pattern(
-    df_in, df_out, names_to, names_pattern, dtypes
-):
-    """
-    Test function where `.value` is in the `names_to` argument, names_pattern
-    is used and no index is supplied.
-    """
-    result = df_in.pivot_longer(
-        names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
-    )
-    assert_frame_equal(result, df_out)
-
-
-@pytest.mark.parametrize(
-    "df_in,df_out,index, names_pattern, dtypes", names_single_value
-)
-def test_single_value(df_in, df_out, index, dtypes, names_pattern):
+def test_single_value(df_in, df_out, index, names_pattern, dtypes, ignore_index):
     "Test function where names_to is a string and == `.value`."
     result = df_in.pivot_longer(
         index=index,
         names_to=".value",
         names_pattern=names_pattern,
-        dtypes=dtypes,
+        dtypes=dtypes, ignore_index = ignore_index
     )
     assert_frame_equal(result, df_out)
 
 
-def test_names_pattern_list(names_pattern_list_df):
-    "Test output if `names_pattern` is a list."
-    result = names_pattern_list_df.pivot_longer(
-        index="ID",
-        names_to=("DateRangeStart", "DateRangeEnd", "Value"),
-        names_pattern=("Start$", "End$", "^Value"),
-        dtypes={"ID": int, "Value": float},
-    )
-
-    expected_output = pd.DataFrame(
-        {
-            "ID": [1, 1, 1],
-            "DateRangeStart": ["1/1/90", "4/5/91", "5/5/95"],
-            "DateRangeEnd": ["3/1/90", "6/7/91", "6/6/96"],
-            "Value": [4.4, 6.2, 3.3],
-        }
-    )
-
-    assert_frame_equal(result, expected_output)
 
 
-def test_names_pattern_list_empty(names_pattern_list_df):
-    """
-    Raise ValueError if `names_pattern` is a list,
-    and nothing is returned.
-    """
-    with pytest.raises(ValueError):
-        names_pattern_list_df.pivot_longer(
-            index="ID",
-            names_to=("DateRangeStart", "DateRangeEnd", "Value"),
-            names_pattern=("^Start", "^End", "Value$"),
+
+df = pd.DataFrame(
+            {
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
+            }
         )
+
+
+print(df)
+print()
+
+print(
+    df.pivot_longer(index=None,
+        names_to=(".value"),
+        names_pattern="(.).",
+        ignore_index=False
+    )
+)

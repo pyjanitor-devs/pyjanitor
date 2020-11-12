@@ -4712,10 +4712,10 @@ def pivot_longer(
     This method does not mutate the original DataFrame.
 
     IIt is a wrapper around `pd.melt` and is meant to serve as a single point
-    for transformations that require `pd.melt` or `pd.wide_to_long`. 
+    for transformations that require `pd.melt` or `pd.wide_to_long`.
 
-    It is modeled after the `pivot_longer` function in R's tidyr package, and 
-    offers more functionality and flexibility than `pd.wide_to_long`.     
+    It is modeled after the `pivot_longer` function in R's tidyr package, and
+    offers more functionality and flexibility than `pd.wide_to_long`.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -4729,7 +4729,7 @@ def pivot_longer(
     adequate.
 
     By default, the unpivoted dataframe is returned in order of appearance.
-    You can get significant performance improvement if ``sort_by_appearance`` 
+    You can get significant performance improvement if ``sort_by_appearance``
     is ``False``.
 
 
@@ -4964,14 +4964,14 @@ def pivot_longer(
         were previously the values of the columns in `column_names`.
     :param dtypes: A dictionary mapping data types to columns in the new
         dataframe.
-    :param sort_by_appearance: Default `True`. Boolean value that determines 
+    :param sort_by_appearance: Default `True`. Boolean value that determines
         if the new dataframe will be sorted in order of appearance. Significant
         performance improvement if set to `False`.
-    :param ignore_index: Default `True`. If True, original index is ignored. 
-        If False, the original index is retained. Index labels will be 
+    :param ignore_index: Default `True`. If True, original index is ignored.
+        If False, the original index is retained. Index labels will be
         repeated as necessary.
     :param flatten_levels: Default `True`. Whether or not to reset the index.
-        This usually applies to scenarios where `.value` is in `names_to`, or
+        This applies to scenarios where `.value` is in `names_to`, or
         `names_pattern` is a list/tuple of regular expressions.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.

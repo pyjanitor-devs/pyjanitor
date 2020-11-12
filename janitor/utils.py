@@ -9,9 +9,6 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from numpy.core.defchararray import add
-from numpy.core.multiarray import dot
-from numpy.testing._private.utils import tempdir
 from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
@@ -790,9 +787,9 @@ def _sort_by_appearance_func(
     This function adds a new column `temporary_index` that
     helps later with sorting by appearance, if `sort_by_appearance`
     is ``True``.
- 
-    An example for `sort_appearance` : 
-    
+
+    An example for `sort_appearance` :
+
     Say data looks like this :
         id, a1, a2, a3, A1, A2, A3
          1, a, b, c, A, B, C
@@ -804,7 +801,7 @@ def _sort_by_appearance_func(
         2     1     3        c     C     2
 
     The `temporary_index` column is used to sort the melted data
-    later. 
+    later.
 
     A dataframe is returned, with a new `temporary_index` column.
     """
@@ -812,7 +809,7 @@ def _sort_by_appearance_func(
     temporary_index = None
     if sort_by_appearance:
         temporary_index = "._temp*index"
-        if temporary_index in df.columns: # need a test for this
+        if temporary_index in df.columns:  # need a test for this
             temporary_index = temporary_index + "_1"
         df[temporary_index] = np.arange(len(df_index))
         if index:
@@ -832,7 +829,7 @@ def _restore_index_and_appearance_func(
 ) -> pd.DataFrame:
     """
     This function restores the original index via the `ignore_index`
-    and `df_index` parameters, and sorts the resulting dataframe 
+    and `df_index` parameters, and sorts the resulting dataframe
     by appearance, via the `sort_by_appearance` and `temporary_index`
     parameters. It is meant for sections in `_computations_pivot_longer`
     function that does not have `.value` in the dataframe's columns.
@@ -855,11 +852,11 @@ def _restore_index_and_appearance_func(
         0  a        C      2
         1  b        C      4
         2  c        C      6
-    
+
     Note how the index is repeated ([0,1,2,0,1,2])
 
-    An example for `sort_appearance` : 
-    
+    An example for `sort_appearance` :
+
     Say data looks like this :
         id, a1, a2, a3, A1, A2, A3
          1, a, b, c, A, B, C
@@ -940,7 +937,7 @@ def _computations_pivot_longer(
     and in column `a`, `a > b > c`, also as it was in the source data.
     This also visually creates a complete set of the data per index. This
     is only applied if `sort_by_appearance` is `True`.
-    
+
     A dataframe is returned with new index is `ignore_index` is `True`.
     """
 
@@ -1073,15 +1070,17 @@ def _computations_pivot_longer(
                 # Again, it is more efficient to create cumulative count
                 # here than on the entire dataframe... cumcount %timeit
                 # is dependent on the length of the grouping
+                # possible room for improvement would be to find a faster
+                # alternative to cumcount
                 mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
         # replace the remaining cells with empty string;
         # this allows for easy melting
-        # initially lumped this under the previous `if index call` 
-        # however; some scenarios (string contains) can cause an incorrect cumcount
-        # hence the need to separate the index checks, get the cumcount
-        # if needed, then replace the cumcounts with empty strings. 
-        # this allows for consistency in the final result.
+        # initially lumped this under the previous `if index call`
+        # however; some scenarios (string contains) can cause an incorrect
+        # cumcount hence the need to separate the index checks,
+        # get the cumcount (if needed), then replace the cumcounts with
+        # empty strings - this allows for consistency in the final result.
         if index:
             mapping.iloc[positions, 1:] = ""
 
@@ -1127,16 +1126,17 @@ def _computations_pivot_longer(
         # flipping begins here, since '.value' is present
         if any((index is None, duplicated_index, sort_by_appearance)):
             # this creates a unique index, which is needed
-            # for unstacking later           
+            # for unstacking later. Also used if dataframe needs
+            # to be sorted by appearance.
             df, index, temporary_index = _sort_by_appearance_func(
                 df=df,
                 index=index,
-                sort_by_appearance=sort_by_appearance,
+                sort_by_appearance=True,
                 df_index=df_index,
             )
 
         df = pd.melt(df, id_vars=index, value_name=values_to)
-       
+
         columns_not_eq_values_to = [
             column for column in df if column != values_to
         ]
@@ -1162,15 +1162,14 @@ def _computations_pivot_longer(
                 .index.drop_duplicates()
             )
 
-
             columns_sorter = df.index.get_level_values(".value").unique()
 
-
-        df = df.unstack(".value").droplevel(level=0, axis=1)
+        df = df.unstack(".value").droplevel(level=0, axis=1)  # noqa:PD010
 
         # tiny bit cheaper to reindex only on columns
         # more expensive reindexing a multindex
-        # checking if index_sorter is sorted helps 
+        # checking if index_sorter is sorted helps
+        # sorting is expensive. There may be a better way.
         if sort_by_appearance:
             if not index_sorter.is_monotonic_increasing:
                 df = df.reindex(index=index_sorter, columns=columns_sorter)

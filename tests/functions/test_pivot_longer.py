@@ -393,7 +393,7 @@ def test_pivot_index_only_not_sort_by_appearance():
 
 def test_ignore_index_False():
     """
-    Test dataframe output if `ignore_index` is False, 
+    Test dataframe output if `ignore_index` is False,
     and `sort_by_appearance` is False.
     """
     df_in = pd.DataFrame(
@@ -649,6 +649,7 @@ multiple_values_pattern = [
         r"([A-Za-z]+)(\d+)",
     )
 ]
+
 
 # probably unneccesary as it is just one item
 # the idea is that more tests may be added for this
@@ -1672,8 +1673,7 @@ names_single_value = [
         None,
         True,
     ),
-
-(
+    (
         pd.DataFrame(
             {
                 "._temp*index": [1, 2, 3],
@@ -1695,7 +1695,6 @@ names_single_value = [
         None,
         True,
     ),
-
     (
         pd.DataFrame(
             {
@@ -1751,19 +1750,47 @@ def test_single_value(
 
 
 df = pd.DataFrame(
-            {
-                "._temp*index": [1, 2, 3],
-                "x1": [4, 5, 6],
-                "x2": [5, 6, 7],
-                "y1": [7, 8, 9],
-                "y2": [10, 11, 12],
-            }
-        )
+    {
+        "off_loc": ["A", "B", "C", "D", "E", "F"],
+        "pt_loc": ["G", "H", "I", "J", "K", "L"],
+        "pt_lat": [
+            100.07548220000001,
+            75.191326,
+            122.65134479999999,
+            124.13553329999999,
+            124.13553329999999,
+            124.01028909999998,
+        ],
+        "off_lat": [
+            121.271083,
+            75.93845266,
+            135.043791,
+            134.51128400000002,
+            134.484374,
+            137.962195,
+        ],
+        "pt_long": [
+            4.472089953,
+            -144.387785,
+            -40.45611048,
+            -46.07156181,
+            -46.07156181,
+            -46.01594293,
+        ],
+        "off_long": [
+            -7.188632000000001,
+            -143.2288569,
+            21.242563,
+            40.937416999999996,
+            40.78472,
+            22.905889000000002,
+        ],
+    }
+)
 
 print(df)
+
 print()
 
-print(df.pivot_longer(index="._temp*index",
-        names_to=['x', 'y'],
-        names_pattern= ['x', 'y'],  sort_by_appearance=True
-    ))
+print(df.pivot_longer(names_to=["set", ".value"],
+                names_pattern="(.+)_(.+)", sort_by_appearance=False), )

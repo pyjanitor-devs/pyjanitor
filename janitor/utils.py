@@ -812,7 +812,7 @@ def _sort_by_appearance_func(
     temporary_index = None
     if sort_by_appearance:
         temporary_index = "._temp*index"
-        if temporary_index in df.columns:
+        if temporary_index in df.columns: # need a test for this
             temporary_index = temporary_index + "_1"
         df[temporary_index] = np.arange(len(df_index))
         if index:
@@ -993,6 +993,7 @@ def _computations_pivot_longer(
     columns_sorter = None
     columns_not_eq_values_to = None
     temporary_index = None
+    positions = None
 
     ##########################################################################
     # this section here deals with the extraction of values from the columns #
@@ -1049,6 +1050,19 @@ def _computations_pivot_longer(
                 mapping = np.select(mapping, names_to, None)
                 mapping = pd.DataFrame(mapping, columns=[".value"])
 
+        # the idea behind this is to preserve the index in the columns,
+        # if it exists.An alternative would have been to set the index
+        # on the dataframe, run the extractions from the columns,
+        # then reset index to add the index back to the dataframe.
+        # Not effective and not efficient(setting index is expensive),
+        # since at some point, if there is '.value' in the labels,
+        # we would have to set the index again, before unstacking.
+        if index:
+            # get the position of the index labels
+            positions = df.columns.get_indexer(index)
+            # replace the cells in the first column with the index labels
+            mapping.iloc[positions, 0] = index
+
         if ".value" in mapping.columns:
             # use this later to determine if unique index will be created
             # unique index is required for unstacking
@@ -1061,20 +1075,14 @@ def _computations_pivot_longer(
                 # is dependent on the length of the grouping
                 mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
-        # the idea behind this is to preserve the index in the columns,
-        # if it exists.An alternative would have been to set the index
-        # on the dataframe, run the extractions from the columns,
-        # then reset index to add the index back to the dataframe.
-        # Not effective and not efficient(setting index is expensive),
-        # since at some point, if there is '.value' in the labels,
-        # we would have to set the index again, before unstacking.
+        # replace the remaining cells with empty string;
+        # this allows for easy melting
+        # initially lumped this under the previous `if index call` 
+        # however; some scenarios (string contains) can cause an incorrect cumcount
+        # hence the need to separate the index checks, get the cumcount
+        # if needed, then replace the cumcounts with empty strings. 
+        # this allows for consistency in the final result.
         if index:
-            # get the position of the index labels
-            positions = df.columns.get_indexer(index)
-            # replace the cells in the first column with the index labels
-            # and replace the remaining cells with empty string;
-            # this allows for easy melting
-            mapping.iloc[positions, 0] = index
             mapping.iloc[positions, 1:] = ""
 
         df.columns = pd.MultiIndex.from_frame(mapping)
@@ -1154,18 +1162,20 @@ def _computations_pivot_longer(
                 .index.drop_duplicates()
             )
 
-            columns_sorter = df.index.get_level_values(".value").unique()
 
+            columns_sorter = df.index.get_level_values(".value").unique()
 
 
         df = df.unstack(".value").droplevel(level=0, axis=1)
 
-
+        # tiny bit cheaper to reindex only on columns
+        # more expensive reindexing a multindex
+        # checking if index_sorter is sorted helps 
         if sort_by_appearance:
-            if np.any(columns_sorter != list(df.columns)):
-                df = df.reindex(columns = columns_sorter)
-            if not index_sorter.equals(df.index):
-                df = df.reindex(index=index_sorter)
+            if not index_sorter.is_monotonic_increasing:
+                df = df.reindex(index=index_sorter, columns=columns_sorter)
+            else:
+                df = df.reindex(columns=columns_sorter)
 
         if "._cumcount" in df.index.names:
             df = df.droplevel("._cumcount")

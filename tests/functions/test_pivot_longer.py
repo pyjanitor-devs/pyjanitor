@@ -1672,6 +1672,30 @@ names_single_value = [
         None,
         True,
     ),
+
+(
+        pd.DataFrame(
+            {
+                "._temp*index": [1, 2, 3],
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
+            }
+        ),
+        pd.DataFrame(
+            {
+                "._temp*index": [1, 1, 2, 2, 3, 3],
+                "x": [4, 5, 5, 6, 6, 7],
+                "y": [7, 10, 8, 11, 9, 12],
+            }
+        ),
+        "._temp*index",
+        "(.).",
+        None,
+        True,
+    ),
+
     (
         pd.DataFrame(
             {
@@ -1724,3 +1748,22 @@ def test_single_value(
         ignore_index=ignore_index,
     )
     assert_frame_equal(result, df_out)
+
+
+df = pd.DataFrame(
+            {
+                "._temp*index": [1, 2, 3],
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
+            }
+        )
+
+print(df)
+print()
+
+print(df.pivot_longer(index="._temp*index",
+        names_to=['x', 'y'],
+        names_pattern= ['x', 'y'],  sort_by_appearance=True
+    ))

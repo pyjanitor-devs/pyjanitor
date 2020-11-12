@@ -4728,6 +4728,11 @@ def pivot_longer(
     If you wish to unpivot MultiIndexed dataframes, `pd.melt` is more than
     adequate.
 
+    By default, the unpivoted dataframe is returned in order of appearance.
+    You can get significant performance improvement if ``sort_by_appearance`` 
+    is ``False``.
+
+
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
 
@@ -4899,7 +4904,10 @@ def pivot_longer(
             names_sep = string/regular expression,
             names_pattern = string/regular expression,
             value_name = new_column_name,
-            dtypes = dtypes
+            dtypes = dtypes,
+            sort_by_appearance = True/False,
+            ignore_index = True/False,
+            flatten_levels = True/False
         )
 
     Method chaining syntax:
@@ -4915,7 +4923,10 @@ def pivot_longer(
                 names_sep = string/regular expression,
                 names_pattern = string/regular expression,
                 value_name= new_column_name,
-                dtypes = dtypes
+                dtypes = dtypes,
+                sort_by_appearance = True/False,
+                ignore_index = True/False,
+                flatten_levels = True/False
             )
         )
 
@@ -4968,16 +4979,17 @@ def pivot_longer(
         list/tuple of strings, or a `janitor.patterns` function.
     :raises TypeError: if `names_to` or `column_names` is not a string, or a
         list/tuple of strings.
-    :raises TypeError: if `values_to` is not a string.
-    :raises TypeError: if `dtypes` is not a dictionary.
-    :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
-        `names_pattern` are provided.
-    :raises TypeError: if `sort_by_appearance` is not a boolean.
-    :raises TypeError: if `ignore_index` is not a boolean.
-    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
-        and `names_sep` is provided.
     :raises TypeError: if `names_sep` or `names_pattern` is not a string or
         regular expression.
+    :raises TypeError: if `values_to` is not a string.
+    :raises TypeError: if `dtypes` is not a dictionary.
+    :raises TypeError: if `sort_by_appearance` is not a boolean.
+    :raises TypeError: if `ignore_index` is not a boolean.
+    :raises TypeError: if `flatten_levels` is not a boolean.
+    :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
+        `names_pattern` are provided.
+    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
+        and `names_sep` is provided.
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
     :raises ValueError: if `df` is a MultiIndex dataframe.

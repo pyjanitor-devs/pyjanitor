@@ -1724,26 +1724,3 @@ def test_single_value(
         ignore_index=ignore_index,
     )
     assert_frame_equal(result, df_out)
-
-
-df = pd.DataFrame(
-        {
-            "id": [1, 2, 3],
-            "M_start_date_1": [201709, 201709, 201709],
-            "M_end_date_1": [201905, 201905, 201905],
-            "M_start_date_2": [202004, 202004, 202004],
-            "M_end_date_2": [202005, 202005, 202005],
-            "F_start_date_1": [201803, 201803, 201803],
-            "F_end_date_1": [201904, 201904, 201904],
-            "F_start_date_2": [201912, 201912, 201912],
-            "F_end_date_2": [202007, 202007, 202007],
-        }
-    )
-
-print(df)
-print()
-
-print(df.pivot_longer(index="id",
-        names_to=("cod", ".value"),
-        names_pattern="(M|F)_(start|end)_.+"
-    ))

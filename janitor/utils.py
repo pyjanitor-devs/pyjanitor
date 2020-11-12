@@ -783,15 +783,59 @@ def _pivot_longer_pattern_match(
     return df, index, column_names
 
 
-def _reindex_func(
-    df: pd.DataFrame, ignore_index, sort_by_appearance, df_index
+def _sort_by_appearance_func(
+    df: pd.DataFrame, index, df_index, sort_by_appearance
 ) -> pd.DataFrame:
     """
-    This function restores the original index if requested, via the `ignore_index`
-    parameter, and sorts the resulting dataframe by appearance, via the 
-    `sort_by_appearance` parameter. It is meant for sections in 
-    `_computations_pivot_longer` function that does not have `.value` in the dataframe's
-    columns.
+    This function adds a new column `temporary_index` that
+    helps later with sorting by appearance, if `sort_by_appearance`
+    is ``True``.
+ 
+    An example for `sort_appearance` : 
+    
+    Say data looks like this :
+        id, a1, a2, a3, A1, A2, A3
+         1, a, b, c, A, B, C
+
+    when pivoted into long form, it will look like this :
+              id instance    a     A  temporary_index
+        0     1     1        a     A     0
+        1     1     2        b     B     1
+        2     1     3        c     C     2
+
+    The `temporary_index` column is used to sort the melted data
+    later. 
+
+    A dataframe is returned, with a new `temporary_index` column.
+    """
+
+    temporary_index = None
+    if sort_by_appearance:
+        temporary_index = "._temp*index"
+        if temporary_index in df.columns:
+            temporary_index = temporary_index + "_1"
+        df[temporary_index] = np.arange(len(df_index))
+        if index:
+            index = index + [temporary_index]
+        else:
+            index = [temporary_index]
+
+    return df, index, temporary_index
+
+
+def _restore_index_and_appearance_func(
+    df: pd.DataFrame,
+    ignore_index,
+    sort_by_appearance,
+    df_index,
+    temporary_index,
+) -> pd.DataFrame:
+    """
+    This function restores the original index via the `ignore_index`
+    and `df_index` parameters, and sorts the resulting dataframe 
+    by appearance, via the `sort_by_appearance` and `temporary_index`
+    parameters. It is meant for sections in `_computations_pivot_longer`
+    function that does not have `.value` in the dataframe's columns.
 
     An example for `ignore_index`:
 
@@ -836,16 +880,11 @@ def _reindex_func(
     if not ignore_index:
         df.index = np.resize(df_index, len(df))
 
+    # sorting with mergesort keeps the order
     if sort_by_appearance:
-        add_index = np.resize(np.arange(len(df_index)), len(df))
-        df = (
-            df.set_index(add_index, append=True)
-            .sort_index(kind="mergesort", level=-1, sort_remaining=False)
-            .droplevel(level=-1)
-        )
-
-        if ignore_index:
-            df = df.reset_index(drop=True)
+        df = df.sort_values(
+            by=temporary_index, kind="mergesort", ignore_index=ignore_index
+        ).drop(columns=temporary_index)
 
     return df
 
@@ -917,6 +956,14 @@ def _computations_pivot_longer(
     df_index = df.index
     # scenario 1
     if all((names_pattern is None, names_sep is None)):
+
+        df, index, temporary_index = _sort_by_appearance_func(
+            df=df,
+            index=index,
+            sort_by_appearance=sort_by_appearance,
+            df_index=df_index,
+        )
+
         df = pd.melt(
             df,
             id_vars=index,
@@ -925,11 +972,12 @@ def _computations_pivot_longer(
             value_name=values_to,
         )
 
-        df = _reindex_func(
+        df = _restore_index_and_appearance_func(
             df=df,
             ignore_index=ignore_index,
             sort_by_appearance=sort_by_appearance,
             df_index=df_index,
+            temporary_index=temporary_index,
         )
 
         return df
@@ -946,16 +994,11 @@ def _computations_pivot_longer(
     columns_not_eq_values_to = None
     temporary_index = None
 
-    ########################################################################
-    # this section here deals with the extraction of values from the columns
-    ########################################################################
+    ##########################################################################
+    # this section here deals with the extraction of values from the columns #
+    ##########################################################################
 
     if any((names_pattern, names_sep)):
-
-        # use this later to determine if unique index will be created
-        # unique index is required for unstacking
-        if index:
-            duplicated_index = df.duplicated(subset=index).any()
 
         if names_sep:
             mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
@@ -1007,19 +1050,24 @@ def _computations_pivot_longer(
                 mapping = pd.DataFrame(mapping, columns=[".value"])
 
         if ".value" in mapping.columns:
+            # use this later to determine if unique index will be created
+            # unique index is required for unstacking
+            if index:
+                duplicated_index = df.duplicated(subset=index).any()
             if mapping.duplicated().any():
-                # creates unique indices so that unstack can occur
-                # again, more efficient to create cumulative count
-                # here than on the entire dataframe... since cumcount
+                # creates unique indices so that unstack can occur.
+                # Again, it is more efficient to create cumulative count
+                # here than on the entire dataframe... cumcount %timeit
                 # is dependent on the length of the grouping
                 mapping["._cumcount"] = mapping.groupby(".value").cumcount()
 
-        # the idea behind this is to preserve the index, if it exists.
-        # an alternative would have been to set the index on the dataframe,
-        # run the extractions, then reset index to add the index back to the
-        # dataframe. Not effective; since at some point if there is '.value'
-        # in the labels, we would have to set the index again, before
-        # unstacking.
+        # the idea behind this is to preserve the index in the columns,
+        # if it exists.An alternative would have been to set the index
+        # on the dataframe, run the extractions from the columns,
+        # then reset index to add the index back to the dataframe.
+        # Not effective and not efficient(setting index is expensive),
+        # since at some point, if there is '.value' in the labels,
+        # we would have to set the index again, before unstacking.
         if index:
             # get the position of the index labels
             positions = df.columns.get_indexer(index)
@@ -1038,20 +1086,29 @@ def _computations_pivot_longer(
         if values_to in df.columns.names:
             values_to = values_to + "_1"
 
-        ####################################################################
-        # extraction is complete. Next phase is either to flip the extracts
-        # as column names (if '.value' is present) or simply create new
-        # columns.
-        ####################################################################
+        ######################################################################
+        # extraction is complete. Next phase is either to flip the extracts  #
+        # as column names (if '.value' is present) or simply create new      #
+        # columns.                                                           #
+        ######################################################################
 
         # no flipping here since '.value' is not present
         if ".value" not in df.columns.names:
-            df = df.melt(id_vars=index, value_name=values_to)
-            df = _reindex_func(
+            df, index, temporary_index = _sort_by_appearance_func(
+                df=df,
+                index=index,
+                sort_by_appearance=sort_by_appearance,
+                df_index=df_index,
+            )
+
+            df = pd.melt(df, id_vars=index, value_name=values_to)
+
+            df = _restore_index_and_appearance_func(
                 df=df,
                 ignore_index=ignore_index,
                 sort_by_appearance=sort_by_appearance,
                 df_index=df_index,
+                temporary_index=temporary_index,
             )
 
             if dtypes:
@@ -1062,17 +1119,16 @@ def _computations_pivot_longer(
         # flipping begins here, since '.value' is present
         if any((index is None, duplicated_index, sort_by_appearance)):
             # this creates a unique index, which is needed
-            # for unstacking later
-            temporary_index = "._temp*index"
-            # should be a rare ocurrence
-            if temporary_index in df.columns:
-                temporary_index = temporary_index + "_1"
-            df.insert(0, temporary_index, np.arange(len(df_index)))
-            if index:
-                index = index + [temporary_index]
-            else:
-                index = [temporary_index]
-        df = df.melt(id_vars=index, value_name=values_to)
+            # for unstacking later           
+            df, index, temporary_index = _sort_by_appearance_func(
+                df=df,
+                index=index,
+                sort_by_appearance=sort_by_appearance,
+                df_index=df_index,
+            )
+
+        df = pd.melt(df, id_vars=index, value_name=values_to)
+       
         columns_not_eq_values_to = [
             column for column in df if column != values_to
         ]
@@ -1085,11 +1141,9 @@ def _computations_pivot_longer(
 
         if sort_by_appearance:
             # sort_remaining=False ensures other levels
-            # are not tampered with; this, along with 
+            # are not tampered with; this, along with
             # `mergesort` ensures that we get the right
             # order of appearance.
-            # also getting the index numbers via argsort
-            # improves performance when sorting by appearance
             index_sorter = (
                 df.droplevel(".value")
                 .sort_index(
@@ -1097,15 +1151,21 @@ def _computations_pivot_longer(
                     kind="mergesort",
                     sort_remaining=False,
                 )
-                .index.drop_duplicates().argsort()
+                .index.drop_duplicates()
             )
 
-            columns_sorter = df.index.get_level_values(".value").unique().argsort()
+            columns_sorter = df.index.get_level_values(".value").unique()
+
+
 
         df = df.unstack(".value").droplevel(level=0, axis=1)
 
+
         if sort_by_appearance:
-            df = df.iloc[index_sorter, columns_sorter]
+            if np.any(columns_sorter != list(df.columns)):
+                df = df.reindex(columns = columns_sorter)
+            if not index_sorter.equals(df.index):
+                df = df.reindex(index=index_sorter)
 
         if "._cumcount" in df.index.names:
             df = df.droplevel("._cumcount")

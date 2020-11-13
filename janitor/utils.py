@@ -816,6 +816,8 @@ def _sort_by_appearance_func(
     temporary_index = None
     if sort_by_appearance:
         temporary_index = "._temp*index"
+        # not sure if this is really necessary
+        # I need to find a more fool-proof solution than this
         if temporary_index in df.columns:
             temporary_index = temporary_index + "_1"
         df[temporary_index] = np.arange(len(df_index))
@@ -1129,6 +1131,10 @@ def _computations_pivot_longer(
         # the original values in the `values_to` column is overriden
         # with the values from values_to in `mapping`, which
         # is certainly not what we want.
+
+        # I think it is better to raise an error, than
+        # patching this. Get the user to supply a `names_to`
+        # argument, or find a way to ignore values_to altogether.
         if values_to in df.columns.names:
             values_to = values_to + "_1"
 

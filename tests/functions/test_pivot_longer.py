@@ -3,6 +3,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 import pytest
+import seaborn
 from pandas.testing import assert_frame_equal
 
 from janitor import patterns
@@ -353,24 +354,24 @@ def test_pivot_no_args_passed():
     assert_frame_equal(result, df_no_args_output)
 
 
-def test_pivot_index_only(df_checks_output):
-    "Test output if only `index` is passed."
-    result = df_checks.pivot_longer(
-        index="region", names_to="year", values_to="num_nests",
-    )
-    assert_frame_equal(result, df_checks_output)
-
-
-def test_pivot_index_only_not_sort_by_appearance():
+def test_pivot_index_only_and_sort_by_appearance(df_checks_output):
     """
-    Test output if only `index` is passed, and
-    `sort_by_appearance` is False.
+    Test output if only `index` is passed and
+    `sort_by_apperance is ``True``.
     """
     result = df_checks.pivot_longer(
         index="region",
         names_to="year",
         values_to="num_nests",
-        sort_by_appearance=False,
+        sort_by_appearance=True,
+    )
+    assert_frame_equal(result, df_checks_output)
+
+
+def test_pivot_index_only():
+    "Test output if only `index` is passed."
+    result = df_checks.pivot_longer(
+        index="region", names_to="year", values_to="num_nests",
     )
 
     df_out = pd.DataFrame(
@@ -426,15 +427,24 @@ def test_ignore_index_False():
 def test_pivot_column_only(df_checks_output):
     "Test output if only `column_names` is passed."
     result = df_checks.pivot_longer(
-        column_names=["2007", "2009"], names_to="year", values_to="num_nests",
+        column_names=["2007", "2009"],
+        names_to="year",
+        values_to="num_nests",
+        sort_by_appearance=True,
     )
     assert_frame_equal(result, df_checks_output)
 
 
-def test_pivot_index_patterns_only(df_checks_output):
-    "Test output if the `patterns` function is passed to `index`."
+def test_pivot_index_patterns_only_sort_by_appearance(df_checks_output):
+    """
+    Test output if the `patterns` function is passed to `index`, and
+    `sort_by_appearance` is ``True``.
+    """
     result = df_checks.pivot_longer(
-        index=patterns(r"[^\d+]"), names_to="year", values_to="num_nests",
+        index=patterns(r"[^\d+]"),
+        names_to="year",
+        values_to="num_nests",
+        sort_by_appearance=True,
     )
     assert_frame_equal(result, df_checks_output)
 
@@ -447,8 +457,8 @@ def test_pivot_no_index_no_columns():  # check this test if it makes sense
     result = test.pivot_longer()
     expected_output = pd.DataFrame(
         {
-            "variable": ["1", "2", "3", "1", "2", "3"],
-            "value": ["fur", "car", "nsw", "lace", "plane", "vic"],
+            "variable": ["1", "1", "2", "2", "3", "3"],
+            "value": ["fur", "lace", "car", "plane", "nsw", "vic"],
         }
     )
     assert_frame_equal(result, expected_output)
@@ -457,7 +467,10 @@ def test_pivot_no_index_no_columns():  # check this test if it makes sense
 def test_pivot_columns_patterns_only(df_checks_output):
     "Test output if the `patterns` function is passed to `column_names`."
     result = df_checks.pivot_longer(
-        column_names=patterns(r"\d+"), names_to="year", values_to="num_nests",
+        column_names=patterns(r"\d+"),
+        names_to="year",
+        values_to="num_nests",
+        sort_by_appearance=True,
     )
     assert_frame_equal(result, df_checks_output)
 
@@ -543,6 +556,8 @@ def test_names_pattern_list(names_pattern_list_df):
         names_to=("DateRangeStart", "DateRangeEnd", "Value"),
         names_pattern=("Start$", "End$", "^Value"),
         dtypes={"ID": int, "Value": float},
+        sort_by_appearance=True,
+        flatten_levels=True,
     )
 
     expected_output = pd.DataFrame(
@@ -647,6 +662,7 @@ multiple_values_pattern = [
         "country",
         ("event", "year"),
         r"([A-Za-z]+)(\d+)",
+        True,
     )
 ]
 
@@ -654,10 +670,11 @@ multiple_values_pattern = [
 # probably unneccesary as it is just one item
 # the idea is that more tests may be added for this
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern", multiple_values_pattern
+    "df_in,df_out,index,names_to,names_pattern, sort_by_appearance",
+    multiple_values_pattern,
 )
 def test_multiple_values_pattern(
-    df_in, df_out, index, names_to, names_pattern
+    df_in, df_out, index, names_to, names_pattern, sort_by_appearance
 ):
     """
     Test function to extract multiple columns, using the `names_to` and
@@ -668,6 +685,7 @@ def test_multiple_values_pattern(
         names_to=names_to,
         names_pattern=names_pattern,
         values_to="score",
+        sort_by_appearance=sort_by_appearance,
     )
     assert_frame_equal(result, df_out)
 
@@ -763,6 +781,7 @@ multiple_values_sep = [
         ("event", "year"),
         "_",
         None,
+        True,
     ),
     (
         pd.DataFrame(
@@ -962,15 +981,17 @@ multiple_values_sep = [
         ("event", "year", "gender"),
         "_",
         {"year": int},
+        True,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep,dtypes", multiple_values_sep
+    "df_in,df_out,index,names_to,names_sep,dtypes,sort_by_appearance",
+    multiple_values_sep,
 )
 def test_multiple_values_sep(
-    df_in, df_out, index, names_to, names_sep, dtypes
+    df_in, df_out, index, names_to, names_sep, dtypes, sort_by_appearance
 ):
     """
     Test function to extract multiple columns, using the `names_to` and
@@ -982,6 +1003,7 @@ def test_multiple_values_sep(
         names_sep=names_sep,
         values_to="score",
         dtypes=dtypes,
+        sort_by_appearance=sort_by_appearance,
     )
     assert_frame_equal(result, df_out)
 
@@ -1021,6 +1043,8 @@ paired_columns_pattern = [
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
         None,
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1051,6 +1075,8 @@ paired_columns_pattern = [
         (".value", "value"),
         r"([a-z]+)(\d)",
         {"value": int, "val": int},
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1078,6 +1104,8 @@ paired_columns_pattern = [
         (".value", "instance"),
         r"(\w)(\d)",
         {"instance": int},
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1108,6 +1136,8 @@ paired_columns_pattern = [
         (".value", "year"),
         "([A-Z])(.+)",
         {"year": int, "B": float},
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1153,25 +1183,40 @@ paired_columns_pattern = [
         (".value", "status"),
         "(.*)_(.*)",
         None,
+        True,
+        True,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_pattern,dtypes", paired_columns_pattern
+    """
+    df_in,df_out,index,names_to,names_pattern,
+    dtypes,sort_by_appearance,flatten_levels
+    """,
+    paired_columns_pattern,
 )
 def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern, dtypes
+    df_in,
+    df_out,
+    index,
+    names_to,
+    names_pattern,
+    dtypes,
+    sort_by_appearance,
+    flatten_levels,
 ):
     """
-    Test output if `.value` is in the `names_to` argument and
-    names_pattern is used.
+    Test output if `.value` is in the `names_to`
+    argument and names_pattern is used.
     """
     result = df_in.pivot_longer(
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,
         dtypes=dtypes,
+        sort_by_appearance=sort_by_appearance,
+        flatten_levels=flatten_levels,
     )
     assert_frame_equal(result, df_out)
 
@@ -1218,6 +1263,8 @@ paired_columns_sep = [
         (".value", "year"),
         "-",
         None,
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1240,6 +1287,8 @@ paired_columns_sep = [
         (".value", "num"),
         "_",
         {"num": int, "S": float},
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1273,6 +1322,8 @@ paired_columns_sep = [
         (".value", "year"),
         "_",
         {"year": int},
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1364,6 +1415,8 @@ paired_columns_sep = [
         (".value", "child"),
         "_",
         {"gender": float},
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1419,6 +1472,8 @@ paired_columns_sep = [
         (".value", "child"),
         "_",
         {"gender": float},
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1460,6 +1515,8 @@ paired_columns_sep = [
         (".value", "brand"),
         "_",
         None,
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1483,22 +1540,40 @@ paired_columns_sep = [
         (".value", "item"),
         "_",
         {"item": int},
+        True,
+        True,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep, dtypes", paired_columns_sep
+    """
+    df_in,df_out,index,names_to,names_sep,
+    dtypes,sort_by_appearance,flatten_levels
+    """,
+    paired_columns_sep,
 )
 def test_extract_column_names_sep(
-    df_in, df_out, index, names_to, names_sep, dtypes
+    df_in,
+    df_out,
+    index,
+    names_to,
+    names_sep,
+    dtypes,
+    sort_by_appearance,
+    flatten_levels,
 ):
     """
-    Test output if `.value` is in the `names_to` argument and names_sep
-    is used.
+    Test output if `.value` is in the `names_to` argument
+    and names_sep is used.
     """
     result = df_in.pivot_longer(
-        index=index, names_to=names_to, names_sep=names_sep, dtypes=dtypes
+        index=index,
+        names_to=names_to,
+        names_sep=names_sep,
+        dtypes=dtypes,
+        sort_by_appearance=sort_by_appearance,
+        flatten_levels=flatten_levels,
     )
     assert_frame_equal(result, df_out)
 
@@ -1607,23 +1682,38 @@ paired_columns_no_index_pattern = [
         ("set", ".value"),
         "(.+)_(.+)",
         {"lat": float, "long": float},
+        True,
+        True,
     )
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,names_to,names_pattern,dtypes",
+    """
+    df_in,df_out,names_to,names_pattern,
+    dtypes,sort_by_appearance,flatten_levels
+    """,
     paired_columns_no_index_pattern,
 )
 def test_paired_columns_no_index_pattern(
-    df_in, df_out, names_to, names_pattern, dtypes
+    df_in,
+    df_out,
+    names_to,
+    names_pattern,
+    dtypes,
+    sort_by_appearance,
+    flatten_levels,
 ):
     """
-    Test function where `.value` is in the `names_to` argument, names_pattern
-    is used and no index is supplied.
+    Test function where `.value` is in the `names_to` argument,
+    names_pattern is used and no index is supplied.
     """
     result = df_in.pivot_longer(
-        names_to=names_to, names_pattern=names_pattern, dtypes=dtypes
+        names_to=names_to,
+        names_pattern=names_pattern,
+        dtypes=dtypes,
+        sort_by_appearance=sort_by_appearance,
+        flatten_levels=flatten_levels,
     )
     assert_frame_equal(result, df_out)
 
@@ -1650,6 +1740,8 @@ names_single_value = [
         "(.+)_.",
         None,
         True,
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1671,6 +1763,8 @@ names_single_value = [
         "id",
         "(.).",
         None,
+        True,
+        True,
         True,
     ),
     (
@@ -1694,6 +1788,8 @@ names_single_value = [
         "(.).",
         None,
         True,
+        True,
+        True,
     ),
     (
         pd.DataFrame(
@@ -1708,6 +1804,8 @@ names_single_value = [
         None,
         "(.).",
         None,
+        True,
+        True,
         True,
     ),
     (
@@ -1727,16 +1825,28 @@ names_single_value = [
         "(.).",
         None,
         False,
+        True,
+        True,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index, names_pattern, dtypes, ignore_index",
+    """
+    df_in,df_out,index, names_pattern, dtypes,
+    ignore_index,sort_by_appearance,flatten_levels
+    """,
     names_single_value,
 )
 def test_single_value(
-    df_in, df_out, index, names_pattern, dtypes, ignore_index
+    df_in,
+    df_out,
+    index,
+    names_pattern,
+    dtypes,
+    ignore_index,
+    sort_by_appearance,
+    flatten_levels,
 ):
     "Test function where names_to is a string and == `.value`."
     result = df_in.pivot_longer(
@@ -1745,52 +1855,144 @@ def test_single_value(
         names_pattern=names_pattern,
         dtypes=dtypes,
         ignore_index=ignore_index,
+        sort_by_appearance=sort_by_appearance,
+        flatten_levels=flatten_levels,
     )
+    assert_frame_equal(result, df_out)
+
+
+single_column_names_pattern = [
+    (
+        pd.DataFrame(
+            {
+                "sepal_length": [5.1, 7.0],
+                "sepal_width": [3.5, 3.2],
+                "petal_length": [1.4, 4.7],
+                "petal_width": [0.2, 1.4],
+                "species": ["setosa", "versicolor"],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {"species": "setosa", "part": "sepal", "value": 5.1},
+                {"species": "versicolor", "part": "sepal", "value": 7.0},
+                {"species": "setosa", "part": "sepal", "value": 3.5},
+                {"species": "versicolor", "part": "sepal", "value": 3.2},
+                {"species": "setosa", "part": "petal", "value": 1.4},
+                {"species": "versicolor", "part": "petal", "value": 4.7},
+                {"species": "setosa", "part": "petal", "value": 0.2},
+                {"species": "versicolor", "part": "petal", "value": 1.4},
+            ]
+        ),
+        "species",
+        None,
+        "part",
+        r"(.*)[_].*",
+    ),
+    (
+        pd.DataFrame(
+            {
+                "sepal_length": [5.1, 7.0],
+                "sepal_width": [3.5, 3.2],
+                "petal_length": [1.4, 4.7],
+                "petal_width": [0.2, 1.4],
+                "species": ["setosa", "versicolor"],
+                "jargon": ["blabla", "blacksheep"],
+            }
+        ),
+        pd.DataFrame(
+            [
+                {"species": "setosa", "part": "sepal", "value": 5.1},
+                {"species": "versicolor", "part": "sepal", "value": 7.0},
+                {"species": "setosa", "part": "sepal", "value": 3.5},
+                {"species": "versicolor", "part": "sepal", "value": 3.2},
+                {"species": "setosa", "part": "petal", "value": 1.4},
+                {"species": "versicolor", "part": "petal", "value": 4.7},
+                {"species": "setosa", "part": "petal", "value": 0.2},
+                {"species": "versicolor", "part": "petal", "value": 1.4},
+            ]
+        ),
+        "species",
+        patterns("_"),
+        "part",
+        r"(.*)[_].*",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "df_in,df_out,index, column_names,names_to,names_pattern",
+    single_column_names_pattern,
+)
+def test_single_column_names_pattern(
+    df_in, df_out, index, column_names, names_to, names_pattern
+):
+    """
+    Test output if `names_to` is a string and
+    `names_pattern` returns a single column.
+    Also tests when both `index` and `column_names`
+    is supplied, and only a subset of the dataframe
+    is transformed.
+    """
+    result = df_in.pivot_longer(
+        index=index,
+        column_names=column_names,
+        names_to=names_to,
+        names_pattern=names_pattern,
+    )
+
     assert_frame_equal(result, df_out)
 
 
 df = pd.DataFrame(
     {
-        "off_loc": ["A", "B", "C", "D", "E", "F"],
-        "pt_loc": ["G", "H", "I", "J", "K", "L"],
-        "pt_lat": [
-            100.07548220000001,
-            75.191326,
-            122.65134479999999,
-            124.13553329999999,
-            124.13553329999999,
-            124.01028909999998,
-        ],
-        "off_lat": [
-            121.271083,
-            75.93845266,
-            135.043791,
-            134.51128400000002,
-            134.484374,
-            137.962195,
-        ],
-        "pt_long": [
-            4.472089953,
-            -144.387785,
-            -40.45611048,
-            -46.07156181,
-            -46.07156181,
-            -46.01594293,
-        ],
-        "off_long": [
-            -7.188632000000001,
-            -143.2288569,
-            21.242563,
-            40.937416999999996,
-            40.78472,
-            22.905889000000002,
-        ],
+        "time": [1, 2, 3],
+        "factor": ["a", "a", "b"],
+        "variable1": [0, 0, 0],
+        "variable2": [0, 0, 1],
+        "variable3": [0, 2, 0],
+        "variable4": [2, 0, 1],
+        "variable5": [1, 0, 1],
+        "variable6": [0, 1, 1],
+        "O1V1": [0, 0.2, -0.3],
+        "O1V2": [0, 0.4, -0.9],
+        "O1V3": [0.5, 0.2, -0.6],
+        "O1V4": [0.5, 0.2, -0.6],
+        "O1V5": [0, 0.2, -0.3],
+        "O1V6": [0, 0.4, -0.9],
+        "O1V7": [0.5, 0.2, -0.6],
+        "O1V8": [0.5, 0.2, -0.6],
+        "O2V1": [0, 0.5, 0.3],
+        "O2V2": [0, 0.2, 0.9],
+        "O2V3": [0.6, 0.1, -0.3],
+        "O2V4": [0.5, 0.2, -0.6],
+        "O2V5": [0, 0.5, 0.3],
+        "O2V6": [0, 0.2, 0.9],
+        "O2V7": [0.6, 0.1, -0.3],
+        "O2V8": [0.5, 0.2, -0.6],
+        "O3V1": [0, 0.7, 0.4],
+        "O3V2": [0.9, 0.2, -0.3],
+        "O3V3": [0.5, 0.2, -0.7],
+        "O3V4": [0.5, 0.2, -0.6],
+        "O3V5": [0, 0.7, 0.4],
+        "O3V6": [0.9, 0.2, -0.3],
+        "O3V7": [0.5, 0.2, -0.7],
+        "O3V8": [0.5, 0.2, -0.6],
     }
 )
 
+
 print(df)
+
+result = df.pivot_longer(
+    index=patterns("(time|factor|variable[1,2])"),
+    column_names=patterns(".+V[1-4]$"),
+    names_to=("id", ".value"),
+    names_pattern=".(.)(.+)$",
+    sort_by_appearance=False,
+    flatten_levels=True,
+).sort_values("id")
 
 print()
 
-print(df.pivot_longer(names_to=["set", ".value"],
-                names_pattern="(.+)_(.+)", sort_by_appearance=False), )
+print(result)

@@ -4702,9 +4702,9 @@ def pivot_longer(
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
     dtypes: Optional[Dict] = None,
-    sort_by_appearance: Optional[bool] = True,
+    sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
-    flatten_levels: Optional[bool] = True,
+    flatten_levels: Optional[bool] = False,
 ) -> pd.DataFrame:
     """
     Unpivots a DataFrame from 'wide' to 'long' format.
@@ -4752,7 +4752,9 @@ def pivot_longer(
 
         df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
                                             names_to='drug',
-                                            values_to='heartrate')
+                                            values_to='heartrate',
+                                            sort_by_appearance=True
+                                            )
 
               name drug  heartrate
         0   Wilbur    a         67
@@ -4782,7 +4784,8 @@ def pivot_longer(
         df = (pd.DataFrame(...)
              .pivot_longer(index='col1',
                            names_to=('year','month'),
-                           names_sep='-')
+                           names_sep='-',
+                           sort_by_appearance=True)
               )
 
           col1  year   month      value
@@ -4814,7 +4817,9 @@ def pivot_longer(
 
         df = (pd.DataFrame(...)
               .pivot_longer(names_to=("group",'.value'),
-                            names_sep = '-')
+                            names_sep = '-',
+                            sort_by_appearance=True,
+                            flatten_levels=True)
               )
 
             group  measure1  measure2
@@ -4840,7 +4845,7 @@ def pivot_longer(
         df = (pd.DataFrame(...)
               .pivot_longer(names_to = (".value", "name"),
                             names_pattern = "(.*)_(.)")
-              )
+              )# return this as a multiindex
 
             name    n  pct
         0     1  10.0  0.1
@@ -4868,7 +4873,7 @@ def pivot_longer(
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
 
-        df = pd.DataFrame(...).pivot_longer(janitor.patterns("^(?!wk)"))
+        df = pd.DataFrame(...).pivot_longer(janitor.patterns("^(?!wk)")) # return with defaults
 
              name variable  value
         0   Alice      wk1      5
@@ -4964,13 +4969,13 @@ def pivot_longer(
         were previously the values of the columns in `column_names`.
     :param dtypes: A dictionary mapping data types to columns in the new
         dataframe.
-    :param sort_by_appearance: Default `True`. Boolean value that determines
+    :param sort_by_appearance: Default `False`. Boolean value that determines
         if the new dataframe will be sorted in order of appearance. Significant
-        performance improvement if set to `False`.
+        performance if set to `False`.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained. Index labels will be
         repeated as necessary.
-    :param flatten_levels: Default `True`. Whether or not to reset the index.
+    :param flatten_levels: Default `False`. Whether or not to reset the index.
         This applies to scenarios where `.value` is in `names_to`, or
         `names_pattern` is a list/tuple of regular expressions.
     :returns: A pandas DataFrame that has been unpivoted from wide to long

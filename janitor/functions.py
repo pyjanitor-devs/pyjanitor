@@ -4873,20 +4873,20 @@ def pivot_longer(
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
 
-        df = pd.DataFrame(...).pivot_longer(janitor.patterns("^(?!wk)")) # return with defaults
+        df = pd.DataFrame(...).pivot_longer(janitor.patterns("^(?!wk)"))
 
              name variable  value
         0   Alice      wk1      5
-        1   Alice      wk2      9
-        2   Alice      wk3     20
-        3   Alice      wk4     22
-        4     Bob      wk1      7
-        5     Bob      wk2     11
-        6     Bob      wk3     17
-        7     Bob      wk4     33
-        8   Carla      wk1      6
-        9   Carla      wk2     13
-        10  Carla      wk3     39
+        1     Bob      wk1      7
+        2   Carla      wk1      6
+        3   Alice      wk2      9
+        4     Bob      wk2     11
+        5   Carla      wk2     13
+        6   Alice      wk3     20
+        7     Bob      wk3     17
+        8   Carla      wk3     39
+        9   Alice      wk4     22
+        10    Bob      wk4     33
         11  Carla      wk4     40
 
     You can determine the data type of the resulting columns with

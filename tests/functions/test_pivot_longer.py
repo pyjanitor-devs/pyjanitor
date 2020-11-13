@@ -3,7 +3,6 @@ from itertools import product
 import numpy as np
 import pandas as pd
 import pytest
-import seaborn
 from pandas.testing import assert_frame_equal
 
 from janitor import patterns
@@ -1942,57 +1941,3 @@ def test_single_column_names_pattern(
     )
 
     assert_frame_equal(result, df_out)
-
-
-df = pd.DataFrame(
-    {
-        "time": [1, 2, 3],
-        "factor": ["a", "a", "b"],
-        "variable1": [0, 0, 0],
-        "variable2": [0, 0, 1],
-        "variable3": [0, 2, 0],
-        "variable4": [2, 0, 1],
-        "variable5": [1, 0, 1],
-        "variable6": [0, 1, 1],
-        "O1V1": [0, 0.2, -0.3],
-        "O1V2": [0, 0.4, -0.9],
-        "O1V3": [0.5, 0.2, -0.6],
-        "O1V4": [0.5, 0.2, -0.6],
-        "O1V5": [0, 0.2, -0.3],
-        "O1V6": [0, 0.4, -0.9],
-        "O1V7": [0.5, 0.2, -0.6],
-        "O1V8": [0.5, 0.2, -0.6],
-        "O2V1": [0, 0.5, 0.3],
-        "O2V2": [0, 0.2, 0.9],
-        "O2V3": [0.6, 0.1, -0.3],
-        "O2V4": [0.5, 0.2, -0.6],
-        "O2V5": [0, 0.5, 0.3],
-        "O2V6": [0, 0.2, 0.9],
-        "O2V7": [0.6, 0.1, -0.3],
-        "O2V8": [0.5, 0.2, -0.6],
-        "O3V1": [0, 0.7, 0.4],
-        "O3V2": [0.9, 0.2, -0.3],
-        "O3V3": [0.5, 0.2, -0.7],
-        "O3V4": [0.5, 0.2, -0.6],
-        "O3V5": [0, 0.7, 0.4],
-        "O3V6": [0.9, 0.2, -0.3],
-        "O3V7": [0.5, 0.2, -0.7],
-        "O3V8": [0.5, 0.2, -0.6],
-    }
-)
-
-
-print(df)
-
-result = df.pivot_longer(
-    index=patterns("(time|factor|variable[1,2])"),
-    column_names=patterns(".+V[1-4]$"),
-    names_to=("id", ".value"),
-    names_pattern=".(.)(.+)$",
-    sort_by_appearance=False,
-    flatten_levels=True,
-).sort_values("id")
-
-print()
-
-print(result)

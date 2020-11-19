@@ -76,39 +76,6 @@ def test_df():
     )
 
 
-multi_index_df = [
-    pd.DataFrame(
-        pd.DataFrame(
-            {
-                "name": {
-                    (67, 56): "Wilbur",
-                    (80, 90): "Petunia",
-                    (64, 50): "Gregory",
-                }
-            }
-        )
-    ),
-    pd.DataFrame(
-        {
-            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
-            ("names", "aa"): {0: 67, 1: 80, 2: 64},
-            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
-        }
-    ),
-    pd.DataFrame(
-        {
-            ("name", "a"): {
-                (0, 2): "Wilbur",
-                (1, 3): "Petunia",
-                (2, 4): "Gregory",
-            },
-            ("names", "aa"): {(0, 2): 67, (1, 3): 80, (2, 4): 64},
-            ("more_names", "aaa"): {(0, 2): 56, (1, 3): 90, (2, 4): 50},
-        }
-    ),
-]
-
-
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
 names_to_labels = [1, {12, "newnames"}]
@@ -250,11 +217,20 @@ def test_names_pattern_names_to_wrong_type():
         )
 
 
-@pytest.mark.parametrize("df", multi_index_df)
-def test_warning_multi_index(df):
+def test_warning_multi_index():
     "Raise ValueError if dataframe is a MultiIndex."
+    df_in = pd.DataFrame(
+        {
+            "name": {
+                (67, 56): "Wilbur",
+                (80, 90): "Petunia",
+                (64, 50): "Gregory",
+            }
+        }
+    )
+
     with pytest.raises(ValueError):
-        df.pivot_longer()
+        df_in.pivot_longer()
 
 
 def test_sort_by_appearance(test_df):
@@ -321,16 +297,19 @@ def test_neither_names_sep_and_pattern():
         )
 
 
-def test_values_to():
+def test_values_to_wrong_type():
     "Raise TypeError if the wrong type is provided for `values_to`."
     with pytest.raises(TypeError):
         df_checks.pivot_longer(values_to=["salvo"])
 
 
-def test_wrong_dtypes():
-    "Raise TypeError if the wrong type is provided for `dtypes`."
-    with pytest.raises(TypeError):
-        df_checks.pivot_longer(dtypes="int")
+def test_values_to_exists_in_columns():
+    """
+    Raise ValueError if `values_to` already
+    exists in the dataframe's columns.
+    """
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(values_to="region")
 
 
 def test_flatten_levels_type():
@@ -449,7 +428,7 @@ def test_pivot_index_patterns_only_sort_by_appearance(df_checks_output):
 
 
 def test_pivot_no_index_no_columns():  # check this test if it makes sense
-    "Test output if neither `index`/`columns_names` is passed, with dtypes."
+    "Test output if neither `index`/`columns_names` is passed."
     test = pd.DataFrame(
         {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
     )
@@ -1941,3 +1920,18 @@ def test_single_column_names_pattern(
     )
 
     assert_frame_equal(result, df_out)
+
+
+df = pd.DataFrame(
+    {"name": {(67, 56): "Wilbur", (80, 90): "Petunia", (64, 50): "Gregory"}}
+)
+
+
+print(df)
+
+result = df.pivot_longer(ignore_index=False)
+
+
+print()
+print()
+print(result)

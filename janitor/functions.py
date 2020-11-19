@@ -4701,10 +4701,9 @@ def pivot_longer(
     values_to: Optional[str] = "value",
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
-    dtypes: Optional[Dict] = None,
+    dtypes=None,
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
-    flatten_levels: Optional[bool] = False,
 ) -> pd.DataFrame:
     """
     Unpivots a DataFrame from 'wide' to 'long' format.
@@ -4912,7 +4911,6 @@ def pivot_longer(
             dtypes = dtypes,
             sort_by_appearance = True/False,
             ignore_index = True/False,
-            flatten_levels = True/False
         )
 
     Method chaining syntax:
@@ -4931,7 +4929,6 @@ def pivot_longer(
                 dtypes = dtypes,
                 sort_by_appearance = True/False,
                 ignore_index = True/False,
-                flatten_levels = True/False
             )
         )
 
@@ -4967,19 +4964,19 @@ def pivot_longer(
         if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
-    :param dtypes: A dictionary mapping data types to columns in the new
-        dataframe.
+    :param dtypes: Use a numpy.dtype or Python type to cast the entire
+        unpivoted dataframe to the same type. Alternatively, you can pass a
+        dictionary of column name and dtype(numpy.dtype or Python type); in
+        this case, only the data types of the columns in the dictionary will
+        be changed.
     :param sort_by_appearance: Default `False`. Boolean value that determines
-        if the new dataframe will be sorted in order of appearance. Significant
-        performance if set to `False`.
+        if the new dataframe will be sorted in order of appearance.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained. Index labels will be
         repeated as necessary.
-    :param flatten_levels: Default `False`. Whether or not to reset the index.
-        This applies to scenarios where `.value` is in `names_to`, or
-        `names_pattern` is a list/tuple of regular expressions.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
-        format.
+        format. If ".value" is in `names_to` or `names_pattern` is a
+        list/tuple, then a MultiIndex may be returned.
     :raises TypeError: if `index` or `column_names` is not a string, or a
         list/tuple of strings, or a `janitor.patterns` function.
     :raises TypeError: if `names_to` or `column_names` is not a string, or a
@@ -5018,7 +5015,6 @@ def pivot_longer(
         dtypes,
         sort_by_appearance,
         ignore_index,
-        flatten_levels,
     ) = _data_checks_pivot_longer(
         df,
         index,
@@ -5030,7 +5026,6 @@ def pivot_longer(
         dtypes,
         sort_by_appearance,
         ignore_index,
-        flatten_levels,
     )
 
     df, index, column_names = _pivot_longer_pattern_match(
@@ -5048,7 +5043,6 @@ def pivot_longer(
         dtypes,
         sort_by_appearance,
         ignore_index,
-        flatten_levels,
     )
 
     return df

@@ -336,8 +336,11 @@ def test_pivot_long_wide_long():
     )
 
     result = result.pivot_longer(
-        index=["a", "b"], names_to=("name", ".value"), names_sep="_"
-    )
+        index=["a", "b"],
+        names_to=("name", ".value"),
+        names_sep="_",
+        dtypes={"points": int, "marks": int, "sets": int},
+    ).reset_index()
     assert_frame_equal(result, df_in)
 
 

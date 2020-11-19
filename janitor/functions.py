@@ -4701,7 +4701,7 @@ def pivot_longer(
     values_to: Optional[str] = "value",
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
-    dtypes=None,
+    dtypes: Optional[Dict] = None,
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
@@ -4964,11 +4964,10 @@ def pivot_longer(
         if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
-    :param dtypes: Use a numpy.dtype or Python type to cast the entire
-        unpivoted dataframe to the same type. Alternatively, you can pass a
-        dictionary of column name and dtype(numpy.dtype or Python type); in
-        this case, only the data types of the columns in the dictionary will
-        be changed.
+    :param dtypes: A dictionary mapping data types to the extracted columns in
+        the new dataframe. In some cases, there may be upcasting of the
+        extracted values; this parameter helps the user to choose the right
+        data type.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         if the new dataframe will be sorted in order of appearance.
     :param ignore_index: Default `True`. If True, original index is ignored.

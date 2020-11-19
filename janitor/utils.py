@@ -627,9 +627,6 @@ def _data_checks_pivot_longer(
 
     Type annotations are not provided because this function is where type
     checking happens.
-
-    No checking is done for `dtypes`; the type checking is done within
-    Pandas and numpy.
     """
 
     if isinstance(df.columns, pd.MultiIndex):
@@ -722,6 +719,9 @@ def _data_checks_pivot_longer(
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
 
+    if dtypes is not None:
+        check("dtypes", dtypes, [dict])
+
     check("values_to", values_to, [str])
 
     if values_to in df.columns:
@@ -731,7 +731,7 @@ def _data_checks_pivot_longer(
                 not isinstance(names_pattern, (list, tuple)),
             )
         ):
-            # copied from pandas melt docs
+            # copied from pandas' melt docs, with a minor tweak
             raise ValueError(
                 """
                 This dataframe has a column name that matches the
@@ -839,7 +839,6 @@ def _restore_index_and_sort_by_appearance(
     """
     primary_index_sorter = None
     index_sorter = None
-    length_check = any((len(df_index) == 1, len(df_index) == len(df)))
 
     if sort_by_appearance:
         primary_index_sorter = df.index
@@ -847,7 +846,7 @@ def _restore_index_and_sort_by_appearance(
     # if the height of the new dataframe is the same as the old
     # dataframe, simply reuse the original index.
     if not ignore_index:
-        if not length_check:
+        if not len(df_index) == len(df):
             # copied from pandas.core.reshape.utils (_tile_compat)
             # applies to MultiIndexes as well
             # numpy resize, with len(df) instead of column_length works too
@@ -856,6 +855,7 @@ def _restore_index_and_sort_by_appearance(
         else:
             df.index = df_index
 
+    length_check = any((len(df_index) == 1, len(df_index) == len(df)))
     if sort_by_appearance:
         # if the height of the new dataframe is the same as the height
         # of the original dataframe, then there is no need to sort
@@ -882,6 +882,7 @@ def _pivot_longer_extractions(
             List[Union[str, Pattern]], Tuple[Union[str, Pattern]], str, Pattern
         ]
     ] = None,
+    dtypes: Optional[Dict] = None,
 ) -> Tuple:
 
     """
@@ -972,9 +973,16 @@ def _pivot_longer_extractions(
         for column_name in mapping:
             if column_name == cumcount:
                 cumcount = f"{cumcount}_1"
+
         others = [
             column_name for column_name in mapping if column_name != ".value"
         ]
+        # takes care of dtype change for the extracted columns
+        # that will become part of the index
+        if dtypes:
+            if set(others).intersection(dtypes):
+                mapping_dtypes = {key: dtypes.pop(key, None) for key in others}
+                mapping = mapping.astype(mapping_dtypes)
         if mapping.duplicated().any():
             mapping[cumcount] = mapping.groupby(".value").cumcount()
         else:
@@ -986,11 +994,7 @@ def _pivot_longer_extractions(
     else:
         df.columns = mapping.iloc[:, 0]
 
-    # keep only requested columns
-    if any((column.hasnans for _, column in mapping.items())):
-        df = df.iloc[:, mapping.index[mapping.notna().any(1)]]
-
-    return df, others
+    return df, others, dtypes
 
 
 def _computations_pivot_longer(
@@ -1104,20 +1108,19 @@ def _computations_pivot_longer(
             sort_by_appearance=sort_by_appearance,
             df_index=df_index,
         )
-
-        if dtypes:
-            df = df.astype(dtypes)
-
+        # dtypes not applied here, since there are no
+        # extractions
         return df
 
     if any((names_pattern, names_sep)):
 
-        df, others = _pivot_longer_extractions(
+        df, others, dtypes = _pivot_longer_extractions(
             df=df,
             index=index,
             names_to=names_to,
             names_sep=names_sep,
             names_pattern=names_pattern,
+            dtypes=dtypes,
         )
 
         if ".value" not in df.columns.names:
@@ -1141,7 +1144,6 @@ def _computations_pivot_longer(
         original_index_positions = range(len(df_index.names))
 
         df = df.stack(others, dropna=True)  # noqa: PD013
-
         if sort_by_appearance:
             df = df.sort_index(
                 level=[primary_index_sorter, -1],
@@ -1160,9 +1162,13 @@ def _computations_pivot_longer(
 
         df.columns = list(df.columns)
         if ignore_index:
-            df = df.droplevel(
-                [*original_index_positions, primary_index_sorter, -1]
-            )
+            if index is None and (len(others) == 1):
+                df = df.droplevel([primary_index_sorter, -1])
+                df.index = np.arange(len(df))
+            else:
+                df = df.droplevel(
+                    [*original_index_positions, primary_index_sorter, -1]
+                )
         else:
             df = df.droplevel([primary_index_sorter, -1])
 

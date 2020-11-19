@@ -218,14 +218,12 @@ def test_names_pattern_names_to_wrong_type():
 
 
 def test_warning_multi_index():
-    "Raise ValueError if dataframe is a MultiIndex."
+    "Raise ValueError if dataframe's column is a MultiIndex."
     df_in = pd.DataFrame(
         {
-            "name": {
-                (67, 56): "Wilbur",
-                (80, 90): "Petunia",
-                (64, 50): "Gregory",
-            }
+            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
+            ("names", "aa"): {0: 67, 1: 80, 2: 64},
+            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
         }
     )
 
@@ -312,10 +310,10 @@ def test_values_to_exists_in_columns():
         df_checks.pivot_longer(values_to="region")
 
 
-def test_flatten_levels_type():
-    "Raise TypeError if the wrong type is provided for `flatten_levels`."
+def test_wrong_dtypes():
+    "Raise TypeError if the wrong type is provided for `dtypes`."
     with pytest.raises(TypeError):
-        df_checks.pivot_longer(flatten_levels="TRUE")
+        df_checks.pivot_longer(dtypes="int")
 
 
 def test_pivot_no_args_passed():
@@ -402,6 +400,36 @@ def test_ignore_index_False():
     assert_frame_equal(result, df_out)
 
 
+def test_ignore_index_false_same_length():
+    """
+    Test output when `ignore_index` is False
+    and the length of the new dataframe is the same
+    as the length of the original dataframe.
+    """
+    df_in = pd.DataFrame(
+        {
+            "name": {
+                (67, 56): "Wilbur",
+                (80, 90): "Petunia",
+                (64, 50): "Gregory",
+            }
+        }
+    )
+    df_out = pd.DataFrame(
+        {
+            "variable": {(64, 50): "name", (67, 56): "name", (80, 90): "name"},
+            "value": {
+                (64, 50): "Gregory",
+                (67, 56): "Wilbur",
+                (80, 90): "Petunia",
+            },
+        }
+    )
+
+    result = df_in.pivot_longer(ignore_index=False)
+    assert_frame_equal(result, df_out)
+
+
 def test_pivot_column_only(df_checks_output):
     "Test output if only `column_names` is passed."
     result = df_checks.pivot_longer(
@@ -461,14 +489,14 @@ def test_length_mismatch():
     data = pd.DataFrame(
         {
             "country": ["United States", "Russia", "China"],
-            "vault_2012_f": [48.132, 46.36600000000001, 44.266000000000005],
-            "vault_2012_m": [46.632, 46.86600000000001, 48.316],
-            "vault_2016_f": [46.86600000000001, 45.733000000000004, 44.332],
+            "vault_2012_f": [48.132, 46.366, 44.266],
+            "vault_2012_m": [46.632, 46.866, 48.316],
+            "vault_2016_f": [46.866, 45.733, 44.332],
             "vault_2016_m": [45.865, 46.033, 45.0],
-            "floor_2012_f": [45.36600000000001, 41.599, 40.833],
-            "floor_2012_m": [45.266000000000005, 45.308, 45.133],
-            "floor_2016_f": [45.998999999999995, 42.032, 42.066],
-            "floor_2016_m": [43.757, 44.766000000000005, 43.799],
+            "floor_2012_f": [45.366, 41.599, 40.833],
+            "floor_2012_m": [45.266, 45.308, 45.133],
+            "floor_2016_f": [45.999, 42.032, 42.066],
+            "floor_2016_m": [43.757, 44.766, 43.799],
         }
     )
     with pytest.raises(ValueError):
@@ -533,10 +561,7 @@ def test_names_pattern_list(names_pattern_list_df):
         index="ID",
         names_to=("DateRangeStart", "DateRangeEnd", "Value"),
         names_pattern=("Start$", "End$", "^Value"),
-        dtypes={"ID": int, "Value": float},
-        sort_by_appearance=True,
-        flatten_levels=True,
-    )
+    ).reset_index()
 
     expected_output = pd.DataFrame(
         {
@@ -646,7 +671,7 @@ multiple_values_pattern = [
 
 
 # probably unneccesary as it is just one item
-# the idea is that more tests may be added for this
+# the idea is that more tests will be added for this
 @pytest.mark.parametrize(
     "df_in,df_out,index,names_to,names_pattern, sort_by_appearance",
     multiple_values_pattern,
@@ -1020,8 +1045,7 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
-        None,
-        True,
+        {"start": int, "end": int},
         True,
     ),
     (
@@ -1054,7 +1078,6 @@ paired_columns_pattern = [
         r"([a-z]+)(\d)",
         {"value": int, "val": int},
         True,
-        True,
     ),
     (
         pd.DataFrame(
@@ -1082,7 +1105,6 @@ paired_columns_pattern = [
         (".value", "instance"),
         r"(\w)(\d)",
         {"instance": int},
-        True,
         True,
     ),
     (
@@ -1114,7 +1136,6 @@ paired_columns_pattern = [
         (".value", "year"),
         "([A-Z])(.+)",
         {"year": int, "B": float},
-        True,
         True,
     ),
     (
@@ -1162,7 +1183,6 @@ paired_columns_pattern = [
         "(.*)_(.*)",
         None,
         True,
-        True,
     ),
 ]
 
@@ -1170,19 +1190,12 @@ paired_columns_pattern = [
 @pytest.mark.parametrize(
     """
     df_in,df_out,index,names_to,names_pattern,
-    dtypes,sort_by_appearance,flatten_levels
+    dtypes,sort_by_appearance
     """,
     paired_columns_pattern,
 )
 def test_extract_column_names_pattern(
-    df_in,
-    df_out,
-    index,
-    names_to,
-    names_pattern,
-    dtypes,
-    sort_by_appearance,
-    flatten_levels,
+    df_in, df_out, index, names_to, names_pattern, dtypes, sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to`
@@ -1194,8 +1207,7 @@ def test_extract_column_names_pattern(
         names_pattern=names_pattern,
         dtypes=dtypes,
         sort_by_appearance=sort_by_appearance,
-        flatten_levels=flatten_levels,
-    )
+    ).reset_index()
     assert_frame_equal(result, df_out)
 
 
@@ -1242,7 +1254,6 @@ paired_columns_sep = [
         "-",
         None,
         True,
-        True,
     ),
     (
         pd.DataFrame(
@@ -1256,16 +1267,15 @@ paired_columns_sep = [
         ),
         pd.DataFrame(
             {
-                "indexer": [0, 0, 0, 0, 1, 1, 1, 1],
-                "num": [1, 2, 3, 4, 1, 2, 3, 4],
-                "S": [1, 0, 0, 1, 1, 1, np.nan, np.nan],
+                "indexer": [0, 0, 0, 0, 1, 1],
+                "num": [1, 2, 3, 4, 1, 2],
+                "S": [1, 0, 0, 1, 1, 1],
             }
         ),
         "indexer",
         (".value", "num"),
         "_",
-        {"num": int, "S": float},
-        True,
+        {"num": int, "S": int},
         True,
     ),
     (
@@ -1299,8 +1309,7 @@ paired_columns_sep = [
         ["county", "area"],
         (".value", "year"),
         "_",
-        {"year": int},
-        True,
+        {"year": int, "pop": int},
         True,
     ),
     (
@@ -1346,12 +1355,6 @@ paired_columns_sep = [
                     "gender": 2.0,
                 },
                 {
-                    "family": 2,
-                    "child": "child2",
-                    "dob": np.nan,
-                    "gender": np.nan,
-                },
-                {
                     "family": 3,
                     "child": "child1",
                     "dob": "2002-07-11",
@@ -1394,7 +1397,6 @@ paired_columns_sep = [
         "_",
         {"gender": float},
         True,
-        True,
     ),
     (
         pd.DataFrame(
@@ -1422,7 +1424,6 @@ paired_columns_sep = [
                 "child": [
                     "child2",
                     "child1",
-                    "child2",
                     "child1",
                     "child2",
                     "child1",
@@ -1434,7 +1435,6 @@ paired_columns_sep = [
                 "dob": [
                     "2000-01-29",
                     "1998-11-26",
-                    np.nan,
                     "1996-06-22",
                     "2004-04-05",
                     "2002-07-11",
@@ -1443,14 +1443,13 @@ paired_columns_sep = [
                     "2005-02-28",
                     "2000-12-05",
                 ],
-                "gender": [2.0, 1, np.nan, 2, 2.0, 2, 1.0, 1, 1.0, 2],
+                "gender": [2.0, 1, 2, 2.0, 2, 1.0, 1, 1.0, 2],
             }
         ),
         None,
         (".value", "child"),
         "_",
         {"gender": float},
-        True,
         True,
     ),
     (
@@ -1492,8 +1491,7 @@ paired_columns_sep = [
         "id",
         (".value", "brand"),
         "_",
-        None,
-        True,
+        {"Q1r1": "int", "Q1r2": int},
         True,
     ),
     (
@@ -1519,7 +1517,6 @@ paired_columns_sep = [
         "_",
         {"item": int},
         True,
-        True,
     ),
 ]
 
@@ -1527,19 +1524,12 @@ paired_columns_sep = [
 @pytest.mark.parametrize(
     """
     df_in,df_out,index,names_to,names_sep,
-    dtypes,sort_by_appearance,flatten_levels
+    dtypes,sort_by_appearance
     """,
     paired_columns_sep,
 )
 def test_extract_column_names_sep(
-    df_in,
-    df_out,
-    index,
-    names_to,
-    names_sep,
-    dtypes,
-    sort_by_appearance,
-    flatten_levels,
+    df_in, df_out, index, names_to, names_sep, dtypes, sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to` argument
@@ -1551,8 +1541,7 @@ def test_extract_column_names_sep(
         names_sep=names_sep,
         dtypes=dtypes,
         sort_by_appearance=sort_by_appearance,
-        flatten_levels=flatten_levels,
-    )
+    ).reset_index()
     assert_frame_equal(result, df_out)
 
 
@@ -1661,7 +1650,6 @@ paired_columns_no_index_pattern = [
         "(.+)_(.+)",
         {"lat": float, "long": float},
         True,
-        True,
     )
 ]
 
@@ -1669,18 +1657,12 @@ paired_columns_no_index_pattern = [
 @pytest.mark.parametrize(
     """
     df_in,df_out,names_to,names_pattern,
-    dtypes,sort_by_appearance,flatten_levels
+    dtypes,sort_by_appearance
     """,
     paired_columns_no_index_pattern,
 )
 def test_paired_columns_no_index_pattern(
-    df_in,
-    df_out,
-    names_to,
-    names_pattern,
-    dtypes,
-    sort_by_appearance,
-    flatten_levels,
+    df_in, df_out, names_to, names_pattern, dtypes, sort_by_appearance
 ):
     """
     Test function where `.value` is in the `names_to` argument,
@@ -1691,8 +1673,7 @@ def test_paired_columns_no_index_pattern(
         names_pattern=names_pattern,
         dtypes=dtypes,
         sort_by_appearance=sort_by_appearance,
-        flatten_levels=flatten_levels,
-    )
+    ).reset_index()
     assert_frame_equal(result, df_out)
 
 
@@ -1709,15 +1690,14 @@ names_single_value = [
         ),
         pd.DataFrame(
             {
-                "event": [1, 1, 2, 2],
                 "url": ["g1", "g2", "g3", "g4"],
                 "name": ["dc", "sf", "nyc", "la"],
-            }
+            },
+            index=pd.Index([1, 1, 2, 2], name="event"),
         ),
         "event",
         "(.+)_.",
         None,
-        True,
         True,
         True,
     ),
@@ -1732,40 +1712,12 @@ names_single_value = [
             }
         ),
         pd.DataFrame(
-            {
-                "id": [1, 1, 2, 2, 3, 3],
-                "x": [4, 5, 5, 6, 6, 7],
-                "y": [7, 10, 8, 11, 9, 12],
-            }
+            {"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]},
+            index=pd.Index([1, 1, 2, 2, 3, 3], name="id"),
         ),
         "id",
         "(.).",
         None,
-        True,
-        True,
-        True,
-    ),
-    (
-        pd.DataFrame(
-            {
-                "._temp*index": [1, 2, 3],
-                "x1": [4, 5, 6],
-                "x2": [5, 6, 7],
-                "y1": [7, 8, 9],
-                "y2": [10, 11, 12],
-            }
-        ),
-        pd.DataFrame(
-            {
-                "._temp*index": [1, 1, 2, 2, 3, 3],
-                "x": [4, 5, 5, 6, 6, 7],
-                "y": [7, 10, 8, 11, 9, 12],
-            }
-        ),
-        "._temp*index",
-        "(.).",
-        None,
-        True,
         True,
         True,
     ),
@@ -1782,7 +1734,6 @@ names_single_value = [
         None,
         "(.).",
         None,
-        True,
         True,
         True,
     ),
@@ -1804,7 +1755,6 @@ names_single_value = [
         None,
         False,
         True,
-        True,
     ),
 ]
 
@@ -1812,7 +1762,7 @@ names_single_value = [
 @pytest.mark.parametrize(
     """
     df_in,df_out,index, names_pattern, dtypes,
-    ignore_index,sort_by_appearance,flatten_levels
+    ignore_index,sort_by_appearance
     """,
     names_single_value,
 )
@@ -1824,7 +1774,6 @@ def test_single_value(
     dtypes,
     ignore_index,
     sort_by_appearance,
-    flatten_levels,
 ):
     "Test function where names_to is a string and == `.value`."
     result = df_in.pivot_longer(
@@ -1834,7 +1783,6 @@ def test_single_value(
         dtypes=dtypes,
         ignore_index=ignore_index,
         sort_by_appearance=sort_by_appearance,
-        flatten_levels=flatten_levels,
     )
     assert_frame_equal(result, df_out)
 
@@ -1922,16 +1870,31 @@ def test_single_column_names_pattern(
     assert_frame_equal(result, df_out)
 
 
-df = pd.DataFrame(
-    {"name": {(67, 56): "Wilbur", (80, 90): "Petunia", (64, 50): "Gregory"}}
-)
+def test_cumcount_present():
+    "Test output if '._cumcount' is in `names_to`."
+    df_in = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "x1": [4, 5, 6],
+            "x2": [5, 6, 7],
+            "y1": [7, 8, 9],
+            "y2": [10, 11, 12],
+        }
+    )
 
+    df_out = pd.DataFrame(
+        {"x": [4, 5, 6, 5, 6, 7], "y": [7, 8, 9, 10, 11, 12]},
+        index=pd.MultiIndex.from_tuples(
+            [(1, "1"), (2, "1"), (3, "1"), (1, "2"), (2, "2"), (3, "2")],
+            names=["id", "._cumcount"],
+        ),
+    )
 
-print(df)
+    result = df_in.pivot_longer(
+        index="id",
+        names_to=[".value", "._cumcount"],
+        names_pattern="(.)(.)",
+        dtypes={"x": int, "y": "int"},
+    )
 
-result = df.pivot_longer(ignore_index=False)
-
-
-print()
-print()
-print(result)
+    assert_frame_equal(result, df_out)

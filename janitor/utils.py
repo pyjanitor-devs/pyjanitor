@@ -620,7 +620,8 @@ def _data_checks_pivot_longer(
     This function raises errors if the arguments have the wrong python type,
     or if an unneeded argument is provided. It also raises errors for some
     other scenarios(e.g if there are no matches returned for the regular
-    expression in `names_pattern`).
+    expression in `names_pattern`, or if the dataframe has MultiIndex
+    columns).
 
     This function is executed before proceeding to the computation phase.
 
@@ -783,13 +784,14 @@ def _pivot_longer_pattern_match(
 
     return df, index, column_names
 
-def __tile_compat(arr, length):
+
+def __tile_compat(arr: pd.Index, length: int) -> pd.Index:
     """
     Repeats index multiple times.
     """
     # copied from pandas.core.reshape.utils (_tile_compat)
     # applies to MultiIndexes as well
-    # numpy resize, with len(df) instead of column_length works too
+    # numpy resize, with len(df) as length works too
     taker = np.tile(np.arange(len(arr)), length)
     return arr.take(taker)
 
@@ -846,6 +848,8 @@ def _restore_index_and_sort_by_appearance(
     index_sorter = None
 
     if sort_by_appearance:
+        # index is already an array of integers(from the melt operation)
+        # so let's use it
         primary_index_sorter = df.index
 
     # if the height of the new dataframe is the same as the old
@@ -903,9 +907,10 @@ def _pivot_longer_extractions(
     )
 
     if dot_value:
-        # the extra indices serve as a control for the stacking
-        # it also aids in sorting by appearance and if the user
-        # wishes to keep the original index or not
+        # the extra indices (np.arange(len(df))) serve as a way to
+        # associate each unpivoted value to a unique row identifier.
+        # It also aids in sorting by appearance. append is used in set_index,
+        # in case the user wishes to keep the original index.
         if index:
             df = df.set_index([*index, np.arange(len(df))], append=True)
         else:
@@ -939,7 +944,7 @@ def _pivot_longer_extractions(
                 raise ValueError(
                     """
                     Length of ``names_to`` does not match
-                    number of columns extracted.
+                    the number of columns extracted.
                     """
                 )
             mapping.columns = names_to
@@ -964,6 +969,8 @@ def _pivot_longer_extractions(
     positions = None
     if not dot_value:
         if index:
+            # easier to do this, than having to set the index
+            # and resetting.
             positions = df.columns.get_indexer(index)
             mapping.iloc[positions, 0] = index
             mapping.iloc[positions, 1:] = ""
@@ -972,6 +979,12 @@ def _pivot_longer_extractions(
         others = [
             column_name for column_name in mapping if column_name != ".value"
         ]
+        # creating categoricals allows us to sort the data; this is necessary
+        # because we will be splitting the data into different chunks and
+        # concatenating back into one whole. As such, having the data uniform
+        # in all the chunks before merging back is crucial. Also, having
+        # categoricals ensure the data stays in its original form in terms
+        # of appearance.
         category_dtypes = {
             key: CategoricalDtype(
                 categories=column.dropna().unique(), ordered=True
@@ -982,6 +995,7 @@ def _pivot_longer_extractions(
             if key in others
         }
         mapping = mapping.astype(category_dtypes)
+        # creating a cumcount is primarily for sorting by appearance.
         cumcount = "._cumcount"
         for column_name in mapping:
             if column_name == cumcount:
@@ -1029,21 +1043,20 @@ def _computations_pivot_longer(
         After the extraction, `pd.melt` is executed.
 
     3. 'The labels in `names_to` become the new column names, if `.value`
-        is not in `names_to`, or `names_pattern` is a list/tuple of regexes.
+        is not in `names_to`, or `names_pattern` is not a list/tuple of
+        regexes.
 
     4.  If, however, `names_to` contains `.value`, or `names_pattern` is a
         list/tuple of regexes, then the `.value` column is unstacked to become
         new column name(s), while the other values, if any, go under different
-        column names.
-
-        A MultiIndex might be returned; the user can reset index with the
-        `flatten_levels` option.
+        column names. `values_to` is overriden.
 
     5.  If `ignore_index` is `False`, then the index of the source dataframe is
         returned, and repeated as necessary.
 
-    6.  If the user wants the data in order of appearance, then
-        `sort_by_appearance` covers that.
+    6.  If the user wants the data in order of appearance, in which case, the
+        unpivoted data appears in stacked form, then `sort_by_appearance`
+        covers that.
 
 
     The function also tries to emulate the way the source data is structured,
@@ -1107,8 +1120,7 @@ def _computations_pivot_longer(
             sort_by_appearance=sort_by_appearance,
             df_index=df_index,
         )
-        # dtypes not applied here, since there are no
-        # extractions
+
         return df
 
     if any((names_pattern, names_sep)):
@@ -1136,17 +1148,27 @@ def _computations_pivot_longer(
         stubnames = df.columns.get_level_values(".value").unique()
         column_length = len(df.columns.get_level_values(cumcount).unique())
         df_index = df.index
-        df = df.sort_index(axis='columns', level=others, sort_remaining=False)
-        df = [df.xs(key=stub, level=".value", axis='columns').melt(value_name=stub) for stub in stubnames]
+        # ensures data is uniform in all the chunks
+        df = df.sort_index(axis="columns", level=others, sort_remaining=False)
+        # separate into chunks by stubname
+        df = [
+            df.xs(key=stub, level=".value", axis="columns").melt(
+                value_name=stub
+            )
+            for stub in stubnames
+        ]
         df = pd.concat(df, axis="columns")
+        # there likely will be multiple `others`; these gets the first
+        # positions and discards the rest.
         others_positions = df.columns.get_indexer_non_unique(others)[0]
-        others_positions = np.sort(others_positions)[:len(others)]
-        stubnames_positions =  df.columns.get_indexer_for(stubnames)
+        others_positions = np.sort(others_positions)[: len(others)]
+        stubnames_positions = df.columns.get_indexer_for(stubnames)
         df = df.iloc[:, [*others_positions, *stubnames_positions]]
         df.index = __tile_compat(df_index, column_length)
         if sort_by_appearance:
             df = df.set_index(cumcount, append=True)
-            df = df.sort_index(level=[-2,-1],sort_remaining=False)
+            # sorting by the extra index and cumcount
+            df = df.sort_index(level=[-2, -1], sort_remaining=False)
             df = df.droplevel(level=[-2, -1])
         else:
             df = df.drop(columns=cumcount)

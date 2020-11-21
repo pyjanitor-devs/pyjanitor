@@ -4962,7 +4962,7 @@ def pivot_longer(
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
     :param sort_by_appearance: Default `False`. Boolean value that determines
-        if the new dataframe will be sorted in order of appearance. If `True`, 
+        if the new dataframe will be sorted in order of appearance. If `True`,
         the unpivoted dataframe will be stacked. See examples for more details.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained. Index labels will be

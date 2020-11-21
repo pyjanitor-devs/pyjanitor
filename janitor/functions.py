@@ -4769,7 +4769,7 @@ def pivot_longer(
                                             values_to='heartrate',
                                             sort_by_appearance=False)
 
-            name     drug  heartrate
+                name     drug  heartrate
         0	Wilbur	   a	67
         1	Petunia	   a	80
         2	Gregory    a	64
@@ -4789,7 +4789,7 @@ def pivot_longer(
                                             sort_by_appearance=False,
                                             ignore_index = False)
 
-            name     drug  heartrate
+                name     drug  heartrate
         0	Wilbur	   a	67
         1	Petunia	   a	80
         2	Gregory    a	64
@@ -4804,7 +4804,7 @@ def pivot_longer(
 
     .. code-block:: python
 
-            col1	 2019-12	 2020-01	 2020-02
+              col1	    2019-12	 2020-01	 2020-02
         0	a	   -1.085631	-1.506295	-2.426679
         1	b	    0.997345	-0.578600	-0.428913
         2	c	    0.282978	 1.651437	 1.265936
@@ -4823,7 +4823,7 @@ def pivot_longer(
                            sort_by_appearance=True)
               )
 
-          col1  year   month      value
+           col1 year   month      value
         0    a  2019     12     -1.085631
         1    a  2020     01     -1.506295
         2    a  2020     02     -2.426679
@@ -4866,7 +4866,7 @@ def pivot_longer(
 
     Let's break down the `.value` idea a bit. When `.value` is used,
     `pivot_longer` creates a pairing. In the example above, we get a pairing
-    {"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}. All
+    ``{"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}``. All
     the values associated with `.value` become new column names, while those
     not associated with `.value`(`treat1` and `treat2`) become values in a
     new column `group`. `values_to` is overridden during this process.
@@ -4895,7 +4895,7 @@ def pivot_longer(
 
     The same idea of `.value` works here as well. Based on the capturing groups
     in the regex in `names_pattern`, we have two pairings -->
-    {".value":["n", "pct"], "name":[1,2,3]}. Just like in the previous example,
+    ``{".value":["n", "pct"], "name":[1,2,3]}``. Just like in the previous example,
     the values associated with `.value` become new column names, while those
     not associated with `.value` become values in the new column ``name``.
 

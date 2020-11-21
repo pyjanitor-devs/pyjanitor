@@ -12,6 +12,7 @@ new version (on deck)
 - [ENH] Add ``pivot_wider`` function, which is the inverse of the `pivot_longer`
   function. @samukweku
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
+- [ENH] Improvements to `pivot_longer` function, with improved speed and cleaner code. @samukweku
 
 v0.20.10
 =======

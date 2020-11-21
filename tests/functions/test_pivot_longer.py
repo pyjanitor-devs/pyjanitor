@@ -1898,3 +1898,22 @@ def test_cumcount_present():
     )
 
     assert_frame_equal(result, df_out)
+
+
+df = pd.DataFrame(
+            {
+                "id": [1, 2, 3],
+                "x1": [4, 5, 6],
+                "x2": [5, 6, 7],
+                "y1": [7, 8, 9],
+                "y2": [10, 11, 12],
+            }
+        )
+
+
+print(df, end="\n\n\n\n")
+result = df.pivot_longer(index = 'id',
+        names_to = ['x','y'],
+        names_pattern = ['^x', '^y'], sort_by_appearance=True)
+
+print(result)

@@ -788,6 +788,16 @@ def _pivot_longer_pattern_match(
 
     return df, index, column_names
 
+def __tile_compat(arr, length):
+    """
+    Repeats index multiple times.
+    """
+    # copied from pandas.core.reshape.utils (_tile_compat)
+    # applies to MultiIndexes as well
+    # numpy resize, with len(df) instead of column_length works too
+    taker = np.tile(np.arange(len(arr)), length)
+    return arr.take(taker)
+
 
 def _restore_index_and_sort_by_appearance(
     df: pd.DataFrame, ignore_index, column_length, sort_by_appearance, df_index
@@ -847,11 +857,7 @@ def _restore_index_and_sort_by_appearance(
     # dataframe, simply reuse the original index.
     if not ignore_index:
         if not len(df_index) == len(df):
-            # copied from pandas.core.reshape.utils (_tile_compat)
-            # applies to MultiIndexes as well
-            # numpy resize, with len(df) instead of column_length works too
-            taker = np.tile(np.arange(len(df_index)), column_length)
-            df.index = df_index.take(taker)
+            df.index = __tile_compat(df_index, column_length)
         else:
             df.index = df_index
 
@@ -882,7 +888,6 @@ def _pivot_longer_extractions(
             List[Union[str, Pattern]], Tuple[Union[str, Pattern]], str, Pattern
         ]
     ] = None,
-    dtypes: Optional[Dict] = None,
 ) -> Tuple:
 
     """
@@ -969,24 +974,24 @@ def _pivot_longer_extractions(
             mapping.iloc[positions, 1:] = ""
 
     else:
+        others = [
+            column_name for column_name in mapping if column_name != ".value"
+        ]
+        category_dtypes = {
+            key: CategoricalDtype(
+                categories=column.dropna().unique(), ordered=True
+            )
+            if column.hasnans
+            else CategoricalDtype(categories=column.unique(), ordered=True)
+            for key, column in mapping.items()
+            if key in others
+        }
+        mapping = mapping.astype(category_dtypes)
         cumcount = "._cumcount"
         for column_name in mapping:
             if column_name == cumcount:
                 cumcount = f"{cumcount}_1"
-
-        others = [
-            column_name for column_name in mapping if column_name != ".value"
-        ]
-        # takes care of dtype change for the extracted columns
-        # that will become part of the index
-        if dtypes:
-            if set(others).intersection(dtypes):
-                mapping_dtypes = {key: dtypes.pop(key, None) for key in others}
-                mapping = mapping.astype(mapping_dtypes)
-        if mapping.duplicated().any():
-            mapping[cumcount] = mapping.groupby(".value").cumcount()
-        else:
-            mapping[cumcount] = mapping.groupby(others, sort=False).ngroup()
+        mapping.loc[:, cumcount] = mapping.groupby(".value").cumcount()
         others.append(cumcount)
 
     if len(mapping.columns) > 1:
@@ -994,7 +999,7 @@ def _pivot_longer_extractions(
     else:
         df.columns = mapping.iloc[:, 0]
 
-    return df, others, dtypes
+    return df, others, cumcount
 
 
 def _computations_pivot_longer(
@@ -1113,14 +1118,12 @@ def _computations_pivot_longer(
         return df
 
     if any((names_pattern, names_sep)):
-
-        df, others, dtypes = _pivot_longer_extractions(
+        df, others, cumcount = _pivot_longer_extractions(
             df=df,
             index=index,
             names_to=names_to,
             names_sep=names_sep,
             names_pattern=names_pattern,
-            dtypes=dtypes,
         )
 
         if ".value" not in df.columns.names:
@@ -1137,41 +1140,32 @@ def _computations_pivot_longer(
             if dtypes:
                 df = df.astype(dtypes)
 
-            return df
 
         stubnames = df.columns.get_level_values(".value").unique()
-        primary_index_sorter = -(len(others) + 1)
-        original_index_positions = range(len(df_index.names))
-
-        df = df.stack(others, dropna=True)  # noqa: PD013
+        column_length = len(df.columns.get_level_values(cumcount).unique())
+        df_index = df.index
+        df = df.sort_index(axis='columns', level=others, sort_remaining=False)
+        df = [df.xs(key=stub, level=".value", axis='columns').melt(value_name=stub) for stub in stubnames]
+        df = pd.concat(df, axis="columns")
+        others_positions = df.columns.get_indexer_non_unique(others)[0]
+        others_positions = np.sort(others_positions)[:len(others)]
+        stubnames_positions =  df.columns.get_indexer_for(stubnames)
+        df = df.iloc[:, [*others_positions, *stubnames_positions]]
+        if not len(df_index) == len(df):
+            df.index = __tile_compat(df_index, column_length)
+        else:
+            df.index = df_index
         if sort_by_appearance:
-            df = df.sort_index(
-                level=[primary_index_sorter, -1],
-                kind="mergesort",
-                sort_remaining=False,
-            )
+            df = df.set_index(cumcount, append=True)
+            df = df.sort_index(level=[-2,-1],sort_remaining=False)
+            df = df.droplevel(level=[-2, -1])
         else:
-            df = df.sort_index(
-                level=[-1, primary_index_sorter],
-                kind="mergesort",
-                sort_remaining=False,
-            )
-
-        if not all((df.columns == stubnames)):
-            df = df.reindex(columns=stubnames)
-
-        df.columns = list(df.columns)
+            df = df.drop(columns=cumcount)
+            df = df.droplevel(level=-1)
+        if index:
+            df = df.reset_index(level=index)
         if ignore_index:
-            if index is None and (len(others) == 1):
-                df = df.droplevel([primary_index_sorter, -1])
-                df.index = np.arange(len(df))
-            else:
-                df = df.droplevel(
-                    [*original_index_positions, primary_index_sorter, -1]
-                )
-        else:
-            df = df.droplevel([primary_index_sorter, -1])
-
+            df.index = np.arange(len(df))
         if dtypes:
             df = df.astype(dtypes)
 

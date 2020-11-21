@@ -309,13 +309,6 @@ def test_values_to_exists_in_columns():
     with pytest.raises(ValueError):
         df_checks.pivot_longer(values_to="region")
 
-
-def test_wrong_dtypes():
-    "Raise TypeError if the wrong type is provided for `dtypes`."
-    with pytest.raises(TypeError):
-        df_checks.pivot_longer(dtypes="int")
-
-
 def test_pivot_no_args_passed():
     "Test output if no arguments are passed."
     df_no_args = pd.DataFrame({"name": ["Wilbur", "Petunia", "Gregory"]})
@@ -561,7 +554,7 @@ def test_names_pattern_list(names_pattern_list_df):
         index="ID",
         names_to=("DateRangeStart", "DateRangeEnd", "Value"),
         names_pattern=("Start$", "End$", "^Value"),
-    ).reset_index()
+    )
 
     expected_output = pd.DataFrame(
         {
@@ -783,7 +776,6 @@ multiple_values_sep = [
         "country",
         ("event", "year"),
         "_",
-        None,
         True,
     ),
     (
@@ -813,168 +805,168 @@ multiple_values_sep = [
                 {
                     "country": "United States",
                     "event": "vault",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "f",
                     "score": 48.132,
                 },
                 {
                     "country": "United States",
                     "event": "vault",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "m",
                     "score": 46.632,
                 },
                 {
                     "country": "United States",
                     "event": "vault",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "f",
                     "score": 46.86600000000001,
                 },
                 {
                     "country": "United States",
                     "event": "vault",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "m",
                     "score": 45.865,
                 },
                 {
                     "country": "United States",
                     "event": "floor",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "f",
                     "score": 45.36600000000001,
                 },
                 {
                     "country": "United States",
                     "event": "floor",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "m",
                     "score": 45.266000000000005,
                 },
                 {
                     "country": "United States",
                     "event": "floor",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "f",
                     "score": 45.998999999999995,
                 },
                 {
                     "country": "United States",
                     "event": "floor",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "m",
                     "score": 43.757,
                 },
                 {
                     "country": "Russia",
                     "event": "vault",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "f",
                     "score": 46.36600000000001,
                 },
                 {
                     "country": "Russia",
                     "event": "vault",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "m",
                     "score": 46.86600000000001,
                 },
                 {
                     "country": "Russia",
                     "event": "vault",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "f",
                     "score": 45.733000000000004,
                 },
                 {
                     "country": "Russia",
                     "event": "vault",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "m",
                     "score": 46.033,
                 },
                 {
                     "country": "Russia",
                     "event": "floor",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "f",
                     "score": 41.599,
                 },
                 {
                     "country": "Russia",
                     "event": "floor",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "m",
                     "score": 45.308,
                 },
                 {
                     "country": "Russia",
                     "event": "floor",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "f",
                     "score": 42.032,
                 },
                 {
                     "country": "Russia",
                     "event": "floor",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "m",
                     "score": 44.766000000000005,
                 },
                 {
                     "country": "China",
                     "event": "vault",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "f",
                     "score": 44.266000000000005,
                 },
                 {
                     "country": "China",
                     "event": "vault",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "m",
                     "score": 48.316,
                 },
                 {
                     "country": "China",
                     "event": "vault",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "f",
                     "score": 44.332,
                 },
                 {
                     "country": "China",
                     "event": "vault",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "m",
                     "score": 45.0,
                 },
                 {
                     "country": "China",
                     "event": "floor",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "f",
                     "score": 40.833,
                 },
                 {
                     "country": "China",
                     "event": "floor",
-                    "year": 2012,
+                    "year": '2012',
                     "gender": "m",
                     "score": 45.133,
                 },
                 {
                     "country": "China",
                     "event": "floor",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "f",
                     "score": 42.066,
                 },
                 {
                     "country": "China",
                     "event": "floor",
-                    "year": 2016,
+                    "year": '2016',
                     "gender": "m",
                     "score": 43.799,
                 },
@@ -983,18 +975,17 @@ multiple_values_sep = [
         "country",
         ("event", "year", "gender"),
         "_",
-        {"year": int},
         True,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index,names_to,names_sep,dtypes,sort_by_appearance",
+    "df_in,df_out,index,names_to,names_sep,sort_by_appearance",
     multiple_values_sep,
 )
 def test_multiple_values_sep(
-    df_in, df_out, index, names_to, names_sep, dtypes, sort_by_appearance
+    df_in, df_out, index, names_to, names_sep,  sort_by_appearance
 ):
     """
     Test function to extract multiple columns, using the `names_to` and
@@ -1005,7 +996,6 @@ def test_multiple_values_sep(
         names_to=names_to,
         names_sep=names_sep,
         values_to="score",
-        dtypes=dtypes,
         sort_by_appearance=sort_by_appearance,
     )
     assert_frame_equal(result, df_out)
@@ -1045,7 +1035,6 @@ paired_columns_pattern = [
         "id",
         ("cod", ".value"),
         "(M|F)_(start|end)_.+",
-        {"start": int, "end": int},
         True,
     ),
     (
@@ -1062,21 +1051,20 @@ paired_columns_pattern = [
         ),
         pd.DataFrame(
             [
-                {"person_id": 1, "value": 1, "date": "12/31/2007", "val": 2},
-                {"person_id": 1, "value": 2, "date": "12/31/2017", "val": 1},
-                {"person_id": 1, "value": 3, "date": "12/31/2027", "val": 7},
-                {"person_id": 2, "value": 1, "date": "11/25/2009", "val": 4},
-                {"person_id": 2, "value": 2, "date": "11/25/2019", "val": 3},
-                {"person_id": 2, "value": 3, "date": "11/25/2029", "val": 9},
-                {"person_id": 3, "value": 1, "date": "10/06/2005", "val": 6},
-                {"person_id": 3, "value": 2, "date": "10/06/2015", "val": 5},
-                {"person_id": 3, "value": 3, "date": "10/06/2025", "val": 11},
+                {"person_id": 1, "value": '1', "date": "12/31/2007", "val": 2},
+                {"person_id": 1, "value": '2', "date": "12/31/2017", "val": 1},
+                {"person_id": 1, "value": '3', "date": "12/31/2027", "val": 7},
+                {"person_id": 2, "value": '1', "date": "11/25/2009", "val": 4},
+                {"person_id": 2, "value": '2', "date": "11/25/2019", "val": 3},
+                {"person_id": 2, "value": '3', "date": "11/25/2029", "val": 9},
+                {"person_id": 3, "value": '1', "date": "10/06/2005", "val": 6},
+                {"person_id": 3, "value": '2', "date": "10/06/2015", "val": 5},
+                {"person_id": 3, "value": '3', "date": "10/06/2025", "val": 11},
             ]
         ),
         patterns("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
-        {"value": int, "val": int},
         True,
     ),
     (
@@ -1096,7 +1084,7 @@ paired_columns_pattern = [
         pd.DataFrame(
             {
                 "id": [1, 1, 1],
-                "instance": [1, 2, 3],
+                "instance": ['1', '2', '3'],
                 "a": ["a", "b", "c"],
                 "A": ["A", "B", "C"],
             }
@@ -1104,7 +1092,6 @@ paired_columns_pattern = [
         "id",
         (".value", "instance"),
         r"(\w)(\d)",
-        {"instance": int},
         True,
     ),
     (
@@ -1127,7 +1114,7 @@ paired_columns_pattern = [
                     0.282978,
                     0.282978,
                 ],
-                "year": [1970, 1980, 1970, 1980, 1970, 1980],
+                "year": ['1970', '1980', '1970', '1980', '1970', '1980'],
                 "A": ["a", "d", "b", "e", "c", "f"],
                 "B": [2.5, 3.2, 1.2, 1.3, 0.7, 0.1],
             }
@@ -1135,7 +1122,6 @@ paired_columns_pattern = [
         "X",
         (".value", "year"),
         "([A-Z])(.+)",
-        {"year": int, "B": float},
         True,
     ),
     (
@@ -1181,7 +1167,6 @@ paired_columns_pattern = [
         "id",
         (".value", "status"),
         "(.*)_(.*)",
-        None,
         True,
     ),
 ]
@@ -1190,12 +1175,12 @@ paired_columns_pattern = [
 @pytest.mark.parametrize(
     """
     df_in,df_out,index,names_to,names_pattern,
-    dtypes,sort_by_appearance
+    sort_by_appearance
     """,
     paired_columns_pattern,
 )
 def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern, dtypes, sort_by_appearance,
+    df_in, df_out, index, names_to, names_pattern,  sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to`
@@ -1205,9 +1190,8 @@ def test_extract_column_names_pattern(
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,
-        dtypes=dtypes,
         sort_by_appearance=sort_by_appearance,
-    ).reset_index()
+    )
     assert_frame_equal(result, df_out)
 
 
@@ -1252,7 +1236,6 @@ paired_columns_sep = [
         "X",
         (".value", "year"),
         "-",
-        None,
         True,
     ),
     (
@@ -1267,15 +1250,14 @@ paired_columns_sep = [
         ),
         pd.DataFrame(
             {
-                "indexer": [0, 0, 0, 0, 1, 1],
-                "num": [1, 2, 3, 4, 1, 2],
-                "S": [1, 0, 0, 1, 1, 1],
-            }
+    "indexer": [0, 0, 0, 0, 1, 1, 1, 1],
+    "num": ["1", "2", "3", "4", "1", "2", "3", "4"],
+    "S": [1, 0, "0", "1", 1, 1, np.nan, np.nan],
+}
         ),
         "indexer",
         (".value", "num"),
         "_",
-        {"num": int, "S": int},
         True,
     ),
     (
@@ -1302,14 +1284,13 @@ paired_columns_sep = [
                     1005,
                 ],
                 "area": [275, 275, 275, 394, 394, 394, 312, 312, 312],
-                "year": [2006, 2007, 2008, 2006, 2007, 2008, 2006, 2007, 2008],
+                "year": ['2006', '2007', '2008', '2006', '2007', '2008', '2006', '2007', '2008'],
                 "pop": [1037, 1052, 1102, 2399, 2424, 2438, 1638, 1647, 1660],
             }
         ),
         ["county", "area"],
         (".value", "year"),
         "_",
-        {"year": int, "pop": int},
         True,
     ),
     (
@@ -1355,6 +1336,12 @@ paired_columns_sep = [
                     "gender": 2.0,
                 },
                 {
+                    "family": 2,
+                    "child": "child2",
+                    "dob": np.nan,
+                    "gender": np.nan,
+                },
+                {
                     "family": 3,
                     "child": "child1",
                     "dob": "2002-07-11",
@@ -1395,8 +1382,7 @@ paired_columns_sep = [
         "family",
         (".value", "child"),
         "_",
-        {"gender": float},
-        True,
+        True
     ),
     (
         pd.DataFrame(
@@ -1424,6 +1410,7 @@ paired_columns_sep = [
                 "child": [
                     "child2",
                     "child1",
+                    "child2",
                     "child1",
                     "child2",
                     "child1",
@@ -1435,6 +1422,7 @@ paired_columns_sep = [
                 "dob": [
                     "2000-01-29",
                     "1998-11-26",
+                    np.nan,
                     "1996-06-22",
                     "2004-04-05",
                     "2002-07-11",
@@ -1443,14 +1431,13 @@ paired_columns_sep = [
                     "2005-02-28",
                     "2000-12-05",
                 ],
-                "gender": [2.0, 1, 2, 2.0, 2, 1.0, 1, 1.0, 2],
+                "gender": [2.0, 1, np.nan, 2, 2.0, 2, 1.0, 1, 1.0, 2],
             }
         ),
         None,
         (".value", "child"),
         "_",
-        {"gender": float},
-        True,
+        True
     ),
     (
         pd.DataFrame(
@@ -1491,7 +1478,6 @@ paired_columns_sep = [
         "id",
         (".value", "brand"),
         "_",
-        {"Q1r1": "int", "Q1r2": int},
         True,
     ),
     (
@@ -1507,7 +1493,7 @@ paired_columns_sep = [
         pd.DataFrame(
             {
                 "event": [1, 1, 2, 2],
-                "item": [1, 2, 1, 2],
+                "item": ['1', '2', '1', '2'],
                 "url": ["g1", "g2", "g3", "g4"],
                 "name": ["dc", "sf", "nyc", "la"],
             }
@@ -1515,7 +1501,6 @@ paired_columns_sep = [
         "event",
         (".value", "item"),
         "_",
-        {"item": int},
         True,
     ),
 ]
@@ -1524,12 +1509,12 @@ paired_columns_sep = [
 @pytest.mark.parametrize(
     """
     df_in,df_out,index,names_to,names_sep,
-    dtypes,sort_by_appearance
+    sort_by_appearance
     """,
     paired_columns_sep,
 )
 def test_extract_column_names_sep(
-    df_in, df_out, index, names_to, names_sep, dtypes, sort_by_appearance,
+    df_in, df_out, index, names_to, names_sep, sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to` argument
@@ -1539,9 +1524,8 @@ def test_extract_column_names_sep(
         index=index,
         names_to=names_to,
         names_sep=names_sep,
-        dtypes=dtypes,
         sort_by_appearance=sort_by_appearance,
-    ).reset_index()
+    )
     assert_frame_equal(result, df_out)
 
 
@@ -1648,7 +1632,6 @@ paired_columns_no_index_pattern = [
         ),
         ("set", ".value"),
         "(.+)_(.+)",
-        {"lat": float, "long": float},
         True,
     )
 ]
@@ -1657,12 +1640,12 @@ paired_columns_no_index_pattern = [
 @pytest.mark.parametrize(
     """
     df_in,df_out,names_to,names_pattern,
-    dtypes,sort_by_appearance
+    sort_by_appearance
     """,
     paired_columns_no_index_pattern,
 )
 def test_paired_columns_no_index_pattern(
-    df_in, df_out, names_to, names_pattern, dtypes, sort_by_appearance
+    df_in, df_out, names_to, names_pattern, sort_by_appearance
 ):
     """
     Test function where `.value` is in the `names_to` argument,
@@ -1671,9 +1654,8 @@ def test_paired_columns_no_index_pattern(
     result = df_in.pivot_longer(
         names_to=names_to,
         names_pattern=names_pattern,
-        dtypes=dtypes,
         sort_by_appearance=sort_by_appearance,
-    ).reset_index()
+    )
     assert_frame_equal(result, df_out)
 
 
@@ -1689,15 +1671,10 @@ names_single_value = [
             }
         ),
         pd.DataFrame(
-            {
-                "url": ["g1", "g2", "g3", "g4"],
-                "name": ["dc", "sf", "nyc", "la"],
-            },
-            index=pd.Index([1, 1, 2, 2], name="event"),
+            {'event': [1, 1, 2, 2], 'url': ['g1', 'g2', 'g3', 'g4'], 'name': ['dc', 'sf', 'nyc', 'la']}
         ),
         "event",
         "(.+)_.",
-        None,
         True,
         True,
     ),
@@ -1712,12 +1689,10 @@ names_single_value = [
             }
         ),
         pd.DataFrame(
-            {"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]},
-            index=pd.Index([1, 1, 2, 2, 3, 3], name="id"),
+            {"id":[1, 1, 2, 2, 3, 3],"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]},
         ),
         "id",
         "(.).",
-        None,
         True,
         True,
     ),
@@ -1733,7 +1708,6 @@ names_single_value = [
         pd.DataFrame({"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]}),
         None,
         "(.).",
-        None,
         True,
         True,
     ),
@@ -1752,7 +1726,6 @@ names_single_value = [
         ),
         None,
         "(.).",
-        None,
         False,
         True,
     ),
@@ -1761,7 +1734,7 @@ names_single_value = [
 
 @pytest.mark.parametrize(
     """
-    df_in,df_out,index, names_pattern, dtypes,
+    df_in,df_out,index, names_pattern,
     ignore_index,sort_by_appearance
     """,
     names_single_value,
@@ -1771,7 +1744,6 @@ def test_single_value(
     df_out,
     index,
     names_pattern,
-    dtypes,
     ignore_index,
     sort_by_appearance,
 ):
@@ -1780,7 +1752,6 @@ def test_single_value(
         index=index,
         names_to=".value",
         names_pattern=names_pattern,
-        dtypes=dtypes,
         ignore_index=ignore_index,
         sort_by_appearance=sort_by_appearance,
     )
@@ -1883,18 +1854,13 @@ def test_cumcount_present():
     )
 
     df_out = pd.DataFrame(
-        {"x": [4, 5, 6, 5, 6, 7], "y": [7, 8, 9, 10, 11, 12]},
-        index=pd.MultiIndex.from_tuples(
-            [(1, "1"), (2, "1"), (3, "1"), (1, "2"), (2, "2"), (3, "2")],
-            names=["id", "._cumcount"],
-        ),
+        {'id': [1, 2, 3, 1, 2, 3], '._cumcount': ['1', '1', '1', '2', '2', '2'], 'x': [4, 5, 6, 5, 6, 7], 'y': [7, 8, 9, 10, 11, 12]}
     )
 
     result = df_in.pivot_longer(
         index="id",
         names_to=[".value", "._cumcount"],
         names_pattern="(.)(.)",
-        dtypes={"x": int, "y": "int"},
     )
 
     assert_frame_equal(result, df_out)
@@ -1902,18 +1868,34 @@ def test_cumcount_present():
 
 df = pd.DataFrame(
             {
-                "id": [1, 2, 3],
-                "x1": [4, 5, 6],
-                "x2": [5, 6, 7],
-                "y1": [7, 8, 9],
-                "y2": [10, 11, 12],
+                "id": ["A", "B", "C", "D", "E", "F"],
+                "f_start": ["p", "i", "i", "p", "p", "i"],
+                "d_start": [
+                    "2018-01-01",
+                    "2019-04-01",
+                    "2018-06-01",
+                    "2019-12-01",
+                    "2019-02-01",
+                    "2018-04-01",
+                ],
+                "f_end": ["p", "p", "i", "p", "p", "i"],
+                "d_end": [
+                    "2018-02-01",
+                    "2020-01-01",
+                    "2019-03-01",
+                    "2020-05-01",
+                    "2019-05-01",
+                    "2018-07-01",
+                ],
             }
         )
 
-
 print(df, end="\n\n\n\n")
-result = df.pivot_longer(index = 'id',
-        names_to = ['x','y'],
-        names_pattern = ['^x', '^y'], sort_by_appearance=True)
+result = df.pivot_longer(
+        index="id",
+        names_to=[".value","status"],
+        names_sep="_", sort_by_appearance=True
+    )
+
 
 print(result)

@@ -1130,7 +1130,9 @@ def _computations_pivot_longer(
                 sort_by_appearance=sort_by_appearance,
                 df_index=df_index,
             )
+            return df
 
+        # .value
         stubnames = df.columns.get_level_values(".value").unique()
         column_length = len(df.columns.get_level_values(cumcount).unique())
         df_index = df.index
@@ -1141,10 +1143,7 @@ def _computations_pivot_longer(
         others_positions = np.sort(others_positions)[:len(others)]
         stubnames_positions =  df.columns.get_indexer_for(stubnames)
         df = df.iloc[:, [*others_positions, *stubnames_positions]]
-        if not len(df_index) == len(df):
-            df.index = __tile_compat(df_index, column_length)
-        else:
-            df.index = df_index
+        df.index = __tile_compat(df_index, column_length)
         if sort_by_appearance:
             df = df.set_index(cumcount, append=True)
             df = df.sort_index(level=[-2,-1],sort_remaining=False)

@@ -4709,7 +4709,7 @@ def pivot_longer(
 
     This method does not mutate the original DataFrame.
 
-    IIt is a wrapper around `pd.melt` and is meant to serve as a single point
+    It is a wrapper around `pd.melt` and is meant to serve as a single point
     for transformations that require `pd.melt` or `pd.wide_to_long`.
 
     It is modeled after the `pivot_longer` function in R's tidyr package, and
@@ -4962,8 +4962,8 @@ def pivot_longer(
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
     :param sort_by_appearance: Default `False`. Boolean value that determines
-        if the new dataframe will be sorted in order of appearance. See examples
-        for more details.
+        if the new dataframe will be sorted in order of appearance. If `True`, 
+        the unpivoted dataframe will be stacked. See examples for more details.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained. Index labels will be
         repeated as necessary.

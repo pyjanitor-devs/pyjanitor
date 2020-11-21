@@ -612,7 +612,6 @@ def _data_checks_pivot_longer(
     values_to,
     names_sep,
     names_pattern,
-    dtypes,
     sort_by_appearance,
     ignore_index,
 ):
@@ -719,9 +718,6 @@ def _data_checks_pivot_longer(
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
 
-    if dtypes is not None:
-        check("dtypes", dtypes, [dict])
-
     check("values_to", values_to, [str])
 
     if values_to in df.columns:
@@ -752,7 +748,6 @@ def _data_checks_pivot_longer(
         values_to,
         names_sep,
         names_pattern,
-        dtypes,
         sort_by_appearance,
         ignore_index,
     )
@@ -1014,7 +1009,6 @@ def _computations_pivot_longer(
             List[Union[str, Pattern]], Tuple[Union[str, Pattern]], str, Pattern
         ]
     ] = None,
-    dtypes: Optional[Dict] = None,
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
@@ -1137,10 +1131,6 @@ def _computations_pivot_longer(
                 df_index=df_index,
             )
 
-            if dtypes:
-                df = df.astype(dtypes)
-
-
         stubnames = df.columns.get_level_values(".value").unique()
         column_length = len(df.columns.get_level_values(cumcount).unique())
         df_index = df.index
@@ -1166,8 +1156,6 @@ def _computations_pivot_longer(
             df = df.reset_index(level=index)
         if ignore_index:
             df.index = np.arange(len(df))
-        if dtypes:
-            df = df.astype(dtypes)
 
         return df
 

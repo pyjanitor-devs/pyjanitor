@@ -4701,7 +4701,6 @@ def pivot_longer(
     values_to: Optional[str] = "value",
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
-    dtypes: Optional[Dict] = None,
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
@@ -4908,7 +4907,6 @@ def pivot_longer(
             names_sep = string/regular expression,
             names_pattern = string/regular expression,
             value_name = new_column_name,
-            dtypes = dtypes,
             sort_by_appearance = True/False,
             ignore_index = True/False,
         )
@@ -4926,7 +4924,6 @@ def pivot_longer(
                 names_sep = string/regular expression,
                 names_pattern = string/regular expression,
                 value_name= new_column_name,
-                dtypes = dtypes,
                 sort_by_appearance = True/False,
                 ignore_index = True/False,
             )
@@ -4964,18 +4961,14 @@ def pivot_longer(
         if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
-    :param dtypes: A dictionary mapping data types to the extracted columns in
-        the new dataframe. In some cases, there may be upcasting of the
-        extracted values; this parameter helps the user to choose the right
-        data type.
     :param sort_by_appearance: Default `False`. Boolean value that determines
-        if the new dataframe will be sorted in order of appearance.
+        if the new dataframe will be sorted in order of appearance. See examples
+        for more details.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained. Index labels will be
         repeated as necessary.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
-        format. If ".value" is in `names_to` or `names_pattern` is a
-        list/tuple, then a MultiIndex may be returned.
+        format.
     :raises TypeError: if `index` or `column_names` is not a string, or a
         list/tuple of strings, or a `janitor.patterns` function.
     :raises TypeError: if `names_to` or `column_names` is not a string, or a
@@ -4983,10 +4976,8 @@ def pivot_longer(
     :raises TypeError: if `names_sep` or `names_pattern` is not a string or
         regular expression.
     :raises TypeError: if `values_to` is not a string.
-    :raises TypeError: if `dtypes` is not a dictionary.
     :raises TypeError: if `sort_by_appearance` is not a boolean.
     :raises TypeError: if `ignore_index` is not a boolean.
-    :raises TypeError: if `flatten_levels` is not a boolean.
     :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
         `names_pattern` are provided.
     :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
@@ -5011,7 +5002,6 @@ def pivot_longer(
         values_to,
         names_sep,
         names_pattern,
-        dtypes,
         sort_by_appearance,
         ignore_index,
     ) = _data_checks_pivot_longer(
@@ -5022,7 +5012,6 @@ def pivot_longer(
         values_to,
         names_sep,
         names_pattern,
-        dtypes,
         sort_by_appearance,
         ignore_index,
     )
@@ -5039,7 +5028,6 @@ def pivot_longer(
         values_to,
         names_sep,
         names_pattern,
-        dtypes,
         sort_by_appearance,
         ignore_index,
     )

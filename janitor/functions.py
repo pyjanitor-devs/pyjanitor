@@ -4722,13 +4722,9 @@ def pivot_longer(
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
-    This function is designed to work primarily with single indexed dataframes;
-    If you wish to unpivot MultiIndexed dataframes, `pd.melt` is more than
-    adequate.
-
-    By default, the unpivoted dataframe is returned in order of appearance.
-    You can get significant performance improvement if ``sort_by_appearance``
-    is ``False``.
+    This function is designed to work primarily with dataframes with single
+    index columns; If your dataframe has MultiIndex columns, kindly try
+    `pd.melt`, as it handles it quite well.
 
 
     Example 1: The following DataFrame contains heartrate data for patients
@@ -4751,8 +4747,7 @@ def pivot_longer(
         df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
                                             names_to='drug',
                                             values_to='heartrate',
-                                            sort_by_appearance=True
-                                            )
+                                            sort_by_appearance=True)
 
               name drug  heartrate
         0   Wilbur    a         67
@@ -4762,12 +4757,54 @@ def pivot_longer(
         4  Gregory    a         64
         5  Gregory    b         50
 
+    Note how the data is stacked in order of appearance. If, however,
+    you do not care for order of appearance, and want to wring out some
+    more performance, you can set `sort_by_appearance` to ``False`` (the
+    default is ``False``).
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
+                                            names_to='drug',
+                                            values_to='heartrate',
+                                            sort_by_appearance=False)
+
+            name     drug  heartrate
+        0	Wilbur	   a	67
+        1	Petunia	   a	80
+        2	Gregory    a	64
+        3	Wilbur	   b	56
+        4	Petunia	   b	90
+        5	Gregory	   b	50
+
+        You can set `ignore_index` to ``False``, if you wish to reuse the index
+        from the source dataframe(the index will be repeated as many times as
+        necessary):
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
+                                            names_to='drug',
+                                            values_to='heartrate',
+                                            sort_by_appearance=False,
+                                            ignore_index = False)
+
+            name     drug  heartrate
+        0	Wilbur	   a	67
+        1	Petunia	   a	80
+        2	Gregory    a	64
+        0	Wilbur	   b	56
+        1	Petunia	   b	90
+        2	Gregory	   b	50
+
+    The `ignore_index` parameter is also applicable to a MultiIndex index.
+
     Example 2: The dataframe below has year and month variables embedded within
     the column names.
 
     .. code-block:: python
 
-            col1	    2019-12	 2020-01	 2020-02
+            col1	 2019-12	 2020-01	 2020-02
         0	a	   -1.085631	-1.506295	-2.426679
         1	b	    0.997345	-0.578600	-0.428913
         2	c	    0.282978	 1.651437	 1.265936
@@ -4809,7 +4846,8 @@ def pivot_longer(
 
     For this, we take advantage of the `.value` variable, which signals to
     `pivot_longer` to treat the part of the column names corresponding to
-    `.value` as new column names.
+    `.value` as new column names. Think of it as `stubnames` in pandas'
+    ``wide_to_long`` function, but with more flexibility.
 
     .. code-block:: python
 
@@ -4833,7 +4871,12 @@ def pivot_longer(
     not associated with `.value`(`treat1` and `treat2`) become values in a
     new column `group`. `values_to` is overridden during this process.
 
-    Example 4: We can also pivot from wide to long using regular expressions
+    .. note:: The values not associated with ".value" (in the example above,
+        this is the `group` column) are returned as categorical dtype.
+        You can change it to your preferred dtype using pandas' ``astype``
+        method.
+
+    Example 4: We can also unpivot from wide to long using regular expressions
 
     .. code-block:: python
 
@@ -4843,7 +4886,7 @@ def pivot_longer(
         df = (pd.DataFrame(...)
               .pivot_longer(names_to = (".value", "name"),
                             names_pattern = "(.*)_(.)")
-              )# return this as a multiindex
+              )
 
             name    n  pct
         0     1  10.0  0.1
@@ -4861,8 +4904,8 @@ def pivot_longer(
 
     You can also take advantage of `janitor.patterns` function, which allows
     selection of columns via a regular expression; this can come in handy if
-    you have a lot of column names to use as index, and do not wish to manually
-    type them all.
+    you have a lot of column names to pass to the `index` or `column_names`
+    paramenters, and you do not wish to manually type them all.
 
     .. code-block:: python
 
@@ -4871,7 +4914,9 @@ def pivot_longer(
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
 
-        df = pd.DataFrame(...).pivot_longer(janitor.patterns("^(?!wk)"))
+        df = (pd.DataFrame(...)
+              .pivot_longer(index = janitor.patterns("^(?!wk)"))
+              )
 
              name variable  value
         0   Alice      wk1      5
@@ -4887,9 +4932,6 @@ def pivot_longer(
         10    Bob      wk4     33
         11  Carla      wk4     40
 
-    You can determine the data type of the resulting columns with
-    the `dtypes` argument, which accepts a dictionary, pairing the column
-    names with the expected types.
 
     Functional usage syntax:
 
@@ -4952,7 +4994,8 @@ def pivot_longer(
         specification as pandas' `str.split` method, and can be a string
         or regular expression.
     :param names_pattern: Determines how the column name is broken up.
-        It can be a regular expression containing matching groups, or a
+        It can be a regular expression containing matching groups (it takes
+        the same specification as pandas' `str.extract` method), or a
         list/tuple of regular expressions. For a list/tuple of
         regular expressions, ``names_to`` must also be a list/tuple and the
         lengths of both arguments must match. The entries in both arguments
@@ -4963,7 +5006,8 @@ def pivot_longer(
         were previously the values of the columns in `column_names`.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         if the new dataframe will be sorted in order of appearance. If `True`,
-        the unpivoted dataframe will be stacked. See examples for more details.
+        the unpivoted dataframe will be stacked in order of appearance.
+        See examples for more details.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained. Index labels will be
         repeated as necessary.
@@ -4984,7 +5028,7 @@ def pivot_longer(
         and `names_sep` is provided.
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises ValueError: if `df` is a MultiIndex dataframe.
+    :raises ValueError: if `df` contains MultiIndex columns.
 
     .. # noqa: DAR402
     """

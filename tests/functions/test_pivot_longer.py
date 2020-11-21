@@ -1886,39 +1886,3 @@ def test_cumcount_present():
     )
 
     assert_frame_equal(result, df_out)
-
-
-df = pd.DataFrame(
-    {
-        "id": ["A", "B", "C", "D", "E", "F"],
-        "f_start": ["p", "i", "i", "p", "p", "i"],
-        "d_start": [
-            "2018-01-01",
-            "2019-04-01",
-            "2018-06-01",
-            "2019-12-01",
-            "2019-02-01",
-            "2018-04-01",
-        ],
-        "f_end": ["p", "p", "i", "p", "p", "i"],
-        "d_end": [
-            "2018-02-01",
-            "2020-01-01",
-            "2019-03-01",
-            "2020-05-01",
-            "2019-05-01",
-            "2018-07-01",
-        ],
-    }
-)
-
-print(df, end="\n\n\n\n")
-result = df.pivot_longer(
-    index="id",
-    names_to=[".value", "status"],
-    names_sep="_",
-    sort_by_appearance=True,
-)
-
-
-print(result)

@@ -4699,7 +4699,7 @@ def pivot_longer(
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = "variable",
     values_to: Optional[str] = "value",
-    column_level:Optional[Union[int,str]]=None,
+    column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
     sort_by_appearance: Optional[bool] = False,
@@ -4794,7 +4794,8 @@ def pivot_longer(
         1	Petunia	   b	90
         2	Gregory	   b	50
 
-    MultiIndex dataframes are unpivoted in the same form you expect from pandas' `melt`:
+    MultiIndex dataframes are unpivoted in the same form you expect
+    from pandas' `melt`:
 
     .. code-block:: python
 
@@ -4925,9 +4926,10 @@ def pivot_longer(
 
     The same idea of `.value` works here as well. Based on the capturing groups
     in the regex in `names_pattern`, we have two pairings -->
-    ``{".value":["n", "pct"], "name":[1,2,3]}``. Just like in the previous example,
-    the values associated with `.value` become new column names, while those
-    not associated with `.value` become values in the new column ``name``.
+    ``{".value":["n", "pct"], "name":[1,2,3]}``. Just like in the previous
+    example, the values associated with `.value` become new column names,
+    while those not associated with `.value` become values in the new column
+    ``name``.
 
     Note that there are no limits to the pairing; however, you can only have
     one `.value` in ``names_to``.
@@ -5030,36 +5032,45 @@ def pivot_longer(
     :param names_sep: Determines how the column name is broken up, if
         `names_to` contains multiple values. It takes the same
         specification as pandas' `str.split` method, and can be a string
-        or regular expression.
+        or regular expression. `names_sep` does not work with MultiIndex
+        columns.
     :param names_pattern: Determines how the column name is broken up.
         It can be a regular expression containing matching groups (it takes
         the same specification as pandas' `str.extract` method), or a
-        list/tuple of regular expressions. For a list/tuple of
-        regular expressions, ``names_to`` must also be a list/tuple and the
-        lengths of both arguments must match. The entries in both arguments
-        must also match positionally, i.e  if `regex1` in `names_pattern` is
-        the first item, it will be aligned to `new_column_name_1` in `names_to`
-        if `new_column_name_1` is the first item, and so on.
+        list/tuple of regular expressions. If it is a single regex, the
+        number of groups must match the length of ``names_to``( if the
+        length of ``names_to`` is 3, then the number of groups must be 3.
+        If ``names_to`` is a string, then there should be only one group
+        in ``names_pattern``). For a list/tuple of regular expressions,
+        ``names_to`` must also be a list/tuple and the lengths of both
+        arguments must match(if the length of `names_to` is 4, then the
+        length of `names_pattern must also be 4). The entries in both
+        arguments must also match positionally, i.e  if
+        `names_to = ("name1", "name2", "name3"), then ``names_pattern``
+        should be ("regex1", "regex2", "regex3"), with "name1" pairing
+        "regex1", "name2" pairing "regex2", and "name3" pairing "regex3".
+        `names_pattern` does not work with MultiIndex columns.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
     :param column_level: If columns are a MultiIndex, then use this level to
         unpivot the dataframe. Provided for compatibility with pandas' melt,
-        and applies only if neither `names_sep` nor `names_pattern` is provided.
+        and applies only if neither `names_sep` nor `names_pattern` is
+        provided.
     :param sort_by_appearance: Default `False`. Boolean value that determines
-        if the new dataframe will be sorted in order of appearance. If `True`,
-        the unpivoted dataframe will be stacked in order of appearance.
-        See examples for more details.
+        the final look of the dataframe. If `True`, the unpivoted dataframe
+        will be stacked in order of appearance. See examples for more details.
     :param ignore_index: Default `True`. If True, original index is ignored.
-        If False, the original index is retained. Index labels will be
+        If False, the original index is retained and the Index labels will be
         repeated as necessary.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
     :raises TypeError: if `index` or `column_names` is not a string, or a
-        list/tuple of strings, or a `janitor.patterns` function.
+        list/tuple of column names, or a `janitor.patterns` function.
     :raises TypeError: if `names_to` or `column_names` is not a string, or a
         list/tuple of strings.
-    :raises TypeError: if `names_sep` or `names_pattern` is not a string or
-        regular expression.
+    :raises TypeError: if `names_sep` is not a string or regular expression.
+    :raises TypeError: if `names_pattern` is not a regular expression, or a
+        list/tuple of regular expressions.
     :raises TypeError: if `values_to` is not a string.
     :raises TypeError: if `sort_by_appearance` is not a boolean.
     :raises TypeError: if `ignore_index` is not a boolean.
@@ -5069,10 +5080,10 @@ def pivot_longer(
         columns is greater than 1.
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises ValueError: if `df` contains MultiIndex columns, and `index` or
-        `column_names` is not a list of tuples.
-    :raises ValueError: if `df` contains MultiIndex columns, and either
-        `names_sep` or `names_pattern` is provided.
+    :raises ValueError: if the dataframe contains MultiIndex columns, and
+    `index` or `column_names` is not a list of tuples.
+    :raises ValueError: if the dataframe contains MultiIndex columns, and
+        either `names_sep` or `names_pattern` is provided.
 
     .. # noqa: DAR402
     """

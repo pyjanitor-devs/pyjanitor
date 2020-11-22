@@ -76,6 +76,17 @@ def test_df():
     )
 
 
+@pytest.fixture
+def df_multi():
+    return pd.DataFrame(
+        {
+            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
+            ("names", "aa"): {0: 67, 1: 80, 2: 64},
+            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
+        }
+    )
+
+
 index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
 names_to_labels = [1, {12, "newnames"}]
@@ -217,18 +228,10 @@ def test_names_pattern_names_to_wrong_type():
         )
 
 
-def test_warning_multi_index():
-    "Raise ValueError if dataframe's column is a MultiIndex."
-    df_in = pd.DataFrame(
-        {
-            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
-            ("names", "aa"): {0: 67, 1: 80, 2: 64},
-            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
-        }
-    )
-
-    with pytest.raises(ValueError):
-        df_in.pivot_longer()
+def test_column_level_wrong_type(df_multi):
+    "Raise TypeError if wrong type is provided for `column_level`."
+    with pytest.raises(TypeError):
+        df_multi.pivot_longer(index="name", column_level={0})
 
 
 def test_sort_by_appearance(test_df):
@@ -287,12 +290,24 @@ def test_both_names_sep_and_pattern():
         )
 
 
-def test_neither_names_sep_and_pattern():
-    "Raise ValueError if neither `names_sep` nor `names_pattern` is provided."
+def test_names_pattern_column_MultiIndex(df_multi):
+    "Raise ValueError if `names_pattern` and MultiIndex column"
     with pytest.raises(ValueError):
-        df_checks.pivot_longer(
-            names_to=["rar", "bar"], names_sep=None, names_pattern=None
+        df_multi.pivot_longer(
+            index="name", column_level=0, names_pattern=r"(.+)(.)"
         )
+
+
+def test_index_tuple_MultiIndex(df_multi):
+    "Raise ValueError if `index` is a tuple and MultiIndex column"
+    with pytest.raises(ValueError):
+        df_multi.pivot_longer(index=("name", "a"))
+
+
+def test_column_names_tuple_MultiIndex(df_multi):
+    "Raise ValueError if `column_names` is a tuple and MultiIndex column"
+    with pytest.raises(ValueError):
+        df_multi.pivot_longer(column_names=("names", "aa"))
 
 
 def test_values_to_wrong_type():
@@ -308,6 +323,17 @@ def test_values_to_exists_in_columns():
     """
     with pytest.raises(ValueError):
         df_checks.pivot_longer(values_to="region")
+
+
+def test_MultiIndex_column_level(df_multi):
+    "Test output from MultiIndex column"
+    result = df_multi.pivot_longer(
+        index="name", column_names="names", column_level=0
+    )
+    expected_output = df_multi.melt(
+        id_vars="name", value_vars="names", col_level=0
+    )
+    assert_frame_equal(result, expected_output)
 
 
 def test_pivot_no_args_passed():
@@ -1886,3 +1912,20 @@ def test_cumcount_present():
     )
 
     assert_frame_equal(result, df_out)
+
+
+df = pd.DataFrame(
+    {
+        ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
+        ("names", "aa"): {0: 67, 1: 80, 2: 64},
+        ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
+    }
+)
+
+print(df)
+print("\n\n\n\n\n")
+
+
+# result = df.pivot_longer(column_names=("names","aa"))
+
+# print(result)

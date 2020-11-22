@@ -733,26 +733,35 @@ def _data_checks_pivot_longer(
     if any((names_sep, names_pattern)):
         if isinstance(df.columns, pd.MultiIndex):
             raise ValueError(
-            """
+                """
             Unpivoting a MultiIndex column dataframe when `names_sep`
             or `names_pattern` is supplied is not supported.
             """
-        )
+            )
 
     if all((names_sep is None, names_pattern is None)):
         # adapted from pandas' melt source code
         if index is not None:
-            if isinstance(df.columns, pd.MultiIndex) and not isinstance(index, list):
+            if isinstance(df.columns, pd.MultiIndex) and not isinstance(
+                index, list
+            ):
                 raise ValueError(
-                "index must be a list of tuples when columns are a MultiIndex"
-            )
+                    """
+                    index must be a list of tuples
+                    when columns are a MultiIndex
+                    """
+                )
 
         if column_names is not None:
-            if isinstance(df.columns, pd.MultiIndex) and not isinstance(column_names, list):
+            if isinstance(df.columns, pd.MultiIndex) and not isinstance(
+                column_names, list
+            ):
                 raise ValueError(
-                "column_names must be a list of tuples when columns are a MultiIndex"
-            )
-
+                    """
+                    column_names must be a list of tuples
+                    when columns are a MultiIndex
+                    """
+                )
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -1043,7 +1052,7 @@ def _computations_pivot_longer(
     column_names: Optional[Union[List, Tuple]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
-    column_level:Optional[Union[int,str]]=None,
+    column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[
         Union[
@@ -1123,7 +1132,6 @@ def _computations_pivot_longer(
                 if column_name not in column_names
             ]
 
-
     df_index = df.index
     column_length = len(df.columns) - 1
 
@@ -1136,7 +1144,7 @@ def _computations_pivot_longer(
             value_vars=column_names,
             var_name=names_to,
             value_name=values_to,
-            col_level=column_level
+            col_level=column_level,
         )
 
         df = _restore_index_and_sort_by_appearance(

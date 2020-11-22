@@ -4903,7 +4903,7 @@ def pivot_longer(
     new column `group`. `values_to` is overridden during this process.
 
     .. note:: The values not associated with ".value" (in the example above,
-        this is the `group` column) are returned as categorical dtype.
+        this is the `group` column) are returned as object dtypes.
         You can change it to your preferred dtype using pandas' ``astype``
         method.
 

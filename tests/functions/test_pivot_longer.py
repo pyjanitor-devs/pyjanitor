@@ -586,6 +586,7 @@ def test_names_pattern_list(names_pattern_list_df):
     expected_output = pd.DataFrame(
         {
             "ID": [1, 1, 1],
+            "group": [0, 1, 2],
             "DateRangeStart": ["1/1/90", "4/5/91", "5/5/95"],
             "DateRangeEnd": ["3/1/90", "6/7/91", "6/6/96"],
             "Value": [4.4, 6.2, 3.3],
@@ -1886,8 +1887,8 @@ def test_single_column_names_pattern(
     assert_frame_equal(result, df_out)
 
 
-def test_cumcount_present():
-    "Test output if '._cumcount' is in `names_to`."
+def test_group_present():
+    "Test output if 'group' is in `names_to`."
     df_in = pd.DataFrame(
         {
             "id": [1, 2, 3],
@@ -1901,31 +1902,14 @@ def test_cumcount_present():
     df_out = pd.DataFrame(
         {
             "id": [1, 2, 3, 1, 2, 3],
-            "._cumcount": ["1", "1", "1", "2", "2", "2"],
+            "group": ["1", "1", "1", "2", "2", "2"],
             "x": [4, 5, 6, 5, 6, 7],
             "y": [7, 8, 9, 10, 11, 12],
         }
     )
 
     result = df_in.pivot_longer(
-        index="id", names_to=[".value", "._cumcount"], names_pattern="(.)(.)",
+        index="id", names_to=[".value", "group"], names_pattern="(.)(.)",
     )
 
     assert_frame_equal(result, df_out)
-
-
-df = pd.DataFrame(
-    {
-        ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
-        ("names", "aa"): {0: 67, 1: 80, 2: 64},
-        ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
-    }
-)
-
-print(df)
-print("\n\n\n\n\n")
-
-
-# result = df.pivot_longer(column_names=("names","aa"))
-
-# print(result)

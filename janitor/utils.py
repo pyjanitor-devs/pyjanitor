@@ -812,19 +812,19 @@ def _pivot_longer_pattern_match(
     return df, index, column_names
 
 
-def __tile_compat(arr: pd.Index, length: int) -> pd.Index:
+def __tile_compat(arr: pd.Index, df: pd.DataFrame) -> pd.Index:
     """
     Repeats index multiple times.
     """
-    # copied from pandas.core.reshape.utils (_tile_compat)
+    # adapted from pandas.core.reshape.utils (_tile_compat)
     # applies to MultiIndexes as well
     # numpy resize, with len(df) as length works too
-    taker = np.tile(np.arange(len(arr)), length)
+    taker = np.tile(np.arange(len(arr)), len(df) // len(arr))
     return arr.take(taker)
 
 
 def _restore_index_and_sort_by_appearance(
-    df: pd.DataFrame, ignore_index, column_length, sort_by_appearance, df_index
+    df: pd.DataFrame, ignore_index, sort_by_appearance, df_index
 ) -> pd.DataFrame:
     """
     This function restores the original index via the `ignore_index`
@@ -883,7 +883,7 @@ def _restore_index_and_sort_by_appearance(
     # dataframe, simply reuse the original index.
     if not ignore_index:
         if not len(df_index) == len(df):
-            df.index = __tile_compat(df_index, column_length)
+            df.index = __tile_compat(df_index, df)
         else:
             df.index = df_index
 
@@ -999,7 +999,7 @@ def _pivot_longer_extractions(
             mapping = np.select(mapping, names_to, None)
             mapping = pd.DataFrame(mapping, columns=[".value"])
 
-    cumcount = None
+    group = None
     others = None
     positions = None
     if not dot_value:
@@ -1030,20 +1030,22 @@ def _pivot_longer_extractions(
             if key in others
         }
         mapping = mapping.astype(category_dtypes)
-        # creating a cumcount is primarily for sorting by appearance.
-        cumcount = "._cumcount"
+        # creating a group is primarily for sorting by appearance.
+        # secondary purpose is to indicate groups if a list/tuple
+        # is passed to `names_pattern`
+        group = "group"
         for column_name in mapping:
-            if column_name == cumcount:
-                cumcount = f"{cumcount}_1"
-        mapping.loc[:, cumcount] = mapping.groupby(".value").cumcount()
-        others.append(cumcount)
+            if column_name == group:
+                group = f"{group}_1"
+        mapping.loc[:, group] = mapping.groupby(".value").cumcount()
+        others.append(group)
 
     if len(mapping.columns) > 1:
         df.columns = pd.MultiIndex.from_frame(mapping)
     else:
         df.columns = mapping.iloc[:, 0]
 
-    return df, others, cumcount
+    return df, others, group
 
 
 def _computations_pivot_longer(
@@ -1133,7 +1135,6 @@ def _computations_pivot_longer(
             ]
 
     df_index = df.index
-    column_length = len(df.columns) - 1
 
     # scenario 1
     if all((names_pattern is None, names_sep is None)):
@@ -1150,7 +1151,6 @@ def _computations_pivot_longer(
         df = _restore_index_and_sort_by_appearance(
             df=df,
             ignore_index=ignore_index,
-            column_length=column_length,
             sort_by_appearance=sort_by_appearance,
             df_index=df_index,
         )
@@ -1158,7 +1158,7 @@ def _computations_pivot_longer(
         return df
 
     if any((names_pattern, names_sep)):
-        df, others, cumcount = _pivot_longer_extractions(
+        df, others, group = _pivot_longer_extractions(
             df=df,
             index=index,
             column_names=column_names,
@@ -1173,7 +1173,6 @@ def _computations_pivot_longer(
             df = _restore_index_and_sort_by_appearance(
                 df=df,
                 ignore_index=ignore_index,
-                column_length=column_length,
                 sort_by_appearance=sort_by_appearance,
                 df_index=df_index,
             )
@@ -1181,7 +1180,6 @@ def _computations_pivot_longer(
 
         # .value
         stubnames = df.columns.get_level_values(".value").unique()
-        column_length = len(df.columns.get_level_values(cumcount).unique())
         df_index = df.index
         # ensures data is uniform in all the chunks
         df = df.sort_index(axis="columns", level=others, sort_remaining=False)
@@ -1199,14 +1197,22 @@ def _computations_pivot_longer(
         others_positions = np.sort(others_positions)[: len(others)]
         stubnames_positions = df.columns.get_indexer_for(stubnames)
         df = df.iloc[:, [*others_positions, *stubnames_positions]]
-        df.index = __tile_compat(df_index, column_length)
+        df.index = __tile_compat(df_index, df)
         if sort_by_appearance:
-            df = df.set_index(cumcount, append=True)
-            # sorting by the extra index and cumcount
+            # keep and return the group column if `names_pattern`
+            # is a list/tuple
+            if isinstance(names_pattern, (list, tuple)):
+                df = df.set_index(group, append=True, drop=False)
+            else:
+                df = df.set_index(group, append=True)
+            # sorting by the extra index(-2) and group(-1)
             df = df.sort_index(level=[-2, -1], sort_remaining=False)
             df = df.droplevel(level=[-2, -1])
         else:
-            df = df.drop(columns=cumcount)
+            # keep and return the group column if `names_pattern`
+            # is a list/tuple
+            if not isinstance(names_pattern, (list, tuple)):
+                df = df.drop(columns=group)
             df = df.droplevel(level=-1)
         if index:
             df = df.reset_index(level=index)

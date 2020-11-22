@@ -5079,7 +5079,7 @@ def pivot_longer(
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
     :raises ValueError: if the dataframe contains MultiIndex columns, and
-    `index` or `column_names` is not a list of tuples.
+        `index` or `column_names` is not a list of tuples.
     :raises ValueError: if the dataframe contains MultiIndex columns, and
         either `names_sep` or `names_pattern` is provided.
 
@@ -5151,7 +5151,7 @@ def pivot_wider(
     """
     Reshapes data from long to wide form. The number of columns are
     increased, while decreasing the number of rows.
-    
+
     It is the inverse of the `pivot_longer` method, and is a
     wrapper around `pd.DataFrame.unstack` method.
 

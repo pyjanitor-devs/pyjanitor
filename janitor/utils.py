@@ -610,6 +610,7 @@ def _data_checks_pivot_longer(
     column_names,
     names_to,
     values_to,
+    column_level,
     names_sep,
     names_pattern,
     sort_by_appearance,
@@ -621,21 +622,13 @@ def _data_checks_pivot_longer(
     or if an unneeded argument is provided. It also raises errors for some
     other scenarios(e.g if there are no matches returned for the regular
     expression in `names_pattern`, or if the dataframe has MultiIndex
-    columns).
+    columns and `names_sep` or `names_pattern` is provided).
 
     This function is executed before proceeding to the computation phase.
 
     Type annotations are not provided because this function is where type
     checking happens.
     """
-
-    if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError(
-            """
-            It looks like your dataframe has MultiIndex columns;
-            kindly use `pandas.melt` instead.
-            """
-        )
 
     if index is not None:
         if isinstance(index, str):
@@ -647,10 +640,14 @@ def _data_checks_pivot_longer(
             column_names = [column_names]
         check("column_names", column_names, [list, tuple, Pattern])
 
-    check("names_to", names_to, [list, tuple, str])
-
     if isinstance(names_to, str):
         names_to = [names_to]
+
+    else:
+        if isinstance(names_to, tuple):
+            names_to = list(names_to)
+
+    check("names_to", names_to, [list])
 
     if not all(isinstance(word, str) for word in names_to):
         raise TypeError("All entries in `names_to` argument must be strings.")
@@ -661,14 +658,6 @@ def _data_checks_pivot_longer(
                 """
                     Only one of names_pattern or names_sep
                     should be provided.
-                    """
-            )
-
-        if all((names_pattern is None, names_sep is None)):
-            raise ValueError(
-                """
-                    If `names_to` is a list/tuple, then either
-                    `names_sep` or `names_pattern` must be supplied.
                     """
             )
 
@@ -689,6 +678,7 @@ def _data_checks_pivot_longer(
             )
     if names_pattern is not None:
         check("names_pattern", names_pattern, [str, Pattern, List, Tuple])
+
         if isinstance(names_pattern, (list, tuple)):
             if not all(
                 isinstance(word, (str, Pattern)) for word in names_pattern
@@ -737,6 +727,33 @@ def _data_checks_pivot_longer(
                 """
             )
 
+    if column_level is not None:
+        check("column_level", column_level, [int, str])
+
+    if any((names_sep, names_pattern)):
+        if isinstance(df.columns, pd.MultiIndex):
+            raise ValueError(
+            """
+            Unpivoting a MultiIndex column dataframe when `names_sep`
+            or `names_pattern` is supplied is not supported.
+            """
+        )
+
+    if all((names_sep is None, names_pattern is None)):
+        # adapted from pandas' melt source code
+        if index is not None:
+            if isinstance(df.columns, pd.MultiIndex) and not isinstance(index, list):
+                raise ValueError(
+                "index must be a list of tuples when columns are a MultiIndex"
+            )
+
+        if column_names is not None:
+            if isinstance(df.columns, pd.MultiIndex) and not isinstance(column_names, list):
+                raise ValueError(
+                "column_names must be a list of tuples when columns are a MultiIndex"
+            )
+
+
     check("sort_by_appearance", sort_by_appearance, [bool])
 
     check("ignore_index", ignore_index, [bool])
@@ -747,6 +764,7 @@ def _data_checks_pivot_longer(
         column_names,
         names_to,
         values_to,
+        column_level,
         names_sep,
         names_pattern,
         sort_by_appearance,
@@ -880,6 +898,7 @@ def _restore_index_and_sort_by_appearance(
 def _pivot_longer_extractions(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple]] = None,
+    column_names: Optional[Union[List, Tuple]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[
@@ -901,6 +920,13 @@ def _pivot_longer_extractions(
 
     A tuple, containing the dataframe and `others`, are returned.
     """
+
+    # if the user is only interested in a subsection
+    # put here because it can cause issues in the
+    # _computation_pivot_longer function, especially
+    # if column_level is not None
+    if all((index, column_names)):
+        df = df.filter(index + column_names)
 
     dot_value = any(
         ((".value" in names_to), isinstance(names_pattern, (list, tuple)))
@@ -1017,6 +1043,7 @@ def _computations_pivot_longer(
     column_names: Optional[Union[List, Tuple]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
+    column_level:Optional[Union[int,str]]=None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[
         Union[
@@ -1096,8 +1123,6 @@ def _computations_pivot_longer(
                 if column_name not in column_names
             ]
 
-    if all((index, column_names)):
-        df = df.filter(index + column_names)
 
     df_index = df.index
     column_length = len(df.columns) - 1
@@ -1111,6 +1136,7 @@ def _computations_pivot_longer(
             value_vars=column_names,
             var_name=names_to,
             value_name=values_to,
+            col_level=column_level
         )
 
         df = _restore_index_and_sort_by_appearance(
@@ -1127,6 +1153,7 @@ def _computations_pivot_longer(
         df, others, cumcount = _pivot_longer_extractions(
             df=df,
             index=index,
+            column_names=column_names,
             names_to=names_to,
             names_sep=names_sep,
             names_pattern=names_pattern,

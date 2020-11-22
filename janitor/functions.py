@@ -4699,6 +4699,7 @@ def pivot_longer(
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = "variable",
     values_to: Optional[str] = "value",
+    column_level:Optional[Union[int,str]]=None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
     sort_by_appearance: Optional[bool] = False,
@@ -4721,10 +4722,6 @@ def pivot_longer(
 
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
-
-    This function is designed to work primarily with dataframes with single
-    index columns; If your dataframe has MultiIndex columns, kindly try
-    `pd.melt`, as it handles it quite well.
 
 
     Example 1: The following DataFrame contains heartrate data for patients
@@ -4777,9 +4774,9 @@ def pivot_longer(
         4	Petunia	   b	90
         5	Gregory	   b	50
 
-        You can set `ignore_index` to ``False``, if you wish to reuse the index
-        from the source dataframe(the index will be repeated as many times as
-        necessary):
+    You can set `ignore_index` to ``False``, if you wish to reuse the index
+    from the source dataframe(the index will be repeated as many times as
+    necessary):
 
     .. code-block:: python
 
@@ -4797,7 +4794,40 @@ def pivot_longer(
         1	Petunia	   b	90
         2	Gregory	   b	50
 
-    The `ignore_index` parameter is also applicable to a MultiIndex index.
+    MultiIndex dataframes are unpivoted in the same form you expect from pandas' `melt`:
+
+    .. code-block:: python
+
+            A  B  C
+            D  E  F
+        0   a  1  2
+        1   b  3  4
+        2   c  5  6
+
+        df = pd.DataFrame(...).pivot_longer(index=[("A","D")],
+                                            names_to=["first", "second"])
+
+             (A, D)  first   second   value
+        0	a	B	E	1
+        1	b	B	E	3
+        2	c	B	E	5
+        3	a	C	F	2
+        4	b	C	F	4
+        5	c	C	F	6
+
+    You can also unpivot on a specific level:
+
+    .. code-block:: python
+
+        df = pd.DataFrame(...).pivot_longer(index="A",
+                                            names_to="first",
+                                            column_level=0)
+
+           A      first  value
+        0  a        B      1
+        1  b        B      3
+        2  c        B      5
+
 
     Example 2: The dataframe below has year and month variables embedded within
     the column names.
@@ -4918,7 +4948,7 @@ def pivot_longer(
               .pivot_longer(index = janitor.patterns("^(?!wk)"))
               )
 
-             name variable  value
+             name   variable  value
         0   Alice      wk1      5
         1     Bob      wk1      7
         2   Carla      wk1      6
@@ -4931,6 +4961,10 @@ def pivot_longer(
         9   Alice      wk4     22
         10    Bob      wk4     33
         11  Carla      wk4     40
+
+    .. note:: Unpivoting a dataframe with MultiIndex columns, when
+        either `names_sep` or `names_pattern` is provided is not
+        supported.
 
 
     Functional usage syntax:
@@ -4948,7 +4982,8 @@ def pivot_longer(
             names_to = new_column_name,
             names_sep = string/regular expression,
             names_pattern = string/regular expression,
-            value_name = new_column_name,
+            values_to= new_column_name,
+            column_level=None/int/str,
             sort_by_appearance = True/False,
             ignore_index = True/False,
         )
@@ -4965,7 +5000,8 @@ def pivot_longer(
                 names_to = new_column_name,
                 names_sep = string/regular expression,
                 names_pattern = string/regular expression,
-                value_name= new_column_name,
+                values_to= new_column_name,
+                column_level=None/int/str,
                 sort_by_appearance = True/False,
                 ignore_index = True/False,
             )
@@ -4976,11 +5012,13 @@ def pivot_longer(
         Should be either a single column name, or a list/tuple of
         column names. You can also dynamically select column names
         by using a regular expression with the `janitor.patterns`
-        function.
+        function. Index should be a list of tuples if the columns
+        are a MultiIndex.
     :param column_names: Name(s) of columns to unpivot. Should be either
         a single column name or a list/tuple of column names. You can also
         dynamically select column names by using a regular expression
-        with the `janitor.patterns` function.
+        with the `janitor.patterns` function. Column_names should be a
+        list of tuples if the columns are a MultiIndex.
     :param names_to: Name of new column as a string that will contain
         what were previously the column names in `column_names`.
         The default is `variable` if no value is provided. It can
@@ -5004,6 +5042,9 @@ def pivot_longer(
         if `new_column_name_1` is the first item, and so on.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
+    :param column_level: If columns are a MultiIndex, then use this level to
+        unpivot the dataframe. Provided for compatibility with pandas' melt,
+        and applies only if neither `names_sep` nor `names_pattern` is provided.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         if the new dataframe will be sorted in order of appearance. If `True`,
         the unpivoted dataframe will be stacked in order of appearance.
@@ -5022,13 +5063,16 @@ def pivot_longer(
     :raises TypeError: if `values_to` is not a string.
     :raises TypeError: if `sort_by_appearance` is not a boolean.
     :raises TypeError: if `ignore_index` is not a boolean.
-    :raises ValueError: if `names_to` is a list/tuple, and both `names_sep` and
-        `names_pattern` are provided.
     :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
         and `names_sep` is provided.
+    :raises ValueError: if `names_to` is a string, and the number of extracted
+        columns is greater than 1.
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises ValueError: if `df` contains MultiIndex columns.
+    :raises ValueError: if `df` contains MultiIndex columns, and `index` or
+        `column_names` is not a list of tuples.
+    :raises ValueError: if `df` contains MultiIndex columns, and either
+        `names_sep` or `names_pattern` is provided.
 
     .. # noqa: DAR402
     """
@@ -5044,6 +5088,7 @@ def pivot_longer(
         column_names,
         names_to,
         values_to,
+        column_level,
         names_sep,
         names_pattern,
         sort_by_appearance,
@@ -5054,6 +5099,7 @@ def pivot_longer(
         column_names,
         names_to,
         values_to,
+        column_level,
         names_sep,
         names_pattern,
         sort_by_appearance,
@@ -5070,6 +5116,7 @@ def pivot_longer(
         column_names,
         names_to,
         values_to,
+        column_level,
         names_sep,
         names_pattern,
         sort_by_appearance,

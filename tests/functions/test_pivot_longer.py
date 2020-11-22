@@ -586,7 +586,6 @@ def test_names_pattern_list(names_pattern_list_df):
     expected_output = pd.DataFrame(
         {
             "ID": [1, 1, 1],
-            "group": [0, 1, 2],
             "DateRangeStart": ["1/1/90", "4/5/91", "5/5/95"],
             "DateRangeEnd": ["3/1/90", "6/7/91", "6/6/96"],
             "Value": [4.4, 6.2, 3.3],

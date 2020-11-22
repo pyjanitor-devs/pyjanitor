@@ -4761,10 +4761,14 @@ def pivot_longer(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
-                                            names_to='drug',
-                                            values_to='heartrate',
-                                            sort_by_appearance=False)
+        df = (pd.DataFrame(...)
+              .pivot_longer(
+                  column_names = ['a', 'b'],
+                  names_to = 'drug',
+                  values_to = 'heartrate',
+                  sort_by_appearance = False
+                  )
+            )
 
                 name     drug  heartrate
         0	Wilbur	   a	67
@@ -4780,11 +4784,15 @@ def pivot_longer(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
-                                            names_to='drug',
-                                            values_to='heartrate',
-                                            sort_by_appearance=False,
-                                            ignore_index = False)
+        df = (pd.DataFrame(...)
+              .pivot_longer(
+                  column_names = ['a', 'b'],
+                  names_to = 'drug',
+                  values_to = 'heartrate',
+                  sort_by_appearance = False,
+                  ignore_index = False
+                  )
+            )
 
                 name     drug  heartrate
         0	Wilbur	   a	67
@@ -4805,8 +4813,12 @@ def pivot_longer(
         1   b  3  4
         2   c  5  6
 
-        df = pd.DataFrame(...).pivot_longer(index=[("A","D")],
-                                            names_to=["first", "second"])
+        df = (pd.DataFrame(...)
+               .pivot_longer(
+                   index = [("A", "D")],
+                   names_to = ["first", "second"]
+                   )
+            )
 
              (A, D)  first   second   value
         0	a	B	E	1
@@ -4820,9 +4832,13 @@ def pivot_longer(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(index="A",
-                                            names_to="first",
-                                            column_level=0)
+        df = (pd.DataFrame(...)
+              .pivot_longer(
+                  index = "A",
+                  names_to = "first",
+                  column_level = 0
+                  )
+            )
 
            A      first  value
         0  a        B      1
@@ -4841,17 +4857,19 @@ def pivot_longer(
         2	c	    0.282978	 1.651437	 1.265936
 
     Pivot_longer can conveniently reshape the dataframe into long format, with
-    new columns for the year and month. We simply pass in the new column names
+    new columns for the year and month. You simply pass in the new column names
     to `names_to`, and pass the hyphen '-' to the `names_sep` argument.
 
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-             .pivot_longer(index='col1',
-                           names_to=('year','month'),
-                           names_sep='-',
-                           sort_by_appearance=True)
-              )
+              .pivot_longer(
+                  index = 'col1',
+                  names_to = ('year', 'month'),
+                  names_sep = '-',
+                  sort_by_appearance = True
+                  )
+            )
 
            col1 year   month      value
         0    a  2019     12     -1.085631
@@ -4868,11 +4886,12 @@ def pivot_longer(
     ('measure1', 'measure2') that we would love to reuse as
     column names.
 
-    .. code-block:: python
+    .. csv-table::
+        :header: "treat1-measure1","treat1-measure2","treat2-measure1","treat2-measure2"
+        :widths: 20,20,20,20
 
-            treat1-measure1	treat1-measure2	treat2-measure1	treat2-measure2
-        0	         1	        4	            2	            5
-        1	         2	        5	            3	            4
+        1,4,2,5
+        2,5,3,4
 
     For this, we take advantage of the `.value` variable, which signals to
     `pivot_longer` to treat the part of the column names corresponding to
@@ -4882,11 +4901,12 @@ def pivot_longer(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .pivot_longer(names_to=("group",'.value'),
-                            names_sep = '-',
-                            sort_by_appearance=True,
-                            flatten_levels=True)
-              )
+              .pivot_longer(
+                  names_to = ("group", '.value'),
+                  names_sep = '-',
+                  sort_by_appearance = True
+                  )
+            )
 
             group  measure1  measure2
         0  treat1         1         4
@@ -4905,7 +4925,7 @@ def pivot_longer(
         this is the `group` column) are returned as object dtypes. You can
         change it to your preferred dtype using pandas' ``astype`` method.
 
-    Example 4: We can also unpivot from wide to long using regular expressions
+    Example 4: You can also unpivot from wide to long using regular expressions
 
     .. code-block:: python
 
@@ -4913,9 +4933,11 @@ def pivot_longer(
         0   10   20   30   0.1    0.2    0.3
 
         df = (pd.DataFrame(...)
-              .pivot_longer(names_to = (".value", "name"),
-                            names_pattern = "(.*)_(.)")
-              )
+              .pivot_longer(
+                  names_to = (".value", "name"),
+                  names_pattern = "(.*)_(.)"
+                  )
+            )
 
             name    n  pct
         0     1  10.0  0.1
@@ -4931,6 +4953,34 @@ def pivot_longer(
 
     Note that there are no limits to the pairing; however, you can only have
     one `.value` in ``names_to``.
+
+    Example 5: You can also pass a list/tuple of regular expressions to
+    ``names_pattern``, along with a list/tuple of new names to
+    ``names_to``:
+
+
+    .. csv-table::
+        :header: "GameID","Date","Visitor","Score_V","Home","Score_H"
+        :widths: 15,15,15,15,15,15
+
+        1,9/10/2020,"Houston Texans",20,"Kansas City Chiefs",34
+        2,9/13/2020,"Seattle SeaHawks",38,"Atlanta Falcons",25
+
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...)
+              .pivot_longer(
+                    ['GameID','Date'],
+                    names_to=("Team","Score"),
+                    names_pattern=("^Visitor|Home", "^Score"))
+            )
+
+               GameID       Date              Team       Score
+        0       1       9/10/2020      Houston Texans     20
+        1       2       9/13/2020    Seattle Seahawks     38
+        2       1       9/10/2020  Kansas City Chiefs     34
+        3       2       9/13/2020     Atlanta Falcons     25
 
     You can also take advantage of `janitor.patterns` function, which allows
     selection of columns via a regular expression; this can come in handy if

@@ -1199,20 +1199,12 @@ def _computations_pivot_longer(
         df = df.iloc[:, [*others_positions, *stubnames_positions]]
         df.index = __tile_compat(df_index, df)
         if sort_by_appearance:
-            # keep and return the group column if `names_pattern`
-            # is a list/tuple
-            if isinstance(names_pattern, (list, tuple)):
-                df = df.set_index(group, append=True, drop=False)
-            else:
-                df = df.set_index(group, append=True)
+            df = df.set_index(group, append=True)
             # sorting by the extra index(-2) and group(-1)
             df = df.sort_index(level=[-2, -1], sort_remaining=False)
             df = df.droplevel(level=[-2, -1])
         else:
-            # keep and return the group column if `names_pattern`
-            # is a list/tuple
-            if not isinstance(names_pattern, (list, tuple)):
-                df = df.drop(columns=group)
+            df = df.drop(columns=group)
             df = df.droplevel(level=-1)
         if index:
             df = df.reset_index(level=index)

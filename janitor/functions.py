@@ -4794,8 +4794,8 @@ def pivot_longer(
         1	Petunia	   b	90
         2	Gregory	   b	50
 
-    MultiIndex dataframes are unpivoted in the same form you expect
-    from pandas' `melt`:
+    MultiIndex dataframes are unpivoted in the same form that you would
+    expect from pandas' `melt`:
 
     .. code-block:: python
 
@@ -4840,10 +4840,9 @@ def pivot_longer(
         1	b	    0.997345	-0.578600	-0.428913
         2	c	    0.282978	 1.651437	 1.265936
 
-    Pivot_longer can conveniently reshape the data into long format, with new
-    columns for the year and month. We simply pass in the new column names to
-    `names_to`, and pass the hyphen '-' to the `names_sep` argument. Note how
-    this effectively replicates the pandas' `wide_to_long` function.
+    Pivot_longer can conveniently reshape the dataframe into long format, with
+    new columns for the year and month. We simply pass in the new column names
+    to `names_to`, and pass the hyphen '-' to the `names_sep` argument.
 
     .. code-block:: python
 
@@ -4903,9 +4902,8 @@ def pivot_longer(
     new column `group`. `values_to` is overridden during this process.
 
     .. note:: The values not associated with ".value" (in the example above,
-        this is the `group` column) are returned as object dtypes.
-        You can change it to your preferred dtype using pandas' ``astype``
-        method.
+        this is the `group` column) are returned as object dtypes. You can
+        change it to your preferred dtype using pandas' ``astype`` method.
 
     Example 4: We can also unpivot from wide to long using regular expressions
 
@@ -5152,13 +5150,17 @@ def pivot_wider(
 ) -> pd.DataFrame:
     """
     Reshapes data from long to wide form. The number of columns are
-    increased, while decreasing the number of rows. It is the inverse
-    of the `pivot_longer` method, and is a wrapper around
-    `pd.DataFrame.unstack`
-    method.
+    increased, while decreasing the number of rows.
+    
+    It is the inverse of the `pivot_longer` method, and is a
+    wrapper around `pd.DataFrame.unstack` method.
+
     This method does not mutate the original DataFrame.
+
     Reshaping to wide form :
+
     .. code-block:: python
+
              name variable  value
         0   Alice      wk1      5
         1   Alice      wk2      9
@@ -5172,6 +5174,7 @@ def pivot_wider(
         9   Carla      wk2     13
         10  Carla      wk3     39
         11  Carla      wk4     40
+
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -5179,16 +5182,20 @@ def pivot_wider(
                 names_from="variable",
                 values_from="value"
             )
+
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
+
     Pivoting on multiple columns is possible :
+
     .. code-block:: python
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
+
         df = (
             pd.DataFrame(...)
             .assign(num=0)
@@ -5198,15 +5205,22 @@ def pivot_wider(
                 values_from=["n", "pct"]
              )
          )
+
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
+
     .. note:: You may choose not to collapse the levels by passing `False`
         to the ``collapse_levels`` argument.
+
     .. note:: An error is raised if the index is not unique.
+
     Functional usage syntax:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor as jn
+
         df = pd.DataFrame(...)
         df = jn.pivot_wider(
             df = df,
@@ -5220,8 +5234,11 @@ def pivot_wider(
             values_from_first=True/False,
             fill_value=fill_value
         )
+
     Method chaining syntax:
+
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -5236,6 +5253,7 @@ def pivot_wider(
                 fill_value=fill_value
                 )
         )
+
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list of column names.

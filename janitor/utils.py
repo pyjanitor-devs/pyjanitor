@@ -1117,7 +1117,7 @@ def _computations_pivot_longer(
     Usually, there is a significant performance improvement when
     `sort_by_appearance` is `False`.
 
-    An unpivoted dataframe is returned .
+    An unpivoted dataframe is returned.
     """
 
     if index is not None:

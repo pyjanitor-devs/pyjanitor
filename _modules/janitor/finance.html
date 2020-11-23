@@ -1,0 +1,761 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.finance &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for janitor.finance</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Finance-specific data cleaning functions.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="kn">from</span> <span class="nn">janitor</span> <span class="kn">import</span> <span class="n">check</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">deprecated_alias</span>
+
+<span class="n">currency_set</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;AUD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BGN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BRL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CAD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CHF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CNY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CZK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DKK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;EUR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GBP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;HKD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;HRK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;HUF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IDR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ILS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;INR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ISK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;JPY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KRW&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MXN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MYR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NOK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NZD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PHP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PLN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RON&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RUB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SEK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SGD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;THB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TRY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;USD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ZAR&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># Dictionary of recognized World Bank countries and their abbreviations</span>
+<span class="n">wb_country_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Aruba&quot;</span><span class="p">:</span> <span class="s2">&quot;ABW&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Afghanistan&quot;</span><span class="p">:</span> <span class="s2">&quot;AFG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Angola&quot;</span><span class="p">:</span> <span class="s2">&quot;AGO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Albania&quot;</span><span class="p">:</span> <span class="s2">&quot;ALB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Andorra&quot;</span><span class="p">:</span> <span class="s2">&quot;AND&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Arab World&quot;</span><span class="p">:</span> <span class="s2">&quot;ARB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;United Arab Emirates&quot;</span><span class="p">:</span> <span class="s2">&quot;ARE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Argentina&quot;</span><span class="p">:</span> <span class="s2">&quot;ARG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Armenia&quot;</span><span class="p">:</span> <span class="s2">&quot;ARM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;American Samoa&quot;</span><span class="p">:</span> <span class="s2">&quot;ASM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Antigua and Barbuda&quot;</span><span class="p">:</span> <span class="s2">&quot;ATG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Australia&quot;</span><span class="p">:</span> <span class="s2">&quot;AUS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Austria&quot;</span><span class="p">:</span> <span class="s2">&quot;AUT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Azerbaijan&quot;</span><span class="p">:</span> <span class="s2">&quot;AZE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Burundi&quot;</span><span class="p">:</span> <span class="s2">&quot;BDI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Belgium&quot;</span><span class="p">:</span> <span class="s2">&quot;BEL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Benin&quot;</span><span class="p">:</span> <span class="s2">&quot;BEN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Burkina Faso&quot;</span><span class="p">:</span> <span class="s2">&quot;BFA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bangladesh&quot;</span><span class="p">:</span> <span class="s2">&quot;BGD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bulgaria&quot;</span><span class="p">:</span> <span class="s2">&quot;BGR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bahrain&quot;</span><span class="p">:</span> <span class="s2">&quot;BHR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bahamas, The&quot;</span><span class="p">:</span> <span class="s2">&quot;BHS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bosnia and Herzegovina&quot;</span><span class="p">:</span> <span class="s2">&quot;BIH&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Belarus&quot;</span><span class="p">:</span> <span class="s2">&quot;BLR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Belize&quot;</span><span class="p">:</span> <span class="s2">&quot;BLZ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bermuda&quot;</span><span class="p">:</span> <span class="s2">&quot;BMU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bolivia&quot;</span><span class="p">:</span> <span class="s2">&quot;BOL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Brazil&quot;</span><span class="p">:</span> <span class="s2">&quot;BRA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Barbados&quot;</span><span class="p">:</span> <span class="s2">&quot;BRB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Brunei Darussalam&quot;</span><span class="p">:</span> <span class="s2">&quot;BRN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bhutan&quot;</span><span class="p">:</span> <span class="s2">&quot;BTN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Botswana&quot;</span><span class="p">:</span> <span class="s2">&quot;BWA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Central African Republic&quot;</span><span class="p">:</span> <span class="s2">&quot;CAF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Canada&quot;</span><span class="p">:</span> <span class="s2">&quot;CAN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Central Europe and the Baltics&quot;</span><span class="p">:</span> <span class="s2">&quot;CEB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Switzerland&quot;</span><span class="p">:</span> <span class="s2">&quot;CHE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Channel Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;CHI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Chile&quot;</span><span class="p">:</span> <span class="s2">&quot;CHL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;China&quot;</span><span class="p">:</span> <span class="s2">&quot;CHN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cote d&#39;Ivoire&quot;</span><span class="p">:</span> <span class="s2">&quot;CIV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cameroon&quot;</span><span class="p">:</span> <span class="s2">&quot;CMR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Congo, Dem. Rep.&quot;</span><span class="p">:</span> <span class="s2">&quot;COD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Congo, Rep.&quot;</span><span class="p">:</span> <span class="s2">&quot;COG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Colombia&quot;</span><span class="p">:</span> <span class="s2">&quot;COL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Comoros&quot;</span><span class="p">:</span> <span class="s2">&quot;COM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cabo Verde&quot;</span><span class="p">:</span> <span class="s2">&quot;CPV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Costa Rica&quot;</span><span class="p">:</span> <span class="s2">&quot;CRI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Caribbean small states&quot;</span><span class="p">:</span> <span class="s2">&quot;CSS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cuba&quot;</span><span class="p">:</span> <span class="s2">&quot;CUB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Curacao&quot;</span><span class="p">:</span> <span class="s2">&quot;CUW&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cayman Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;CYM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cyprus&quot;</span><span class="p">:</span> <span class="s2">&quot;CYP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Czech Republic&quot;</span><span class="p">:</span> <span class="s2">&quot;CZE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Germany&quot;</span><span class="p">:</span> <span class="s2">&quot;DEU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Djibouti&quot;</span><span class="p">:</span> <span class="s2">&quot;DJI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Dominica&quot;</span><span class="p">:</span> <span class="s2">&quot;DMA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Denmark&quot;</span><span class="p">:</span> <span class="s2">&quot;DNK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Dominican Republic&quot;</span><span class="p">:</span> <span class="s2">&quot;DOM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Algeria&quot;</span><span class="p">:</span> <span class="s2">&quot;DZA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;East Asia &amp; Pacific (excluding high income)&quot;</span><span class="p">:</span> <span class="s2">&quot;EAP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Early-demographic dividend&quot;</span><span class="p">:</span> <span class="s2">&quot;EAR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;East Asia &amp; Pacific&quot;</span><span class="p">:</span> <span class="s2">&quot;EAS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Europe &amp; Central Asia (excluding high income)&quot;</span><span class="p">:</span> <span class="s2">&quot;ECA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Europe &amp; Central Asia&quot;</span><span class="p">:</span> <span class="s2">&quot;ECS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Ecuador&quot;</span><span class="p">:</span> <span class="s2">&quot;ECU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Egypt, Arab Rep.&quot;</span><span class="p">:</span> <span class="s2">&quot;EGY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Euro area&quot;</span><span class="p">:</span> <span class="s2">&quot;EMU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Eritrea&quot;</span><span class="p">:</span> <span class="s2">&quot;ERI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Spain&quot;</span><span class="p">:</span> <span class="s2">&quot;ESP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Estonia&quot;</span><span class="p">:</span> <span class="s2">&quot;EST&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Ethiopia&quot;</span><span class="p">:</span> <span class="s2">&quot;ETH&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;European Union&quot;</span><span class="p">:</span> <span class="s2">&quot;EUU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Fragile and conflict affected situations&quot;</span><span class="p">:</span> <span class="s2">&quot;FCS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Finland&quot;</span><span class="p">:</span> <span class="s2">&quot;FIN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Fiji&quot;</span><span class="p">:</span> <span class="s2">&quot;FJI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;France&quot;</span><span class="p">:</span> <span class="s2">&quot;FRA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Faroe Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;FRO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Micronesia, Fed. Sts.&quot;</span><span class="p">:</span> <span class="s2">&quot;FSM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Gabon&quot;</span><span class="p">:</span> <span class="s2">&quot;GAB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;United Kingdom&quot;</span><span class="p">:</span> <span class="s2">&quot;GBR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Georgia&quot;</span><span class="p">:</span> <span class="s2">&quot;GEO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Ghana&quot;</span><span class="p">:</span> <span class="s2">&quot;GHA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Gibraltar&quot;</span><span class="p">:</span> <span class="s2">&quot;GIB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Guinea&quot;</span><span class="p">:</span> <span class="s2">&quot;GIN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Gambia, The&quot;</span><span class="p">:</span> <span class="s2">&quot;GMB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Guinea-Bissau&quot;</span><span class="p">:</span> <span class="s2">&quot;GNB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Equatorial Guinea&quot;</span><span class="p">:</span> <span class="s2">&quot;GNQ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Greece&quot;</span><span class="p">:</span> <span class="s2">&quot;GRC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Grenada&quot;</span><span class="p">:</span> <span class="s2">&quot;GRD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Greenland&quot;</span><span class="p">:</span> <span class="s2">&quot;GRL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Guatemala&quot;</span><span class="p">:</span> <span class="s2">&quot;GTM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Guam&quot;</span><span class="p">:</span> <span class="s2">&quot;GUM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Guyana&quot;</span><span class="p">:</span> <span class="s2">&quot;GUY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;High income&quot;</span><span class="p">:</span> <span class="s2">&quot;HIC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Hong Kong SAR, China&quot;</span><span class="p">:</span> <span class="s2">&quot;HKG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Honduras&quot;</span><span class="p">:</span> <span class="s2">&quot;HND&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Heavily indebted poor countries (HIPC)&quot;</span><span class="p">:</span> <span class="s2">&quot;HPC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Croatia&quot;</span><span class="p">:</span> <span class="s2">&quot;HRV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Haiti&quot;</span><span class="p">:</span> <span class="s2">&quot;HTI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Hungary&quot;</span><span class="p">:</span> <span class="s2">&quot;HUN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IBRD only&quot;</span><span class="p">:</span> <span class="s2">&quot;IBD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IDA &amp; IBRD total&quot;</span><span class="p">:</span> <span class="s2">&quot;IBT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IDA total&quot;</span><span class="p">:</span> <span class="s2">&quot;IDA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IDA blend&quot;</span><span class="p">:</span> <span class="s2">&quot;IDB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Indonesia&quot;</span><span class="p">:</span> <span class="s2">&quot;IDN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IDA only&quot;</span><span class="p">:</span> <span class="s2">&quot;IDX&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Isle of Man&quot;</span><span class="p">:</span> <span class="s2">&quot;IMN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;India&quot;</span><span class="p">:</span> <span class="s2">&quot;IND&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Not classified&quot;</span><span class="p">:</span> <span class="s2">&quot;INX&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Ireland&quot;</span><span class="p">:</span> <span class="s2">&quot;IRL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Iran, Islamic Rep.&quot;</span><span class="p">:</span> <span class="s2">&quot;IRN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Iraq&quot;</span><span class="p">:</span> <span class="s2">&quot;IRQ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Iceland&quot;</span><span class="p">:</span> <span class="s2">&quot;ISL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Israel&quot;</span><span class="p">:</span> <span class="s2">&quot;ISR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Italy&quot;</span><span class="p">:</span> <span class="s2">&quot;ITA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Jamaica&quot;</span><span class="p">:</span> <span class="s2">&quot;JAM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Jordan&quot;</span><span class="p">:</span> <span class="s2">&quot;JOR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Japan&quot;</span><span class="p">:</span> <span class="s2">&quot;JPN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Kazakhstan&quot;</span><span class="p">:</span> <span class="s2">&quot;KAZ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Kenya&quot;</span><span class="p">:</span> <span class="s2">&quot;KEN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Kyrgyz Republic&quot;</span><span class="p">:</span> <span class="s2">&quot;KGZ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cambodia&quot;</span><span class="p">:</span> <span class="s2">&quot;KHM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Kiribati&quot;</span><span class="p">:</span> <span class="s2">&quot;KIR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;St. Kitts and Nevis&quot;</span><span class="p">:</span> <span class="s2">&quot;KNA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Korea, Rep.&quot;</span><span class="p">:</span> <span class="s2">&quot;KOR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Kuwait&quot;</span><span class="p">:</span> <span class="s2">&quot;KWT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Latin America &amp; Caribbean (excluding high income)&quot;</span><span class="p">:</span> <span class="s2">&quot;LAC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Lao PDR&quot;</span><span class="p">:</span> <span class="s2">&quot;LAO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Lebanon&quot;</span><span class="p">:</span> <span class="s2">&quot;LBN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Liberia&quot;</span><span class="p">:</span> <span class="s2">&quot;LBR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Libya&quot;</span><span class="p">:</span> <span class="s2">&quot;LBY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;St. Lucia&quot;</span><span class="p">:</span> <span class="s2">&quot;LCA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Latin America &amp; Caribbean&quot;</span><span class="p">:</span> <span class="s2">&quot;LCN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Least developed countries: UN classification&quot;</span><span class="p">:</span> <span class="s2">&quot;LDC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Low income&quot;</span><span class="p">:</span> <span class="s2">&quot;LIC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Liechtenstein&quot;</span><span class="p">:</span> <span class="s2">&quot;LIE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sri Lanka&quot;</span><span class="p">:</span> <span class="s2">&quot;LKA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Lower middle income&quot;</span><span class="p">:</span> <span class="s2">&quot;LMC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Low &amp; middle income&quot;</span><span class="p">:</span> <span class="s2">&quot;LMY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Lesotho&quot;</span><span class="p">:</span> <span class="s2">&quot;LSO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Late-demographic dividend&quot;</span><span class="p">:</span> <span class="s2">&quot;LTE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Lithuania&quot;</span><span class="p">:</span> <span class="s2">&quot;LTU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Luxembourg&quot;</span><span class="p">:</span> <span class="s2">&quot;LUX&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Latvia&quot;</span><span class="p">:</span> <span class="s2">&quot;LVA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Macao SAR, China&quot;</span><span class="p">:</span> <span class="s2">&quot;MAC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;St. Martin (French part)&quot;</span><span class="p">:</span> <span class="s2">&quot;MAF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Morocco&quot;</span><span class="p">:</span> <span class="s2">&quot;MAR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Monaco&quot;</span><span class="p">:</span> <span class="s2">&quot;MCO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Moldova&quot;</span><span class="p">:</span> <span class="s2">&quot;MDA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Madagascar&quot;</span><span class="p">:</span> <span class="s2">&quot;MDG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Maldives&quot;</span><span class="p">:</span> <span class="s2">&quot;MDV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Middle East &amp; North Africa&quot;</span><span class="p">:</span> <span class="s2">&quot;MEA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Mexico&quot;</span><span class="p">:</span> <span class="s2">&quot;MEX&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Marshall Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;MHL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Middle income&quot;</span><span class="p">:</span> <span class="s2">&quot;MIC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;North Macedonia&quot;</span><span class="p">:</span> <span class="s2">&quot;MKD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Mali&quot;</span><span class="p">:</span> <span class="s2">&quot;MLI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Malta&quot;</span><span class="p">:</span> <span class="s2">&quot;MLT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Myanmar&quot;</span><span class="p">:</span> <span class="s2">&quot;MMR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Middle East &amp; North Africa (excluding high income)&quot;</span><span class="p">:</span> <span class="s2">&quot;MNA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Montenegro&quot;</span><span class="p">:</span> <span class="s2">&quot;MNE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Mongolia&quot;</span><span class="p">:</span> <span class="s2">&quot;MNG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Northern Mariana Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;MNP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Mozambique&quot;</span><span class="p">:</span> <span class="s2">&quot;MOZ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Mauritania&quot;</span><span class="p">:</span> <span class="s2">&quot;MRT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Mauritius&quot;</span><span class="p">:</span> <span class="s2">&quot;MUS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Malawi&quot;</span><span class="p">:</span> <span class="s2">&quot;MWI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Malaysia&quot;</span><span class="p">:</span> <span class="s2">&quot;MYS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;North America&quot;</span><span class="p">:</span> <span class="s2">&quot;NAC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Namibia&quot;</span><span class="p">:</span> <span class="s2">&quot;NAM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;New Caledonia&quot;</span><span class="p">:</span> <span class="s2">&quot;NCL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Niger&quot;</span><span class="p">:</span> <span class="s2">&quot;NER&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Nigeria&quot;</span><span class="p">:</span> <span class="s2">&quot;NGA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Nicaragua&quot;</span><span class="p">:</span> <span class="s2">&quot;NIC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Netherlands&quot;</span><span class="p">:</span> <span class="s2">&quot;NLD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Norway&quot;</span><span class="p">:</span> <span class="s2">&quot;NOR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Nepal&quot;</span><span class="p">:</span> <span class="s2">&quot;NPL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Nauru&quot;</span><span class="p">:</span> <span class="s2">&quot;NRU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;New Zealand&quot;</span><span class="p">:</span> <span class="s2">&quot;NZL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;OECD members&quot;</span><span class="p">:</span> <span class="s2">&quot;OED&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Oman&quot;</span><span class="p">:</span> <span class="s2">&quot;OMN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Other small states&quot;</span><span class="p">:</span> <span class="s2">&quot;OSS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Pakistan&quot;</span><span class="p">:</span> <span class="s2">&quot;PAK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Panama&quot;</span><span class="p">:</span> <span class="s2">&quot;PAN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Peru&quot;</span><span class="p">:</span> <span class="s2">&quot;PER&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Philippines&quot;</span><span class="p">:</span> <span class="s2">&quot;PHL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Palau&quot;</span><span class="p">:</span> <span class="s2">&quot;PLW&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Papua New Guinea&quot;</span><span class="p">:</span> <span class="s2">&quot;PNG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Poland&quot;</span><span class="p">:</span> <span class="s2">&quot;POL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Pre-demographic dividend&quot;</span><span class="p">:</span> <span class="s2">&quot;PRE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Puerto Rico&quot;</span><span class="p">:</span> <span class="s2">&quot;PRI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Korea, Dem. People&#39;s Rep.&quot;</span><span class="p">:</span> <span class="s2">&quot;PRK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Portugal&quot;</span><span class="p">:</span> <span class="s2">&quot;PRT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Paraguay&quot;</span><span class="p">:</span> <span class="s2">&quot;PRY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;West Bank and Gaza&quot;</span><span class="p">:</span> <span class="s2">&quot;PSE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Pacific island small states&quot;</span><span class="p">:</span> <span class="s2">&quot;PSS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Post-demographic dividend&quot;</span><span class="p">:</span> <span class="s2">&quot;PST&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;French Polynesia&quot;</span><span class="p">:</span> <span class="s2">&quot;PYF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Qatar&quot;</span><span class="p">:</span> <span class="s2">&quot;QAT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Romania&quot;</span><span class="p">:</span> <span class="s2">&quot;ROU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Russian Federation&quot;</span><span class="p">:</span> <span class="s2">&quot;RUS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Rwanda&quot;</span><span class="p">:</span> <span class="s2">&quot;RWA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;South Asia&quot;</span><span class="p">:</span> <span class="s2">&quot;SAS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Saudi Arabia&quot;</span><span class="p">:</span> <span class="s2">&quot;SAU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sudan&quot;</span><span class="p">:</span> <span class="s2">&quot;SDN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Senegal&quot;</span><span class="p">:</span> <span class="s2">&quot;SEN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Singapore&quot;</span><span class="p">:</span> <span class="s2">&quot;SGP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Solomon Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;SLB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sierra Leone&quot;</span><span class="p">:</span> <span class="s2">&quot;SLE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;El Salvador&quot;</span><span class="p">:</span> <span class="s2">&quot;SLV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;San Marino&quot;</span><span class="p">:</span> <span class="s2">&quot;SMR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Somalia&quot;</span><span class="p">:</span> <span class="s2">&quot;SOM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Serbia&quot;</span><span class="p">:</span> <span class="s2">&quot;SRB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sub-Saharan Africa (excluding high income)&quot;</span><span class="p">:</span> <span class="s2">&quot;SSA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;South Sudan&quot;</span><span class="p">:</span> <span class="s2">&quot;SSD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sub-Saharan Africa&quot;</span><span class="p">:</span> <span class="s2">&quot;SSF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Small states&quot;</span><span class="p">:</span> <span class="s2">&quot;SST&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sao Tome and Principe&quot;</span><span class="p">:</span> <span class="s2">&quot;STP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Suriname&quot;</span><span class="p">:</span> <span class="s2">&quot;SUR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Slovak Republic&quot;</span><span class="p">:</span> <span class="s2">&quot;SVK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Slovenia&quot;</span><span class="p">:</span> <span class="s2">&quot;SVN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sweden&quot;</span><span class="p">:</span> <span class="s2">&quot;SWE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Eswatini&quot;</span><span class="p">:</span> <span class="s2">&quot;SWZ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sint Maarten (Dutch part)&quot;</span><span class="p">:</span> <span class="s2">&quot;SXM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Seychelles&quot;</span><span class="p">:</span> <span class="s2">&quot;SYC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Syrian Arab Republic&quot;</span><span class="p">:</span> <span class="s2">&quot;SYR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Turks and Caicos Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;TCA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Chad&quot;</span><span class="p">:</span> <span class="s2">&quot;TCD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;East Asia &amp; Pacific (IDA &amp; IBRD countries)&quot;</span><span class="p">:</span> <span class="s2">&quot;TEA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Europe &amp; Central Asia (IDA &amp; IBRD countries)&quot;</span><span class="p">:</span> <span class="s2">&quot;TEC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Togo&quot;</span><span class="p">:</span> <span class="s2">&quot;TGO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Thailand&quot;</span><span class="p">:</span> <span class="s2">&quot;THA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tajikistan&quot;</span><span class="p">:</span> <span class="s2">&quot;TJK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Turkmenistan&quot;</span><span class="p">:</span> <span class="s2">&quot;TKM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Latin America &amp; the Caribbean (IDA &amp; IBRD countries)&quot;</span><span class="p">:</span> <span class="s2">&quot;TLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Timor-Leste&quot;</span><span class="p">:</span> <span class="s2">&quot;TLS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Middle East &amp; North Africa (IDA &amp; IBRD countries)&quot;</span><span class="p">:</span> <span class="s2">&quot;TMN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tonga&quot;</span><span class="p">:</span> <span class="s2">&quot;TON&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;South Asia (IDA &amp; IBRD)&quot;</span><span class="p">:</span> <span class="s2">&quot;TSA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sub-Saharan Africa (IDA &amp; IBRD countries)&quot;</span><span class="p">:</span> <span class="s2">&quot;TSS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Trinidad and Tobago&quot;</span><span class="p">:</span> <span class="s2">&quot;TTO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tunisia&quot;</span><span class="p">:</span> <span class="s2">&quot;TUN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Turkey&quot;</span><span class="p">:</span> <span class="s2">&quot;TUR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tuvalu&quot;</span><span class="p">:</span> <span class="s2">&quot;TUV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tanzania&quot;</span><span class="p">:</span> <span class="s2">&quot;TZA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Uganda&quot;</span><span class="p">:</span> <span class="s2">&quot;UGA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Ukraine&quot;</span><span class="p">:</span> <span class="s2">&quot;UKR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Upper middle income&quot;</span><span class="p">:</span> <span class="s2">&quot;UMC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Uruguay&quot;</span><span class="p">:</span> <span class="s2">&quot;URY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;United States&quot;</span><span class="p">:</span> <span class="s2">&quot;USA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Uzbekistan&quot;</span><span class="p">:</span> <span class="s2">&quot;UZB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;St. Vincent and the Grenadines&quot;</span><span class="p">:</span> <span class="s2">&quot;VCT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Venezuela, RB&quot;</span><span class="p">:</span> <span class="s2">&quot;VEN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;British Virgin Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;VGB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Virgin Islands (U.S.)&quot;</span><span class="p">:</span> <span class="s2">&quot;VIR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Vietnam&quot;</span><span class="p">:</span> <span class="s2">&quot;VNM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Vanuatu&quot;</span><span class="p">:</span> <span class="s2">&quot;VUT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;World&quot;</span><span class="p">:</span> <span class="s2">&quot;WLD&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Samoa&quot;</span><span class="p">:</span> <span class="s2">&quot;WSM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Kosovo&quot;</span><span class="p">:</span> <span class="s2">&quot;XKX&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Yemen, Rep.&quot;</span><span class="p">:</span> <span class="s2">&quot;YEM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;South Africa&quot;</span><span class="p">:</span> <span class="s2">&quot;ZAF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Zambia&quot;</span><span class="p">:</span> <span class="s2">&quot;ZMB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Zimbabwe&quot;</span><span class="p">:</span> <span class="s2">&quot;ZWE&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">_check_currency</span><span class="p">(</span><span class="n">currency</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">currency</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">currency_set</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;currency </span><span class="si">{</span><span class="n">currency</span><span class="si">}</span><span class="s2"> not in supported currency set, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">currency_set</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_check_wb_country</span><span class="p">(</span><span class="n">country</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">country</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wb_country_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="p">(</span>
+        <span class="n">country</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wb_country_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>  <span class="c1"># noqa: PD011</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;country </span><span class="si">{</span><span class="n">country</span><span class="si">}</span><span class="s2"> not in supported World Bank country dict, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">wb_country_dict</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_check_wb_years</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">year</span> <span class="o">&lt;</span> <span class="mi">1960</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;year value must be 1960 or later&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_convert_currency</span><span class="p">(</span>
+    <span class="n">from_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">to_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">historical_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Currency conversion for Pandas DataFrame column.</span>
+
+<span class="sd">    Helper function for `convert_currency` method.</span>
+
+<span class="sd">    The API used is: https://exchangeratesapi.io/</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://api.exchangeratesapi.io&quot;</span>
+
+    <span class="k">if</span> <span class="n">historical_date</span><span class="p">:</span>
+        <span class="n">check</span><span class="p">(</span><span class="s2">&quot;historical_date&quot;</span><span class="p">,</span> <span class="n">historical_date</span><span class="p">,</span> <span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="n">date</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">historical_date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">historical_date</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">1999</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;historical_date:datetime must be later than 1999-01-04!&quot;</span>
+                <span class="p">)</span>
+            <span class="n">string_date</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)[:</span><span class="mi">10</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">historical_date</span> <span class="o">&lt;</span> <span class="n">date</span><span class="p">(</span><span class="mi">1999</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;historical_date:date must be later than 1999-01-04!&quot;</span>
+                <span class="p">)</span>
+            <span class="n">string_date</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="o">+</span> <span class="s2">&quot;/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">string_date</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="o">+</span> <span class="s2">&quot;/latest&quot;</span>
+
+    <span class="n">_check_currency</span><span class="p">(</span><span class="n">from_currency</span><span class="p">)</span>
+    <span class="n">_check_currency</span><span class="p">(</span><span class="n">to_currency</span><span class="p">)</span>
+
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="n">from_currency</span><span class="p">,</span> <span class="s2">&quot;symbols&quot;</span><span class="p">:</span> <span class="n">to_currency</span><span class="p">}</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">(</span>
+            <span class="s2">&quot;Exchange Rate API failed to receive a 200 &quot;</span>
+            <span class="s2">&quot;response from the server. &quot;</span>
+            <span class="s2">&quot;Please try again later.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">currency_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">rate</span> <span class="o">=</span> <span class="n">currency_dict</span><span class="p">[</span><span class="s2">&quot;rates&quot;</span><span class="p">][</span><span class="n">to_currency</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">rate</span>
+
+
+<div class="viewcode-block" id="convert_currency"><a class="viewcode-back" href="../../reference/finance.html#janitor.finance.convert_currency">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="nd">@deprecated_alias</span><span class="p">(</span><span class="n">colname</span><span class="o">=</span><span class="s2">&quot;column_name&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">convert_currency</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">from_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">to_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">historical_date</span><span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">make_new_column</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a column from one currency to another, with an option to</span>
+<span class="sd">    convert based on historical exchange values.</span>
+
+<span class="sd">    This method mutates the original DataFrame.</span>
+
+<span class="sd">    :param df: A pandas dataframe.</span>
+<span class="sd">    :param column_name: Name of the new column. Should be a string, in order</span>
+<span class="sd">        for the column name to be compatible with the Feather binary</span>
+<span class="sd">        format (this is a useful thing to have).</span>
+<span class="sd">    :param from_currency: The base currency to convert from.</span>
+<span class="sd">        May be any of: currency_set = {&quot;AUD&quot;, &quot;BGN&quot;, &quot;BRL&quot;, &quot;CAD&quot;, &quot;CHF&quot;,</span>
+<span class="sd">        &quot;CNY&quot;, &quot;CZK&quot;, &quot;DKK&quot;, &quot;EUR&quot;, &quot;GBP&quot;, &quot;HKD&quot;, &quot;HRK&quot;, &quot;HUF&quot;, &quot;IDR&quot;,</span>
+<span class="sd">        &quot;ILS&quot;, &quot;INR&quot;, &quot;ISK&quot;, &quot;JPY&quot;, &quot;KRW&quot;, &quot;MXN&quot;, &quot;MYR&quot;, &quot;NOK&quot;, &quot;NZD&quot;,</span>
+<span class="sd">        &quot;PHP&quot;, &quot;PLN&quot;, &quot;RON&quot;, &quot;RUB&quot;, &quot;SEK&quot;, &quot;SGD&quot;, &quot;THB&quot;, &quot;TRY&quot;, &quot;USD&quot;,</span>
+<span class="sd">        &quot;ZAR&quot;}</span>
+<span class="sd">    :param to_currency: The target currency to convert to.</span>
+<span class="sd">        May be any of: currency_set = {&quot;AUD&quot;, &quot;BGN&quot;, &quot;BRL&quot;, &quot;CAD&quot;, &quot;CHF&quot;,</span>
+<span class="sd">        &quot;CNY&quot;, &quot;CZK&quot;, &quot;DKK&quot;, &quot;EUR&quot;, &quot;GBP&quot;, &quot;HKD&quot;, &quot;HRK&quot;, &quot;HUF&quot;, &quot;IDR&quot;,</span>
+<span class="sd">        &quot;ILS&quot;, &quot;INR&quot;, &quot;ISK&quot;, &quot;JPY&quot;, &quot;KRW&quot;, &quot;MXN&quot;, &quot;MYR&quot;, &quot;NOK&quot;, &quot;NZD&quot;,</span>
+<span class="sd">        &quot;PHP&quot;, &quot;PLN&quot;, &quot;RON&quot;, &quot;RUB&quot;, &quot;SEK&quot;, &quot;SGD&quot;, &quot;THB&quot;, &quot;TRY&quot;, &quot;USD&quot;,</span>
+<span class="sd">        &quot;ZAR&quot;}</span>
+<span class="sd">    :param historical_date: If supplied, get exchange rate on a certain\</span>
+<span class="sd">        date. If not supplied, get the latest exchange rate. The exchange\</span>
+<span class="sd">        rates go back to Jan. 4, 1999.</span>
+<span class="sd">    :param make_new_column: Generates new column for converted currency if</span>
+<span class="sd">        True, otherwise, converts currency in place.</span>
+<span class="sd">    :returns: The dataframe with converted currency column.</span>
+
+<span class="sd">    :Setup:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor</span>
+<span class="sd">        from datetime import date</span>
+
+<span class="sd">        data_dict = {</span>
+<span class="sd">            &quot;a&quot;: [1.23452345, 2.456234, 3.2346125] * 3,</span>
+<span class="sd">            &quot;Bell__Chart&quot;: [1/3, 2/7, 3/2] * 3,</span>
+<span class="sd">            &quot;decorated-elephant&quot;: [1/234, 2/13, 3/167] * 3,</span>
+<span class="sd">            &quot;animals&quot;: [&quot;rabbit&quot;, &quot;leopard&quot;, &quot;lion&quot;] * 3,</span>
+<span class="sd">            &quot;cities&quot;: [&quot;Cambridge&quot;, &quot;Shanghai&quot;, &quot;Basel&quot;] * 3,</span>
+<span class="sd">        }</span>
+
+<span class="sd">        example_dataframe = pd.DataFrame(data_dict)</span>
+
+<span class="sd">    :Example: Converting a column from one currency to another using rates</span>
+
+<span class="sd">    from 01/01/2018:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        example_dataframe.convert_currency(&#39;a&#39;, from_currency=&#39;USD&#39;,</span>
+<span class="sd">        to_currency=&#39;EUR&#39;, historical_date=date(2018,1,1))</span>
+
+<span class="sd">    :Output:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">                    a  Bell__Chart  decorated-elephant  animals     cities</span>
+<span class="sd">        0  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
+<span class="sd">        1  2.048056     0.285714            0.153846  leopard   Shanghai</span>
+<span class="sd">        2  2.697084     1.500000            0.017964     lion      Basel</span>
+<span class="sd">        3  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
+<span class="sd">        4  2.048056     0.285714            0.153846  leopard   Shanghai</span>
+<span class="sd">        5  2.697084     1.500000            0.017964     lion      Basel</span>
+<span class="sd">        6  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
+<span class="sd">        7  2.048056     0.285714            0.153846  leopard   Shanghai</span>
+<span class="sd">        8  2.697084     1.500000            0.017964     lion      Basel</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rate</span> <span class="o">=</span> <span class="n">_convert_currency</span><span class="p">(</span><span class="n">from_currency</span><span class="p">,</span> <span class="n">to_currency</span><span class="p">,</span> <span class="n">historical_date</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">make_new_column</span><span class="p">:</span>
+        <span class="n">new_column_name</span> <span class="o">=</span> <span class="n">column_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">to_currency</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">new_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">rate</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">rate</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_inflate_currency</span><span class="p">(</span>
+    <span class="n">country</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">currency_year</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">to_year</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Currency inflation for Pandas DataFrame column.</span>
+<span class="sd">    Helper function for `inflate_currency` method.</span>
+<span class="sd">    The API used is the World Bank Indicator API:</span>
+<span class="sd">    https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check all inputs are correct data type</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;country&quot;</span><span class="p">,</span> <span class="n">country</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;currency_year&quot;</span><span class="p">,</span> <span class="n">currency_year</span><span class="p">,</span> <span class="p">[</span><span class="nb">int</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;to_year&quot;</span><span class="p">,</span> <span class="n">to_year</span><span class="p">,</span> <span class="p">[</span><span class="nb">int</span><span class="p">])</span>
+
+    <span class="c1"># Get WB country abbreviation</span>
+    <span class="n">_check_wb_country</span><span class="p">(</span><span class="n">country</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">country</span> <span class="ow">in</span> <span class="n">wb_country_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">country</span> <span class="o">=</span> <span class="n">wb_country_dict</span><span class="p">[</span><span class="n">country</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># `country` is already a correct abbreviation; do nothing</span>
+        <span class="k">pass</span>
+
+    <span class="n">_check_wb_years</span><span class="p">(</span><span class="n">currency_year</span><span class="p">)</span>
+    <span class="n">_check_wb_years</span><span class="p">(</span><span class="n">to_year</span><span class="p">)</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;https://api.worldbank.org/v2/country/&quot;</span>
+        <span class="o">+</span> <span class="n">country</span>
+        <span class="o">+</span> <span class="s2">&quot;/indicator/FP.CPI.TOTL?date=&quot;</span>
+        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">currency_year</span><span class="p">,</span> <span class="n">to_year</span><span class="p">))</span>
+        <span class="o">+</span> <span class="s2">&quot;:&quot;</span>
+        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">currency_year</span><span class="p">,</span> <span class="n">to_year</span><span class="p">))</span>
+        <span class="o">+</span> <span class="s2">&quot;&amp;format=json&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">(</span>
+            <span class="s2">&quot;WB Indicator API failed to receive a 200 &quot;</span>
+            <span class="s2">&quot;response from the server. &quot;</span>
+            <span class="s2">&quot;Please try again later.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># The API returns a list of two items;</span>
+    <span class="c1"># the second item in the list is what we want</span>
+    <span class="n">inflation_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">text</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Error checking</span>
+    <span class="k">if</span> <span class="n">inflation_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;The WB Indicator API returned nothing. &quot;</span>
+            <span class="s2">&quot;This likely means the currency_year and &quot;</span>
+            <span class="s2">&quot;to_year are outside of the year range for &quot;</span>
+            <span class="s2">&quot;which the WB has inflation data for the &quot;</span>
+            <span class="s2">&quot;specified country.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Create new dict with only the year and inflation values</span>
+    <span class="n">inflation_dict_ready</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">inflation_dict</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;date&quot;</span><span class="p">]):</span> <span class="nb">float</span><span class="p">(</span><span class="n">inflation_dict</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inflation_dict</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">inflation_dict</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Error catching</span>
+    <span class="k">if</span> <span class="n">currency_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">inflation_dict_ready</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The WB Indicator API does not have inflation &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;data for </span><span class="si">{</span><span class="n">currency_year</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">country</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">to_year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">inflation_dict_ready</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The WB Indicator API does not have inflation &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;data for </span><span class="si">{</span><span class="n">to_year</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">country</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">inflator</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">inflation_dict_ready</span><span class="p">[</span><span class="n">to_year</span><span class="p">]</span> <span class="o">/</span> <span class="n">inflation_dict_ready</span><span class="p">[</span><span class="n">currency_year</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">inflator</span>
+
+
+<div class="viewcode-block" id="inflate_currency"><a class="viewcode-back" href="../../reference/finance.html#janitor.finance.inflate_currency">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">inflate_currency</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">country</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">currency_year</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">to_year</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">make_new_column</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inflates a column of monetary values from one year to another, based on</span>
+<span class="sd">    the currency&#39;s country.</span>
+
+<span class="sd">    The provided country can be any economy name or code from the World Bank</span>
+<span class="sd">    list of economies:</span>
+<span class="sd">    https://databank.worldbank.org/data/download/site-content/CLASS.xls.</span>
+
+<span class="sd">    This method mutates the original DataFrame.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.finance</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = janitor.finance.inflate_currency(</span>
+<span class="sd">            df=df,</span>
+<span class="sd">            column_name=&#39;profit&#39;,</span>
+<span class="sd">            country=&#39;USA&#39;,</span>
+<span class="sd">            currency_year=2015,</span>
+<span class="sd">            to_year=2018,</span>
+<span class="sd">            make_new_column=True</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.finance</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+<span class="sd">        df = df.inflate_currency(</span>
+<span class="sd">            column_name=&#39;profit&#39;,</span>
+<span class="sd">            country=&#39;USA&#39;,</span>
+<span class="sd">            currency_year=2015,</span>
+<span class="sd">            to_year=2018,</span>
+<span class="sd">            make_new_column=True</span>
+<span class="sd">        )</span>
+
+<span class="sd">    :param df: A pandas dataframe.</span>
+<span class="sd">    :param column_name: Name of the column containing monetary</span>
+<span class="sd">        values to inflate.</span>
+<span class="sd">    :param country: The country associated with the currency being inflated.</span>
+<span class="sd">        May be any economy or code from the World Bank list of economies:</span>
+<span class="sd">        https://databank.worldbank.org/data/download/site-content/CLASS.xls.</span>
+<span class="sd">    :param currency_year: The currency year to inflate from.</span>
+<span class="sd">        The year should be 1960 or later.</span>
+<span class="sd">    :param to_year: The currency year to inflate to.</span>
+<span class="sd">        The year should be 1960 or later.</span>
+<span class="sd">    :param make_new_column: Generates new column for inflated currency if</span>
+<span class="sd">        True, otherwise, inflates currency in place.</span>
+<span class="sd">    :returns: The dataframe with inflated currency column.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">inflator</span> <span class="o">=</span> <span class="n">_inflate_currency</span><span class="p">(</span><span class="n">country</span><span class="p">,</span> <span class="n">currency_year</span><span class="p">,</span> <span class="n">to_year</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">make_new_column</span><span class="p">:</span>
+        <span class="n">new_column_name</span> <span class="o">=</span> <span class="n">column_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">to_year</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">new_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">inflator</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">inflator</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

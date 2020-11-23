@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.transform_columns &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.rename_column" href="janitor.rename_column.html" />
+    <link rel="prev" title="janitor.transform_column" href="janitor.transform_column.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-transform-columns">
+<h1>janitor.transform_columns<a class="headerlink" href="#janitor-transform-columns" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.transform_columns">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">transform_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column_names</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">, </span>Tuple<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span></em>, <em class="sig-param"><span class="n">suffix</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">elementwise</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">new_column_names</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#transform_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.transform_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform multiple columns through the same transformation.</p>
+<p>This method mutates the original DataFrame.</p>
+<p>Super syntactic sugar!</p>
+<p>Basically wraps <cite>transform_column</cite> and calls it repeatedly over all column
+names provided.</p>
+<p>User can optionally supply either a suffix to create a new set of columns
+with the specified suffix, or provide a dictionary mapping each original
+column name to its corresponding new column name. Note that all column
+names must be strings.</p>
+<p>A few examples below. Firstly, to just log10 transform a list of columns
+without creating new columns to hold the transformed values:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">transform_columns</span><span class="p">([</span><span class="s1">&#39;col1&#39;</span><span class="p">,</span> <span class="s1">&#39;col2&#39;</span><span class="p">,</span> <span class="s1">&#39;col3&#39;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Secondly, to add a ‘_log’ suffix when creating a new column, which we think
+is going to be the most common use case:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">transform_columns</span><span class="p">(</span>
+        <span class="p">[</span><span class="s1">&#39;col1&#39;</span><span class="p">,</span> <span class="s1">&#39;col2&#39;</span><span class="p">,</span> <span class="s1">&#39;col3&#39;</span><span class="p">],</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;_log&quot;</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, to provide new names explicitly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">transform_column</span><span class="p">(</span>
+        <span class="p">[</span><span class="s1">&#39;col1&#39;</span><span class="p">,</span> <span class="s1">&#39;col2&#39;</span><span class="p">,</span> <span class="s1">&#39;col3&#39;</span><span class="p">],</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">,</span>
+        <span class="n">new_column_names</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;col1&#39;</span><span class="p">:</span> <span class="s1">&#39;transform1&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;col2&#39;</span><span class="p">:</span> <span class="s1">&#39;transform2&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;col3&#39;</span><span class="p">:</span> <span class="s1">&#39;transform3&#39;</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame.</p></li>
+<li><p><strong>column_names</strong> – An iterable of columns to transform.</p></li>
+<li><p><strong>function</strong> – A function to apply on each column.</p></li>
+<li><p><strong>suffix</strong> – (optional) Suffix to use when creating new columns to hold
+the transformed values.</p></li>
+<li><p><strong>elementwise</strong> – Passed on to <cite>transform_column</cite>; whether or not
+to apply the transformation function elementwise (True)
+or columnwise (False).</p></li>
+<li><p><strong>new_column_names</strong> – (optional) An explicit mapping of old column names
+to new column names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame with transformed columns.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if both <code class="docutils literal notranslate"><span class="pre">suffix</span></code> and <code class="docutils literal notranslate"><span class="pre">new_column_names</span></code> are
+specified</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.expand_column.html">janitor.expand_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.concatenate_columns.html">janitor.concatenate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.deconcatenate_column.html">janitor.deconcatenate_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.remove_columns.html">janitor.remove_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_column.html">janitor.add_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_columns.html">janitor.add_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.transform_column.html">janitor.transform_column</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.transform_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_column.html">janitor.rename_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_columns.html">janitor.rename_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.reorder_columns.html">janitor.reorder_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.collapse_levels.html">janitor.collapse_levels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.change_type.html">janitor.change_type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.limit_column_characters.html">janitor.limit_column_characters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.row_to_names.html">janitor.row_to_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.clean_names.html">janitor.clean_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.currency_column_to_numeric.html">janitor.currency_column_to_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.groupby_agg.html">janitor.groupby_agg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.join_apply.html">janitor.join_apply</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.drop_duplicate_columns.html">janitor.drop_duplicate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.process_text.html">janitor.process_text</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#other">Other</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.transform_column.html" title="previous chapter">janitor.transform_column</a></li>
+      <li>Next: <a href="janitor.rename_column.html" title="next chapter">janitor.rename_column</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.transform_columns.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

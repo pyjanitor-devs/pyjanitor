@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>General Functions &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="janitor.expand_column" href="janitor.functions/janitor.expand_column.html" />
+    <link rel="prev" title="Time Series" href="timeseries.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="general-functions">
+<h1>General Functions<a class="headerlink" href="#general-functions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="modify-columns">
+<h2>Modify columns<a class="headerlink" href="#modify-columns" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.expand_column.html#janitor.expand_column" title="janitor.expand_column"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expand_column</span></code></a>(df, column_name, sep[, concat])</p></td>
+<td><p>Expand a categorical column with multiple labels into dummy-coded columns.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.concatenate_columns.html#janitor.concatenate_columns" title="janitor.concatenate_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">concatenate_columns</span></code></a>(df, column_names, …[, sep])</p></td>
+<td><p>Concatenates the set of columns into a single column.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.deconcatenate_column.html#janitor.deconcatenate_column" title="janitor.deconcatenate_column"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deconcatenate_column</span></code></a>(df, column_name[, sep, …])</p></td>
+<td><p>De-concatenates a single column into multiple columns.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.remove_columns.html#janitor.remove_columns" title="janitor.remove_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_columns</span></code></a>(df, column_names)</p></td>
+<td><p>Remove the set of columns specified in <cite>column_names</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.add_column.html#janitor.add_column" title="janitor.add_column"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_column</span></code></a>(df, column_name, value[, …])</p></td>
+<td><p>Add a column to the dataframe.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.add_columns.html#janitor.add_columns" title="janitor.add_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_columns</span></code></a>(df[, fill_remaining])</p></td>
+<td><p>Add multiple columns to the dataframe.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.transform_column.html#janitor.transform_column" title="janitor.transform_column"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_column</span></code></a>(df, column_name, function)</p></td>
+<td><p>Transform the given column in-place using the provided function.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.transform_columns.html#janitor.transform_columns" title="janitor.transform_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_columns</span></code></a>(df, column_names, function)</p></td>
+<td><p>Transform multiple columns through the same transformation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.rename_column.html#janitor.rename_column" title="janitor.rename_column"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rename_column</span></code></a>(df, old_column_name, …)</p></td>
+<td><p>Rename a column in place.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.rename_columns.html#janitor.rename_columns" title="janitor.rename_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rename_columns</span></code></a>(df, new_column_names)</p></td>
+<td><p>Rename columns in place.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.reorder_columns.html#janitor.reorder_columns" title="janitor.reorder_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reorder_columns</span></code></a>(df, column_order)</p></td>
+<td><p>Reorder DataFrame columns by specifying desired order as list of col names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.collapse_levels.html#janitor.collapse_levels" title="janitor.collapse_levels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">collapse_levels</span></code></a>(df[, sep])</p></td>
+<td><p>Flatten multi-level column dataframe to a single level.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.change_type.html#janitor.change_type" title="janitor.change_type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_type</span></code></a>(df, column_name, dtype[, …])</p></td>
+<td><p>Change the type of a column.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.limit_column_characters.html#janitor.limit_column_characters" title="janitor.limit_column_characters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">limit_column_characters</span></code></a>(df, column_length[, …])</p></td>
+<td><p>Truncate column sizes to a specific length.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.row_to_names.html#janitor.row_to_names" title="janitor.row_to_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">row_to_names</span></code></a>(df[, row_number, remove_row, …])</p></td>
+<td><p>Elevates a row to be the column names of a DataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.clean_names.html#janitor.clean_names" title="janitor.clean_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clean_names</span></code></a>(df[, strip_underscores, …])</p></td>
+<td><p>Clean column names.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.currency_column_to_numeric.html#janitor.currency_column_to_numeric" title="janitor.currency_column_to_numeric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">currency_column_to_numeric</span></code></a>(df, column_name)</p></td>
+<td><p>Convert currency column to numeric.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.groupby_agg.html#janitor.groupby_agg" title="janitor.groupby_agg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">groupby_agg</span></code></a>(df, by, new_column_name, …)</p></td>
+<td><p>Shortcut for assigning a groupby-transform to a new column.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.join_apply.html#janitor.join_apply" title="janitor.join_apply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">join_apply</span></code></a>(df, func, new_column_name)</p></td>
+<td><p>Join the result of applying a function across dataframe rows.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.drop_duplicate_columns.html#janitor.drop_duplicate_columns" title="janitor.drop_duplicate_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_duplicate_columns</span></code></a>(df, column_name[, …])</p></td>
+<td><p>Remove a duplicated column specified by column_name, its index.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.process_text.html#janitor.process_text" title="janitor.process_text"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_text</span></code></a>(df, column, string_function, …)</p></td>
+<td><p>Apply a Pandas string method to an existing column and return a dataframe.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="modify-values">
+<h2>Modify values<a class="headerlink" href="#modify-values" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.fill_empty.html#janitor.fill_empty" title="janitor.fill_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill_empty</span></code></a>(df, column_names, value)</p></td>
+<td><p>Fill <cite>NaN</cite> values in specified columns with a given value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.fill_direction.html#janitor.fill_direction" title="janitor.fill_direction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill_direction</span></code></a>(df, directions[, limit])</p></td>
+<td><p>Provide a method-chainable function for filling missing values in selected columns.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.convert_excel_date.html#janitor.convert_excel_date" title="janitor.convert_excel_date"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_excel_date</span></code></a>(df, column_name)</p></td>
+<td><p>Convert Excel’s serial date format into Python datetime format.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.convert_matlab_date.html#janitor.convert_matlab_date" title="janitor.convert_matlab_date"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_matlab_date</span></code></a>(df, column_name)</p></td>
+<td><p>Convert Matlab’s serial date number into Python datetime format.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.convert_unix_date.html#janitor.convert_unix_date" title="janitor.convert_unix_date"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_unix_date</span></code></a>(df, column_name)</p></td>
+<td><p>Convert unix epoch time into Python datetime format.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.remove_empty.html#janitor.remove_empty" title="janitor.remove_empty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_empty</span></code></a>(df)</p></td>
+<td><p>Drop all rows and columns that are completely null.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.coalesce.html#janitor.coalesce" title="janitor.coalesce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coalesce</span></code></a>(df, column_names[, …])</p></td>
+<td><p>Coalesce two or more columns of data in order of column names provided.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.find_replace.html#janitor.find_replace" title="janitor.find_replace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_replace</span></code></a>(df[, match])</p></td>
+<td><p>Perform a find-and-replace action on provided columns.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.round_to_fraction.html#janitor.round_to_fraction" title="janitor.round_to_fraction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">round_to_fraction</span></code></a>(df[, column_name, …])</p></td>
+<td><p>Round all values in a column to a fraction.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.update_where.html#janitor.update_where" title="janitor.update_where"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_where</span></code></a>(df, conditions, …)</p></td>
+<td><p>Add multiple conditions to update a column in the dataframe.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.to_datetime.html#janitor.to_datetime" title="janitor.to_datetime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_datetime</span></code></a>(df, column_name, **kwargs)</p></td>
+<td><p>Method-chainable to_datetime.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.jitter.html#janitor.jitter" title="janitor.jitter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jitter</span></code></a>(df, column_name, dest_column_name, scale)</p></td>
+<td><p>Adds Gaussian noise (jitter) to the values of a column.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="filtering">
+<h2>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.take_first.html#janitor.take_first" title="janitor.take_first"><code class="xref py py-obj docutils literal notranslate"><span class="pre">take_first</span></code></a>(df, subset, by[, ascending])</p></td>
+<td><p>Take the first row within each group specified by <cite>subset</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.filter_string.html#janitor.filter_string" title="janitor.filter_string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_string</span></code></a>(df, column_name, search_string)</p></td>
+<td><p>Filter a string-based column according to whether it contains a substring.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.filter_on.html#janitor.filter_on" title="janitor.filter_on"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_on</span></code></a>(df, criteria[, complement])</p></td>
+<td><p>Return a dataframe filtered on a particular criteria.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.filter_date.html#janitor.filter_date" title="janitor.filter_date"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_date</span></code></a>(df, column_name[, start_date, …])</p></td>
+<td><p>Filter a date-based column based on certain criteria.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.filter_column_isin.html#janitor.filter_column_isin" title="janitor.filter_column_isin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_column_isin</span></code></a>(df, column_name, iterable)</p></td>
+<td><p>Filter a dataframe for values in a column that exist in another iterable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.select_columns.html#janitor.select_columns" title="janitor.select_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_columns</span></code></a>(df, search_column_names[, invert])</p></td>
+<td><p>Method-chainable selection of columns.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.dropnotnull.html#janitor.dropnotnull" title="janitor.dropnotnull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropnotnull</span></code></a>(df, column_name)</p></td>
+<td><p>Drop rows that do not have null values in the given column.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.get_dupes.html#janitor.get_dupes" title="janitor.get_dupes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dupes</span></code></a>(df[, column_names])</p></td>
+<td><p>Return all duplicate rows.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="preprocessing">
+<h2>Preprocessing<a class="headerlink" href="#preprocessing" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.bin_numeric.html#janitor.bin_numeric" title="janitor.bin_numeric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bin_numeric</span></code></a>(df, from_column_name, to_column_name)</p></td>
+<td><p>Generate a new column that labels bins for a specified numeric column.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.encode_categorical.html#janitor.encode_categorical" title="janitor.encode_categorical"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode_categorical</span></code></a>(df, column_names)</p></td>
+<td><p>Encode the specified columns with Pandas’ <a class="reference external" href="http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html">category dtype</a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.impute.html#janitor.impute" title="janitor.impute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impute</span></code></a>(df, column_name[, value, …])</p></td>
+<td><p>Method-chainable imputation of values in a column.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.label_encode.html#janitor.label_encode" title="janitor.label_encode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label_encode</span></code></a>(df, column_names)</p></td>
+<td><p>Convert labels into numerical data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.min_max_scale.html#janitor.min_max_scale" title="janitor.min_max_scale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_max_scale</span></code></a>(df[, old_min, old_max, …])</p></td>
+<td><p>Scales data to between a minimum and maximum value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.get_features_targets.html#janitor.get_features_targets" title="janitor.get_features_targets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_features_targets</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="other">
+<h2>Other<a class="headerlink" href="#other" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.then.html#janitor.then" title="janitor.then"><code class="xref py py-obj docutils literal notranslate"><span class="pre">then</span></code></a>(df, func)</p></td>
+<td><p>Add an arbitrary function to run in the <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> method chain.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.also.html#janitor.also" title="janitor.also"><code class="xref py py-obj docutils literal notranslate"><span class="pre">also</span></code></a>(df, func, *args, **kwargs)</p></td>
+<td><p>Add an arbitrary function with no return value to run in the <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> method chain.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.shuffle.html#janitor.shuffle" title="janitor.shuffle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shuffle</span></code></a>(df[, random_state, reset_index])</p></td>
+<td><p>Shuffle the rows of the DataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.count_cumulative_unique.html#janitor.count_cumulative_unique" title="janitor.count_cumulative_unique"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count_cumulative_unique</span></code></a>(df, column_name, …)</p></td>
+<td><p>Generates a running total of cumulative unique values in a given column.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.sort_naturally.html#janitor.sort_naturally" title="janitor.sort_naturally"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort_naturally</span></code></a>(df, column_name, …)</p></td>
+<td><p>Sort a DataFrame by a column using “natural” sorting.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.expand_grid.html#janitor.expand_grid" title="janitor.expand_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expand_grid</span></code></a>([df, df_key, others])</p></td>
+<td><p>Creates a dataframe from a combination of all inputs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.flag_nulls.html#janitor.flag_nulls" title="janitor.flag_nulls"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flag_nulls</span></code></a>(df[, column_name, columns])</p></td>
+<td><p>Creates a new column to indicate whether you have null values in a given row.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.move.html#janitor.move" title="janitor.move"><code class="xref py py-obj docutils literal notranslate"><span class="pre">move</span></code></a>(df, source, target[, position, axis])</p></td>
+<td><p>Move column or row to a position adjacent to another column or row in dataframe.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.toset.html#janitor.toset" title="janitor.toset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toset</span></code></a>(series)</p></td>
+<td><p>Return a set of the values.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.unionize_dataframe_categories.html#janitor.unionize_dataframe_categories" title="janitor.unionize_dataframe_categories"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unionize_dataframe_categories</span></code></a>(*dataframes[, …])</p></td>
+<td><p>Given a group of dataframes which contain some categorical columns, for each categorical column present, find all the possible categories across all the dataframes which have that column.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.groupby_topk.html#janitor.groupby_topk" title="janitor.groupby_topk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">groupby_topk</span></code></a>(df, groupby_column_name, …[, …])</p></td>
+<td><p>Return top <cite>k</cite> rows from a groupby of a set of columns.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.complete.html#janitor.complete" title="janitor.complete"><code class="xref py py-obj docutils literal notranslate"><span class="pre">complete</span></code></a>(df, columns[, fill_value])</p></td>
+<td><p>This function shows all possible combinations in a dataframe, including the missing values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.functions/janitor.pivot_longer.html#janitor.pivot_longer" title="janitor.pivot_longer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pivot_longer</span></code></a>(df[, index, column_names, …])</p></td>
+<td><p>Unpivots a DataFrame from ‘wide’ to ‘long’ format.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="janitor.functions/janitor.pivot_wider.html#janitor.pivot_wider" title="janitor.pivot_wider"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pivot_wider</span></code></a>(df[, index, names_from, …])</p></td>
+<td><p>Reshapes data from long to wide form. The number of columns are increased, while decreasing the number of rows. It is the inverse of the <cite>pivot_longer</cite> method, and is a wrapper around <cite>pd.DataFrame.unstack</cite> method. This method does not mutate the original DataFrame. Reshaping to wide form : .. code-block:: python          name variable  value     0   Alice      wk1      5     1   Alice      wk2      9     2   Alice      wk3     20     3   Alice      wk4     22     4     Bob      wk1      7     5     Bob      wk2     11     6     Bob      wk3     17     7     Bob      wk4     33     8   Carla      wk1      6     9   Carla      wk2     13     10  Carla      wk3     39     11  Carla      wk4     40     df = (         pd.DataFrame(…)         .pivot_wider(             index=”name”,             names_from=”variable”,             values_from=”value”         )          name    wk1   wk2   wk3   wk4     0    Alice     5     9    20    22     1    Bob       7    11    17    33     2    Carla     6    13    39    40 Pivoting on multiple columns is possible : .. code-block:: python         name    n  pct     0     1  10.0  0.1     1     2  20.0  0.2     2     3  30.0  0.3     df = (         pd.DataFrame(…)         .assign(num=0)         .pivot_wider(             index=’num’,             names_from=”name”,             values_from=[“n”, “pct”]          )      )         num n_1  n_2  n_3  pct_1  pct_2  pct_3     0   0   10   20   30   0.1    0.2    0.3 .. note:: You may choose not to collapse the levels by passing <cite>False</cite>     to the <code class="docutils literal notranslate"><span class="pre">collapse_levels</span></code> argument. .. note:: An error is raised if the index is not unique. Functional usage syntax: .. code-block:: python     import pandas as pd     import janitor as jn     df = pd.DataFrame(…)     df = jn.pivot_wider(         df = df,         index = [column1, column2, …],         names_from = [column3, column4, …],         value_from = [column5, column6, …],         names_sort = True/False,         names_prefix = string,         names_sep = string,         flatten_levels=True/False,         values_from_first=True/False,         fill_value=fill_value     ) Method chaining syntax: .. code-block:: python     df = (         pd.DataFrame(…)         .pivot_wider(             index = [column1, column2, …],             names_from = [column3, column4, …],             value_from = [column5, column6, …],             names_sort = True/False,             names_prefix = string,             names_sep = string,             flatten_levels=True/False,             values_from_first=True/False,             fill_value=fill_value             )     ) :param df: A pandas dataframe. :param index: Name(s) of columns to use as identifier variables. Should be either a single column name, or a list of column names. If <cite>index</cite> is not provided, the current frame’s index is used. :param names_from: Name(s) of columns to pivot. Should be either     a single column name, or a list of column names. A label or labels     must be provided for <code class="docutils literal notranslate"><span class="pre">names_from</span></code>. :param values_from: Name of column that will be used for populating new     frame’s values. Should be either a single column name, or a list of     column names. By default, if <code class="docutils literal notranslate"><span class="pre">values_from</span></code> is a list, the value     will be added to the front of the output column; you can turn this     off with the <cite>values_from_first</cite> argument. If <code class="docutils literal notranslate"><span class="pre">values_from</span></code> is not     specified, all remaining columns will be used. :param names_sort: Default is <cite>False</cite>. Sorts columns by order of     appearance. Applicable only if <code class="docutils literal notranslate"><span class="pre">flatten_levels</span></code> is <cite>True</cite>. :param flatten_levels: Default is <cite>True</cite>. Determines if the reshaped     dataframe stays as a MultiIndex. :param values_from_first: Determines if the values in <code class="docutils literal notranslate"><span class="pre">values_from</span></code> will     be at the front of the output column. This applies if <code class="docutils literal notranslate"><span class="pre">values_from</span></code>     is a list, and the levels are flattened. Default is True. :param names_prefix: String to be added to the front of each output column. Can be handy if the values in <code class="docutils literal notranslate"><span class="pre">names_from</span></code> are numeric data types. Applicable only if the levels are flattened. :param names_sep: If <code class="docutils literal notranslate"><span class="pre">names_from</span></code> or <code class="docutils literal notranslate"><span class="pre">values_from</span></code> contain multiple     variables, this will be used to join their values into a single string     to use as a column name. Default is <code class="docutils literal notranslate"><span class="pre">_</span></code>. Applicable only if the     levels are flattened. :param fill_value: Value to replace missing values with (after pivoting). It can be a number, string, or a dictionary, where the keys are the     column_names, while the values are the values to replace the missing     values with. :returns: A pandas DataFrame that has been unpivoted from long to wide     form. :raises TypeError: if <cite>index</cite> or <cite>names_from</cite> is not a string, or a list of     strings. :raises ValueError: if <cite>names_from</cite> is None. :raises TypeError: if <cite>names_sep</cite> is not a string. :raises TypeError: if <cite>values_from</cite> is not a string or a list of strings. :raises TypeError: if <cite>names_sort</cite> is not a boolean. :raises TypeError: if <cite>flatten_levels</cite> is not a boolean. :raises ValueError: if values in <cite>index</cite> or <cite>names_from</cite> or <cite>values_from</cite>     do not exist in the dataframe. :raises ValueError: if the combination of <cite>index</cite> and <cite>names_from</cite> is not     unique.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">General Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#modify-columns">Modify columns</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.expand_column.html">janitor.expand_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.concatenate_columns.html">janitor.concatenate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.deconcatenate_column.html">janitor.deconcatenate_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.remove_columns.html">janitor.remove_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.add_column.html">janitor.add_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.add_columns.html">janitor.add_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.transform_column.html">janitor.transform_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.transform_columns.html">janitor.transform_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.rename_column.html">janitor.rename_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.rename_columns.html">janitor.rename_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.reorder_columns.html">janitor.reorder_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.collapse_levels.html">janitor.collapse_levels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.change_type.html">janitor.change_type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.limit_column_characters.html">janitor.limit_column_characters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.row_to_names.html">janitor.row_to_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.clean_names.html">janitor.clean_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.currency_column_to_numeric.html">janitor.currency_column_to_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.groupby_agg.html">janitor.groupby_agg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.join_apply.html">janitor.join_apply</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.drop_duplicate_columns.html">janitor.drop_duplicate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.process_text.html">janitor.process_text</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#modify-values">Modify values</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.fill_empty.html">janitor.fill_empty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.fill_direction.html">janitor.fill_direction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.convert_excel_date.html">janitor.convert_excel_date</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.convert_matlab_date.html">janitor.convert_matlab_date</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.convert_unix_date.html">janitor.convert_unix_date</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.remove_empty.html">janitor.remove_empty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.coalesce.html">janitor.coalesce</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.find_replace.html">janitor.find_replace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.round_to_fraction.html">janitor.round_to_fraction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.update_where.html">janitor.update_where</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.to_datetime.html">janitor.to_datetime</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.jitter.html">janitor.jitter</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#filtering">Filtering</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.take_first.html">janitor.take_first</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.filter_string.html">janitor.filter_string</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.filter_on.html">janitor.filter_on</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.filter_date.html">janitor.filter_date</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.filter_column_isin.html">janitor.filter_column_isin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.select_columns.html">janitor.select_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.dropnotnull.html">janitor.dropnotnull</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.get_dupes.html">janitor.get_dupes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#preprocessing">Preprocessing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.bin_numeric.html">janitor.bin_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.encode_categorical.html">janitor.encode_categorical</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.impute.html">janitor.impute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.label_encode.html">janitor.label_encode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.min_max_scale.html">janitor.min_max_scale</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.get_features_targets.html">janitor.get_features_targets</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#other">Other</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.then.html">janitor.then</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.also.html">janitor.also</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.shuffle.html">janitor.shuffle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.count_cumulative_unique.html">janitor.count_cumulative_unique</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.sort_naturally.html">janitor.sort_naturally</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.expand_grid.html">janitor.expand_grid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.flag_nulls.html">janitor.flag_nulls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.move.html">janitor.move</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.toset.html">janitor.toset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.unionize_dataframe_categories.html">janitor.unionize_dataframe_categories</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.groupby_topk.html">janitor.groupby_topk</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.complete.html">janitor.complete</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.pivot_longer.html">janitor.pivot_longer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.functions/janitor.pivot_wider.html">janitor.pivot_wider</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">API Documentation</a><ul>
+      <li>Previous: <a href="timeseries.html" title="previous chapter">Time Series</a></li>
+      <li>Next: <a href="janitor.functions/janitor.expand_column.html" title="next chapter">janitor.expand_column</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/reference/general_functions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

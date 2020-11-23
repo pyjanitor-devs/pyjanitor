@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>General XArray Functions &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="janitor.xarray.clone_using" href="janitor.xarray.functions/janitor.xarray.clone_using.html" />
+    <link rel="prev" title="janitor.spark.update_where" href="janitor.spark.functions/janitor.spark.update_where.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="general-xarray-functions">
+<h1>General XArray Functions<a class="headerlink" href="#general-xarray-functions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="working-with-dataarray-metadata">
+<h2>Working with <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> metadata<a class="headerlink" href="#working-with-dataarray-metadata" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.xarray.functions/janitor.xarray.clone_using.html#janitor.xarray.clone_using" title="janitor.xarray.clone_using"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone_using</span></code></a>(da, np_arr[, use_coords, …])</p></td>
+<td><p>Given a NumPy array, return an XArray <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> which contains the same dimension names and (optionally) coordinates and other properties as the supplied <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="modify-coodinates">
+<h2>Modify coodinates<a class="headerlink" href="#modify-coodinates" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="janitor.xarray.functions/janitor.xarray.convert_datetime_to_number.html#janitor.xarray.convert_datetime_to_number" title="janitor.xarray.convert_datetime_to_number"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_datetime_to_number</span></code></a>(da_or_ds, time_units)</p></td>
+<td><p>Convert the coordinates of a datetime axis to a human-readable float representation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="timeseries.html">Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_functions.html">General Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">General XArray Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#working-with-dataarray-metadata">Working with <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> metadata</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="janitor.xarray.functions/janitor.xarray.clone_using.html">janitor.xarray.clone_using</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#modify-coodinates">Modify coodinates</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="janitor.xarray.functions/janitor.xarray.convert_datetime_to_number.html">janitor.xarray.convert_datetime_to_number</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">API Documentation</a><ul>
+      <li>Previous: <a href="janitor.spark.functions/janitor.spark.update_where.html" title="previous chapter">janitor.spark.update_where</a></li>
+      <li>Next: <a href="janitor.xarray.functions/janitor.xarray.clone_using.html" title="next chapter">janitor.xarray.clone_using</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/reference/xarray.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

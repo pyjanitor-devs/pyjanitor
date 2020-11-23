@@ -1,0 +1,6 @@
+﻿janitor.process\_text
+=====================
+
+.. currentmodule:: janitor
+
+.. autofunction:: process_text

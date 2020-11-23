@@ -1,0 +1,6 @@
+﻿janitor.expand\_grid
+====================
+
+.. currentmodule:: janitor
+
+.. autofunction:: expand_grid

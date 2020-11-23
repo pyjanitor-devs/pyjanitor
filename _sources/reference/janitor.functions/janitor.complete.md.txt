@@ -1,0 +1,6 @@
+﻿janitor.complete
+================
+
+.. currentmodule:: janitor
+
+.. autofunction:: complete

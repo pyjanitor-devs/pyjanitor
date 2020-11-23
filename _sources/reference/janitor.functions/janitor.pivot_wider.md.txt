@@ -1,0 +1,6 @@
+﻿janitor.pivot\_wider
+====================
+
+.. currentmodule:: janitor
+
+.. autofunction:: pivot_wider

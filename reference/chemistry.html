@@ -1,0 +1,387 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chemistry &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Engineering" href="engineering.html" />
+    <link rel="prev" title="Biology" href="biology.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-janitor.chemistry">
+<span id="chemistry"></span><h1>Chemistry<a class="headerlink" href="#module-janitor.chemistry" title="Permalink to this headline">¶</a></h1>
+<p>Chemistry and cheminformatics-oriented data cleaning functions.</p>
+<dl class="py function">
+<dt id="janitor.chemistry.maccs_keys_fingerprint">
+<code class="sig-prename descclassname">janitor.chemistry.</code><code class="sig-name descname">maccs_keys_fingerprint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">mols_column_name</span><span class="p">:</span> <span class="n">Hashable</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/janitor/chemistry.html#maccs_keys_fingerprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.chemistry.maccs_keys_fingerprint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a column of RDKIT mol objects into MACCS Keys Fingerprints.</p>
+<p>Returns a new dataframe without any of the original data.
+This is intentional to leave the user with the data requested.</p>
+<p>This method does not mutate the original DataFrame.</p>
+<p>Functional usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">maccs</span> <span class="o">=</span> <span class="n">janitor</span><span class="o">.</span><span class="n">chemistry</span><span class="o">.</span><span class="n">maccs_keys_fingerprint</span><span class="p">(</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">),</span>
+    <span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">maccs</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">maccs_keys_fingerprint</span><span class="p">(</span><span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>If you wish to join the maccs keys fingerprints back into the
+original dataframe, this can be accomplished by doing a <cite>join</cite>,
+because the indices are preserved:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">joined</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">maccs_keys_fingerprint</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame.</p></li>
+<li><p><strong>mols_column_name</strong> – The name of the column that has the RDKIT mol
+objects.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new pandas DataFrame of MACCS keys fingerprints.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="janitor.chemistry.molecular_descriptors">
+<code class="sig-prename descclassname">janitor.chemistry.</code><code class="sig-name descname">molecular_descriptors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">mols_column_name</span><span class="p">:</span> <span class="n">Hashable</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/janitor/chemistry.html#molecular_descriptors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.chemistry.molecular_descriptors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a column of RDKIT mol objects into a Pandas DataFrame
+of molecular descriptors.</p>
+<p>Returns a new dataframe without any of the original data. This is
+intentional to leave the user only with the data requested.</p>
+<p>This method does not mutate the original DataFrame.</p>
+<p>The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:</p>
+<blockquote>
+<div><p>Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,
+Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,
+Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles,
+NumAliphaticHeterocycles, NumAliphaticRings, NumAmideBonds,
+NumAromaticCarbocycles, NumAromaticHeterocycles, NumAromaticRings,
+NumAtomStereoCenters, NumBridgeheadAtoms, NumHBA, NumHBD,
+NumHeteroatoms, NumHeterocycles, NumLipinskiHBA, NumLipinskiHBD,
+NumRings, NumSaturatedCarbocycles, NumSaturatedHeterocycles,
+NumSaturatedRings, NumSpiroAtoms, NumUnspecifiedAtomStereoCenters,
+TPSA.</p>
+</div></blockquote>
+<p>Functional usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">mol_desc</span> <span class="o">=</span> <span class="n">janitor</span><span class="o">.</span><span class="n">chemistry</span><span class="o">.</span><span class="n">molecular_descriptors</span><span class="p">(</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">),</span>
+    <span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">mol_desc</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">molecular_descriptors</span><span class="p">(</span><span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>If you wish to join the molecular descriptors back into the original
+dataframe, this can be accomplished by doing a <cite>join</cite>,
+because the indices are preserved:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">joined</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mol_desc</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame.</p></li>
+<li><p><strong>mols_column_name</strong> – The name of the column that has the RDKIT mol
+objects.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new pandas DataFrame of molecular descriptors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="janitor.chemistry.morgan_fingerprint">
+<code class="sig-prename descclassname">janitor.chemistry.</code><code class="sig-name descname">morgan_fingerprint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">mols_column_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em>, <em class="sig-param"><span class="n">radius</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span> <span class="o">=</span> <span class="default_value">3</span></em>, <em class="sig-param"><span class="n">nbits</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span> <span class="o">=</span> <span class="default_value">2048</span></em>, <em class="sig-param"><span class="n">kind</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">'counts'</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/janitor/chemistry.html#morgan_fingerprint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.chemistry.morgan_fingerprint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a column of RDKIT Mol objects into Morgan Fingerprints.</p>
+<p>Returns a new dataframe without any of the original data. This is
+intentional, as Morgan fingerprints are usually high-dimensional
+features.</p>
+<p>This method does not mutate the original DataFrame.</p>
+<p>Functional usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1"># For &quot;counts&quot; kind</span>
+<span class="n">morgans</span> <span class="o">=</span> <span class="n">janitor</span><span class="o">.</span><span class="n">chemistry</span><span class="o">.</span><span class="n">morgan_fingerprint</span><span class="p">(</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">),</span>
+    <span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span><span class="p">,</span>
+    <span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>      <span class="c1"># Defaults to 3</span>
+    <span class="n">nbits</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>    <span class="c1"># Defaults to 2048</span>
+    <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;counts&#39;</span>  <span class="c1"># Defaults to &quot;counts&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># For &quot;bits&quot; kind</span>
+<span class="n">morgans</span> <span class="o">=</span> <span class="n">janitor</span><span class="o">.</span><span class="n">chemistry</span><span class="o">.</span><span class="n">morgan_fingerprint</span><span class="p">(</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">),</span>
+    <span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span><span class="p">,</span>
+    <span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>      <span class="c1"># Defaults to 3</span>
+    <span class="n">nbits</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>    <span class="c1"># Defaults to 2048</span>
+    <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bits&#39;</span>    <span class="c1"># Defaults to &quot;counts&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1"># For &quot;counts&quot; kind</span>
+<span class="n">morgans</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">morgan_fingerprint</span><span class="p">(</span><span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span><span class="p">,</span>
+                          <span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>      <span class="c1"># Defaults to 3</span>
+                          <span class="n">nbits</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>    <span class="c1"># Defaults to 2048</span>
+                          <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;counts&#39;</span>  <span class="c1"># Defaults to &quot;counts&quot;</span>
+      <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># For &quot;bits&quot; kind</span>
+<span class="n">morgans</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span> <span class="s1">&#39;mols&#39;</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">morgan_fingerprint</span><span class="p">(</span><span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span><span class="p">,</span>
+                          <span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>    <span class="c1"># Defaults to 3</span>
+                          <span class="n">nbits</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>  <span class="c1"># Defaults to 2048</span>
+                          <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bits&#39;</span>  <span class="c1"># Defaults to &quot;counts&quot;</span>
+      <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>If you wish to join the morgan fingerprints back into the original
+dataframe, this can be accomplished by doing a <cite>join</cite>,
+because the indices are preserved:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">joined</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">morgans</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame.</p></li>
+<li><p><strong>mols_column_name</strong> – The name of the column that has the RDKIT
+mol objects</p></li>
+<li><p><strong>radius</strong> – Radius of Morgan fingerprints. Defaults to 3.</p></li>
+<li><p><strong>nbits</strong> – The length of the fingerprints. Defaults to 2048.</p></li>
+<li><p><strong>kind</strong> – Whether to return counts or bits. Defaults to counts.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new pandas DataFrame of Morgan fingerprints.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">kind</span></code> is not one of
+<code class="docutils literal notranslate"><span class="pre">&quot;counts&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;bits&quot;</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="janitor.chemistry.smiles2mol">
+<code class="sig-prename descclassname">janitor.chemistry.</code><code class="sig-name descname">smiles2mol</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">smiles_column_name</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">mols_column_name</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">drop_nulls</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">progressbar</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/janitor/chemistry.html#smiles2mol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.chemistry.smiles2mol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a column of SMILES strings into RDKit Mol objects.</p>
+<p>Automatically drops invalid SMILES, as determined by RDKIT.</p>
+<p>This method mutates the original DataFrame.</p>
+<p>Functional usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">janitor</span><span class="o">.</span><span class="n">chemistry</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">smiles_column_name</span><span class="o">=</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span>
+    <span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.chemistry</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">smiles2mol</span><span class="p">(</span><span class="n">smiles_column_name</span><span class="o">=</span><span class="s1">&#39;smiles&#39;</span><span class="p">,</span>
+                   <span class="n">mols_column_name</span><span class="o">=</span><span class="s1">&#39;mols&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A progressbar can be optionally used.</p>
+<ul class="simple">
+<li><p>Pass in “notebook” to show a tqdm notebook progressbar. (ipywidgets must
+be enabled with your Jupyter installation.)</p></li>
+<li><p>Pass in “terminal” to show a tqdm progressbar. Better suited for use
+with scripts.</p></li>
+<li><p>“none” is the default value - progress bar will be not be shown.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – pandas DataFrame.</p></li>
+<li><p><strong>smiles_column_name</strong> – Name of column that holds the SMILES strings.</p></li>
+<li><p><strong>mols_column_name</strong> – Name to be given to the new mols column.</p></li>
+<li><p><strong>drop_nulls</strong> – Whether to drop rows whose mols failed to be
+constructed.</p></li>
+<li><p><strong>progressbar</strong> – Whether to show a progressbar or not.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame with new RDKIT Mol objects column.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">progressbar</span></code> is not one of
+<code class="docutils literal notranslate"><span class="pre">&quot;notebook&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;terminal&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="biology.html">Biology</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="timeseries.html">Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_functions.html">General Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">API Documentation</a><ul>
+      <li>Previous: <a href="biology.html" title="previous chapter">Biology</a></li>
+      <li>Next: <a href="engineering.html" title="next chapter">Engineering</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/reference/chemistry.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

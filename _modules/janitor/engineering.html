@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.engineering &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for janitor.engineering</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Engineering-specific data cleaning functions.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
+
+<span class="kn">from</span> <span class="nn">janitor</span> <span class="kn">import</span> <span class="n">check</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">import_message</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">unyt</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">import_message</span><span class="p">(</span>
+        <span class="n">submodule</span><span class="o">=</span><span class="s2">&quot;engineering&quot;</span><span class="p">,</span>
+        <span class="n">package</span><span class="o">=</span><span class="s2">&quot;unyt&quot;</span><span class="p">,</span>
+        <span class="n">conda_channel</span><span class="o">=</span><span class="s2">&quot;conda-forge&quot;</span><span class="p">,</span>
+        <span class="n">pip_install</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="convert_units"><a class="viewcode-back" href="../../reference/engineering.html#janitor.engineering.convert_units">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">convert_units</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">existing_units</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">to_units</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dest_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a column of numeric values from one unit to another.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.engineering</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = janitor.engineering.convert_units(</span>
+<span class="sd">            df=df,</span>
+<span class="sd">            column_name=&#39;temp_F&#39;,</span>
+<span class="sd">            existing_units=&#39;degF&#39;,</span>
+<span class="sd">            to_units=&#39;degC&#39;,</span>
+<span class="sd">            dest_column_name=&#39;temp_C&#39;</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.engineering</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = df.convert_units(</span>
+<span class="sd">            column_name=&#39;temp_F&#39;,</span>
+<span class="sd">            existing_units=&#39;degF&#39;,</span>
+<span class="sd">            to_units=&#39;degC&#39;,</span>
+<span class="sd">            dest_column_name=&#39;temp_C&#39;</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Unit conversion can only take place if the existing_units and</span>
+<span class="sd">    to_units are of the same type (e.g., temperature or pressure).</span>
+<span class="sd">    The provided unit types can be any unit name or alternate name provided</span>
+<span class="sd">    in the unyt package&#39;s Listing of Units table:</span>
+<span class="sd">    https://unyt.readthedocs.io/en/stable/unit_listing.html#unit-listing.</span>
+
+<span class="sd">    Volume units are not provided natively in unyt.  However, exponents are</span>
+<span class="sd">    supported, and therefore some volume units can be converted.  For example,</span>
+<span class="sd">    a volume in cubic centimeters can be converted to cubic meters using</span>
+<span class="sd">    existing_units=&#39;cm**3&#39; and to_units=&#39;m**3&#39;.</span>
+
+<span class="sd">    This method mutates the original DataFrame.</span>
+
+<span class="sd">    :param df: A pandas dataframe.</span>
+<span class="sd">    :param column_name: Name of the column containing numeric</span>
+<span class="sd">        values that are to be converted from one set of units to another.</span>
+<span class="sd">    :param existing_units: The unit type to convert from.</span>
+<span class="sd">    :param to_units: The unit type to convert to.</span>
+<span class="sd">    :param dest_column_name: The name of the new column containing the</span>
+<span class="sd">        converted values that will be created.</span>
+
+<span class="sd">    :returns: A pandas DataFrame with a new column of unit-converted values.</span>
+<span class="sd">    :raises TypeError: if column is not numeric.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check all inputs are correct data type</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;column_name&quot;</span><span class="p">,</span> <span class="n">column_name</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;existing_units&quot;</span><span class="p">,</span> <span class="n">existing_units</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;to_units&quot;</span><span class="p">,</span> <span class="n">to_units</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;dest_column_name&quot;</span><span class="p">,</span> <span class="n">dest_column_name</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+
+    <span class="c1"># Check that column_name is a numeric column</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_name</span><span class="si">}</span><span class="s2"> must be a numeric column.&quot;</span><span class="p">)</span>
+
+    <span class="n">original_vals</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">*</span> <span class="n">unyt</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">existing_units</span><span class="p">)</span>
+    <span class="n">converted_vals</span> <span class="o">=</span> <span class="n">original_vals</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">to_units</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">dest_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">converted_vals</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

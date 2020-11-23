@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Examples &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyjanitor Usage Walkthrough" href="notebooks/pyjanitor_intro.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/pyjanitor_intro.html">pyjanitor Usage Walkthrough</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#Why-pyjanitor?">Why <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#What-is-method-chaining?">What is method chaining?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#The-pyjanitor-approach">The <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> approach</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#A-survey-of-pyjanitor-functions">A survey of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#Some-things-that-are-different">Some things that are different</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#How-it-works">How it works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#Demo-of-various-DataFrame-manipulation-tasks-using-pyjanitor">Demo of various <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation tasks using <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html#Example-analysis-of-the-data">Example analysis of the data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Pivoting%20Data%20from%20Wide%20to%20Long.html">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/README.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/README.html#guidelines">Guidelines</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/Row_to_Names.html">row_to_names : Elevates a row to be the column names of a DataFrame.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/Row_to_Names.html#Background">Background</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/anime.html">Processing Anime Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/anime.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/anime.html#One-Shot">One-Shot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/anime.html#Multi-Step">Multi-Step</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/bad_values.html">Replacing Bad Values</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bad_values.html#Load-Wind-Turbine-Data">Load Wind Turbine Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bad_values.html#Check-Mean">Check Mean</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bad_values.html#Check-the-Mean-(again)">Check the Mean (again)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bad_values.html#Alternate-method">Alternate method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bad_values.html#Confirming-this-produces-the-same-result">Confirming this produces the same result</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/bird_call.html">Processing Bird Call Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bird_call.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bird_call.html#Citations">Citations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bird_call.html#Get-Raw-Data">Get Raw Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bird_call.html#Original-DataFrames">Original DataFrames</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bird_call.html#Cleaning-Data-Using-Pyjanitor">Cleaning Data Using Pyjanitor</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/board_games.html">Processing Board Game Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/board_games.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/board_games.html#Data-Cleaning">Data Cleaning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/board_games.html#Multi-Step">Multi-Step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/board_games.html#Sample-Analysis">Sample Analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/dirty_data.html">Processing Dirty Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dirty_data.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dirty_data.html#Load-Data">Load Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dirty_data.html#Cleaning-Column-Names">Cleaning Column Names</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dirty_data.html#Renaming-Individual-Columns">Renaming Individual Columns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dirty_data.html#Coalescing-Columns">Coalescing Columns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dirty_data.html#Dealing-with-Excel-Dates">Dealing with Excel Dates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/expand_grid.html">Expand_grid : Create a dataframe from all combinations of inputs.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/expand_grid.html#Background">Background</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/french_trains.html">Processing French train data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/french_trains.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/french_trains.html#The-data">The data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/french_trains.html#Preliminaries">Preliminaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/french_trains.html#Call-chaining-example">Call chaining example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/french_trains.html#Step-by-step-through-the-methods">Step by step through the methods</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/groupby_agg.html">Groupby_agg : Shortcut for assigning a groupby-transform to a new column.</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/groupby_agg.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/groupby_agg.html#Use-grouby_agg-to-find-average-price-for-each-item-and-append-column-to-dataframe">Use grouby_agg to find average price for each item and append column to dataframe</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/inflating_converting_currency.html">Inflating and Converting Currency</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/inflating_converting_currency.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/inflating_converting_currency.html#Getting-and-Cleaning-the-Data">Getting and Cleaning the Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/inflating_converting_currency.html#Use-inflate_currency()-to-Inflate-All-Values-to-2018$">Use inflate_currency() to Inflate All Values to 2018$</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/inflating_converting_currency.html#Plot-Time-Series-to-Observe-Currency-Inflation">Plot Time Series to Observe Currency Inflation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/inflating_converting_currency.html#Use-convert_currency()-to-Convert-USD-to-British-Pounds">Use convert_currency() to Convert USD to British Pounds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/inflating_converting_currency.html#Plot-Time-Series-to-Observe-Currency-Conversion">Plot Time Series to Observe Currency Conversion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/medium_franchise.html">Tidy Up Web-Scraped Media Franchise Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/medium_franchise.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/medium_franchise.html#Structural-convention">Structural convention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/medium_franchise.html#Python-implementation">Python implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/normalize.html">Normalization and Standardization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/normalize.html#Load-data">Load data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/normalize.html#Examine-raw-data">Examine raw data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/normalize.html#min-max-normalization">min-max normalization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/normalize.html#Standardization-(z-score)">Standardization (z-score)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/sort_naturally.html">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/teacher_pupil.html">Processing International Teacher Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/teacher_pupil.html#Background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/teacher_pupil.html#Data-Dictionary">Data Dictionary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/teacher_pupil.html#Data-Cleaning">Data Cleaning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/transform_column.html">Transforming columns</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/transform_column.html#Introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/transform_column.html#Numeric-Data">Numeric Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/transform_column.html#String-Data">String Data</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/pyjanitor_intro.html">pyjanitor Usage Walkthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/Pivoting%20Data%20from%20Wide%20to%20Long.html">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/README.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/Row_to_Names.html">row_to_names : Elevates a row to be the column names of a DataFrame.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/anime.html">Processing Anime Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bad_values.html">Replacing Bad Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/bird_call.html">Processing Bird Call Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/board_games.html">Processing Board Game Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/dirty_data.html">Processing Dirty Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/expand_grid.html">Expand_grid : Create a dataframe from all combinations of inputs.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/french_trains.html">Processing French train data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/groupby_agg.html">Groupby_agg : Shortcut for assigning a groupby-transform to a new column.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/inflating_converting_currency.html">Inflating and Converting Currency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/medium_franchise.html">Tidy Up Web-Scraped Media Franchise Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/normalize.html">Normalization and Standardization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/sort_naturally.html">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/teacher_pupil.html">Processing International Teacher Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebooks/transform_column.html">Transforming columns</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
+      <li>Next: <a href="notebooks/pyjanitor_intro.html" title="next chapter">pyjanitor Usage Walkthrough</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/notebooks.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

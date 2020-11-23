@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.xarray.clone_using &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.xarray.convert_datetime_to_number" href="janitor.xarray.convert_datetime_to_number.html" />
+    <link rel="prev" title="General XArray Functions" href="../xarray.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-xarray-clone-using">
+<h1>janitor.xarray.clone_using<a class="headerlink" href="#janitor-xarray-clone-using" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.xarray.clone_using">
+<code class="sig-prename descclassname">janitor.xarray.</code><code class="sig-name descname">clone_using</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">da</span><span class="p">:</span> <span class="n">xarray.core.dataarray.DataArray</span></em>, <em class="sig-param"><span class="n">np_arr</span><span class="p">:</span> <span class="n">numpy.array</span></em>, <em class="sig-param"><span class="n">use_coords</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">use_attrs</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">new_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; xarray.core.dataarray.DataArray<a class="reference internal" href="../../_modules/janitor/xarray/functions.html#clone_using"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.xarray.clone_using" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a NumPy array, return an XArray <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> which contains the same
+dimension names and (optionally) coordinates and other properties as the
+supplied <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p>
+<p>This is similar to <code class="docutils literal notranslate"><span class="pre">xr.DataArray.copy()</span></code> with more specificity for
+the type of cloning you would like to perform - the different properties
+that you desire to mirror in the new <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p>
+<p>If the coordinates from the source <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> are not desired, the shape
+of the source and new NumPy arrays don’t need to match.
+The number of dimensions do, however.</p>
+<p>Usage example - making a new <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> from a previous one, keeping the
+dimension names but dropping the coordinates (the input NumPy array is of a
+different size):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">da</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">)),</span> <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ax_1&#39;</span><span class="p">,</span> <span class="s1">&#39;ax_2&#39;</span><span class="p">],</span>
+    <span class="n">coords</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">ax_1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span>
+                <span class="n">ax_2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1024</span><span class="p">)),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;original&#39;</span>
+<span class="p">)</span>
+
+<span class="n">new_da</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">clone_using</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span> <span class="n">new_name</span><span class="o">=</span><span class="s1">&#39;new_and_improved&#39;</span><span class="p">,</span>
+                        <span class="n">use_coords</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>da</strong> – The <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> supplied by the method itself.</p></li>
+<li><p><strong>np_arr</strong> – The NumPy array which will be wrapped in a new <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>
+given the properties copied over from the source <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p></li>
+<li><p><strong>use_coords</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use the coordinates of the source
+<code class="docutils literal notranslate"><span class="pre">DataArray</span></code> for the coordinates of the newly-generated array. Shapes
+must match in this case. If <code class="docutils literal notranslate"><span class="pre">False</span></code>, only the number of dimensions
+must match.</p></li>
+<li><p><strong>use_attrs</strong> – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, copy over the <code class="docutils literal notranslate"><span class="pre">attrs</span></code> from the source
+<code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.
+The data inside <code class="docutils literal notranslate"><span class="pre">attrs</span></code> itself is not copied, only the mapping.
+Otherwise, use the supplied attrs.</p></li>
+<li><p><strong>new_name</strong> – If set, use as the new name of the returned <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.
+Otherwise, use the name of <code class="docutils literal notranslate"><span class="pre">da</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> styled like the input <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> containing the
+NumPy array data.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if number of dimensions in <code class="docutils literal notranslate"><span class="pre">NumPy</span></code> array and
+<code class="docutils literal notranslate"><span class="pre">DataArray</span></code> do not match.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if shape of <code class="docutils literal notranslate"><span class="pre">NumPy</span></code> array and <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>
+do not match.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../general_functions.html">General Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../xarray.html">General XArray Functions</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../xarray.html#working-with-dataarray-metadata">Working with <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> metadata</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.xarray.clone_using</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../xarray.html#modify-coodinates">Modify coodinates</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../xarray.html">General XArray Functions</a><ul>
+      <li>Previous: <a href="../xarray.html" title="previous chapter">General XArray Functions</a></li>
+      <li>Next: <a href="janitor.xarray.convert_datetime_to_number.html" title="next chapter">janitor.xarray.convert_datetime_to_number</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.xarray.functions/janitor.xarray.clone_using.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

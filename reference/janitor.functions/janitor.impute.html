@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.impute &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.label_encode" href="janitor.label_encode.html" />
+    <link rel="prev" title="janitor.encode_categorical" href="janitor.encode_categorical.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-impute">
+<h1>janitor.impute<a class="headerlink" href="#janitor-impute" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.impute">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">impute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column_name</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">statistic_column_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#impute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.impute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method-chainable imputation of values in a column.</p>
+<p>This method mutates the original DataFrame.</p>
+<p>Underneath the hood, this function calls the <code class="docutils literal notranslate"><span class="pre">.fillna()</span></code> method available
+to every pandas.Series object.</p>
+<p>Method-chaining example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+    <span class="s2">&quot;sales&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+    <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">]}</span>
+<span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="c1"># Impute null values with 0</span>
+    <span class="o">.</span><span class="n">impute</span><span class="p">(</span><span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;sales&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="c1"># Impute null values with median</span>
+    <span class="o">.</span><span class="n">impute</span><span class="p">(</span><span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;score&#39;</span><span class="p">,</span> <span class="n">statistic_column_name</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Either one of <code class="docutils literal notranslate"><span class="pre">value</span></code> or <code class="docutils literal notranslate"><span class="pre">statistic_column_name</span></code> should be provided.</p>
+<dl class="simple">
+<dt>If <code class="docutils literal notranslate"><span class="pre">value</span></code> is provided, then all null values in the selected column will</dt><dd><p>take on the value provided.</p>
+</dd>
+</dl>
+<p>If <code class="docutils literal notranslate"><span class="pre">statistic_column_name</span></code> is provided, then all null values in the
+selected column will take on the summary statistic value of other non-null
+values.</p>
+<p>Currently supported statistics include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mean</span></code> (also aliased by <code class="docutils literal notranslate"><span class="pre">average</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">median</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mode</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">minimum</span></code> (also aliased by <code class="docutils literal notranslate"><span class="pre">min</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maximum</span></code> (also aliased by <code class="docutils literal notranslate"><span class="pre">max</span></code>)</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame</p></li>
+<li><p><strong>column_name</strong> – The name of the column on which to impute values.</p></li>
+<li><p><strong>value</strong> – (optional) The value to impute.</p></li>
+<li><p><strong>statistic_column_name</strong> – (optional) The column statistic to impute.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An imputed pandas DataFrame.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if both <code class="docutils literal notranslate"><span class="pre">value</span></code> and <code class="docutils literal notranslate"><span class="pre">statistic</span></code> are provided.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.9)"><strong>KeyError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">statistic</span></code> is not one of <code class="docutils literal notranslate"><span class="pre">mean</span></code>, <code class="docutils literal notranslate"><span class="pre">average</span></code>
+<code class="docutils literal notranslate"><span class="pre">median</span></code>, <code class="docutils literal notranslate"><span class="pre">mode</span></code>, <code class="docutils literal notranslate"><span class="pre">minimum</span></code>, <code class="docutils literal notranslate"><span class="pre">min</span></code>, <code class="docutils literal notranslate"><span class="pre">maximum</span></code>, or <code class="docutils literal notranslate"><span class="pre">max</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.bin_numeric.html">janitor.bin_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.encode_categorical.html">janitor.encode_categorical</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.impute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.label_encode.html">janitor.label_encode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.min_max_scale.html">janitor.min_max_scale</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.get_features_targets.html">janitor.get_features_targets</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#other">Other</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.encode_categorical.html" title="previous chapter">janitor.encode_categorical</a></li>
+      <li>Next: <a href="janitor.label_encode.html" title="next chapter">janitor.label_encode</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.impute.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

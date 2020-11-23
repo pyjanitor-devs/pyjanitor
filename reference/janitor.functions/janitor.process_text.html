@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.process_text &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.fill_empty" href="janitor.fill_empty.html" />
+    <link rel="prev" title="janitor.drop_duplicate_columns" href="janitor.drop_duplicate_columns.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-process-text">
+<h1>janitor.process_text<a class="headerlink" href="#janitor-process-text" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.process_text">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">process_text</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em>, <em class="sig-param"><span class="n">string_function</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#process_text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.process_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a Pandas string method to an existing column and return a dataframe.</p>
+<p>This function aims to make string cleaning easy, while chaining,
+by simply passing the string method name to the <code class="docutils literal notranslate"><span class="pre">process_text</span></code> function.
+Note that this modifies an existing column,
+and should not be used to create a new column.
+A list of all the string methods in Pandas can be accessed here:
+<a class="reference external" href="https://pandas.pydata.org/docs/user_guide/text.html#method-summary">https://pandas.pydata.org/docs/user_guide/text.html#method-summary</a>.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span> <span class="k">as</span> <span class="nn">jn</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;text&quot;</span><span class="p">:[</span><span class="s2">&quot;ragnar&quot;</span><span class="p">,</span><span class="s2">&quot;sammywemmy&quot;</span><span class="p">,</span><span class="s2">&quot;ginger&quot;</span><span class="p">],</span>
+                   <span class="s2">&quot;code&quot;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]})</span>
+
+<span class="n">df</span><span class="o">.</span><span class="n">process_text</span><span class="p">(</span><span class="n">column</span> <span class="o">=</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">string_function</span> <span class="o">=</span> <span class="s2">&quot;lower&quot;</span><span class="p">)</span>
+<span class="c1"># text       |   code</span>
+<span class="c1"># ragnar     |    1</span>
+<span class="c1"># sammywemmy |    2</span>
+<span class="c1"># ginger     |    3</span>
+
+<span class="c1">#For string methods with parameters, simply pass the arguments :</span>
+<span class="n">df</span><span class="o">.</span><span class="n">process_text</span><span class="p">(</span>
+    <span class="n">column</span> <span class="o">=</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
+    <span class="n">string_function</span> <span class="o">=</span> <span class="s2">&quot;extract&quot;</span><span class="p">,</span>
+    <span class="n">pat</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;(ag)&quot;</span><span class="p">,</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span>
+    <span class="p">)</span>
+
+<span class="c1"># text |   code</span>
+<span class="c1"># ag   |    1</span>
+<span class="c1"># NaN  |    2</span>
+<span class="c1"># NaN  |    3</span>
+</pre></div>
+</div>
+<p>Functional usage syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span> <span class="k">as</span> <span class="nn">jn</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">jn</span><span class="o">.</span><span class="n">process_text</span><span class="p">(</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">,</span>
+    <span class="n">string_function</span> <span class="o">=</span> <span class="s2">&quot;string_func_name_here&quot;</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>Method-chaining usage syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span> <span class="k">as</span> <span class="nn">jn</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">process_text</span><span class="p">(</span>
+        <span class="n">string_function</span> <span class="o">=</span> <span class="s2">&quot;string_func_name_here&quot;</span><span class="p">,</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
+        <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas dataframe.</p></li>
+<li><p><strong>column</strong> – String column to be operated on.</p></li>
+<li><p><strong>string_function</strong> – Pandas string method to be applied.</p></li>
+<li><p><strong>args</strong> – Arguments for parameters.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments for parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas dataframe with modified column.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.9)"><strong>KeyError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">string_function</span></code> is not a Pandas string method.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if wrong <code class="docutils literal notranslate"><span class="pre">arg</span></code> or <code class="docutils literal notranslate"><span class="pre">kwarg</span></code> is supplied.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.expand_column.html">janitor.expand_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.concatenate_columns.html">janitor.concatenate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.deconcatenate_column.html">janitor.deconcatenate_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.remove_columns.html">janitor.remove_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_column.html">janitor.add_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_columns.html">janitor.add_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.transform_column.html">janitor.transform_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.transform_columns.html">janitor.transform_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_column.html">janitor.rename_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_columns.html">janitor.rename_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.reorder_columns.html">janitor.reorder_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.collapse_levels.html">janitor.collapse_levels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.change_type.html">janitor.change_type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.limit_column_characters.html">janitor.limit_column_characters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.row_to_names.html">janitor.row_to_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.clean_names.html">janitor.clean_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.currency_column_to_numeric.html">janitor.currency_column_to_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.groupby_agg.html">janitor.groupby_agg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.join_apply.html">janitor.join_apply</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.drop_duplicate_columns.html">janitor.drop_duplicate_columns</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.process_text</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#other">Other</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.drop_duplicate_columns.html" title="previous chapter">janitor.drop_duplicate_columns</a></li>
+      <li>Next: <a href="janitor.fill_empty.html" title="next chapter">janitor.fill_empty</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.process_text.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

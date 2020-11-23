@@ -1,0 +1,403 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# pyjanitor Usage Walkthrough"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "`pyjanitor` is a Python-based API on top of `pandas` inspired by the [janitor](https://github.com/sfirke/janitor) R package. It aims to provide a clean, understandable interface based on method chaining for common and less-common tasks involving data cleaning and `DataFrame` manipulation. \n",
+    "\n",
+    "The core philosophy and augmentations on `pandas`' approach to data cleaning and `DataFrame` manipulation include:\n",
+    "\n",
+    "- A method-chaining paradigm for coding efficiency & clarity of code through greatly improved readability.\n",
+    "- Implementation of common, useful `DataFrame` manipulation tasks that saves on repetitive code.\n",
+    "- Focus on active tense / verb approaches to function naming to provide at-a-glance understanding of a data manipulation pipeline.\n",
+    "\n",
+    "## Why `pyjanitor`?\n",
+    "\n",
+    "Originally a simple port of the R package, `pyjanitor` has evolved from a set of convenient data cleaning routines into an experiment with the method-chaining paradigm.\n",
+    "\n",
+    "Data preprocessing is best expressed as a [directed acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph) of actions taken on data. We take a base data file as the starting point and perform actions on it such as removing null/empty rows, replacing them with other values, adding/renaming/removing columns of data, filtering rows, and more.\n",
+    "\n",
+    "The `pandas` API has been invaluable for the Python data science ecosystem and implements method chaining for a subset of methods as part of the API. For example, resetting indexes (`.reset_index()`), dropping null values (`.dropna()`), and more are accomplished via the appropriate `pd.DataFrame` method calls.\n",
+    "\n",
+    "Inspired by the R statistical language ecosystem, where consistent and good API design in the `dplyr` package enables end-users, who are not necessarily developers, to concisely express data processing code, `pyjanitor` has evolved into a language for expressing the data processing DAG for `pandas` users.\n",
+    "\n",
+    "## What is method chaining?\n",
+    "\n",
+    "To accomplish these goals, actions for which we would need to invoke imperative-style statements can be replaced with method chains that allow the user to read off the logical order of actions taken. Note the annotated example below. First, we introduce the textual description of a sample data cleaning pipeline:\n",
+    "\n",
+    "- Create `DataFrame`.\n",
+    "- Delete one column.\n",
+    "- Drop rows with empty values in two particular columns.\n",
+    "- Rename another two columns.\n",
+    "- Add a new column.\n",
+    "- Reset index to account for the missing row we removed above\n",
+    "\n",
+    "In `pandas` code, this would look as such:\n",
+    "\n",
+    "```python\n",
+    "df = pd.DataFrame(...)  # create a pandas DataFrame somehow.\n",
+    "del df['column1']  # delete a column from the dataframe.\n",
+    "df = df.dropna(subset=['column2', 'column3'])  # drop rows that have empty values in column 2 and 3.\n",
+    "df = df.rename({'column2': 'unicorns', 'column3': 'dragons'})  # rename column2 and column3\n",
+    "df['new_column'] = ['iterable', 'of', 'items']  # add a new column.\n",
+    "df.reset_index(inplace=True, drop=True)  # reset index to account for the missing row we removed above\n",
+    "```\n",
+    "\n",
+    "## The `pyjanitor` approach\n",
+    "\n",
+    "With `pyjanitor`, we enable method chaining with method names that are _verbs_ which describe the action taken:\n",
+    "\n",
+    "```python\n",
+    "df = (\n",
+    "    pd.DataFrame(...)\n",
+    "    .remove_columns(['column1'])\n",
+    "    .dropna(subset=['column2', 'column3'])\n",
+    "    .rename_column('column2', 'unicorns')\n",
+    "    .rename_column('column3', 'dragons')\n",
+    "    .add_column('new_column', ['iterable', 'of', 'items'])\n",
+    "    .reset_index(drop=True)\n",
+    ")\n",
+    "```\n",
+    "\n",
+    "We believe the `pyjanitor` chaining-based approach leads to much cleaner code where the intent of a series of `DataFrame` manipulations is much more immediately clear.\n",
+    "\n",
+    "`pyjanitor`’s etymology has a two-fold relationship to “cleanliness”. Firstly, it’s about extending `pandas` with convenient data cleaning routines. Secondly, it’s about providing a cleaner, method-chaining, verb-based API for common `pandas` routines.\n",
+    "\n",
+    "## A survey of `pyjanitor` functions\n",
+    "\n",
+    "- Cleaning column names (multi-indexes are possible!)\n",
+    "- Removing empty rows and columns\n",
+    "- Identifying duplicate entries\n",
+    "- Encoding columns as categorical\n",
+    "- Splitting your data into features and targets (for machine learning)\n",
+    "- Adding, removing, and renaming columns\n",
+    "- Coalesce multiple columns into a single column\n",
+    "- Convert excel date (serial format) into a Python datetime format\n",
+    "- Expand a single column that has delimited, categorical values into dummy-encoded variables\n",
+    "\n",
+    "A full list of functionality that `pyjanitor` implements can be found in the [API docs](https://ericmjl.github.io/pyjanitor/).\n",
+    "\n",
+    "## Some things that are different\n",
+    "\n",
+    "Some `pyjanitor` methods are `DataFrame`-mutating operations, i.e., in place. Given that in a method-chaining paradigm, `DataFrame`s that would be created at each step of the chain cannot be accessed anyway, duplication of data at each step would lead to unnecessary, potential considerable slowdowns and increased memory usage due to data-copying operations. The severity of such copying scales with `DataFrame` size. Take care to understand which functions change the original `DataFrame` you are chaining on if it is necessary to preserve that data. If it is, you can simply `.copy()` it as the first step in a `df.copy().operation1().operation2()...` chain.\n",
+    "\n",
+    "## How it works\n",
+    "\n",
+    "`pyjanitor` relies on the [Pandas Flavor](https://github.com/Zsailer/pandas_flavor) package to register new functions as object methods that can be called directly on `DataFrame`s. For example:\n",
+    "\n",
+    "```python\n",
+    "import pandas as pd\n",
+    "import pandas_flavor as pf\n",
+    "\n",
+    "\n",
+    "@pf.register_dataframe_method\n",
+    "def remove_column(df, column_name: str):\n",
+    "    del df[column_name]\n",
+    "    return df\n",
+    "\n",
+    "df = (\n",
+    "    pd.read_csv('my_data.csv')\n",
+    "    .remove_column('my_column_name')\n",
+    "    .operation2(...)\n",
+    ")\n",
+    "```\n",
+    "\n",
+    "Importing the `janitor` package immediately registers these functions. The fact that each `DataFrame` method `pyjanitor` registers returns the `DataFrame` is what gives it the capability to method chain. \n",
+    "\n",
+    "Note that `pyjanitor` explicitly does not modify any existing `pandas` methods / functionality."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Demo of various `DataFrame` manipulation tasks using `pyjanitor`"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Here, we'll walk through some useful `pyjanitor`-based approaches to cleaning and manipulating `DataFrame`s."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Code preamble:"
+   ]
+  },
+  {
+   "source": [
+    "import pandas as pd\n",
+    "import janitor\n",
+    "import pandas_flavor as pf\n",
+    "import numpy as np"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Let's take a look at our dataset:"
+   ]
+  },
+  {
+   "source": [
+    "df = pd.read_excel('dirty_data.xlsx')\n",
+    "df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can see that this dataset is dirty in a number of ways, including the following:\n",
+    "\n",
+    "  * Column names contain spaces, punctuation marks, and inconsistent casing\n",
+    "  * One row (`7`) with completely missing data\n",
+    "  * One column (`do not edit! --->`) with completely missing data"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Clean up our data using a `pyjanitor` method-chaining pipeline\n",
+    "\n",
+    "Let's run through a demo `DataFrame` cleaning procedure:"
+   ]
+  },
+  {
+   "source": [
+    "cleaned_df = (\n",
+    "    pd.read_excel('dirty_data.xlsx')\n",
+    "    .clean_names()\n",
+    "    .remove_empty()\n",
+    "    .rename_column(\"%_allocated\", \"percent_allocated\")\n",
+    "    .rename_column(\"full_time_\", \"full_time\")\n",
+    "    .coalesce([\"certification\", \"certification_1\"], \"certification\")\n",
+    "    .encode_categorical([\"subject\", \"employee_status\", \"full_time\"])\n",
+    "    .convert_excel_date(\"hire_date\")\n",
+    "    .reset_index(drop=True)\n",
+    ")\n",
+    "\n",
+    "cleaned_df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The cleaned `DataFrame` looks much better and quite a bit more usable for our downstream tasks."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Step-by-step walkthrough of `pyjanitor` `DataFrame` manipulations\n",
+    "\n",
+    "Just for clearer understanding of the above, let's see how `pyjanitor` progressively modified the data.\n",
+    "\n",
+    "Loading data in:"
+   ]
+  },
+  {
+   "source": [
+    "df = pd.read_excel('dirty_data.xlsx')\n",
+    "df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Clean up names by removing whitespace, punctuation / symbols, capitalization:"
+   ]
+  },
+  {
+   "source": [
+    "df = df.clean_names()\n",
+    "df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Remove entirely empty rows / columns:"
+   ]
+  },
+  {
+   "source": [
+    "df = df.remove_empty()\n",
+    "df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Rename particular columns:"
+   ]
+  },
+  {
+   "source": [
+    "df = (\n",
+    "    df.rename_column(\"%_allocated\", \"percent_allocated\")\n",
+    "    .rename_column(\"full_time_\", \"full_time\")\n",
+    ")\n",
+    "df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Take first non-`NaN` row value in two columns:"
+   ]
+  },
+  {
+   "source": [
+    "df = df.coalesce([\"certification\", \"certification_1\"], \"certification\")\n",
+    "df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Convert string object rows to categorical to save on memory consumption and speed up access:"
+   ]
+  },
+  {
+   "source": [
+    "df.dtypes"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "source": [
+    "df.encode_categorical([\"subject\", \"employee_status\", \"full_time\"])\n",
+    "df.dtypes"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Convert Excel date-formatted column to a more interpretable format:"
+   ]
+  },
+  {
+   "source": [
+    "df.convert_excel_date(\"hire_date\")\n",
+    "df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Example analysis of the data"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's perform analysis on the above, cleaned `DataFrame`. First we add some additional, randomly-generated data. Note that we `.copy()` the original to preserve it, given that the following would otherwise modify it:"
+   ]
+  },
+  {
+   "source": [
+    "data_df = (\n",
+    "    cleaned_df\n",
+    "    .copy()\n",
+    "    .add_columns(\n",
+    "        lucky_number=np.random.randint(0, 10, len(cleaned_df)),\n",
+    "        age=np.random.randint(10, 100, len(cleaned_df)),\n",
+    "        employee_of_month_count=np.random.randint(0, 5, len(cleaned_df))\n",
+    "    )\n",
+    ")\n",
+    "\n",
+    "data_df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Calculate mean, median of all numerical columns after grouping by employee status. Use `.collapse_levels()`, a `pyjanitor` convenience function, to convert the `DataFrame` returned by `.agg()` from having multi-level columns (because we supplied a list of aggregation operations) to single-level by concatenating the level names with an underscore:"
+   ]
+  },
+  {
+   "source": [
+    "stats_df = (\n",
+    "    data_df.groupby('employee_status')\n",
+    "    .agg(['mean', 'median'])\n",
+    "    .collapse_levels()\n",
+    "    .reset_index()\n",
+    ")\n",
+    "\n",
+    "stats_df"
+   ],
+   "cell_type": "markdown",
+   "metadata": {}
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

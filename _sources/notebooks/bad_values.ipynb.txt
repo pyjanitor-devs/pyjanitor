@@ -1,0 +1,664 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Replacing Bad Values\n",
+    "\n",
+    "This is US wind turbine data. The numeric fields use -9999 as a null value for missing data. \n",
+    "Using -9999 as a null value in numeric fields will cause big problems for any summary statistics like totals, means, etc,\n",
+    "we should change that to something else, like np.NaN which Pandas sum and mean functions will automatically filter out.  \n",
+    "You can see that the means for before and after replacing -9999 with np.NaN are very different. \n",
+    "You can use Janitor's find_replace to easily replace them. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import janitor\n",
+    "import numpy as np"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Load Wind Turbine Data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>case_id</th>\n",
+       "      <th>faa_ors</th>\n",
+       "      <th>faa_asn</th>\n",
+       "      <th>usgs_pr_id</th>\n",
+       "      <th>t_state</th>\n",
+       "      <th>t_county</th>\n",
+       "      <th>t_fips</th>\n",
+       "      <th>p_name</th>\n",
+       "      <th>p_year</th>\n",
+       "      <th>p_tnum</th>\n",
+       "      <th>...</th>\n",
+       "      <th>t_hh</th>\n",
+       "      <th>t_rd</th>\n",
+       "      <th>t_rsa</th>\n",
+       "      <th>t_ttlh</th>\n",
+       "      <th>t_conf_atr</th>\n",
+       "      <th>t_conf_loc</th>\n",
+       "      <th>t_img_date</th>\n",
+       "      <th>t_img_srce</th>\n",
+       "      <th>xlong</th>\n",
+       "      <th>ylat</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>3073429</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>4960</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1/1/2012</td>\n",
+       "      <td>NAIP</td>\n",
+       "      <td>-118.360725</td>\n",
+       "      <td>35.083778</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>3071522</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>4997</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1/1/2012</td>\n",
+       "      <td>NAIP</td>\n",
+       "      <td>-118.361168</td>\n",
+       "      <td>35.081512</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3073425</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>4957</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1/1/2012</td>\n",
+       "      <td>NAIP</td>\n",
+       "      <td>-118.360420</td>\n",
+       "      <td>35.084709</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>3071569</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>5023</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>7/31/2016</td>\n",
+       "      <td>Digital Globe</td>\n",
+       "      <td>-118.364029</td>\n",
+       "      <td>35.079418</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>3005252</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>5768</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>-9999.0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>11/23/2017</td>\n",
+       "      <td>Digital Globe</td>\n",
+       "      <td>-118.354286</td>\n",
+       "      <td>35.085594</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 24 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   case_id  faa_ors  faa_asn  usgs_pr_id t_state     t_county  t_fips  \\\n",
+       "0  3073429  missing  missing        4960      CA  Kern County    6029   \n",
+       "1  3071522  missing  missing        4997      CA  Kern County    6029   \n",
+       "2  3073425  missing  missing        4957      CA  Kern County    6029   \n",
+       "3  3071569  missing  missing        5023      CA  Kern County    6029   \n",
+       "4  3005252  missing  missing        5768      CA  Kern County    6029   \n",
+       "\n",
+       "     p_name  p_year  p_tnum  ...    t_hh    t_rd   t_rsa  t_ttlh  t_conf_atr  \\\n",
+       "0  251 Wind    1987     194  ... -9999.0 -9999.0 -9999.0 -9999.0           2   \n",
+       "1  251 Wind    1987     194  ... -9999.0 -9999.0 -9999.0 -9999.0           2   \n",
+       "2  251 Wind    1987     194  ... -9999.0 -9999.0 -9999.0 -9999.0           2   \n",
+       "3  251 Wind    1987     194  ... -9999.0 -9999.0 -9999.0 -9999.0           2   \n",
+       "4  251 Wind    1987     194  ... -9999.0 -9999.0 -9999.0 -9999.0           2   \n",
+       "\n",
+       "   t_conf_loc  t_img_date     t_img_srce       xlong       ylat  \n",
+       "0           3    1/1/2012           NAIP -118.360725  35.083778  \n",
+       "1           3    1/1/2012           NAIP -118.361168  35.081512  \n",
+       "2           3    1/1/2012           NAIP -118.360420  35.084709  \n",
+       "3           3   7/31/2016  Digital Globe -118.364029  35.079418  \n",
+       "4           3  11/23/2017  Digital Globe -118.354286  35.085594  \n",
+       "\n",
+       "[5 rows x 24 columns]"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "wind = pd.read_csv(\n",
+    "    \"https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2018/2018-11-06/us_wind.csv\"\n",
+    ")\n",
+    "wind.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Check Mean"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "-1069.986537767466"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "wind.t_hh.mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The t_hh column appears to be affected by -9999 values. \n",
+    "What are all the columns that are affected?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['usgs_pr_id', 'p_year', 'p_cap', 't_cap', 't_hh', 't_rd', 't_rsa', 't_ttlh']"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "[col for col in wind.columns if -9999 in wind[col].values]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Note:\n",
+    "When replacing the -9999 values you can make a copy of the dataframe to prevent making modifications to the original dataframe."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "At first glance, it looks like the mean is negative, but this is only because of the bad values (-9999.0) throughout the column. To get the right mean, we should replace them!## Replace Bad Values with NaNs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>case_id</th>\n",
+       "      <th>faa_ors</th>\n",
+       "      <th>faa_asn</th>\n",
+       "      <th>usgs_pr_id</th>\n",
+       "      <th>t_state</th>\n",
+       "      <th>t_county</th>\n",
+       "      <th>t_fips</th>\n",
+       "      <th>p_name</th>\n",
+       "      <th>p_year</th>\n",
+       "      <th>p_tnum</th>\n",
+       "      <th>...</th>\n",
+       "      <th>t_hh</th>\n",
+       "      <th>t_rd</th>\n",
+       "      <th>t_rsa</th>\n",
+       "      <th>t_ttlh</th>\n",
+       "      <th>t_conf_atr</th>\n",
+       "      <th>t_conf_loc</th>\n",
+       "      <th>t_img_date</th>\n",
+       "      <th>t_img_srce</th>\n",
+       "      <th>xlong</th>\n",
+       "      <th>ylat</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>3073429</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>4960.0</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1/1/2012</td>\n",
+       "      <td>NAIP</td>\n",
+       "      <td>-118.360725</td>\n",
+       "      <td>35.083778</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>3071522</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>4997.0</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1/1/2012</td>\n",
+       "      <td>NAIP</td>\n",
+       "      <td>-118.361168</td>\n",
+       "      <td>35.081512</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3073425</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>4957.0</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1/1/2012</td>\n",
+       "      <td>NAIP</td>\n",
+       "      <td>-118.360420</td>\n",
+       "      <td>35.084709</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>3071569</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>5023.0</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>7/31/2016</td>\n",
+       "      <td>Digital Globe</td>\n",
+       "      <td>-118.364029</td>\n",
+       "      <td>35.079418</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>3005252</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>5768.0</td>\n",
+       "      <td>CA</td>\n",
+       "      <td>Kern County</td>\n",
+       "      <td>6029</td>\n",
+       "      <td>251 Wind</td>\n",
+       "      <td>1987</td>\n",
+       "      <td>194</td>\n",
+       "      <td>...</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2</td>\n",
+       "      <td>3</td>\n",
+       "      <td>11/23/2017</td>\n",
+       "      <td>Digital Globe</td>\n",
+       "      <td>-118.354286</td>\n",
+       "      <td>35.085594</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 24 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   case_id  faa_ors  faa_asn  usgs_pr_id t_state     t_county  t_fips  \\\n",
+       "0  3073429  missing  missing      4960.0      CA  Kern County    6029   \n",
+       "1  3071522  missing  missing      4997.0      CA  Kern County    6029   \n",
+       "2  3073425  missing  missing      4957.0      CA  Kern County    6029   \n",
+       "3  3071569  missing  missing      5023.0      CA  Kern County    6029   \n",
+       "4  3005252  missing  missing      5768.0      CA  Kern County    6029   \n",
+       "\n",
+       "     p_name  p_year  p_tnum  ...  t_hh t_rd t_rsa  t_ttlh  t_conf_atr  \\\n",
+       "0  251 Wind    1987     194  ...   NaN  NaN   NaN     NaN           2   \n",
+       "1  251 Wind    1987     194  ...   NaN  NaN   NaN     NaN           2   \n",
+       "2  251 Wind    1987     194  ...   NaN  NaN   NaN     NaN           2   \n",
+       "3  251 Wind    1987     194  ...   NaN  NaN   NaN     NaN           2   \n",
+       "4  251 Wind    1987     194  ...   NaN  NaN   NaN     NaN           2   \n",
+       "\n",
+       "   t_conf_loc  t_img_date     t_img_srce       xlong       ylat  \n",
+       "0           3    1/1/2012           NAIP -118.360725  35.083778  \n",
+       "1           3    1/1/2012           NAIP -118.361168  35.081512  \n",
+       "2           3    1/1/2012           NAIP -118.360420  35.084709  \n",
+       "3           3   7/31/2016  Digital Globe -118.364029  35.079418  \n",
+       "4           3  11/23/2017  Digital Globe -118.354286  35.085594  \n",
+       "\n",
+       "[5 rows x 24 columns]"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "mapping = {-9999.0: np.nan}\n",
+    "wind2 = (\n",
+    "    wind\n",
+    "    .find_replace(\n",
+    "        usgs_pr_id=mapping,\n",
+    "        p_tnum=mapping,\n",
+    "        p_cap=mapping,\n",
+    "        t_cap=mapping,\n",
+    "        t_hh=mapping,\n",
+    "        t_rd=mapping,\n",
+    "        t_rsa=mapping,\n",
+    "        t_ttlh=mapping,\n",
+    "    )\n",
+    ")\n",
+    "wind2.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Check the Mean (again)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "77.31203064391"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "wind2.t_hh.mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "And, now that the bad values were replaced by NaNs (which the mean() method ignores), the calculated mean is correct!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Alternate method"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "If we look at the description of the data (see [README](https://github.com/rfordatascience/tidytuesday/blob/master/data/2018/2018-11-06/readme.md)) we can find descriptions for our data values, for example:\n",
+    "\n",
+    "- `p_year`: Year project became operational\n",
+    "- `t_hh`: Turbine hub height (meters)\n",
+    "- `xlong`: Longitude\n",
+    "\n",
+    "Using our knowledge of the data, this would give us bounds we could use for these values. For example, the oldest electric wind turbine was built in 1887 and this document was written in 2018, so $1887 \\leq \\text{p_year} \\leq 2018$. Turbine hub height should be positive, and a value above 1 km would be silly, so $0 < \\text{t_hh} < 1000$. These are wind turbines in the United States, so $-161.76 < \\text{xlong} < -68.01$.\n",
+    "\n",
+    "(Note that the README actually gives us minima and maxima for the data, so we could get much tighter bounds from that.)\n",
+    "\n",
+    "To filter out potential bad values, we will use `update_where` to remove values outside these ranges."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Note that update_where mutates the original dataframe\n",
+    "(\n",
+    "    wind.update_where(\n",
+    "        (wind['p_year'] < 1887) | (wind['p_year'] > 2018), 'p_year', np.nan\n",
+    "    )\n",
+    "    .update_where((wind['t_hh'] <= 0) | (wind['t_hh'] >= 1000), 't_hh', np.nan)\n",
+    "    .update_where((wind['xlong'] < -161.76) | (wind['xlong'] > -68.01), 'xlong', np.nan)\n",
+    ");"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Confirming this produces the same result"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "77.31203064391"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "wind.t_hh.mean()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

@@ -1,0 +1,267 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finance &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Machine Learning" href="ml.html" />
+    <link rel="prev" title="Engineering" href="engineering.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-janitor.finance">
+<span id="finance"></span><h1>Finance<a class="headerlink" href="#module-janitor.finance" title="Permalink to this headline">¶</a></h1>
+<p>Finance-specific data cleaning functions.</p>
+<dl class="py function">
+<dt id="janitor.finance.convert_currency">
+<code class="sig-prename descclassname">janitor.finance.</code><code class="sig-name descname">convert_currency</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">from_currency</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">to_currency</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">historical_date</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.date" title="(in Python v3.9)">datetime.date</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">make_new_column</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/janitor/finance.html#convert_currency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.finance.convert_currency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a column from one currency to another, with an option to
+convert based on historical exchange values.</p>
+<p>This method mutates the original DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas dataframe.</p></li>
+<li><p><strong>column_name</strong> – Name of the new column. Should be a string, in order
+for the column name to be compatible with the Feather binary
+format (this is a useful thing to have).</p></li>
+<li><p><strong>from_currency</strong> – The base currency to convert from.
+May be any of: currency_set = {“AUD”, “BGN”, “BRL”, “CAD”, “CHF”,
+“CNY”, “CZK”, “DKK”, “EUR”, “GBP”, “HKD”, “HRK”, “HUF”, “IDR”,
+“ILS”, “INR”, “ISK”, “JPY”, “KRW”, “MXN”, “MYR”, “NOK”, “NZD”,
+“PHP”, “PLN”, “RON”, “RUB”, “SEK”, “SGD”, “THB”, “TRY”, “USD”,
+“ZAR”}</p></li>
+<li><p><strong>to_currency</strong> – The target currency to convert to.
+May be any of: currency_set = {“AUD”, “BGN”, “BRL”, “CAD”, “CHF”,
+“CNY”, “CZK”, “DKK”, “EUR”, “GBP”, “HKD”, “HRK”, “HUF”, “IDR”,
+“ILS”, “INR”, “ISK”, “JPY”, “KRW”, “MXN”, “MYR”, “NOK”, “NZD”,
+“PHP”, “PLN”, “RON”, “RUB”, “SEK”, “SGD”, “THB”, “TRY”, “USD”,
+“ZAR”}</p></li>
+<li><p><strong>historical_date</strong> – If supplied, get exchange rate on a certain        date. If not supplied, get the latest exchange rate. The exchange        rates go back to Jan. 4, 1999.</p></li>
+<li><p><strong>make_new_column</strong> – Generates new column for converted currency if
+True, otherwise, converts currency in place.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The dataframe with converted currency column.</p>
+</dd>
+<dt class="field-odd">Setup</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span>
+
+<span class="n">data_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.23452345</span><span class="p">,</span> <span class="mf">2.456234</span><span class="p">,</span> <span class="mf">3.2346125</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;Bell__Chart&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="o">/</span><span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;decorated-elephant&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="o">/</span><span class="mi">234</span><span class="p">,</span> <span class="mi">2</span><span class="o">/</span><span class="mi">13</span><span class="p">,</span> <span class="mi">3</span><span class="o">/</span><span class="mi">167</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;animals&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;rabbit&quot;</span><span class="p">,</span> <span class="s2">&quot;leopard&quot;</span><span class="p">,</span> <span class="s2">&quot;lion&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;cities&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Cambridge&quot;</span><span class="p">,</span> <span class="s2">&quot;Shanghai&quot;</span><span class="p">,</span> <span class="s2">&quot;Basel&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">example_dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>Converting a column from one currency to another using rates</p>
+</dd>
+</dl>
+<p>from 01/01/2018:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">example_dataframe</span><span class="o">.</span><span class="n">convert_currency</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">from_currency</span><span class="o">=</span><span class="s1">&#39;USD&#39;</span><span class="p">,</span>
+<span class="n">to_currency</span><span class="o">=</span><span class="s1">&#39;EUR&#39;</span><span class="p">,</span> <span class="n">historical_date</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Output</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>            <span class="n">a</span>  <span class="n">Bell__Chart</span>  <span class="n">decorated</span><span class="o">-</span><span class="n">elephant</span>  <span class="n">animals</span>     <span class="n">cities</span>
+<span class="mi">0</span>  <span class="mf">1.029370</span>     <span class="mf">0.333333</span>            <span class="mf">0.004274</span>   <span class="n">rabbit</span>  <span class="n">Cambridge</span>
+<span class="mi">1</span>  <span class="mf">2.048056</span>     <span class="mf">0.285714</span>            <span class="mf">0.153846</span>  <span class="n">leopard</span>   <span class="n">Shanghai</span>
+<span class="mi">2</span>  <span class="mf">2.697084</span>     <span class="mf">1.500000</span>            <span class="mf">0.017964</span>     <span class="n">lion</span>      <span class="n">Basel</span>
+<span class="mi">3</span>  <span class="mf">1.029370</span>     <span class="mf">0.333333</span>            <span class="mf">0.004274</span>   <span class="n">rabbit</span>  <span class="n">Cambridge</span>
+<span class="mi">4</span>  <span class="mf">2.048056</span>     <span class="mf">0.285714</span>            <span class="mf">0.153846</span>  <span class="n">leopard</span>   <span class="n">Shanghai</span>
+<span class="mi">5</span>  <span class="mf">2.697084</span>     <span class="mf">1.500000</span>            <span class="mf">0.017964</span>     <span class="n">lion</span>      <span class="n">Basel</span>
+<span class="mi">6</span>  <span class="mf">1.029370</span>     <span class="mf">0.333333</span>            <span class="mf">0.004274</span>   <span class="n">rabbit</span>  <span class="n">Cambridge</span>
+<span class="mi">7</span>  <span class="mf">2.048056</span>     <span class="mf">0.285714</span>            <span class="mf">0.153846</span>  <span class="n">leopard</span>   <span class="n">Shanghai</span>
+<span class="mi">8</span>  <span class="mf">2.697084</span>     <span class="mf">1.500000</span>            <span class="mf">0.017964</span>     <span class="n">lion</span>      <span class="n">Basel</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="janitor.finance.inflate_currency">
+<code class="sig-prename descclassname">janitor.finance.</code><code class="sig-name descname">inflate_currency</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">country</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">currency_year</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">to_year</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">make_new_column</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/janitor/finance.html#inflate_currency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.finance.inflate_currency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inflates a column of monetary values from one year to another, based on
+the currency’s country.</p>
+<p>The provided country can be any economy name or code from the World Bank
+list of economies:
+<a class="reference external" href="https://databank.worldbank.org/data/download/site-content/CLASS.xls">https://databank.worldbank.org/data/download/site-content/CLASS.xls</a>.</p>
+<p>This method mutates the original DataFrame.</p>
+<p>Functional usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.finance</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">janitor</span><span class="o">.</span><span class="n">finance</span><span class="o">.</span><span class="n">inflate_currency</span><span class="p">(</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;profit&#39;</span><span class="p">,</span>
+    <span class="n">country</span><span class="o">=</span><span class="s1">&#39;USA&#39;</span><span class="p">,</span>
+    <span class="n">currency_year</span><span class="o">=</span><span class="mi">2015</span><span class="p">,</span>
+    <span class="n">to_year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span>
+    <span class="n">make_new_column</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.finance</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">inflate_currency</span><span class="p">(</span>
+    <span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;profit&#39;</span><span class="p">,</span>
+    <span class="n">country</span><span class="o">=</span><span class="s1">&#39;USA&#39;</span><span class="p">,</span>
+    <span class="n">currency_year</span><span class="o">=</span><span class="mi">2015</span><span class="p">,</span>
+    <span class="n">to_year</span><span class="o">=</span><span class="mi">2018</span><span class="p">,</span>
+    <span class="n">make_new_column</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas dataframe.</p></li>
+<li><p><strong>column_name</strong> – Name of the column containing monetary
+values to inflate.</p></li>
+<li><p><strong>country</strong> – The country associated with the currency being inflated.
+May be any economy or code from the World Bank list of economies:
+<a class="reference external" href="https://databank.worldbank.org/data/download/site-content/CLASS.xls">https://databank.worldbank.org/data/download/site-content/CLASS.xls</a>.</p></li>
+<li><p><strong>currency_year</strong> – The currency year to inflate from.
+The year should be 1960 or later.</p></li>
+<li><p><strong>to_year</strong> – The currency year to inflate to.
+The year should be 1960 or later.</p></li>
+<li><p><strong>make_new_column</strong> – Generates new column for inflated currency if
+True, otherwise, inflates currency in place.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The dataframe with inflated currency column.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="engineering.html">Engineering</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="timeseries.html">Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_functions.html">General Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">API Documentation</a><ul>
+      <li>Previous: <a href="engineering.html" title="previous chapter">Engineering</a></li>
+      <li>Next: <a href="ml.html" title="next chapter">Machine Learning</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/reference/finance.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

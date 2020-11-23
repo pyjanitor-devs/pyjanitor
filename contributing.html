@@ -1,0 +1,322 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contributing &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributors" href="authors.html" />
+    <link rel="prev" title="janitor.xarray.convert_datetime_to_number" href="reference/janitor.xarray.functions/janitor.xarray.convert_datetime_to_number.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="toctree-wrapper compound">
+</div>
+<div class="section" id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h1>
+<p>Contributions are welcome, and they are greatly appreciated!
+Every little bit helps, and credit will always be given.</p>
+<p>The following sections detail a variety of ways to contribute,
+as well as how to get started.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please take a look at the <a class="reference external" href="CONTRIBUTION_TYPES.html">types of Contributions</a>  that we welcome,
+along with the guidelines.</p>
+</div>
+<div class="section" id="get-started">
+<h2>Get Started!<a class="headerlink" href="#get-started" title="Permalink to this headline">¶</a></h2>
+<p>Ready to contribute? Here’s how to setup <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> for local development.</p>
+<div class="section" id="development-containers-with-vscode">
+<h3>Development Containers with VSCode<a class="headerlink" href="#development-containers-with-vscode" title="Permalink to this headline">¶</a></h3>
+<p>As of 29 May 2020, development containers are supported!
+For me, this is the preferred way to get you started up and running,
+as I have experience with it.
+Here, you are provided with a pre-built and clean
+runtime and build environment.
+You don’t have to wrestle with conda wait times if you don’t want to!</p>
+<p>To get started:</p>
+<ol class="arabic simple">
+<li><p>Fork the repository.</p></li>
+<li><p>Ensure you have Docker running on your local machine.</p></li>
+<li><p>Ensure you have VSCode running on your local machine.</p></li>
+<li><dl class="simple">
+<dt>In Visual Studio Code,</dt><dd><p>click on the quick actions Status Bar item in the lower left corner.</p>
+</dd>
+</dl>
+</li>
+<li><p>Then select “Remote Containers: Clone Repository In Container Volume”.</p></li>
+<li><p>Enter in the URL of your fork of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>.</p></li>
+</ol>
+<p>VSCode will pull down the prebuilt Docker container,
+git clone the repository for you inside an isolated Docker volume,
+and mount the repository directory inside your Docker container.</p>
+<p>Follow best practices to submit a pull request by making a feature branch.
+Now, hack away, and submit in your pull request!</p>
+<p>You shouln’t be able to access the cloned repo
+on your local hard drive.
+If you do want local access, then clone the repo locally first
+before selecting “Remote Containers: Open Folder In Container”.</p>
+<p>If you find something is broken because a utility is missing in the container,
+submit a PR with the appropriate build command inserted in the Dockerfile.
+Care has been taken to document what each step does,
+so please read the in-line documentation in the Dockerfile carefully.</p>
+</div>
+<div class="section" id="manual-setup">
+<h3>Manual Setup<a class="headerlink" href="#manual-setup" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p>Fork the <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> repo on GitHub: <a class="reference external" href="https://github.com/ericmjl/pyjanitor">https://github.com/ericmjl/pyjanitor</a>.</p></li>
+<li><p>Clone your fork locally:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone git@github.com:your_name_here/pyjanitor.git
+</pre></div>
+</div>
+</li>
+<li><dl>
+<dt>Install your local copy into a conda environment.</dt><dd><p>Assuming you have conda installed,
+this is how you set up your fork for local development:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd pyjanitor/
+$ make install
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ol>
+<p>This also installs your new conda environment as a Jupyter-accessible kernel.
+To run correctly inside the environment,
+make sure you select the correct kernel from the top right corner of JupyterLab!</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are on Windows,
+you may need to install <code class="docutils literal notranslate"><span class="pre">make</span></code> before you can run the install.
+You can get it from <code class="docutils literal notranslate"><span class="pre">conda-forge</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ conda install -c defaults -c conda-forge make
+</pre></div>
+</div>
+<p>You should be able to run <cite>make</cite> now. The command above installs <cite>make</cite> to the <cite>~/Anaconda3/Library/bin</cite> directory.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For PyCharm users,
+here are some <a class="reference external" href="PYCHARM_USERS.html">instructions</a>  to get your Conda environment set up.</p>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>(Optional) Install the pre-commit hooks.</p></li>
+</ol>
+<p>As of 29 October 2019,
+<code class="docutils literal notranslate"><span class="pre">pre-commit</span></code> hooks are available to run code formatting checks automagically before git commits happen.
+If you did not have these installed before,
+run the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Update your environment to install pre-commit
+$ conda env update -f environment-dev.yml
+# Install pre-commit hooks
+$ pre-commit install-hooks
+</pre></div>
+</div>
+<ol class="arabic" start="5">
+<li><dl>
+<dt>You should also be able to build the docs locally.</dt><dd><p>To do this, from the main <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ make docs
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ol>
+<p>The command above allows you to view the documentation locally in your browser.
+<a class="reference external" href="http://www.sphinx-doc.org/en/stable/usage/quickstart.html">Sphinx (a python documentation generator)</a> builds and renders the html for you,
+and you can find the html files by navigating to <code class="docutils literal notranslate"><span class="pre">pyjanitor/docs/_build</span></code>,
+and then you can find the correct html file.
+To see the main pyjanitor page,
+open the <code class="docutils literal notranslate"><span class="pre">index.html</span></code> file.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you get any errors related to Importing modules when running <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docs</span></code>,
+first activate the development environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ source activate pyjanitor-dev
+</pre></div>
+</div>
+<p>or by typing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ conda activate pyjanitor-dev
+</pre></div>
+</div>
+</div>
+<p>Sphinx uses <a class="reference external" href="http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">rst files (restructured text)</a> as its markdown language.
+To edit documentation,
+go to the rst file that corresponds to the html file you would like to edit.
+Make the changes directly in the rst file with the correct markup.
+Save the file and rebuild the html pages using the same commands as above to see what your changes look like in html.</p>
+<ol class="arabic simple" start="6">
+<li><p>Submit an issue to the <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> GitHub issue tracker describing your planned changes: <a class="reference external" href="https://github.com/ericmjl/pyjanitor/issues">https://github.com/ericmjl/pyjanitor/issues</a></p></li>
+</ol>
+<p>This helps us keep track of who is working on what.</p>
+<ol class="arabic simple" start="7">
+<li><p>Create a branch for local development:</p></li>
+</ol>
+<p>New features added to <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> should be done in a new branch you have based off the latest version of the <code class="docutils literal notranslate"><span class="pre">dev</span></code> branch.</p>
+<p>Releases are made off the <code class="docutils literal notranslate"><span class="pre">dev</span></code> branch.</p>
+<p>To create a new branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git checkout -b name-of-your-bugfix-or-feature dev
+</pre></div>
+</div>
+<p>Now you can make your changes locally.</p>
+<ol class="arabic" start="8">
+<li><dl>
+<dt>When you’re done making changes,</dt><dd><p>check that your changes are properly formatted and that all tests still pass:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ make check
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ol>
+<p>If any of the checks fail, you can apply the checks individually (to save time):</p>
+<ul class="simple">
+<li><p>Automated code formatting: <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">style</span></code></p></li>
+<li><p>Code styling problems check: <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">lint</span></code></p></li>
+<li><p>Code unit testing: <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code></p></li>
+</ul>
+<p>Styling problems must be resolved before the pull request can be accepted.</p>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> runs all <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>’s unit tests to probe whether changes to the source code have potentially introduced bugs.
+These tests must also pass before the pull request is accepted.</p>
+<p>All these commands are available when you create the development environment.</p>
+<p>When you run the test locally,
+the tests in <code class="docutils literal notranslate"><span class="pre">chemistry.py</span></code>, <code class="docutils literal notranslate"><span class="pre">biology.py</span></code>, <code class="docutils literal notranslate"><span class="pre">spark.py</span></code> are automatically skipped if you don’t have the optional dependencies (e.g. <code class="docutils literal notranslate"><span class="pre">rdkit</span></code>) installed.</p>
+<ol class="arabic" start="9">
+<li><p>Commit your changes and push your branch to GitHub:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git add .
+$ git commit -m &quot;Your detailed description of your changes.&quot;
+$ git push origin name-of-your-bugfix-or-feature
+</pre></div>
+</div>
+</li>
+<li><p>Submit a pull request through the GitHub website.
+When you are picking out which branch to merge into,
+be sure to select <code class="docutils literal notranslate"><span class="pre">dev</span></code> (not <code class="docutils literal notranslate"><span class="pre">master</span></code>).</p></li>
+<li><p>Let the continuous integration (CI) system on Azure Pipelines check your code.</p></li>
+</ol>
+<p>If there are any issues, the pipeline will fail out.
+We check for code style, docstring coverage, test coverage, and doc discovery.
+If you’re comfortable looking at the pipeline logs, feel free to do so;
+they are open to all to view.
+Otherwise, one of the dev team members can help you with reviewing the code checks.</p>
+</div>
+</div>
+<div class="section" id="code-compatibility">
+<h2>Code Compatibility<a class="headerlink" href="#code-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>pyjanitor supports Python 3.6+,
+so all contributed code must maintain this compatibility.</p>
+</div>
+<div class="section" id="tips">
+<h2>Tips<a class="headerlink" href="#tips" title="Permalink to this headline">¶</a></h2>
+<p>To run a subset of tests:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ py.test tests.test_functions
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">API Documentation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#get-started">Get Started!</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#development-containers-with-vscode">Development Containers with VSCode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manual-setup">Manual Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#code-compatibility">Code Compatibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tips">Tips</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="reference/janitor.xarray.functions/janitor.xarray.convert_datetime_to_number.html" title="previous chapter">janitor.xarray.convert_datetime_to_number</a></li>
+      <li>Next: <a href="authors.html" title="next chapter">Contributors</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/contributing.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

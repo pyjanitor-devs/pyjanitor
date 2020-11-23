@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.chemistry &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for janitor.chemistry</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Chemistry and cheminformatics-oriented data cleaning functions.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">deprecated_alias</span><span class="p">,</span> <span class="n">import_message</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">rdkit</span> <span class="kn">import</span> <span class="n">Chem</span><span class="p">,</span> <span class="n">DataStructs</span>
+    <span class="kn">from</span> <span class="nn">rdkit.Chem.rdMolDescriptors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="n">GetHashedMorganFingerprint</span><span class="p">,</span>
+        <span class="n">GetMorganFingerprintAsBitVect</span><span class="p">,</span>
+        <span class="n">CalcChi0n</span><span class="p">,</span>
+        <span class="n">CalcChi0v</span><span class="p">,</span>
+        <span class="n">CalcChi1n</span><span class="p">,</span>
+        <span class="n">CalcChi1v</span><span class="p">,</span>
+        <span class="n">CalcChi2n</span><span class="p">,</span>
+        <span class="n">CalcChi2v</span><span class="p">,</span>
+        <span class="n">CalcChi3n</span><span class="p">,</span>
+        <span class="n">CalcChi3v</span><span class="p">,</span>
+        <span class="n">CalcChi4n</span><span class="p">,</span>
+        <span class="n">CalcChi4v</span><span class="p">,</span>
+        <span class="n">CalcExactMolWt</span><span class="p">,</span>
+        <span class="n">CalcFractionCSP3</span><span class="p">,</span>
+        <span class="n">CalcHallKierAlpha</span><span class="p">,</span>
+        <span class="n">CalcKappa1</span><span class="p">,</span>
+        <span class="n">CalcKappa2</span><span class="p">,</span>
+        <span class="n">CalcKappa3</span><span class="p">,</span>
+        <span class="n">CalcLabuteASA</span><span class="p">,</span>
+        <span class="n">CalcNumAliphaticCarbocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAliphaticHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAliphaticRings</span><span class="p">,</span>
+        <span class="n">CalcNumAmideBonds</span><span class="p">,</span>
+        <span class="n">CalcNumAromaticCarbocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAromaticHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAromaticRings</span><span class="p">,</span>
+        <span class="n">CalcNumAtomStereoCenters</span><span class="p">,</span>
+        <span class="n">CalcNumBridgeheadAtoms</span><span class="p">,</span>
+        <span class="n">CalcNumHBA</span><span class="p">,</span>
+        <span class="n">CalcNumHBD</span><span class="p">,</span>
+        <span class="n">CalcNumHeteroatoms</span><span class="p">,</span>
+        <span class="n">CalcNumHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumLipinskiHBA</span><span class="p">,</span>
+        <span class="n">CalcNumLipinskiHBD</span><span class="p">,</span>
+        <span class="n">CalcNumRings</span><span class="p">,</span>
+        <span class="n">CalcNumSaturatedCarbocycles</span><span class="p">,</span>
+        <span class="n">CalcNumSaturatedHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumSaturatedRings</span><span class="p">,</span>
+        <span class="n">CalcNumSpiroAtoms</span><span class="p">,</span>
+        <span class="n">CalcNumUnspecifiedAtomStereoCenters</span><span class="p">,</span>
+        <span class="n">CalcTPSA</span><span class="p">,</span>
+        <span class="n">GetMACCSKeysFingerprint</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">import_message</span><span class="p">(</span>
+        <span class="n">submodule</span><span class="o">=</span><span class="s2">&quot;chemistry&quot;</span><span class="p">,</span>
+        <span class="n">package</span><span class="o">=</span><span class="s2">&quot;rdkit&quot;</span><span class="p">,</span>
+        <span class="n">conda_channel</span><span class="o">=</span><span class="s2">&quot;conda-forge&quot;</span><span class="p">,</span>
+        <span class="n">pip_install</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+    <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm_notebook</span> <span class="k">as</span> <span class="n">tqdmn</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">import_message</span><span class="p">(</span>
+        <span class="n">submodule</span><span class="o">=</span><span class="s2">&quot;chemistry&quot;</span><span class="p">,</span>
+        <span class="n">package</span><span class="o">=</span><span class="s2">&quot;tqdm&quot;</span><span class="p">,</span>
+        <span class="n">conda_channel</span><span class="o">=</span><span class="s2">&quot;conda-forge&quot;</span><span class="p">,</span>
+        <span class="n">pip_install</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="smiles2mol"><a class="viewcode-back" href="../../reference/chemistry.html#janitor.chemistry.smiles2mol">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="nd">@deprecated_alias</span><span class="p">(</span><span class="n">smiles_col</span><span class="o">=</span><span class="s2">&quot;smiles_column_name&quot;</span><span class="p">,</span> <span class="n">mols_col</span><span class="o">=</span><span class="s2">&quot;mols_column_name&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">smiles2mol</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">smiles_column_name</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
+    <span class="n">mols_column_name</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
+    <span class="n">drop_nulls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">progressbar</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a column of SMILES strings into RDKit Mol objects.</span>
+
+<span class="sd">    Automatically drops invalid SMILES, as determined by RDKIT.</span>
+
+<span class="sd">    This method mutates the original DataFrame.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = janitor.chemistry.smiles2mol(</span>
+<span class="sd">            df=df,</span>
+<span class="sd">            smiles_column_name=&#39;smiles&#39;,</span>
+<span class="sd">            mols_column_name=&#39;mols&#39;</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = df.smiles2mol(smiles_column_name=&#39;smiles&#39;,</span>
+<span class="sd">                           mols_column_name=&#39;mols&#39;)</span>
+
+<span class="sd">    A progressbar can be optionally used.</span>
+
+<span class="sd">    - Pass in &quot;notebook&quot; to show a tqdm notebook progressbar. (ipywidgets must</span>
+<span class="sd">      be enabled with your Jupyter installation.)</span>
+<span class="sd">    - Pass in &quot;terminal&quot; to show a tqdm progressbar. Better suited for use</span>
+<span class="sd">      with scripts.</span>
+<span class="sd">    - &quot;none&quot; is the default value - progress bar will be not be shown.</span>
+
+<span class="sd">    :param df: pandas DataFrame.</span>
+<span class="sd">    :param smiles_column_name: Name of column that holds the SMILES strings.</span>
+<span class="sd">    :param mols_column_name: Name to be given to the new mols column.</span>
+<span class="sd">    :param drop_nulls: Whether to drop rows whose mols failed to be</span>
+<span class="sd">        constructed.</span>
+<span class="sd">    :param progressbar: Whether to show a progressbar or not.</span>
+<span class="sd">    :returns: A pandas DataFrame with new RDKIT Mol objects column.</span>
+<span class="sd">    :raises ValueError: if ``progressbar`` is not one of</span>
+<span class="sd">        ``&quot;notebook&quot;``, ``&quot;terminal&quot;``, or ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">valid_progress</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;notebook&quot;</span><span class="p">,</span> <span class="s2">&quot;terminal&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">progressbar</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_progress</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;progressbar kwarg must be one of </span><span class="si">{</span><span class="n">valid_progress</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">progressbar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">mols_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">smiles_column_name</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">Chem</span><span class="o">.</span><span class="n">MolFromSmiles</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">progressbar</span> <span class="o">==</span> <span class="s2">&quot;notebook&quot;</span><span class="p">:</span>
+            <span class="n">tqdmn</span><span class="p">()</span><span class="o">.</span><span class="n">pandas</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s2">&quot;mols&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">progressbar</span> <span class="o">==</span> <span class="s2">&quot;terminal&quot;</span><span class="p">:</span>
+            <span class="n">tqdm</span><span class="o">.</span><span class="n">pandas</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s2">&quot;mols&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">mols_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">smiles_column_name</span><span class="p">]</span><span class="o">.</span><span class="n">progress_apply</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">Chem</span><span class="o">.</span><span class="n">MolFromSmiles</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">drop_nulls</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="n">mols_column_name</span><span class="p">])</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="morgan_fingerprint"><a class="viewcode-back" href="../../reference/chemistry.html#janitor.chemistry.morgan_fingerprint">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="nd">@deprecated_alias</span><span class="p">(</span><span class="n">mols_col</span><span class="o">=</span><span class="s2">&quot;mols_column_name&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">morgan_fingerprint</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">mols_column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="n">nbits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">,</span>
+    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;counts&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a column of RDKIT Mol objects into Morgan Fingerprints.</span>
+
+<span class="sd">    Returns a new dataframe without any of the original data. This is</span>
+<span class="sd">    intentional, as Morgan fingerprints are usually high-dimensional</span>
+<span class="sd">    features.</span>
+
+<span class="sd">    This method does not mutate the original DataFrame.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        # For &quot;counts&quot; kind</span>
+<span class="sd">        morgans = janitor.chemistry.morgan_fingerprint(</span>
+<span class="sd">            df=df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;),</span>
+<span class="sd">            mols_column_name=&#39;mols&#39;,</span>
+<span class="sd">            radius=3,      # Defaults to 3</span>
+<span class="sd">            nbits=2048,    # Defaults to 2048</span>
+<span class="sd">            kind=&#39;counts&#39;  # Defaults to &quot;counts&quot;</span>
+<span class="sd">        )</span>
+
+<span class="sd">        # For &quot;bits&quot; kind</span>
+<span class="sd">        morgans = janitor.chemistry.morgan_fingerprint(</span>
+<span class="sd">            df=df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;),</span>
+<span class="sd">            mols_column_name=&#39;mols&#39;,</span>
+<span class="sd">            radius=3,      # Defaults to 3</span>
+<span class="sd">            nbits=2048,    # Defaults to 2048</span>
+<span class="sd">            kind=&#39;bits&#39;    # Defaults to &quot;counts&quot;</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        # For &quot;counts&quot; kind</span>
+<span class="sd">        morgans = (</span>
+<span class="sd">            df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;)</span>
+<span class="sd">              .morgan_fingerprint(mols_column_name=&#39;mols&#39;,</span>
+<span class="sd">                                  radius=3,      # Defaults to 3</span>
+<span class="sd">                                  nbits=2048,    # Defaults to 2048</span>
+<span class="sd">                                  kind=&#39;counts&#39;  # Defaults to &quot;counts&quot;</span>
+<span class="sd">              )</span>
+<span class="sd">        )</span>
+
+<span class="sd">        # For &quot;bits&quot; kind</span>
+<span class="sd">        morgans = (</span>
+<span class="sd">            df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;)</span>
+<span class="sd">              .morgan_fingerprint(mols_column_name=&#39;mols&#39;,</span>
+<span class="sd">                                  radius=3,    # Defaults to 3</span>
+<span class="sd">                                  nbits=2048,  # Defaults to 2048</span>
+<span class="sd">                                  kind=&#39;bits&#39;  # Defaults to &quot;counts&quot;</span>
+<span class="sd">              )</span>
+<span class="sd">        )</span>
+
+<span class="sd">    If you wish to join the morgan fingerprints back into the original</span>
+<span class="sd">    dataframe, this can be accomplished by doing a `join`,</span>
+<span class="sd">    because the indices are preserved:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        joined = df.join(morgans)</span>
+
+<span class="sd">    :param df: A pandas DataFrame.</span>
+<span class="sd">    :param mols_column_name: The name of the column that has the RDKIT</span>
+<span class="sd">        mol objects</span>
+<span class="sd">    :param radius: Radius of Morgan fingerprints. Defaults to 3.</span>
+<span class="sd">    :param nbits: The length of the fingerprints. Defaults to 2048.</span>
+<span class="sd">    :param kind: Whether to return counts or bits. Defaults to counts.</span>
+<span class="sd">    :returns: A new pandas DataFrame of Morgan fingerprints.</span>
+<span class="sd">    :raises ValueError: if ``kind`` is not one of</span>
+<span class="sd">        ``&quot;counts&quot;`` or ``&quot;bits&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">acceptable_kinds</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;bits&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">acceptable_kinds</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;`kind` must be one of </span><span class="si">{</span><span class="n">acceptable_kinds</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;bits&quot;</span><span class="p">:</span>
+        <span class="n">fps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">GetMorganFingerprintAsBitVect</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">nbits</span><span class="p">,</span> <span class="n">useChirality</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="n">mols_column_name</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;counts&quot;</span><span class="p">:</span>
+        <span class="n">fps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">GetHashedMorganFingerprint</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">nbits</span><span class="p">,</span> <span class="n">useChirality</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="n">mols_column_name</span><span class="p">]</span>
+        <span class="p">]</span>
+
+    <span class="n">np_fps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fp</span> <span class="ow">in</span> <span class="n">fps</span><span class="p">:</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,))</span>
+        <span class="n">DataStructs</span><span class="o">.</span><span class="n">ConvertToNumpyArray</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
+        <span class="n">np_fps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+    <span class="n">np_fps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">np_fps</span><span class="p">)</span>
+    <span class="n">fpdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np_fps</span><span class="p">)</span>
+    <span class="n">fpdf</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+    <span class="k">return</span> <span class="n">fpdf</span></div>
+
+
+<div class="viewcode-block" id="molecular_descriptors"><a class="viewcode-back" href="../../reference/chemistry.html#janitor.chemistry.molecular_descriptors">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="nd">@deprecated_alias</span><span class="p">(</span><span class="n">mols_col</span><span class="o">=</span><span class="s2">&quot;mols_column_name&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">molecular_descriptors</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">mols_column_name</span><span class="p">:</span> <span class="n">Hashable</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a column of RDKIT mol objects into a Pandas DataFrame</span>
+<span class="sd">    of molecular descriptors.</span>
+
+<span class="sd">    Returns a new dataframe without any of the original data. This is</span>
+<span class="sd">    intentional to leave the user only with the data requested.</span>
+
+<span class="sd">    This method does not mutate the original DataFrame.</span>
+
+<span class="sd">    The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:</span>
+
+<span class="sd">        Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,</span>
+<span class="sd">        Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,</span>
+<span class="sd">        Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles,</span>
+<span class="sd">        NumAliphaticHeterocycles, NumAliphaticRings, NumAmideBonds,</span>
+<span class="sd">        NumAromaticCarbocycles, NumAromaticHeterocycles, NumAromaticRings,</span>
+<span class="sd">        NumAtomStereoCenters, NumBridgeheadAtoms, NumHBA, NumHBD,</span>
+<span class="sd">        NumHeteroatoms, NumHeterocycles, NumLipinskiHBA, NumLipinskiHBD,</span>
+<span class="sd">        NumRings, NumSaturatedCarbocycles, NumSaturatedHeterocycles,</span>
+<span class="sd">        NumSaturatedRings, NumSpiroAtoms, NumUnspecifiedAtomStereoCenters,</span>
+<span class="sd">        TPSA.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        mol_desc = janitor.chemistry.molecular_descriptors(</span>
+<span class="sd">            df=df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;),</span>
+<span class="sd">            mols_column_name=&#39;mols&#39;</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        mol_desc = (</span>
+<span class="sd">            df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;)</span>
+<span class="sd">              .molecular_descriptors(mols_column_name=&#39;mols&#39;)</span>
+<span class="sd">        )</span>
+
+<span class="sd">    If you wish to join the molecular descriptors back into the original</span>
+<span class="sd">    dataframe, this can be accomplished by doing a `join`,</span>
+<span class="sd">    because the indices are preserved:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        joined = df.join(mol_desc)</span>
+
+<span class="sd">    :param df: A pandas DataFrame.</span>
+<span class="sd">    :param mols_column_name: The name of the column that has the RDKIT mol</span>
+<span class="sd">        objects.</span>
+<span class="sd">    :returns: A new pandas DataFrame of molecular descriptors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">descriptors</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">CalcChi0n</span><span class="p">,</span>
+        <span class="n">CalcChi0v</span><span class="p">,</span>
+        <span class="n">CalcChi1n</span><span class="p">,</span>
+        <span class="n">CalcChi1v</span><span class="p">,</span>
+        <span class="n">CalcChi2n</span><span class="p">,</span>
+        <span class="n">CalcChi2v</span><span class="p">,</span>
+        <span class="n">CalcChi3n</span><span class="p">,</span>
+        <span class="n">CalcChi3v</span><span class="p">,</span>
+        <span class="n">CalcChi4n</span><span class="p">,</span>
+        <span class="n">CalcChi4v</span><span class="p">,</span>
+        <span class="n">CalcExactMolWt</span><span class="p">,</span>
+        <span class="n">CalcFractionCSP3</span><span class="p">,</span>
+        <span class="n">CalcHallKierAlpha</span><span class="p">,</span>
+        <span class="n">CalcKappa1</span><span class="p">,</span>
+        <span class="n">CalcKappa2</span><span class="p">,</span>
+        <span class="n">CalcKappa3</span><span class="p">,</span>
+        <span class="n">CalcLabuteASA</span><span class="p">,</span>
+        <span class="n">CalcNumAliphaticCarbocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAliphaticHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAliphaticRings</span><span class="p">,</span>
+        <span class="n">CalcNumAmideBonds</span><span class="p">,</span>
+        <span class="n">CalcNumAromaticCarbocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAromaticHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumAromaticRings</span><span class="p">,</span>
+        <span class="n">CalcNumAtomStereoCenters</span><span class="p">,</span>
+        <span class="n">CalcNumBridgeheadAtoms</span><span class="p">,</span>
+        <span class="n">CalcNumHBA</span><span class="p">,</span>
+        <span class="n">CalcNumHBD</span><span class="p">,</span>
+        <span class="n">CalcNumHeteroatoms</span><span class="p">,</span>
+        <span class="n">CalcNumHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumLipinskiHBA</span><span class="p">,</span>
+        <span class="n">CalcNumLipinskiHBD</span><span class="p">,</span>
+        <span class="n">CalcNumRings</span><span class="p">,</span>
+        <span class="n">CalcNumSaturatedCarbocycles</span><span class="p">,</span>
+        <span class="n">CalcNumSaturatedHeterocycles</span><span class="p">,</span>
+        <span class="n">CalcNumSaturatedRings</span><span class="p">,</span>
+        <span class="n">CalcNumSpiroAtoms</span><span class="p">,</span>
+        <span class="n">CalcNumUnspecifiedAtomStereoCenters</span><span class="p">,</span>
+        <span class="n">CalcTPSA</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">descriptors_mapping</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;Calc&quot;</span><span class="p">):</span> <span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">descriptors</span><span class="p">}</span>
+
+    <span class="n">feats</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">descriptors_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">feats</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">func</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="n">mols_column_name</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">feats</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="maccs_keys_fingerprint"><a class="viewcode-back" href="../../reference/chemistry.html#janitor.chemistry.maccs_keys_fingerprint">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="nd">@deprecated_alias</span><span class="p">(</span><span class="n">mols_col</span><span class="o">=</span><span class="s2">&quot;mols_column_name&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">maccs_keys_fingerprint</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">mols_column_name</span><span class="p">:</span> <span class="n">Hashable</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a column of RDKIT mol objects into MACCS Keys Fingerprints.</span>
+
+<span class="sd">    Returns a new dataframe without any of the original data.</span>
+<span class="sd">    This is intentional to leave the user with the data requested.</span>
+
+<span class="sd">    This method does not mutate the original DataFrame.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        maccs = janitor.chemistry.maccs_keys_fingerprint(</span>
+<span class="sd">            df=df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;),</span>
+<span class="sd">            mols_column_name=&#39;mols&#39;</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.chemistry</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        maccs = (</span>
+<span class="sd">            df.smiles2mol(&#39;smiles&#39;, &#39;mols&#39;)</span>
+<span class="sd">              .maccs_keys_fingerprint(mols_column_name=&#39;mols&#39;)</span>
+<span class="sd">        )</span>
+
+<span class="sd">    If you wish to join the maccs keys fingerprints back into the</span>
+<span class="sd">    original dataframe, this can be accomplished by doing a `join`,</span>
+<span class="sd">    because the indices are preserved:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        joined = df.join(maccs_keys_fingerprint)</span>
+
+
+<span class="sd">    :param df: A pandas DataFrame.</span>
+<span class="sd">    :param mols_column_name: The name of the column that has the RDKIT mol</span>
+<span class="sd">        objects.</span>
+<span class="sd">    :returns: A new pandas DataFrame of MACCS keys fingerprints.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">maccs</span> <span class="o">=</span> <span class="p">[</span><span class="n">GetMACCSKeysFingerprint</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="n">mols_column_name</span><span class="p">]]</span>
+
+    <span class="n">np_maccs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">macc</span> <span class="ow">in</span> <span class="n">maccs</span><span class="p">:</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,))</span>
+        <span class="n">DataStructs</span><span class="o">.</span><span class="n">ConvertToNumpyArray</span><span class="p">(</span><span class="n">macc</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
+        <span class="n">np_maccs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+    <span class="n">np_maccs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">np_maccs</span><span class="p">)</span>
+    <span class="n">fmaccs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np_maccs</span><span class="p">)</span>
+    <span class="n">fmaccs</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+    <span class="k">return</span> <span class="n">fmaccs</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

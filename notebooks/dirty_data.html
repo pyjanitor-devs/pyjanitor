@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Processing Dirty Data &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Expand_grid : Create a dataframe from all combinations of inputs." href="expand_grid.html" />
+    <link rel="prev" title="Processing Board Game Data" href="board_games.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="Processing-Dirty-Data">
+<h1>Processing Dirty Data<a class="headerlink" href="#Processing-Dirty-Data" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Background">
+<h2>Background<a class="headerlink" href="#Background" title="Permalink to this headline">¶</a></h2>
+<p>This is fake data generated to demonstrate the capabilities of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>. It contains a bunch of common problems that we regularly encounter when working with data. Let’s go fix it!</p>
+<div class="section" id="Load-Packages">
+<h3>Load Packages<a class="headerlink" href="#Load-Packages" title="Permalink to this headline">¶</a></h3>
+<p>Importing <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> is all that’s needed to give Pandas Dataframes extra methods to work with your data.</p>
+<p>import pandas as pd import janitor</p>
+</div>
+</div>
+<div class="section" id="Load-Data">
+<h2>Load Data<a class="headerlink" href="#Load-Data" title="Permalink to this headline">¶</a></h2>
+<p>df = pd.read_excel(‘dirty_data.xlsx’) df</p>
+</div>
+<div class="section" id="Cleaning-Column-Names">
+<h2>Cleaning Column Names<a class="headerlink" href="#Cleaning-Column-Names" title="Permalink to this headline">¶</a></h2>
+<p>There are a bunch of problems with this data. Firstly, the column names are not lowercase, and they have spaces. This will make it cumbersome to use in a programmatic function. To solve this, we can use the <code class="docutils literal notranslate"><span class="pre">clean_names()</span></code> method.</p>
+<p>df_clean = df.clean_names() df_clean.head(2)</p>
+<p>Notice now how the column names have been made better.</p>
+<p>If you squint at the unclean dataset, you’ll notice one row and one column of data that are missing. We can also fix this! Building on top of the code block from above, let’s now remove those empty columns using the <code class="docutils literal notranslate"><span class="pre">remove_empty()</span></code> method:</p>
+<p>df_clean = df.clean_names().remove_empty() df_clean.head(9).tail(4)</p>
+<p>Now this is starting to shape up well!</p>
+</div>
+<div class="section" id="Renaming-Individual-Columns">
+<h2>Renaming Individual Columns<a class="headerlink" href="#Renaming-Individual-Columns" title="Permalink to this headline">¶</a></h2>
+<p>Next, let’s rename some of the columns. <code class="docutils literal notranslate"><span class="pre">%_allocated</span></code> and <code class="docutils literal notranslate"><span class="pre">full_time?</span></code> contain non-alphanumeric characters, so they make it a bit harder to use. We can rename them using the :py:meth:<code class="docutils literal notranslate"><span class="pre">rename_column()</span></code> method:</p>
+<p>df_clean = ( df .clean_names() .remove_empty() .rename_column(“%<em>allocated”, “percent_allocated”) .rename_column(“full_time</em>”, “full_time”) )</p>
+<p>df_clean.head(5)</p>
+<p>Note how now we have really nice column names! You might be wondering why I’m not modifying the two certifiation columns – that is the next thing we’ll tackle.</p>
+</div>
+<div class="section" id="Coalescing-Columns">
+<h2>Coalescing Columns<a class="headerlink" href="#Coalescing-Columns" title="Permalink to this headline">¶</a></h2>
+<p>If we look more closely at the two <code class="docutils literal notranslate"><span class="pre">certification</span></code> columns, we’ll see that they look like this:</p>
+<p>df_clean[[‘certification’, ‘certification_1’]]</p>
+<p>Rows 8 and 11 have NaN in the left certification column, but have a value in the right certification column. Let’s assume for a moment that the left certification column is intended to record the first certification that a teacher had obtained. In this case, the values in the right certification column on rows 8 and 11 should be moved to the first column. Let’s do that with Janitor, using the <code class="docutils literal notranslate"><span class="pre">coalesce()</span></code> method, which does the following:</p>
+<p>df_clean = ( df .clean_names() .remove_empty() .rename_column(“%<em>allocated”, “percent_allocated”) .rename_column(“full_time</em>”, “full_time”) .coalesce( column_names=[‘certification’, ‘certification_1’], new_column_name=‘certification’ ) )</p>
+<p>df_clean</p>
+<p>Awesome stuff! Now we don’t have two columns of scattered data, we have one column of densely populated data.`</p>
+</div>
+<div class="section" id="Dealing-with-Excel-Dates">
+<h2>Dealing with Excel Dates<a class="headerlink" href="#Dealing-with-Excel-Dates" title="Permalink to this headline">¶</a></h2>
+<p>Finally, notice how the <code class="docutils literal notranslate"><span class="pre">hire_date</span></code> column isn’t date formatted. It’s got this weird Excel serialization. To clean up this data, we can use the :py:meth:<code class="docutils literal notranslate"><span class="pre">convert_excel_date</span></code> method.</p>
+<p>df_clean = ( df .clean_names() .remove_empty() .rename_column(‘%<em>allocated’, ’percent_allocated’) .rename_column(’full_time</em>’, ‘full_time’) .coalesce([‘certification’, ‘certification_1’], ‘certification’) .convert_excel_date(‘hire_date’) ) df_clean</p>
+<p>We have a cleaned dataframe!</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../notebooks.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pyjanitor_intro.html">pyjanitor Usage Walkthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pivoting%20Data%20from%20Wide%20to%20Long.html">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Row_to_Names.html">row_to_names : Elevates a row to be the column names of a DataFrame.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="anime.html">Processing Anime Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bad_values.html">Replacing Bad Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bird_call.html">Processing Bird Call Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="board_games.html">Processing Board Game Data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Processing Dirty Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Background">Background</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Load-Packages">Load Packages</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Load-Data">Load Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Cleaning-Column-Names">Cleaning Column Names</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Renaming-Individual-Columns">Renaming Individual Columns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Coalescing-Columns">Coalescing Columns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Dealing-with-Excel-Dates">Dealing with Excel Dates</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="expand_grid.html">Expand_grid : Create a dataframe from all combinations of inputs.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="french_trains.html">Processing French train data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="groupby_agg.html">Groupby_agg : Shortcut for assigning a groupby-transform to a new column.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflating_converting_currency.html">Inflating and Converting Currency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="medium_franchise.html">Tidy Up Web-Scraped Media Franchise Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normalize.html">Normalization and Standardization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sort_naturally.html">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="teacher_pupil.html">Processing International Teacher Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transform_column.html">Transforming columns</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../notebooks.html">Examples</a><ul>
+      <li>Previous: <a href="board_games.html" title="previous chapter">Processing Board Game Data</a></li>
+      <li>Next: <a href="expand_grid.html" title="next chapter">Expand_grid : Create a dataframe from all combinations of inputs.</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/notebooks/dirty_data.ipynb.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.pivot_longer &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.pivot_wider" href="janitor.pivot_wider.html" />
+    <link rel="prev" title="janitor.complete" href="janitor.complete.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-pivot-longer">
+<h1>janitor.pivot_longer<a class="headerlink" href="#janitor-pivot-longer" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.pivot_longer">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">pivot_longer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">, </span>Tuple<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Pattern<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">column_names</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">, </span>Tuple<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Pattern<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">names_to</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">, </span>Tuple<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'variable'</span></em>, <em class="sig-param"><span class="n">values_to</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'value'</span></em>, <em class="sig-param"><span class="n">names_sep</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Pattern<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">names_pattern</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">, </span>Tuple<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Pattern<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtypes</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#pivot_longer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.pivot_longer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unpivots a DataFrame from ‘wide’ to ‘long’ format.</p>
+<p>This method does not mutate the original DataFrame.</p>
+<p>It is meant to serve as a single point for transformations of dataframes
+from wide to long form. It also offers more functionality and flexibility
+than <cite>pd.wide_to_long</cite>. It is modeled after the <cite>pivot_longer</cite> function in
+R’s <cite>tidyr</cite> package.</p>
+<p>This function is useful to massage a DataFrame into a format where
+one or more columns are considered measured variables, and all other
+columns are considered as identifier variables.</p>
+<p>All measured variables are “unpivoted” (and typically duplicated) along the
+row axis.</p>
+<p>This function is designed to work primarily with single indexed dataframes;
+If you wish to unpivot MultiIndexed dataframes, <cite>pd.melt</cite> is more than
+adequate.</p>
+<p>Example 1: The following DataFrame contains heartrate data for patients
+treated with two different drugs, ‘a’ and ‘b’.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>      <span class="n">name</span>   <span class="n">a</span>   <span class="n">b</span>
+<span class="mi">0</span>   <span class="n">Wilbur</span>  <span class="mi">67</span>  <span class="mi">56</span>
+<span class="mi">1</span>  <span class="n">Petunia</span>  <span class="mi">80</span>  <span class="mi">90</span>
+<span class="mi">2</span>  <span class="n">Gregory</span>  <span class="mi">64</span>  <span class="mi">50</span>
+</pre></div>
+</div>
+<p>The column names ‘a’ and ‘b’ are actually the names of a measured variable
+(i.e. the name of a drug), but the values are a different measured variable
+(heartrate). We would like to unpivot these ‘a’ and ‘b’ columns into a
+‘drug’ column and a ‘heartrate’ column.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="o">.</span><span class="n">pivot_longer</span><span class="p">(</span><span class="n">column_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">],</span>
+                                    <span class="n">names_to</span><span class="o">=</span><span class="s1">&#39;drug&#39;</span><span class="p">,</span>
+                                    <span class="n">values_to</span><span class="o">=</span><span class="s1">&#39;heartrate&#39;</span><span class="p">)</span>
+
+      <span class="n">name</span> <span class="n">drug</span>  <span class="n">heartrate</span>
+<span class="mi">0</span>   <span class="n">Wilbur</span>    <span class="n">a</span>         <span class="mi">67</span>
+<span class="mi">1</span>   <span class="n">Wilbur</span>    <span class="n">b</span>         <span class="mi">56</span>
+<span class="mi">2</span>  <span class="n">Petunia</span>    <span class="n">a</span>         <span class="mi">80</span>
+<span class="mi">3</span>  <span class="n">Petunia</span>    <span class="n">b</span>         <span class="mi">90</span>
+<span class="mi">4</span>  <span class="n">Gregory</span>    <span class="n">a</span>         <span class="mi">64</span>
+<span class="mi">5</span>  <span class="n">Gregory</span>    <span class="n">b</span>         <span class="mi">50</span>
+</pre></div>
+</div>
+<p>Example 2: The dataframe below has year and month variables embedded within
+the column names.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">col1</span>            <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span>      <span class="mi">2020</span><span class="o">-</span><span class="mi">01</span>         <span class="mi">2020</span><span class="o">-</span><span class="mi">02</span>
+<span class="mi">0</span>       <span class="n">a</span>          <span class="o">-</span><span class="mf">1.085631</span>    <span class="o">-</span><span class="mf">1.506295</span>       <span class="o">-</span><span class="mf">2.426679</span>
+<span class="mi">1</span>       <span class="n">b</span>           <span class="mf">0.997345</span>    <span class="o">-</span><span class="mf">0.578600</span>       <span class="o">-</span><span class="mf">0.428913</span>
+<span class="mi">2</span>       <span class="n">c</span>           <span class="mf">0.282978</span>     <span class="mf">1.651437</span>        <span class="mf">1.265936</span>
+</pre></div>
+</div>
+<p>Pivot_longer can conveniently reshape the data into long format, with new
+columns for the year and month. We simply pass in the new column names to
+<cite>names_to</cite>, and pass the hyphen ‘-‘ to the <cite>names_sep</cite> argument. Note how
+this effectively replicates the pandas’ <cite>wide_to_long</cite> function.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+     <span class="o">.</span><span class="n">pivot_longer</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;col1&#39;</span><span class="p">,</span>
+                   <span class="n">names_to</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;year&#39;</span><span class="p">,</span><span class="s1">&#39;month&#39;</span><span class="p">),</span>
+                   <span class="n">names_sep</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+      <span class="p">)</span>
+
+  <span class="n">col1</span>  <span class="n">year</span>   <span class="n">month</span>      <span class="n">value</span>
+<span class="mi">0</span>    <span class="n">a</span>  <span class="mi">2019</span>     <span class="mi">12</span>     <span class="o">-</span><span class="mf">1.085631</span>
+<span class="mi">1</span>    <span class="n">a</span>  <span class="mi">2020</span>     <span class="mi">01</span>     <span class="o">-</span><span class="mf">1.506295</span>
+<span class="mi">2</span>    <span class="n">a</span>  <span class="mi">2020</span>     <span class="mi">02</span>     <span class="o">-</span><span class="mf">2.426679</span>
+<span class="mi">3</span>    <span class="n">b</span>  <span class="mi">2019</span>     <span class="mi">12</span>      <span class="mf">0.997345</span>
+<span class="mi">4</span>    <span class="n">b</span>  <span class="mi">2020</span>     <span class="mi">01</span>     <span class="o">-</span><span class="mf">0.578600</span>
+<span class="mi">5</span>    <span class="n">b</span>  <span class="mi">2020</span>     <span class="mi">02</span>     <span class="o">-</span><span class="mf">0.428913</span>
+<span class="mi">6</span>    <span class="n">c</span>  <span class="mi">2019</span>     <span class="mi">12</span>      <span class="mf">0.282978</span>
+<span class="mi">7</span>    <span class="n">c</span>  <span class="mi">2020</span>     <span class="mi">01</span>      <span class="mf">1.651437</span>
+<span class="mi">8</span>    <span class="n">c</span>  <span class="mi">2020</span>     <span class="mi">02</span>      <span class="mf">1.265936</span>
+</pre></div>
+</div>
+<p>Example 3: The dataframe below has names embedded in it
+(‘measure1’, ‘measure2’) that we would love to reuse as
+column names.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">treat1</span><span class="o">-</span><span class="n">measure1</span>     <span class="n">treat1</span><span class="o">-</span><span class="n">measure2</span> <span class="n">treat2</span><span class="o">-</span><span class="n">measure1</span> <span class="n">treat2</span><span class="o">-</span><span class="n">measure2</span>
+<span class="mi">0</span>                <span class="mi">1</span>              <span class="mi">4</span>                   <span class="mi">2</span>               <span class="mi">5</span>
+<span class="mi">1</span>                <span class="mi">2</span>              <span class="mi">5</span>                   <span class="mi">3</span>               <span class="mi">4</span>
+</pre></div>
+</div>
+<p>For this, we take advantage of the <cite>.value</cite> variable, which signals to
+<cite>pivot_longer</cite> to treat the part of the column names corresponding to
+<cite>.value</cite> as new column names.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">pivot_longer</span><span class="p">(</span><span class="n">names_to</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span><span class="s1">&#39;.value&#39;</span><span class="p">),</span>
+                    <span class="n">names_sep</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
+      <span class="p">)</span>
+
+    <span class="n">group</span>  <span class="n">measure1</span>  <span class="n">measure2</span>
+<span class="mi">0</span>  <span class="n">treat1</span>         <span class="mi">1</span>         <span class="mi">4</span>
+<span class="mi">1</span>  <span class="n">treat2</span>         <span class="mi">2</span>         <span class="mi">5</span>
+<span class="mi">2</span>  <span class="n">treat1</span>         <span class="mi">2</span>         <span class="mi">5</span>
+<span class="mi">3</span>  <span class="n">treat2</span>         <span class="mi">3</span>         <span class="mi">4</span>
+</pre></div>
+</div>
+<p>Let’s break down the <cite>.value</cite> idea a bit. When <cite>.value</cite> is used,
+<cite>pivot_longer</cite> creates a pairing. In the example above, we get a pairing
+{“group”:[“treat1”, “treat2”], “.value”:[“measure1”, “measure2”]}. All
+the values associated with <cite>.value</cite> become new column names, while those
+not associated with <cite>.value`(`treat1</cite> and <cite>treat2</cite>) become values in a
+new column <cite>group</cite>. <cite>values_to</cite> is overridden during this process.</p>
+<p>Example 4: We can also pivot from wide to long using regular expressions</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">n_1</span>  <span class="n">n_2</span>  <span class="n">n_3</span>  <span class="n">pct_1</span>  <span class="n">pct_2</span>  <span class="n">pct_3</span>
+<span class="mi">0</span>   <span class="mi">10</span>   <span class="mi">20</span>   <span class="mi">30</span>   <span class="mf">0.1</span>    <span class="mf">0.2</span>    <span class="mf">0.3</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+      <span class="o">.</span><span class="n">pivot_longer</span><span class="p">(</span><span class="n">names_to</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;.value&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">),</span>
+                    <span class="n">names_pattern</span> <span class="o">=</span> <span class="s2">&quot;(.*)_(.)&quot;</span><span class="p">)</span>
+      <span class="p">)</span>
+
+    <span class="n">name</span>    <span class="n">n</span>  <span class="n">pct</span>
+<span class="mi">0</span>     <span class="mi">1</span>  <span class="mf">10.0</span>  <span class="mf">0.1</span>
+<span class="mi">1</span>     <span class="mi">2</span>  <span class="mf">20.0</span>  <span class="mf">0.2</span>
+<span class="mi">2</span>     <span class="mi">3</span>  <span class="mf">30.0</span>  <span class="mf">0.3</span>
+</pre></div>
+</div>
+<p>The same idea of <cite>.value</cite> works here as well. Based on the capturing groups
+in the regex in <cite>names_pattern</cite>, we have two pairings –&gt;
+{“.value”:[“n”, “pct”], “name”:[1,2,3]}. Just like in the previous example,
+the values associated with <cite>.value</cite> become new column names, while those
+not associated with <cite>.value</cite> become values in the new column <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<p>Note that there are no limits to the pairing; however, you can only have
+one <cite>.value</cite> in <code class="docutils literal notranslate"><span class="pre">names_to</span></code>.</p>
+<p>You can also take advantage of <cite>janitor.patterns</cite> function, which allows
+selection of columns via a regular expression; this can come in handy if
+you have a lot of column names to use as index, and do not wish to manually
+type them all.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>     <span class="n">name</span>    <span class="n">wk1</span>   <span class="n">wk2</span>   <span class="n">wk3</span>   <span class="n">wk4</span>
+<span class="mi">0</span>    <span class="n">Alice</span>     <span class="mi">5</span>     <span class="mi">9</span>    <span class="mi">20</span>    <span class="mi">22</span>
+<span class="mi">1</span>    <span class="n">Bob</span>       <span class="mi">7</span>    <span class="mi">11</span>    <span class="mi">17</span>    <span class="mi">33</span>
+<span class="mi">2</span>    <span class="n">Carla</span>     <span class="mi">6</span>    <span class="mi">13</span>    <span class="mi">39</span>    <span class="mi">40</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="o">.</span><span class="n">pivot_longer</span><span class="p">(</span><span class="n">janitor</span><span class="o">.</span><span class="n">patterns</span><span class="p">(</span><span class="s2">&quot;^(?!wk)&quot;</span><span class="p">))</span>
+
+     <span class="n">name</span> <span class="n">variable</span>  <span class="n">value</span>
+<span class="mi">0</span>   <span class="n">Alice</span>      <span class="n">wk1</span>      <span class="mi">5</span>
+<span class="mi">1</span>   <span class="n">Alice</span>      <span class="n">wk2</span>      <span class="mi">9</span>
+<span class="mi">2</span>   <span class="n">Alice</span>      <span class="n">wk3</span>     <span class="mi">20</span>
+<span class="mi">3</span>   <span class="n">Alice</span>      <span class="n">wk4</span>     <span class="mi">22</span>
+<span class="mi">4</span>     <span class="n">Bob</span>      <span class="n">wk1</span>      <span class="mi">7</span>
+<span class="mi">5</span>     <span class="n">Bob</span>      <span class="n">wk2</span>     <span class="mi">11</span>
+<span class="mi">6</span>     <span class="n">Bob</span>      <span class="n">wk3</span>     <span class="mi">17</span>
+<span class="mi">7</span>     <span class="n">Bob</span>      <span class="n">wk4</span>     <span class="mi">33</span>
+<span class="mi">8</span>   <span class="n">Carla</span>      <span class="n">wk1</span>      <span class="mi">6</span>
+<span class="mi">9</span>   <span class="n">Carla</span>      <span class="n">wk2</span>     <span class="mi">13</span>
+<span class="mi">10</span>  <span class="n">Carla</span>      <span class="n">wk3</span>     <span class="mi">39</span>
+<span class="mi">11</span>  <span class="n">Carla</span>      <span class="n">wk4</span>     <span class="mi">40</span>
+</pre></div>
+</div>
+<p>You can determine the data type of the resulting columns with
+the <cite>dtypes</cite> argument, which accepts a dictionary, pairing the column
+names with the expected types.</p>
+<p>Functional usage syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span> <span class="k">as</span> <span class="nn">jn</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">jn</span><span class="o">.</span><span class="n">pivot_longer</span><span class="p">(</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">,</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="n">column1</span><span class="p">,</span> <span class="n">column2</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">column3</span><span class="p">,</span> <span class="n">column4</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="n">names_to</span> <span class="o">=</span> <span class="n">new_column_name</span><span class="p">,</span>
+    <span class="n">names_sep</span> <span class="o">=</span> <span class="n">string</span><span class="o">/</span><span class="n">regular</span> <span class="n">expression</span><span class="p">,</span>
+    <span class="n">names_pattern</span> <span class="o">=</span> <span class="n">string</span><span class="o">/</span><span class="n">regular</span> <span class="n">expression</span><span class="p">,</span>
+    <span class="n">value_name</span> <span class="o">=</span> <span class="n">new_column_name</span><span class="p">,</span>
+    <span class="n">dtypes</span> <span class="o">=</span> <span class="n">dtypes</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">pivot_longer</span><span class="p">(</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="n">column1</span><span class="p">,</span> <span class="n">column2</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">column3</span><span class="p">,</span> <span class="n">column4</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">names_to</span> <span class="o">=</span> <span class="n">new_column_name</span><span class="p">,</span>
+        <span class="n">names_sep</span> <span class="o">=</span> <span class="n">string</span><span class="o">/</span><span class="n">regular</span> <span class="n">expression</span><span class="p">,</span>
+        <span class="n">names_pattern</span> <span class="o">=</span> <span class="n">string</span><span class="o">/</span><span class="n">regular</span> <span class="n">expression</span><span class="p">,</span>
+        <span class="n">value_name</span><span class="o">=</span> <span class="n">new_column_name</span><span class="p">,</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="n">dtypes</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas dataframe.</p></li>
+<li><p><strong>index</strong> – Name(s) of columns to use as identifier variables.
+Should be either a single column name, or a list/tuple of
+column names. You can also dynamically select column names
+by using a regular expression with the <cite>janitor.patterns</cite>
+function.</p></li>
+<li><p><strong>column_names</strong> – Name(s) of columns to unpivot. Should be either
+a single column name or a list/tuple of column names. You can also
+dynamically select column names by using a regular expression
+with the <cite>janitor.patterns</cite> function.</p></li>
+<li><p><strong>names_to</strong> – Name of new column as a string that will contain
+what were previously the column names in <cite>column_names</cite>.
+The default is <cite>variable</cite> if no value is provided. It can
+also be a list/tuple of strings that will serve as new column
+names, if <cite>name_sep</cite> or <cite>names_pattern</cite> is provided.
+If <cite>.value</cite> is in <cite>names_to</cite>, new column names will be extracted
+from part of the existing column names and <cite>values_to</cite> will be
+replaced.</p></li>
+<li><p><strong>names_sep</strong> – Determines how the column name is broken up, if
+<cite>names_to</cite> contains multiple values. It takes the same
+specification as pandas’ <cite>str.split</cite> method, and can be a string
+or regular expression.</p></li>
+<li><p><strong>names_pattern</strong> – Determines how the column name is broken up.
+It can be a regular expression containing matching groups, or a
+list/tuple of regular expressions. For a list/tuple of
+regular expressions, <code class="docutils literal notranslate"><span class="pre">names_to</span></code> must also be a list/tuple and the
+lengths of both arguments must match. The entries in both arguments
+must also match positionally, i.e  if <cite>regex1</cite> in <cite>names_pattern</cite> is
+the first item, it will be aligned to <cite>new_column_name_1</cite> in <cite>names_to</cite>
+if <cite>new_column_name_1</cite> is the first item, and so on.</p></li>
+<li><p><strong>values_to</strong> – Name of new column as a string that will contain what
+were previously the values of the columns in <cite>column_names</cite>.</p></li>
+<li><p><strong>dtypes</strong> – A dictionary mapping data types to columns in the new
+dataframe.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame that has been unpivoted from wide to long
+format.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>index</cite> or <cite>column_names</cite> is not a string, or a
+list/tuple of strings, or a <cite>janitor.patterns</cite> function.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>names_to</cite> or <cite>column_names</cite> is not a string, or a
+list/tuple of strings.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>values_to</cite> is not a string.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>dtypes</cite> is not a dictionary.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <cite>names_to</cite> is a list/tuple, and both <cite>names_sep</cite> and
+<cite>names_pattern</cite> are provided.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <cite>names_to</cite> is a string or a list/tuple of length 1,
+and <cite>names_sep</cite> is provided.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>names_sep</cite> or <cite>names_pattern</cite> is not a string or
+regular expression.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <cite>names_to</cite> is a list/tuple, and its length does not
+match the number of extracted columns.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <cite>df</cite> is a MultiIndex dataframe.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#other">Other</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.then.html">janitor.then</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.also.html">janitor.also</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.shuffle.html">janitor.shuffle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.count_cumulative_unique.html">janitor.count_cumulative_unique</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.sort_naturally.html">janitor.sort_naturally</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.expand_grid.html">janitor.expand_grid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.flag_nulls.html">janitor.flag_nulls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.move.html">janitor.move</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.toset.html">janitor.toset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.unionize_dataframe_categories.html">janitor.unionize_dataframe_categories</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.groupby_topk.html">janitor.groupby_topk</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.complete.html">janitor.complete</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.pivot_longer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.pivot_wider.html">janitor.pivot_wider</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.complete.html" title="previous chapter">janitor.complete</a></li>
+      <li>Next: <a href="janitor.pivot_wider.html" title="next chapter">janitor.pivot_wider</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.pivot_longer.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

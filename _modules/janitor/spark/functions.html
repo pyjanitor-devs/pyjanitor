@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.spark.functions &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for janitor.spark.functions</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">General purpose data cleaning functions for pyspark.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">janitor_func</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">utils</span> <span class="k">as</span> <span class="n">janitor_utils</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">backend</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyspark.sql</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">janitor_utils</span><span class="o">.</span><span class="n">import_message</span><span class="p">(</span>
+        <span class="n">submodule</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">,</span>
+        <span class="n">package</span><span class="o">=</span><span class="s2">&quot;pyspark&quot;</span><span class="p">,</span>
+        <span class="n">conda_channel</span><span class="o">=</span><span class="s2">&quot;conda-forge&quot;</span><span class="p">,</span>
+        <span class="n">pip_install</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="clean_names"><a class="viewcode-back" href="../../../reference/janitor.spark.functions/janitor.spark.clean_names.html#janitor.spark.clean_names">[docs]</a><span class="nd">@backend</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">clean_names</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">case_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lower&quot;</span><span class="p">,</span>
+    <span class="n">remove_special</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">strip_underscores</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clean column names for pyspark dataframe.</span>
+
+<span class="sd">    Takes all column names, converts them to lowercase, then replaces all</span>
+<span class="sd">    spaces with underscores.</span>
+
+<span class="sd">    This method does not mutate the original DataFrame.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        df = clean_names(df)</span>
+
+<span class="sd">    Method chaining example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        from pyspark.sql import DataFrame</span>
+<span class="sd">        import janitor.spark</span>
+<span class="sd">        df = DataFrame(...).clean_names()</span>
+
+<span class="sd">    :Example of transformation:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        Columns before: First Name, Last Name, Employee Status, Subject</span>
+<span class="sd">        Columns after: first_name, last_name, employee_status, subject</span>
+
+<span class="sd">    :param df: Spark DataFrame object.</span>
+<span class="sd">    :param strip_underscores: (optional) Removes the outer underscores from all</span>
+<span class="sd">        column names. Default None keeps outer underscores. Values can be</span>
+<span class="sd">        either &#39;left&#39;, &#39;right&#39; or &#39;both&#39; or the respective shorthand &#39;l&#39;, &#39;r&#39;</span>
+<span class="sd">        and True.</span>
+<span class="sd">    :param case_type: (optional) Whether to make columns lower or uppercase.</span>
+<span class="sd">        Current case may be preserved with &#39;preserve&#39;,</span>
+<span class="sd">        while snake case conversion (from CamelCase or camelCase only)</span>
+<span class="sd">        can be turned on using &quot;snake&quot;.</span>
+<span class="sd">        Default &#39;lower&#39; makes all characters lowercase.</span>
+<span class="sd">    :param remove_special: (optional) Remove special characters from columns.</span>
+<span class="sd">        Only letters, numbers and underscores are preserved.</span>
+<span class="sd">    :returns: A Spark DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">janitor_func</span><span class="o">.</span><span class="n">_change_case</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">case_type</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">janitor_func</span><span class="o">.</span><span class="n">_normalize_1</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">remove_special</span><span class="p">:</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">janitor_func</span><span class="o">.</span><span class="n">_remove_special</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;_+&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">]</span>  <span class="c1"># noqa: PD005</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">janitor_utils</span><span class="o">.</span><span class="n">_strip_underscores_func</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">strip_underscores</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span>
+    <span class="p">]</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">` AS `</span><span class="si">{</span><span class="n">new_col</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">new_col</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">selectExpr</span><span class="p">(</span><span class="o">*</span><span class="n">cols</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="update_where"><a class="viewcode-back" href="../../../reference/janitor.spark.functions/janitor.spark.update_where.html#janitor.spark.update_where">[docs]</a><span class="nd">@backend</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">update_where</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">conditions</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">target_column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">target_val</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add multiple conditions to update a column in the dataframe.</span>
+
+<span class="sd">    This method does not mutate the original DataFrame.</span>
+
+<span class="sd">    Example usage:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        from pyspark.sql import SparkSession</span>
+<span class="sd">        import janitor.spark</span>
+
+<span class="sd">        spark = SparkSession.builder.getOrCreate()</span>
+
+<span class="sd">        data = {</span>
+<span class="sd">            &quot;a&quot;: [1, 2, 3, 4],</span>
+<span class="sd">            &quot;b&quot;: [5, 6, 7, 8],</span>
+<span class="sd">            &quot;c&quot;: [0, 0, 0, 0]</span>
+<span class="sd">        }</span>
+<span class="sd">        df = spark.createDataFrame(pd.DataFrame(data))</span>
+<span class="sd">        df = (</span>
+<span class="sd">            df</span>
+<span class="sd">            .update_where(</span>
+<span class="sd">                conditions=&quot;a &gt; 2 AND b &lt; 8&quot;,</span>
+<span class="sd">                target_column_name=&#39;c&#39;,</span>
+<span class="sd">                target_val=10</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+<span class="sd">        df.show()</span>
+<span class="sd">        # +---+---+---+</span>
+<span class="sd">        # |  a|  b|  c|</span>
+<span class="sd">        # +---+---+---+</span>
+<span class="sd">        # |  1|  5|  0|</span>
+<span class="sd">        # |  2|  6|  0|</span>
+<span class="sd">        # |  3|  7| 10|</span>
+<span class="sd">        # |  4|  8|  0|</span>
+<span class="sd">        # +---+---+---+</span>
+
+<span class="sd">    :param df: Spark DataFrame object.</span>
+<span class="sd">    :param conditions: Spark SQL string condition used to update a target</span>
+<span class="sd">        column and target value</span>
+<span class="sd">    :param target_column_name: Column to be updated. If column does not exist</span>
+<span class="sd">        in dataframe, a new column will be created; note that entries that do</span>
+<span class="sd">        not get set in the new column will be null.</span>
+<span class="sd">    :param target_val: Value to be updated</span>
+<span class="sd">    :returns: An updated spark DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># String without quotes are treated as column name</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">target_val</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">target_val</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+
+    <span class="k">if</span> <span class="n">target_column_name</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="c1"># `{col]` is to enable non-standard column name,</span>
+        <span class="c1"># i.e. column name with special characters etc.</span>
+        <span class="n">select_stmts</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">target_column_name</span>
+        <span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CASE</span>
+<span class="s2">                WHEN </span><span class="si">{</span><span class="n">conditions</span><span class="si">}</span><span class="s2"> THEN </span><span class="si">{</span><span class="n">target_val</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">                ELSE `</span><span class="si">{</span><span class="n">target_column_name</span><span class="si">}</span><span class="s2">`</span>
+<span class="s2">            END AS `</span><span class="si">{</span><span class="n">target_column_name</span><span class="si">}</span><span class="s2">`</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+        <span class="p">]</span>
+        <span class="c1"># This is to retain the ordering</span>
+        <span class="n">col_order</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">select_stmts</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CASE</span>
+<span class="s2">                WHEN </span><span class="si">{</span><span class="n">conditions</span><span class="si">}</span><span class="s2"> THEN </span><span class="si">{</span><span class="n">target_val</span><span class="si">}</span><span class="s2"> ELSE NULL</span>
+<span class="s2">            END AS `</span><span class="si">{</span><span class="n">target_column_name</span><span class="si">}</span><span class="s2">`</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+        <span class="p">]</span>
+        <span class="n">col_order</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">+</span> <span class="p">[</span><span class="n">target_column_name</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">selectExpr</span><span class="p">(</span><span class="o">*</span><span class="n">select_stmts</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">*</span><span class="n">col_order</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../../index.html">
+    <img class="logo" src="../../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

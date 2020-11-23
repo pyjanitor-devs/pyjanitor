@@ -1,0 +1,485 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "pycharm": {
+     "metadata": false,
+     "name": "#%% md\n"
+    }
+   },
+   "source": [
+    "# Processing International Teacher Data"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Background\n",
+    "\n",
+    "This sample data comes from the UNESCO Institute of Statistics and can be found at [tidytuesdays' github repo](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-05-07). This subset of the the data collected by the UNESCO Institute of Statistics contains country-level data on the number of teachers, teacher-to-student ratios, and related figures."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "pycharm": {
+     "is_executing": false,
+     "metadata": false,
+     "name": "#%%\n"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>EDULIT_IND</th>\n",
+       "      <th>Indicator</th>\n",
+       "      <th>LOCATION</th>\n",
+       "      <th>Country</th>\n",
+       "      <th>TIME</th>\n",
+       "      <th>Time</th>\n",
+       "      <th>Value</th>\n",
+       "      <th>Flag Codes</th>\n",
+       "      <th>Flags</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Pupil-teacher ratio in lower secondary educati...</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2013</td>\n",
+       "      <td>2013</td>\n",
+       "      <td>56.59395</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Pupil-teacher ratio in lower secondary educati...</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2014</td>\n",
+       "      <td>2014</td>\n",
+       "      <td>51.94690</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Pupil-teacher ratio in lower secondary educati...</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2015</td>\n",
+       "      <td>2015</td>\n",
+       "      <td>53.22717</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Pupil-teacher ratio in lower secondary educati...</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2016</td>\n",
+       "      <td>2016</td>\n",
+       "      <td>38.18923</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>PTRHC_1</td>\n",
+       "      <td>Pupil-teacher ratio in primary education (head...</td>\n",
+       "      <td>COD</td>\n",
+       "      <td>Democratic Republic of the Congo</td>\n",
+       "      <td>2012</td>\n",
+       "      <td>2012</td>\n",
+       "      <td>34.74758</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  EDULIT_IND                                          Indicator LOCATION  \\\n",
+       "0    PTRHC_2  Pupil-teacher ratio in lower secondary educati...      MRT   \n",
+       "1    PTRHC_2  Pupil-teacher ratio in lower secondary educati...      MRT   \n",
+       "2    PTRHC_2  Pupil-teacher ratio in lower secondary educati...      MRT   \n",
+       "3    PTRHC_2  Pupil-teacher ratio in lower secondary educati...      MRT   \n",
+       "4    PTRHC_1  Pupil-teacher ratio in primary education (head...      COD   \n",
+       "\n",
+       "                            Country  TIME  Time     Value Flag Codes Flags  \n",
+       "0                        Mauritania  2013  2013  56.59395        NaN   NaN  \n",
+       "1                        Mauritania  2014  2014  51.94690        NaN   NaN  \n",
+       "2                        Mauritania  2015  2015  53.22717        NaN   NaN  \n",
+       "3                        Mauritania  2016  2016  38.18923        NaN   NaN  \n",
+       "4  Democratic Republic of the Congo  2012  2012  34.74758        NaN   NaN  "
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import janitor\n",
+    "import pandas as pd\n",
+    "import pandas_flavor as pf\n",
+    "\n",
+    "dirty_csv = (\n",
+    "    \"https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-07/EDULIT_DS_06052019101747206.csv\"\n",
+    ")\n",
+    "dirty_df = pd.read_csv(dirty_csv)\n",
+    "dirty_df.head()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Data Dictionary\n",
+    "\n",
+    "Below is the data dictionary from the tidytuesday github repo.\n",
+    "\n",
+    "\n",
+    "|variable      |class     |description |\n",
+    "|:---|:---|:-----------|\n",
+    "|edulit_ind    | character | Unique ID|\n",
+    "|indicator     | character | Education level group (\"Lower Secondary Education\", \"Primary Education\", \"Upper Secondary Education\", \"Pre-Primary Education\", \"Secondary Education\", \"Tertiary Education\", \"Post-Secondary Non-Tertiary Education\")|\n",
+    "|country_code  | character |  Country code |\n",
+    "|country       | character | Country Full name|\n",
+    "|year          | integer (date)    | Year |\n",
+    "|student_ratio | double    |Student to teacher ratio (lower = fewer students/teacher)|\n",
+    "|flag_codes    | character | Code to indicate some metadata about exceptions |\n",
+    "|flags         | character | Metadata about exceptions |\n",
+    "\n",
+    "\n",
+    "The indicator variable describles the education level for each observation. Let's evaluate the actual values of the Indicator column in the data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'Pupil-teacher ratio in lower secondary education (headcount basis)',\n",
+       " 'Pupil-teacher ratio in post-secondary non-tertiary education (headcount basis)',\n",
+       " 'Pupil-teacher ratio in pre-primary education (headcount basis)',\n",
+       " 'Pupil-teacher ratio in primary education (headcount basis)',\n",
+       " 'Pupil-teacher ratio in secondary education (headcount basis)',\n",
+       " 'Pupil-teacher ratio in tertiary education (headcount basis)',\n",
+       " 'Pupil-teacher ratio in upper secondary education (headcount basis)'}"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# The set of unique values in the indicator column\n",
+    "set(dirty_df.Indicator)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Notice that strings in the dataframe each contain \"Pupil-teach ratio in\" & \"(headcount basis)\". We don't need all of this text to analyze the data. \n",
+    "\n",
+    " need some custom functions to clean up the strings. We'll need a function that removes a substring, given a pattern, from values in columns. Another function that removes trailing and leading characters from a value in a column. And finally, a function to make the first letter in each string upper case."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Data Cleaning"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {
+    "pycharm": {
+     "is_executing": false,
+     "metadata": false,
+     "name": "#%%\n"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "@pf.register_dataframe_method\n",
+    "def str_remove(df, column_name: str, pat: str, *args, **kwargs):\n",
+    "    \"\"\"Remove a substring, given its pattern from a string value, in a given column\"\"\"\n",
+    "    df[column_name] = df[column_name].str.replace(pat, '', *args, **kwargs)\n",
+    "    return df\n",
+    "\n",
+    "\n",
+    "@pf.register_dataframe_method\n",
+    "def str_trim(df, column_name: str, *args, **kwargs):\n",
+    "    \"\"\"Remove trailing and leading characters, in a given column\"\"\"\n",
+    "    df[column_name] = df[column_name].str.strip(*args, **kwargs)\n",
+    "    return df\n",
+    "\n",
+    "\n",
+    "@pf.register_dataframe_method\n",
+    "def str_title(df, column_name: str, *args, **kwargs):\n",
+    "    \"\"\"Make the first letter in each word upper case\"\"\"\n",
+    "    df[column_name] = df[column_name].str.title(*args, **kwargs)\n",
+    "    return df\n",
+    "\n",
+    "\n",
+    "@pf.register_dataframe_method\n",
+    "def drop_duplicated_column(df, column_name: str, column_order: int=0):\n",
+    "    \"\"\"Remove duplicated columns and retain only a column given its order.\n",
+    "    Order 0 is to remove the first column, Order 1 is to remove the second column, and etc\"\"\"\n",
+    "\n",
+    "    cols = list(df.columns)\n",
+    "    col_indexes = [\n",
+    "        col_idx for col_idx,\n",
+    "        col_name in enumerate(cols) if col_name == column_name\n",
+    "    ]\n",
+    "\n",
+    "    # given that a column could be duplicated, user could opt based on its order\n",
+    "    removed_col_idx = col_indexes[column_order]\n",
+    "    # get the column indexes without column that is being removed\n",
+    "    filtered_cols = [\n",
+    "        c_i for c_i,\n",
+    "        c_v in enumerate(cols) if c_i != removed_col_idx\n",
+    "    ]\n",
+    "    return df.iloc[:, filtered_cols]\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Note in the next example how we are able to chain our manipulations of the data into one process without losing our ability to explain what we are doing. The is the preferred framework for using pyjanitor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>edulit_ind</th>\n",
+       "      <th>indicator</th>\n",
+       "      <th>country_code</th>\n",
+       "      <th>country</th>\n",
+       "      <th>year</th>\n",
+       "      <th>student_ratio</th>\n",
+       "      <th>flag_codes</th>\n",
+       "      <th>flags</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Lower Secondary Education</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2013</td>\n",
+       "      <td>56.59395</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Lower Secondary Education</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2014</td>\n",
+       "      <td>51.94690</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Lower Secondary Education</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2015</td>\n",
+       "      <td>53.22717</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>PTRHC_2</td>\n",
+       "      <td>Lower Secondary Education</td>\n",
+       "      <td>MRT</td>\n",
+       "      <td>Mauritania</td>\n",
+       "      <td>2016</td>\n",
+       "      <td>38.18923</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>PTRHC_1</td>\n",
+       "      <td>Primary Education</td>\n",
+       "      <td>COD</td>\n",
+       "      <td>Democratic Republic of the Congo</td>\n",
+       "      <td>2012</td>\n",
+       "      <td>34.74758</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  edulit_ind                  indicator country_code  \\\n",
+       "0    PTRHC_2  Lower Secondary Education          MRT   \n",
+       "1    PTRHC_2  Lower Secondary Education          MRT   \n",
+       "2    PTRHC_2  Lower Secondary Education          MRT   \n",
+       "3    PTRHC_2  Lower Secondary Education          MRT   \n",
+       "4    PTRHC_1          Primary Education          COD   \n",
+       "\n",
+       "                            country  year  student_ratio flag_codes flags  \n",
+       "0                        Mauritania  2013       56.59395        NaN   NaN  \n",
+       "1                        Mauritania  2014       51.94690        NaN   NaN  \n",
+       "2                        Mauritania  2015       53.22717        NaN   NaN  \n",
+       "3                        Mauritania  2016       38.18923        NaN   NaN  \n",
+       "4  Democratic Republic of the Congo  2012       34.74758        NaN   NaN  "
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "py_clean_df = (\n",
+    "    dirty_df\n",
+    "    .clean_names()\n",
+    "    # modify string values\n",
+    "    .str_remove(\"indicator\", \"Pupil-teacher ratio in\")\n",
+    "    .str_remove(\"indicator\", \"(headcount basis)\")\n",
+    "    .str_remove(\"indicator\", \"\\\\(\\\\)\")\n",
+    "    .str_trim(\"indicator\")\n",
+    "    .str_trim(\"country\")\n",
+    "    .str_title(\"indicator\")\n",
+    "    # remove `time` column (which is duplicated). The second `time` is being removed\n",
+    "    .drop_duplicated_column(\"time\", 1)\n",
+    "    # renaming columns\n",
+    "    .rename_column(\"location\", \"country_code\")\n",
+    "    .rename_column(\"value\", \"student_ratio\")\n",
+    "    .rename_column(\"time\", \"year\")\n",
+    ")\n",
+    "\n",
+    "py_clean_df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "pycharm": {
+     "is_executing": false,
+     "metadata": false,
+     "name": "#%%\n"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# ensure that the output from janitor is similar with the clean r's janitor\n",
+    "r_clean_csv = (\n",
+    "    \"https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-07/student_teacher_ratio.csv\"\n",
+    ")\n",
+    "r_clean_df = pd.read_csv(r_clean_csv)\n",
+    "\n",
+    "pd.testing.assert_frame_equal(r_clean_df, py_clean_df)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.6"
+  },
+  "stem_cell": {
+   "cell_type": "raw",
+   "metadata": {
+    "pycharm": {
+     "metadata": false
+    }
+   },
+   "source": ""
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

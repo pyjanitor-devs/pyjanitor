@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.update_where &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.to_datetime" href="janitor.to_datetime.html" />
+    <link rel="prev" title="janitor.round_to_fraction" href="janitor.round_to_fraction.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-update-where">
+<h1>janitor.update_where<a class="headerlink" href="#janitor-update-where" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.update_where">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">update_where</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">conditions</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="n">target_column_name</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">target_val</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#update_where"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.update_where" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add multiple conditions to update a column in the dataframe.</p>
+<p>This method mutates the original DataFrame.</p>
+<p>Example usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The dataframe must be assigned to a variable first.</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+    <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span>
+    <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="p">}</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span>
+    <span class="o">.</span><span class="n">update_where</span><span class="p">(</span>
+        <span class="n">condition</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;a &gt; 2 and b &lt; 8&quot;</span><span class="p">,</span>
+        <span class="n">target_column_name</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">,</span>
+        <span class="n">target_val</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="c1"># a b  c</span>
+<span class="c1"># 1 5  0</span>
+<span class="c1"># 2 6  0</span>
+<span class="c1"># 3 7 10</span>
+<span class="c1"># 4 8  0</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – The pandas DataFrame object.</p></li>
+<li><p><strong>conditions</strong> – Conditions used to update a target column
+and target value.</p></li>
+<li><p><strong>target_column_name</strong> – Column to be updated. If column does not exist
+in dataframe, a new column will be created; note that entries that do
+not get set in the new column will be null.</p></li>
+<li><p><strong>target_val</strong> – Value to be updated</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An updated pandas DataFrame.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IndexError" title="(in Python v3.9)"><strong>IndexError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">conditions</span></code> does not have the same length as
+<code class="docutils literal notranslate"><span class="pre">df</span></code>.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">conditions</span></code> is not a pandas-compatible string
+query.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.fill_empty.html">janitor.fill_empty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.fill_direction.html">janitor.fill_direction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.convert_excel_date.html">janitor.convert_excel_date</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.convert_matlab_date.html">janitor.convert_matlab_date</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.convert_unix_date.html">janitor.convert_unix_date</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.remove_empty.html">janitor.remove_empty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.coalesce.html">janitor.coalesce</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.find_replace.html">janitor.find_replace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.round_to_fraction.html">janitor.round_to_fraction</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.update_where</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.to_datetime.html">janitor.to_datetime</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.jitter.html">janitor.jitter</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#other">Other</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.round_to_fraction.html" title="previous chapter">janitor.round_to_fraction</a></li>
+      <li>Next: <a href="janitor.to_datetime.html" title="next chapter">janitor.to_datetime</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.update_where.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

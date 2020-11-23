@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.drop_duplicate_columns &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.process_text" href="janitor.process_text.html" />
+    <link rel="prev" title="janitor.join_apply" href="janitor.join_apply.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-drop-duplicate-columns">
+<h1>janitor.drop_duplicate_columns<a class="headerlink" href="#janitor-drop-duplicate-columns" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.drop_duplicate_columns">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">drop_duplicate_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column_name</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">nth_index</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span> <span class="o">=</span> <span class="default_value">0</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#drop_duplicate_columns"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.drop_duplicate_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a duplicated column specified by column_name, its index.</p>
+<p>This method does not mutate the original DataFrame.</p>
+<dl class="simple">
+<dt>Column order 0 is to remove the first column,</dt><dd><p>order 1 is to remove the second column, and etc</p>
+</dd>
+</dl>
+<p>The corresponding tidyverse R’s library is:
+<cite>select(-&lt;column_name&gt;_&lt;nth_index + 1&gt;)</cite></p>
+<p>Method chaining syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
+    <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
+    <span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
+    <span class="s2">&quot;a*&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+<span class="p">})</span><span class="o">.</span><span class="n">clean_names</span><span class="p">(</span><span class="n">remove_special</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># remove a duplicated second &#39;a&#39; column</span>
+<span class="n">df</span><span class="o">.</span><span class="n">drop_duplicate_columns</span><span class="p">(</span><span class="n">column_name</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">nth_index</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame</p></li>
+<li><p><strong>column_name</strong> – Column to be removed</p></li>
+<li><p><strong>nth_index</strong> – Among the duplicated columns,
+select the nth column to drop.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.expand_column.html">janitor.expand_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.concatenate_columns.html">janitor.concatenate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.deconcatenate_column.html">janitor.deconcatenate_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.remove_columns.html">janitor.remove_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_column.html">janitor.add_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_columns.html">janitor.add_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.transform_column.html">janitor.transform_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.transform_columns.html">janitor.transform_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_column.html">janitor.rename_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_columns.html">janitor.rename_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.reorder_columns.html">janitor.reorder_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.collapse_levels.html">janitor.collapse_levels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.change_type.html">janitor.change_type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.limit_column_characters.html">janitor.limit_column_characters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.row_to_names.html">janitor.row_to_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.clean_names.html">janitor.clean_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.currency_column_to_numeric.html">janitor.currency_column_to_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.groupby_agg.html">janitor.groupby_agg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.join_apply.html">janitor.join_apply</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.drop_duplicate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.process_text.html">janitor.process_text</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#other">Other</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.join_apply.html" title="previous chapter">janitor.join_apply</a></li>
+      <li>Next: <a href="janitor.process_text.html" title="next chapter">janitor.process_text</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.drop_duplicate_columns.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

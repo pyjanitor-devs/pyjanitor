@@ -1,0 +1,218 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Expand_grid : Create a dataframe from all combinations of inputs."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Background \n",
+    "\n",
+    "This notebook serves to show examples of how expand_grid works. Expand_grid aims to offer similar functionality to R's [expand_grid](https://tidyr.tidyverse.org/reference/expand_grid.html) function.<br><br>\n",
+    "Expand_grid creates a dataframe from a combination of all inputs. <br><br>One requirement is that a dictionary be provided. If a dataframe is provided, a key must be provided as well.\n",
+    "\n",
+    "Some of the examples used here are from tidyr's expand_grid page and from Pandas' cookbook.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "from janitor import expand_grid"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": "   x  y\n0  1  1\n1  1  2\n2  2  1\n3  2  2\n4  3  1\n5  3  2",
+      "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>x</th>\n      <th>y</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>1</td>\n      <td>1</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>1</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>2</td>\n      <td>1</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>2</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>3</td>\n      <td>1</td>\n    </tr>\n    <tr>\n      <th>5</th>\n      <td>3</td>\n      <td>2</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+     },
+     "metadata": {},
+     "execution_count": 2
+    }
+   ],
+   "source": [
+    "data = {\"x\":[1,2,3], \"y\":[1,2]}\n",
+    "\n",
+    "result = expand_grid(others = data)\n",
+    "\n",
+    "result"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": "  l1 l2\n0  a  A\n1  a  E\n2  a  B\n3  a  D\n4  a  C\n5  b  A\n6  b  E\n7  b  B\n8  b  D\n9  b  C",
+      "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>l1</th>\n      <th>l2</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>a</td>\n      <td>A</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>a</td>\n      <td>E</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>a</td>\n      <td>B</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>a</td>\n      <td>D</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>a</td>\n      <td>C</td>\n    </tr>\n    <tr>\n      <th>5</th>\n      <td>b</td>\n      <td>A</td>\n    </tr>\n    <tr>\n      <th>6</th>\n      <td>b</td>\n      <td>E</td>\n    </tr>\n    <tr>\n      <th>7</th>\n      <td>b</td>\n      <td>B</td>\n    </tr>\n    <tr>\n      <th>8</th>\n      <td>b</td>\n      <td>D</td>\n    </tr>\n    <tr>\n      <th>9</th>\n      <td>b</td>\n      <td>C</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+     },
+     "metadata": {},
+     "execution_count": 3
+    }
+   ],
+   "source": [
+    "#combination of letters\n",
+    "\n",
+    "data = {\"l1\":list(\"abcde\"), \"l2\" : list(\"ABCDE\")}\n",
+    "\n",
+    "result = expand_grid(others = data)\n",
+    "\n",
+    "result.head(10)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": "    height  weight     sex\n0       60     100    Male\n1       60     100  Female\n2       60     140    Male\n3       60     140  Female\n4       60     180    Male\n5       60     180  Female\n6       70     100    Male\n7       70     100  Female\n8       70     140    Male\n9       70     140  Female\n10      70     180    Male\n11      70     180  Female",
+      "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>height</th>\n      <th>weight</th>\n      <th>sex</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>60</td>\n      <td>100</td>\n      <td>Male</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>60</td>\n      <td>100</td>\n      <td>Female</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>60</td>\n      <td>140</td>\n      <td>Male</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>60</td>\n      <td>140</td>\n      <td>Female</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>60</td>\n      <td>180</td>\n      <td>Male</td>\n    </tr>\n    <tr>\n      <th>5</th>\n      <td>60</td>\n      <td>180</td>\n      <td>Female</td>\n    </tr>\n    <tr>\n      <th>6</th>\n      <td>70</td>\n      <td>100</td>\n      <td>Male</td>\n    </tr>\n    <tr>\n      <th>7</th>\n      <td>70</td>\n      <td>100</td>\n      <td>Female</td>\n    </tr>\n    <tr>\n      <th>8</th>\n      <td>70</td>\n      <td>140</td>\n      <td>Male</td>\n    </tr>\n    <tr>\n      <th>9</th>\n      <td>70</td>\n      <td>140</td>\n      <td>Female</td>\n    </tr>\n    <tr>\n      <th>10</th>\n      <td>70</td>\n      <td>180</td>\n      <td>Male</td>\n    </tr>\n    <tr>\n      <th>11</th>\n      <td>70</td>\n      <td>180</td>\n      <td>Female</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+     },
+     "metadata": {},
+     "execution_count": 4
+    }
+   ],
+   "source": [
+    "\n",
+    "data = {'height': [60, 70],\n",
+    "        'weight': [100, 140, 180],\n",
+    "        'sex': ['Male', 'Female']}\n",
+    "\n",
+    "result = expand_grid(others = data)\n",
+    "\n",
+    "result"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": "   x1_0  x1_1  x2_0  x2_1\n0     1     3     5     7\n1     1     3     6     8\n2     2     4     5     7\n3     2     4     6     8",
+      "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>x1_0</th>\n      <th>x1_1</th>\n      <th>x2_0</th>\n      <th>x2_1</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>1</td>\n      <td>3</td>\n      <td>5</td>\n      <td>7</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>1</td>\n      <td>3</td>\n      <td>6</td>\n      <td>8</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>2</td>\n      <td>4</td>\n      <td>5</td>\n      <td>7</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>2</td>\n      <td>4</td>\n      <td>6</td>\n      <td>8</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+     },
+     "metadata": {},
+     "execution_count": 5
+    }
+   ],
+   "source": [
+    "#A dictionary of arrays\n",
+    "#Arrays can only have dimensions of 1 or 2\n",
+    "\n",
+    "data = {\"x1\":np.array([[1,3],[2,4]]), \n",
+    "        \"x2\":np.array([[5,7],[6,8]])}\n",
+    "\n",
+    "result = expand_grid(others=data)\n",
+    "\n",
+    "result"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": "   df_x  df_y  z\n0     1     2  1\n1     1     2  2\n2     1     2  3\n3     2     1  1\n4     2     1  2\n5     2     1  3",
+      "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>df_x</th>\n      <th>df_y</th>\n      <th>z</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>1</td>\n      <td>2</td>\n      <td>1</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>1</td>\n      <td>2</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>1</td>\n      <td>2</td>\n      <td>3</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>2</td>\n      <td>1</td>\n      <td>1</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>2</td>\n      <td>1</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>5</th>\n      <td>2</td>\n      <td>1</td>\n      <td>3</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+     },
+     "metadata": {},
+     "execution_count": 6
+    }
+   ],
+   "source": [
+    "#This shows how to method chain expand_grid\n",
+    "#to an existing dataframe\n",
+    "\n",
+    "df = pd.DataFrame({\"x\":[1,2], \"y\":[2,1]})\n",
+    "data = {\"z\":[1,2,3]}\n",
+    "\n",
+    "#a key has to be passed in for the dataframe\n",
+    "#this is added to the column name of the dataframe\n",
+    "\n",
+    "result = df.expand_grid(df_key=\"df\",others = data)\n",
+    "\n",
+    "result"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "output_type": "execute_result",
+     "data": {
+      "text/plain": "    df1_x  df1_y  df2_x  df2_y  df3_x df3_y\n0       1      2      1      3      2     a\n1       1      2      2      2      3     b\n2       1      2      3      1      2     a\n3       1      2      1      3      3     b\n4       1      2      2      2      2     a\n5       1      2      3      1      3     b\n6       2      1      1      3      2     a\n7       2      1      2      2      3     b\n8       2      1      3      1      2     a\n9       2      1      1      3      3     b\n10      2      1      2      2      2     a\n11      2      1      3      1      3     b",
+      "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>df1_x</th>\n      <th>df1_y</th>\n      <th>df2_x</th>\n      <th>df2_y</th>\n      <th>df3_x</th>\n      <th>df3_y</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>1</td>\n      <td>2</td>\n      <td>1</td>\n      <td>3</td>\n      <td>2</td>\n      <td>a</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>1</td>\n      <td>2</td>\n      <td>2</td>\n      <td>2</td>\n      <td>3</td>\n      <td>b</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>1</td>\n      <td>2</td>\n      <td>3</td>\n      <td>1</td>\n      <td>2</td>\n      <td>a</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>1</td>\n      <td>2</td>\n      <td>1</td>\n      <td>3</td>\n      <td>3</td>\n      <td>b</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>1</td>\n      <td>2</td>\n      <td>2</td>\n      <td>2</td>\n      <td>2</td>\n      <td>a</td>\n    </tr>\n    <tr>\n      <th>5</th>\n      <td>1</td>\n      <td>2</td>\n      <td>3</td>\n      <td>1</td>\n      <td>3</td>\n      <td>b</td>\n    </tr>\n    <tr>\n      <th>6</th>\n      <td>2</td>\n      <td>1</td>\n      <td>1</td>\n      <td>3</td>\n      <td>2</td>\n      <td>a</td>\n    </tr>\n    <tr>\n      <th>7</th>\n      <td>2</td>\n      <td>1</td>\n      <td>2</td>\n      <td>2</td>\n      <td>3</td>\n      <td>b</td>\n    </tr>\n    <tr>\n      <th>8</th>\n      <td>2</td>\n      <td>1</td>\n      <td>3</td>\n      <td>1</td>\n      <td>2</td>\n      <td>a</td>\n    </tr>\n    <tr>\n      <th>9</th>\n      <td>2</td>\n      <td>1</td>\n      <td>1</td>\n      <td>3</td>\n      <td>3</td>\n      <td>b</td>\n    </tr>\n    <tr>\n      <th>10</th>\n      <td>2</td>\n      <td>1</td>\n      <td>2</td>\n      <td>2</td>\n      <td>2</td>\n      <td>a</td>\n    </tr>\n    <tr>\n      <th>11</th>\n      <td>2</td>\n      <td>1</td>\n      <td>3</td>\n      <td>1</td>\n      <td>3</td>\n      <td>b</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+     },
+     "metadata": {},
+     "execution_count": 7
+    }
+   ],
+   "source": [
+    "\n",
+    "# expand_grid can work on multiple dataframes\n",
+    "# Ensure that there are keys\n",
+    "# for each dataframe in the dictionary\n",
+    "\n",
+    "df1 = pd.DataFrame({\"x\":range(1,3), \"y\":[2,1]})\n",
+    "df2 = pd.DataFrame({\"x\":[1,2,3],\"y\":[3,2,1]})\n",
+    "df3 = pd.DataFrame({\"x\":[2,3],\"y\":[\"a\",\"b\"]})\n",
+    "\n",
+    "data = {\"df1\":df1, \"df2\":df2, \"df3\":df3}\n",
+    "\n",
+    "result = expand_grid(others=data)\n",
+    "\n",
+    "result"
+   ]
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.7-final"
+  },
+  "orig_nbformat": 2,
+  "kernelspec": {
+   "name": "python3",
+   "display_name": "Python 3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

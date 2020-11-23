@@ -1,0 +1,6 @@
+﻿janitor.fill\_direction
+=======================
+
+.. currentmodule:: janitor
+
+.. autofunction:: fill_direction

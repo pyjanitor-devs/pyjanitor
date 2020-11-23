@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.deconcatenate_column &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.remove_columns" href="janitor.remove_columns.html" />
+    <link rel="prev" title="janitor.concatenate_columns" href="janitor.concatenate_columns.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-deconcatenate-column">
+<h1>janitor.deconcatenate_column<a class="headerlink" href="#janitor-deconcatenate-column" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.deconcatenate_column">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">deconcatenate_column</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column_name</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">sep</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">new_column_names</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">, </span>Tuple<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">autoname</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">preserve_position</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#deconcatenate_column"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.deconcatenate_column" title="Permalink to this definition">¶</a></dt>
+<dd><p>De-concatenates a single column into multiple columns.</p>
+<p>The column to de-concatenate can be either a collection (list, tuple, …)
+which can be separated out with <code class="docutils literal notranslate"><span class="pre">pd.Series.tolist()</span></code>,
+or a string to slice based on <code class="docutils literal notranslate"><span class="pre">sep</span></code>.</p>
+<p>To determine this behaviour automatically,
+the first element in the column specified is inspected.</p>
+<p>If it is a string, then <code class="docutils literal notranslate"><span class="pre">sep</span></code> must be specified.
+Else, the function assumes that it is an iterable type
+(e.g. <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>),
+and will attempt to deconcatenate by splitting the list.</p>
+<p>Given a column with string values, this is the inverse of the
+<code class="docutils literal notranslate"><span class="pre">concatenate_columns</span></code> function.</p>
+<p>Used to quickly split columns out of a single column.</p>
+<p>The keyword argument <code class="docutils literal notranslate"><span class="pre">preserve_position</span></code>
+takes <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code> boolean
+that controls whether the <code class="docutils literal notranslate"><span class="pre">new_column_names</span></code>
+will take the original position
+of the to-be-deconcatenated <code class="docutils literal notranslate"><span class="pre">column_name</span></code>:</p>
+<ul class="simple">
+<li><p>When <cite>preserve_position=False</cite> (default), <cite>df.columns</cite> change from
+<cite>[…, column_name, …]</cite> to <cite>[…, column_name, …, new_column_names]</cite>.
+In other words, the deconcatenated new columns are appended to the right
+of the original dataframe and the original <cite>column_name</cite> is NOT dropped.</p></li>
+<li><p>When <cite>preserve_position=True</cite>, <cite>df.column</cite> change from
+<cite>[…, column_name, …]</cite> to <cite>[…, new_column_names, …]</cite>.
+In other words, the deconcatenated new column will REPLACE the original
+<cite>column_name</cite> at its original position, and <cite>column_name</cite> itself
+is dropped.</p></li>
+</ul>
+<p>The keyword argument <code class="docutils literal notranslate"><span class="pre">autoname</span></code> accepts a base string
+and then automatically creates numbered column names
+based off the base string.
+For example, if <code class="docutils literal notranslate"><span class="pre">col</span></code> is passed in
+as the argument to <code class="docutils literal notranslate"><span class="pre">autoname</span></code>,
+and 4 columns are created,
+then the resulting columns will be named
+<code class="docutils literal notranslate"><span class="pre">col1,</span> <span class="pre">col2,</span> <span class="pre">col3,</span> <span class="pre">col4</span></code>.
+Numbering is always 1-indexed, not 0-indexed,
+in order to make the column names human-friendly.</p>
+<p>This method does not mutate the original DataFrame.</p>
+<p>Functional usage syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">deconcatenate_column</span><span class="p">(</span>
+        <span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">new_column_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;col1&#39;</span><span class="p">,</span> <span class="s1">&#39;col2&#39;</span><span class="p">],</span>
+        <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">preserve_position</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="o">.</span>
+        <span class="n">deconcatenate_column</span><span class="p">(</span>
+            <span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">new_column_names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;col1&#39;</span><span class="p">,</span> <span class="s1">&#39;col2&#39;</span><span class="p">],</span>
+            <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">preserve_position</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">))</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame.</p></li>
+<li><p><strong>column_name</strong> – The column to split.</p></li>
+<li><p><strong>sep</strong> – The separator delimiting the column’s data.</p></li>
+<li><p><strong>new_column_names</strong> – A list of new column names post-splitting.</p></li>
+<li><p><strong>autoname</strong> – A base name for automatically naming the new columns.
+Takes precedence over <code class="docutils literal notranslate"><span class="pre">new_column_names</span></code> if both are provided.</p></li>
+<li><p><strong>preserve_position</strong> – Boolean for whether or not to preserve original
+position of the column upon de-concatenation, default to False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame with a deconcatenated column.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">column_name</span></code> is not present in the
+DataFrame.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">sep</span></code> is not provided and the column values
+are of type <code class="docutils literal notranslate"><span class="pre">str</span></code>.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if either <code class="docutils literal notranslate"><span class="pre">new_column_names</span></code> or <code class="docutils literal notranslate"><span class="pre">autoname</span></code>
+is not supplied.</p></li>
+<li><p><strong>JanitorError</strong> – if incorrect number of names is provided
+within <code class="docutils literal notranslate"><span class="pre">new_column_names</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.expand_column.html">janitor.expand_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.concatenate_columns.html">janitor.concatenate_columns</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.deconcatenate_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.remove_columns.html">janitor.remove_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_column.html">janitor.add_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.add_columns.html">janitor.add_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.transform_column.html">janitor.transform_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.transform_columns.html">janitor.transform_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_column.html">janitor.rename_column</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.rename_columns.html">janitor.rename_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.reorder_columns.html">janitor.reorder_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.collapse_levels.html">janitor.collapse_levels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.change_type.html">janitor.change_type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.limit_column_characters.html">janitor.limit_column_characters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.row_to_names.html">janitor.row_to_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.clean_names.html">janitor.clean_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.currency_column_to_numeric.html">janitor.currency_column_to_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.groupby_agg.html">janitor.groupby_agg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.join_apply.html">janitor.join_apply</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.drop_duplicate_columns.html">janitor.drop_duplicate_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.process_text.html">janitor.process_text</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#other">Other</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.concatenate_columns.html" title="previous chapter">janitor.concatenate_columns</a></li>
+      <li>Next: <a href="janitor.remove_columns.html" title="next chapter">janitor.remove_columns</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.deconcatenate_column.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

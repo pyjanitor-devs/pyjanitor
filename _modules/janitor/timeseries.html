@@ -1,0 +1,558 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.timeseries &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for janitor.timeseries</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Time series-specific data cleaning functions. &quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
+
+<span class="kn">from</span> <span class="nn">janitor</span> <span class="kn">import</span> <span class="n">check</span>
+
+<span class="kn">from</span> <span class="nn">.errors</span> <span class="kn">import</span> <span class="n">JanitorError</span>
+
+
+<div class="viewcode-block" id="fill_missing_timestamps"><a class="viewcode-back" href="../../reference/timeseries.html#janitor.timeseries.fill_missing_timestamps">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">fill_missing_timestamps</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">frequency</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">first_time_stamp</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">last_time_stamp</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fill dataframe with missing timestamps based on a defined frequency.</span>
+
+<span class="sd">    If timestamps are missing,</span>
+<span class="sd">    this function will reindex the dataframe.</span>
+<span class="sd">    If timestamps are not missing,</span>
+<span class="sd">    then the function will return the dataframe unmodified.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.timeseries</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = janitor.timeseries.fill_missing_timestamps(</span>
+<span class="sd">            df=df,</span>
+<span class="sd">            frequency=&quot;1H&quot;,</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.timeseries</span>
+
+<span class="sd">        df = (</span>
+<span class="sd">            pd.DataFrame(...)</span>
+<span class="sd">            .fill_missing_timestamps(frequency=&quot;1H&quot;)</span>
+<span class="sd">        )</span>
+
+<span class="sd">    :param df: Dataframe which needs to be tested for missing timestamps</span>
+<span class="sd">    :param frequency: frequency i.e. sampling frequency of the data.</span>
+<span class="sd">        Acceptable frequency strings are available</span>
+<span class="sd">        `here &lt;https://pandas.pydata.org/pandas-docs/stable/&gt;`_</span>
+<span class="sd">        Check offset aliases under time series in user guide</span>
+<span class="sd">    :param first_time_stamp: timestamp expected to start from</span>
+<span class="sd">        Defaults to None.</span>
+<span class="sd">        If no input is provided assumes the minimum value in time_series</span>
+<span class="sd">    :param last_time_stamp: timestamp expected to end with.</span>
+<span class="sd">        Defaults to None.</span>
+<span class="sd">        If no input is provided, assumes the maximum value in time_series</span>
+<span class="sd">    :returns: dataframe that has a complete set of contiguous datetimes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check all the inputs are the correct data type</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;frequency&quot;</span><span class="p">,</span> <span class="n">frequency</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;first_time_stamp&quot;</span><span class="p">,</span> <span class="n">first_time_stamp</span><span class="p">,</span> <span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;last_time_stamp&quot;</span><span class="p">,</span> <span class="n">last_time_stamp</span><span class="p">,</span> <span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)])</span>
+
+    <span class="k">if</span> <span class="n">first_time_stamp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">first_time_stamp</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">last_time_stamp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">last_time_stamp</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+    <span class="c1"># Generate expected timestamps</span>
+    <span class="n">expected_timestamps</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">first_time_stamp</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">last_time_stamp</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">frequency</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">expected_timestamps</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_missing_timestamps</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">frequency</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">first_time_stamp</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">last_time_stamp</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the timestamps that are missing in a dataframe.</span>
+
+<span class="sd">    This function takes in a dataframe,</span>
+<span class="sd">    and checks its index against a dataframe</span>
+<span class="sd">    that contains the expected timestamps.</span>
+<span class="sd">    Here, we assume that the expected timestamps</span>
+<span class="sd">    are going to be of a larger size</span>
+<span class="sd">    than the timestamps available in the input dataframe ``df``.</span>
+
+<span class="sd">    If there are any missing timestamps in the input dataframe,</span>
+<span class="sd">    this function will return those missing timestamps</span>
+<span class="sd">    from the expected dataframe.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">expected_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">fill_missing_timestamps</span><span class="p">(</span>
+        <span class="n">frequency</span><span class="p">,</span> <span class="n">first_time_stamp</span><span class="p">,</span> <span class="n">last_time_stamp</span>
+    <span class="p">)</span>
+
+    <span class="n">missing_timestamps</span> <span class="o">=</span> <span class="n">expected_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">expected_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">missing_timestamps</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="sort_timestamps_monotonically"><a class="viewcode-back" href="../../reference/timeseries.html#janitor.timeseries.sort_timestamps_monotonically">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">sort_timestamps_monotonically</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;increasing&quot;</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sort dataframe such that index is monotonic.</span>
+
+<span class="sd">    If timestamps are monotonic,</span>
+<span class="sd">    this function will return the dataframe unmodified.</span>
+<span class="sd">    If timestamps are not monotonic,</span>
+<span class="sd">    then the function will sort the dataframe.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.timeseries</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = janitor.timeseries.sort_timestamps_monotonically(</span>
+<span class="sd">            direction=&quot;increasing&quot;</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.timeseries</span>
+
+<span class="sd">        df = (</span>
+<span class="sd">            pd.DataFrame(...)</span>
+<span class="sd">            .sort_timestamps_monotonically(direction=&quot;increasing&quot;)</span>
+<span class="sd">        )</span>
+
+<span class="sd">    :param df: Dataframe which needs to be tested for monotonicity</span>
+<span class="sd">    :param direction: type of monotonicity desired.</span>
+<span class="sd">        Acceptable arguments are:</span>
+<span class="sd">            1. increasing</span>
+<span class="sd">            2. decreasing</span>
+<span class="sd">    :param strict: flag to enable/disable strict monotonicity.</span>
+<span class="sd">        If set to True,</span>
+<span class="sd">        will remove duplicates in the index,</span>
+<span class="sd">        by retaining first occurrence of value in index.</span>
+<span class="sd">        If set to False,</span>
+<span class="sd">        will not test for duplicates in the index.</span>
+<span class="sd">        Defaults to False.</span>
+<span class="sd">    :returns: Dataframe that has monotonically increasing</span>
+<span class="sd">        (or decreasing) timestamps.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check all the inputs are the correct data type</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;df&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;direction&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;strict&quot;</span><span class="p">,</span> <span class="n">strict</span><span class="p">,</span> <span class="p">[</span><span class="nb">bool</span><span class="p">])</span>
+
+    <span class="c1"># Remove duplicates if requested</span>
+    <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="s2">&quot;first&quot;</span><span class="p">)]</span>
+
+    <span class="c1"># Sort timestamps</span>
+    <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;increasing&quot;</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Return the dataframe</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<span class="k">def</span> <span class="nf">_flag_jumps_single_col</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a boolean column that flags whether or not the change</span>
+<span class="sd">    between consecutive rows in the provided dataframe column exceeds a</span>
+<span class="sd">    provided threshold.</span>
+
+<span class="sd">    Comparisons are always performed utilizing a GREATER THAN</span>
+<span class="sd">    threshold check. Thus, flags correspond to values that EXCEED</span>
+<span class="sd">    the provided threshold.</span>
+
+<span class="sd">    The method used to create consecutive row comparisons is set by the</span>
+<span class="sd">    `scale` argument. A `scale=absolute` corresponds to a difference</span>
+<span class="sd">    method (`.diff()`) and a `scale=percentage` corresponds to a</span>
+<span class="sd">    percentage change methods (`pct_change()`).</span>
+
+<span class="sd">    A `direction` argument is used to determine how to handle the sign</span>
+<span class="sd">    of the difference or percentage change methods.</span>
+<span class="sd">    A `direction=increasing` will only consider consecutive rows that</span>
+<span class="sd">    are increasing in value and exceeding the provided threshold.</span>
+<span class="sd">    A `direction=decreasing` will only consider consecutive rows that</span>
+<span class="sd">    are decreasing in value and exceeding the provided threshold.</span>
+<span class="sd">    If `direction=any`, the absolute value is taken for both the</span>
+<span class="sd">    difference method and the percentage change methods and the sign</span>
+<span class="sd">    between consecutive rows is ignored.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;direction&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;threshold&quot;</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span>
+
+    <span class="n">scale_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="s2">&quot;percentage&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">scale</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scale_types</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">JanitorError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unrecognized scale: &#39;</span><span class="si">{</span><span class="n">scale</span><span class="si">}</span><span class="s2">&#39;. Must be one of: </span><span class="si">{</span><span class="n">scale_types</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">direction_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;increasing&quot;</span><span class="p">,</span> <span class="s2">&quot;decreasing&quot;</span><span class="p">,</span> <span class="s2">&quot;any&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">direction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">direction_types</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">JanitorError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unrecognized direction: &#39;</span><span class="si">{</span><span class="n">direction</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Must be one of: </span><span class="si">{</span><span class="n">direction_types</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">threshold</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">JanitorError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unrecognized threshold: </span><span class="si">{</span><span class="n">threshold</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;This value must be &gt;= 0.0. &quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;Use &#39;direction&#39; to specify positive or negative intent.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">single_col</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+    <span class="n">single_col_diffs</span> <span class="o">=</span> <span class="n">single_col</span><span class="o">.</span><span class="n">diff</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;percentage&quot;</span><span class="p">:</span>
+        <span class="n">single_col_pcts</span> <span class="o">=</span> <span class="n">single_col</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;increasing&quot;</span><span class="p">:</span>
+            <span class="c1"># Using diffs ensures correct sign is used for incr/decr</span>
+            <span class="c1"># (see issue #711)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">single_col_diffs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">single_col_pcts</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;decreasing&quot;</span><span class="p">:</span>
+            <span class="c1"># Using diffs ensures correct sign is used for incr/decr</span>
+            <span class="c1"># (see issue #711)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">single_col_diffs</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">single_col_pcts</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">single_col_pcts</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;increasing&quot;</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">single_col_diffs</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+
+        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;decreasing&quot;</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">single_col_diffs</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">single_col_diffs</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">single_col_diffs</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<div class="viewcode-block" id="flag_jumps"><a class="viewcode-back" href="../../reference/timeseries.html#janitor.timeseries.flag_jumps">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">flag_jumps</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;percentage&quot;</span><span class="p">,</span>
+    <span class="n">direction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;any&quot;</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create boolean column(s) that flag whether or not the change</span>
+<span class="sd">    between consecutive rows exceeds a provided threshold.</span>
+
+<span class="sd">    Functional usage example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.timeseries</span>
+
+<span class="sd">        df = pd.DataFrame(...)</span>
+
+<span class="sd">        df = flag_jumps(</span>
+<span class="sd">            df=df,</span>
+<span class="sd">            scale=&quot;absolute&quot;,</span>
+<span class="sd">            direction=&quot;any&quot;,</span>
+<span class="sd">            threshold=2,</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Method chaining example:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        import pandas as pd</span>
+<span class="sd">        import janitor.timeseries</span>
+
+<span class="sd">        df = (</span>
+<span class="sd">            pd.DatFrame(...)</span>
+<span class="sd">            .flag_jumps(</span>
+<span class="sd">                scale=&quot;absolute&quot;,</span>
+<span class="sd">                direction=&quot;any&quot;,</span>
+<span class="sd">                threshold=2,</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Detailed chaining examples:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        # Applies specified criteria across all columns of the dataframe</span>
+<span class="sd">        # Appends a flag column for each column in the dataframe</span>
+<span class="sd">        df = (</span>
+<span class="sd">            pd.DataFrame(...)</span>
+<span class="sd">            .flag_jumps(</span>
+<span class="sd">                scale=&quot;absolute&quot;,</span>
+<span class="sd">                direction=&quot;any&quot;,</span>
+<span class="sd">                threshold=2</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+
+<span class="sd">        # Applies specific criteria to certain dataframe columns</span>
+<span class="sd">        # Applies default criteria to columns not specifically listed</span>
+<span class="sd">        # Appends a flag column for each column in the dataframe</span>
+<span class="sd">        df = (</span>
+<span class="sd">            pd.DataFrame(...)</span>
+<span class="sd">            .flag_jumps(</span>
+<span class="sd">                scale=dict(col1=&quot;absolute&quot;, col2=&quot;percentage&quot;),</span>
+<span class="sd">                direction=dict(col1=&quot;increasing&quot;, col2=&quot;any&quot;),</span>
+<span class="sd">                threshold=dict(col1=1, col2=0.5),</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+
+<span class="sd">        # Applies specific criteria to certain dataframe columns</span>
+<span class="sd">        # Applies default criteria to columns not specifically listed</span>
+<span class="sd">        # Appends a flag column for each column in the dataframe</span>
+<span class="sd">        df = (</span>
+<span class="sd">            pd.DataFrame(...)</span>
+<span class="sd">            .flag_jumps(</span>
+<span class="sd">                scale=dict(col1=&quot;absolute&quot;),</span>
+<span class="sd">                direction=dict(col2=&quot;increasing&quot;),</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+
+<span class="sd">        # Applies specific criteria to certain dataframe columns</span>
+<span class="sd">        # Applies default criteria to columns not specifically listed</span>
+<span class="sd">        # Appends a flag column for only those columns found in</span>
+<span class="sd">        #   specified criteria</span>
+<span class="sd">        df = (</span>
+<span class="sd">            pd.DataFrame(...)</span>
+<span class="sd">            .flag_jumps(</span>
+<span class="sd">                scale=dict(col1=&quot;absolute&quot;),</span>
+<span class="sd">                threshold=dict(col2=1),</span>
+<span class="sd">                strict=True,</span>
+<span class="sd">            )</span>
+<span class="sd">        )</span>
+
+<span class="sd">    :param df: Dataframe which needs to be flagged for changes between</span>
+<span class="sd">        consecutive rows above a certain threshold.</span>
+<span class="sd">    :param scale: Type of scaling approach to use.</span>
+<span class="sd">        Acceptable arguments are:</span>
+<span class="sd">            1. absolute (consider the difference between rows).</span>
+<span class="sd">            2. percentage (consider the percentage change between rows).</span>
+<span class="sd">        Defaults to percentage.</span>
+<span class="sd">    :param direction: Type of method used to handle the sign change when</span>
+<span class="sd">        comparing consecutive rows.</span>
+<span class="sd">        Acceptable arguments are:</span>
+<span class="sd">            1. increasing (only consider rows that are increasing in value).</span>
+<span class="sd">            2. decreasing (only consider rows that are decreasing in value).</span>
+<span class="sd">            3. any (consider rows that are either increasing or decreasing;</span>
+<span class="sd">                sign is ignored).</span>
+<span class="sd">        Defaults to any.</span>
+<span class="sd">    :param threshold: The value to check if consecutive row comparisons</span>
+<span class="sd">        exceed. Always uses a greater than comparison. Must be &gt;= 0.0.</span>
+<span class="sd">        Defaults to 0.0</span>
+<span class="sd">    :param strict: flag to enable/disable appending of a flag column for</span>
+<span class="sd">        each column in the provided dataframe.</span>
+<span class="sd">        If set to True, will only append a flag column for those columns</span>
+<span class="sd">            found in at least one of the input dictionaries.</span>
+<span class="sd">        If set to False, will append a flag column for each column found</span>
+<span class="sd">             in the provided dataframe. If criteria is not specified,</span>
+<span class="sd">             the defaults for each criteria is used.</span>
+<span class="sd">        Defaults to False.</span>
+<span class="sd">    :returns: Dataframe that has flag jump columns.</span>
+<span class="sd">    :raises JanitorError: if ``strict=True`` and at least one of</span>
+<span class="sd">        ``scale``, ``direction``, or ``threshold`` inputs is not a</span>
+<span class="sd">        dictionary.</span>
+<span class="sd">    :raises JanitorError: if ``scale`` is not one of</span>
+<span class="sd">        ``[&quot;absolute&quot;, &quot;percentage&quot;]``.</span>
+<span class="sd">    :raises JanitorError: if ``direction`` is not one of</span>
+<span class="sd">        ``[&quot;increasing&quot;, &quot;decreasing&quot;, &quot;any&quot;]``.</span>
+<span class="sd">    :raises JanitorError: if ``threshold`` is less than 0.0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">threshold</span><span class="p">))</span>
+            <span class="ow">is</span> <span class="kc">False</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">JanitorError</span><span class="p">(</span>
+                <span class="s2">&quot;When enacting &#39;strict=True&#39;, &#39;scale&#39;, &#39;direction&#39;, or &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;&#39;threshold&#39; must be a dictionary.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Only append a flag col for the cols that appear</span>
+        <span class="c1"># in at least one of the input dicts</span>
+        <span class="n">arg_keys</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">arg</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">arg_keys</span><span class="p">))</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Append a flag col for each col in the dataframe</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+
+    <span class="n">columns_to_add</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">cols</span><span class="p">):</span>
+
+        <span class="c1"># Allow arguments to be a mix of dict and single instances</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="s2">&quot;percentage&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">scale</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">direction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="s2">&quot;any&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">direction</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">direction</span>
+        <span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">threshold</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">threshold</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">threshold</span>
+        <span class="p">)</span>
+
+        <span class="n">columns_to_add</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_jump_flag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_flag_jumps_single_col</span><span class="p">(</span>
+            <span class="n">df</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">t</span>
+        <span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="n">columns_to_add</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

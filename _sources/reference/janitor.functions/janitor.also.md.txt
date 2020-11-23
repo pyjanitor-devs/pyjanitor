@@ -1,0 +1,6 @@
+﻿janitor.also
+============
+
+.. currentmodule:: janitor
+
+.. autofunction:: also

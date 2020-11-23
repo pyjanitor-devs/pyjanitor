@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Engineering &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Finance" href="finance.html" />
+    <link rel="prev" title="Chemistry" href="chemistry.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-janitor.engineering">
+<span id="engineering"></span><h1>Engineering<a class="headerlink" href="#module-janitor.engineering" title="Permalink to this headline">¶</a></h1>
+<p>Engineering-specific data cleaning functions.</p>
+<dl class="py function">
+<dt id="janitor.engineering.convert_units">
+<code class="sig-prename descclassname">janitor.engineering.</code><code class="sig-name descname">convert_units</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">column_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">existing_units</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">to_units</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dest_column_name</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../_modules/janitor/engineering.html#convert_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.engineering.convert_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a column of numeric values from one unit to another.</p>
+<p>Functional usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.engineering</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">janitor</span><span class="o">.</span><span class="n">engineering</span><span class="o">.</span><span class="n">convert_units</span><span class="p">(</span>
+    <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+    <span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;temp_F&#39;</span><span class="p">,</span>
+    <span class="n">existing_units</span><span class="o">=</span><span class="s1">&#39;degF&#39;</span><span class="p">,</span>
+    <span class="n">to_units</span><span class="o">=</span><span class="s1">&#39;degC&#39;</span><span class="p">,</span>
+    <span class="n">dest_column_name</span><span class="o">=</span><span class="s1">&#39;temp_C&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Method chaining usage example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor.engineering</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">convert_units</span><span class="p">(</span>
+    <span class="n">column_name</span><span class="o">=</span><span class="s1">&#39;temp_F&#39;</span><span class="p">,</span>
+    <span class="n">existing_units</span><span class="o">=</span><span class="s1">&#39;degF&#39;</span><span class="p">,</span>
+    <span class="n">to_units</span><span class="o">=</span><span class="s1">&#39;degC&#39;</span><span class="p">,</span>
+    <span class="n">dest_column_name</span><span class="o">=</span><span class="s1">&#39;temp_C&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Unit conversion can only take place if the existing_units and
+to_units are of the same type (e.g., temperature or pressure).
+The provided unit types can be any unit name or alternate name provided
+in the unyt package’s Listing of Units table:
+<a class="reference external" href="https://unyt.readthedocs.io/en/stable/unit_listing.html#unit-listing">https://unyt.readthedocs.io/en/stable/unit_listing.html#unit-listing</a>.</p>
+<p>Volume units are not provided natively in unyt.  However, exponents are
+supported, and therefore some volume units can be converted.  For example,
+a volume in cubic centimeters can be converted to cubic meters using
+existing_units=’cm**3’ and to_units=’m**3’.</p>
+<p>This method mutates the original DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas dataframe.</p></li>
+<li><p><strong>column_name</strong> – Name of the column containing numeric
+values that are to be converted from one set of units to another.</p></li>
+<li><p><strong>existing_units</strong> – The unit type to convert from.</p></li>
+<li><p><strong>to_units</strong> – The unit type to convert to.</p></li>
+<li><p><strong>dest_column_name</strong> – The name of the new column containing the
+converted values that will be created.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame with a new column of unit-converted values.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if column is not numeric.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chemistry.html">Chemistry</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="timeseries.html">Time Series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="general_functions.html">General Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">API Documentation</a><ul>
+      <li>Previous: <a href="chemistry.html" title="previous chapter">Chemistry</a></li>
+      <li>Next: <a href="finance.html" title="next chapter">Finance</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/reference/engineering.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

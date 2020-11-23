@@ -1,0 +1,1908 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Normalization and Standardization &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using sort_naturally" href="sort_naturally.html" />
+    <link rel="prev" title="Tidy Up Web-Scraped Media Franchise Data" href="medium_franchise.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<div class="section" id="Normalization-and-Standardization">
+<h1>Normalization and Standardization<a class="headerlink" href="#Normalization-and-Standardization" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Normalization_(statistics)">Normalization</a> makes data more meaningful by converting absolute values into comparisons with related values. <a class="reference external" href="https://github.com/jcvall">Chris Vallier</a> has produced this demonstration of normalization using PyJanitor.</p>
+<p>pyjanitor functions demonstrated here:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="../reference/functions.html#janitor.functions.min_max_scale">min_max_scale</a></p></li>
+<li><p><a class="reference external" href="../reference/functions.html#janitor.functions.transform_column">transform_column</a></p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">janitor</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">&quot;whitegrid&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Load-data">
+<h2>Load data<a class="headerlink" href="#Load-data" title="Permalink to this headline">¶</a></h2>
+<p>We’ll use a dataset with fuel efficiency in miles per gallon (“mpg”), engine displacement in cubic centimeters (“disp”), and horsepower (“hp”) for a variety of car models. It’s a crazy, but customary, mix of units.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">csv_file</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s1">&#39;https://gist.githubusercontent.com/seankross/a412dfbd88b3db70b74b/raw/5f23f993cd87c283ce766e7ac6b329ee7cc2e1d1/mtcars.csv&#39;</span>
+<span class="p">)</span>
+<span class="n">cars_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csv_file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Quantities without units are dangerous, so let’s use pyjanitor’s <code class="docutils literal notranslate"><span class="pre">rename_column</span></code>…</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s1">&#39;disp&#39;</span><span class="p">,</span> <span class="s1">&#39;disp_cc&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Examine-raw-data">
+<h2>Examine raw data<a class="headerlink" href="#Examine-raw-data" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>model</th>
+      <th>mpg</th>
+      <th>cyl</th>
+      <th>disp_cc</th>
+      <th>hp</th>
+      <th>drat</th>
+      <th>wt</th>
+      <th>qsec</th>
+      <th>vs</th>
+      <th>am</th>
+      <th>gear</th>
+      <th>carb</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Mazda RX4</td>
+      <td>21.0</td>
+      <td>6</td>
+      <td>160.0</td>
+      <td>110</td>
+      <td>3.90</td>
+      <td>2.620</td>
+      <td>16.46</td>
+      <td>0</td>
+      <td>1</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Mazda RX4 Wag</td>
+      <td>21.0</td>
+      <td>6</td>
+      <td>160.0</td>
+      <td>110</td>
+      <td>3.90</td>
+      <td>2.875</td>
+      <td>17.02</td>
+      <td>0</td>
+      <td>1</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Datsun 710</td>
+      <td>22.8</td>
+      <td>4</td>
+      <td>108.0</td>
+      <td>93</td>
+      <td>3.85</td>
+      <td>2.320</td>
+      <td>18.61</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Hornet 4 Drive</td>
+      <td>21.4</td>
+      <td>6</td>
+      <td>258.0</td>
+      <td>110</td>
+      <td>3.08</td>
+      <td>3.215</td>
+      <td>19.44</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Hornet Sportabout</td>
+      <td>18.7</td>
+      <td>8</td>
+      <td>360.0</td>
+      <td>175</td>
+      <td>3.15</td>
+      <td>3.440</td>
+      <td>17.02</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="section" id="Visualize">
+<h3>Visualize<a class="headerlink" href="#Visualize" title="Permalink to this headline">¶</a></h3>
+<p>Each value makes more sense viewed in comparison to the other models. We’ll use simple <a class="reference external" href="https://seaborn.pydata.org/">Seaborn</a> bar plots.</p>
+</div>
+<div class="section" id="mpg-by-model">
+<h3>mpg by model<a class="headerlink" href="#mpg-by-model" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa29b344810&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_10_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_10_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="displacement-by-model">
+<h3>displacement by model<a class="headerlink" href="#displacement-by-model" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa29afaf650&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_12_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_12_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="horsepower-by-model">
+<h3>horsepower by model<a class="headerlink" href="#horsepower-by-model" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa29a860710&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_14_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_14_1.png" />
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="min-max-normalization">
+<h2><a class="reference external" href="https://en.wikipedia.org/wiki/Feature_scaling#Rescaling_(min-max_normalization)">min-max normalization</a><a class="headerlink" href="#min-max-normalization" title="Permalink to this headline">¶</a></h2>
+<p>First we’ll use pyjanitor’s <a class="reference external" href="../reference/functions.html#janitor.functions.min_max_scale">min_max_scale</a> to rescale the <code class="docutils literal notranslate"><span class="pre">mpg</span></code>, <code class="docutils literal notranslate"><span class="pre">disp_cc</span></code>, and <code class="docutils literal notranslate"><span class="pre">hp</span></code> columns in-place so that each value varies from 0 to 1.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="p">(</span>
+    <span class="n">cars_df</span><span class="o">.</span><span class="n">min_max_scale</span><span class="p">(</span><span class="n">col_name</span><span class="o">=</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="n">new_max</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">new_min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">min_max_scale</span><span class="p">(</span><span class="n">col_name</span><span class="o">=</span><span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="n">new_max</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">new_min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">min_max_scale</span><span class="p">(</span><span class="n">col_name</span><span class="o">=</span><span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="n">new_max</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">new_min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>model</th>
+      <th>mpg</th>
+      <th>cyl</th>
+      <th>disp_cc</th>
+      <th>hp</th>
+      <th>drat</th>
+      <th>wt</th>
+      <th>qsec</th>
+      <th>vs</th>
+      <th>am</th>
+      <th>gear</th>
+      <th>carb</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>30</th>
+      <td>Maserati Bora</td>
+      <td>0.195745</td>
+      <td>8</td>
+      <td>0.573460</td>
+      <td>1.000000</td>
+      <td>3.54</td>
+      <td>3.570</td>
+      <td>14.60</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>Ford Pantera L</td>
+      <td>0.229787</td>
+      <td>8</td>
+      <td>0.698179</td>
+      <td>0.749117</td>
+      <td>4.22</td>
+      <td>3.170</td>
+      <td>14.50</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Duster 360</td>
+      <td>0.165957</td>
+      <td>8</td>
+      <td>0.720629</td>
+      <td>0.681979</td>
+      <td>3.21</td>
+      <td>3.570</td>
+      <td>15.84</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>Camaro Z28</td>
+      <td>0.123404</td>
+      <td>8</td>
+      <td>0.695685</td>
+      <td>0.681979</td>
+      <td>3.73</td>
+      <td>3.840</td>
+      <td>15.41</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>Chrysler Imperial</td>
+      <td>0.182979</td>
+      <td>8</td>
+      <td>0.920180</td>
+      <td>0.628975</td>
+      <td>3.23</td>
+      <td>5.345</td>
+      <td>17.42</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>Lincoln Continental</td>
+      <td>0.000000</td>
+      <td>8</td>
+      <td>0.970067</td>
+      <td>0.575972</td>
+      <td>3.00</td>
+      <td>5.424</td>
+      <td>17.82</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>Cadillac Fleetwood</td>
+      <td>0.000000</td>
+      <td>8</td>
+      <td>1.000000</td>
+      <td>0.540636</td>
+      <td>2.93</td>
+      <td>5.250</td>
+      <td>17.98</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>Merc 450SLC</td>
+      <td>0.204255</td>
+      <td>8</td>
+      <td>0.510601</td>
+      <td>0.452297</td>
+      <td>3.07</td>
+      <td>3.780</td>
+      <td>18.00</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Merc 450SE</td>
+      <td>0.255319</td>
+      <td>8</td>
+      <td>0.510601</td>
+      <td>0.452297</td>
+      <td>3.07</td>
+      <td>4.070</td>
+      <td>17.40</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Merc 450SL</td>
+      <td>0.293617</td>
+      <td>8</td>
+      <td>0.510601</td>
+      <td>0.452297</td>
+      <td>3.07</td>
+      <td>3.730</td>
+      <td>17.60</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>Pontiac Firebird</td>
+      <td>0.374468</td>
+      <td>8</td>
+      <td>0.820404</td>
+      <td>0.434629</td>
+      <td>3.08</td>
+      <td>3.845</td>
+      <td>17.05</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Hornet Sportabout</td>
+      <td>0.353191</td>
+      <td>8</td>
+      <td>0.720629</td>
+      <td>0.434629</td>
+      <td>3.15</td>
+      <td>3.440</td>
+      <td>17.02</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>Ferrari Dino</td>
+      <td>0.395745</td>
+      <td>6</td>
+      <td>0.184335</td>
+      <td>0.434629</td>
+      <td>3.62</td>
+      <td>2.770</td>
+      <td>15.50</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>Dodge Challenger</td>
+      <td>0.217021</td>
+      <td>8</td>
+      <td>0.615864</td>
+      <td>0.346290</td>
+      <td>2.76</td>
+      <td>3.520</td>
+      <td>16.87</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>AMC Javelin</td>
+      <td>0.204255</td>
+      <td>8</td>
+      <td>0.580943</td>
+      <td>0.346290</td>
+      <td>3.15</td>
+      <td>3.435</td>
+      <td>17.30</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Merc 280C</td>
+      <td>0.314894</td>
+      <td>6</td>
+      <td>0.240708</td>
+      <td>0.250883</td>
+      <td>3.92</td>
+      <td>3.440</td>
+      <td>18.90</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Merc 280</td>
+      <td>0.374468</td>
+      <td>6</td>
+      <td>0.240708</td>
+      <td>0.250883</td>
+      <td>3.92</td>
+      <td>3.440</td>
+      <td>18.30</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>Lotus Europa</td>
+      <td>0.851064</td>
+      <td>4</td>
+      <td>0.059865</td>
+      <td>0.215548</td>
+      <td>3.77</td>
+      <td>1.513</td>
+      <td>16.90</td>
+      <td>1</td>
+      <td>1</td>
+      <td>5</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>Mazda RX4</td>
+      <td>0.451064</td>
+      <td>6</td>
+      <td>0.221751</td>
+      <td>0.204947</td>
+      <td>3.90</td>
+      <td>2.620</td>
+      <td>16.46</td>
+      <td>0</td>
+      <td>1</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Mazda RX4 Wag</td>
+      <td>0.451064</td>
+      <td>6</td>
+      <td>0.221751</td>
+      <td>0.204947</td>
+      <td>3.90</td>
+      <td>2.875</td>
+      <td>17.02</td>
+      <td>0</td>
+      <td>1</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Hornet 4 Drive</td>
+      <td>0.468085</td>
+      <td>6</td>
+      <td>0.466201</td>
+      <td>0.204947</td>
+      <td>3.08</td>
+      <td>3.215</td>
+      <td>19.44</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>Volvo 142E</td>
+      <td>0.468085</td>
+      <td>4</td>
+      <td>0.124470</td>
+      <td>0.201413</td>
+      <td>4.11</td>
+      <td>2.780</td>
+      <td>18.60</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Valiant</td>
+      <td>0.327660</td>
+      <td>6</td>
+      <td>0.383886</td>
+      <td>0.187279</td>
+      <td>2.76</td>
+      <td>3.460</td>
+      <td>20.22</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>Toyota Corona</td>
+      <td>0.472340</td>
+      <td>4</td>
+      <td>0.122225</td>
+      <td>0.159011</td>
+      <td>3.70</td>
+      <td>2.465</td>
+      <td>20.01</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Merc 230</td>
+      <td>0.527660</td>
+      <td>4</td>
+      <td>0.173859</td>
+      <td>0.151943</td>
+      <td>3.92</td>
+      <td>3.150</td>
+      <td>22.90</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Datsun 710</td>
+      <td>0.527660</td>
+      <td>4</td>
+      <td>0.092043</td>
+      <td>0.144876</td>
+      <td>3.85</td>
+      <td>2.320</td>
+      <td>18.61</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>Porsche 914-2</td>
+      <td>0.663830</td>
+      <td>4</td>
+      <td>0.122724</td>
+      <td>0.137809</td>
+      <td>4.43</td>
+      <td>2.140</td>
+      <td>16.70</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>Fiat X1-9</td>
+      <td>0.719149</td>
+      <td>4</td>
+      <td>0.019706</td>
+      <td>0.049470</td>
+      <td>4.08</td>
+      <td>1.935</td>
+      <td>18.90</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>Fiat 128</td>
+      <td>0.936170</td>
+      <td>4</td>
+      <td>0.018957</td>
+      <td>0.049470</td>
+      <td>4.08</td>
+      <td>2.200</td>
+      <td>19.47</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>Toyota Corolla</td>
+      <td>1.000000</td>
+      <td>4</td>
+      <td>0.000000</td>
+      <td>0.045936</td>
+      <td>4.22</td>
+      <td>1.835</td>
+      <td>19.90</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Merc 240D</td>
+      <td>0.595745</td>
+      <td>4</td>
+      <td>0.188576</td>
+      <td>0.035336</td>
+      <td>3.69</td>
+      <td>3.190</td>
+      <td>20.00</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>Honda Civic</td>
+      <td>0.851064</td>
+      <td>4</td>
+      <td>0.011474</td>
+      <td>0.000000</td>
+      <td>4.93</td>
+      <td>1.615</td>
+      <td>18.52</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>The shapes of the bar graphs remain the same, but the horizontal axes show the new scale.</p>
+<div class="section" id="mpg-(min-max-normalized)">
+<h3>mpg (min-max normalized)<a class="headerlink" href="#mpg-(min-max-normalized)" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa29789e4d0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_19_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_19_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="displacement-(min-max-normalized)">
+<h3>displacement (min-max normalized)<a class="headerlink" href="#displacement-(min-max-normalized)" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa295770710&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_21_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_21_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="horsepower-(min-max-normalized)">
+<h3>horsepower (min-max normalized)<a class="headerlink" href="#horsepower-(min-max-normalized)" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa29561c550&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_23_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_23_1.png" />
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="Standardization-(z-score)">
+<h2>Standardization (z-score)<a class="headerlink" href="#Standardization-(z-score)" title="Permalink to this headline">¶</a></h2>
+<p>Next we’ll convert to <a class="reference external" href="https://en.wikipedia.org/wiki/Standard_score">standard scores</a>. This expresses each value in terms of its standard deviations from the mean, expressing where each model stands in relation to the others.</p>
+<p>We’ll use pyjanitor’s <a class="reference external" href="../reference/functions.html#janitor.functions.transform_columns">transform_columns</a> to apply the standard score calculation, <code class="docutils literal notranslate"><span class="pre">(x</span> <span class="pre">-</span> <span class="pre">x.mean())</span> <span class="pre">/</span> <span class="pre">x.std()</span></code>, to each value in each of the columns we’re evaluating.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span><span class="o">.</span><span class="n">transform_columns</span><span class="p">(</span>
+    <span class="p">[</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="s1">&#39;hp&#39;</span><span class="p">],</span>
+    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">/</span> <span class="n">x</span><span class="o">.</span><span class="n">std</span><span class="p">(),</span>
+    <span class="n">elementwise</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>model</th>
+      <th>mpg</th>
+      <th>cyl</th>
+      <th>disp_cc</th>
+      <th>hp</th>
+      <th>drat</th>
+      <th>wt</th>
+      <th>qsec</th>
+      <th>vs</th>
+      <th>am</th>
+      <th>gear</th>
+      <th>carb</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>30</th>
+      <td>Maserati Bora</td>
+      <td>-0.844644</td>
+      <td>8</td>
+      <td>0.567039</td>
+      <td>2.746567</td>
+      <td>3.54</td>
+      <td>3.570</td>
+      <td>14.60</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>Ford Pantera L</td>
+      <td>-0.711907</td>
+      <td>8</td>
+      <td>0.970465</td>
+      <td>1.711021</td>
+      <td>4.22</td>
+      <td>3.170</td>
+      <td>14.50</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Duster 360</td>
+      <td>-0.960789</td>
+      <td>8</td>
+      <td>1.043081</td>
+      <td>1.433903</td>
+      <td>3.21</td>
+      <td>3.570</td>
+      <td>15.84</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>Camaro Z28</td>
+      <td>-1.126710</td>
+      <td>8</td>
+      <td>0.962396</td>
+      <td>1.433903</td>
+      <td>3.73</td>
+      <td>3.840</td>
+      <td>15.41</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>Chrysler Imperial</td>
+      <td>-0.894420</td>
+      <td>8</td>
+      <td>1.688562</td>
+      <td>1.215126</td>
+      <td>3.23</td>
+      <td>5.345</td>
+      <td>17.42</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>Lincoln Continental</td>
+      <td>-1.607883</td>
+      <td>8</td>
+      <td>1.849932</td>
+      <td>0.996348</td>
+      <td>3.00</td>
+      <td>5.424</td>
+      <td>17.82</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>Cadillac Fleetwood</td>
+      <td>-1.607883</td>
+      <td>8</td>
+      <td>1.946754</td>
+      <td>0.850497</td>
+      <td>2.93</td>
+      <td>5.250</td>
+      <td>17.98</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>Merc 450SLC</td>
+      <td>-0.811460</td>
+      <td>8</td>
+      <td>0.363713</td>
+      <td>0.485868</td>
+      <td>3.07</td>
+      <td>3.780</td>
+      <td>18.00</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Merc 450SE</td>
+      <td>-0.612354</td>
+      <td>8</td>
+      <td>0.363713</td>
+      <td>0.485868</td>
+      <td>3.07</td>
+      <td>4.070</td>
+      <td>17.40</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Merc 450SL</td>
+      <td>-0.463025</td>
+      <td>8</td>
+      <td>0.363713</td>
+      <td>0.485868</td>
+      <td>3.07</td>
+      <td>3.730</td>
+      <td>17.60</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>Pontiac Firebird</td>
+      <td>-0.147774</td>
+      <td>8</td>
+      <td>1.365821</td>
+      <td>0.412942</td>
+      <td>3.08</td>
+      <td>3.845</td>
+      <td>17.05</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Hornet Sportabout</td>
+      <td>-0.230735</td>
+      <td>8</td>
+      <td>1.043081</td>
+      <td>0.412942</td>
+      <td>3.15</td>
+      <td>3.440</td>
+      <td>17.02</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>Ferrari Dino</td>
+      <td>-0.064813</td>
+      <td>6</td>
+      <td>-0.691647</td>
+      <td>0.412942</td>
+      <td>3.62</td>
+      <td>2.770</td>
+      <td>15.50</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>Dodge Challenger</td>
+      <td>-0.761683</td>
+      <td>8</td>
+      <td>0.704204</td>
+      <td>0.048313</td>
+      <td>2.76</td>
+      <td>3.520</td>
+      <td>16.87</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>AMC Javelin</td>
+      <td>-0.811460</td>
+      <td>8</td>
+      <td>0.591245</td>
+      <td>0.048313</td>
+      <td>3.15</td>
+      <td>3.435</td>
+      <td>17.30</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Merc 280C</td>
+      <td>-0.380064</td>
+      <td>6</td>
+      <td>-0.509299</td>
+      <td>-0.345486</td>
+      <td>3.92</td>
+      <td>3.440</td>
+      <td>18.90</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Merc 280</td>
+      <td>-0.147774</td>
+      <td>6</td>
+      <td>-0.509299</td>
+      <td>-0.345486</td>
+      <td>3.92</td>
+      <td>3.440</td>
+      <td>18.30</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>Lotus Europa</td>
+      <td>1.710547</td>
+      <td>4</td>
+      <td>-1.094266</td>
+      <td>-0.491337</td>
+      <td>3.77</td>
+      <td>1.513</td>
+      <td>16.90</td>
+      <td>1</td>
+      <td>1</td>
+      <td>5</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>Mazda RX4</td>
+      <td>0.150885</td>
+      <td>6</td>
+      <td>-0.570620</td>
+      <td>-0.535093</td>
+      <td>3.90</td>
+      <td>2.620</td>
+      <td>16.46</td>
+      <td>0</td>
+      <td>1</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Mazda RX4 Wag</td>
+      <td>0.150885</td>
+      <td>6</td>
+      <td>-0.570620</td>
+      <td>-0.535093</td>
+      <td>3.90</td>
+      <td>2.875</td>
+      <td>17.02</td>
+      <td>0</td>
+      <td>1</td>
+      <td>4</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Hornet 4 Drive</td>
+      <td>0.217253</td>
+      <td>6</td>
+      <td>0.220094</td>
+      <td>-0.535093</td>
+      <td>3.08</td>
+      <td>3.215</td>
+      <td>19.44</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>Volvo 142E</td>
+      <td>0.217253</td>
+      <td>4</td>
+      <td>-0.885292</td>
+      <td>-0.549678</td>
+      <td>4.11</td>
+      <td>2.780</td>
+      <td>18.60</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Valiant</td>
+      <td>-0.330287</td>
+      <td>6</td>
+      <td>-0.046167</td>
+      <td>-0.608019</td>
+      <td>2.76</td>
+      <td>3.460</td>
+      <td>20.22</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>Toyota Corona</td>
+      <td>0.233846</td>
+      <td>4</td>
+      <td>-0.892553</td>
+      <td>-0.724700</td>
+      <td>3.70</td>
+      <td>2.465</td>
+      <td>20.01</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Merc 230</td>
+      <td>0.449543</td>
+      <td>4</td>
+      <td>-0.725535</td>
+      <td>-0.753870</td>
+      <td>3.92</td>
+      <td>3.150</td>
+      <td>22.90</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Datsun 710</td>
+      <td>0.449543</td>
+      <td>4</td>
+      <td>-0.990182</td>
+      <td>-0.783040</td>
+      <td>3.85</td>
+      <td>2.320</td>
+      <td>18.61</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>Porsche 914-2</td>
+      <td>0.980492</td>
+      <td>4</td>
+      <td>-0.890939</td>
+      <td>-0.812211</td>
+      <td>4.43</td>
+      <td>2.140</td>
+      <td>16.70</td>
+      <td>0</td>
+      <td>1</td>
+      <td>5</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>Fiat X1-9</td>
+      <td>1.196190</td>
+      <td>4</td>
+      <td>-1.224169</td>
+      <td>-1.176840</td>
+      <td>4.08</td>
+      <td>1.935</td>
+      <td>18.90</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>Fiat 128</td>
+      <td>2.042389</td>
+      <td>4</td>
+      <td>-1.226589</td>
+      <td>-1.176840</td>
+      <td>4.08</td>
+      <td>2.200</td>
+      <td>19.47</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>Toyota Corolla</td>
+      <td>2.291272</td>
+      <td>4</td>
+      <td>-1.287910</td>
+      <td>-1.191425</td>
+      <td>4.22</td>
+      <td>1.835</td>
+      <td>19.90</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>Merc 240D</td>
+      <td>0.715018</td>
+      <td>4</td>
+      <td>-0.677931</td>
+      <td>-1.235180</td>
+      <td>3.69</td>
+      <td>3.190</td>
+      <td>20.00</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>Honda Civic</td>
+      <td>1.710547</td>
+      <td>4</td>
+      <td>-1.250795</td>
+      <td>-1.381032</td>
+      <td>4.93</td>
+      <td>1.615</td>
+      <td>18.52</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="section" id="Standardized-mpg">
+<h3>Standardized mpg<a class="headerlink" href="#Standardized-mpg" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;mpg&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa2954f5350&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_27_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_27_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Standardized-displacement">
+<h3>Standardized displacement<a class="headerlink" href="#Standardized-displacement" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;disp_cc&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa295367ad0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_29_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_29_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Standardized-horsepower">
+<h3>Standardized horsepower<a class="headerlink" href="#Standardized-horsepower" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cars_df</span> <span class="o">=</span> <span class="n">cars_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">barplot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cars_df</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x7fa295236e90&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_31_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_31_1.png" />
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../notebooks.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pyjanitor_intro.html">pyjanitor Usage Walkthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pivoting%20Data%20from%20Wide%20to%20Long.html">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Row_to_Names.html">row_to_names : Elevates a row to be the column names of a DataFrame.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="anime.html">Processing Anime Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bad_values.html">Replacing Bad Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bird_call.html">Processing Bird Call Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="board_games.html">Processing Board Game Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dirty_data.html">Processing Dirty Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expand_grid.html">Expand_grid : Create a dataframe from all combinations of inputs.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="french_trains.html">Processing French train data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="groupby_agg.html">Groupby_agg : Shortcut for assigning a groupby-transform to a new column.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflating_converting_currency.html">Inflating and Converting Currency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="medium_franchise.html">Tidy Up Web-Scraped Media Franchise Data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Normalization and Standardization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Load-data">Load data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Examine-raw-data">Examine raw data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Visualize">Visualize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mpg-by-model">mpg by model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#displacement-by-model">displacement by model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#horsepower-by-model">horsepower by model</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#min-max-normalization">min-max normalization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mpg-(min-max-normalized)">mpg (min-max normalized)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#displacement-(min-max-normalized)">displacement (min-max normalized)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#horsepower-(min-max-normalized)">horsepower (min-max normalized)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Standardization-(z-score)">Standardization (z-score)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Standardized-mpg">Standardized mpg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Standardized-displacement">Standardized displacement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Standardized-horsepower">Standardized horsepower</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sort_naturally.html">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="teacher_pupil.html">Processing International Teacher Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transform_column.html">Transforming columns</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../notebooks.html">Examples</a><ul>
+      <li>Previous: <a href="medium_franchise.html" title="previous chapter">Tidy Up Web-Scraped Media Franchise Data</a></li>
+      <li>Next: <a href="sort_naturally.html" title="next chapter">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/notebooks/normalize.ipynb.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

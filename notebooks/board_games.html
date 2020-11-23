@@ -1,0 +1,1088 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Processing Board Game Data &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Processing Dirty Data" href="dirty_data.html" />
+    <link rel="prev" title="Processing Bird Call Data" href="bird_call.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<div class="section" id="Processing-Board-Game-Data">
+<h1>Processing Board Game Data<a class="headerlink" href="#Processing-Board-Game-Data" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Background">
+<h2>Background<a class="headerlink" href="#Background" title="Permalink to this headline">¶</a></h2>
+<p>This dataset comes from the <a class="reference external" href="http://boardgamegeek.com/">Board Game Geek database</a>. The site’s database has more than 90,000 games, with crowd-sourced ratings. This particular subset is limited to only games with at least 50 ratings which were published between 1950 and 2016. This still leaves us with 10,532 games! For more information please check out the <a class="reference external" href="https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-03-12">tidytuesday repo</a> which is where this example was
+taken from.</p>
+</div>
+<div class="section" id="Data-Cleaning">
+<h2>Data Cleaning<a class="headerlink" href="#Data-Cleaning" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span>
+<span class="kn">import</span> <span class="nn">os</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="One-Shot">
+<h3>One-Shot<a class="headerlink" href="#One-Shot" title="Permalink to this headline">¶</a></h3>
+<p>This cell demonstrates the cleaning process using the call chaining approach championed in pyjanitor</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cleaned_df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+        <span class="s2">&quot;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-12//board_games.csv&quot;</span>
+    <span class="p">)</span>  <span class="c1"># ingest raw data</span>
+    <span class="o">.</span><span class="n">clean_names</span><span class="p">()</span>  <span class="c1"># removes whitespace, punctuation/symbols, capitalization</span>
+    <span class="o">.</span><span class="n">remove_empty</span><span class="p">()</span>  <span class="c1"># removes entirely empty rows / columns</span>
+    <span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">,</span> <span class="s2">&quot;thumbnail&quot;</span><span class="p">,</span> <span class="s2">&quot;compilation&quot;</span><span class="p">,</span> <span class="s2">&quot;game_id&quot;</span><span class="p">])</span>  <span class="c1"># drops unnecessary columns</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="Multi-Step">
+<h2>Multi-Step<a class="headerlink" href="#Multi-Step" title="Permalink to this headline">¶</a></h2>
+<p>These cells repeat the process in a step-by-step manner in order to explain it in more detail</p>
+<div class="section" id="Read-in-the-csv">
+<h3>Read in the csv<a class="headerlink" href="#Read-in-the-csv" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+    <span class="s2">&quot;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-12/board_games.csv&quot;</span>
+<span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>game_id</th>
+      <th>description</th>
+      <th>image</th>
+      <th>max_players</th>
+      <th>max_playtime</th>
+      <th>min_age</th>
+      <th>min_players</th>
+      <th>min_playtime</th>
+      <th>name</th>
+      <th>playing_time</th>
+      <th>...</th>
+      <th>artist</th>
+      <th>category</th>
+      <th>compilation</th>
+      <th>designer</th>
+      <th>expansion</th>
+      <th>family</th>
+      <th>mechanic</th>
+      <th>publisher</th>
+      <th>average_rating</th>
+      <th>users_rated</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>Die Macher is a game about seven sequential po...</td>
+      <td>//cf.geekdo-images.com/images/pic159509.jpg</td>
+      <td>5</td>
+      <td>240</td>
+      <td>14</td>
+      <td>3</td>
+      <td>240</td>
+      <td>Die Macher</td>
+      <td>240</td>
+      <td>...</td>
+      <td>Marcus Gschwendtner</td>
+      <td>Economic,Negotiation,Political</td>
+      <td>NaN</td>
+      <td>Karl-Heinz Schmiel</td>
+      <td>NaN</td>
+      <td>Country: Germany,Valley Games Classic Line</td>
+      <td>Area Control / Area Influence,Auction/Bidding,...</td>
+      <td>Hans im Glück Verlags-GmbH,Moskito Spiele,Vall...</td>
+      <td>7.66508</td>
+      <td>4498</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>Dragonmaster is a trick-taking card game based...</td>
+      <td>//cf.geekdo-images.com/images/pic184174.jpg</td>
+      <td>4</td>
+      <td>30</td>
+      <td>12</td>
+      <td>3</td>
+      <td>30</td>
+      <td>Dragonmaster</td>
+      <td>30</td>
+      <td>...</td>
+      <td>Bob Pepper</td>
+      <td>Card Game,Fantasy</td>
+      <td>NaN</td>
+      <td>G. W. "Jerry" D'Arcey</td>
+      <td>NaN</td>
+      <td>Animals: Dragons</td>
+      <td>Trick-taking</td>
+      <td>E.S. Lowe,Milton Bradley</td>
+      <td>6.60815</td>
+      <td>478</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>Part of the Knizia tile-laying trilogy, Samura...</td>
+      <td>//cf.geekdo-images.com/images/pic3211873.jpg</td>
+      <td>4</td>
+      <td>60</td>
+      <td>10</td>
+      <td>2</td>
+      <td>30</td>
+      <td>Samurai</td>
+      <td>60</td>
+      <td>...</td>
+      <td>Franz Vohwinkel</td>
+      <td>Abstract Strategy,Medieval</td>
+      <td>NaN</td>
+      <td>Reiner Knizia</td>
+      <td>NaN</td>
+      <td>Asian Theme,Country: Japan,Knizia tile-laying ...</td>
+      <td>Area Control / Area Influence,Hand Management,...</td>
+      <td>999 Games,ABACUSSPIELE,Astrel Games,Ceilikan J...</td>
+      <td>7.44119</td>
+      <td>12019</td>
+    </tr>
+  </tbody>
+</table>
+<p>3 rows × 22 columns</p>
+</div></div>
+</div>
+</div>
+<div class="section" id="Remove-the-whitespace,-punctuation/symbols,-and-capitalization-form-columns">
+<h3>Remove the whitespace, punctuation/symbols, and capitalization form columns<a class="headerlink" href="#Remove-the-whitespace,-punctuation/symbols,-and-capitalization-form-columns" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">clean_names</span><span class="p">()</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>game_id</th>
+      <th>description</th>
+      <th>image</th>
+      <th>max_players</th>
+      <th>max_playtime</th>
+      <th>min_age</th>
+      <th>min_players</th>
+      <th>min_playtime</th>
+      <th>name</th>
+      <th>playing_time</th>
+      <th>...</th>
+      <th>artist</th>
+      <th>category</th>
+      <th>compilation</th>
+      <th>designer</th>
+      <th>expansion</th>
+      <th>family</th>
+      <th>mechanic</th>
+      <th>publisher</th>
+      <th>average_rating</th>
+      <th>users_rated</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>Die Macher is a game about seven sequential po...</td>
+      <td>//cf.geekdo-images.com/images/pic159509.jpg</td>
+      <td>5</td>
+      <td>240</td>
+      <td>14</td>
+      <td>3</td>
+      <td>240</td>
+      <td>Die Macher</td>
+      <td>240</td>
+      <td>...</td>
+      <td>Marcus Gschwendtner</td>
+      <td>Economic,Negotiation,Political</td>
+      <td>NaN</td>
+      <td>Karl-Heinz Schmiel</td>
+      <td>NaN</td>
+      <td>Country: Germany,Valley Games Classic Line</td>
+      <td>Area Control / Area Influence,Auction/Bidding,...</td>
+      <td>Hans im Glück Verlags-GmbH,Moskito Spiele,Vall...</td>
+      <td>7.66508</td>
+      <td>4498</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>Dragonmaster is a trick-taking card game based...</td>
+      <td>//cf.geekdo-images.com/images/pic184174.jpg</td>
+      <td>4</td>
+      <td>30</td>
+      <td>12</td>
+      <td>3</td>
+      <td>30</td>
+      <td>Dragonmaster</td>
+      <td>30</td>
+      <td>...</td>
+      <td>Bob Pepper</td>
+      <td>Card Game,Fantasy</td>
+      <td>NaN</td>
+      <td>G. W. "Jerry" D'Arcey</td>
+      <td>NaN</td>
+      <td>Animals: Dragons</td>
+      <td>Trick-taking</td>
+      <td>E.S. Lowe,Milton Bradley</td>
+      <td>6.60815</td>
+      <td>478</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>Part of the Knizia tile-laying trilogy, Samura...</td>
+      <td>//cf.geekdo-images.com/images/pic3211873.jpg</td>
+      <td>4</td>
+      <td>60</td>
+      <td>10</td>
+      <td>2</td>
+      <td>30</td>
+      <td>Samurai</td>
+      <td>60</td>
+      <td>...</td>
+      <td>Franz Vohwinkel</td>
+      <td>Abstract Strategy,Medieval</td>
+      <td>NaN</td>
+      <td>Reiner Knizia</td>
+      <td>NaN</td>
+      <td>Asian Theme,Country: Japan,Knizia tile-laying ...</td>
+      <td>Area Control / Area Influence,Hand Management,...</td>
+      <td>999 Games,ABACUSSPIELE,Astrel Games,Ceilikan J...</td>
+      <td>7.44119</td>
+      <td>12019</td>
+    </tr>
+  </tbody>
+</table>
+<p>3 rows × 22 columns</p>
+</div></div>
+</div>
+</div>
+<div class="section" id="Remove-all-the-empty-rows-and-columns-if-present">
+<h3>Remove all the empty rows and columns if present<a class="headerlink" href="#Remove-all-the-empty-rows-and-columns-if-present" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">remove_empty</span><span class="p">()</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>game_id</th>
+      <th>description</th>
+      <th>image</th>
+      <th>max_players</th>
+      <th>max_playtime</th>
+      <th>min_age</th>
+      <th>min_players</th>
+      <th>min_playtime</th>
+      <th>name</th>
+      <th>playing_time</th>
+      <th>...</th>
+      <th>artist</th>
+      <th>category</th>
+      <th>compilation</th>
+      <th>designer</th>
+      <th>expansion</th>
+      <th>family</th>
+      <th>mechanic</th>
+      <th>publisher</th>
+      <th>average_rating</th>
+      <th>users_rated</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>Die Macher is a game about seven sequential po...</td>
+      <td>//cf.geekdo-images.com/images/pic159509.jpg</td>
+      <td>5</td>
+      <td>240</td>
+      <td>14</td>
+      <td>3</td>
+      <td>240</td>
+      <td>Die Macher</td>
+      <td>240</td>
+      <td>...</td>
+      <td>Marcus Gschwendtner</td>
+      <td>Economic,Negotiation,Political</td>
+      <td>NaN</td>
+      <td>Karl-Heinz Schmiel</td>
+      <td>NaN</td>
+      <td>Country: Germany,Valley Games Classic Line</td>
+      <td>Area Control / Area Influence,Auction/Bidding,...</td>
+      <td>Hans im Glück Verlags-GmbH,Moskito Spiele,Vall...</td>
+      <td>7.66508</td>
+      <td>4498</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>Dragonmaster is a trick-taking card game based...</td>
+      <td>//cf.geekdo-images.com/images/pic184174.jpg</td>
+      <td>4</td>
+      <td>30</td>
+      <td>12</td>
+      <td>3</td>
+      <td>30</td>
+      <td>Dragonmaster</td>
+      <td>30</td>
+      <td>...</td>
+      <td>Bob Pepper</td>
+      <td>Card Game,Fantasy</td>
+      <td>NaN</td>
+      <td>G. W. "Jerry" D'Arcey</td>
+      <td>NaN</td>
+      <td>Animals: Dragons</td>
+      <td>Trick-taking</td>
+      <td>E.S. Lowe,Milton Bradley</td>
+      <td>6.60815</td>
+      <td>478</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>Part of the Knizia tile-laying trilogy, Samura...</td>
+      <td>//cf.geekdo-images.com/images/pic3211873.jpg</td>
+      <td>4</td>
+      <td>60</td>
+      <td>10</td>
+      <td>2</td>
+      <td>30</td>
+      <td>Samurai</td>
+      <td>60</td>
+      <td>...</td>
+      <td>Franz Vohwinkel</td>
+      <td>Abstract Strategy,Medieval</td>
+      <td>NaN</td>
+      <td>Reiner Knizia</td>
+      <td>NaN</td>
+      <td>Asian Theme,Country: Japan,Knizia tile-laying ...</td>
+      <td>Area Control / Area Influence,Hand Management,...</td>
+      <td>999 Games,ABACUSSPIELE,Astrel Games,Ceilikan J...</td>
+      <td>7.44119</td>
+      <td>12019</td>
+    </tr>
+  </tbody>
+</table>
+<p>3 rows × 22 columns</p>
+</div></div>
+</div>
+</div>
+<div class="section" id="Check-to-see-whether-“min_playtime”-and-“max_playtime”-columns-are-equal">
+<h3>Check to see whether “min_playtime” and “max_playtime” columns are equal<a class="headerlink" href="#Check-to-see-whether-“min_playtime”-and-“max_playtime”-columns-are-equal" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;min_playtime&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;max_playtime&quot;</span><span class="p">]])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+1565
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Check-to-see-what-percentage-of-the-values-in-the-“compilation”-column-are-not-null">
+<h3>Check to see what percentage of the values in the “compilation” column are not null<a class="headerlink" href="#Check-to-see-what-percentage-of-the-values-in-the-“compilation”-column-are-not-null" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;compilation&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+0.03892897835169009
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Drop-unnecessary-columns">
+<h3>Drop unnecessary columns<a class="headerlink" href="#Drop-unnecessary-columns" title="Permalink to this headline">¶</a></h3>
+<p>The ‘compilation’ column was demonstrated to have little value, the “image” and “thumbnail” columns link to images and are not a factor in this analysis. The “game_id” column can be replaced by using the index.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;image&quot;</span><span class="p">,</span> <span class="s2">&quot;thumbnail&quot;</span><span class="p">,</span> <span class="s2">&quot;compilation&quot;</span><span class="p">,</span> <span class="s2">&quot;game_id&quot;</span><span class="p">])</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>description</th>
+      <th>max_players</th>
+      <th>max_playtime</th>
+      <th>min_age</th>
+      <th>min_players</th>
+      <th>min_playtime</th>
+      <th>name</th>
+      <th>playing_time</th>
+      <th>year_published</th>
+      <th>artist</th>
+      <th>category</th>
+      <th>designer</th>
+      <th>expansion</th>
+      <th>family</th>
+      <th>mechanic</th>
+      <th>publisher</th>
+      <th>average_rating</th>
+      <th>users_rated</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Die Macher is a game about seven sequential po...</td>
+      <td>5</td>
+      <td>240</td>
+      <td>14</td>
+      <td>3</td>
+      <td>240</td>
+      <td>Die Macher</td>
+      <td>240</td>
+      <td>1986</td>
+      <td>Marcus Gschwendtner</td>
+      <td>Economic,Negotiation,Political</td>
+      <td>Karl-Heinz Schmiel</td>
+      <td>NaN</td>
+      <td>Country: Germany,Valley Games Classic Line</td>
+      <td>Area Control / Area Influence,Auction/Bidding,...</td>
+      <td>Hans im Glück Verlags-GmbH,Moskito Spiele,Vall...</td>
+      <td>7.66508</td>
+      <td>4498</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Dragonmaster is a trick-taking card game based...</td>
+      <td>4</td>
+      <td>30</td>
+      <td>12</td>
+      <td>3</td>
+      <td>30</td>
+      <td>Dragonmaster</td>
+      <td>30</td>
+      <td>1981</td>
+      <td>Bob Pepper</td>
+      <td>Card Game,Fantasy</td>
+      <td>G. W. "Jerry" D'Arcey</td>
+      <td>NaN</td>
+      <td>Animals: Dragons</td>
+      <td>Trick-taking</td>
+      <td>E.S. Lowe,Milton Bradley</td>
+      <td>6.60815</td>
+      <td>478</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Part of the Knizia tile-laying trilogy, Samura...</td>
+      <td>4</td>
+      <td>60</td>
+      <td>10</td>
+      <td>2</td>
+      <td>30</td>
+      <td>Samurai</td>
+      <td>60</td>
+      <td>1998</td>
+      <td>Franz Vohwinkel</td>
+      <td>Abstract Strategy,Medieval</td>
+      <td>Reiner Knizia</td>
+      <td>NaN</td>
+      <td>Asian Theme,Country: Japan,Knizia tile-laying ...</td>
+      <td>Area Control / Area Influence,Hand Management,...</td>
+      <td>999 Games,ABACUSSPIELE,Astrel Games,Ceilikan J...</td>
+      <td>7.44119</td>
+      <td>12019</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+</div>
+<div class="section" id="Sample-Analysis">
+<h2>Sample Analysis<a class="headerlink" href="#Sample-Analysis" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="c1"># allow plots to appear directly in the notebook</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<div class="section" id="What-Categories-appear-most-often?">
+<h3>What Categories appear most often?<a class="headerlink" href="#What-Categories-appear-most-often?" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;category&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Wargame,World War II          449
+Card Game                     438
+Abstract Strategy             284
+Napoleonic,Wargame            124
+Economic                      116
+Card Game,Fantasy             110
+Dice                          107
+American Civil War,Wargame     97
+Modern Warfare,Wargame         89
+Party Game                     77
+Name: category, dtype: int64
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="What-is-the-relationship-between-games’-player-numbers,-reccomended-minimum-age,-and-the-game’s-estimated-length?">
+<h3>What is the relationship between games’ player numbers, reccomended minimum age, and the game’s estimated length?<a class="headerlink" href="#What-is-the-relationship-between-games’-player-numbers,-reccomended-minimum-age,-and-the-game’s-estimated-length?" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">sns</span><span class="o">.</span><span class="n">pairplot</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span>
+    <span class="n">x_vars</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;min_age&#39;</span><span class="p">,</span> <span class="s1">&#39;min_players&#39;</span><span class="p">,</span> <span class="s1">&#39;min_playtime&#39;</span><span class="p">],</span>
+    <span class="n">y_vars</span><span class="o">=</span><span class="s1">&#39;users_rated&#39;</span><span class="p">,</span>
+    <span class="n">height</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+    <span class="n">aspect</span><span class="o">=</span><span class="mf">0.7</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_board_games_24_0.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_board_games_24_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Preliminary-analysis">
+<h3>Preliminary analysis<a class="headerlink" href="#Preliminary-analysis" title="Permalink to this headline">¶</a></h3>
+<p>Without digging into the data too much more it becomes apparent that there are some entries that were improperly entered e.g. having a minimum playtime of 60000 minutes. Otherwise we see some nice bell curves.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../notebooks.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pyjanitor_intro.html">pyjanitor Usage Walkthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pivoting%20Data%20from%20Wide%20to%20Long.html">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Row_to_Names.html">row_to_names : Elevates a row to be the column names of a DataFrame.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="anime.html">Processing Anime Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bad_values.html">Replacing Bad Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bird_call.html">Processing Bird Call Data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Processing Board Game Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Background">Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Data-Cleaning">Data Cleaning</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#One-Shot">One-Shot</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Multi-Step">Multi-Step</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Read-in-the-csv">Read in the csv</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Remove-the-whitespace,-punctuation/symbols,-and-capitalization-form-columns">Remove the whitespace, punctuation/symbols, and capitalization form columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Remove-all-the-empty-rows-and-columns-if-present">Remove all the empty rows and columns if present</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Check-to-see-whether-“min_playtime”-and-“max_playtime”-columns-are-equal">Check to see whether “min_playtime” and “max_playtime” columns are equal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Check-to-see-what-percentage-of-the-values-in-the-“compilation”-column-are-not-null">Check to see what percentage of the values in the “compilation” column are not null</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Drop-unnecessary-columns">Drop unnecessary columns</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Sample-Analysis">Sample Analysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#What-Categories-appear-most-often?">What Categories appear most often?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#What-is-the-relationship-between-games’-player-numbers,-reccomended-minimum-age,-and-the-game’s-estimated-length?">What is the relationship between games’ player numbers, reccomended minimum age, and the game’s estimated length?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Preliminary-analysis">Preliminary analysis</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dirty_data.html">Processing Dirty Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expand_grid.html">Expand_grid : Create a dataframe from all combinations of inputs.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="french_trains.html">Processing French train data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="groupby_agg.html">Groupby_agg : Shortcut for assigning a groupby-transform to a new column.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflating_converting_currency.html">Inflating and Converting Currency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="medium_franchise.html">Tidy Up Web-Scraped Media Franchise Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normalize.html">Normalization and Standardization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sort_naturally.html">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="teacher_pupil.html">Processing International Teacher Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transform_column.html">Transforming columns</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../notebooks.html">Examples</a><ul>
+      <li>Previous: <a href="bird_call.html" title="previous chapter">Processing Bird Call Data</a></li>
+      <li>Next: <a href="dirty_data.html" title="next chapter">Processing Dirty Data</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/notebooks/board_games.ipynb.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

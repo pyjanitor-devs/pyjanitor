@@ -1,0 +1,1644 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tidy Up Web-Scraped Media Franchise Data &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Normalization and Standardization" href="normalize.html" />
+    <link rel="prev" title="Inflating and Converting Currency" href="inflating_converting_currency.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container,
+div.nbinput.container div.prompt,
+div.nbinput.container div.input_area,
+div.nbinput.container div[class*=highlight],
+div.nbinput.container div[class*=highlight] pre,
+div.nboutput.container,
+div.nboutput.container div.prompt,
+div.nboutput.container div.output_area,
+div.nboutput.container div[class*=highlight],
+div.nboutput.container div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<div class="section" id="Tidy-Up-Web-Scraped-Media-Franchise-Data">
+<h1>Tidy Up Web-Scraped Media Franchise Data<a class="headerlink" href="#Tidy-Up-Web-Scraped-Media-Franchise-Data" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Background">
+<h2>Background<a class="headerlink" href="#Background" title="Permalink to this headline">¶</a></h2>
+<p>This example combines functionalities of <a class="reference external" href="https://anaconda.org/conda-forge/pyjanitor">pyjanitor</a> and <a class="reference external" href="https://anaconda.org/conda-forge/pandas-flavor">pandas-flavor</a> to showcase an explicit–and thus reproducible–workflow enabled by dataframe <strong>method chaining</strong>.</p>
+<p>The data cleaning workflow largely follows the <a class="reference external" href="https://github.com/rfordatascience/tidytuesday/blob/master/data/2019/2019-07-02/revenue.R">R example</a> from <a class="reference external" href="https://github.com/rfordatascience/tidytuesday">the tidytuesday project</a>. The raw data is scraped from <a class="reference external" href="https://en.wikipedia.org/wiki/List_of_highest-grossing_media_franchises">Wikipedia page</a> titled “<em>List of highest-grossing media franchises</em>”. The workflow is presented both in multi-step (section1) and in one-shot (section 2)
+fashions.</p>
+<p>More specifically, you will find several data-cleaning techniques that one may encounter frequently in web-scraping tasks; This includes:</p>
+<ul class="simple">
+<li><p>String operations with regular expressions (with <code class="docutils literal notranslate"><span class="pre">pandas-favor</span></code>)</p></li>
+<li><p>Data type changes (with <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>)</p></li>
+<li><p>Split strings in cells into seperate rows (with <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code>)</p></li>
+<li><p>Split strings in cells into separate columns (with <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> + <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code>)</p></li>
+<li><p>Filter dataframe values based on substring pattern (with <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>)</p></li>
+<li><p>Column value remapping with fuzzy substring matching (with <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> + <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code>)</p></li>
+</ul>
+<p>Data visualization is not included in this example. But if you are looking for inspirations, <a class="reference external" href="https://www.reddit.com/r/dataisbeautiful/comments/c53540/highest_grossing_media_franchises_oc/">here</a> is a good example.</p>
+</div>
+<hr class="docutils" />
+<div class="section" id="Structural-convention">
+<h2>Structural convention<a class="headerlink" href="#Structural-convention" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="1.-Annotation-system-in-code-comments">
+<h3>1. Annotation system in code comments<a class="headerlink" href="#1.-Annotation-system-in-code-comments" title="Permalink to this headline">¶</a></h3>
+<p>This example includes both <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas-flavors</span></code> methods. As you step through this example, you will see the following annotation system in code comments that explains various methods’ categories:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[pyjanitor]</span></code> denotes <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> methods</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[pandas-flavor]</span></code> denotes custom <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code> methods</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[pyjanitor</span> <span class="pre">+</span> <span class="pre">pandas-flavor]</span></code> denotes <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code> methods built on top of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> functions</p></li>
+</ul>
+</div>
+<div class="section" id="2.-R-counterpart-snippets-and-python-code-in-tandem">
+<h3>2. R counterpart snippets and python code in tandem<a class="headerlink" href="#2.-R-counterpart-snippets-and-python-code-in-tandem" title="Permalink to this headline">¶</a></h3>
+<p>The multi-step workflow is presented by alternating the original R snippets (from tidytuesday) and the corresponding python implementations.</p>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="Python-implementation">
+<h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Preparation">
+<h3>Preparation<a class="headerlink" href="#Preparation" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Import pyjanitor and pandas</span>
+<span class="kn">import</span> <span class="nn">janitor</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Supress user warnings when we try overwriting our custom pandas flavor functions</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="Section-1-Multi-Step">
+<h3>Section 1 Multi-Step<a class="headerlink" href="#Section-1-Multi-Step" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="Load-data">
+<h4>Load data<a class="headerlink" href="#Load-data" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="Note:-The-table-from-the-url-has-been-saved-as-a-csv-file-for-use-in-this-example-notebook.">
+<h5>Note: The table from the url has been saved as a csv file for use in this example notebook.<a class="headerlink" href="#Note:-The-table-from-the-url-has-been-saved-as-a-csv-file-for-use-in-this-example-notebook." title="Permalink to this headline">¶</a></h5>
+<p>R snippet:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">url</span> <span class="o">&lt;-</span> <span class="s">&quot;https://en.wikipedia.org/wiki/List_of_highest-grossing_media_franchises&quot;</span>
+<span class="n">df</span> <span class="o">&lt;-</span> <span class="n">url</span> <span class="o">%&gt;%</span>
+  <span class="nf">read_html</span><span class="p">()</span> <span class="o">%&gt;%</span>
+  <span class="nf">html_table</span><span class="p">(</span><span class="n">fill</span> <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span> <span class="o">%&gt;%</span>
+  <span class="n">.</span><span class="p">[[</span><span class="m">2</span><span class="p">]]</span>
+</pre></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">fileurl</span> <span class="o">=</span> <span class="s1">&#39;../data/medium_franchise_raw_table.csv&#39;</span> <span class="c1"># originally from https://en.wikipedia.org/wiki/List_of_highest-grossing_media_franchises</span>
+<span class="n">df_raw</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">fileurl</span><span class="p">)</span>
+<span class="n">df_raw</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Franchise</th>
+      <th>Year of inception</th>
+      <th>Total revenue (USD)</th>
+      <th>Revenue breakdown (est.)</th>
+      <th>Original media</th>
+      <th>Creator(s)</th>
+      <th>Owner(s)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>$19.9 billion[da]</td>
+      <td>Book sales – $9.125 billion[245] Box office – ...</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>James Bond</td>
+      <td>1953</td>
+      <td>est. $19.9 billion[db]</td>
+      <td>Box office – $7.078 billion[249] Home video sa...</td>
+      <td>Novel</td>
+      <td>Ian Fleming</td>
+      <td>Metro-Goldwyn-Mayer</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Peanuts</td>
+      <td>1950</td>
+      <td>est. $19.1 billion</td>
+      <td>Retail sales – $18.805 billion[dc] Box office ...</td>
+      <td>Comic strip</td>
+      <td>Charles M. Schulz</td>
+      <td>Sony Music Entertainment Japan (Sony) WildBrai...</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+</div>
+<div class="section" id="Rename-columns">
+<h4>Rename columns<a class="headerlink" href="#Rename-columns" title="Permalink to this headline">¶</a></h4>
+<p>R snippet:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_money</span> <span class="o">&lt;-</span> <span class="n">df</span> <span class="o">%&gt;%</span>
+  <span class="nf">set_names</span><span class="p">(</span><span class="n">nm</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;franchise&quot;</span><span class="p">,</span> <span class="s">&quot;year_created&quot;</span><span class="p">,</span> <span class="s">&quot;total_revenue&quot;</span><span class="p">,</span> <span class="s">&quot;revenue_items&quot;</span><span class="p">,</span>
+                   <span class="s">&quot;original_media&quot;</span><span class="p">,</span> <span class="s">&quot;creators&quot;</span><span class="p">,</span> <span class="s">&quot;owners&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># pandas-flavor helper functions</span>
+
+
+<span class="c1"># [pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Remove string patten from a column</span>
+
+<span class="sd">    Wrapper around df.str.replace()</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+<span class="sd">    column_name: str</span>
+<span class="sd">        Name of the column to be operated on</span>
+<span class="sd">    pattern: str, default to &#39;&#39;</span>
+<span class="sd">        String pattern to be removed</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="c1"># [pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">str_trim</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Remove leading and trailing white space from a column of strings</span>
+
+<span class="sd">    Wrapper around df.str.strip()</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+<span class="sd">    column_name: str</span>
+<span class="sd">        Name of the column to be operated on</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="c1"># [pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">str_slice</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Slice a column of strings by indexes</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+<span class="sd">    column_name: str</span>
+<span class="sd">        Name of the column to be operated on</span>
+<span class="sd">    start: int, optional, default to 0</span>
+<span class="sd">        Staring index for string slicing</span>
+<span class="sd">    stop: int, optional, default to -1</span>
+<span class="sd">        Ending index for string slicing</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">stop</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">colnames</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s1">&#39;franchise&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;year_created&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;total_revenue&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;revenue_items&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;original_media&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;creators&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;owners&#39;</span>
+<span class="p">)</span>
+<span class="n">df_dirty</span> <span class="o">=</span> <span class="n">df_raw</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">col_old</span><span class="p">:</span> <span class="n">col_new</span> <span class="k">for</span> <span class="n">col_old</span><span class="p">,</span> <span class="n">col_new</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">df_raw</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">colnames</span><span class="p">)}</span>
+<span class="p">)</span>
+<span class="n">df_dirty</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>year_created</th>
+      <th>total_revenue</th>
+      <th>revenue_items</th>
+      <th>original_media</th>
+      <th>creators</th>
+      <th>owners</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>$19.9 billion[da]</td>
+      <td>Book sales – $9.125 billion[245] Box office – ...</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>James Bond</td>
+      <td>1953</td>
+      <td>est. $19.9 billion[db]</td>
+      <td>Box office – $7.078 billion[249] Home video sa...</td>
+      <td>Novel</td>
+      <td>Ian Fleming</td>
+      <td>Metro-Goldwyn-Mayer</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Peanuts</td>
+      <td>1950</td>
+      <td>est. $19.1 billion</td>
+      <td>Retail sales – $18.805 billion[dc] Box office ...</td>
+      <td>Comic strip</td>
+      <td>Charles M. Schulz</td>
+      <td>Sony Music Entertainment Japan (Sony) WildBrai...</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<div class="section" id="Clean-up-total_revenue-column">
+<h4>Clean up <code class="docutils literal notranslate"><span class="pre">total_revenue</span></code> column<a class="headerlink" href="#Clean-up-total_revenue-column" title="Permalink to this headline">¶</a></h4>
+<p>R snippet:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_money</span> <span class="o">&lt;-</span> <span class="n">df</span> <span class="o">%&gt;%</span> <span class="kc">...</span> <span class="o">%&gt;%</span>
+<span class="nf">mutate</span><span class="p">(</span><span class="n">total_revenue</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">total_revenue</span><span class="p">,</span> <span class="s">&quot;est.&quot;</span><span class="p">),</span>
+     <span class="n">total_revenue</span> <span class="o">=</span> <span class="nf">str_trim</span><span class="p">(</span><span class="n">total_revenue</span><span class="p">),</span>
+     <span class="n">total_revenue</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">total_revenue</span><span class="p">,</span> <span class="s">&quot;[$]&quot;</span><span class="p">),</span>
+     <span class="n">total_revenue</span> <span class="o">=</span> <span class="nf">word</span><span class="p">(</span><span class="n">total_revenue</span><span class="p">,</span> <span class="m">1</span><span class="p">,</span> <span class="m">1</span><span class="p">),</span>
+     <span class="n">total_revenue</span> <span class="o">=</span> <span class="nf">as.double</span><span class="p">(</span><span class="n">total_revenue</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">column_name</span> <span class="o">=</span> <span class="s1">&#39;total_revenue&#39;</span>
+<span class="n">df_clean_money</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df_dirty</span><span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;est.&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_trim</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;\$&#39;</span><span class="p">)</span>   <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_slice</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">change_type</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>  <span class="c1"># [pyjanitor]</span>
+<span class="p">)</span>
+<span class="n">df_clean_money</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>year_created</th>
+      <th>total_revenue</th>
+      <th>revenue_items</th>
+      <th>original_media</th>
+      <th>creators</th>
+      <th>owners</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Book sales – $9.125 billion[245] Box office – ...</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>James Bond</td>
+      <td>1953</td>
+      <td>19.0</td>
+      <td>Box office – $7.078 billion[249] Home video sa...</td>
+      <td>Novel</td>
+      <td>Ian Fleming</td>
+      <td>Metro-Goldwyn-Mayer</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Peanuts</td>
+      <td>1950</td>
+      <td>19.0</td>
+      <td>Retail sales – $18.805 billion[dc] Box office ...</td>
+      <td>Comic strip</td>
+      <td>Charles M. Schulz</td>
+      <td>Sony Music Entertainment Japan (Sony) WildBrai...</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<div class="section" id="Split-column-revenue_items-into-revenue_category-and-revenue">
+<h4>Split column <code class="docutils literal notranslate"><span class="pre">revenue_items</span></code> into <code class="docutils literal notranslate"><span class="pre">revenue_category</span></code> and <code class="docutils literal notranslate"><span class="pre">revenue</span></code><a class="headerlink" href="#Split-column-revenue_items-into-revenue_category-and-revenue" title="Permalink to this headline">¶</a></h4>
+<p>R snippet:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_category</span> <span class="o">&lt;-</span> <span class="n">clean_money</span> <span class="o">%&gt;%</span>
+    <span class="nf">separate_rows</span><span class="p">(</span><span class="n">revenue_items</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot;\\[&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="nf">filter</span><span class="p">(</span><span class="nf">str_detect</span><span class="p">(</span><span class="n">revenue_items</span><span class="p">,</span> <span class="s">&quot;illion&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
+    <span class="nf">separate</span><span class="p">(</span><span class="n">revenue_items</span><span class="p">,</span> <span class="n">into</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;revenue_category&quot;</span><span class="p">,</span> <span class="s">&quot;revenue&quot;</span><span class="p">),</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot;[$]&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="nf">mutate</span><span class="p">(</span><span class="n">revenue_category</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">,</span> <span class="s">&quot; – &quot;</span><span class="p">),</span>
+         <span class="n">revenue_category</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">,</span> <span class="nf">regex</span><span class="p">(</span><span class="s">&quot;.*\\]&quot;</span><span class="p">)),</span>
+         <span class="n">revenue_category</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># pandas-flavor helper functions</span>
+
+
+<span class="c1"># [pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">separate_rows</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Split each cell of a column that contains a list of items</span>
+<span class="sd">    (separated by `sep`) into separate rows</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+<span class="sd">    column_name: str</span>
+<span class="sd">        Name of the column to be operated on</span>
+<span class="sd">    sep: str, default to &#39;&#39;</span>
+<span class="sd">        Substring used as separators for cell splitting</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Preserve an id field for later merge</span>
+    <span class="n">columns_original</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+    <span class="n">wdf</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="c1"># Preserve the same id field for merge</span>
+    <span class="n">wdf</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;level_0&#39;</span><span class="p">:</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span> <span class="s1">&#39;revenue_items&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">wdf</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;level_1&#39;</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># Merge and preserve original order</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">wdf</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;_drop&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">column_name</span> <span class="o">+</span> <span class="s2">&quot;_drop&quot;</span><span class="p">]</span>
+    <span class="p">)[</span><span class="n">columns_original</span><span class="p">]</span>
+
+
+<span class="c1"># [pyjanitor + pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">separate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">into</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Split a column into separate columns at separator specified by `sep`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+<span class="sd">    column_name: str</span>
+<span class="sd">        Name of the column to be operated on</span>
+<span class="sd">    into: List[str], default to None</span>
+<span class="sd">        New column names for the splitted columns</span>
+<span class="sd">    sep: str, default to &#39;&#39;</span>
+<span class="sd">        Separator at which to split the column</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">index_original</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">cols</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">into</span><span class="p">):</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">index_original</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">deconcatenate_column</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="n">new_column_names</span><span class="o">=</span><span class="n">into</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">sep</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">column_name</span><span class="p">)[</span><span class="n">cols</span><span class="p">]</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Generate `df_clean_category` on top of `df_clean_money`</span>
+<span class="n">column_name</span> <span class="o">=</span> <span class="s1">&#39;revenue_items&#39;</span>
+<span class="n">df_clean_category</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df_clean_money</span><span class="o">.</span><span class="n">separate_rows</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;\[&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">filter_string</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="s1">&#39;illion&#39;</span><span class="p">)</span>  <span class="c1"># [pyjanitor]</span>
+    <span class="o">.</span><span class="n">separate</span><span class="p">(</span>
+        <span class="n">column_name</span><span class="p">,</span> <span class="n">into</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="s1">&#39;revenue&#39;</span><span class="p">],</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;\$&#39;</span>
+    <span class="p">)</span>  <span class="c1"># [pyjanitor + pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39; – &#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;.*\]&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+<span class="p">)</span>
+<span class="n">df_clean_category</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>year_created</th>
+      <th>total_revenue</th>
+      <th>revenue_category</th>
+      <th>revenue</th>
+      <th>original_media</th>
+      <th>creators</th>
+      <th>owners</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Book sales</td>
+      <td>9.125 billion</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Box office</td>
+      <td>5.896 billion</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Home video sales</td>
+      <td>4.194 billion</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<div class="section" id="Clean-up-revenue_category-column">
+<h4>Clean up <code class="docutils literal notranslate"><span class="pre">revenue_category</span></code> column<a class="headerlink" href="#Clean-up-revenue_category-column" title="Permalink to this headline">¶</a></h4>
+<p>R snippet:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_df</span> <span class="o">&lt;-</span> <span class="n">clean_category</span> <span class="o">%&gt;%</span>
+  <span class="nf">mutate</span><span class="p">(</span><span class="n">revenue_category</span> <span class="o">=</span> <span class="nf">case_when</span><span class="p">(</span>
+    <span class="nf">str_detect</span><span class="p">(</span><span class="nf">str_to_lower</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">),</span> <span class="s">&quot;box office&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="s">&quot;Box Office&quot;</span><span class="p">,</span>
+    <span class="nf">str_detect</span><span class="p">(</span><span class="nf">str_to_lower</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">),</span> <span class="s">&quot;dvd|blu|vhs|home video|video rentals|video sales|streaming|home entertainment&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="s">&quot;Home Video/Entertainment&quot;</span><span class="p">,</span>
+    <span class="nf">str_detect</span><span class="p">(</span><span class="nf">str_to_lower</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">),</span> <span class="s">&quot;video game|computer game|mobile game|console|game|pachinko|pet|card&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="s">&quot;Video Games/Games&quot;</span><span class="p">,</span>
+    <span class="nf">str_detect</span><span class="p">(</span><span class="nf">str_to_lower</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">),</span> <span class="s">&quot;comic|manga&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="s">&quot;Comic or Manga&quot;</span><span class="p">,</span>
+    <span class="nf">str_detect</span><span class="p">(</span><span class="nf">str_to_lower</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">),</span> <span class="s">&quot;music|soundtrack&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="s">&quot;Music&quot;</span><span class="p">,</span>
+    <span class="nf">str_detect</span><span class="p">(</span><span class="nf">str_to_lower</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">),</span> <span class="s">&quot;tv&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="s">&quot;TV&quot;</span><span class="p">,</span>
+    <span class="nf">str_detect</span><span class="p">(</span><span class="nf">str_to_lower</span><span class="p">(</span><span class="n">revenue_category</span><span class="p">),</span> <span class="s">&quot;merchandise|licens|mall|stage|retail&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="s">&quot;Merchandise, Licensing &amp; Retail&quot;</span><span class="p">,</span>
+    <span class="kc">TRUE</span> <span class="o">~</span> <span class="n">revenue_category</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># pandas-flavor helper functions</span>
+
+
+<span class="c1"># [pyjanitor + pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">fuzzy_match_replace</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mapper</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Value remapping for specific column with fuzzy matching and replacement</span>
+<span class="sd">    of strings</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+<span class="sd">    column_name: str</span>
+<span class="sd">        Name of the column to be operated on</span>
+<span class="sd">    mapper: dict, default to None</span>
+<span class="sd">        {oldstr_0: newstr_0, oldstr_1: newstr_1, ..., oldstr_n: newstr_n}</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">mapper</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="c1"># [pyjanitor] update_where: update value when condition is True</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">update_where</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">column_name</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Value mapper `revenue_category`</span>
+<span class="n">value_mapper</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;box office&#39;</span><span class="p">:</span> <span class="s1">&#39;Box Office&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;dvd|blu|vhs|home video|video rentals|video sales|streaming|home entertainment&#39;</span><span class="p">:</span> <span class="s1">&#39;Home Video/Entertainment&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;video game|computer game|mobile game|console|game|pachinko|pet|card&#39;</span><span class="p">:</span> <span class="s1">&#39;Video Games/Games&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;comic|manga&#39;</span><span class="p">:</span> <span class="s1">&#39;Comic or Manga&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;music|soundtrac&#39;</span><span class="p">:</span> <span class="s1">&#39;Music&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;tv&#39;</span><span class="p">:</span> <span class="s1">&#39;TV&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;merchandise|licens|mall|stage|retail&#39;</span><span class="p">:</span> <span class="s1">&#39;Merchandise, Licensing &amp; Retail&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">column_name</span> <span class="o">=</span> <span class="s1">&#39;revenue_category&#39;</span>
+<span class="n">df_clean_category</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df_clean_category</span><span class="o">.</span><span class="n">transform_column</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="nb">str</span><span class="o">.</span><span class="n">lower</span><span class="p">)</span>  <span class="c1"># [pyjanitor] convert to lower case</span>
+    <span class="o">.</span><span class="n">transform_column</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">)</span>  <span class="c1"># [pyjanitor] strip leading/trailing white space</span>
+    <span class="o">.</span><span class="n">fuzzy_match_replace</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="n">mapper</span><span class="o">=</span><span class="n">value_mapper</span><span class="p">)</span>  <span class="c1"># [pyjanitor + pandas_flavor]</span>
+<span class="p">)</span>
+<span class="n">df_clean_category</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>year_created</th>
+      <th>total_revenue</th>
+      <th>revenue_category</th>
+      <th>revenue</th>
+      <th>original_media</th>
+      <th>creators</th>
+      <th>owners</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>book sales</td>
+      <td>9.125 billion</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Box Office</td>
+      <td>5.896 billion</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Home Video/Entertainment</td>
+      <td>4.194 billion</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<div class="section" id="Clean-up-revenue-column">
+<h4>Clean up <code class="docutils literal notranslate"><span class="pre">revenue</span></code> column<a class="headerlink" href="#Clean-up-revenue-column" title="Permalink to this headline">¶</a></h4>
+<p>R snippet:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="o">%&gt;%</span>
+<span class="nf">mutate</span><span class="p">(</span><span class="n">revenue</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">revenue</span><span class="p">,</span> <span class="s">&quot;illion&quot;</span><span class="p">),</span>
+     <span class="n">revenue</span> <span class="o">=</span> <span class="nf">str_trim</span><span class="p">(</span><span class="n">revenue</span><span class="p">),</span>
+     <span class="n">revenue</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">revenue</span><span class="p">,</span> <span class="s">&quot; &quot;</span><span class="p">),</span>
+     <span class="n">revenue</span> <span class="o">=</span> <span class="nf">case_when</span><span class="p">(</span><span class="nf">str_detect</span><span class="p">(</span><span class="n">revenue</span><span class="p">,</span> <span class="s">&quot;m&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="nf">paste0</span><span class="p">(</span><span class="nf">str_extract</span><span class="p">(</span><span class="n">revenue</span><span class="p">,</span> <span class="s">&quot;[:digit:]+&quot;</span><span class="p">),</span> <span class="s">&quot;e-3&quot;</span><span class="p">),</span>
+                         <span class="nf">str_detect</span><span class="p">(</span><span class="n">revenue</span><span class="p">,</span> <span class="s">&quot;b&quot;</span><span class="p">)</span> <span class="o">~</span> <span class="nf">str_extract</span><span class="p">(</span><span class="n">revenue</span><span class="p">,</span> <span class="s">&quot;[:digit:]+&quot;</span><span class="p">),</span>
+                         <span class="kc">TRUE</span> <span class="o">~</span> <span class="kc">NA_character_</span><span class="p">),</span>
+     <span class="n">revenue</span> <span class="o">=</span> <span class="nf">format</span><span class="p">(</span><span class="n">revenue</span><span class="p">,</span> <span class="n">scientific</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">),</span>
+     <span class="n">revenue</span> <span class="o">=</span> <span class="nf">parse_number</span><span class="p">(</span><span class="n">revenue</span><span class="p">))</span> <span class="o">%&gt;%</span>
+<span class="nf">mutate</span><span class="p">(</span><span class="n">original_media</span> <span class="o">=</span> <span class="nf">str_remove</span><span class="p">(</span><span class="n">original_media</span><span class="p">,</span> <span class="s">&quot;\\[.+&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># pandas-flavor helper functions</span>
+
+
+<span class="c1"># [pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">str_replace</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">old</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Match and replace strings from a dataframe column.</span>
+<span class="sd">    Wrapper around df.str.replace</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+<span class="sd">    column_name: str</span>
+<span class="sd">        Name of the column to be operated on</span>
+<span class="sd">    old: str, default to &#39;&#39;</span>
+<span class="sd">        Old string to be matched and replaced</span>
+<span class="sd">    new: str, default to &#39;&#39;</span>
+<span class="sd">        New string to replace old</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="c1"># [pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">parse_number</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check all columns of dataframe and properly parse numeric types</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">continue</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="c1"># [pandas-flavor]</span>
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">flatten_multiindex</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flatten dataframe with multilevel index</span>
+<span class="sd">    A wrapper around pd.DataFrame(df.to_records())</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    df: pd.Dataframe</span>
+<span class="sd">        Input dataframe to be modified</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    df: pd.Dataframe</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">to_records</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># clean up revenue values</span>
+<span class="n">column_name</span> <span class="o">=</span> <span class="s1">&#39;revenue&#39;</span>
+<span class="n">df_clean</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df_clean_category</span><span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="s1">&#39;illion&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_trim</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_replace</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="s1">&#39;\s*b&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_replace</span><span class="p">(</span><span class="n">column_name</span><span class="p">,</span> <span class="s1">&#39;\s*m&#39;</span><span class="p">,</span> <span class="s1">&#39;e-3&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">parse_number</span><span class="p">()</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;original_media&#39;</span><span class="p">,</span> <span class="s1">&#39;\[.+&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+<span class="p">)</span>
+<span class="n">df_clean</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>year_created</th>
+      <th>total_revenue</th>
+      <th>revenue_category</th>
+      <th>revenue</th>
+      <th>original_media</th>
+      <th>creators</th>
+      <th>owners</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>book sales</td>
+      <td>9.125</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Box Office</td>
+      <td>5.896</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>1937</td>
+      <td>19.0</td>
+      <td>Home Video/Entertainment</td>
+      <td>4.194</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+      <td>Tolkien Estate (books) Warner Bros. (AT&amp;T) (fi...</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="Section-2-One-Shot">
+<h3>Section 2 One-Shot<a class="headerlink" href="#Section-2-One-Shot" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df_clean</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">fileurl</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">col_old</span><span class="p">:</span> <span class="n">col_new</span> <span class="k">for</span> <span class="n">col_old</span><span class="p">,</span> <span class="n">col_new</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">df_raw</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">colnames</span><span class="p">)}</span>
+    <span class="p">)</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;total_revenue&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;est.&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_trim</span><span class="p">(</span><span class="s1">&#39;total_revenue&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;total_revenue&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;\$&#39;</span><span class="p">)</span>   <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_slice</span><span class="p">(</span><span class="s1">&#39;total_revenue&#39;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">change_type</span><span class="p">(</span><span class="s1">&#39;total_revenue&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>  <span class="c1"># [pyjanitor]</span>
+    <span class="o">.</span><span class="n">separate_rows</span><span class="p">(</span><span class="s1">&#39;revenue_items&#39;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;\[&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">filter_string</span><span class="p">(</span><span class="s1">&#39;revenue_items&#39;</span><span class="p">,</span> <span class="s1">&#39;illion&#39;</span><span class="p">)</span>  <span class="c1"># [pyjanitor]</span>
+    <span class="o">.</span><span class="n">separate</span><span class="p">(</span>
+        <span class="s1">&#39;revenue_items&#39;</span><span class="p">,</span> <span class="n">into</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="s1">&#39;revenue&#39;</span><span class="p">],</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;\$&#39;</span>
+    <span class="p">)</span>  <span class="c1"># [pyjanitor + pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39; – &#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;.*\]&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">transform_column</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="o">.</span><span class="n">lower</span><span class="p">)</span>  <span class="c1"># [pyjanitor] convert to lower case</span>
+    <span class="o">.</span><span class="n">transform_column</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">)</span>  <span class="c1"># [pyjanitor] strip leading/trailing white space</span>
+    <span class="o">.</span><span class="n">fuzzy_match_replace</span><span class="p">(</span><span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="n">mapper</span><span class="o">=</span><span class="n">value_mapper</span><span class="p">)</span>  <span class="c1"># [pyjanitor + pandas_flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;illion&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_trim</span><span class="p">(</span><span class="s1">&#39;revenue&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_replace</span><span class="p">(</span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;\s*b&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_replace</span><span class="p">(</span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span> <span class="s1">&#39;\s*m&#39;</span><span class="p">,</span> <span class="s1">&#39;e-3&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">parse_number</span><span class="p">()</span>  <span class="c1"># [pandas-flavor]</span>
+    <span class="o">.</span><span class="n">str_remove</span><span class="p">(</span><span class="s1">&#39;original_media&#39;</span><span class="p">,</span> <span class="s1">&#39;\[.+&#39;</span><span class="p">)</span>  <span class="c1"># [pandas-flavor]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="Final-aggregation-and-join">
+<h3>Final aggregation and join<a class="headerlink" href="#Final-aggregation-and-join" title="Permalink to this headline">¶</a></h3>
+<p>R snippet:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span> <span class="n">sum_df</span> <span class="o">&lt;-</span> <span class="n">clean_df</span> <span class="o">%&gt;%</span>
+  <span class="nf">group_by</span><span class="p">(</span><span class="n">franchise</span><span class="p">,</span> <span class="n">revenue_category</span><span class="p">)</span> <span class="o">%&gt;%</span>
+  <span class="nf">summarize</span><span class="p">(</span><span class="n">revenue</span> <span class="o">=</span> <span class="nf">sum</span><span class="p">(</span><span class="n">revenue</span><span class="p">))</span>
+
+<span class="n">metadata_df</span> <span class="o">&lt;-</span> <span class="n">clean_df</span> <span class="o">%&gt;%</span>
+  <span class="nf">select</span><span class="p">(</span><span class="n">franchise</span><span class="o">:</span><span class="n">revenue_category</span><span class="p">,</span> <span class="n">original_media</span><span class="o">:</span><span class="n">owners</span><span class="p">,</span> <span class="o">-</span><span class="n">total_revenue</span><span class="p">)</span>
+
+<span class="n">final_df</span> <span class="o">&lt;-</span> <span class="nf">left_join</span><span class="p">(</span><span class="n">sum_df</span><span class="p">,</span> <span class="n">metadata_df</span><span class="p">,</span>
+                      <span class="n">by</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;franchise&quot;</span><span class="p">,</span> <span class="s">&quot;revenue_category&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
+  <span class="nf">distinct</span><span class="p">(</span><span class="n">.keep_all</span> <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+
+<span class="n">final_df</span>
+</pre></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df_sum</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df_clean</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;franchise&#39;</span><span class="p">,</span> <span class="s1">&#39;revenue_category&#39;</span><span class="p">])</span>
+    <span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">flatten_multiindex</span><span class="p">()</span>
+<span class="p">)</span>
+<span class="n">df_sum</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>revenue_category</th>
+      <th>year_created</th>
+      <th>total_revenue</th>
+      <th>revenue</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Avengers</td>
+      <td>Box Office</td>
+      <td>1963</td>
+      <td>15.0</td>
+      <td>7.765</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Avengers</td>
+      <td>Comic or Manga</td>
+      <td>1963</td>
+      <td>15.0</td>
+      <td>0.131</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Avengers</td>
+      <td>Home Video/Entertainment</td>
+      <td>1963</td>
+      <td>15.0</td>
+      <td>0.459</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df_metadata</span> <span class="o">=</span> <span class="n">df_clean</span><span class="p">[</span>
+    <span class="p">[</span><span class="s1">&#39;franchise&#39;</span><span class="p">,</span> <span class="s1">&#39;revenue_category&#39;</span><span class="p">,</span> <span class="s1">&#39;original_media&#39;</span><span class="p">,</span> <span class="s1">&#39;creators&#39;</span><span class="p">]</span>
+<span class="p">]</span>
+<span class="n">df_metadata</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>revenue_category</th>
+      <th>original_media</th>
+      <th>creators</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>book sales</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>Box Office</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Middle-earth (The Lord of the Rings)</td>
+      <td>Home Video/Entertainment</td>
+      <td>Novel</td>
+      <td>J. R. R. Tolkien</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="Final-Dataframe">
+<h3>Final Dataframe<a class="headerlink" href="#Final-Dataframe" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Generate final dataframe</span>
+<span class="n">df_final</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+        <span class="n">df_sum</span><span class="p">,</span> <span class="n">df_metadata</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;franchise&#39;</span><span class="p">,</span> <span class="s1">&#39;revenue_category&#39;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">df_final</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>franchise</th>
+      <th>revenue_category</th>
+      <th>year_created</th>
+      <th>total_revenue</th>
+      <th>revenue</th>
+      <th>original_media</th>
+      <th>creators</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Avengers</td>
+      <td>Box Office</td>
+      <td>1963</td>
+      <td>15.0</td>
+      <td>7.765</td>
+      <td>Comic book</td>
+      <td>Stan Lee Jack Kirby</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Avengers</td>
+      <td>Comic or Manga</td>
+      <td>1963</td>
+      <td>15.0</td>
+      <td>0.131</td>
+      <td>Comic book</td>
+      <td>Stan Lee Jack Kirby</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Avengers</td>
+      <td>Home Video/Entertainment</td>
+      <td>1963</td>
+      <td>15.0</td>
+      <td>0.459</td>
+      <td>Comic book</td>
+      <td>Stan Lee Jack Kirby</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../notebooks.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pyjanitor_intro.html">pyjanitor Usage Walkthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Pivoting%20Data%20from%20Wide%20to%20Long.html">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Row_to_Names.html">row_to_names : Elevates a row to be the column names of a DataFrame.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="anime.html">Processing Anime Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bad_values.html">Replacing Bad Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bird_call.html">Processing Bird Call Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="board_games.html">Processing Board Game Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dirty_data.html">Processing Dirty Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expand_grid.html">Expand_grid : Create a dataframe from all combinations of inputs.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="french_trains.html">Processing French train data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="groupby_agg.html">Groupby_agg : Shortcut for assigning a groupby-transform to a new column.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflating_converting_currency.html">Inflating and Converting Currency</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Tidy Up Web-Scraped Media Franchise Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Background">Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Structural-convention">Structural convention</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#1.-Annotation-system-in-code-comments">1. Annotation system in code comments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#2.-R-counterpart-snippets-and-python-code-in-tandem">2. R counterpart snippets and python code in tandem</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Python-implementation">Python implementation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Preparation">Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Section-1-Multi-Step">Section 1 Multi-Step</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#Load-data">Load data</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#Note:-The-table-from-the-url-has-been-saved-as-a-csv-file-for-use-in-this-example-notebook.">Note: The table from the url has been saved as a csv file for use in this example notebook.</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#Rename-columns">Rename columns</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#Clean-up-total_revenue-column">Clean up <code class="docutils literal notranslate"><span class="pre">total_revenue</span></code> column</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#Split-column-revenue_items-into-revenue_category-and-revenue">Split column <code class="docutils literal notranslate"><span class="pre">revenue_items</span></code> into <code class="docutils literal notranslate"><span class="pre">revenue_category</span></code> and <code class="docutils literal notranslate"><span class="pre">revenue</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="#Clean-up-revenue_category-column">Clean up <code class="docutils literal notranslate"><span class="pre">revenue_category</span></code> column</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#Clean-up-revenue-column">Clean up <code class="docutils literal notranslate"><span class="pre">revenue</span></code> column</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#Section-2-One-Shot">Section 2 One-Shot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Final-aggregation-and-join">Final aggregation and join</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Final-Dataframe">Final Dataframe</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="normalize.html">Normalization and Standardization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sort_naturally.html">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="teacher_pupil.html">Processing International Teacher Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transform_column.html">Transforming columns</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../notebooks.html">Examples</a><ul>
+      <li>Previous: <a href="inflating_converting_currency.html" title="previous chapter">Inflating and Converting Currency</a></li>
+      <li>Next: <a href="normalize.html" title="next chapter">Normalization and Standardization</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/notebooks/medium_franchise.ipynb.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

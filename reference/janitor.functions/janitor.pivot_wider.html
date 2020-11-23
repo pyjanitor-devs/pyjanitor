@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.pivot_wider &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="General PySpark Functions" href="../pyspark.html" />
+    <link rel="prev" title="janitor.pivot_longer" href="janitor.pivot_longer.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-pivot-wider">
+<h1>janitor.pivot_wider<a class="headerlink" href="#janitor-pivot-wider" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.pivot_wider">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">pivot_wider</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">index</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">names_from</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">values_from</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>List<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">names_sort</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">flatten_levels</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">values_from_first</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">True</span></em>, <em class="sig-param"><span class="n">names_prefix</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">names_sep</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'_'</span></em>, <em class="sig-param"><span class="n">fill_value</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#pivot_wider"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.pivot_wider" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reshapes data from long to wide form. The number of columns are
+increased, while decreasing the number of rows. It is the inverse
+of the <cite>pivot_longer</cite> method, and is a wrapper around
+<cite>pd.DataFrame.unstack</cite>
+method.
+This method does not mutate the original DataFrame.
+Reshaping to wide form :
+.. code-block:: python</p>
+<blockquote>
+<div><blockquote>
+<div><p>name variable  value</p>
+</div></blockquote>
+<p>0   Alice      wk1      5
+1   Alice      wk2      9
+2   Alice      wk3     20
+3   Alice      wk4     22
+4     Bob      wk1      7
+5     Bob      wk2     11
+6     Bob      wk3     17
+7     Bob      wk4     33
+8   Carla      wk1      6
+9   Carla      wk2     13
+10  Carla      wk3     39
+11  Carla      wk4     40
+df = (</p>
+<blockquote>
+<div><p>pd.DataFrame(…)
+.pivot_wider(</p>
+<blockquote>
+<div><p>index=”name”,
+names_from=”variable”,
+values_from=”value”</p>
+</div></blockquote>
+<dl class="simple">
+<dt>)</dt><dd><p>name    wk1   wk2   wk3   wk4</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>0    Alice     5     9    20    22
+1    Bob       7    11    17    33
+2    Carla     6    13    39    40</p>
+</div></blockquote>
+<p>Pivoting on multiple columns is possible :
+.. code-block:: python</p>
+<blockquote>
+<div><blockquote>
+<div><p>name    n  pct</p>
+</div></blockquote>
+<p>0     1  10.0  0.1
+1     2  20.0  0.2
+2     3  30.0  0.3
+df = (</p>
+<blockquote>
+<div><blockquote>
+<div><p>pd.DataFrame(…)
+.assign(num=0)
+.pivot_wider(</p>
+<blockquote>
+<div><blockquote>
+<div><p>index=’num’,
+names_from=”name”,
+values_from=[“n”, “pct”]</p>
+</div></blockquote>
+<p>)</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="simple">
+<dt>)</dt><dd><p>num n_1  n_2  n_3  pct_1  pct_2  pct_3</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>0   0   10   20   30   0.1    0.2    0.3</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may choose not to collapse the levels by passing <cite>False</cite>
+to the <code class="docutils literal notranslate"><span class="pre">collapse_levels</span></code> argument.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>An error is raised if the index is not unique.</p>
+</div>
+<p>Functional usage syntax:
+.. code-block:: python</p>
+<blockquote>
+<div><p>import pandas as pd
+import janitor as jn
+df = pd.DataFrame(…)
+df = jn.pivot_wider(</p>
+<blockquote>
+<div><p>df = df,
+index = [column1, column2, …],
+names_from = [column3, column4, …],
+value_from = [column5, column6, …],
+names_sort = True/False,
+names_prefix = string,
+names_sep = string,
+flatten_levels=True/False,
+values_from_first=True/False,
+fill_value=fill_value</p>
+</div></blockquote>
+<p>)</p>
+</div></blockquote>
+<p>Method chaining syntax:
+.. code-block:: python</p>
+<blockquote>
+<div><dl>
+<dt>df = (</dt><dd><p>pd.DataFrame(…)
+.pivot_wider(</p>
+<blockquote>
+<div><p>index = [column1, column2, …],
+names_from = [column3, column4, …],
+value_from = [column5, column6, …],
+names_sort = True/False,
+names_prefix = string,
+names_sep = string,
+flatten_levels=True/False,
+values_from_first=True/False,
+fill_value=fill_value
+)</p>
+</div></blockquote>
+</dd>
+</dl>
+<p>)</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas dataframe.</p></li>
+<li><p><strong>index</strong> – Name(s) of columns to use as identifier variables.
+Should be either a single column name, or a list of column names.
+If <cite>index</cite> is not provided, the current frame’s index is used.</p></li>
+<li><p><strong>names_from</strong> – Name(s) of columns to pivot. Should be either
+a single column name, or a list of column names. A label or labels
+must be provided for <code class="docutils literal notranslate"><span class="pre">names_from</span></code>.</p></li>
+<li><p><strong>values_from</strong> – Name of column that will be used for populating new
+frame’s values. Should be either a single column name, or a list of
+column names. By default, if <code class="docutils literal notranslate"><span class="pre">values_from</span></code> is a list, the value
+will be added to the front of the output column; you can turn this
+off with the <cite>values_from_first</cite> argument. If <code class="docutils literal notranslate"><span class="pre">values_from</span></code> is not
+specified, all remaining columns will be used.</p></li>
+<li><p><strong>names_sort</strong> – Default is <cite>False</cite>. Sorts columns by order of
+appearance. Applicable only if <code class="docutils literal notranslate"><span class="pre">flatten_levels</span></code> is <cite>True</cite>.</p></li>
+<li><p><strong>flatten_levels</strong> – Default is <cite>True</cite>. Determines if the reshaped
+dataframe stays as a MultiIndex.</p></li>
+<li><p><strong>values_from_first</strong> – Determines if the values in <code class="docutils literal notranslate"><span class="pre">values_from</span></code> will
+be at the front of the output column. This applies if <code class="docutils literal notranslate"><span class="pre">values_from</span></code>
+is a list, and the levels are flattened. Default is True.</p></li>
+<li><p><strong>names_prefix</strong> – String to be added to the front of each output column.
+Can be handy if the values in <code class="docutils literal notranslate"><span class="pre">names_from</span></code> are numeric data types.
+Applicable only if the levels are flattened.</p></li>
+<li><p><strong>names_sep</strong> – If <code class="docutils literal notranslate"><span class="pre">names_from</span></code> or <code class="docutils literal notranslate"><span class="pre">values_from</span></code> contain multiple
+variables, this will be used to join their values into a single string
+to use as a column name. Default is <code class="docutils literal notranslate"><span class="pre">_</span></code>. Applicable only if the
+levels are flattened.</p></li>
+<li><p><strong>fill_value</strong> – Value to replace missing values with (after pivoting).
+It can be a number, string, or a dictionary, where the keys are the
+column_names, while the values are the values to replace the missing
+values with.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame that has been unpivoted from long to wide
+form.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>index</cite> or <cite>names_from</cite> is not a string, or a list of
+strings.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <cite>names_from</cite> is None.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>names_sep</cite> is not a string.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>values_from</cite> is not a string or a list of strings.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>names_sort</cite> is not a boolean.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <cite>flatten_levels</cite> is not a boolean.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if values in <cite>index</cite> or <cite>names_from</cite> or <cite>values_from</cite>
+do not exist in the dataframe.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if the combination of <cite>index</cite> and <cite>names_from</cite> is not
+unique.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#other">Other</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.then.html">janitor.then</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.also.html">janitor.also</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.shuffle.html">janitor.shuffle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.count_cumulative_unique.html">janitor.count_cumulative_unique</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.sort_naturally.html">janitor.sort_naturally</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.expand_grid.html">janitor.expand_grid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.flag_nulls.html">janitor.flag_nulls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.move.html">janitor.move</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.toset.html">janitor.toset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.unionize_dataframe_categories.html">janitor.unionize_dataframe_categories</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.groupby_topk.html">janitor.groupby_topk</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.complete.html">janitor.complete</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.pivot_longer.html">janitor.pivot_longer</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.pivot_wider</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.pivot_longer.html" title="previous chapter">janitor.pivot_longer</a></li>
+      <li>Next: <a href="../pyspark.html" title="next chapter">General PySpark Functions</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.pivot_wider.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

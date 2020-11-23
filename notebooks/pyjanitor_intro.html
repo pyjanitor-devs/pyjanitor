@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyjanitor Usage Walkthrough &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Pivot_Longer : One function to cover transformations from wide to long form." href="Pivoting%20Data%20from%20Wide%20to%20Long.html" />
+    <link rel="prev" title="Examples" href="../notebooks.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="pyjanitor-Usage-Walkthrough">
+<h1>pyjanitor Usage Walkthrough<a class="headerlink" href="#pyjanitor-Usage-Walkthrough" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> is a Python-based API on top of <code class="docutils literal notranslate"><span class="pre">pandas</span></code> inspired by the <a class="reference external" href="https://github.com/sfirke/janitor">janitor</a> R package. It aims to provide a clean, understandable interface based on method chaining for common and less-common tasks involving data cleaning and <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation.</p>
+<p>The core philosophy and augmentations on <code class="docutils literal notranslate"><span class="pre">pandas</span></code>’ approach to data cleaning and <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation include:</p>
+<ul class="simple">
+<li><p>A method-chaining paradigm for coding efficiency &amp; clarity of code through greatly improved readability.</p></li>
+<li><p>Implementation of common, useful <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation tasks that saves on repetitive code.</p></li>
+<li><p>Focus on active tense / verb approaches to function naming to provide at-a-glance understanding of a data manipulation pipeline.</p></li>
+</ul>
+<div class="section" id="Why-pyjanitor?">
+<h2>Why <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>?<a class="headerlink" href="#Why-pyjanitor?" title="Permalink to this headline">¶</a></h2>
+<p>Originally a simple port of the R package, <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> has evolved from a set of convenient data cleaning routines into an experiment with the method-chaining paradigm.</p>
+<p>Data preprocessing is best expressed as a <a class="reference external" href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic graph (DAG)</a> of actions taken on data. We take a base data file as the starting point and perform actions on it such as removing null/empty rows, replacing them with other values, adding/renaming/removing columns of data, filtering rows, and more.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">pandas</span></code> API has been invaluable for the Python data science ecosystem and implements method chaining for a subset of methods as part of the API. For example, resetting indexes (<code class="docutils literal notranslate"><span class="pre">.reset_index()</span></code>), dropping null values (<code class="docutils literal notranslate"><span class="pre">.dropna()</span></code>), and more are accomplished via the appropriate <code class="docutils literal notranslate"><span class="pre">pd.DataFrame</span></code> method calls.</p>
+<p>Inspired by the R statistical language ecosystem, where consistent and good API design in the <code class="docutils literal notranslate"><span class="pre">dplyr</span></code> package enables end-users, who are not necessarily developers, to concisely express data processing code, <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> has evolved into a language for expressing the data processing DAG for <code class="docutils literal notranslate"><span class="pre">pandas</span></code> users.</p>
+</div>
+<div class="section" id="What-is-method-chaining?">
+<h2>What is method chaining?<a class="headerlink" href="#What-is-method-chaining?" title="Permalink to this headline">¶</a></h2>
+<p>To accomplish these goals, actions for which we would need to invoke imperative-style statements can be replaced with method chains that allow the user to read off the logical order of actions taken. Note the annotated example below. First, we introduce the textual description of a sample data cleaning pipeline:</p>
+<ul class="simple">
+<li><p>Create <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>.</p></li>
+<li><p>Delete one column.</p></li>
+<li><p>Drop rows with empty values in two particular columns.</p></li>
+<li><p>Rename another two columns.</p></li>
+<li><p>Add a new column.</p></li>
+<li><p>Reset index to account for the missing row we removed above</p></li>
+</ul>
+<p>In <code class="docutils literal notranslate"><span class="pre">pandas</span></code> code, this would look as such:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># create a pandas DataFrame somehow.</span>
+<span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;column1&#39;</span><span class="p">]</span>  <span class="c1"># delete a column from the dataframe.</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;column2&#39;</span><span class="p">,</span> <span class="s1">&#39;column3&#39;</span><span class="p">])</span>  <span class="c1"># drop rows that have empty values in column 2 and 3.</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="s1">&#39;column2&#39;</span><span class="p">:</span> <span class="s1">&#39;unicorns&#39;</span><span class="p">,</span> <span class="s1">&#39;column3&#39;</span><span class="p">:</span> <span class="s1">&#39;dragons&#39;</span><span class="p">})</span>  <span class="c1"># rename column2 and column3</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;new_column&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;iterable&#39;</span><span class="p">,</span> <span class="s1">&#39;of&#39;</span><span class="p">,</span> <span class="s1">&#39;items&#39;</span><span class="p">]</span>  <span class="c1"># add a new column.</span>
+<span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># reset index to account for the missing row we removed above</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="The-pyjanitor-approach">
+<h2>The <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> approach<a class="headerlink" href="#The-pyjanitor-approach" title="Permalink to this headline">¶</a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>, we enable method chaining with method names that are <em>verbs</em> which describe the action taken:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">remove_columns</span><span class="p">([</span><span class="s1">&#39;column1&#39;</span><span class="p">])</span>
+    <span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;column2&#39;</span><span class="p">,</span> <span class="s1">&#39;column3&#39;</span><span class="p">])</span>
+    <span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s1">&#39;column2&#39;</span><span class="p">,</span> <span class="s1">&#39;unicorns&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s1">&#39;column3&#39;</span><span class="p">,</span> <span class="s1">&#39;dragons&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="s1">&#39;new_column&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;iterable&#39;</span><span class="p">,</span> <span class="s1">&#39;of&#39;</span><span class="p">,</span> <span class="s1">&#39;items&#39;</span><span class="p">])</span>
+    <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>We believe the <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> chaining-based approach leads to much cleaner code where the intent of a series of <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulations is much more immediately clear.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>’s etymology has a two-fold relationship to “cleanliness”. Firstly, it’s about extending <code class="docutils literal notranslate"><span class="pre">pandas</span></code> with convenient data cleaning routines. Secondly, it’s about providing a cleaner, method-chaining, verb-based API for common <code class="docutils literal notranslate"><span class="pre">pandas</span></code> routines.</p>
+</div>
+<div class="section" id="A-survey-of-pyjanitor-functions">
+<h2>A survey of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> functions<a class="headerlink" href="#A-survey-of-pyjanitor-functions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Cleaning column names (multi-indexes are possible!)</p></li>
+<li><p>Removing empty rows and columns</p></li>
+<li><p>Identifying duplicate entries</p></li>
+<li><p>Encoding columns as categorical</p></li>
+<li><p>Splitting your data into features and targets (for machine learning)</p></li>
+<li><p>Adding, removing, and renaming columns</p></li>
+<li><p>Coalesce multiple columns into a single column</p></li>
+<li><p>Convert excel date (serial format) into a Python datetime format</p></li>
+<li><p>Expand a single column that has delimited, categorical values into dummy-encoded variables</p></li>
+</ul>
+<p>A full list of functionality that <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> implements can be found in the <a class="reference external" href="https://ericmjl.github.io/pyjanitor/">API docs</a>.</p>
+</div>
+<div class="section" id="Some-things-that-are-different">
+<h2>Some things that are different<a class="headerlink" href="#Some-things-that-are-different" title="Permalink to this headline">¶</a></h2>
+<p>Some <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> methods are <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>-mutating operations, i.e., in place. Given that in a method-chaining paradigm, <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s that would be created at each step of the chain cannot be accessed anyway, duplication of data at each step would lead to unnecessary, potential considerable slowdowns and increased memory usage due to data-copying operations. The severity of such copying scales with <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> size. Take care to understand which functions change the original
+<code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> you are chaining on if it is necessary to preserve that data. If it is, you can simply <code class="docutils literal notranslate"><span class="pre">.copy()</span></code> it as the first step in a <code class="docutils literal notranslate"><span class="pre">df.copy().operation1().operation2()...</span></code> chain.</p>
+</div>
+<div class="section" id="How-it-works">
+<h2>How it works<a class="headerlink" href="#How-it-works" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> relies on the <a class="reference external" href="https://github.com/Zsailer/pandas_flavor">Pandas Flavor</a> package to register new functions as object methods that can be called directly on <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
+
+
+<span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="k">def</span> <span class="nf">remove_column</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">del</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;my_data.csv&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">remove_column</span><span class="p">(</span><span class="s1">&#39;my_column_name&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">operation2</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Importing the <code class="docutils literal notranslate"><span class="pre">janitor</span></code> package immediately registers these functions. The fact that each <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> method <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> registers returns the <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> is what gives it the capability to method chain.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> explicitly does not modify any existing <code class="docutils literal notranslate"><span class="pre">pandas</span></code> methods / functionality.</p>
+</div>
+<div class="section" id="Demo-of-various-DataFrame-manipulation-tasks-using-pyjanitor">
+<h2>Demo of various <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation tasks using <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code><a class="headerlink" href="#Demo-of-various-DataFrame-manipulation-tasks-using-pyjanitor" title="Permalink to this headline">¶</a></h2>
+<p>Here, we’ll walk through some useful <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>-based approaches to cleaning and manipulating <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s.</p>
+<div class="section" id="Code-preamble:">
+<h3>Code preamble:<a class="headerlink" href="#Code-preamble:" title="Permalink to this headline">¶</a></h3>
+<p>import pandas as pd import janitor import pandas_flavor as pf import numpy as np</p>
+</div>
+<div class="section" id="Let’s-take-a-look-at-our-dataset:">
+<h3>Let’s take a look at our dataset:<a class="headerlink" href="#Let’s-take-a-look-at-our-dataset:" title="Permalink to this headline">¶</a></h3>
+<p>df = pd.read_excel(‘dirty_data.xlsx’) df</p>
+<p>We can see that this dataset is dirty in a number of ways, including the following:</p>
+<ul class="simple">
+<li><p>Column names contain spaces, punctuation marks, and inconsistent casing</p></li>
+<li><p>One row (<code class="docutils literal notranslate"><span class="pre">7</span></code>) with completely missing data</p></li>
+<li><p>One column (<code class="docutils literal notranslate"><span class="pre">do</span> <span class="pre">not</span> <span class="pre">edit!</span> <span class="pre">---&gt;</span></code>) with completely missing data</p></li>
+</ul>
+</div>
+<div class="section" id="Clean-up-our-data-using-a-pyjanitor-method-chaining-pipeline">
+<h3>Clean up our data using a <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> method-chaining pipeline<a class="headerlink" href="#Clean-up-our-data-using-a-pyjanitor-method-chaining-pipeline" title="Permalink to this headline">¶</a></h3>
+<p>Let’s run through a demo <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> cleaning procedure:</p>
+<p>cleaned_df = ( pd.read_excel(‘dirty_data.xlsx’) .clean_names() .remove_empty() .rename_column(“%<em>allocated”, “percent_allocated”) .rename_column(“full_time</em>”, “full_time”) .coalesce([“certification”, “certification_1”], “certification”) .encode_categorical([“subject”, “employee_status”, “full_time”]) .convert_excel_date(“hire_date”) .reset_index(drop=True) )</p>
+<p>cleaned_df</p>
+<p>The cleaned <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> looks much better and quite a bit more usable for our downstream tasks.</p>
+</div>
+<div class="section" id="Step-by-step-walkthrough-of-pyjanitor-DataFrame-manipulations">
+<h3>Step-by-step walkthrough of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulations<a class="headerlink" href="#Step-by-step-walkthrough-of-pyjanitor-DataFrame-manipulations" title="Permalink to this headline">¶</a></h3>
+<p>Just for clearer understanding of the above, let’s see how <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> progressively modified the data.</p>
+<p>Loading data in:</p>
+<p>df = pd.read_excel(‘dirty_data.xlsx’) df</p>
+<p>Clean up names by removing whitespace, punctuation / symbols, capitalization:</p>
+<p>df = df.clean_names() df</p>
+<p>Remove entirely empty rows / columns:</p>
+<p>df = df.remove_empty() df</p>
+<p>Rename particular columns:</p>
+<p>df = ( df.rename_column(“%<em>allocated”, “percent_allocated”) .rename_column(“full_time</em>”, “full_time”) ) df</p>
+<p>Take first non-<code class="docutils literal notranslate"><span class="pre">NaN</span></code> row value in two columns:</p>
+<p>df = df.coalesce([“certification”, “certification_1”], “certification”) df</p>
+<p>Convert string object rows to categorical to save on memory consumption and speed up access:</p>
+<p>df.dtypes</p>
+<p>df.encode_categorical([“subject”, “employee_status”, “full_time”]) df.dtypes</p>
+<p>Convert Excel date-formatted column to a more interpretable format:</p>
+<p>df.convert_excel_date(“hire_date”) df</p>
+</div>
+</div>
+<div class="section" id="Example-analysis-of-the-data">
+<h2>Example analysis of the data<a class="headerlink" href="#Example-analysis-of-the-data" title="Permalink to this headline">¶</a></h2>
+<p>Let’s perform analysis on the above, cleaned <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>. First we add some additional, randomly-generated data. Note that we <code class="docutils literal notranslate"><span class="pre">.copy()</span></code> the original to preserve it, given that the following would otherwise modify it:</p>
+<p>data_df = ( cleaned_df .copy() .add_columns( lucky_number=np.random.randint(0, 10, len(cleaned_df)), age=np.random.randint(10, 100, len(cleaned_df)), employee_of_month_count=np.random.randint(0, 5, len(cleaned_df)) ) )</p>
+<p>data_df</p>
+<p>Calculate mean, median of all numerical columns after grouping by employee status. Use <code class="docutils literal notranslate"><span class="pre">.collapse_levels()</span></code>, a <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> convenience function, to convert the <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> returned by <code class="docutils literal notranslate"><span class="pre">.agg()</span></code> from having multi-level columns (because we supplied a list of aggregation operations) to single-level by concatenating the level names with an underscore:</p>
+<p>stats_df = ( data_df.groupby(‘employee_status’) .agg([‘mean’, ‘median’]) .collapse_levels() .reset_index() )</p>
+<p>stats_df</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../notebooks.html">Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pyjanitor Usage Walkthrough</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Why-pyjanitor?">Why <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#What-is-method-chaining?">What is method chaining?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#The-pyjanitor-approach">The <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> approach</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#A-survey-of-pyjanitor-functions">A survey of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Some-things-that-are-different">Some things that are different</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#How-it-works">How it works</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Demo-of-various-DataFrame-manipulation-tasks-using-pyjanitor">Demo of various <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation tasks using <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Code-preamble:">Code preamble:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Let’s-take-a-look-at-our-dataset:">Let’s take a look at our dataset:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Clean-up-our-data-using-a-pyjanitor-method-chaining-pipeline">Clean up our data using a <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> method-chaining pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Step-by-step-walkthrough-of-pyjanitor-DataFrame-manipulations">Step-by-step walkthrough of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-analysis-of-the-data">Example analysis of the data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Pivoting%20Data%20from%20Wide%20to%20Long.html">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Row_to_Names.html">row_to_names : Elevates a row to be the column names of a DataFrame.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="anime.html">Processing Anime Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bad_values.html">Replacing Bad Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bird_call.html">Processing Bird Call Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="board_games.html">Processing Board Game Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dirty_data.html">Processing Dirty Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expand_grid.html">Expand_grid : Create a dataframe from all combinations of inputs.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="french_trains.html">Processing French train data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="groupby_agg.html">Groupby_agg : Shortcut for assigning a groupby-transform to a new column.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inflating_converting_currency.html">Inflating and Converting Currency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="medium_franchise.html">Tidy Up Web-Scraped Media Franchise Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normalize.html">Normalization and Standardization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sort_naturally.html">Using <code class="docutils literal notranslate"><span class="pre">sort_naturally</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="teacher_pupil.html">Processing International Teacher Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transform_column.html">Transforming columns</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../notebooks.html">Examples</a><ul>
+      <li>Previous: <a href="../notebooks.html" title="previous chapter">Examples</a></li>
+      <li>Next: <a href="Pivoting%20Data%20from%20Wide%20to%20Long.html" title="next chapter">Pivot_Longer : One function to cover transformations from wide to long form.</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/notebooks/pyjanitor_intro.ipynb.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

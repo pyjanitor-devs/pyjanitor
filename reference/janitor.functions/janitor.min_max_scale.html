@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>janitor.min_max_scale &#8212; pyjanitor  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="janitor.get_features_targets" href="janitor.get_features_targets.html" />
+    <link rel="prev" title="janitor.label_encode" href="janitor.label_encode.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="janitor-min-max-scale">
+<h1>janitor.min_max_scale<a class="headerlink" href="#janitor-min-max-scale" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="janitor.min_max_scale">
+<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">min_max_scale</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">old_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">old_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">column_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">new_min</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">new_max</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#min_max_scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.min_max_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scales data to between a minimum and maximum value.</p>
+<p>This method mutates the original DataFrame.</p>
+<p>If <cite>minimum</cite> and <cite>maximum</cite> are provided, the true min/max of the
+<cite>DataFrame</cite> or column is ignored in the scaling process and replaced with
+these values, instead.</p>
+<p>One can optionally set a new target minimum and maximum value using the
+<cite>new_min</cite> and <cite>new_max</cite> keyword arguments. This will result in the
+transformed data being bounded between <cite>new_min</cite> and <cite>new_max</cite>.</p>
+<p>If a particular column name is specified, then only that column of data
+are scaled. Otherwise, the entire dataframe is scaled.</p>
+<p>Method chaining syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="o">.</span><span class="n">min_max_scale</span><span class="p">(</span><span class="n">column_name</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Setting custom minimum and maximum:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">min_max_scale</span><span class="p">(</span>
+        <span class="n">column_name</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+        <span class="n">new_min</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">new_max</span><span class="o">=</span><span class="mi">10</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Setting a min and max that is not based on the data, while applying to
+entire dataframe:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">min_max_scale</span><span class="p">(</span>
+        <span class="n">old_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">old_max</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
+        <span class="n">new_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">new_max</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The aforementioned example might be applied to something like scaling the
+isoelectric points of amino acids. While technically they range from
+approx 3-10, we can also think of them on the pH scale which ranges from
+1 to 14. Hence, 3 gets scaled not to 0 but approx. 0.15 instead, while 10
+gets scaled to approx. 0.69 instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> – A pandas DataFrame.</p></li>
+<li><p><strong>old_min</strong> – (optional) Overrides for the current minimum
+value of the data to be transformed.</p></li>
+<li><p><strong>old_max</strong> – (optional) Overrides for the current maximum
+value of the data to be transformed.</p></li>
+<li><p><strong>new_min</strong> – (optional) The minimum value of the data after
+it has been scaled.</p></li>
+<li><p><strong>new_max</strong> – (optional) The maximum value of the data after
+it has been scaled.</p></li>
+<li><p><strong>column_name</strong> – (optional) The column on which to perform scaling.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas DataFrame with scaled data.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">old_max</span></code> is not greater than <code class="docutils literal notranslate"><span class="pre">old_min</span></code>.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">new_max</span></code> is not greater than <code class="docutils literal notranslate"><span class="pre">new_min</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../../index.html">
+    <img class="logo" src="../../_static/logo_title.svg" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../biology.html">Biology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">Chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../engineering.html">Engineering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../finance.html">Finance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ml.html">Machine Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../timeseries.html">Time Series</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../general_functions.html">General Functions</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-columns">Modify columns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#modify-values">Modify values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#filtering">Filtering</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../general_functions.html#preprocessing">Preprocessing</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="janitor.bin_numeric.html">janitor.bin_numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.encode_categorical.html">janitor.encode_categorical</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.impute.html">janitor.impute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.label_encode.html">janitor.label_encode</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">janitor.min_max_scale</a></li>
+<li class="toctree-l4"><a class="reference internal" href="janitor.get_features_targets.html">janitor.get_features_targets</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../general_functions.html#other">Other</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pyspark.html">General PySpark Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xarray.html">General XArray Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Contributors</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Documentation</a><ul>
+  <li><a href="../general_functions.html">General Functions</a><ul>
+      <li>Previous: <a href="janitor.label_encode.html" title="previous chapter">janitor.label_encode</a></li>
+      <li>Next: <a href="janitor.get_features_targets.html" title="next chapter">janitor.get_features_targets</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, PyJanitor devs.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/reference/janitor.functions/janitor.min_max_scale.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

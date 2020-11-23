@@ -328,3 +328,24 @@ def test_duplicate_index():
     result = df.complete(columns=["row", "column"], fill_value={"value": 0})
 
     assert_frame_equal(result, dup_expected_output)
+
+import janitor
+
+df = pd.DataFrame(
+    {
+        "group": [1, 2, 1],
+        "item_id": [1, 2, 2],
+        "item_name": ["a", "b", "b"],
+        "value1": [1, 2, 3],
+        "value2": [4, 5, 6],
+    }
+)
+
+df = pd.concat([df]*3, ignore_index=True)
+
+print(df)
+print("\n\n")
+
+result = df.complete(["group", "item_id", "item_name"])
+
+print(result)

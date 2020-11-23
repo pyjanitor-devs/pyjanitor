@@ -553,6 +553,58 @@ def _computations_complete(
     A dataframe with all possible combinations is returned.
     """
 
+    if not columns:
+        raise ValueError("`columns` cannot be empty.")
+    check("columns", columns, [list])
+    # easy to reindex when new values are supplied via a dictionary
+    # of course, this has a caveat that the number of rows generated
+    # from the values of the dictionary must be greater than the
+    # number of rows of the original dataframe.
+    if len(columns) == 1 and (not isinstance(columns[0], dict)):
+        raise ValueError(
+            """
+            Only a dictionary is allowed, if the number of
+            entries in `columns` is 1.
+            """)
+    column_checker = []
+    for grouping in columns:
+        check("grouping", grouping, [list, dict, str, tuple])
+        if not grouping:
+            raise ValueError("grouping cannot be empty")
+        if isinstance(grouping, str):
+            column_checker.append(grouping)
+        else:
+            column_checker.extend(grouping)
+
+    # columns should not be duplicated across groups
+    column_checker_set = set()
+    for column in column_checker:
+        if column in column_checker_set:
+            raise ValueError(f"{column} column should be in only one group.")
+        else:
+            column_checker_set.add(column)
+
+    check_column(df, column_checker)
+
+    if fill_value is not None:
+        check("fill_value", fill_value, [dict])
+        check_column(df, fill_value)
+
+    unique_indices = None
+    if all((isinstance(grouping, str) for grouping in columns)):
+        if not df.duplicated(subset=columns).any():
+            df = df.set_index(columns)
+            df = df.unstack(columns[1:])
+            df = df.stack(columns[1:], dropna=False)
+            df = df.reset_index()
+        else:
+            unique_indices = (column.unique() for _, column in df.filter(columns).items())
+            unique_indices = pd.MultiIndex.from_product(unique_indices, names=columns)
+            unique_indices =  unique_indices.to_frame(index=False)
+            df = df.merge(unique_indices, how='outer')
+            df = df.sort_values(by=columns, ignore_index=True)
+        if fill_value:
+            df = df.fillna(fill_value)
 
     return df
 

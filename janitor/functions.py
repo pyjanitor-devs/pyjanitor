@@ -5092,9 +5092,9 @@ def pivot_longer(
         in ``names_pattern``). For a list/tuple of regular expressions,
         ``names_to`` must also be a list/tuple and the lengths of both
         arguments must match(if the length of `names_to` is 4, then the
-        length of `names_pattern must also be 4). The entries in both
+        length of `names_pattern` must also be 4). The entries in both
         arguments must also match positionally, i.e  if
-        `names_to = ("name1", "name2", "name3"), then ``names_pattern``
+        `names_to` = ("name1", "name2", "name3"), then ``names_pattern``
         should be ("regex1", "regex2", "regex3"), with "name1" pairing
         "regex1", "name2" pairing "regex2", and "name3" pairing "regex3".
         `names_pattern` does not work with MultiIndex columns.
@@ -5107,6 +5107,8 @@ def pivot_longer(
     :param sort_by_appearance: Default `False`. Boolean value that determines
         the final look of the dataframe. If `True`, the unpivoted dataframe
         will be stacked in order of appearance. See examples for more details.
+        `pivot_longer` is usually more performant if `sort_by_appearance` is
+        ``False``.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained and the Index labels will be
         repeated as necessary.

@@ -718,7 +718,8 @@ def _data_checks_pivot_longer(
                 not isinstance(names_pattern, (list, tuple)),
             )
         ):
-            # copied from pandas' melt docs, with a minor tweak
+            # copied from pandas' melt source code
+            # with a minor tweak
             raise ValueError(
                 """
                 This dataframe has a column name that matches the
@@ -734,9 +735,10 @@ def _data_checks_pivot_longer(
         if isinstance(df.columns, pd.MultiIndex):
             raise ValueError(
                 """
-            Unpivoting a MultiIndex column dataframe when `names_sep`
-            or `names_pattern` is supplied is not supported.
-            """
+                Unpivoting a MultiIndex column dataframe when
+                `names_sep` or `names_pattern` is supplied is
+                not supported.
+                """
             )
 
     if all((names_sep is None, names_pattern is None)):
@@ -748,7 +750,7 @@ def _data_checks_pivot_longer(
                 raise ValueError(
                     """
                     index must be a list of tuples
-                    when columns are a MultiIndex
+                    when columns are a MultiIndex.
                     """
                 )
 
@@ -759,7 +761,7 @@ def _data_checks_pivot_longer(
                 raise ValueError(
                     """
                     column_names must be a list of tuples
-                    when columns are a MultiIndex
+                    when columns are a MultiIndex.
                     """
                 )
 
@@ -788,8 +790,8 @@ def _pivot_longer_pattern_match(
 ) -> Tuple:
     """
     This checks if a pattern (regular expression) is supplied
-    to index or columns and extracts the names that match the
-    given regular expression.
+    to index or column_names and extracts the column labels
+    that match the given regular expression.
 
     A dataframe, along with the `index` and `column_names` are
     returned.
@@ -860,7 +862,7 @@ def _restore_index_and_sort_by_appearance(
         id, a1, a2, a3, A1, A2, A3
          1, a, b, c, A, B, C
 
-    when pivoted into long form, it will look like this :
+    when unpivoted into long form, it will look like this :
               id instance    a     A
         0     1     1        a     A
         1     1     2        b     B
@@ -869,7 +871,8 @@ def _restore_index_and_sort_by_appearance(
     where the column `a` comes before `A`, as it was in the source data,
     and in column `a`, `a > b > c`, also as it was in the source data.
 
-    A reindexed dataframe is returned.
+    A dataframe that is possibly reindexed or sorted by appearance
+    is returned.
     """
     primary_index_sorter = None
     index_sorter = None
@@ -922,15 +925,10 @@ def _pivot_longer_extractions(
     into new columns, and is executed if `names_sep` or `names_pattern`
     is not None.
 
-    An `others` variable is created, containing column names that
-    are not `.value`. It is created if ".value" is in `names_to`,
-    or `names_pattern` is a list/tuple. The `others` variable
-    comes in handy when stacking.
-
     A tuple, containing the dataframe and `others`, are returned.
     """
 
-    # if the user is only interested in a subsection
+    # This is executed if the user is only interested in a subsection
     # put here because it can cause issues in the
     # _computation_pivot_longer function, especially
     # if column_level is not None
@@ -958,8 +956,8 @@ def _pivot_longer_extractions(
         if len(mapping.columns) != len(names_to):
             raise ValueError(
                 """
-                Length of ``names_to`` does not match
-                number of columns extracted.
+                The length of ``names_to`` does not match
+                the number of columns extracted.
                 """
             )
         mapping.columns = names_to
@@ -978,7 +976,7 @@ def _pivot_longer_extractions(
             if len(names_to) != len(mapping.columns):
                 raise ValueError(
                     """
-                    Length of ``names_to`` does not match
+                    The length of ``names_to`` does not match
                     the number of columns extracted.
                     """
                 )
@@ -992,8 +990,8 @@ def _pivot_longer_extractions(
             if not np.any(mapping):
                 raise ValueError(
                     """
-                    No match was returned for the regular expressions
-                    in `names_pattern`.
+                    The regular expressions in ``names_pattern``
+                    did not return any matches.
                     """
                 )
             mapping = np.select(mapping, names_to, None)
@@ -1011,6 +1009,8 @@ def _pivot_longer_extractions(
             mapping.iloc[positions, 1:] = ""
 
     else:
+        # The `others` variable comes in
+        # handy when reshaping the data.
         others = [
             column_name for column_name in mapping if column_name != ".value"
         ]
@@ -1032,7 +1032,9 @@ def _pivot_longer_extractions(
         mapping = mapping.astype(category_dtypes)
         # creating a group is primarily for sorting by appearance.
         # secondary purpose is to indicate groups if a list/tuple
-        # is passed to `names_pattern`
+        # is passed to `names_pattern`. This purpose is not revealed
+        # to the user in the final result; this may change, if users
+        # request it.
         group = "group"
         for column_name in mapping:
             if column_name == group:
@@ -1066,7 +1068,7 @@ def _computations_pivot_longer(
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_longer` function.
-    Below is a summary of what/how the function accomplishes its tasks:
+    Below is a summary of how the function accomplishes its tasks:
 
     1. If `names_sep` or `names_pattern` is not provided, then regular data
        unpivoting is covered with pandas melt.
@@ -1081,13 +1083,14 @@ def _computations_pivot_longer(
         After the extraction, `pd.melt` is executed.
 
     3. 'The labels in `names_to` become the new column names, if `.value`
-        is not in `names_to`, or `names_pattern` is not a list/tuple of
+        is not in `names_to`, or if `names_pattern` is not a list/tuple of
         regexes.
 
     4.  If, however, `names_to` contains `.value`, or `names_pattern` is a
-        list/tuple of regexes, then the `.value` column is unstacked to become
-        new column name(s), while the other values, if any, go under different
-        column names. `values_to` is overriden.
+        list/tuple of regexes, then the `.value` column is unstacked(in a
+        manner of speaking, `pd.DataFrame.unstack` is not actually used) to
+        become new column name(s), while the other values, if any, go under
+        different column names. `values_to` is overriden.
 
     5.  If `ignore_index` is `False`, then the index of the source dataframe is
         returned, and repeated as necessary.
@@ -1095,27 +1098,6 @@ def _computations_pivot_longer(
     6.  If the user wants the data in order of appearance, in which case, the
         unpivoted data appears in stacked form, then `sort_by_appearance`
         covers that.
-
-
-    The function also tries to emulate the way the source data is structured,
-    and is only applied if `sort_by_appearance` is True.
-
-    Say data looks like this :
-        id, a1, a2, a3, A1, A2, A3
-         1, a, b, c, A, B, C
-
-    when pivoted into long form, it will look like this :
-              id instance    a     A
-        0     1     1        a     A
-        1     1     2        b     B
-        2     1     3        c     C
-
-    where the columns `a` comes before `A`, as it was in the source data,
-    and in column `a`, `a > b > c`, also as it was in the source data.
-    This also visually creates a complete set of the data per index.
-
-    Usually, there is a significant performance improvement when
-    `sort_by_appearance` is `False`.
 
     An unpivoted dataframe is returned.
     """
@@ -1191,8 +1173,8 @@ def _computations_pivot_longer(
             for stub in stubnames
         ]
         df = pd.concat(df, axis="columns")
-        # there likely will be multiple `others`; these gets the first
-        # positions and discards the rest.
+        # there likely will be multiple `others`; this section gets the
+        # first positions and discards the rest.
         others_positions = df.columns.get_indexer_non_unique(others)[0]
         others_positions = np.sort(others_positions)[: len(others)]
         stubnames_positions = df.columns.get_indexer_for(stubnames)

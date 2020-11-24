@@ -4883,19 +4883,17 @@ def pivot_longer(
         8    c  2020     02      1.265936
 
     Example 3: The dataframe below has names embedded in it
-    ('measure1', 'measure2') that we would love to reuse as
-    column names.
+    (‘measure1’, ‘measure2’) that we would love to reuse as column names.
 
-    .. csv-table::
-        :header: "treat1-measure1","treat1-measure2","treat2-measure1","treat2-measure2"
-        :widths: 20,20,20,20
+    .. code-block:: python
 
-        1,4,2,5
-        2,5,3,4
+            treat1-measure1     treat1-measure2 treat2-measure1 treat2-measure2
+        0                1              4                   2               5
+        1                2              5                   3               4
 
-    For this, we take advantage of the `.value` variable, which signals to
-    `pivot_longer` to treat the part of the column names corresponding to
-    `.value` as new column names. Think of it as `stubnames` in pandas'
+    For this, we use the `.value` variable, which signals to `pivot_longer`
+    to treat the part of the column names corresponding to `.value` as new
+    column names. The `.value` variable is similar to `stubnames` in pandas'
     ``wide_to_long`` function, but with more flexibility.
 
     .. code-block:: python
@@ -4954,18 +4952,15 @@ def pivot_longer(
     Note that there are no limits to the pairing; however, you can only have
     one `.value` in ``names_to``.
 
-    Example 5: You can also pass a list/tuple of regular expressions to
-    ``names_pattern``, along with a list/tuple of new names to
-    ``names_to``:
+    Example 5: You can also pass a list/tuple of regular expressions that match
+    specific patterns to ``names_pattern``, along with a list/tuple of new
+    names to ``names_to``:
 
+    .. code-block:: python
 
-    .. csv-table::
-        :header: "GameID","Date","Visitor","Score_V","Home","Score_H"
-        :widths: 15,15,15,15,15,15
-
-        1,9/10/2020,"Houston Texans",20,"Kansas City Chiefs",34
-        2,9/13/2020,"Seattle SeaHawks",38,"Atlanta Falcons",25
-
+          GameID   Date	        Visitor	     Score_V	   Home	        Score_H
+        0  1     9/10/2020   Houston Texans     20    Kansas City Chiefs   34
+        1  2     9/13/2020   Seattle Seahawks   38    Atlanta Falcons      25
 
     .. code-block:: python
 

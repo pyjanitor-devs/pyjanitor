@@ -4723,6 +4723,9 @@ def pivot_longer(
     All measured variables are “unpivoted” (and typically duplicated) along the
     row axis.
 
+    See the `Example notebooks <https://pyjanitor.readthedocs.io/notebooks/>`_
+    for a more in depth exploration of `pivot_longer`.
+
 
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
@@ -4954,7 +4957,7 @@ def pivot_longer(
 
     Example 5: You can also pass a list/tuple of regular expressions that match
     specific patterns to ``names_pattern``, along with a list/tuple of new
-    names to ``names_to``:
+    names to ``names_to``; this can come in handy if `.value` falls short:
 
     .. code-block:: python
 
@@ -4976,6 +4979,13 @@ def pivot_longer(
         1       2       9/13/2020    Seattle Seahawks     38
         2       1       9/10/2020  Kansas City Chiefs     34
         3       2       9/13/2020     Atlanta Falcons     25
+
+    Note that in the code above, the number of entries in both `names_to` and
+    `names_pattern` must match. Essentially, what the code does is look for
+    columns that start with `Visitor` or `Home` (using the regex supplied) and
+    puts all the values associated with these columns under a new column name
+    `Team`. It then looks for columns that start with `Score` and collate all
+    the values associated with these columns to a single column named `Score`.
 
     You can also take advantage of `janitor.patterns` function, which allows
     selection of columns via a regular expression; this can come in handy if

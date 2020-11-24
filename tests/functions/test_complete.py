@@ -341,7 +341,7 @@ df = pd.DataFrame(
     }
 )
 
-df = pd.concat([df]*3, ignore_index=True)
+#df = pd.concat([df]*3, ignore_index=True)
 
 print(df)
 print("\n\n")

@@ -585,6 +585,8 @@ def _computations_complete(
             column_checker_set.add(column)
 
     check_column(df, column_checker)
+    column_checker_set = None
+    column_checker = None
 
     if fill_value is not None:
         check("fill_value", fill_value, [dict])
@@ -592,19 +594,16 @@ def _computations_complete(
 
     unique_indices = None
     if all((isinstance(grouping, str) for grouping in columns)):
-        if not df.duplicated(subset=columns).any():
-            df = df.set_index(columns)
-            df = df.unstack(columns[1:])
-            df = df.stack(columns[1:], dropna=False)
-            df = df.reset_index()
-        else:
-            unique_indices = (column.unique() for _, column in df.filter(columns).items())
-            unique_indices = pd.MultiIndex.from_product(unique_indices, names=columns)
-            unique_indices =  unique_indices.to_frame(index=False)
-            df = df.merge(unique_indices, how='outer')
-            df = df.sort_values(by=columns, ignore_index=True)
+        unique_indices = (column.unique() for _, column in df.filter(columns).items())
+        unique_indices = pd.MultiIndex.from_product(unique_indices, names=columns)
+        unique_indices =  unique_indices.to_frame(index=False)
+        df = df.merge(unique_indices, on = columns, how='outer')
+        df = df.sort_values(by=columns, ignore_index=True)
         if fill_value:
             df = df.fillna(fill_value)
+        return df
+
+    # now to deal with nested possibilities
 
     return df
 

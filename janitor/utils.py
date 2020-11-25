@@ -621,7 +621,7 @@ def _computations_complete(
             column.unique() for _, column in df.filter(columns).items()
         )
         unique_indices = product(*unique_indices)
-        unique_indices = pd.DataFrame(unique_indices, columns = columns)
+        unique_indices = pd.DataFrame(unique_indices, columns=columns)
         df = df.merge(unique_indices, on=columns, how="outer")
         df = df.sort_values(by=columns, ignore_index=True)
         if fill_value:
@@ -646,16 +646,15 @@ def _computations_complete(
             group_value = zip(*group_value)
             group_collection.append(group_value)
         else:
-            if isinstance(group, dict):
-                for _, value in group.items():
-                    group_value = __apply_if_callable(value, df)
-                    # safe assumption to get unique values
-                    if isinstance(group_value, pd.Series):
-                        if not group_value.is_unique:
-                            group_value = group_value.unique()
-                    else:
-                        group_value = set(group_value)
-                    group_collection.append(group_value)
+            for _, value in group.items():
+                group_value = __apply_if_callable(value, df)
+                # safe assumption to get unique values
+                if isinstance(group_value, pd.Series):
+                    if not group_value.is_unique:
+                        group_value = group_value.unique()
+                else:
+                    group_value = set(group_value)
+                group_collection.append(group_value)
 
     # create total unique combinations
     group_collection = product(*group_collection)

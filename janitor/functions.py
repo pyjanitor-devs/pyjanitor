@@ -4365,7 +4365,7 @@ def fill_direction(
         Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
     :raises ValueError: if column supplied is not in the dataframe.
-    :raises ValueError: if direction supplied is not one of `down`,`up`,
+    :raises ValueError: if direction supplied is not one of `down`, `up`,
         `updown`, or `downup`.
 
     .. # noqa: DAR402

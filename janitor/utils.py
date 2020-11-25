@@ -9,6 +9,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from numpy.lib.arraysetops import isin
 from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
@@ -539,9 +540,28 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     return pd.DataFrame(*df_expand_grid, columns=df_columns)
 
 
+# copied from pandas.core.common.py
+# used in _computations_complete
+# might also be useful in case_when
+def __apply_if_callable(maybe_callable, obj, **kwargs):
+    """
+    Evaluate possibly callable input using obj and kwargs if it is callable,
+    otherwise return as it is.
+    Parameters
+    ----------
+    maybe_callable : possibly a callable
+    obj : NDFrame
+    **kwargs
+    """
+    if callable(maybe_callable):
+        return maybe_callable(obj, **kwargs)
+
+    return maybe_callable
+
+
 def _computations_complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]],
+    columns: List[Union[List, Tuple, Dict, str]] = None,
     fill_value: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
@@ -554,18 +574,20 @@ def _computations_complete(
     """
 
     if not columns:
-        raise ValueError("`columns` cannot be empty.")
-    check("columns", columns, [list])
-    # easy to reindex when new values are supplied via a dictionary
-    # of course, this has a caveat that the number of rows generated
-    # from the values of the dictionary must be greater than the
-    # number of rows of the original dataframe.
-    if len(columns) == 1 and (not isinstance(columns[0], dict)):
+        return df
+
+    # TODO: get complete to work on MultiIndex columns,
+    # if there is sufficient interest with use cases
+    if isinstance(df.columns, pd.MultiIndex):
         raise ValueError(
             """
-            Only a dictionary is allowed, if the number of
-            entries in `columns` is 1.
-            """)
+            `complete` does not support MultiIndex columns.
+            """
+        )
+
+    # type checking
+    check("columns", columns, [list])
+
     column_checker = []
     for grouping in columns:
         check("grouping", grouping, [list, dict, str, tuple])
@@ -577,33 +599,81 @@ def _computations_complete(
             column_checker.extend(grouping)
 
     # columns should not be duplicated across groups
-    column_checker_set = set()
+    column_checker_no_duplicates = set()
     for column in column_checker:
-        if column in column_checker_set:
+        if column in column_checker_no_duplicates:
             raise ValueError(f"{column} column should be in only one group.")
         else:
-            column_checker_set.add(column)
+            column_checker_no_duplicates.add(column)
 
     check_column(df, column_checker)
-    column_checker_set = None
-    column_checker = None
+    column_checker_no_duplicates = None
 
     if fill_value is not None:
         check("fill_value", fill_value, [dict])
         check_column(df, fill_value)
 
+    # actual computation once type checking is complete
     unique_indices = None
     if all((isinstance(grouping, str) for grouping in columns)):
-        unique_indices = (column.unique() for _, column in df.filter(columns).items())
-        unique_indices = pd.MultiIndex.from_product(unique_indices, names=columns)
-        unique_indices =  unique_indices.to_frame(index=False)
-        df = df.merge(unique_indices, on = columns, how='outer')
+        unique_indices = (
+            column.unique() for _, column in df.filter(columns).items()
+        )
+        unique_indices = pd.MultiIndex.from_product(
+            unique_indices, names=columns
+        )
+        unique_indices = unique_indices.to_frame(index=False)
+        df = df.merge(unique_indices, on=columns, how="outer")
         df = df.sort_values(by=columns, ignore_index=True)
         if fill_value:
             df = df.fillna(fill_value)
         return df
 
-    # now to deal with nested possibilities
+    # now to deal with possibly nested groups and dictionaries
+    group_collection = []
+    group_value = None
+    for group in columns:
+        # check if str, or list, or tuple, or dict
+        if isinstance(group, str):
+            group_value = df.loc[:, group]
+            if not group_value.is_unique:
+                group_value = group_value.unique()
+            group_collection.append(group_value)
+        elif isinstance(group, (list, tuple)):
+            group_value = df.loc[:, group]
+            if group_value.duplicated().any():
+                group_value = group_value.drop_duplicates()
+            group_value = (column for _, column in group_value.items())
+            group_value = zip(*group_value)
+            group_collection.append(group_value)
+        else:
+            if isinstance(group, dict):
+                for _, value in group.items():
+                    group_value = __apply_if_callable(value, df)
+                    # safe assumption to get unique values
+                    if isinstance(group_value, pd.Series):
+                        if not group_value.is_unique:
+                            group_value = group_value.unique()
+                    else:
+                        group_value = set(group_value)
+                    group_collection.append(group_value)
+
+    # create total unique combinations
+    group_collection = product(*group_collection)
+    # idea from https://stackoverflow.com/a/22569169/7175713
+    # makes it easy to merge lists with int or other scalar
+    group_collection = (
+        (item if isinstance(item, tuple) else (item,) for item in entry)
+        for entry in group_collection
+    )
+    group_collection = (
+        chain.from_iterable(entry) for entry in group_collection
+    )
+    group_collection = pd.DataFrame(group_collection, columns=column_checker)
+    df = df.merge(group_collection, on=column_checker, how="outer")
+    df = df.sort_values(by=column_checker, ignore_index=True)
+    if fill_value:
+        df = df.fillna(fill_value)
 
     return df
 

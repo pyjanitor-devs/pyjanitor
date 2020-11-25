@@ -4522,7 +4522,7 @@ def groupby_topk(
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]],
+    columns: List[Union[List, Tuple, Dict, str]] = None,
     fill_value: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
@@ -4647,10 +4647,9 @@ def complete(
     """
     df = df.copy()
 
-    df =_computations_complete(df, columns, fill_value)
+    df = _computations_complete(df, columns, fill_value)
 
     return df
-
 
 
 def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:

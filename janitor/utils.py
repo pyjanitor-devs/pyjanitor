@@ -9,7 +9,6 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from numpy.lib.arraysetops import isin
 from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
@@ -604,7 +603,7 @@ def _computations_complete(
         if column in column_checker_no_duplicates:
             raise ValueError(f"{column} column should be in only one group.")
         else:
-            column_checker_no_duplicates.add(column)
+            column_checker_no_duplicates.add(column)  # noqa: PD005
 
     check_column(df, column_checker)
     column_checker_no_duplicates = None
@@ -614,15 +613,15 @@ def _computations_complete(
         check_column(df, fill_value)
 
     # actual computation once type checking is complete
+    # use `merge` instead of `reindex`, as `merge` can handle
+    # duplicated data, as well as null values.
     unique_indices = None
     if all((isinstance(grouping, str) for grouping in columns)):
         unique_indices = (
             column.unique() for _, column in df.filter(columns).items()
         )
-        unique_indices = pd.MultiIndex.from_product(
-            unique_indices, names=columns
-        )
-        unique_indices = unique_indices.to_frame(index=False)
+        unique_indices = product(*unique_indices)
+        unique_indices = pd.DataFrame(unique_indices, columns = columns)
         df = df.merge(unique_indices, on=columns, how="outer")
         df = df.sort_values(by=columns, ignore_index=True)
         if fill_value:

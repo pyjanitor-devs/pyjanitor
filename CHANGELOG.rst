@@ -12,6 +12,8 @@ new version (on deck)
 - [ENH] Add ``pivot_wider`` function, which is the inverse of the `pivot_longer`
   function. @samukweku
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
+- [ENH] Improvements to `complete` method. Use `pd.merge` to handle duplicates and
+  null values. @samukweku
 
 v0.20.10
 =======

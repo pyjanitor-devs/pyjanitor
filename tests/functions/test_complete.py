@@ -5,8 +5,6 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-import janitor
-
 
 # from http://imachordata.com/2016/02/05/you-complete-me/
 @pytest.fixture
@@ -390,3 +388,12 @@ def test_complete_multiple_groupings():
     ).sort_values("project_id", ignore_index=True)
 
     assert_frame_equal(result, output3)
+
+import janitor
+df = pd.DataFrame(dict(Borough = ('Brooklyn', 'Brooklyn', 'Queens'),
+                 Crime = ('Robbery', 'Homicide', 'Drug'),
+                 Count=(1, 2, 1)))
+
+print(df, end="\n\n")
+
+print(df.complete(['Borough', 'Crime']))

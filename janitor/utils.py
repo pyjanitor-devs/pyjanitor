@@ -1290,27 +1290,33 @@ def _computations_as_categorical(
     A dataframe is returned with one or more categorical columns.
     """
 
-    dtypes = None
+    dtypes = {}
     zipped = None
     column_category_set_difference = None
     if not column_names:
         if not ordered:
             df = df.astype("category")
-        else:  # drop nulls if they exist
-            if ordered == "sort":
-                dtypes = {
-                    col_name: CategoricalDtype(
-                        categories=np.unique(col.dropna()), ordered=True
-                    )
-                    for col_name, col in df.items()
-                }
-            else:  # "appearance"
-                dtypes = {
-                    col_name: CategoricalDtype(
-                        categories=pd.unique(col.dropna()), ordered=True
-                    )
-                    for col_name, col in df.items()
-                }
+        else:
+            for column_name, column in df.items():
+                if ordered == "sort":
+                    if column.hasnans:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=np.unique(column.dropna()), ordered=True
+                        )
+                    else:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=np.unique(column), ordered=True
+                        )
+
+                else:  # "appearance"
+                    if column.hasnans:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=column.dropna().unique(), ordered=True
+                        )
+                    else:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=column.unique(), ordered=True
+                        )
 
             df = df.astype(dtypes)
 
@@ -1318,23 +1324,40 @@ def _computations_as_categorical(
 
     if not categories:
         if not ordered:
-            df = df.astype({col: "category" for col in column_names})
+            df = df.astype(
+                {column_name: "category" for column_name in column_names}
+            )
         else:
             zipped = zip(column_names, ordered)
-            dtypes = {
-                column_name: "category"
-                if order is None
-                else CategoricalDtype(
-                    categories=np.unique(df.loc[:, column_name].dropna()),
-                    ordered=True,
-                )
-                if order == "sort"
-                else CategoricalDtype(
-                    categories=pd.unique(df.loc[:, column_name].dropna()),
-                    ordered=True,
-                )
-                for column_name, order in zipped
-            }
+            for column_name, order in zipped:
+                if order is None:
+                    dtypes[column_name] = "category"
+                elif order == "sort":
+                    if df.loc[:, column_name].hasnans:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=np.unique(
+                                df.loc[:, column_name].dropna()
+                            ),
+                            ordered=True,
+                        )
+                    else:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=np.unique(df.loc[:, column_name]),
+                            ordered=True,
+                        )
+                else:  # "appearance"
+                    if df.loc[:, column_name].hasnans:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=df.loc[:, column_name]
+                            .dropna()
+                            .unique(),
+                            ordered=True,
+                        )
+                    else:
+                        dtypes[column_name] = CategoricalDtype(
+                            categories=df.loc[:, column_name].unique(),
+                            ordered=True,
+                        )
 
             df = df.astype(dtypes)
 

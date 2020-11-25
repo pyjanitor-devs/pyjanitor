@@ -4603,7 +4603,7 @@ def complete(
     The null value can be replaced with the fill_value argument::
 
         df.complete(columns = ['Year', 'Taxon'],
-                    fill_value={"Abundance" : 0})
+                    fill_value = {"Abundance" : 0})
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -4685,6 +4685,8 @@ def complete(
         str/dict/list/tuple.
     :raises ValueError: if entry in `columns` is a dict/list/tuple
         and is empty.
+
+    .. # noqa: DAR402
     """
     df = df.copy()
 

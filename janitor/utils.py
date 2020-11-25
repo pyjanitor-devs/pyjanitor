@@ -602,8 +602,7 @@ def _computations_complete(
     for column in column_checker:
         if column in column_checker_no_duplicates:
             raise ValueError(f"{column} column should be in only one group.")
-        else:
-            column_checker_no_duplicates.add(column)  # noqa: PD005
+        column_checker_no_duplicates.add(column)  # noqa: PD005
 
     check_column(df, column_checker)
     column_checker_no_duplicates = None

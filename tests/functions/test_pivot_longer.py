@@ -78,6 +78,7 @@ def test_df():
 
 @pytest.fixture
 def df_multi():
+    """MultiIndex dataframe fixture."""
     return pd.DataFrame(
         {
             ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},

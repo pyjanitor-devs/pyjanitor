@@ -4263,7 +4263,8 @@ def fill_direction(
     directions: Dict[Hashable, str] = None,
     limit: Optional[int] = None,
 ) -> pd.DataFrame:
-    """Provide a method-chainable function for filling missing values
+    """
+    Provide a method-chainable function for filling missing values
     in selected columns.
 
     Missing values are filled using the next or previous entry.

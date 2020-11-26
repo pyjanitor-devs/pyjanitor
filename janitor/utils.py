@@ -5,6 +5,7 @@ import os
 import sys
 import warnings
 from itertools import chain, product
+from collections import namedtuple
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
@@ -1139,284 +1140,46 @@ def _computations_pivot_wider(
     return df
 
 
-def _data_checks_as_categorical(
-    df, column_names, categories, ordered,
-):
-
-    """
-    This function raises errors if the arguments have the wrong python type.
-
-    This function is executed before proceeding to the computation phase.
-    """
-
-    if ordered:
-        check("ordered", ordered, [list, str])
-        if isinstance(ordered, str):
-            if ordered not in ("appearance", "sort"):
-                raise ValueError(
-                    """
-                    `ordered` argument should be either "appearance" or "sort".
-                    """
-                )
-
-    if categories:
-        if is_list_like(categories):
-            categories = list(categories)
-        check("categories", categories, [list])
-
-    if not column_names:
-        if isinstance(categories, list):
-            raise ValueError(
-                """
-                `categories` cannot be a list if `column_names` is `None`.
-                Kindly set as `None`.
-                """
-            )
-        if isinstance(ordered, list):
-            raise ValueError(
-                """
-                `ordered` cannot be a list if `column_names` is `None`.
-                Kindly set as `None`, or provide one of the following options:
-                'sorted', 'appearance'.
-                """
-            )
-
-    else:
-        if isinstance(column_names, str):
-            column_names = [column_names]
-        check("column_name", column_names, [list])
-        check_column(df, column_names, present=True)
-        # if more than one column name is supplied, then categories should be
-        # a collection of lists.
-        if len(column_names) > 1:
-            if isinstance(categories, list):
-                if not all((is_list_like(entry) for entry in categories)):
-                    raise ValueError(
-                        """
-                        categories for each column should be array-like.
-                        """
-                    )
-
-                if len(column_names) != len(categories):
-                    raise ValueError(
-                        """
-                        The length of `categories` argument does not match the
-                        length of `column_names`.
-                        """
-                    )
-
-                # helpful for situations where a set is passed
-                # this way we ensure uniform type is passed to
-                # categories parameter
-                categories = [list(entry) for entry in categories]
-
-            if isinstance(ordered, str):
-                raise ValueError(
-                    """
-                    `ordered` should be a list since more than one
-                    column is provided in `column_names`.
-                    """
-                )
-
-            if isinstance(ordered, list) and (
-                len(column_names) != len(ordered)
-            ):
-                raise ValueError(
-                    """
-                    Length of `ordered` argument does not match the
-                    length of `column_names`.
-                    """
-                )
-
-        else:  # len(column_names)==1
-            if isinstance(categories, list):
-                if any((is_list_like(entry) for entry in categories)):
-                    raise ValueError(
-                        """
-                        There should be no sub-lists in the `categories`,
-                        since only one `column_names` is supplied.
-                        """
-                    )
-                categories = [categories]
-            if isinstance(ordered, list):
-                raise ValueError(
-                    """
-                    `ordered` cannot be a list, but should either be
-                    None, 'sort',or 'appearance', since only one
-                    `column_names` is supplied.
-                    """
-                )
-            if isinstance(ordered, str):
-                ordered = [ordered]
-
-    return (
-        df,
-        column_names,
-        categories,
-        ordered,
-    )
-
-
 def _computations_as_categorical(
     df: pd.DataFrame,
-    column_names: Optional[list] = None,
-    categories: Optional[list] = None,
-    ordered: Optional[list] = None,
+    **kwargs
 ) -> pd.DataFrame:
     """
-    This is the main workhorse of the `as_categorical` function.
-
-    if `column_names` is ``None``, then all the columns in the
-    dataframe will be converted to Categorical dtypes. It is
-    expected that in this scenario, `categories` will be `None`,
-    while `ordered` will either be `None`, or "sort", or "appearance".
-    If `ordered` is 'sort', the categories will be sorted in
-    ascending order (using np.unique); if it is 'appearance', the
-    categories will be in order of appearance (using pandas' unique function.)
-
-    If, however, `column_names` is not None, then, only the columns
-    in `column_names` will be converted to Categorical dtypes. If
-    `categories` is not provided,then category type will be applied, the
-    categories will be pulled from the unique values of the columns(using
-    either `np.unique` if ``ordered==sort``, or `pd.unique` if
-    ``ordered==appearance``, or the category dtype if `ordered` is ``None``).
-    If `categories` is provided, then some checks will be conducted and user
-    warnings generated if some or all unique values in the column are not found
-    in `categories`.The columns is then converted to categorical column using
-    the same approach as earlier ( either `np.unique` if ``ordered==sort``,
-    or `pd.unique` if ``ordered==appearance``, or the category dtype if
-    `ordered` is ``None``).
-
-    A dataframe is returned with one or more categorical columns.
     """
 
-    dtypes = {}
-    zipped = None
-    column_category_set_difference = None
-    if not column_names:
-        if not ordered:
-            df = df.astype("category")
-        else:
-            for column_name, column in df.items():
-                if ordered == "sort":
-                    if column.hasnans:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=np.unique(column.dropna()), ordered=True
-                        )
-                    else:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=np.unique(column), ordered=True
-                        )
+    df = df.copy()
 
-                else:  # "appearance"
-                    if column.hasnans:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=column.dropna().unique(), ordered=True
-                        )
-                    else:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=column.unique(), ordered=True
-                        )
+    check_column(df, kwargs)
 
-            df = df.astype(dtypes)
-
-        return df
-
-    if not categories:
-        if not ordered:
-            df = df.astype(
-                {column_name: "category" for column_name in column_names}
-            )
-        else:
-            zipped = zip(column_names, ordered)
-            for column_name, order in zipped:
-                if order is None:
-                    dtypes[column_name] = "category"
-                elif order == "sort":
-                    if df.loc[:, column_name].hasnans:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=np.unique(
-                                df.loc[:, column_name].dropna()
-                            ),
-                            ordered=True,
-                        )
-                    else:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=np.unique(df.loc[:, column_name]),
-                            ordered=True,
-                        )
-                else:  # "appearance"
-                    if df.loc[:, column_name].hasnans:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=df.loc[:, column_name]
-                            .dropna()
-                            .unique(),
-                            ordered=True,
-                        )
-                    else:
-                        dtypes[column_name] = CategoricalDtype(
-                            categories=df.loc[:, column_name].unique(),
-                            ordered=True,
-                        )
-
-            df = df.astype(dtypes)
-
-        return df
-
-    if categories:
-        zipped = tuple(zip([column for _, column in df.items()], categories))
-        for column, category in zipped:
-            column_category_set_difference = set(column.dropna()).difference(
-                category
-            )
-            if column_category_set_difference:
-                if column_category_set_difference == set(column.dropna()):
-                    warnings.warn(
-                        f"""None of the values in {column.name} are in {category};
-                        you might have nulls for all your values
-                        in the new categorical column.""",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                else:
-                    warnings.warn(
-                        f"""Values {tuple(column_category_set_difference)}
-                        are missing from categories {category}
-                        for {column.name}, you might have nulls in
-                        the new categorical column.""",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-
-        if not ordered:
-            df = df.astype(
-                {
-                    column.name: CategoricalDtype(
-                        categories=category, ordered=False
-                    )
-                    for column, category in zipped
-                }
-            )
-
-        else:
-            zipped = zip(
-                [column_name for column_name, _ in df.items()],
-                categories,
-                ordered,
-            )
-            dtypes = {
-                column_name: CategoricalDtype(
-                    categories=category, ordered=False
+    for _, value in kwargs.items():
+        check("AsCategorical", value, [tuple])
+        if len(value) != 2:
+            raise ValueError(
+                """
+                The `AsCategorical` tuple must
+                contain only two arguments.
+                """
                 )
-                if order is None
-                else CategoricalDtype(
-                    categories=sorted(category), ordered=True
+
+    for _, (categories, order) in kwargs.items():
+        if categories is not None:
+            if is_list_like(categories):
+                categories = list(categories)
+            check("categories", categories, [list])
+
+        if order is not None:
+            check("order", order, [str])
+            if order not in ("appearance", "sort"):
+                raise ValueError(
+                    """
+                    `order` argument should be one of
+                    "appearance", "sort" or `None`.
+                    """
                 )
-                if order == "sort"
-                else CategoricalDtype(categories=category, ordered=True)
-                for column_name, category, order in zipped
-            }
 
-            df = df.astype(dtypes)
+    AsCategorical = namedtuple('AsCategorical', ['categories', 'order'])
 
-        return df
+    categories_dict ={key: AsCategorical._make(value) for key, value in kwargs.items()}
+
+
+    return df

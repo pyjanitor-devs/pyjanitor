@@ -31,6 +31,7 @@ from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
+
 from .errors import JanitorError
 from .utils import (
     _check_instance,
@@ -40,7 +41,6 @@ from .utils import (
     _computations_pivot_longer,
     _computations_pivot_wider,
     _currency_column_to_numeric,
-    _data_checks_as_categorical,
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
     _grid_computation,
@@ -5230,9 +5230,7 @@ def pivot_wider(
 @pf.register_dataframe_method
 def as_categorical(
     df: pd.DataFrame,
-    column_names: Optional[Union[list, str]] = None,
-    categories: Optional[Union[list, tuple, set, pd.Series, np.array]] = None,
-    ordered: Optional[Union[list, str]] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Converts a column into a Categorical column. This function also accepts
@@ -5444,10 +5442,8 @@ def as_categorical(
     .. # noqa: DAR402
     """
 
-    (df, column_names, categories, ordered,) = _data_checks_as_categorical(
-        df, column_names, categories, ordered,
-    )
+    df = df.copy()
 
-    df = _computations_as_categorical(df, column_names, categories, ordered,)
+    df = _computations_as_categorical(df, **kwargs)
 
     return df

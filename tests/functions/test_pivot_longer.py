@@ -137,21 +137,21 @@ names_pattern_type_check = [
 
 @pytest.mark.parametrize("df,index", index_type_checks)
 def test_type_index(df, index):
-    "Raise TypeError if wrong type is provided for the `index`."
+    """Raise TypeError if wrong type is provided for the `index`."""
     with pytest.raises(TypeError):
         df.pivot_longer(index=index)
 
 
 @pytest.mark.parametrize("df,column", column_type_checks)
 def test_type_column_names(df, column):
-    "Raise TypeError if wrong type is provided for `column_names`."
+    """Raise TypeError if wrong type is provided for `column_names`."""
     with pytest.raises(TypeError):
         df.pivot_longer(column_names=column)
 
 
 @pytest.mark.parametrize("df,names_to", names_to_type_checks)
 def test_type_names_to(df, names_to):
-    "Raise TypeError if wrong type is provided for `names_to`."
+    """Raise TypeError if wrong type is provided for `names_to`."""
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to)
 
@@ -168,14 +168,14 @@ def test_subtype_names_to(df, names_to):
 
 @pytest.mark.parametrize("df,index", index_presence_checks)
 def test_presence_index(df, index):
-    "Raise ValueError if labels in `index` do not exist."
+    """Raise ValueError if labels in `index` do not exist."""
     with pytest.raises(ValueError):
         df.pivot_longer(index=index)
 
 
 @pytest.mark.parametrize("df,column", column_presence_checks)
 def test_presence_columns(df, column):
-    "Raise ValueError if labels in `column_names` do not exist."
+    """Raise ValueError if labels in `column_names` do not exist."""
     with pytest.raises(ValueError):
         df.pivot_longer(column_names=column)
 
@@ -192,7 +192,7 @@ def test_name_sep_names_to_len(df, names_to, names_sep):
 
 @pytest.mark.parametrize("df,names_to, names_sep", names_sep_type_check)
 def test_name_sep_wrong_type(df, names_to, names_sep):
-    "Raise TypeError if the wrong type is provided for `names_sep`."
+    """Raise TypeError if the wrong type is provided for `names_sep`."""
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
 
@@ -201,7 +201,7 @@ def test_name_sep_wrong_type(df, names_to, names_sep):
     "df,names_to, names_pattern", names_pattern_type_check
 )
 def test_name_pattern_wrong_type(df, names_to, names_pattern):
-    "Raise TypeError if the wrong type provided for `names_pattern`."
+    """Raise TypeError if the wrong type provided for `names_pattern`."""
     with pytest.raises(TypeError):
         df.pivot_longer(names_to=names_to, names_pattern=names_pattern)
 
@@ -229,13 +229,13 @@ def test_names_pattern_names_to_wrong_type():
 
 
 def test_column_level_wrong_type(df_multi):
-    "Raise TypeError if wrong type is provided for `column_level`."
+    """Raise TypeError if wrong type is provided for `column_level`."""
     with pytest.raises(TypeError):
         df_multi.pivot_longer(index="name", column_level={0})
 
 
 def test_sort_by_appearance(test_df):
-    "Raise error if `sort_by_appearance` is not boolean."
+    """Raise error if `sort_by_appearance` is not boolean."""
     with pytest.raises(TypeError):
         test_df.pivot_longer(
             names_to=[".value", "value"],
@@ -245,7 +245,7 @@ def test_sort_by_appearance(test_df):
 
 
 def test_ignore_index(test_df):
-    "Raise error if `ignore_index` is not boolean."
+    """Raise error if `ignore_index` is not boolean."""
     with pytest.raises(TypeError):
         test_df.pivot_longer(
             names_to=[".value", "value"], names_sep="_", ignore_index="TRUE"
@@ -253,7 +253,7 @@ def test_ignore_index(test_df):
 
 
 def test_duplicate_dot_value(test_df):
-    "Raise error if `names_to` contains more than 1 `.value."
+    """Raise error if `names_to` contains more than one `.value."""
     with pytest.raises(ValueError):
         test_df.pivot_longer(
             names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
@@ -283,7 +283,10 @@ def test_names_pattern_names_to_dot_value():
 
 
 def test_both_names_sep_and_pattern():
-    "Raise ValueError if both `names_sep` and `names_pattern` is provided."
+    """
+    Raise ValueError if both `names_sep`
+    and `names_pattern` is provided.
+    """
     with pytest.raises(ValueError):
         df_checks.pivot_longer(
             names_to=["rar", "bar"], names_sep="-", names_pattern=r"\\d+"
@@ -291,7 +294,7 @@ def test_both_names_sep_and_pattern():
 
 
 def test_names_pattern_column_MultiIndex(df_multi):
-    "Raise ValueError if `names_pattern` and MultiIndex column"
+    """Raise ValueError if `names_pattern` and MultiIndex column"""
     with pytest.raises(ValueError):
         df_multi.pivot_longer(
             index="name", column_level=0, names_pattern=r"(.+)(.)"
@@ -299,19 +302,19 @@ def test_names_pattern_column_MultiIndex(df_multi):
 
 
 def test_index_tuple_MultiIndex(df_multi):
-    "Raise ValueError if `index` is a tuple and MultiIndex column"
+    """Raise ValueError if `index` is a tuple and MultiIndex column"""
     with pytest.raises(ValueError):
         df_multi.pivot_longer(index=("name", "a"))
 
 
 def test_column_names_tuple_MultiIndex(df_multi):
-    "Raise ValueError if `column_names` is a tuple and MultiIndex column"
+    """Raise ValueError if `column_names` is a tuple and MultiIndex column"""
     with pytest.raises(ValueError):
         df_multi.pivot_longer(column_names=("names", "aa"))
 
 
 def test_values_to_wrong_type():
-    "Raise TypeError if the wrong type is provided for `values_to`."
+    """Raise TypeError if the wrong type is provided for `values_to`."""
     with pytest.raises(TypeError):
         df_checks.pivot_longer(values_to=["salvo"])
 
@@ -326,7 +329,7 @@ def test_values_to_exists_in_columns():
 
 
 def test_MultiIndex_column_level(df_multi):
-    "Test output from MultiIndex column"
+    """Test output from MultiIndex column"""
     result = df_multi.pivot_longer(
         index="name", column_names="names", column_level=0
     )
@@ -337,7 +340,7 @@ def test_MultiIndex_column_level(df_multi):
 
 
 def test_pivot_no_args_passed():
-    "Test output if no arguments are passed."
+    """Test output if no arguments are passed."""
     df_no_args = pd.DataFrame({"name": ["Wilbur", "Petunia", "Gregory"]})
     df_no_args_output = pd.DataFrame(
         {
@@ -365,7 +368,7 @@ def test_pivot_index_only_and_sort_by_appearance(df_checks_output):
 
 
 def test_pivot_index_only():
-    "Test output if only `index` is passed."
+    """Test output if only `index` is passed."""
     result = df_checks.pivot_longer(
         index="region", names_to="year", values_to="num_nests",
     )
@@ -451,7 +454,7 @@ def test_ignore_index_false_same_length():
 
 
 def test_pivot_column_only(df_checks_output):
-    "Test output if only `column_names` is passed."
+    """Test output if only `column_names` is passed."""
     result = df_checks.pivot_longer(
         column_names=["2007", "2009"],
         names_to="year",
@@ -475,8 +478,8 @@ def test_pivot_index_patterns_only_sort_by_appearance(df_checks_output):
     assert_frame_equal(result, df_checks_output)
 
 
-def test_pivot_no_index_no_columns():  # check this test if it makes sense
-    "Test output if neither `index`/`columns_names` is passed."
+def test_pivot_no_index_no_columns():
+    """Test output if neither `index`/`columns_names` is passed."""
     test = pd.DataFrame(
         {"1": ["fur", "lace"], "2": ["car", "plane"], "3": ["nsw", "vic"]}
     )
@@ -491,7 +494,7 @@ def test_pivot_no_index_no_columns():  # check this test if it makes sense
 
 
 def test_pivot_columns_patterns_only(df_checks_output):
-    "Test output if the `patterns` function is passed to `column_names`."
+    """Test output if the `patterns` function is passed to `column_names`."""
     result = df_checks.pivot_longer(
         column_names=patterns(r"\d+"),
         names_to="year",
@@ -524,7 +527,7 @@ def test_length_mismatch():
 
 
 def test_empty_mapping(test_df):
-    "Raise error if `names_pattern` is a regex and returns no matches."
+    """Raise error if `names_pattern` is a regex and returns no matches."""
     with pytest.raises(ValueError):
         test_df.pivot_longer(
             names_to=[".value", "value"], names_pattern=r"(\d+)([A-Z])"
@@ -576,7 +579,7 @@ def test_names_pattern_list_empty(names_pattern_list_df):
 
 
 def test_names_pattern_list(names_pattern_list_df):
-    "Test output if `names_pattern` is a list."
+    """Test output if `names_pattern` is a list."""
     result = names_pattern_list_df.pivot_longer(
         index="ID",
         names_to=("DateRangeStart", "DateRangeEnd", "Value"),
@@ -1792,7 +1795,7 @@ names_single_value = [
 def test_single_value(
     df_in, df_out, index, names_pattern, ignore_index, sort_by_appearance,
 ):
-    "Test function where names_to is a string and == `.value`."
+    """Test function where names_to is a string and == `.value`."""
     result = df_in.pivot_longer(
         index=index,
         names_to=".value",

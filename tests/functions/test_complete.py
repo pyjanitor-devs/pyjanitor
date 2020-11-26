@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -96,20 +94,20 @@ empty_sub_columns = [
 
 @pytest.mark.parametrize("frame,wrong_columns", wrong_columns)
 def test_wrong_columns(frame, wrong_columns):
-    "Test that ValueError is raised if wrong column is supplied."
+    """Test that ValueError is raised if wrong column is supplied."""
     with pytest.raises(ValueError):
         frame.complete(columns=wrong_columns)
 
 
 @pytest.mark.parametrize("frame,empty_sub_cols", empty_sub_columns)
 def test_empty_subcols(frame, empty_sub_cols):
-    "Raise ValueError for an empty group in columns"
+    """Raise ValueError for an empty group in columns"""
     with pytest.raises(ValueError):
         frame.complete(columns=empty_sub_cols)
 
 
 def test_fill_value(df1):
-    "Test fill_value argument."
+    """Test fill_value argument."""
     output1 = pd.DataFrame(
         {
             "Year": [1999, 1999, 2000, 2000, 2004, 2004],
@@ -224,47 +222,68 @@ def test_dict_series_duplicates(df1, df1_output):
     assert_frame_equal(result, df1_output)
 
 
-# from https://tidyr.tidyverse.org/reference/complete.html
-df = pd.DataFrame(
-    {
-        "group": [1, 2, 1],
-        "item_id": [1, 2, 2],
-        "item_name": ["a", "b", "b"],
-        "value1": [1, 2, 3],
-        "value2": [4, 5, 6],
-    }
-)
-
-columns = [
-    ["group", "item_id", "item_name"],
-    ["group", ("item_id", "item_name")],
-]
-
-expected_output = [
-    pd.DataFrame(
-        {
-            "group": [1, 1, 1, 1, 2, 2, 2, 2],
-            "item_id": [1, 1, 2, 2, 1, 1, 2, 2],
-            "item_name": ["a", "b", "a", "b", "a", "b", "a", "b"],
-            "value1": [1.0, np.nan, np.nan, 3.0, np.nan, np.nan, np.nan, 2.0],
-            "value2": [4.0, np.nan, np.nan, 6.0, np.nan, np.nan, np.nan, 5.0],
-        }
-    ),
-    pd.DataFrame(
-        {
-            "group": [1, 1, 2, 2],
-            "item_id": [1, 2, 1, 2],
-            "item_name": ["a", "b", "a", "b"],
-            "value1": [1.0, 3.0, np.nan, 2.0],
-            "value2": [4.0, 6.0, np.nan, 5.0],
-        }
-    ),
-]
+# adapted from https://tidyr.tidyverse.org/reference/complete.html
 complete_parameters = [
-    (dataframe, columns, output)
-    for dataframe, (columns, output) in itertools.product(
-        [df], zip(columns, expected_output)
-    )
+    (
+        pd.DataFrame(
+            {
+                "group": [1, 2, 1],
+                "item_id": [1, 2, 2],
+                "item_name": ["a", "b", "b"],
+                "value1": [1, 2, 3],
+                "value2": [4, 5, 6],
+            }
+        ),
+        ["group", "item_id", "item_name"],
+        pd.DataFrame(
+            {
+                "group": [1, 1, 1, 1, 2, 2, 2, 2],
+                "item_id": [1, 1, 2, 2, 1, 1, 2, 2],
+                "item_name": ["a", "b", "a", "b", "a", "b", "a", "b"],
+                "value1": [
+                    1.0,
+                    np.nan,
+                    np.nan,
+                    3.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    2.0,
+                ],
+                "value2": [
+                    4.0,
+                    np.nan,
+                    np.nan,
+                    6.0,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    5.0,
+                ],
+            }
+        ),
+    ),
+    (
+        pd.DataFrame(
+            {
+                "group": [1, 2, 1],
+                "item_id": [1, 2, 2],
+                "item_name": ["a", "b", "b"],
+                "value1": [1, 2, 3],
+                "value2": [4, 5, 6],
+            }
+        ),
+        ["group", ("item_id", "item_name")],
+        pd.DataFrame(
+            {
+                "group": [1, 1, 2, 2],
+                "item_id": [1, 2, 1, 2],
+                "item_name": ["a", "b", "a", "b"],
+                "value1": [1.0, 3.0, np.nan, 2.0],
+                "value2": [4.0, 6.0, np.nan, 5.0],
+            }
+        ),
+    ),
 ]
 
 
@@ -278,7 +297,7 @@ def test_complete(df, columns, output):
 # pandas-how-to-include-all-columns-for-all-rows-although-value-is-missing-in-a-d
 # /63543164#63543164
 def test_duplicate_index():
-    "Test that the complete function works for duplicate index."
+    """Test that the complete function works for duplicate index."""
     df = pd.DataFrame(
         {
             "row": {
@@ -361,7 +380,7 @@ def test_grouping_first_columns():
 
 # https://stackoverflow.com/questions/48914323/tidyr-complete-cases-nesting-misunderstanding
 def test_complete_multiple_groupings():
-    "Test that `complete` gets the correct output for multiple groupings."
+    """Test that `complete` gets the correct output for multiple groupings."""
     df3 = pd.DataFrame(
         {
             "project_id": [1, 1, 1, 1, 2, 2, 2],

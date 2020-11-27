@@ -5,6 +5,7 @@ from hypothesis import given
 from pandas.api.types import CategoricalDtype
 from pandas.testing import assert_frame_equal
 
+from janitor import AsCategorical
 from janitor.errors import JanitorError
 from janitor.testing_utils.strategies import (
     categoricaldf_strategy,
@@ -170,6 +171,25 @@ def test_tuple_length_in_kwargs(df, as_categorical_tuple):
 
 
 test_various_df = [
+
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1],
+                "col2": ["a", "b", "c", "d"],
+                "col3": pd.date_range("1/1/2020", periods=4),
+            }
+        ).astype({"col1": "category", "col2": "category"}),
+        {"col1": AsCategorical(categories=None, order=None), "col2": AsCategorical(order=None, categories=None)},
+    )
+,
     (
         pd.DataFrame(
             {
@@ -255,6 +275,37 @@ test_various_df = [
         ),
         {"col2": (None, "appearance"), "col1": (None, "appearance")},
     ),
+
+    (
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ),
+        pd.DataFrame(
+            {
+                "col1": [2, 1, 3, 1, np.nan],
+                "col2": ["a", "b", "c", "d", "a"],
+                "col3": pd.date_range("1/1/2020", periods=5),
+            }
+        ).astype(
+            {
+                "col1": CategoricalDtype(
+                    categories=[2.0, 1.0, 3.0], ordered=True
+                ),
+                "col2": CategoricalDtype(
+                    categories=["a", "b", "c", "d"], ordered=False
+                ),
+            }
+        ),
+        {
+            "col2": (["a", "b", "c", "d"], None),
+            "col1": ([2.0, 1.0, 3.0], "appearance"),
+        },
+    ),
+
     (
         pd.DataFrame(
             {

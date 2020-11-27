@@ -3,6 +3,7 @@
 import datetime as dt
 import inspect
 import itertools
+import collections
 import re
 import unicodedata
 import warnings
@@ -14,7 +15,7 @@ from typing import (
     Dict,
     Hashable,
     Iterable,
-    List,
+    List, NamedTuple,
     Optional,
     Pattern,
     Set,
@@ -464,6 +465,24 @@ def get_dupes(
     """
     dupes = df.duplicated(subset=column_names, keep=False)
     return df[dupes == True]  # noqa: E712
+
+def AsCategorical(categories:Optional[Union[List,Set,Tuple,pd.Series,np.ndarray]]=None, order:Optional[str]=None) -> NamedTuple:
+    """
+    Helper function for `encode_categorical`. It makes creating the
+    `categories` and `order` more explicit.
+
+    :param categories: list-like object to create new categorical column.
+    :param order: string object that can be either "sort" or "appearance". If "sort",
+        the `categories` argument will be sorted with np.sort; if "apperance", the
+        `categories` argument will be used as is.
+    :returns: A namedtuple of (`categories`, `order`).
+    """
+    AsCategorical = collections.namedtuple(
+        "AsCategorical", ["categories", "order"], defaults=(None, None)
+    )
+
+    return AsCategorical._make((categories, order))
+
 
 
 @pf.register_dataframe_method

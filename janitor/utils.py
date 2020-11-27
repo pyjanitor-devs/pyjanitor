@@ -7,6 +7,7 @@ import warnings
 from collections import defaultdict, namedtuple
 from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
+from hypothesis.extra.pandas.impl import column
 
 import numpy as np
 import pandas as pd
@@ -1151,30 +1152,32 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     df = df.copy()
 
-    # type and column presence checks
-    check_column(df, kwargs)
-
-    for _, value in kwargs.items():
-        check("AsCategorical", value, [tuple])
-        if len(value) != 2:
-            raise ValueError("Must provide tuples of (categories, order).")
-
     AsCategorical = namedtuple(
         "AsCategorical", ["categories", "order"], defaults=(None, None)
     )
 
     categories_dict = {}
-    for column_name, (categories, order) in kwargs.items():
-        if categories is not None:
+
+    # type and column presence checks
+    check_column(df, kwargs)
+
+    for column_name, value in kwargs.items():
+        check("AsCategorical", value, [tuple])
+        if len(value) != 2:
+            raise ValueError("Must provide tuples of (categories, order).")
+
+        value = AsCategorical._make(value)
+
+        if value.categories is not None:
             check(
                 "categories",
-                categories,
+                value.categories,
                 [list, tuple, set, np.ndarray, pd.Series],
             )
 
-        if order is not None:
-            check("order", order, [str])
-            if order not in ("appearance", "sort"):
+        if value.order is not None:
+            check("order", value.order, [str])
+            if value.order not in ("appearance", "sort"):
                 raise ValueError(
                     """
                     `order` argument should be one of
@@ -1182,7 +1185,8 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                     """
                 )
 
-        categories_dict[column_name] = AsCategorical._make((categories, order))
+        categories_dict[column_name] = value
+
 
     categories_dtypes = {}
     unique_values_in_column = None
@@ -1191,6 +1195,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         if categories_order_tuple.categories is None:
             if categories_order_tuple.order is None:
                 categories_dtypes[column_name] = "category"
+
             elif categories_order_tuple.order == "sort":
                 if df[column_name].hasnans:
                     unique_values_in_column = np.unique(
@@ -1201,6 +1206,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 categories_dtypes[column_name] = CategoricalDtype(
                     categories=unique_values_in_column, ordered=True
                 )
+
             else:  # appearance
                 if df[column_name].hasnans:
                     unique_values_in_column = df[column_name].dropna().unique()
@@ -1221,6 +1227,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 categories_order_tuple.categories,
                 assume_unique=True,
             )
+
             if np.any(missing_values):
                 if np.array_equal(missing_values, unique_values_in_column):
                     warnings.warn(
@@ -1244,19 +1251,19 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                         UserWarning,
                         stacklevel=2,
                     )
-            else:
-                if categories_order_tuple.order is None:
-                    categories_dtypes[column_name] = CategoricalDtype(
+
+            if categories_order_tuple.order is None:
+                categories_dtypes[column_name] = CategoricalDtype(
                         categories=categories_order_tuple.categories,
                         ordered=False,
                     )
-                elif categories_order_tuple.order == "sort":
-                    categories_dtypes[column_name] = CategoricalDtype(
+            elif categories_order_tuple.order == "sort":
+                categories_dtypes[column_name] = CategoricalDtype(
                         categories=np.sort(categories_order_tuple.categories),
                         ordered=True,
                     )
-                else:  # appearance
-                    categories_dtypes[column_name] = CategoricalDtype(
+            else:  # appearance
+                categories_dtypes[column_name] = CategoricalDtype(
                         categories=categories_order_tuple.categories,
                         ordered=True,
                     )

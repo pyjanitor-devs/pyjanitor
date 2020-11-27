@@ -1,4 +1,4 @@
-﻿janitor.filter\_column\_isin
+janitor.filter\_column\_isin
 ============================
 
 .. currentmodule:: janitor

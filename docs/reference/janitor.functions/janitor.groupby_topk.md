@@ -1,4 +1,4 @@
-﻿janitor.groupby\_topk
+janitor.groupby\_topk
 =====================
 
 .. currentmodule:: janitor

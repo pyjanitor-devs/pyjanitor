@@ -1,4 +1,4 @@
-﻿janitor.jitter
+janitor.jitter
 ==============
 
 .. currentmodule:: janitor

@@ -1,4 +1,4 @@
-﻿janitor.fill\_empty
+janitor.fill\_empty
 ===================
 
 .. currentmodule:: janitor

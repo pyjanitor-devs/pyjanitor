@@ -1,4 +1,4 @@
-﻿janitor.take\_first
+janitor.take\_first
 ===================
 
 .. currentmodule:: janitor

@@ -1,4 +1,4 @@
-﻿janitor.coalesce
+janitor.coalesce
 ================
 
 .. currentmodule:: janitor

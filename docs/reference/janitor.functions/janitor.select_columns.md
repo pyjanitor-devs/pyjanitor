@@ -1,4 +1,4 @@
-﻿janitor.select\_columns
+janitor.select\_columns
 =======================
 
 .. currentmodule:: janitor

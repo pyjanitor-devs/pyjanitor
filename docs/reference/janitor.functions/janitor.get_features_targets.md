@@ -1,4 +1,4 @@
-﻿janitor.get\_features\_targets
+janitor.get\_features\_targets
 ==============================
 
 .. currentmodule:: janitor

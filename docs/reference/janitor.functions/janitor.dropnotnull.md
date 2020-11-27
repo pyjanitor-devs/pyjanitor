@@ -1,4 +1,4 @@
-﻿janitor.dropnotnull
+janitor.dropnotnull
 ===================
 
 .. currentmodule:: janitor

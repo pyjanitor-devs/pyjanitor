@@ -1,4 +1,4 @@
-﻿janitor.transform\_columns
+janitor.transform\_columns
 ==========================
 
 .. currentmodule:: janitor

@@ -1,4 +1,4 @@
-﻿janitor.convert\_unix\_date
+janitor.convert\_unix\_date
 ===========================
 
 .. currentmodule:: janitor

@@ -1,4 +1,4 @@
-﻿janitor.update\_where
+janitor.update\_where
 =====================
 
 .. currentmodule:: janitor

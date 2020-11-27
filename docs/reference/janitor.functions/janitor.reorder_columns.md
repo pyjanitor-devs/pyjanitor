@@ -1,4 +1,4 @@
-﻿janitor.reorder\_columns
+janitor.reorder\_columns
 ========================
 
 .. currentmodule:: janitor

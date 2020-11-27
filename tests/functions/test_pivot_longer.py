@@ -1890,7 +1890,7 @@ def test_single_column_names_pattern(
 
 
 def test_group_present():
-    "Test output if 'group' is in `names_to`."
+    """Test output if 'group' is in `names_to`."""
     df_in = pd.DataFrame(
         {
             "id": [1, 2, 3],

@@ -1,4 +1,4 @@
-﻿janitor.spark.update\_where
+janitor.spark.update\_where
 ===========================
 
 .. currentmodule:: janitor.spark

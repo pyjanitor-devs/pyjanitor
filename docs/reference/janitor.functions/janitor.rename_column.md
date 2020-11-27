@@ -1,4 +1,4 @@
-﻿janitor.rename\_column
+janitor.rename\_column
 ======================
 
 .. currentmodule:: janitor

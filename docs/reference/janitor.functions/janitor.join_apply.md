@@ -1,4 +1,4 @@
-﻿janitor.join\_apply
+janitor.join\_apply
 ===================
 
 .. currentmodule:: janitor

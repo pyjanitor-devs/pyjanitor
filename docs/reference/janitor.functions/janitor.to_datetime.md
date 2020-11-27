@@ -1,4 +1,4 @@
-﻿janitor.to\_datetime
+janitor.to\_datetime
 ====================
 
 .. currentmodule:: janitor

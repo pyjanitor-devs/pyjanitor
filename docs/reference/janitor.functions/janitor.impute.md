@@ -1,4 +1,4 @@
-﻿janitor.impute
+janitor.impute
 ==============
 
 .. currentmodule:: janitor

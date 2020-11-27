@@ -1,4 +1,4 @@
-﻿janitor.currency\_column\_to\_numeric
+janitor.currency\_column\_to\_numeric
 =====================================
 
 .. currentmodule:: janitor

@@ -1,4 +1,4 @@
-﻿janitor.clean\_names
+janitor.clean\_names
 ====================
 
 .. currentmodule:: janitor

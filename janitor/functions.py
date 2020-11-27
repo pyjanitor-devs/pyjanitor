@@ -31,7 +31,6 @@ from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
-
 from .errors import JanitorError
 from .utils import (
     _check_instance,
@@ -470,12 +469,14 @@ def get_dupes(
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def encode_categorical(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Encode the specified columns with Pandas'
     `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Functional usage syntax:
 
@@ -502,21 +503,40 @@ def encode_categorical(
     :raises JanitorError: if ``column_names`` is not hashable
         nor iterable.
     """  # noqa: E501
-    if isinstance(column_names, list) or isinstance(column_names, tuple):
-        for col in column_names:
-            if col not in df.columns:
-                raise JanitorError(f"{col} missing from DataFrame columns!")
-            df[col] = pd.Categorical(df[col])
-    elif isinstance(column_names, Hashable):
-        if column_names not in df.columns:
-            raise JanitorError(
-                f"{column_names} missing from DataFrame columns!"
-            )
-        df[column_names] = pd.Categorical(df[column_names])
-    else:
-        raise JanitorError(
-            "kwarg `column_names` must be hashable or iterable!"
+
+    df = df.copy()
+
+    if all((column_names, kwargs)):
+        raise ValueError(
+            """
+            Only one of `column_names` or `kwargs`
+            can be provided.
+            """
         )
+    # previous code dealt with only category dtype (unordered)
+    # kwargs takes care of scenarios where user wants an ordered category
+    # or user supplies specific categories to create the categorical
+    if column_names:
+        if isinstance(column_names, list) or isinstance(column_names, tuple):
+            for col in column_names:
+                if col not in df.columns:
+                    raise JanitorError(
+                        f"{col} missing from DataFrame columns!"
+                    )
+                df[col] = pd.Categorical(df[col])
+        elif isinstance(column_names, Hashable):
+            if column_names not in df.columns:
+                raise JanitorError(
+                    f"{column_names} missing from DataFrame columns!"
+                )
+            df[column_names] = pd.Categorical(df[column_names])
+        else:
+            raise JanitorError(
+                "kwarg `column_names` must be hashable or iterable!"
+            )
+        return df
+
+    df = _computations_as_categorical(df, **kwargs)
     return df
 
 
@@ -5223,227 +5243,5 @@ def pivot_wider(
         names_sep,
         fill_value,
     )
-
-    return df
-
-
-@pf.register_dataframe_method
-def as_categorical(
-    df: pd.DataFrame,
-    **kwargs,
-) -> pd.DataFrame:
-    """
-    Converts a column into a Categorical column. This function also accepts
-    multiple columns, and can convert an entire dataframe into a Categorical
-    data type.
-
-    This method does not mutate the original DataFrame.
-
-    It is syntactic sugar around `pd.Categorical`.
-
-    .. code-block:: python
-
-               col1	col2	col3
-        0	2.0	a	2020-01-01
-        1	1.0	b	2020-01-02
-        2	3.0	c	2020-01-03
-        3	1.0	d	2020-01-04
-        4	NaN	a	2020-01-05
-
-        df.dtypes
-
-        col1           float64
-        col2            object
-        col3    datetime64[ns]
-        dtype: object
-
-    We can convert specific columns to category type:
-
-    .. code-block:: python
-
-        df = (pd.DataFrame(...)
-                .as_categorical(
-                    columns=['col1', 'col2', 'col3'],
-                    categories=None,
-                    ordered=['appearance', 'sort', None]
-                    )
-            )
-
-        df.dtypes
-
-        col1    category
-        col2    category
-        col3    category
-        dtype: object
-
-    The 'appearance' argument returns the unique values in the column
-    in the order that they appear as categories.
-
-    .. code-block:: python
-
-        df['col1']
-
-        0    2.0
-        1    1.0
-        2    3.0
-        3    1.0
-        4    NaN
-        Name: col1, dtype: category
-        Categories (3, float64): [2.0 < 1.0 < 3.0]
-
-    The 'sort' argument returns the sorted unique values in the column
-    in ascending order as categories.
-
-    .. code-block:: python
-
-        df['col2']
-
-        0    a
-        1    b
-        2    c
-        3    d
-        4    a
-        Name: col2, dtype: category
-        Categories (4, object): [a < b < c < d]
-
-    The `None` argument returns the unique values in the column as categories,
-    without any order
-
-    .. code-block:: python
-
-        df['col3']
-
-        0   2020-01-01
-        1   2020-01-02
-        2   2020-01-03
-        3   2020-01-04
-        4   2020-01-05
-        Name: col3, dtype: category
-        Categories (5, datetime64[ns]):
-        [2020-01-01, 2020-01-02, 2020-01-03, 2020-01-04, 2020-01-05]
-
-    Categories can be provided via the `categories` parameter:
-
-    .. code-block:: python
-
-        df = (pd.DataFrame(...)
-                .as_categorical(
-                    column_names=["col1","col2"],
-                    categories=[[3, 2, 1, 4],['a','d','c','b']],
-                    ordered=["appearance", "sort"]
-                    )
-            )
-
-        df['col1']
-
-        0      2
-        1      1
-        2      3
-        3      1
-        4    NaN
-        Name: col1, dtype: category
-        Categories (4, int64): [3 < 2 < 1 < 4]
-
-        df['col2']
-
-        0    a
-        1    b
-        2    c
-        3    d
-        4    a
-        Name: col2, dtype: category
-        Categories (4, object): [a < b < c < d]
-
-
-    A User Warning will be generated if some or all of the unique values
-    in the column are not present in the provided `categories` argument.
-
-    .. code-block:: python
-
-        df = (pd.DataFrame(...)
-                .as_categorical(
-                    column_names="col1",
-                    categories=[4, 5, 6],
-                    ordered="appearance"
-                    )
-            )
-
-        UserWarning: None of the values in col1 are in [4, 5, 6];
-                     you might have nulls for all your values
-                     in the new categorical column.
-
-        df['col1']
-
-        0    NaN
-        1    NaN
-        2    NaN
-        3    NaN
-        4    NaN
-        Name: col1, dtype: category
-        Categories (3, int64): [4 < 5 < 6]
-
-
-    Functional usage syntax:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame(...)
-        df = jn.as_categorical(
-            df = df,
-            column_names = [column1, column2, ...],
-            categories = categories,
-            ordered = None/'sort'/'appearance',
-        )
-
-    Method chaining syntax:
-
-    .. code-block:: python
-
-        df = (
-            pd.DataFrame(...)
-            .as_categorical(
-                column_names = [column1, column2, ...],
-                categories = categories,
-                ordered = None/'sort'/'appearance',
-            )
-        )
-
-    :param df: A pandas dataframe.
-    :param column_names: Name(s) of columns to convert to categorical
-        dtype. Can be a single column or list of columns or `None`.
-        `None` implies that all the columns in the dataframe should be
-        converted to categorical columns.
-    :param categories: array-like of categories for the new categorical
-        column. Can be `None`, in which case the categories are based on
-        the unique values in the column. If `categories` is provided,
-        then these values are used to create the categories for the column.
-    :param ordered: Order of the categories. Can be `None` (default), 'sort'
-        or 'appearance'. None returns an unordered `categories`, 'sort' returns
-        a sorted `categories` in ascending order, while 'appearance' returns
-        the `categories` as they appear. For multiple columns, a list is
-        required, containing the order for each respective column.
-    :returns: A pandas DataFrame with one or more categorical columns.
-    :raises TypeError: if `column_names` is not a string or list of strings.
-    :raises TypeError: if `categories` is not array-like.
-    :raises TypeError: if `ordered` is not a string or list of strings.
-    :raises ValueError: if `ordered` is neither `None`, nor 'sort' nor
-        'appearance'.
-    :raises ValueError: if a single `column_names` is provided, and `ordered`
-        is a list.
-    :raises ValueError: if the length of `column_names` is greater than one,
-        and it does not match the length of `categories` or the length of
-        `ordered`.
-    :raises ValueError: if `column_names` is `None` and `categories` is not
-        `None`, or `ordered` is a list.
-
-    .. # noqa: DAR402
-    """
-
-    df = df.copy()
-
-    df = _computations_as_categorical(df, **kwargs)
 
     return df

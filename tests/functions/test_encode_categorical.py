@@ -437,11 +437,3 @@ df = pd.DataFrame(
         "col3": pd.date_range("1/1/2020", periods=5),
     }
 )
-
-result = df.encode_categorical(
-    col1=([2.0, 1.0, 3.0], "appearance"), col2=(["a", "b", "c"], "sort")
-)
-
-print(df, end="\n\n")
-
-print(result)

@@ -1216,8 +1216,6 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 )
         # categories supplied
         else:
-            # check if categories supplied does not match
-            # with the values in the column
             if df[column_name].hasnans:
                 unique_values_in_column = df[column_name].dropna().unique()
             else:
@@ -1225,11 +1223,14 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
             missing_values = np.setdiff1d(
                 unique_values_in_column,
                 categories_order_tuple.categories,
-                assume_unique=True,
+                assume_unique=False,
             )
-
+            # check if categories supplied does not match
+            # with the values in the column
+            # either there are no matches
+            # or an incomplete number of matches
             if np.any(missing_values):
-                if np.array_equal(missing_values, unique_values_in_column):
+                if len(missing_values) == len(unique_values_in_column):
                     warnings.warn(
                         f"""
                         None of the values in {column_name} are in

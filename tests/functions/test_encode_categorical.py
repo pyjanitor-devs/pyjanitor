@@ -171,7 +171,6 @@ def test_tuple_length_in_kwargs(df, as_categorical_tuple):
 
 
 test_various_df = [
-
     (
         pd.DataFrame(
             {
@@ -187,9 +186,11 @@ test_various_df = [
                 "col3": pd.date_range("1/1/2020", periods=4),
             }
         ).astype({"col1": "category", "col2": "category"}),
-        {"col1": AsCategorical(categories=None, order=None), "col2": AsCategorical(order=None, categories=None)},
-    )
-,
+        {
+            "col1": AsCategorical(categories=None, order=None),
+            "col2": AsCategorical(order=None, categories=None),
+        },
+    ),
     (
         pd.DataFrame(
             {
@@ -275,7 +276,6 @@ test_various_df = [
         ),
         {"col2": (None, "appearance"), "col1": (None, "appearance")},
     ),
-
     (
         pd.DataFrame(
             {
@@ -305,7 +305,6 @@ test_various_df = [
             "col1": ([2.0, 1.0, 3.0], "appearance"),
         },
     ),
-
     (
         pd.DataFrame(
             {

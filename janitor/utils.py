@@ -7,10 +7,10 @@ import warnings
 from collections import defaultdict, namedtuple
 from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
-from hypothesis.extra.pandas.impl import column
 
 import numpy as np
 import pandas as pd
+from hypothesis.extra.pandas.impl import column
 from pandas.api.types import CategoricalDtype, is_list_like
 
 from .errors import JanitorError
@@ -1187,7 +1187,6 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
         categories_dict[column_name] = value
 
-
     categories_dtypes = {}
     unique_values_in_column = None
     missing_values = None
@@ -1254,19 +1253,18 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
             if categories_order_tuple.order is None:
                 categories_dtypes[column_name] = CategoricalDtype(
-                        categories=categories_order_tuple.categories,
-                        ordered=False,
-                    )
+                    categories=categories_order_tuple.categories,
+                    ordered=False,
+                )
             elif categories_order_tuple.order == "sort":
                 categories_dtypes[column_name] = CategoricalDtype(
-                        categories=np.sort(categories_order_tuple.categories),
-                        ordered=True,
-                    )
+                    categories=np.sort(categories_order_tuple.categories),
+                    ordered=True,
+                )
             else:  # appearance
                 categories_dtypes[column_name] = CategoricalDtype(
-                        categories=categories_order_tuple.categories,
-                        ordered=True,
-                    )
+                    categories=categories_order_tuple.categories, ordered=True,
+                )
 
     df = df.astype(categories_dtypes)
 

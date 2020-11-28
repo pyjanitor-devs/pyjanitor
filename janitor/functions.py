@@ -4151,10 +4151,12 @@ def expand_grid(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(column="column_names")
 def process_text(
     df: pd.DataFrame,
-    column: str,
-    string_function: str,
+    column_name: str,
+    new_column_name: Optional[str] = None,
+    string_function: Optional[str] = None,
     *args: str,
     **kwargs: str,
 ) -> pd.DataFrame:
@@ -4163,10 +4165,14 @@ def process_text(
 
     This function aims to make string cleaning easy, while chaining,
     by simply passing the string method name to the ``process_text`` function.
-    Note that this modifies an existing column,
-    and should not be used to create a new column.
-    A list of all the string methods in Pandas can be accessed here:
-    https://pandas.pydata.org/docs/user_guide/text.html#method-summary.
+    This modifies an existing column and can also be used to create a new
+    column, follwing the text processing.
+
+    .. note:: In versions < 0.20.11, this function did not support creation of
+        a new column.
+
+    A list of all the string methods in Pandas can be accessed `here
+    <https://pandas.pydata.org/docs/user_guide/text.html#method-summary>`__.
 
     Example:
 
@@ -4175,27 +4181,43 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({"text":["ragnar","sammywemmy","ginger"],
+        df = pd.DataFrame({"text":["Ragnar","sammywemmy","ginger"],
                            "code" : [1, 2, 3]})
 
-        df.process_text(column = "text", string_function = "lower")
-        # text       |   code
-        # ragnar     |    1
-        # sammywemmy |    2
-        # ginger     |    3
+        df.process_text(column_name = "text", string_function = "lower")
+          text       |   code
+        0 ragnar     |    1
+        1 sammywemmy |    2
+        2 ginger     |    3
 
-        #For string methods with parameters, simply pass the arguments :
+    For string methods with parameters, simply pass the arguments::
+
         df.process_text(
-            column = "text",
+            column_name = "text",
             string_function = "extract",
             pat = r"(ag)",
             flags = re.IGNORECASE
             )
 
-        # text |   code
-        # ag   |    1
-        # NaN  |    2
-        # NaN  |    3
+          text     code
+        0 ag        1
+        1 NaN       2
+        2 NaN       3
+
+    A new column can be created, leaving the existing column unmodified::
+
+        df.process_text(
+            column_name = "text",
+            new_column_name = "new_text",
+            string_function = "extract",
+            pat = r"(ag)",
+            flags = re.IGNORECASE
+            )
+
+          text           code     new_text
+        0 Ragnar          1          ag
+        1 sammywemmy      2          NaN
+        2 ginger          3          NaN
 
 
     Functional usage syntax:
@@ -4208,6 +4230,8 @@ def process_text(
         df = pd.DataFrame(...)
         df = jn.process_text(
             df = df,
+            column_name,
+            new_column_name = None,
             string_function = "string_func_name_here",
             args, kwargs
             )
@@ -4222,6 +4246,7 @@ def process_text(
         df = (
             pd.DataFrame(...)
             .process_text(
+                new_column_name = None,
                 string_function = "string_func_name_here",
                 args, kwargs
                 )
@@ -4229,7 +4254,10 @@ def process_text(
 
 
     :param df: A pandas dataframe.
-    :param column: String column to be operated on.
+    :param column_name: String column to be operated on.
+    :param new_column_name: New string column to create. The existing
+        `column_name` stays unmodified if  `new_column_name` is not
+        None.
     :param string_function: Pandas string method to be applied.
     :param args: Arguments for parameters.
     :param kwargs: Keyword arguments for parameters.
@@ -4241,18 +4269,31 @@ def process_text(
     """
     df = df.copy()
 
+    check("column_name", column_name, [str])
+
+    if new_column_name is not None:
+        check("new_column_name", new_column_name, [str])
+
+    check_column(df, [column_name])
+
     pandas_string_methods = [
         func.__name__
         for _, func in inspect.getmembers(pd.Series.str, inspect.isfunction)
         if not func.__name__.startswith("_")
     ]
 
-    if string_function not in pandas_string_methods:
-        raise KeyError(f"{string_function} is not a Pandas string method.")
+    if string_function is not None:
+        if string_function not in pandas_string_methods:
+            raise KeyError(f"{string_function} is not a Pandas string method.")
 
-    df.loc[:, column] = getattr(df.loc[:, column].str, string_function)(
-        *args, **kwargs
-    )
+    if new_column_name is not None:
+        df[new_column_name] = getattr(df[column_name].str, string_function)(
+            *args, **kwargs
+        )
+    else:
+        df[column_name] = getattr(df[column_name].str, string_function)(
+            *args, **kwargs
+        )
 
     return df
 

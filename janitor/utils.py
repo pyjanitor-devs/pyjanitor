@@ -4,14 +4,13 @@ import functools
 import os
 import sys
 import warnings
-from collections import defaultdict, namedtuple
+from collections import namedtuple
 from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from hypothesis.extra.pandas.impl import column
-from pandas.api.types import CategoricalDtype, is_list_like
+from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -1143,11 +1142,12 @@ def _computations_pivot_wider(
 
 def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
-    This function handles cases where categorical columns are created with an order,
-    or specific values supplied for the categories. It uses a kwarg, with a namedtuple -
-    `column_name: (categories, order)`, with the idea inspired by Pandas' NamedAggregation.
-    The defaults for the namedtuple are (None, None) and will return a categorical dtype
-    with no order and categories inferred from the column.
+    This function handles cases where categorical columns are created with
+    an order, or specific values supplied for the categories. It uses a kwarg,
+    with a namedtuple - `column_name: (categories, order)`, with the idea
+    inspired by Pandas' NamedAggregation. The defaults for the namedtuple are
+    (None, None) and will return a categorical dtype with no order and
+    categories inferred from the column.
     """
 
     df = df.copy()
@@ -1216,7 +1216,8 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 )
         # categories supplied
         else:
-            # check if categories supplied does not match with the values in the column
+            # check if categories supplied does not match
+            # with the values in the column
             if df[column_name].hasnans:
                 unique_values_in_column = df[column_name].dropna().unique()
             else:

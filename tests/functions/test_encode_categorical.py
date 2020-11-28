@@ -5,7 +5,7 @@ from hypothesis import given
 from pandas.api.types import CategoricalDtype
 from pandas.testing import assert_frame_equal
 
-from janitor import AsCategorical
+from janitor import As_Categorical
 from janitor.errors import JanitorError
 from janitor.testing_utils.strategies import (
     categoricaldf_strategy,
@@ -187,8 +187,8 @@ test_various_df = [
             }
         ).astype({"col1": "category", "col2": "category"}),
         {
-            "col1": AsCategorical(categories=None, order=None),
-            "col2": AsCategorical(order=None, categories=None),
+            "col1": As_Categorical(categories=None, order=None),
+            "col2": As_Categorical(order=None, categories=None),
         },
     ),
     (

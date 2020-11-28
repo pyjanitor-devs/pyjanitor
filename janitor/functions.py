@@ -663,7 +663,7 @@ def encode_categorical(
 
         df = jn.encode_categorical(
                     df,
-                    col1 = (None, None),
+                    col1 = (categories, order),
                     col2 = jn.As_Categorical(
                                 categories = [values],
                                 order="sort"/"appearance"/None
@@ -684,7 +684,7 @@ def encode_categorical(
         df = (
             pd.DataFrame(...)
             .encode_categorical(
-                col1 = (None, None),
+                col1 = (categories, order),
                 col2 = jn.As_Categorical(
                             categories = [values],
                             order="sort"/"appearance"/None
@@ -700,8 +700,6 @@ def encode_categorical(
         namedtuple of (`categories`, `order`) to make it clearer what the arguments
         are. This is useful in creating categorical columns that are ordered, or
         if the user needs to explicitly specify the categories.
-
-        New in version 0.20.11.
     :returns: A pandas DataFrame.
     :raises JanitorError: if a column specified within ``column_names``
         is not found in the DataFrame.
@@ -719,7 +717,7 @@ def encode_categorical(
             can be provided.
             """
         )
-    # previous code dealt with only category dtype (unordered)
+    # column_names deal with only category dtype (unordered)
     # kwargs takes care of scenarios where user wants an ordered category
     # or user supplies specific categories to create the categorical
     if column_names:

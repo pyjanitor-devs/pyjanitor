@@ -425,15 +425,5 @@ def test_warnings(df_in, kwargs):
     the categories do not match the unique values in the column, or
     some values in the column are missing in `categories`.
     """
-
     with pytest.warns(UserWarning):
         df_in.encode_categorical(**kwargs)
-
-
-df = pd.DataFrame(
-    {
-        "col1": [2, 1, 3, 1, np.nan],
-        "col2": ["a", "b", "c", "d", "a"],
-        "col3": pd.date_range("1/1/2020", periods=5),
-    }
-)

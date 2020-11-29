@@ -4166,7 +4166,7 @@ def process_text(
     This function aims to make string cleaning easy, while chaining,
     by simply passing the string method name to the ``process_text`` function.
     This modifies an existing column and can also be used to create a new
-    column, follwing the text processing.
+    column.
 
     .. note:: In versions < 0.20.11, this function did not support creation of
         a new column.
@@ -4196,6 +4196,7 @@ def process_text(
             column_name = "text",
             string_function = "extract",
             pat = r"(ag)",
+            expand = False,
             flags = re.IGNORECASE
             )
 
@@ -4255,9 +4256,14 @@ def process_text(
 
     :param df: A pandas dataframe.
     :param column_name: String column to be operated on.
-    :param new_column_name: New string column to create. The existing
-        `column_name` stays unmodified if  `new_column_name` is not
-        None.
+    :param new_column_names: New string columns to create. The existing
+        `column_name` stays unmodified if  `new_column_names` is not
+        None. It also comes in handy if the processed text returns a
+        dataframe.
+    :param concat: This comes into play if the result of the text
+        processing is a dataframe. If `True`, the resulting dataframe
+        will be merged with the original dataframe; if `False`, the
+        resulting dataframe, not the original dataframe, will be returned.
     :param string_function: Pandas string method to be applied.
     :param args: Arguments for parameters.
     :param kwargs: Keyword arguments for parameters.
@@ -4286,16 +4292,24 @@ def process_text(
         if string_function not in pandas_string_methods:
             raise KeyError(f"{string_function} is not a Pandas string method.")
 
-    if new_column_name is not None:
-        df[new_column_name] = getattr(df[column_name].str, string_function)(
-            *args, **kwargs
-        )
-    else:
-        df[column_name] = getattr(df[column_name].str, string_function)(
+    result = getattr(df[column_name].str, string_function)(
             *args, **kwargs
         )
 
-    return df
+    if isinstance(result, pd.Series):
+        if new_column_name is not None:
+            df[new_column_name] = result
+        else:
+            df[column_name] = getattr(df[column_name].str, string_function)(
+            *args, **kwargs
+        )
+
+        return df
+
+    # this will occur if result is a dataframe,
+    # operations like split, with exapnd =True
+    # or string extract will create a dataframe
+    return result
 
 
 @pf.register_dataframe_method

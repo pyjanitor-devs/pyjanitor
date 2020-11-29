@@ -123,3 +123,4 @@ def test_str_wrong_parameters(test_df):
         test_df.process_text(
             column_name="text", string_function="split", pattern="_"
         )
+

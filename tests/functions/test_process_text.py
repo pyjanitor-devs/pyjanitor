@@ -41,14 +41,14 @@ def test_str_split(test_df):
     assert_frame_equal(result, expected)
 
 
-def test_new_column_name(test_df):
+def test_new_column_names(test_df):
     """
     Test that a new column name is created when
     `new_column_name` is not None.
     """
     result = test_df.process_text(
         column_name="text",
-        new_column_name="new_text",
+        new_column_names="new_text",
         string_function="slice",
         start=2,
     )
@@ -124,3 +124,14 @@ def test_str_wrong_parameters(test_df):
             column_name="text", string_function="split", pattern="_"
         )
 
+import janitor
+s = pd.Series(['a', 'b', np.nan, 'd'], index=["A", "B", "C","A"])
+df = pd.DataFrame()
+df = df.assign(text = s, number = 1)
+t = pd.Series(['d', 'a', 'e', 'c'], index=[3, 0, 4, 2])
+
+result =df.process_text("text",  merge_frame=True, new_column_names = "newtext_", string_function="cat", na_rep='-', others=['A', 'B', 'C', 'D'])
+res = df.text.str.cat(t, join='outer', na_rep='-')
+
+print(df, end="\n\n")
+print(res)

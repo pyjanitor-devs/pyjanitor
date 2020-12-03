@@ -13,8 +13,10 @@ new version (on deck)
 - [ENH] Add ``pivot_wider`` function, which is the inverse of the `pivot_longer`
   function. @samukweku
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
-- [ENH] Add `new_column_name` parameter to `process_text`, allowing a user to
-  create a new column name after processing a text column. @samukweku
+- [ENH] Add `new_column_names` parameter to `process_text`, allowing a user to
+  create a new column name after processing a text column. Also added a `merge_frame`
+  parameter, allowing dataframe merging, if the result of the text processing is a
+  dataframe.@samukweku
 v0.20.10
 =======
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli

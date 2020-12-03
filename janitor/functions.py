@@ -24,7 +24,6 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from pandas.core.arrays import string_
 import pandas_flavor as pf
 from natsort import index_natsorted
 from pandas.api.types import union_categoricals
@@ -4157,7 +4156,7 @@ def process_text(
     df: pd.DataFrame,
     column_name: str,
     new_column_names: Optional[Union[str, list]] = None,
-    merge_frame:Optional[bool] = None,
+    merge_frame: Optional[bool] = None,
     string_function: Optional[str] = None,
     *args: str,
     **kwargs: str,
@@ -4235,6 +4234,7 @@ def process_text(
             df = df,
             column_name,
             new_column_name = None,
+            merge_frame = None,
             string_function = "string_func_name_here",
             args, kwargs
             )
@@ -4249,7 +4249,9 @@ def process_text(
         df = (
             pd.DataFrame(...)
             .process_text(
+                column_name,
                 new_column_name = None,
+                merge_frame = None/True/False
                 string_function = "string_func_name_here",
                 args, kwargs
                 )
@@ -4261,11 +4263,11 @@ def process_text(
     :param new_column_names: Names to assign to the new columns created from
         the text processing. `new_column_names` can be a string, if the result
         of the text processing is a Series or string; if the result of the text
-        processing is a dataframe, then `new_column_names` is treated as a prefix
-        for each of the columns in the new dataframe. `new_column_names` can also
-        be a list of strings to act as new column names for the new dataframe.
-        The existing `column_name` stays unmodified if `new_column_names` is
-        not None.
+        processing is a dataframe, then `new_column_names` is treated as a
+        prefix for each of the columns in the new dataframe. `new_column_names`
+        can also be a list of strings to act as new column names for the new
+        dataframe. The existing `column_name` stays unmodified if
+        `new_column_names` is not None.
     :param merge_frame: This comes into play if the result of the text
         processing is a dataframe. If `True`, the resulting dataframe
         will be merged with the original dataframe; if `False`, the
@@ -4300,18 +4302,20 @@ def process_text(
         if not func.__name__.startswith("_")
     ]
 
-    if string_function is not None:
-        if string_function not in pandas_string_methods:
-            raise KeyError(f"{string_function} is not a Pandas string method.")
-    if string_function=="extractall" and merge_frame:
+    if string_function is None:
+        return df
+
+    if string_function not in pandas_string_methods:
+        raise KeyError(f"{string_function} is not a Pandas string method.")
+    if string_function == "extractall" and merge_frame:
         # create unique indices
         # comes in handy for executing joins if there are
         # duplicated indices in the original dataframe
         df = df.set_index(np.arange(len(df)), append=True)
 
     result = getattr(df.loc[:, column_name].str, string_function)(
-            *args, **kwargs
-        )
+        *args, **kwargs
+    )
 
     if isinstance(result, str):
         if not new_column_names:
@@ -4322,7 +4326,8 @@ def process_text(
 
     # TODO: Support for str.cat with `join`
     # need a robust way to handle the results
-    # if there is a `join` parameter
+    # if there is a `join` parameter, as this could create more
+    # or less rows with varying indices or even duplicate indices
     if isinstance(result, pd.Series):
         if not new_column_names:
             df.loc[:, column_name] = result
@@ -4342,25 +4347,22 @@ def process_text(
                         match the number of columns in the new
                         dataframe generated from the text processing.
                         """
-                )
+                    )
                 result.columns = new_column_names
         if not merge_frame:
             return result
 
         if not isinstance(result.index, pd.MultiIndex):
-            df = pd.concat([df, result], axis = 'columns')
+            df = pd.concat([df, result], axis="columns")
             return df
         # primarily for str.extractall, since at the moment this is the only
         # string method that returns a MultiIndex.
         # code will be modified if another string function that returns a
         # MultIndex is added to Pandas string methods.
-        result = result.reset_index(level='match').astype({"match":'Int64'})
-        df = df.join(result, how = 'outer')
-        df = df.droplevel(-1).set_index('match', append=True)
+        result = result.reset_index(level="match")
+        df = df.join(result, how="outer")
+        df = df.droplevel(-1).set_index("match", append=True)
         return df
-
-
-    return df
 
 
 @pf.register_dataframe_method

@@ -4186,10 +4186,11 @@ def process_text(
                            "code" : [1, 2, 3]})
 
         df.process_text(column_name = "text", string_function = "lower")
-          text       |   code
-        0 ragnar     |    1
-        1 sammywemmy |    2
-        2 ginger     |    3
+
+          text          code
+        0 ragnar         1
+        1 sammywemmy     2
+        2 ginger         3
 
     For string methods with parameters, simply pass the arguments::
 

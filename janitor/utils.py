@@ -967,7 +967,7 @@ def _pivot_longer_extractions(
         if isinstance(names_pattern, str):
             mapping = df.columns.str.extract(names_pattern)
 
-            if mapping.isna().all().all():
+            if mapping.isna().all(axis=None):
                 raise ValueError(
                     """
                     The regular expression in ``names_pattern``

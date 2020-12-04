@@ -1059,6 +1059,10 @@ def _pivot_longer_extractions(
         # null values will be generated due to the empty spaces in the `group`
         # column. The only columns needed for complete cases are `.value` and
         # `others`, excluding `group`
+        # setting `mapping` to the left of the merge operation ensures that all
+        # the actual values are kept in the data; at some point in 
+        # `computations_pivot_longer` we drop duplicate columns by keeping the 
+        # leftmost columns.
         reindex_columns = mapping.merge(reindex_columns, how="outer").fillna(0)
         reindex_columns = pd.MultiIndex.from_frame(reindex_columns)
 

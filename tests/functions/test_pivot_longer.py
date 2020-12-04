@@ -1916,3 +1916,41 @@ def test_group_present():
     )
 
     assert_frame_equal(result, df_out)
+
+
+# copied from :
+# https://github.com/pandas-dev/pandas/blob/master/pandas/tests/reshape/test_melt.py
+# interesting edge case
+def test_float_suffix_irregular():
+    """
+    Test output for floating suffixes for stubnames;
+    the suffixes are unique and differ for the stubnames.
+    """
+    df = pd.DataFrame(
+            {
+                "treatment_1.1": [1.0, 2.0],
+                "treatment_2.1": [3.0, 4.0],
+                "result_1.2": [5.0, 6.0],
+                "result_1": [0, 9],
+                "A": ["X1", "X2"],
+            }
+        )
+
+    expected =  pd.DataFrame(
+            {
+                "A": ["X1", "X1", "X1", "X1", "X2", "X2", "X2", "X2"],
+                "colname": ['1', '1.1', '1.2', '2.1', '1', '1.1', '1.2', '2.1'],
+                "treatment": [np.nan, 1.0, np.nan, 3.0, np.nan, 2.0, np.nan, 4.0],
+                "result": [0.0, np.nan, 5.0, np.nan, 9.0, np.nan, 6.0, np.nan],
+            }
+        )
+    result = df.pivot_longer(index="A", names_to= (".value", "colname"), names_sep="_", sort_by_appearance=True)
+    assert_frame_equal(result, expected)
+
+
+df = pd.DataFrame({"col": list("ABC"), "value": range(10, 16, 2)})
+
+
+print(df, end='\n\n')
+print(expected.reset_index(), end="\n\n")
+print(result)

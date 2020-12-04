@@ -8,6 +8,7 @@ from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
+from numpy.core.fromnumeric import prod
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 
@@ -950,6 +951,7 @@ def _pivot_longer_extractions(
             df = df.set_index(np.arange(len(df)), append=True)
 
     mapping = None
+    reindex_columns = None
     if names_sep:
         mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
 
@@ -1004,11 +1006,23 @@ def _pivot_longer_extractions(
         if index:
             # easier to do this, than having to set the index
             # and resetting.
+            # put the index(or indices) into the first column
+            # and set the remaining columns to empty string
+            # on the same row(s)
             positions = df.columns.get_indexer(index)
             mapping.iloc[positions, 0] = index
             mapping.iloc[positions, 1:] = ""
 
     else:
+        # we need to get the complete representations of all column labels
+        # in `.value` and in `others`. This way, we are assured of a complete
+        # representation. Came across an edge case in one of the tests in
+        # pd.wide_to_long, that forced me to rethink my steps and borrow idea
+        # from the `complete` method
+        reindex_columns = [column.unique() for _, column in mapping.items()]
+        reindex_columns = product(*reindex_columns)
+        reindex_columns = pd.DataFrame(reindex_columns, columns=mapping.columns)
+
         # The `others` variable comes in
         # handy when reshaping the data.
         others = [
@@ -1041,11 +1055,21 @@ def _pivot_longer_extractions(
                 group = f"{group}_1"
         mapping.loc[:, group] = mapping.groupby(".value").cumcount()
         others.append(group)
+        # null values will be generated due to the empty spaces in the `group`
+        # column. The only columns needed for complete cases are `.value` and
+        # `others`, excluding `group`
+        reindex_columns = mapping.merge(reindex_columns,  how='outer').fillna(0)
+
 
     if len(mapping.columns) > 1:
         df.columns = pd.MultiIndex.from_frame(mapping)
     else:
         df.columns = mapping.iloc[:, 0]
+    # now we have a full representation of all the labels, both in
+    # '.value' and others
+    df = df.reindex(columns=reindex_columns)
+
+
 
     return df, others, group
 
@@ -1175,6 +1199,10 @@ def _computations_pivot_longer(
         df = pd.concat(df, axis="columns")
         # there likely will be multiple `others`; this section gets the
         # first positions and discards the rest.
+        # using this step, is more efficient, than using set_index
+        # the data is assured because of the category types set earlier
+        # coupled with the index sorting, to ensure data is aligned in all
+        # chunks.
         others_positions = df.columns.get_indexer_non_unique(others)[0]
         others_positions = np.sort(others_positions)[: len(others)]
         stubnames_positions = df.columns.get_indexer_for(stubnames)
@@ -1193,7 +1221,7 @@ def _computations_pivot_longer(
         if ignore_index:
             df.index = np.arange(len(df))
 
-        return df
+    return df
 
 
 def _data_checks_pivot_wider(

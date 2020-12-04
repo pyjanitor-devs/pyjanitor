@@ -113,48 +113,51 @@ def test_new_column_names(test_df):
     assert_frame_equal(result, expected)
 
 
-def test_str_cat():
+@pytest.fixture
+def no_nulls_df():
+    return pd.DataFrame({"text": ["a", "b", "c", "d"], "numbers": range(1, 5)})
+
+
+def test_str_cat(no_nulls_df):
     """Test outcome for Pandas ``.str.cat()`` method."""
 
-    df = pd.DataFrame({"text": ["a", "b", "c", "d"], "numbers": range(1, 5)})
-
-    result = df.process_text(
+    result = no_nulls_df.process_text(
         column_name="text", string_function="cat", others=["A", "B", "C", "D"],
     )
 
-    expected = df.assign(text=df["text"].str.cat(others=["A", "B", "C", "D"]))
+    expected = no_nulls_df.assign(
+        text=no_nulls_df["text"].str.cat(others=["A", "B", "C", "D"])
+    )
 
     assert_frame_equal(result, expected)
 
 
-def test_str_cat_result_is_a_string():
+def test_str_cat_result_is_a_string(no_nulls_df):
     """
     Test wrapper for Pandas ``.str.cat()`` method
     when the outcome is a string.
     """
 
-    df = pd.DataFrame({"text": ["a", "b", "c", "d"], "numbers": range(1, 5)})
+    result = no_nulls_df.process_text(
+        column_name="text", string_function="cat",
+    )
 
-    result = df.process_text(column_name="text", string_function="cat",)
-
-    expected = df.assign(text=df["text"].str.cat())
+    expected = no_nulls_df.assign(text=no_nulls_df["text"].str.cat())
 
     assert_frame_equal(result, expected)
 
 
-def test_str_cat_result_is_a_string_and_new_column_names():
+def test_str_cat_result_is_a_string_and_new_column_names(no_nulls_df):
     """
     Test wrapper for Pandas ``.str.cat()`` method when the outcome is a string,
     and `new_column_names` is not None.
     """
 
-    df = pd.DataFrame({"text": ["a", "b", "c", "d"], "numbers": range(1, 5)})
-
-    result = df.process_text(
+    result = no_nulls_df.process_text(
         column_name="text", string_function="cat", new_column_names="combined"
     )
 
-    expected = df.assign(combined=df["text"].str.cat())
+    expected = no_nulls_df.assign(combined=no_nulls_df["text"].str.cat())
 
     assert_frame_equal(result, expected)
 
@@ -197,13 +200,12 @@ def test_str_lower():
     assert_frame_equal(result, expected)
 
 
-def test_str_wrong():
+def test_str_wrong(test_df):
     """Test that an invalid Pandas string method raises an exception."""
-    df = pd.DataFrame(
-        {"text": ["ragnar", "sammywemmy", "ginger"], "code": [1, 2, 3]}
-    )
     with pytest.raises(KeyError):
-        df.process_text(column_name="text", string_function="invalid_function")
+        test_df.process_text(
+            column_name="text", string_function="invalid_function"
+        )
 
 
 def test_str_wrong_parameters(test_df):
@@ -214,48 +216,49 @@ def test_str_wrong_parameters(test_df):
         )
 
 
-def test_return_dataframe_merge_is_None():
+@pytest.fixture
+def returns_frame_1():
+    return pd.DataFrame(
+        {
+            "ticker": [
+                "spx 5/25/2001 p500",
+                "spx 5/25/2001 p600",
+                "spx 5/25/2001 p700",
+            ]
+        }
+    )
+
+
+def test_return_dataframe_merge_is_None(returns_frame_1):
     """
     Test that the dataframe returned when `merge_frame` is None
     is the result of the text processing, and is not merged to
     the original dataframe.
     """
-    df = pd.DataFrame(
-        {
-            "ticker": [
-                "spx 5/25/2001 p500",
-                "spx 5/25/2001 p600",
-                "spx 5/25/2001 p700",
-            ]
-        }
-    )
-    expected_output = df["ticker"].str.split(" ", expand=True)
-    result = df.process_text(
+
+    expected_output = returns_frame_1["ticker"].str.split(" ", expand=True)
+    result = returns_frame_1.process_text(
         column_name="ticker", string_function="split", expand=True, pat=" "
     )
     assert_frame_equal(result, expected_output)
 
 
-def test_return_dataframe_merge_is_not_None():
+def test_return_dataframe_merge_is_not_None(returns_frame_1):
     """
     Test that the dataframe returned when `merge_frame` is not None
     is a merger of the original dataframe, and the dataframe
     generated from the text processing.
     """
-    df = pd.DataFrame(
-        {
-            "ticker": [
-                "spx 5/25/2001 p500",
-                "spx 5/25/2001 p600",
-                "spx 5/25/2001 p700",
-            ]
-        }
-    )
     expected_output = pd.concat(
-        [df, df["ticker"].str.split(" ", expand=True).add_prefix("new_")],
+        [
+            returns_frame_1,
+            returns_frame_1["ticker"]
+            .str.split(" ", expand=True)
+            .add_prefix("new_"),
+        ],
         axis="columns",
     )
-    result = df.process_text(
+    result = returns_frame_1.process_text(
         column_name="ticker",
         new_column_names="new_",
         merge_frame=True,
@@ -266,32 +269,26 @@ def test_return_dataframe_merge_is_not_None():
     assert_frame_equal(result, expected_output)
 
 
-def test_return_dataframe_merge_is_not_None_new_column_names_is_a_list():
+def test_return_dataframe_merge_is_not_None_new_column_names_is_a_list(
+    returns_frame_1,
+):
     """
     Test that the dataframe returned when `merge_frame` is not None
     is a merger of the original dataframe, and the dataframe
     generated from the text processing. Also, the `new_column_names`
     is a list.
     """
-    df = pd.DataFrame(
-        {
-            "ticker": [
-                "spx 5/25/2001 p500",
-                "spx 5/25/2001 p600",
-                "spx 5/25/2001 p700",
-            ]
-        }
-    )
+
     expected_output = pd.concat(
         [
-            df,
-            df["ticker"]
+            returns_frame_1,
+            returns_frame_1["ticker"]
             .str.split(" ", expand=True)
             .set_axis(["header1", "header2", "header3"], axis="columns"),
         ],
         axis="columns",
     )
-    result = df.process_text(
+    result = returns_frame_1.process_text(
         column_name="ticker",
         new_column_names=["header1", "header2", "header3"],
         merge_frame=True,
@@ -302,24 +299,18 @@ def test_return_dataframe_merge_is_not_None_new_column_names_is_a_list():
     assert_frame_equal(result, expected_output)
 
 
-def test_return_dataframe_new_column_names_is_a_list_len_unequal():
+def test_return_dataframe_new_column_names_is_a_list_len_unequal(
+    returns_frame_1,
+):
     """
     Raise error if text processing returns a dataframe,
     `new_column_names` is not None, and the length of
     `new_column_names` is not equal to the length of the
     new dataframe's columns.
     """
-    df = pd.DataFrame(
-        {
-            "ticker": [
-                "spx 5/25/2001 p500",
-                "spx 5/25/2001 p600",
-                "spx 5/25/2001 p700",
-            ]
-        }
-    )
+
     with pytest.raises(ValueError):
-        df.process_text(
+        returns_frame_1.process_text(
             column_name="ticker",
             new_column_names=["header1", "header2"],
             merge_frame=True,

@@ -8,7 +8,6 @@ from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
-from numpy.core.fromnumeric import prod
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 
@@ -1021,7 +1020,9 @@ def _pivot_longer_extractions(
         # from the `complete` method
         reindex_columns = [column.unique() for _, column in mapping.items()]
         reindex_columns = product(*reindex_columns)
-        reindex_columns = pd.DataFrame(reindex_columns, columns=mapping.columns)
+        reindex_columns = pd.DataFrame(
+            reindex_columns, columns=mapping.columns
+        )
 
         # The `others` variable comes in
         # handy when reshaping the data.
@@ -1058,8 +1059,8 @@ def _pivot_longer_extractions(
         # null values will be generated due to the empty spaces in the `group`
         # column. The only columns needed for complete cases are `.value` and
         # `others`, excluding `group`
-        reindex_columns = mapping.merge(reindex_columns,  how='outer').fillna(0)
-
+        reindex_columns = mapping.merge(reindex_columns, how="outer").fillna(0)
+        reindex_columns = pd.MultiIndex.from_frame(reindex_columns)
 
     if len(mapping.columns) > 1:
         df.columns = pd.MultiIndex.from_frame(mapping)
@@ -1067,9 +1068,8 @@ def _pivot_longer_extractions(
         df.columns = mapping.iloc[:, 0]
     # now we have a full representation of all the labels, both in
     # '.value' and others
-    df = df.reindex(columns=reindex_columns)
-
-
+    if dot_value:
+        df = df.reindex(columns=reindex_columns)
 
     return df, others, group
 

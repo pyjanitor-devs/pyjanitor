@@ -4278,7 +4278,7 @@ def process_text(
     :raises KeyError: if ``string_function`` is not a Pandas string method.
     :raises TypeError: if wrong ``arg`` or ``kwarg`` is supplied.
     :raises ValueError: if `column_name` not found in dataframe.
-    :raises ValueErorr: if `new_column_names` is not None and is found in
+    :raises ValueError: if `new_column_names` is not None and is found in
         dataframe.
 
     .. # noqa: DAR402

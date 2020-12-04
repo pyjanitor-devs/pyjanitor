@@ -4158,7 +4158,6 @@ def process_text(
     new_column_names: Optional[Union[str, list]] = None,
     merge_frame: Optional[bool] = None,
     string_function: Optional[str] = None,
-    *args: str,
     **kwargs: str,
 ) -> pd.DataFrame:
     """
@@ -4237,7 +4236,7 @@ def process_text(
             new_column_names = None,
             merge_frame = None,
             string_function = "string_func_name_here",
-            args, kwargs
+            kwargs
             )
 
     Method-chaining usage syntax:
@@ -4254,7 +4253,7 @@ def process_text(
                 new_column_names = None,
                 merge_frame = None/True/False
                 string_function = "string_func_name_here",
-                args, kwargs
+                kwargs
                 )
         )
 
@@ -4274,11 +4273,13 @@ def process_text(
         will be merged with the original dataframe, else the resulting
         dataframe, not the original dataframe, will be returned.
     :param string_function: Pandas string method to be applied.
-    :param args: Arguments for parameters of the `string_function`.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
     :returns: A pandas dataframe with modified column(s).
     :raises KeyError: if ``string_function`` is not a Pandas string method.
     :raises TypeError: if wrong ``arg`` or ``kwarg`` is supplied.
+    :raises ValueError: if `column_name` not found in dataframe.
+    :raises ValueErorr: if `new_column_names` is not None and is found in
+        dataframe.
 
     .. # noqa: DAR402
     """
@@ -4316,9 +4317,7 @@ def process_text(
         # duplicated indices in the original dataframe
         df = df.set_index(np.arange(len(df)), append=True)  # extra_index_line
 
-    result = getattr(df.loc[:, column_name].str, string_function)(
-        *args, **kwargs
-    )
+    result = getattr(df.loc[:, column_name].str, string_function)(**kwargs)
 
     # TODO: Support for str.cat with `join` parameter
     # need a robust way to handle the results

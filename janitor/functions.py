@@ -5021,9 +5021,9 @@ def pivot_wider(
     values_from: Optional[Union[List, str]] = None,
     names_sort: Optional[bool] = False,
     flatten_levels: Optional[bool] = True,
-    values_from_first: Optional[bool] = True,
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
+    aggfunc: Optional[Union[str, list, dict]] = None,
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -5170,9 +5170,9 @@ def pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
-        values_from_first,
         names_prefix,
         names_sep,
+        aggfunc,
         fill_value,
     ) = _data_checks_pivot_wider(
         df,
@@ -5181,9 +5181,9 @@ def pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
-        values_from_first,
         names_prefix,
         names_sep,
+        aggfunc,
         fill_value,
     )
 
@@ -5194,9 +5194,9 @@ def pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
-        values_from_first,
         names_prefix,
         names_sep,
+        aggfunc,
         fill_value,
     )
 

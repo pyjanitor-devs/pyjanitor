@@ -74,7 +74,6 @@ combinations = [
         ["variable", "measure"],
         "value",
         None,
-        True,
     ),
     (
         pd.DataFrame(
@@ -95,7 +94,6 @@ combinations = [
         "n",
         "name",
         None,
-        True,
     ),
     (
         pd.DataFrame(
@@ -116,7 +114,6 @@ combinations = [
         "n",
         "name",
         "name",
-        True,
     ),
     (
         pd.DataFrame(
@@ -137,17 +134,16 @@ combinations = [
             {
                 "geoid": [1, 13],
                 "name": ["Alabama", "Georgia"],
-                "estimate_pop_renter": [1434765, 3592422],
-                "estimate_median_rent": [747, 927],
-                "error_pop_renter": [16736, 33385],
-                "error_median_rent": [3, 3],
+                "pop_renter_estimate": [1434765, 3592422],
+                "median_rent_estimate": [747, 927],
+                "pop_renter_error": [16736, 33385],
+                "median_rent_error": [3, 3],
             }
         ),
         ["geoid", "name"],
         "variable",
         ["estimate", "error"],
         None,
-        True,
     ),
     (
         pd.DataFrame(
@@ -178,7 +174,6 @@ combinations = [
         "variable",
         ["estimate", "error"],
         None,
-        False,
     ),
 ]
 
@@ -240,15 +235,6 @@ def test_presence_names_from2(df_checks_output):
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
 
-
-def test_values_from_first_wrong_type(df_checks_output):
-    "Raise TypeError if the wrong type is provided for `values_from_first`."
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name",
-            names_from=["estimate", "variable"],
-            values_from_first=2,
-        )
 
 
 def test_names_sort_wrong_type(df_checks_output):
@@ -332,7 +318,7 @@ def test_pivot_long_wide_long():
     )
 
     result = df_in.pivot_wider(
-        index=["a", "b"], names_from="name", values_from_first=False
+        index=["a", "b"], names_from="name"
     )
 
     result = result.pivot_longer(
@@ -368,7 +354,7 @@ def pivot_wide_long_wide():
 @pytest.mark.parametrize(
     """
     df_in,df_out,index,names_from,
-    values_from, names_prefix,values_from_first
+    values_from, names_prefix
     """,
     combinations,
 )
@@ -379,7 +365,6 @@ def test_pivot_wider_various(
     names_from,
     values_from,
     names_prefix,
-    values_from_first,
 ):
     """
     Test `pivot_wider` function with various combinations.
@@ -389,7 +374,6 @@ def test_pivot_wider_various(
         names_from=names_from,
         values_from=values_from,
         names_prefix=names_prefix,
-        values_from_first=values_from_first,
     )
     assert_frame_equal(result, df_out)
 
@@ -442,18 +426,16 @@ def test_fill_values():
         values_from="values",
         flatten_levels=False,
         fill_value=0,
-        names_sort=True,
     )
 
     expected_output = pd.DataFrame(
-        {
-            1: {(1, 1): 0, (1, 2): 2, (2, 1): 4, (2, 2): 0},
-            2: {(1, 1): 1, (1, 2): 0, (2, 1): 3, (2, 2): 5},
-        },
-        index=pd.MultiIndex.from_tuples(
-            [(1, 1), (1, 2), (2, 1), (2, 2)], names=["lev1", "lev2"]
-        ),
-        columns=pd.Int64Index([1, 2], dtype="int64", name="lev3"),
+        {1: [0, 2, 4, 0], 2: [1, 0, 3, 5]},
+        index=pd.MultiIndex.from_tuples([(1, 1),
+            (1, 2),
+            (2, 1),
+            (2, 2)],
+           names=['lev1', 'lev2']),
+        columns=pd.Int64Index([1, 2], dtype='int64', name='lev3'),
     )
     assert_frame_equal(result, expected_output)
 
@@ -475,7 +457,7 @@ def test_no_index():
         }
     )
 
-    result = df_in.pivot_wider(names_from="gender")
+    result = df_in.pivot_wider(names_from="gender", names_prefix="contVar_")
 
     assert_frame_equal(result, expected_output)
 
@@ -497,7 +479,7 @@ def test_no_index_names_sort_True():
         }
     )
 
-    result = df_in.pivot_wider(names_from="gender", names_sort=True)
+    result = df_in.pivot_wider(names_from="gender", names_sort=True, names_prefix="contVar_")
 
     assert_frame_equal(result, expected_output)
 
@@ -524,3 +506,65 @@ def test_index_names_sort_True():
     )
 
     assert_frame_equal(result, expected_output)
+
+@pytest.fixture()
+def df_aggfunc():
+    return pd.DataFrame(
+  [{'V4': 'A', 'variable': 'V1', 'value': 0},
+ {'V4': 'A', 'variable': 'V1', 'value': 0},
+ {'V4': 'A', 'variable': 'V1', 'value': 0},
+ {'V4': 'B', 'variable': 'V1', 'value': 4},
+ {'V4': 'B', 'variable': 'V1', 'value': 4},
+ {'V4': 'B', 'variable': 'V1', 'value': 1},
+ {'V4': 'C', 'variable': 'V1', 'value': 4},
+ {'V4': 'C', 'variable': 'V1', 'value': 1},
+ {'V4': 'C', 'variable': 'V1', 'value': 1},
+ {'V4': 'A', 'variable': 'V2', 'value': 3},
+ {'V4': 'A', 'variable': 'V2', 'value': 4},
+ {'V4': 'A', 'variable': 'V2', 'value': 7},
+ {'V4': 'B', 'variable': 'V2', 'value': 0},
+ {'V4': 'B', 'variable': 'V2', 'value': 8},
+ {'V4': 'B', 'variable': 'V2', 'value': 5},
+ {'V4': 'C', 'variable': 'V2', 'value': 5},
+ {'V4': 'C', 'variable': 'V2', 'value': 0},
+ {'V4': 'C', 'variable': 'V2', 'value': 9}])
+
+
+def test_aggfunc(df_aggfunc):
+    """Test output when `aggfunc` is provided."""
+    expected=pd.DataFrame({"V4":['A','B','C'], 'V1':[3,3,3],'V2':[3,3,3]})
+    result = df_aggfunc.pivot_wider(index='V4', names_from='variable', aggfunc='size', flatten_levels=True)
+    assert_frame_equal(result, expected)
+
+def test_aggfunc_list(df_aggfunc):
+    """Test output when `aggfunc` is a list."""
+    expected=pd.DataFrame({"V4":['A','B','C'], 'V1':[0,9,6],'V2':[14,13,14]})
+    result = df_aggfunc.pivot_wider(index='V4', names_from='variable', aggfunc=['sum'], flatten_levels=True)
+    assert_frame_equal(result, expected)
+
+import janitor
+df = pd.DataFrame(
+        {
+            "lev1": [1, 1, 1, 2, 2, 2],
+            "lev2": [1, 1, 2, 1, 1, 2],
+            "lev3": [1, 2, 1, 2, 1, 2],
+            "lev4": [1, 2, 3, 4, 5, 6],
+            "values": [0, 1, 2, 3, 4, 5],
+        }
+    )
+
+result = df.pivot_wider(index=['lev1','lev2'], names_from='lev3', values_from='values', flatten_levels=False, fill_value=0)
+print(df, end="\n\n")
+print(result)
+
+expected_output = pd.DataFrame(
+        {
+            1: {(1, 1): 0, (1, 2): 2, (2, 1): 4, (2, 2): 0},
+            2: {(1, 1): 1, (1, 2): 0, (2, 1): 3, (2, 2): 5},
+        },
+        index=pd.MultiIndex.from_tuples(
+            [(1, 1), (1, 2), (2, 1), (2, 2)], names=["lev1", "lev2"]
+        ),
+        columns=pd.Index([1, 2], dtype="int64", name="lev3"))
+print("\n\n")
+print(expected_output)

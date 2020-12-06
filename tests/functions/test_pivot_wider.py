@@ -543,28 +543,13 @@ def test_aggfunc_list(df_aggfunc):
     assert_frame_equal(result, expected)
 
 import janitor
-df = pd.DataFrame(
-        {
-            "lev1": [1, 1, 1, 2, 2, 2],
-            "lev2": [1, 1, 2, 1, 1, 2],
-            "lev3": [1, 2, 1, 2, 1, 2],
-            "lev4": [1, 2, 3, 4, 5, 6],
-            "values": [0, 1, 2, 3, 4, 5],
-        }
-    )
+raw = {
+'sample':[1, 1, 1, 1, 2, 2, 3, 3, 3, 3],
+'gene':['G1', 'G2', 'G3', 'G3', 'G1', 'G2', 'G2', 'G2', 'G3', 'G3'],
+'type':['HIGH', 'HIGH', 'LOW', 'MED', 'HIGH', 'LOW', 'LOW', 'LOW', 'MED', 'LOW']}
+df = pd.DataFrame(raw)
 
-result = df.pivot_wider(index=['lev1','lev2'], names_from='lev3', values_from='values', flatten_levels=False, fill_value=0)
+result = df.pivot_wider(index='gene', names_from='sample', values_from='type', flatten_levels=False, aggfunc='max')
 print(df, end="\n\n")
 print(result)
 
-expected_output = pd.DataFrame(
-        {
-            1: {(1, 1): 0, (1, 2): 2, (2, 1): 4, (2, 2): 0},
-            2: {(1, 1): 1, (1, 2): 0, (2, 1): 3, (2, 2): 5},
-        },
-        index=pd.MultiIndex.from_tuples(
-            [(1, 1), (1, 2), (2, 1), (2, 2)], names=["lev1", "lev2"]
-        ),
-        columns=pd.Index([1, 2], dtype="int64", name="lev3"))
-print("\n\n")
-print(expected_output)

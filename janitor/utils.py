@@ -1064,7 +1064,6 @@ def _computations_pivot_wider(
     source data. This only occurs if `flatten_levels` is True.
     """
 
-    # TODO : include an aggfunc argument
     if values_from is None:
         if index:
             values_from = [
@@ -1109,6 +1108,8 @@ def _computations_pivot_wider(
         df = df.groupby(level=aggfunc_index).agg(aggfunc)
 
     df = df.unstack(level=names_from, fill_value=fill_value)  # noqa: PD010
+    if aggfunc: # unstack does not fill for aggregations
+        df = df.fillna(fill_value)
 
     if not flatten_levels:
         return df

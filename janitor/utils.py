@@ -9,7 +9,6 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -1072,29 +1071,32 @@ def _computations_pivot_wider(
         else:
             values_from = [col for col in df.columns if col not in names_from]
 
-    dtypes = None
-    before = None
-    # ensure `names_sort` is in combination with `flatten_levels`
-    if all((names_sort is False, flatten_levels)):
-        # dtypes only needed for names_from
-        # since that is what will become the new column names
-        dtypes = {
-            column_name: CategoricalDtype(
-                categories=column.unique(), ordered=True
-            )
-            for column_name, column in df.filter(names_from).items()
-        }
-        if index is not None:
-            before = df.filter(index)
-            if before.duplicated().any():
-                before = before.drop_duplicates()
-
-        df = df.astype(dtypes)
-
+    # use the counter to maintain order by appearance
+    # if values_from length is greater than one, and is a list
+    # and names_from is of length 1, the unstack method sorts
+    # the names_from column before unstacking.
+    # That is fine if `names_sort` is True; however, if the user
+    # wants the data returned in order of appearance, then a counter
+    # is included to keep the order and prevent `unstack` from
+    # sorting the columns before unstacking.
+    counter = None
+    counter_true_or_false = False
+    cond1 = (isinstance(values_from, list)) and (len(values_from) > 1)
+    cond2 = len(names_from) == 1
+    if cond1 or cond2:
+        if names_sort is False:
+            counter = df.groupby(names_from).ngroup()
+            counter_true_or_false = True
     if index is None:  # use existing index
-        df = df.set_index(names_from, append=True)
+        if counter_true_or_false is True:
+            df = df.set_index([*names_from, counter], append=True)
+        else:
+            df = df.set_index(names_from, append=True)
     else:
-        df = df.set_index(index + names_from)
+        if counter_true_or_false is True:
+            df = df.set_index([*index, *names_from, counter])
+        else:
+            df = df.set_index(index + names_from)
 
     if not df.index.is_unique:
         raise ValueError(
@@ -1106,34 +1108,33 @@ def _computations_pivot_wider(
         )
 
     df = df.loc[:, values_from]
-    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
-    if flatten_levels:
-        if isinstance(values_from, list):
-            df.columns = df.columns.set_names(level=0, names="values_from")
-            if not values_from_first:
-                df = df.reorder_levels(names_from + ["values_from"], axis=1)
-        if df.columns.nlevels > 1:
-            df.columns = [names_sep.join(entry) for entry in df]
-        if names_prefix:
-            df = df.add_prefix(names_prefix)
-        df.columns = list(
-            df.columns
-        )  # blanket approach that covers categories
 
-        if index:
-            # this way we avoid having to convert index
-            # from category to original dtype
-            # while still maintaining order of appearance
-            if names_sort is False:
-                df = before.merge(
-                    df, how="left", left_on=index, right_index=True
-                ).reset_index(drop=True)
-            else:
-                df = df.reset_index()
-        else:
-            # remove default index, since it is irrelevant
-            df = df.reset_index().iloc[:, 1:]
+    if counter_true_or_false is True:  # counter will always be the last level;
+        # I think it is a cool feature that the `level` argument
+        # in unstack accepts a combination of strings and integers
+        df = df.unstack(  # noqa: PD010
+            level=[*names_from, -1], fill_value=fill_value
+        )
+        df = df.droplevel(
+            level=-1, axis="columns"
+        )  # counter has served its purpose
+    else:
+        df = df.unstack(level=names_from, fill_value=fill_value)  # noqa: PD010
 
+    if not flatten_levels:
         return df
+
+    if isinstance(values_from, list):
+        df.columns = df.columns.set_names(level=0, names="values_from")
+        if not values_from_first:
+            df = df.reorder_levels(names_from + ["values_from"], axis=1)
+    if df.columns.nlevels > 1:
+        df.columns = [names_sep.join(entry) for entry in df]
+    if names_prefix:
+        df = df.add_prefix(names_prefix)
+    if index:
+        df = df.reset_index()
+    if df.columns.names:
+        df = df.rename_axis(columns=None)
 
     return df

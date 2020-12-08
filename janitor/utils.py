@@ -6,11 +6,10 @@ import sys
 import warnings
 from itertools import chain, product
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
-from pandas.api.types import CategoricalDtype
-
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import CategoricalDtype
 
 from .errors import JanitorError
 
@@ -1072,16 +1071,16 @@ def _computations_pivot_wider(
         else:
             values_from = [col for col in df.columns if col not in names_from]
 
-
+    dtypes = None
     if all((names_sort is False, flatten_levels is True)):
         # dtypes only needed for names_from
         # since that is what will become the new column names
         dtypes = {
             column_name: CategoricalDtype(
                 categories=column.dropna().unique(), ordered=True
-            ) if column.hasnans else CategoricalDtype(
-                categories=column.unique(), ordered=True
             )
+            if column.hasnans
+            else CategoricalDtype(categories=column.unique(), ordered=True)
             for column_name, column in df.loc[:, names_from].items()
         }
 
@@ -1105,39 +1104,52 @@ def _computations_pivot_wider(
     aggfunc_index = None
     if aggfunc is not None:
         aggfunc_index = list(range(df.index.nlevels))
-        df = df.groupby(level=aggfunc_index).agg(aggfunc)
+        # since names_from may be categoricals if `names_sort`
+        # is False and `flatten_levels` is True.
+        # observed is set to True, keeping results consistent
+        if all((names_sort is False, flatten_levels is True)):
+            df = df.groupby(level=aggfunc_index, observed=True).agg(aggfunc)
+        else:
+            df = df.groupby(level=aggfunc_index).agg(aggfunc)
 
     df = df.unstack(level=names_from, fill_value=fill_value)  # noqa: PD010
-    if aggfunc: # unstack does not fill for aggregations
-        df = df.fillna(fill_value)
 
     if not flatten_levels:
         return df
 
     extra_levels = df.columns.nlevels - len(names_from)
-    if extra_levels ==1 :
-        df.columns = df.columns.set_names(level=0, names='values_from')
-        if len(df.columns.get_level_values('values_from').unique())==1:
-            df = df.droplevel("values_from", axis='columns')
+    if extra_levels == 1:
+        df.columns = df.columns.set_names(level=0, names="values_from")
     elif extra_levels == 2:
-        df.columns = df.columns.set_names(level=[0,1], names=['values_from','aggfunc'])
-        if len(df.columns.get_level_values('values_from').unique())==1:
-            df = df.droplevel("values_from", axis='columns')
-        if len(df.columns.get_level_values('aggfunc').unique())==1:
-            df = df.droplevel("aggfunc", axis='columns')
-    new_column_levels = pd.Index(names_from).union(df.columns.names, sort=False)
-    if df.columns.nlevels > len(names_from):
-        df = df.reorder_levels(order = new_column_levels, axis='columns')
+        df.columns = df.columns.set_names(
+            level=[0, 1], names=["values_from", "aggfunc"]
+        )
+
+    if "values_from" in df.columns.names:
+        if len(df.columns.get_level_values("values_from").unique()) == 1:
+            df = df.droplevel("values_from", axis="columns")
+    if "aggfunc" in df.columns.names:
+        if len(df.columns.get_level_values("aggfunc").unique()) == 1:
+            df = df.droplevel("aggfunc", axis="columns")
+
+    # TODO: Add option of name order -
+    # names_from before values_from or vice versa
+    # same will apply if aggfunc is present.
+    # Probably best to get feedback from users.
     if names_sort:
-        df = df.sort_index(axis='columns', level=names_from)
+        df = df.sort_index(axis="columns", level=names_from)
 
     if df.columns.nlevels > 1:
-        df.columns = [names_sep.join(entry) for entry in df]
+        df.columns = [names_sep.join(column_tuples) for column_tuples in df]
+
     if names_prefix:
         df = df.add_prefix(names_prefix)
+
     df.columns = list(df.columns)
+
     if index:
         df = df.reset_index()
+
     if df.columns.names:
         df = df.rename_axis(columns=None)
 

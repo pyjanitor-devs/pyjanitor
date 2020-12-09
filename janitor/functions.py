@@ -4181,7 +4181,7 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({"text":["Ragnar","sammywemmy","ginger"],
+        df = pd.DataFrame({"text" : ["Ragnar","sammywemmy","ginger"],
                            "code" : [1, 2, 3]})
 
         df.process_text(column_name = "text", string_function = "lower")
@@ -4191,7 +4191,7 @@ def process_text(
         1 sammywemmy     2
         2 ginger         3
 
-    For string methods with parameters, simply pass the arguments::
+    For string methods with parameters, simply pass the keyword arguments::
 
         df.process_text(
             column_name = "text",

@@ -5,7 +5,7 @@ from pandas.testing import assert_frame_equal
 
 
 @pytest.fixture
-def test_df():
+def process_test_df():
     return pd.DataFrame(
         {"text": ["a_b_c", "c_d_e", np.nan, "f_g_h"], "numbers": range(1, 5)}
     )
@@ -19,24 +19,24 @@ def test_returns_dataframe():
     )
 
 
-def test_column_name_type(test_df):
+def test_column_name_type(process_test_df):
     """Raise TypeError if `column_name` type is not `str`."""
     with pytest.raises(TypeError):
-        test_df.process_text(["text"])
+        process_test_df.process_text(["text"])
 
 
-def test_new_column_names_type(test_df):
+def test_new_column_names_type(process_test_df):
     """Raise TypeError if `new_column_names` type is not string or list."""
     with pytest.raises(TypeError):
-        test_df.process_text(
+        process_test_df.process_text(
             column_name="text", new_column_names={"nutext": "rar"}
         )
 
 
-def test_column_name_presence(test_df):
+def test_column_name_presence(process_test_df):
     """Raise ValueError if `column_name` is not in dataframe."""
     with pytest.raises(ValueError):
-        test_df.process_text(column_name="Test")
+        process_test_df.process_text(column_name="Test")
 
 
 def test_new_column_names_presence_str(test_returns_dataframe):
@@ -80,36 +80,40 @@ def test_merge_frame_type(test_returns_dataframe):
         )
 
 
-def test_string_function_is_None(test_df):
+def test_string_function_is_None(process_test_df):
     """Test that dataframe is returned if string_function is None."""
-    result = test_df.process_text(column_name="text")
-    assert_frame_equal(result, test_df)
+    result = process_test_df.process_text(column_name="text")
+    assert_frame_equal(result, process_test_df)
 
 
-def test_str_split(test_df):
+def test_str_split(process_test_df):
     """Test wrapper for Pandas ``str.split()`` method."""
 
-    expected = test_df.assign(text=test_df["text"].str.split("_"))
+    expected = process_test_df.assign(
+        text=process_test_df["text"].str.split("_")
+    )
 
-    result = test_df.process_text(
+    result = process_test_df.process_text(
         column_name="text", string_function="split", pat="_"
     )
 
     assert_frame_equal(result, expected)
 
 
-def test_new_column_names(test_df):
+def test_new_column_names(process_test_df):
     """
     Test that a new column name is created when
     `new_column_name` is not None.
     """
-    result = test_df.process_text(
+    result = process_test_df.process_text(
         column_name="text",
         new_column_names="new_text",
         string_function="slice",
         start=2,
     )
-    expected = test_df.assign(new_text=test_df["text"].str.slice(start=2))
+    expected = process_test_df.assign(
+        new_text=process_test_df["text"].str.slice(start=2)
+    )
     assert_frame_equal(result, expected)
 
 
@@ -200,18 +204,18 @@ def test_str_lower():
     assert_frame_equal(result, expected)
 
 
-def test_str_wrong(test_df):
+def test_str_wrong(process_test_df):
     """Test that an invalid Pandas string method raises an exception."""
     with pytest.raises(KeyError):
-        test_df.process_text(
+        process_test_df.process_text(
             column_name="text", string_function="invalid_function"
         )
 
 
-def test_str_wrong_parameters(test_df):
+def test_str_wrong_parameters(process_test_df):
     """Test that invalid argument for Pandas string method raises an error."""
     with pytest.raises(TypeError):
-        test_df.process_text(
+        process_test_df.process_text(
             column_name="text", string_function="split", pattern="_"
         )
 

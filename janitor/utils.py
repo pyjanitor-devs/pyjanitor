@@ -10,6 +10,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
+from pandas.core import common
 
 from .errors import JanitorError
 
@@ -539,25 +540,6 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     return pd.DataFrame(*df_expand_grid, columns=df_columns)
 
 
-# copied from pandas.core.common.py
-# used in _computations_complete
-# might also be useful in case_when
-def __apply_if_callable(maybe_callable, obj, **kwargs):
-    """
-    Evaluate possibly callable input using obj and kwargs if it is callable,
-    otherwise return as it is.
-    Parameters
-    ----------
-    maybe_callable : possibly a callable
-    obj : NDFrame
-    **kwargs
-    """
-    if callable(maybe_callable):
-        return maybe_callable(obj, **kwargs)
-
-    return maybe_callable
-
-
 def _computations_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]] = None,
@@ -646,7 +628,7 @@ def _computations_complete(
             group_collection.append(group_value)
         else:
             for _, value in group.items():
-                group_value = __apply_if_callable(value, df)
+                group_value = common.apply_if_callable(value, df)
                 # safe assumption to get unique values
                 if isinstance(group_value, pd.Series):
                     if not group_value.is_unique:

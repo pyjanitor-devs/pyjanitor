@@ -5057,9 +5057,9 @@ def pivot_wider(
         df = (
             pd.DataFrame(...)
             .pivot_wider(
-                index="name",
-                names_from="variable",
-                values_from="value"
+                index = "name",
+                names_from = "variable",
+                values_from = "value"
             )
 
              name    wk1   wk2   wk3   wk4
@@ -5078,9 +5078,9 @@ def pivot_wider(
 
         df = (
             pd.DataFrame(...)
-            .assign(num=0)
+            .assign(num = 0)
             .pivot_wider(
-                index = 'num',
+                index = "num",
                 names_from = "name",
                 values_from = ["n", "pct"],
                 names_sep = "_"
@@ -5110,7 +5110,7 @@ def pivot_wider(
         a   Adam    2
 
         df.pivot_wider(
-            index = ["id"],
+            index = "id",
             names_from = "name",
             aggfunc = np.sum,
             values_from = "value",
@@ -5148,11 +5148,11 @@ def pivot_wider(
             names_sort = True/False,
             names_prefix = string,
             names_sep = string,
-            flatten_levels=True/False,
-            names_from_position="first"/"last",
-            values_from_first=True/False,
+            flatten_levels = True/False,
+            names_from_position = "first"/"last",
+            values_from_first = True/False,
             aggfunc,
-            fill_value=fill_value
+            fill_value = fill_value
         )
     Method chaining syntax:
 
@@ -5167,29 +5167,30 @@ def pivot_wider(
                 names_sort = True/False,
                 names_prefix = string,
                 names_sep = string,
-                flatten_levels=True/False,
-                names_from_position="first"/"last",
-                values_from_first=True/False,
+                flatten_levels = True/False,
+                names_from_position = "first"/"last",
+                values_from_first = True/False,
                 aggfunc,
-                fill_value=fill_value
+                fill_value = fill_value
                 )
         )
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list of column names.
-        If `index` is not provided, the current frame's index is used.
-    :param names_from: Name(s) of columns to pivot. Should be either
-        a single column name, or a list of column names. The unique
-        values in the column will become the new column names of the wide
-        dataframe.A label or labels must be provided for ``names_from``.
+        If `index` is not provided, the current dataframe's index is used.
+    :param names_from: Name(s) of column(s) to use to make the new
+        dataframe's columns. Should be either a single column name, or a
+        list of column names. A label or labels must be provided for
+        ``names_from``.
     :param values_from: Name(s) of column(s) that will be used for populating
         the new dataframe's values. Should be either a single column name,
         or a list of column names. If ``values_from`` is not specified, all
-        remaining columns will be used.
+        remaining columns will be used. If `flatten_levels` is ``False``,
+        a MultiIndex dataframe is created.
     :param names_sort: Default is `False`. Sorts columns by order of
         appearance. Applicable only if ``flatten_levels`` is `True`.
-        User can set as `True` to get the columns sorted lexicographicially,
+        Set as `True` to get the columns sorted lexicographicially,
         or if the columns are of category type.
     :param flatten_levels: Default is `True`. If `False`, the dataframe stays
         as a MultiIndex.
@@ -5206,11 +5207,10 @@ def pivot_wider(
         to use as a column name. Default is ``_``. Applicable only if
         ``flatten_levels`` is ``True``.
     :param aggfunc: An aggregate function. It can be a function, a string,
-        list, or dictionary, pairing column name with aggregate function.
-    :param fill_value: Value to replace missing values with (after pivoting).
-        It can be a number, string, or a dictionary, where the keys are the
-        column_names, while the values are the values to replace the missing
-        values with.
+        list of functions, or a dictionary, pairing column name with aggregate
+        function.
+    :param fill_value: Scalar value to replace missing values with
+        (after pivoting).
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
     :raises TypeError: if `index` or `names_from` is not a string, or a list of

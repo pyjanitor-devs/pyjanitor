@@ -993,11 +993,10 @@ def _data_checks_pivot_wider(
             "pivot_wider() missing 1 required argument: 'names_from'"
         )
 
-    if names_from is not None:
-        if isinstance(names_from, str):
-            names_from = [names_from]
-        check("names_from", names_from, [list])
-        check_column(df, names_from, present=True)
+    if isinstance(names_from, str):
+        names_from = [names_from]
+    check("names_from", names_from, [list])
+    check_column(df, names_from, present=True)
 
     if values_from is not None:
         check("values_from", values_from, [list, str])
@@ -1027,13 +1026,15 @@ def _data_checks_pivot_wider(
         check("names_sep", names_sep, [str])
 
     if aggfunc is not None:
-        # cant apply the `check` function here because of the callable
+        # cant apply the `check` function here
+        # because of the callable type
         if not any(
             (isinstance(aggfunc, (str, list, dict)), callable(aggfunc))
         ):
             raise TypeError(
                 """
-                aggfunc should be either a function, string, list, dictionary.
+                aggfunc should be either a function,
+                string, list, or a dictionary.
                 """
             )
 
@@ -1070,27 +1071,32 @@ def _computations_pivot_wider(
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
-    If `values_from` is a list, then every item in `values_from`
-    will be added to the front of each output column. This option
-    can be turned off with the `values_from_first` argument, in
-    which case, the `names_from` variables (or `names_prefix`, if
-    present) start each column.
+
     The `unstack` method is used here, and not `pivot`; multiple
     labels in the `index` or `names_from` are supported in the
-    `pivot` function for Pandas 1.1 and above. Also, the
+    `pivot` function for Pandas 1.1 and above. Besides, pandas'
+    `pivot` function is built on the `unstack` method.
+
     `pivot_table` function is not used, because it is quite slow,
     compared to the `pivot` function and `unstack`.
+
+    By default, values from `names_from` are at the front of
+    each output column. If there are multiple `values_from`, this
+    can be changed via the `names_from_position`, by setting it to
+    `last`.
+
     The columns are sorted in the order of appearance from the
-    source data. This only occurs if `flatten_levels` is True.
+    source data. This only occurs if `flatten_levels` is `True`.
+    It can be turned off by setting `names_sort` to `True`.
     """
 
     if values_from is None:
         if index:
             values_from = [
-                col for col in df.columns if col not in (index + names_from)
+                col for col in df if col not in (index + names_from)
             ]
         else:
-            values_from = [col for col in df.columns if col not in names_from]
+            values_from = [col for col in df if col not in names_from]
 
     dtypes = None
     names_sort_and_flatten_levels = all(
@@ -1125,6 +1131,7 @@ def _computations_pivot_wider(
         )
 
     df = df.loc[:, values_from]
+
     aggfunc_index = None
     if aggfunc is not None:
         aggfunc_index = list(range(df.index.nlevels))
@@ -1173,6 +1180,9 @@ def _computations_pivot_wider(
     if names_prefix:
         df = df.add_prefix(names_prefix)
 
+    # if columns are of category type
+    # this returns columns to object dtype
+    # also, resetting index with category columns is not possible
     df.columns = list(df.columns)
 
     if index:

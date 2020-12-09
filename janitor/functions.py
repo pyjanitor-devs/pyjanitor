@@ -5150,7 +5150,6 @@ def pivot_wider(
             names_sep = string,
             flatten_levels = True/False,
             names_from_position = "first"/"last",
-            values_from_first = True/False,
             aggfunc,
             fill_value = fill_value
         )
@@ -5169,7 +5168,6 @@ def pivot_wider(
                 names_sep = string,
                 flatten_levels = True/False,
                 names_from_position = "first"/"last",
-                values_from_first = True/False,
                 aggfunc,
                 fill_value = fill_value
                 )

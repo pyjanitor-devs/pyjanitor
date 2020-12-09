@@ -5021,20 +5021,25 @@ def pivot_wider(
     values_from: Optional[Union[List, str]] = None,
     names_sort: Optional[bool] = False,
     flatten_levels: Optional[bool] = True,
+    names_from_position: Optional[str] = "first",
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
-    aggfunc: Optional[Union[str, list, dict]] = None,
+    aggfunc: Optional[Union[str, list, dict, Callable]] = None,
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
     Reshapes data from long to wide form. The number of columns are
-    increased, while decreasing the number of rows. It is the inverse
-    of the `pivot_longer` method, and is a wrapper around
-    `pd.DataFrame.unstack`
-    method.
+    increased, while decreasing the number of rows.
+
+    It is the inverse of the `pivot_longer` method, and is a wrapper
+    around the `pd.DataFrame.unstack` method.
+
     This method does not mutate the original DataFrame.
+
     Reshaping to wide form :
+
     .. code-block:: python
+
              name variable  value
         0   Alice      wk1      5
         1   Alice      wk2      9
@@ -5048,6 +5053,7 @@ def pivot_wider(
         9   Carla      wk2     13
         10  Carla      wk3     39
         11  Carla      wk4     40
+
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -5055,35 +5061,85 @@ def pivot_wider(
                 names_from="variable",
                 values_from="value"
             )
+
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
+
     Pivoting on multiple columns is possible :
+
     .. code-block:: python
+
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
+
         df = (
             pd.DataFrame(...)
             .assign(num=0)
             .pivot_wider(
-                index='num',
-                names_from="name",
-                values_from=["n", "pct"]
+                index = 'num',
+                names_from = "name",
+                values_from = ["n", "pct"],
+                names_sep = "_"
              )
          )
+
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
+
+    Aggregations are also possible with the ``aggfunc`` parameter::
+
+        df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
+                           {'id': 'b', 'name': 'Eve', 'value': 6},
+                           {'id': 'c', 'name': 'Adam', 'value': 4},
+                           {'id': 'a', 'name': 'Eve', 'value': 3},
+                           {'id': 'd', 'name': 'Seth', 'value': 2},
+                           {'id': 'b', 'name': 'Adam', 'value': 4},
+                           {'id': 'a', 'name': 'Adam', 'value': 2}])
+
+        id  name    value
+        a   Adam    5
+        b   Eve     6
+        c   Adam    4
+        a   Eve     3
+        d   Seth    2
+        b   Adam    4
+        a   Adam    2
+
+        df.pivot_wider(
+            index = ["id"],
+            names_from = "name",
+            aggfunc = np.sum,
+            values_from = "value",
+            flatten_levels = True,
+            fill_value = 0
+            )
+
+            id  Adam  Eve  Seth
+        0   a     7    3     0
+        1   b     4    6     0
+        2   c     4    0     0
+        3   d     0    0     2
+
+
     .. note:: You may choose not to collapse the levels by passing `False`
-        to the ``collapse_levels`` argument.
-    .. note:: An error is raised if the index is not unique.
+        to the ``flatten_levels`` argument.
+
+    .. note:: An error is raised if the index is not unique and
+        `aggfunc` is None.
+
     Functional usage syntax:
+
     .. code-block:: python
+
         import pandas as pd
         import janitor as jn
+
         df = pd.DataFrame(...)
+
         df = jn.pivot_wider(
             df = df,
             index = [column1, column2, ...],
@@ -5093,11 +5149,15 @@ def pivot_wider(
             names_prefix = string,
             names_sep = string,
             flatten_levels=True/False,
+            names_from_position="first"/"last",
             values_from_first=True/False,
+            aggfunc,
             fill_value=fill_value
         )
     Method chaining syntax:
+
     .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -5108,37 +5168,45 @@ def pivot_wider(
                 names_prefix = string,
                 names_sep = string,
                 flatten_levels=True/False,
+                names_from_position="first"/"last",
                 values_from_first=True/False,
+                aggfunc,
                 fill_value=fill_value
                 )
         )
+
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list of column names.
         If `index` is not provided, the current frame's index is used.
     :param names_from: Name(s) of columns to pivot. Should be either
-        a single column name, or a list of column names. A label or labels
-        must be provided for ``names_from``.
-    :param values_from: Name of column that will be used for populating new
-        frame's values. Should be either a single column name, or a list of
-        column names. By default, if ``values_from`` is a list, the value
-        will be added to the front of the output column; you can turn this
-        off with the `values_from_first` argument. If ``values_from`` is not
-        specified, all remaining columns will be used.
+        a single column name, or a list of column names. The unique
+        values in the column will become the new column names of the wide
+        dataframe.A label or labels must be provided for ``names_from``.
+    :param values_from: Name(s) of column(s) that will be used for populating
+        the new dataframe's values. Should be either a single column name,
+        or a list of column names. If ``values_from`` is not specified, all
+        remaining columns will be used.
     :param names_sort: Default is `False`. Sorts columns by order of
         appearance. Applicable only if ``flatten_levels`` is `True`.
-    :param flatten_levels: Default is `True`. Determines if the reshaped
-        dataframe stays as a MultiIndex.
-    :param values_from_first: Determines if the values in ``values_from`` will
-        be at the front of the output column. This applies if ``values_from``
-        is a list, and the levels are flattened. Default is True.
+        User can set as `True` to get the columns sorted lexicographicially,
+        or if the columns are of category type.
+    :param flatten_levels: Default is `True`. If `False`, the dataframe stays
+        as a MultiIndex.
+    :param names_from_position: By default, the values in ``names_from`` stay
+        at the front of the new column names, even when ``values_from`` or
+        ``aggfunc`` is a list. This can be changed to "last"; this places the
+        values in ``names_from`` at the tail of the column names. Applicable
+        only when ``flatten_levels`` is ``True``. Default is "first".
     :param names_prefix: String to be added to the front of each output column.
         Can be handy if the values in ``names_from`` are numeric data types.
-        Applicable only if the levels are flattened.
+        Applicable only if ``flatten_levels`` is True.
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is ``_``. Applicable only if the
-        levels are flattened.
+        to use as a column name. Default is ``_``. Applicable only if
+        ``flatten_levels`` is ``True``.
+    :param aggfunc: An aggregate function. It can be a function, a string,
+        list, or dictionary, pairing column name with aggregate function.
     :param fill_value: Value to replace missing values with (after pivoting).
         It can be a number, string, or a dictionary, where the keys are the
         column_names, while the values are the values to replace the missing
@@ -5155,7 +5223,7 @@ def pivot_wider(
     :raises ValueError: if values in `index` or `names_from` or `values_from`
         do not exist in the dataframe.
     :raises ValueError: if the combination of `index` and `names_from` is not
-        unique.
+        unique and ``aggfunc`` is ``None``.
 
 
     .. # noqa: DAR402
@@ -5170,6 +5238,7 @@ def pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
+        names_from_position,
         names_prefix,
         names_sep,
         aggfunc,
@@ -5181,6 +5250,7 @@ def pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
+        names_from_position,
         names_prefix,
         names_sep,
         aggfunc,
@@ -5194,6 +5264,7 @@ def pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
+        names_from_position,
         names_prefix,
         names_sep,
         aggfunc,

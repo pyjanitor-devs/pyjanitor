@@ -967,6 +967,7 @@ def _data_checks_pivot_wider(
     values_from,
     names_sort,
     flatten_levels,
+    names_from_position,
     names_prefix,
     names_sep,
     aggfunc,
@@ -1009,6 +1010,16 @@ def _data_checks_pivot_wider(
 
     check("flatten_levels", flatten_levels, [bool])
 
+    if names_from_position is not None:
+        check("names_from_position", names_from_position, [str])
+        if names_from_position not in ("first", "last"):
+            raise ValueError(
+                """
+                The position of `names_from`
+                must be either "first" or "last".
+                """
+            )
+
     if names_prefix is not None:
         check("names_prefix", names_prefix, [str])
 
@@ -1016,7 +1027,15 @@ def _data_checks_pivot_wider(
         check("names_sep", names_sep, [str])
 
     if aggfunc is not None:
-        check("aggfunc", aggfunc, [str, list, dict])
+        # cant apply the `check` function here because of the callable
+        if not any(
+            (isinstance(aggfunc, (str, list, dict)), callable(aggfunc))
+        ):
+            raise TypeError(
+                """
+                aggfunc should be either a function, string, list, dictionary.
+                """
+            )
 
     if fill_value is not None:
         check("fill_value", fill_value, [int, float, str])
@@ -1028,6 +1047,7 @@ def _data_checks_pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
+        names_from_position,
         names_prefix,
         names_sep,
         aggfunc,
@@ -1042,9 +1062,10 @@ def _computations_pivot_wider(
     values_from: Optional[Union[List, str]] = None,
     names_sort: Optional[bool] = False,
     flatten_levels: Optional[bool] = True,
+    names_from_position: Optional[str] = "first",
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
-    aggfunc: Optional[Union[str, list, dict]] = None,
+    aggfunc: Optional[Union[str, list, dict, Callable]] = None,
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -1072,7 +1093,10 @@ def _computations_pivot_wider(
             values_from = [col for col in df.columns if col not in names_from]
 
     dtypes = None
-    if all((names_sort is False, flatten_levels is True)):
+    names_sort_and_flatten_levels = all(
+        (names_sort is False, flatten_levels is True)
+    )
+    if names_sort_and_flatten_levels:
         # dtypes only needed for names_from
         # since that is what will become the new column names
         dtypes = {
@@ -1107,7 +1131,7 @@ def _computations_pivot_wider(
         # since names_from may be categoricals if `names_sort`
         # is False and `flatten_levels` is True.
         # observed is set to True, keeping results consistent
-        if all((names_sort is False, flatten_levels is True)):
+        if names_sort_and_flatten_levels:
             df = df.groupby(level=aggfunc_index, observed=True).agg(aggfunc)
         else:
             df = df.groupby(level=aggfunc_index).agg(aggfunc)
@@ -1119,23 +1143,27 @@ def _computations_pivot_wider(
 
     extra_levels = df.columns.nlevels - len(names_from)
     if extra_levels == 1:
-        df.columns = df.columns.set_names(level=0, names="values_from")
+        if len(df.columns.get_level_values(0).unique()) == 1:
+            df = df.droplevel(level=0, axis="columns")
+        else:
+            df.columns = df.columns.set_names(level=0, names="values_from")
     elif extra_levels == 2:
         df.columns = df.columns.set_names(
             level=[0, 1], names=["values_from", "aggfunc"]
         )
-
-    if "values_from" in df.columns.names:
         if len(df.columns.get_level_values("values_from").unique()) == 1:
             df = df.droplevel("values_from", axis="columns")
-    if "aggfunc" in df.columns.names:
         if len(df.columns.get_level_values("aggfunc").unique()) == 1:
             df = df.droplevel("aggfunc", axis="columns")
 
-    # TODO: Add option of name order -
-    # names_from before values_from or vice versa
-    # same will apply if aggfunc is present.
-    # Probably best to get feedback from users.
+    new_order_level = None
+    if df.columns.nlevels != len(names_from):
+        if names_from_position == "first":
+            new_order_level = pd.Index(names_from).union(
+                df.columns.names, sort=False
+            )
+            df = df.reorder_levels(order=new_order_level, axis="columns")
+
     if names_sort:
         df = df.sort_index(axis="columns", level=names_from)
 

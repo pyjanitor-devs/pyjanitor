@@ -4486,10 +4486,11 @@ def process_text(
 @pf.register_dataframe_method
 def fill_direction(
     df: pd.DataFrame,
-    directions: Dict[Hashable, str],
+    directions: Dict[Hashable, str] = None,
     limit: Optional[int] = None,
 ) -> pd.DataFrame:
-    """Provide a method-chainable function for filling missing values
+    """
+    Provide a method-chainable function for filling missing values
     in selected columns.
 
     Missing values are filled using the next or previous entry.
@@ -4499,40 +4500,56 @@ def fill_direction(
     .. code-block:: python
 
         import pandas as pd
+        import numpy as np
         import janitor as jn
 
         df = pd.DataFrame({"text": ["ragnar", np.nan, "sammywemmy",
                                     np.nan, "ginger"],
                            "code" : [np.nan, 2, 3, np.nan, 5]})
 
-        # Single column :
-        df.fill_direction({"text" : "up"})
-        # text       |   code
-        # ragnar     |    NaN
-        # sammywemmy |    2
-        # sammywemmy |    3
-        # ginger     |    NaN
-        # ginger     |    5
+        df
 
-        # Multiple columns :
+           text          code
+        0 ragnar         NaN
+        1 NaN            2.0
+        2 sammywemmy     3.0
+        3 NaN            NaN
+        4 ginger         5.0
+
+
+
+    Fill on a single column::
+
+        df.fill_direction({"text" : "up"})
+
+           text          code
+        0 ragnar         NaN
+        1 sammywemmy     2.0
+        2 sammywemmy     3.0
+        3 ginger         NaN
+        4 ginger         5.0
+
+    Fill on multiple columns::
+
         df.fill_direction({"text" : "down", "code" : "down"})
 
-        # text       |   code
-        # ragnar     |    NaN
-        # ragnar     |    2
-        # sammywemmy |    3
-        # sammywemmy |    3
-        # ginger     |    5
+           text          code
+        0 ragnar         NaN
+        1 ragnar         2.0
+        2 sammywemmy     3.0
+        3 sammywemmy     3.0
+        4 ginger         5.0
 
-        # Multiple columns in different directions.
+    Fill multiple columns in different directions::
+
         df.fill_direction({"text" : "up", "code" : "down"})
 
-        # text       |   code
-        # ragnar     |    NaN
-        # sammywemmy |    2
-        # sammywemmy |    3
-        # ginger     |    3
-        # ginger     |    5
+           text          code
+        0 ragnar         NaN
+        1 sammywemmy     2.0
+        2 sammywemmy     3.0
+        3 ginger         3.0
+        4 ginger         5.0
 
     Functional usage syntax:
 
@@ -4544,7 +4561,9 @@ def fill_direction(
         df = pd.DataFrame(...)
         df = jn.fill_direction(
             df = df,
-            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            directions = {column_1 : direction_1,
+                          column_2 : direction_2,
+                          ...},
             limit = None # limit must be None or greater than 0
             )
 
@@ -4558,56 +4577,51 @@ def fill_direction(
         df = (
             pd.DataFrame(...)
             .fill_direction(
-            directions = {column_1 : direction_1, column_2 : direction_2, ...},
+            directions = {column_1 : direction_1,
+                          column_2 : direction_2,
+                          ...},
             limit = None # limit must be None or greater than 0
             )
         )
 
     :param df: A pandas dataframe.
     :param directions: Key - value pairs of columns and directions. Directions
-        can be either `down`(default), `up`, `updown`(fill up then down) and
+        can be either `down` (default), `up`, `updown` (fill up then down) and
         `downup` (fill down then up).
     :param limit: number of consecutive null values to forward/backward fill.
         Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
-    :raises ValueError: if ``directions`` dictionary is empty.
     :raises ValueError: if column supplied is not in the dataframe.
-    :raises ValueError: if direction supplied is not one of `down`,`up`,
+    :raises ValueError: if direction supplied is not one of `down`, `up`,
         `updown`, or `downup`.
+
+    .. # noqa: DAR402
     """
     df = df.copy()
-    # check that dictionary is not empty
     if not directions:
-        raise ValueError("A mapping of columns with directions is required.")
+        return df
 
-    # check that the right columns are provided
-    # should be removed once the minimum Pandas version is 1.1,
-    # as Pandas loc will raise a KeyError if columns provided do not exist
-    wrong_columns_provided = set(directions).difference(df.columns)
-    if any(wrong_columns_provided):
-        if len(wrong_columns_provided) > 1:
-            outcome = ", ".join(f"'{word}'" for word in wrong_columns_provided)
+    check("directions", directions, [dict])
+
+    if limit is not None:
+        check("limit", limit, [int])
+        # pandas raises error if limit is not greater than zero
+        # so no need for a check on pyjanitor's end
+
+    check_column(df, directions)
+
+    for _, direction in directions.items():
+        if direction not in {"up", "down", "updown", "downup"}:
             raise ValueError(
-                f"Columns {outcome} do not exist in the dataframe."
+                """
+                The direction should be a string and should be one of
+                `up`, `down`, `updown`, or `downup`.
+                """
             )
-        outcome = "".join(wrong_columns_provided)
-        raise ValueError(f"Column {outcome} does not exist in the dataframe.")
 
-    # check that the right directions are provided
-    set_directions = {"up", "down", "updown", "downup"}
-
-    # linter throws an error when I use dictionary.values()
-    # it assumes that dictionary is a dataframe
-    directions_values = [value for key, value in directions.items()]
-    wrong_directions_provided = set(directions_values).difference(
-        set_directions
-    )
-    if any(wrong_directions_provided):
-        raise ValueError(
-            """The direction should be a string and should be one of `up`,
-            `down`, `updown`, or `downup`."""
-        )
-
+    # TODO: option to specify limit per column; current implementation
+    # is one `limit` for all the columns. Might need refactoring, or an
+    # API change.
     for column, direction in directions.items():
         if direction == "up":
             df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
@@ -4617,7 +4631,7 @@ def fill_direction(
             df.loc[:, column] = (
                 df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
             )
-        elif direction == "downup":
+        else:  # downup
             df.loc[:, column] = (
                 df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
             )

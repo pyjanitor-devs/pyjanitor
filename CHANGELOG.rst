@@ -9,9 +9,11 @@ new version (on deck)
   allowing the user to control the data types. - @samukweku
 - [INF] Loosen dependency specifications. Switch to pip-tools for managing
   dependencies. Issue #760. @MinchinWeb
+- [DOC]: added pipenv installation instructions @evan-anderson
 - [ENH] Add ``pivot_wider`` function, which is the inverse of the `pivot_longer`
   function. @samukweku
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
+- [ENH] Reduce code by reusing existing functions for fill_direction. @samukweku
 - [ENH] Add kwargs to ``encode_categorical`` function, to create ordered categorical columns,
   or categorical columns with explicit categories. @samukweku
 

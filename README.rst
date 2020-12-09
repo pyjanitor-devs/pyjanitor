@@ -185,6 +185,12 @@ Installation
 
     conda install pyjanitor -c conda-forge
 
+``pyjanitor`` can be installed by the pipenv environment manager too. This requires enabling prerelease dependencies:
+
+.. code-block:: bash
+
+    pipenv install --pre pyjanitor
+
 ``pyjanitor`` requires Python 3.6+.
 
 .. pypi-doc

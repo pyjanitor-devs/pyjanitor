@@ -14,11 +14,12 @@ new version (on deck)
   function. @samukweku
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
 - [ENH] Reduce code by reusing existing functions for fill_direction. @samukweku
+- [ENH] Improvements to `pivot_longer` function, with improved speed and cleaner code. @samukweku
 - [ENH] Add kwargs to ``encode_categorical`` function, to create ordered categorical columns,
   or categorical columns with explicit categories. @samukweku
 
 v0.20.10
-=======
+========
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
 - [ENH] Added the complete function for converting implicit missing values
   to explicit ones. @samukweku

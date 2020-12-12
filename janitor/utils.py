@@ -1072,8 +1072,17 @@ def _pivot_longer_extractions(
     # '.value' and others
     if dot_value:
         df = df.reindex(columns=reindex_columns)
+        if len(others) > 1:
+            # take the mapping along
+            # to filter the final dataframe
+            # in computations_pivot_longer
+            # and keep only the values that exist
+            # originally
+            mapping = mapping.loc[:, others[:-1]]
+        else:
+            mapping = None
 
-    return df, others, group
+    return df, others, group, mapping
 
 
 def _computations_pivot_longer(
@@ -1166,7 +1175,7 @@ def _computations_pivot_longer(
         return df
 
     if any((names_pattern, names_sep)):
-        df, others, group = _pivot_longer_extractions(
+        df, others, group, mapping = _pivot_longer_extractions(
             df=df,
             index=index,
             column_names=column_names,
@@ -1214,6 +1223,17 @@ def _computations_pivot_longer(
             )
 
         # attach df_index
+        intersect = None
+        if mapping is not None:
+            # keep the original values
+            # a tiny bit faster than merge
+            intersect = list(
+                df.columns.intersection(mapping.columns, sort=False)
+            )
+            intersect = df.set_index(intersect).index.isin(
+                mapping.set_index(intersect).index
+            )
+            df = df.loc[intersect]
         df.index = __tile_compat(df_index, df)
         if sort_by_appearance:
             df = df.set_index(group, append=True)

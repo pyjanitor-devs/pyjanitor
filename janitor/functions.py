@@ -4758,10 +4758,10 @@ def pivot_longer(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(column_names=['a', 'b'],
-                                            names_to='drug',
-                                            values_to='heartrate',
-                                            sort_by_appearance=True)
+        df = pd.DataFrame(...).pivot_longer(column_names = ['a', 'b'],
+                                            names_to = 'drug',
+                                            values_to = 'heartrate',
+                                            sort_by_appearance = True)
 
               name drug  heartrate
         0   Wilbur    a         67
@@ -4771,7 +4771,7 @@ def pivot_longer(
         4  Gregory    a         64
         5  Gregory    b         50
 
-    Note how the data is stacked in order of appearance. If, however,
+    Note how the data is stacked in order of first appearance. If, however,
     you do not care for order of appearance, and want to wring out some
     more performance, you can set `sort_by_appearance` to ``False`` (the
     default is ``False``).
@@ -4796,7 +4796,7 @@ def pivot_longer(
         5	Gregory	   b	50
 
     You can set `ignore_index` to ``False``, if you wish to reuse the index
-    from the source dataframe(the index will be repeated as many times as
+    from the source dataframe (the index will be repeated as many times as
     necessary):
 
     .. code-block:: python
@@ -4929,8 +4929,8 @@ def pivot_longer(
         2  treat1         2         5
         3  treat2         3         4
 
-    Let's break down the `.value` idea a bit. When `.value` is used,
-    `pivot_longer` creates a pairing. In the example above, we get a pairing
+    Let's break down the `.value` idea. When `.value` is used, `pivot_longer`
+    creates a pairing. In the example above, we get a pairing
     ``{"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}``. All
     the values associated with `.value` become new column names, while those
     not associated with `.value`(`treat1` and `treat2`) become values in a
@@ -5125,9 +5125,9 @@ def pivot_longer(
         provided.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         the final look of the dataframe. If `True`, the unpivoted dataframe
-        will be stacked in order of appearance. See examples for more details.
-        `pivot_longer` is usually more performant if `sort_by_appearance` is
-        ``False``.
+        will be stacked in order of first appearance. See examples for more
+        details. `pivot_longer` is usually more performant if
+        `sort_by_appearance` is ``False``.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained and the Index labels will be
         repeated as necessary.

@@ -656,7 +656,7 @@ def _data_checks_pivot_longer(
         if all((names_pattern, names_sep)):
             raise ValueError(
                 """
-                    Only one of names_pattern or names_sep
+                    Only one of `names_pattern` or `names_sep`
                     should be provided.
                     """
             )
@@ -672,8 +672,8 @@ def _data_checks_pivot_longer(
         if names_sep is not None:
             raise ValueError(
                 """
-                    For a single names_to value,
-                    names_sep is not required.
+                    For a single `names_to` value,
+                    `names_sep` is not required.
                     """
             )
     if names_pattern is not None:
@@ -723,7 +723,7 @@ def _data_checks_pivot_longer(
             raise ValueError(
                 """
                 This dataframe has a column name that matches the
-                'values_to' column name of the resultiing Dataframe.
+                'values_to' column name of the resulting Dataframe.
                 Kindly set the 'values_to' parameter to a unique name.
                 """
             )
@@ -929,9 +929,8 @@ def _pivot_longer_extractions(
     """
 
     # This is executed if the user is only interested in a subsection
-    # put here because it can cause issues in the
-    # _computation_pivot_longer function, especially
-    # if column_level is not None
+    # put here because it is specific only for situations where `names_sep`
+    # or `names_pattern` is not None
     if all((index, column_names)):
         df = df.filter(index + column_names)
 
@@ -1003,21 +1002,21 @@ def _pivot_longer_extractions(
     positions = None
     if not dot_value:
         if index:
-            # easier to do this, than having to set the index
-            # and resetting.
-            # put the index(or indices) into the first column
-            # and set the remaining columns to empty string
-            # on the same row(s)
+            # more efficient to do this, than having to
+            # set the index and resetting.
+            # This puts the index(or indices) into the first
+            # column and set the remaining columns to empty string
+            # on the same row(s). When melting, pd.melt will
+            # gracefully handle the empty cells and replicate the
+            # `index` values accordingly.
             positions = df.columns.get_indexer(index)
             mapping.iloc[positions, 0] = index
             mapping.iloc[positions, 1:] = ""
 
     else:
-        # we need to get the complete representations of all column labels
-        # in `.value` and in `others`. This way, we are assured of a complete
-        # representation. Came across an edge case in one of the tests in
-        # pd.wide_to_long, that forced me to rethink my steps and borrow idea
-        # from the `complete` method
+        # This ensures the complete representations of all column labels
+        # in `.value` and in `others`. Idea is borrowed from the
+        # `complete` method.
         reindex_columns = [column.unique() for _, column in mapping.items()]
         reindex_columns = product(*reindex_columns)
         reindex_columns = pd.DataFrame(
@@ -1034,7 +1033,7 @@ def _pivot_longer_extractions(
         # concatenating back into one whole. As such, having the data uniform
         # in all the chunks before merging back is crucial. Also, having
         # categoricals ensure the data stays in its original form in terms
-        # of appearance.
+        # of first appearance.
         category_dtypes = {
             key: CategoricalDtype(
                 categories=column.dropna().unique(), ordered=True
@@ -1046,23 +1045,22 @@ def _pivot_longer_extractions(
         }
         mapping = mapping.astype(category_dtypes)
         # creating a group is primarily for sorting by appearance.
-        # secondary purpose is to indicate groups if a list/tuple
-        # is passed to `names_pattern`. This purpose is not revealed
-        # to the user in the final result; this may change, if users
-        # request it.
+        # The secondary purpose is to indicate groups if a list/tuple
+        # is passed to `names_pattern`.
         group = "group"
         for column_name in mapping:
             if column_name == group:
                 group = f"{group}_1"
         mapping.loc[:, group] = mapping.groupby(".value").cumcount()
         others.append(group)
-        # null values will be generated due to the empty spaces in the `group`
-        # column. The only columns needed for complete cases are `.value` and
-        # `others`, excluding `group`
-        # setting `mapping` to the left of the merge operation ensures that all
-        # the actual values are kept in the data; at some point in
-        # `computations_pivot_longer` we drop duplicate columns by keeping the
-        # leftmost columns.
+        # When merging with `mapping`, null values may be generated;
+        # The only columns needed for complete cases are `.value` and
+        # `others` (excluding `group`). Fill the null values with 0, to
+        # keep them as a group. This will also help during the melting.
+        # setting `mapping` to the left of the merge operation ensures
+        # that all the actual values are kept in the data; at some point in
+        # `computations_pivot_longer` the duplicate columns will be dropped;
+        # only the leftmost columns will be retained.
         reindex_columns = mapping.merge(reindex_columns, how="outer").fillna(0)
         reindex_columns = pd.MultiIndex.from_frame(reindex_columns)
 
@@ -1070,7 +1068,7 @@ def _pivot_longer_extractions(
         df.columns = pd.MultiIndex.from_frame(mapping)
     else:
         df.columns = mapping.iloc[:, 0]
-    # now we have a full representation of all the labels, both in
+    # now there is a full representation of all the labels, both in
     # '.value' and others
     if dot_value:
         df = df.reindex(columns=reindex_columns)
@@ -1194,23 +1192,28 @@ def _computations_pivot_longer(
         # ensures data is uniform in all the chunks
         df = df.sort_index(axis="columns", level=others, sort_remaining=False)
         # separate into chunks by stubname
-        df = [
-            df.xs(key=stub, level=".value", axis="columns").melt(
-                value_name=stub
+        if len(stubnames) > 1:
+            df = [
+                df.xs(key=stub, level=".value", axis="columns").melt(
+                    value_name=stub
+                )
+                for stub in stubnames
+            ]
+
+            first, *rest = df
+            # the `first` frame already has `others`,
+            # `others` can be safely discarded from the other dataframes
+            # this is why sorting was done earlier (via the sort_index)
+            # to ensure uniformity
+            rest = [frame.iloc[:, -1] for frame in rest]
+            df = pd.concat([first, *rest], axis="columns")
+
+        else:
+            df = df.xs(key=stubnames[0], level=".value", axis="columns").melt(
+                value_name=stubnames[0]
             )
-            for stub in stubnames
-        ]
-        df = pd.concat(df, axis="columns")
-        # there likely will be multiple `others`; this section gets the
-        # first positions and discards the rest.
-        # using this step, is more efficient, than using set_index
-        # the data is assured because of the category types set earlier
-        # coupled with the index sorting, to ensure data is aligned in all
-        # chunks.
-        others_positions = df.columns.get_indexer_non_unique(others)[0]
-        others_positions = np.sort(others_positions)[: len(others)]
-        stubnames_positions = df.columns.get_indexer_for(stubnames)
-        df = df.iloc[:, [*others_positions, *stubnames_positions]]
+
+        # attach df_index
         df.index = __tile_compat(df_index, df)
         if sort_by_appearance:
             df = df.set_index(group, append=True)
@@ -1219,7 +1222,7 @@ def _computations_pivot_longer(
             df = df.droplevel(level=[-2, -1])
         else:
             df = df.drop(columns=group)
-            df = df.droplevel(level=-1)
+            df = df.droplevel(level=-1)  # the extra index
         if index:
             df = df.reset_index(level=index)
         if ignore_index:

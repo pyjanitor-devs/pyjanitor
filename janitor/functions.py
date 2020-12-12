@@ -5105,7 +5105,7 @@ def pivot_longer(
         It can be a regular expression containing matching groups (it takes
         the same specification as pandas' `str.extract` method), or a
         list/tuple of regular expressions. If it is a single regex, the
-        number of groups must match the length of ``names_to``( if the
+        number of groups must match the length of ``names_to`` ( if the
         length of ``names_to`` is 3, then the number of groups must be 3.
         If ``names_to`` is a string, then there should be only one group
         in ``names_pattern``). For a list/tuple of regular expressions,
@@ -5113,7 +5113,7 @@ def pivot_longer(
         arguments must match(if the length of `names_to` is 4, then the
         length of `names_pattern` must also be 4). The entries in both
         arguments must also match positionally, i.e  if
-        `names_to` = ("name1", "name2", "name3"), then ``names_pattern``
+        ``names_to = ("name1", "name2", "name3")``, then ``names_pattern``
         should be ("regex1", "regex2", "regex3"), with "name1" pairing
         "regex1", "name2" pairing "regex2", and "name3" pairing "regex3".
         `names_pattern` does not work with MultiIndex columns.

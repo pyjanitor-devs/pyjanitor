@@ -1222,7 +1222,6 @@ def _computations_pivot_longer(
                 value_name=stubnames[0]
             )
 
-        # attach df_index
         intersect = None
         if mapping is not None:
             # keep the original values
@@ -1234,7 +1233,10 @@ def _computations_pivot_longer(
                 mapping.set_index(intersect).index
             )
             df = df.loc[intersect]
+
+        # attach df_index
         df.index = __tile_compat(df_index, df)
+
         if sort_by_appearance:
             df = df.set_index(group, append=True)
             # sorting by the extra index(-2) and group(-1)
@@ -1243,8 +1245,10 @@ def _computations_pivot_longer(
         else:
             df = df.drop(columns=group)
             df = df.droplevel(level=-1)  # the extra index
+
         if index:
             df = df.reset_index(level=index)
+
         if ignore_index:
             df.index = np.arange(len(df))
 

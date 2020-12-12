@@ -1,4 +1,4 @@
-﻿janitor.find\_replace
+janitor.find\_replace
 =====================
 
 .. currentmodule:: janitor

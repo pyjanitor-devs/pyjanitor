@@ -949,7 +949,6 @@ def _pivot_longer_extractions(
             df = df.set_index(np.arange(len(df)), append=True)
 
     mapping = None
-    reindex_columns = None
     if names_sep:
         mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
 
@@ -1002,6 +1001,7 @@ def _pivot_longer_extractions(
     positions = None
     category_dtypes = None
     category_keys = None
+    reindex_columns = None
     if not dot_value:
         if index:
             # more efficient to do this, than having to

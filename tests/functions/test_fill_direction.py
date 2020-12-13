@@ -143,3 +143,14 @@ def test_wrong_direction(df):
     """Raise Value Error if wrong direction is provided."""
     with pytest.raises(ValueError):
         df.fill_direction({"pet_type": "upanddawn"})
+
+
+def test_wrong_type_limit(df):
+    """Raise TypeError if limit is wrong type."""
+    with pytest.raises(TypeError):
+        df.fill_direction({"pet_type": "up"}, limit="one")
+
+
+def test_empty_directions(df):
+    """Return dataframe if `directions` is empty."""
+    assert_frame_equal(df.fill_direction({}), df)

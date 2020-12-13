@@ -949,7 +949,6 @@ def _pivot_longer_extractions(
             df = df.set_index(np.arange(len(df)), append=True)
 
     mapping = None
-    reindex_columns = None
     if names_sep:
         mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
 
@@ -1000,6 +999,9 @@ def _pivot_longer_extractions(
     group = None
     others = None
     positions = None
+    category_dtypes = None
+    category_keys = None
+    reindex_columns = None
     if not dot_value:
         if index:
             # more efficient to do this, than having to
@@ -1014,36 +1016,39 @@ def _pivot_longer_extractions(
             mapping.iloc[positions, 1:] = ""
 
     else:
-        # This ensures the complete representations of all column labels
-        # in `.value` and in `others`. Idea is borrowed from the
-        # `complete` method.
+        # this gets the complete pairings of all labels in `mapping`
         reindex_columns = [column.unique() for _, column in mapping.items()]
-        reindex_columns = product(*reindex_columns)
-        reindex_columns = pd.DataFrame(
-            reindex_columns, columns=mapping.columns
-        )
+        actual_values = [column for _, column in mapping.items()]
+        actual_values = zip(*actual_values)
+        # check if `mapping` is already 'complete'
+        if set(product(*reindex_columns)).difference(actual_values):
+            reindex_columns = product(*reindex_columns)
+            reindex_columns = pd.DataFrame(
+                reindex_columns, columns=mapping.columns
+            )
+        else:
+            reindex_columns = None
 
-        # The `others` variable comes in
-        # handy when reshaping the data.
         others = [
             column_name for column_name in mapping if column_name != ".value"
         ]
+
         # creating categoricals allows us to sort the data; this is necessary
         # because we will be splitting the data into different chunks and
         # concatenating back into one whole. As such, having the data uniform
         # in all the chunks before merging back is crucial. Also, having
         # categoricals ensure the data stays in its original form in terms
         # of first appearance.
-        category_dtypes = {
-            key: CategoricalDtype(
-                categories=column.dropna().unique(), ordered=True
-            )
-            if column.hasnans
-            else CategoricalDtype(categories=column.unique(), ordered=True)
-            for key, column in mapping.items()
-            if key in others
-        }
-        mapping = mapping.astype(category_dtypes)
+        if others:
+            category_dtypes = {
+                key: CategoricalDtype(
+                    categories=column.dropna().unique(), ordered=True
+                )
+                if column.hasnans
+                else CategoricalDtype(categories=column.unique(), ordered=True)
+                for key, column in mapping.loc[:, others].items()
+            }
+            mapping = mapping.astype(category_dtypes)
         # creating a group is primarily for sorting by appearance.
         # The secondary purpose is to indicate groups if a list/tuple
         # is passed to `names_pattern`.
@@ -1053,32 +1058,29 @@ def _pivot_longer_extractions(
                 group = f"{group}_1"
         mapping.loc[:, group] = mapping.groupby(".value").cumcount()
         others.append(group)
-        # When merging with `mapping`, null values may be generated;
-        # The only columns needed for complete cases are `.value` and
-        # `others` (excluding `group`). Fill the null values with 0, to
-        # keep them as a group. This will also help during the melting.
-        # setting `mapping` to the left of the merge operation ensures
-        # that all the actual values are kept in the data; at some point in
-        # `computations_pivot_longer` the duplicate columns will be dropped;
-        # only the leftmost columns will be retained.
-        reindex_columns = mapping.merge(reindex_columns, how="outer").fillna(0)
-        reindex_columns = pd.MultiIndex.from_frame(reindex_columns)
+
+        if reindex_columns is not None:
+            reindex_columns = mapping.merge(
+                reindex_columns, how="outer"
+            ).fillna(  # fill the null values in `group`
+                0
+            )
+            reindex_columns = pd.MultiIndex.from_frame(reindex_columns)
 
     if len(mapping.columns) > 1:
         df.columns = pd.MultiIndex.from_frame(mapping)
     else:
         df.columns = mapping.iloc[:, 0]
-    # now there is a full representation of all the labels, both in
-    # '.value' and others
+
     if dot_value:
-        df = df.reindex(columns=reindex_columns)
-        if len(others) > 1:
-            # take the mapping along
-            # to filter the final dataframe
-            # in computations_pivot_longer
-            # and keep only the values that exist
-            # originally
-            mapping = mapping.loc[:, others[:-1]]
+        if reindex_columns is not None:
+            df = df.reindex(columns=reindex_columns)
+            # this is used in `computations_pivot_longer`
+            # to retain only the values or pairings in the
+            # original dataframe's columns
+            if category_dtypes:
+                category_keys = list(category_dtypes.keys())
+                mapping = mapping.set_index(category_keys).index
         else:
             mapping = None
 
@@ -1222,17 +1224,14 @@ def _computations_pivot_longer(
                 value_name=stubnames[0]
             )
 
-        intersect = None
+        intersection = None
         if mapping is not None:
-            # keep the original values
+            # if the values or the pairings of the values
+            # do not exist in the original dataframe's columns,
+            # then discard.
             # a tiny bit faster than merge
-            intersect = list(
-                df.columns.intersection(mapping.columns, sort=False)
-            )
-            intersect = df.set_index(intersect).index.isin(
-                mapping.set_index(intersect).index
-            )
-            df = df.loc[intersect]
+            intersection = df.set_index(mapping.names).index.isin(mapping)
+            df = df.loc[intersection]
 
         # attach df_index
         df.index = __tile_compat(df_index, df)
@@ -1253,6 +1252,8 @@ def _computations_pivot_longer(
             df.index = np.arange(len(df))
 
     return df
+
+
 
 
 def _data_checks_pivot_wider(

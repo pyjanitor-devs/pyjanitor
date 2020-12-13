@@ -4758,10 +4758,14 @@ def pivot_longer(
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).pivot_longer(column_names = ['a', 'b'],
-                                            names_to = 'drug',
-                                            values_to = 'heartrate',
-                                            sort_by_appearance = True)
+        df = (pd.DataFrame(...)
+              .pivot_longer(
+                  column_names = ['a', 'b'],
+                  names_to = 'drug',
+                  values_to = 'heartrate',
+                  sort_by_appearance = True
+                  )
+            )
 
               name drug  heartrate
         0   Wilbur    a         67
@@ -5204,6 +5208,7 @@ def pivot_longer(
     )
 
     return df
+
 
 
 @pf.register_dataframe_method

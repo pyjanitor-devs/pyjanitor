@@ -1254,8 +1254,6 @@ def _computations_pivot_longer(
     return df
 
 
-
-
 def _data_checks_pivot_wider(
     df,
     index,

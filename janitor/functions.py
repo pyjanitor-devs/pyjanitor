@@ -5210,7 +5210,6 @@ def pivot_longer(
     return df
 
 
-
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,

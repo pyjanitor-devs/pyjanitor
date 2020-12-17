@@ -4,7 +4,7 @@ import functools
 import os
 import sys
 import warnings
-from itertools import chain, product
+from itertools import chain, product, tee
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
@@ -416,8 +416,6 @@ def _check_instance(entry: Dict):
     This checks if entry is a dictionary,
     checks the instance of value in key:value pairs in entry,
     and makes changes to other types as deemed necessary.
-    Additionally, ValueErrors are raised if empty containers are
-    passed in as values into the dictionary.
     How each type is handled, and their associated exceptions,
     are pretty clear from the code.
     """
@@ -427,7 +425,23 @@ def _check_instance(entry: Dict):
 
     # couple of checks that should cause the program to fail early
     # if conditions are not met
-    for _, value in entry.items():
+    entry = {
+        # If it is a scalar value, then wrap in a list
+        # this is necessary, as we will use the itertools.product function
+        # which works only on iterables.
+        key: [value]
+        if isinstance(value, (type(None), int, float, bool, str, np.generic))
+        else value
+        for key, value in entry.items()
+    }
+
+    for key, value in entry.items():
+        check("key", key, [str])
+        check(
+            "value",
+            value,
+            [np.ndarray, pd.DataFrame, pd.Series, list, set, tuple, range],
+        )
 
         if isinstance(value, np.ndarray):
             if value.size == 0:
@@ -440,20 +454,18 @@ def _check_instance(entry: Dict):
         if isinstance(value, (pd.DataFrame, pd.Series)):
             if value.empty:
                 raise ValueError("passed DataFrame cannot be empty")
+            if isinstance(value, pd.DataFrame):
+                if isinstance(value.columns, pd.MultiIndex):
+                    raise ValueError(
+                        """
+                        Dataframes with MultiIndex columns
+                        are not supported in expand_grid.
+                        """
+                    )
 
-        if isinstance(value, (list, tuple, set, dict)):
+        if isinstance(value, (list, tuple, set)):
             if not value:
                 raise ValueError("passed data cannot be empty")
-
-    entry = {
-        # If it is a scalar value, then wrap in a list
-        # this is necessary, as we will use the itertools.product function
-        # which works only on iterables.
-        key: [value]
-        if isinstance(value, (type(None), int, float, bool, str, np.generic))
-        else value
-        for key, value in entry.items()
-    }
 
     return entry
 
@@ -470,73 +482,62 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     each entry and `pandas DataFrame join` is called to create the cross join.
     """
 
-    # checks if the dictionary does not have any of
-    # (pd.Dataframe, pd.Series, numpy) values and uses itertools.product.
-    # numpy meshgrid is faster, but requires homogenous data to appreciate
-    # the speed, and also to keep the data type for each column created.
-    # As an example, if we have a mix in the dictionary of strings and numbers,
-    # numpy will convert it to an object data type. Itertools product is
-    # efficient and does not lose the data type.
-
-    if not any(
-        isinstance(value, (pd.DataFrame, pd.Series, np.ndarray))
-        for key, value in entry.items()
-    ):
-        df_expand_grid = (value for key, value in entry.items())
-        df_expand_grid = product(*df_expand_grid)
-        return pd.DataFrame(df_expand_grid, columns=entry)
-
-    # dictionary is a mix of different types - dataframe/series/numpy/...
+    # dictionary could be a mix of different types - dataframe/series/numpy/...
     # so we check for each data type- if it is a pandas dataframe, then convert
     # to numpy and add to `df_expand_grid`; the other data types are added to
     # `df_expand_grid` as is. For each of the data types, new column names are
     # created if they do not have, and modified if names already exist. These
     # names are built through the for loop below and added to `df_columns`
-    df_columns = []
-    df_expand_grid = []
+    expanded_columns = []
+    expanded_grid = []
+    column_names = None
+    contents = None
     for key, value in entry.items():
         if isinstance(value, pd.DataFrame):
-            df_expand_grid.append(value.to_numpy())
-            if isinstance(value.columns, pd.MultiIndex):
-                df_columns.extend(
-                    [f"{key}_{ind}" for ind, col in enumerate(value.columns)]
-                )
-            else:
-                df_columns.extend([f"{key}_{col}" for col in value])
+            column_names, contents = zip(*value.items())
+            column_names = [f"{key}_{name}" for name in column_names]
+            expanded_columns.extend(column_names)
+            expanded_grid.append(zip(*contents))
         elif isinstance(value, pd.Series):
-            df_expand_grid.append(np.array(value))
             if value.name:
-                df_columns.append(f"{key}_{value.name}")
+                expanded_columns.append(f"{key}_{value.name}")
             else:
-                df_columns.append(str(key))
+                expanded_columns.append(key)
+            expanded_grid.append(value.__iter__())
         elif isinstance(value, np.ndarray):
-            df_expand_grid.append(value)
             if value.ndim == 1:
-                df_columns.append(f"{key}_0")
+                expanded_columns.append(f"{key}_0")
+                expanded_grid.append(value)
+            elif value.ndim == 2:
+                column_names = [
+                    f"{key}_{ind}" for ind in range(value.shape[-1])
+                ]
+                expanded_columns.extend(column_names)
+                contents = (
+                    tuple(row) for row in value
+                )  # possible improvement?
+                expanded_grid.append([*contents])
             else:
-                df_columns.extend(
-                    [f"{key}_{ind}" for ind in range(value.shape[-1])]
+                raise ValueError(
+                    """expand_grid supports only 1D or 2D arrays."""
                 )
         else:
-            df_expand_grid.append(value)
-            df_columns.append(key)
+            expanded_columns.append(key)
+            expanded_grid.append(value)
 
-        # here we run the product function from itertools only if there is
-        # more than one item in the list; if only one item, we simply
-        # create a dataframe with the new column names from `df_columns`
-    if len(df_expand_grid) > 1:
-        df_expand_grid = product(*df_expand_grid)
-        df_expand_grid = (
-            chain.from_iterable(
-                [val]
-                if not isinstance(val, (pd.DataFrame, pd.Series, np.ndarray))
-                else val
-                for val in value
-            )
-            for value in df_expand_grid
+    expanded_grid = product(*expanded_grid)
+    tuple_check, expanded_grid = tee(expanded_grid, 2)
+    tuple_check = any(
+        any(isinstance(val, tuple) for val in item) for item in tuple_check
+    )
+    if tuple_check:
+        expanded_grid = (
+            (val if isinstance(val, tuple) else (val,) for val in item)
+            for item in expanded_grid
         )
-        return pd.DataFrame(df_expand_grid, columns=df_columns)
-    return pd.DataFrame(*df_expand_grid, columns=df_columns)
+        expanded_grid = (chain.from_iterable(item) for item in expanded_grid)
+
+    return pd.DataFrame(expanded_grid, columns=expanded_columns)
 
 
 def _complete_groupings(df, list_of_columns):

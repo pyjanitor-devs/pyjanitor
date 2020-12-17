@@ -4133,6 +4133,10 @@ def expand_grid(
     # it must have a key, to create a name value pair
     if df is not None:
         df = df.copy()
+
+        # take this out
+        # expand_grid should work like merge
+        # where the indices are lost
         if isinstance(df.index, pd.MultiIndex) or isinstance(
             df.columns, pd.MultiIndex
         ):
@@ -4145,6 +4149,7 @@ def expand_grid(
                 """
             )
         others = {**{df_key: df}, **others}
+
     entry = _check_instance(others)
 
     return _grid_computation(entry)

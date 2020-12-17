@@ -8,19 +8,25 @@ from pandas.testing import assert_frame_equal
 from janitor.functions import expand_grid
 from janitor.utils import _check_instance
 
+not_others = [
+    (None, [60, 70]),
+    (None, pd.DataFrame([60, 70])),
+    (pd.DataFrame({"x": [2, 3]}), [5, 4, 3, 2, 1]),
+]
 
-def test_not_a_dict():
-    """Test that entry(list) is not a dictionary."""
-    data = [60, 70]
+
+@pytest.mark.parametrize(
+    """
+    frame, others
+    """,
+    not_others,
+)
+def test_not_a_dict(
+    frame, others,
+):
+    """Raise if `others` is not a dictionary."""
     with pytest.raises(TypeError):
-        expand_grid(others=data)
-
-
-def test_not_a_dict_1():
-    """Test that entry (dataframe) is not a dictionary."""
-    data = pd.DataFrame([60, 70])
-    with pytest.raises(TypeError):
-        expand_grid(others=data)
+        expand_grid(df=frame, others=others)
 
 
 def test_df_key():
@@ -32,14 +38,6 @@ def test_df_key():
         expand_grid(df, others=others)
 
 
-def test_df_others():
-    """Raise error if others is not a dict."""
-    df = pd.DataFrame({"x": [2, 3]})
-    others = [5, 4, 3, 2, 1]
-    with pytest.raises(TypeError):
-        expand_grid(df, others=others)
-
-
 def test_numpy_gt_2d():
     """Raise error if numpy array dimension is greater than 2."""
     data = {"x": np.array([[[2, 3]]])}
@@ -47,13 +45,14 @@ def test_numpy_gt_2d():
         expand_grid(others=data)
 
 
+# no reason to check if entry is empty
 empty_containers = [
-    {},
-    {"x": pd.Series([], dtype="int")},
-    {"x": pd.DataFrame([])},
-    {"x": [], "y": [2, 3]},
-    {"x": [2, 3], "y": set()},
-    {"x": np.array([])},
+    ({}),
+    ({"x": pd.Series([], dtype="int")}),
+    ({"x": pd.DataFrame([])}),
+    ({"x": [], "y": [2, 3]}),
+    ({"x": [2, 3], "y": set()}),
+    ({"x": np.array([])}),
 ]
 
 
@@ -86,19 +85,26 @@ def test_frames_series_single_index(frames_series, outputs):
 
 
 multiIndex_pandas = [
-    {
-        "x": pd.Series(
-            [2, 3, 4],
-            name="mika",
-            index=pd.MultiIndex.from_tuples([(1, 2), (3, 4), (5, 6)]),
-        )
-    },
-    {
-        "x": pd.DataFrame(
-            [[2, 3, 4]],
-            columns=pd.MultiIndex.from_tuples([(1, 2), (3, 4), (5, 6)]),
-        )
-    },
+    (
+        {
+            "x": pd.Series(
+                [2, 3, 4],
+                name="mika",
+                index=pd.MultiIndex.from_tuples([(1, 2), (3, 4), (5, 6)]),
+            )
+        },
+        pd.DataFrame({"x_mika": [2, 3, 4]}),
+    ),
+    pytest.param(
+        {  # expand_grid cant deal with MultiIndex columns
+            "x": pd.DataFrame(
+                [[2, 3, 4]],
+                columns=pd.MultiIndex.from_tuples([(1, 2), (3, 4), (5, 6)]),
+            )
+        },
+        pd.DataFrame({"x_0": [2], "x_1": [3], "x_2": [4]}),
+        marks=pytest.mark.xfail,
+    ),
 ]
 
 multiIndex_output = [
@@ -109,7 +115,9 @@ multiIndex_output = [
 zip_multiIndex = zip(multiIndex_pandas, multiIndex_output)
 
 
-@pytest.mark.parametrize("multiIndex_data,multiIndex_outputs", zip_multiIndex)
+@pytest.mark.parametrize(
+    "multiIndex_data,multiIndex_outputs", multiIndex_pandas
+)
 def test_frames_series_multi_iIdex(multiIndex_data, multiIndex_outputs):
     """
     Test that expand_grid works with multiIndex dataframe and series,
@@ -254,3 +262,15 @@ def test_expand_grid_others_only(grid_input, grid_output):
     is supplied.
     """
     assert_frame_equal(expand_grid(others=grid_input), grid_output)
+
+
+df = {"x": pd.Series([2, 3])}
+others = {
+    "x": pd.DataFrame([[2, 3], [6, 7]]),
+    "y": pd.Series([2, 3]),
+    "z": range(1, 4),
+}
+
+result = expand_grid(others=others)
+
+print(result)

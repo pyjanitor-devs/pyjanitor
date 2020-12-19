@@ -11,6 +11,7 @@ from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
+from pandas.core import common
 
 from .errors import JanitorError
 
@@ -540,69 +541,121 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
     return pd.DataFrame(*df_expand_grid, columns=df_columns)
 
 
-def _complete_groupings(df, list_of_columns):
-    # this collects all the columns as individual labels, which will be
-    # used to set the index of the dataframe
-    index_columns = []
-    # this will collect all the values associated with the respective
-    # columns, and used to reindex the dataframe, to get the complete
-    # pairings
-    reindex_columns = []
-    for item in list_of_columns:
-        if not isinstance(item, (str, dict, list, tuple)):
-            raise ValueError(
-                """Value must either be a column label, a list/tuple of columns or a
-                    dictionary where the keys are columns in the dataframe."""
-            )
-        if not item:
+def _computations_complete(
+    df: pd.DataFrame,
+    columns: List[Union[List, Tuple, Dict, str]] = None,
+    fill_value: Optional[Dict] = None,
+) -> pd.DataFrame:
+    """
+    This is the main workhorse of the `complete` function.
+    TypeErrors are raised if column labels in the `columns`
+    parameter do not exist in the dataframe, or if fill_value is
+    not a dictionary.
+
+    A dataframe with all possible combinations is returned.
+    """
+
+    if not columns:
+        return df
+
+    # TODO: get complete to work on MultiIndex columns,
+    # if there is sufficient interest with use cases
+    if isinstance(df.columns, pd.MultiIndex):
+        raise ValueError(
+            """
+            `complete` does not support MultiIndex columns.
+            """
+        )
+
+    # type checking
+    check("columns", columns, [list])
+
+    column_checker = []
+    for grouping in columns:
+        check("grouping", grouping, [list, dict, str, tuple])
+        if not grouping:
             raise ValueError("grouping cannot be empty")
-        if isinstance(item, str):
-            reindex_columns.append(set(df[item].array))
-            index_columns.append(item)
+        if isinstance(grouping, str):
+            column_checker.append(grouping)
         else:
-            # this comes into play if we wish to input values that
-            # do not exist in the data, say years, or alphabets, or
-            # range of numbers
-            if isinstance(item, dict):
-                if len(item) > 1:
-                    index_columns.extend(item.keys())
+            column_checker.extend(grouping)
+
+    # columns should not be duplicated across groups
+    column_checker_no_duplicates = set()
+    for column in column_checker:
+        if column in column_checker_no_duplicates:
+            raise ValueError(f"{column} column should be in only one group.")
+        column_checker_no_duplicates.add(column)  # noqa: PD005
+
+    check_column(df, column_checker)
+    column_checker_no_duplicates = None
+
+    if fill_value is not None:
+        check("fill_value", fill_value, [dict])
+        check_column(df, fill_value)
+
+    # actual computation once type checking is complete
+    # use `merge` instead of `reindex`, as `merge` can handle
+    # duplicated data, as well as null values.
+    unique_indices = None
+    if all((isinstance(grouping, str) for grouping in columns)):
+        unique_indices = (
+            column.unique() for _, column in df.filter(columns).items()
+        )
+        unique_indices = product(*unique_indices)
+        unique_indices = pd.DataFrame(unique_indices, columns=columns)
+        df = df.merge(unique_indices, on=columns, how="outer")
+        df = df.sort_values(by=columns, ignore_index=True)
+        if fill_value:
+            df = df.fillna(fill_value)
+        return df
+
+    # now to deal with possibly nested groups and dictionaries
+    group_collection = []
+    group_value = None
+    for group in columns:
+        # check if str, or list, or tuple, or dict
+        if isinstance(group, str):
+            group_value = df.loc[:, group]
+            if not group_value.is_unique:
+                group_value = group_value.unique()
+            group_collection.append(group_value)
+        elif isinstance(group, (list, tuple)):
+            group_value = df.loc[:, group]
+            if group_value.duplicated().any():
+                group_value = group_value.drop_duplicates()
+            group_value = (column for _, column in group_value.items())
+            group_value = zip(*group_value)
+            group_collection.append(group_value)
+        else:
+            for _, value in group.items():
+                group_value = common.apply_if_callable(value, df)
+                # safe assumption to get unique values
+                if isinstance(group_value, pd.Series):
+                    if not group_value.is_unique:
+                        group_value = group_value.unique()
                 else:
-                    index_columns.append(*item.keys())
-                    item_contents = [
-                        # convert scalars to iterables; this is necessary
-                        # when creating combinations with itertools' product
-                        [value]
-                        if isinstance(value, (int, float, str, bool))
-                        else value
-                        for key, value in item.items()
-                    ]
-                    reindex_columns.extend(item_contents)
-            else:
-                index_columns.extend(item)
-                # TODO : change this to read as a numpy instead
-                # instead of a list comprehension
-                # it should be faster
-                item = (df[sub_column].array for sub_column in item)
-                item = set(zip(*item))
-                reindex_columns.append(item)
+                    group_value = set(group_value)
+                group_collection.append(group_value)
 
-    reindex_columns = product(*reindex_columns)
-    # A list comprehension, coupled with itertools chain.from_iterable
-    # would likely be faster; I fear that it may hamper readability with
-    # nested list comprehensions; as such, I chose the for loop method.
-    new_reindex_columns = []
-    for row in reindex_columns:
-        new_row = []
-        for cell in row:
-            if isinstance(cell, tuple):
-                new_row.extend(cell)
-            else:
-                new_row.append(cell)
-        new_reindex_columns.append(tuple(new_row))
+    # create total unique combinations
+    group_collection = product(*group_collection)
+    # idea from https://stackoverflow.com/a/22569169/7175713
+    # makes it easy to merge lists with int or other scalar
+    group_collection = (
+        (item if isinstance(item, tuple) else (item,) for item in entry)
+        for entry in group_collection
+    )
+    group_collection = (
+        chain.from_iterable(entry) for entry in group_collection
+    )
+    group_collection = pd.DataFrame(group_collection, columns=column_checker)
+    df = df.merge(group_collection, on=column_checker, how="outer")
+    df = df.sort_values(by=column_checker, ignore_index=True)
+    if fill_value:
+        df = df.fillna(fill_value)
 
-    df = df.set_index(index_columns)
-
-    return df, new_reindex_columns
+    return df
 
 
 def _data_checks_pivot_longer(

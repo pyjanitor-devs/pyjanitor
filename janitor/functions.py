@@ -4040,15 +4040,16 @@ def expand_grid(
     """
     Creates a dataframe from a combination of all inputs.
 
-    This works with a dictionary of name value pairs,
-    and will work with structures that are not dataframes.
-    If method-chaining to a dataframe,
-    a key to represent the column name in the output must be provided.
+    This works with a dictionary of name value pairs, and will work
+    with structures that are not dataframes.
 
-    Note that if a MultiIndex dataframe or series is passed, the index/columns
+    If method-chaining to a dataframe, a key to represent the column
+    name in the output must be provided.
+
+    Note that if a MultiIndex dataframe or series is passed, the index
     will be discarded, and a single indexed dataframe will be returned.
 
-    The output will always be a dataframe.
+    A dataframe is returned.
 
     Example:
 

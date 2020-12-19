@@ -15,6 +15,7 @@ new version (on deck)
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
 - [ENH] Reduce code by reusing existing functions for fill_direction. @samukweku
 - [ENH] Improvements to `pivot_longer` function, with improved speed and cleaner code. @samukweku
+- [ENH] Reused existing functions to check dtypes in expand_grid. @samukweku
 
 v0.20.10
 =======

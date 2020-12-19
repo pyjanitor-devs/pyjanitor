@@ -6,6 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from janitor.functions import expand_grid
+from janitor.utils import _grid_computation
 
 not_others = [
     (None, [60, 70]),
@@ -151,7 +152,7 @@ def test_scalar_to_list():
         "f": range(2, 12),
     }
 
-    assert _check_instance(data) == expected
+    assert _grid_computation(data) == expected
 
 
 def test_computation_output():
@@ -234,7 +235,7 @@ output_others = [
         }
     ),
     pd.DataFrame({"x": [[2, 3], [4, 3]]}),
-    pd.DataFrame(np.array([2, 3]), columns=["x_0"]),
+    pd.DataFrame(np.array([2, 3]), columns=["x"]),
     pd.DataFrame(np.array([[2, 3]]), columns=["x_0", "x_1"]),
     pd.DataFrame(
         {
@@ -269,8 +270,15 @@ others = {
     "x": pd.DataFrame([[2, 3], [6, 7]]),
     "y": pd.Series([2, 3]),
     "z": range(1, 4),
+    "k": ("a", "b", "c"),
 }
 
-result = expand_grid(others=others)
+result = expand_grid(
+    others={
+        "x": np.reshape(np.arange(1, 5), (2, -1), order="F"),
+        "y": np.reshape(np.arange(5, 9), (2, -1), order="F"),
+        "z": [0, 1, 2, 3],
+    }
+)
 
 print(result)

@@ -412,13 +412,14 @@ def skiperror(
 
 def _grid_computation(entry: Dict) -> pd.DataFrame:
     """
-    # rewrite docstrings
-    Function to check instances in the expand_grid function.
-    This checks if entry is a dictionary,
-    checks the instance of value in key:value pairs in entry,
-    and makes changes to other types as deemed necessary.
-    How each type is handled, and their associated exceptions,
-    are pretty clear from the code.
+    This function relies on itertools' `product` function
+    to create the different combinations. It is possible
+    that in the future, a faster implementation will be used,
+    and still respect data types.
+    In this function, a couple of checks are conducted as well.
+    This include type checking, as well as the size (if it is a
+    numpy array, it should not be greater than 2). Dataframes
+    with MultiIndex columns are not supported.
     """
     # dictionary should not be empty
     if not entry:
@@ -449,17 +450,14 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
                     "expand_grid works only on 1D and 2D structures."
                 )
             if value.ndim == 1:
-                expanded_columns.append(f"{key}_0")
+                expanded_columns.append(f"{key}")
                 expanded_grid.append(value)
             else:
                 column_names = [
                     f"{key}_{ind}" for ind in range(value.shape[-1])
                 ]
                 expanded_columns.extend(column_names)
-                contents = (
-                    tuple(row) for row in value
-                )  # possible improvement?
-                expanded_grid.append([*contents])
+                expanded_grid.append([*value])
 
         elif isinstance(value, (pd.DataFrame, pd.Series)):
             if value.empty:
@@ -492,13 +490,19 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
             expanded_grid.append(value)
 
     expanded_grid = product(*expanded_grid)
-    tuple_check, expanded_grid = tee(expanded_grid, 2)
-    tuple_check = any(
-        any(isinstance(val, tuple) for val in item) for item in tuple_check
+    sequence_check, expanded_grid = tee(expanded_grid, 2)
+    sequence_check = any(
+        any(isinstance(val, (np.ndarray, tuple)) for val in item)
+        for item in sequence_check
     )
-    if tuple_check:
+     # this check comes in handy when combining the outputs of 2D
+     # data structures (pandas dataframes and 2D numpy arrays)
+    if sequence_check:
         expanded_grid = (
-            (val if isinstance(val, tuple) else (val,) for val in item)
+            (
+                val if isinstance(val, (np.ndarray, tuple)) else (val,)
+                for val in item
+            )
             for item in expanded_grid
         )
         expanded_grid = (chain.from_iterable(item) for item in expanded_grid)

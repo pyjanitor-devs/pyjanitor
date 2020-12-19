@@ -412,14 +412,16 @@ def skiperror(
 
 def _grid_computation(entry: Dict) -> pd.DataFrame:
     """
-    This function relies on itertools' `product` function
-    to create the different combinations. It is possible
-    that in the future, a faster implementation will be used,
+    This function relies on itertools' `product` function to
+    create the different combinations.
+    It is possible that in the future,
+    a faster implementation will be used,
     and still respect data types.
+
     In this function, a couple of checks are conducted as well.
-    This include type checking, as well as the size (if it is a
-    numpy array, it should not be greater than 2). Dataframes
-    with MultiIndex columns are not supported.
+    This include type checking, as well as the
+    size (if it is a  numpy array, it should not be greater than 2).
+    Dataframes with MultiIndex columns are not supported.
     """
     # dictionary should not be empty
     if not entry:

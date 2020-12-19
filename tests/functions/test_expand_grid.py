@@ -263,22 +263,3 @@ def test_expand_grid_others_only(grid_input, grid_output):
     is supplied.
     """
     assert_frame_equal(expand_grid(others=grid_input), grid_output)
-
-
-df = {"x": pd.Series([2, 3])}
-others = {
-    "x": pd.DataFrame([[2, 3], [6, 7]]),
-    "y": pd.Series([2, 3]),
-    "z": range(1, 4),
-    "k": ("a", "b", "c"),
-}
-
-result = expand_grid(
-    others={
-        "x": np.reshape(np.arange(1, 5), (2, -1), order="F"),
-        "y": np.reshape(np.arange(5, 9), (2, -1), order="F"),
-        "z": [0, 1, 2, 3],
-    }
-)
-
-print(result)

@@ -495,8 +495,8 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
         any(isinstance(val, (np.ndarray, tuple)) for val in item)
         for item in sequence_check
     )
-     # this check comes in handy when combining the outputs of 2D
-     # data structures (pandas dataframes and 2D numpy arrays)
+    # this check comes in handy when combining the outputs of 2D
+    # data structures (pandas dataframes and 2D numpy arrays)
     if sequence_check:
         expanded_grid = (
             (

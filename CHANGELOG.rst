@@ -15,10 +15,13 @@ new version (on deck)
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
 - [ENH] Reduce code by reusing existing functions for fill_direction. @samukweku
 - [ENH] Improvements to `pivot_longer` function, with improved speed and cleaner code. @samukweku
+- [ENH] Add kwargs to ``encode_categorical`` function, to create ordered categorical columns,
+  or categorical columns with explicit categories. @samukweku
 - [ENH] Reused existing functions to check dtypes in expand_grid. @samukweku
 
+
 v0.20.10
-=======
+========
 - [ENH] Added function ``sort_timestamps_monotonically`` to timeseries functions @UGuntupalli
 - [ENH] Added the complete function for converting implicit missing values
   to explicit ones. @samukweku
@@ -42,9 +45,8 @@ v0.20.9
 v0.20.8
 =======
 - [ENH] Upgraded ``update_where`` function to use either the pandas query style,
-  or boolean indexing via the ``loc`` method.
-  Also updated ``find_replace`` function to use the ``loc`` method directly,
-  instead of routing it through the ``update_where`` function. @samukweku
+  or boolean indexing via the ``loc`` method. Also updated ``find_replace`` function to use the ``loc``
+  method directly, instead of routing it through the ``update_where`` function. @samukweku
 - [INF] Update ``pandas`` minimum version to 1.0.0. @hectormz
 - [DOC] Updated the general functions API page to show all available functions. @samukweku
 - [DOC] Fix the few lacking type annotations of functions. @VPerrollaz

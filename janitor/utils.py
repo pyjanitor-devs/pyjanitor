@@ -4,7 +4,12 @@ import functools
 import os
 import sys
 import warnings
+<<<<<<< HEAD
 from itertools import chain, product, tee
+=======
+from collections import namedtuple
+from itertools import chain, product
+>>>>>>> 6f9a241040abe1c80addd8317a96bb6c936c98c7
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
@@ -1403,5 +1408,138 @@ def _computations_pivot_wider(
             df = df.reset_index().iloc[:, 1:]
 
         return df
+
+    return df
+
+
+def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    """
+    This function handles cases where categorical columns are created with
+    an order, or specific values supplied for the categories. It uses a kwarg,
+    with a namedtuple - `column_name: (categories, order)`, with the idea
+    inspired by Pandas' NamedAggregation. The defaults for the namedtuple are
+    (None, None) and will return a categorical dtype with no order and
+    categories inferred from the column.
+    """
+
+    df = df.copy()
+
+    AsCategorical = namedtuple(
+        "AsCategorical", ["categories", "order"], defaults=(None, None)
+    )
+
+    categories_dict = {}
+
+    # type and column presence checks
+    check_column(df, kwargs)
+
+    for column_name, value in kwargs.items():
+        check("AsCategorical", value, [tuple])
+        if len(value) != 2:
+            raise ValueError("Must provide tuples of (categories, order).")
+
+        value = AsCategorical._make(value)
+
+        if value.categories is not None:
+            check(
+                "categories",
+                value.categories,
+                [list, tuple, set, np.ndarray, pd.Series],
+            )
+
+        if value.order is not None:
+            check("order", value.order, [str])
+            if value.order not in ("appearance", "sort"):
+                raise ValueError(
+                    """
+                    `order` argument should be one of
+                    "appearance", "sort" or `None`.
+                    """
+                )
+
+        categories_dict[column_name] = value
+
+    categories_dtypes = {}
+    unique_values_in_column = None
+    missing_values = None
+    for column_name, categories_order_tuple in categories_dict.items():
+        if categories_order_tuple.categories is None:
+            if categories_order_tuple.order is None:
+                categories_dtypes[column_name] = "category"
+
+            elif categories_order_tuple.order == "sort":
+                if df[column_name].hasnans:
+                    unique_values_in_column = np.unique(
+                        df[column_name].dropna()
+                    )
+                else:
+                    unique_values_in_column = np.unique(df[column_name])
+                categories_dtypes[column_name] = CategoricalDtype(
+                    categories=unique_values_in_column, ordered=True
+                )
+
+            else:  # appearance
+                if df[column_name].hasnans:
+                    unique_values_in_column = df[column_name].dropna().unique()
+                else:
+                    unique_values_in_column = df[column_name].unique()
+                categories_dtypes[column_name] = CategoricalDtype(
+                    categories=unique_values_in_column, ordered=True
+                )
+        # categories supplied
+        else:
+            if df[column_name].hasnans:
+                unique_values_in_column = df[column_name].dropna().unique()
+            else:
+                unique_values_in_column = df[column_name].unique()
+            missing_values = np.setdiff1d(
+                unique_values_in_column,
+                categories_order_tuple.categories,
+                assume_unique=False,
+            )
+            # check if categories supplied does not match
+            # with the values in the column
+            # either there are no matches
+            # or an incomplete number of matches
+            if np.any(missing_values):
+                if len(missing_values) == len(unique_values_in_column):
+                    warnings.warn(
+                        f"""
+                        None of the values in {column_name} are in
+                        {categories_order_tuple.categories};
+                        this might create nulls for all your values
+                        in the new categorical column.
+                        """,
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                else:
+                    warnings.warn(
+                        f"""
+                        Values {tuple(missing_values)} are missing from
+                        categories {categories_order_tuple.categories}
+                        for {column_name}; this may create nulls
+                        the new categorical column.
+                        """,
+                        UserWarning,
+                        stacklevel=2,
+                    )
+
+            if categories_order_tuple.order is None:
+                categories_dtypes[column_name] = CategoricalDtype(
+                    categories=categories_order_tuple.categories,
+                    ordered=False,
+                )
+            elif categories_order_tuple.order == "sort":
+                categories_dtypes[column_name] = CategoricalDtype(
+                    categories=np.sort(categories_order_tuple.categories),
+                    ordered=True,
+                )
+            else:  # appearance
+                categories_dtypes[column_name] = CategoricalDtype(
+                    categories=categories_order_tuple.categories, ordered=True,
+                )
+
+    df = df.astype(categories_dtypes)
 
     return df

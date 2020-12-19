@@ -457,7 +457,7 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
                     "expand_grid works only on 1D and 2D structures."
                 )
             if value.ndim == 1:
-                expanded_columns.append(f"{key}")
+                expanded_columns.append(key)
                 expanded_grid.append(value)
             else:
                 column_names = [

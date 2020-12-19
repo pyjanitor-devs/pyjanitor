@@ -1,5 +1,6 @@
 """ General purpose data cleaning functions. """
 
+import collections
 import datetime as dt
 import inspect
 import itertools
@@ -15,6 +16,7 @@ from typing import (
     Hashable,
     Iterable,
     List,
+    NamedTuple,
     Optional,
     Pattern,
     Set,
@@ -36,6 +38,7 @@ from .utils import (
     _check_instance,
     _clean_accounting_column,
     _complete_groupings,
+    _computations_as_categorical,
     _computations_pivot_longer,
     _computations_pivot_wider,
     _currency_column_to_numeric,
@@ -465,56 +468,279 @@ def get_dupes(
     return df[dupes == True]  # noqa: E712
 
 
+def As_Categorical(
+    categories: Optional[
+        Union[List, Set, Tuple, pd.Series, np.ndarray]
+    ] = None,
+    order: Optional[str] = None,
+) -> NamedTuple:
+    """
+    Helper function for `encode_categorical`. It makes creating the
+    `categories` and `order` more explicit. Inspired by pd.NamedAgg.
+
+    :param categories: list-like object to create new categorical column.
+    :param order: string object that can be either "sort" or "appearance".
+        If "sort", the `categories` argument will be sorted with np.sort;
+        if "apperance", the `categories` argument will be used as is.
+    :returns: A namedtuple of (`categories`, `order`).
+    """
+    AsCategorical = collections.namedtuple(
+        "AsCategorical", ["categories", "order"], defaults=(None, None)
+    )
+
+    return AsCategorical._make((categories, order))
+
+
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def encode_categorical(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """Encode the specified columns with Pandas'
     `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_.
 
-    This method mutates the original DataFrame.
+    Categories and order can be explicitly specified via the `kwargs` option, which is a
+    pairing of column name and a tuple of (categories, order).
+
+    The `janitor.As_Categorical` function is provided to make it clearer what the arguments
+    to the function are.
+
+    It is syntactic sugar around `pd.Categorical`.
+
+    This method does not mutate the original DataFrame.
+
+    .. note:: In versions < 0.20.11, this method mutates the original DataFrame.
+
+    **Examples:**
+
+
+    .. code-block:: python
+
+               col1	col2	col3
+        0	2.0	a	2020-01-01
+        1	1.0	b	2020-01-02
+        2	3.0	c	2020-01-03
+        3	1.0	d	2020-01-04
+        4	NaN	a	2020-01-05
+
+        df.dtypes
+
+        col1           float64
+        col2            object
+        col3    datetime64[ns]
+        dtype: object
+
+    Specific columns can be converted to category type:
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...)
+                .encode_categorical(
+                    column_names=['col1', 'col2', 'col3']
+                    )
+            )
+
+        df.dtypes
+
+        col1    category
+        col2    category
+        col3    category
+        dtype: object
+
+    Note that for the code above, the categories were inferred from
+    the columns, and is unordered::
+
+        df['col3']
+        0   2020-01-01
+        1   2020-01-02
+        2   2020-01-03
+        3   2020-01-04
+        4   2020-01-05
+        Name: col3, dtype: category
+        Categories (5, datetime64[ns]):
+        [2020-01-01, 2020-01-02, 2020-01-03, 2020-01-04, 2020-01-05]
+
+
+    Explicit categories can be provided, and ordered via the ``kwargs``
+    parameter::
+
+        df = (pd.DataFrame(...)
+                .as_categorical(
+                    col1 = ([3, 2, 1, 4], "appearance"),
+                    col2 = (['a','d','c','b'], "sort")
+                    )
+            )
+
+        df['col1']
+        0      2
+        1      1
+        2      3
+        3      1
+        4    NaN
+        Name: col1, dtype: category
+        Categories (4, int64): [3 < 2 < 1 < 4]
+
+        df['col2']
+        0    a
+        1    b
+        2    c
+        3    d
+        4    a
+        Name: col2, dtype: category
+        Categories (4, object): [a < b < c < d]
+
+    When the `order` parameter is "appearance", the categories argument is used as-is;
+    if the `order` is "sort", the categories argument is sorted in ascending order;
+    if `order` is ``None``, then the categories argument is applied unordered.
+
+    The ``janitor.As_Categorical`` function can also be used to make clearer
+    what the arguments to the function are::
+
+        df = (pd.DataFrame(...)
+                .as_categorical(
+                    col1 = As_Categorical(
+                                categories = [3, 2, 1, 4],
+                                order = "appearance"
+                                ),
+                    col2 = As_Categorical(
+                                categories = ['a','d','c','b'],
+                                order = "sort"
+                                )
+                    )
+            )
+
+    A User Warning will be generated if some or all of the unique values
+    in the column are not present in the provided `categories` argument.
+
+    .. code-block:: python
+
+        df = (pd.DataFrame(...)
+                .encode_categorical(
+                    col1 = As_Categorical(
+                            categories = [4, 5, 6],
+                            order = "appearance"
+                            )
+            )
+
+        UserWarning: None of the values in col1 are in [4, 5, 6];
+                     this might create nulls for all your values
+                     in the new categorical column.
+
+        df['col1']
+        0    NaN
+        1    NaN
+        2    NaN
+        3    NaN
+        4    NaN
+        Name: col1, dtype: category
+        Categories (3, int64): [4 < 5 < 6]
+
+
+    .. note:: if ``categories`` is None in the ``kwargs`` tuple, then the
+        values for `categories` are inferred from the column; if `order`
+        is None, then the values for categories are applied unordered.
+
+    .. note:: ``column_names`` and ``kwargs`` parameters cannot be used at
+        the same time.
 
     Functional usage syntax:
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor as jn
+
+    - With ``column_names``::
+
         categorical_cols = ['col1', 'col2', 'col4']
-        df = encode_categorical(df, columns=categorical_cols)  # one way
+        df = jn.encode_categorical(
+                    df,
+                    columns = categorical_cols)  # one way
+
+    - With ``kwargs``::
+
+        df = jn.encode_categorical(
+                    df,
+                    col1 = (categories, order),
+                    col2 = jn.As_Categorical(
+                                categories = [values],
+                                order="sort"/"appearance"/None
+                                )
+                )
 
     Method chaining syntax:
 
-    .. code-block:: python
+    - With ``column_names``::
 
-        import pandas as pd
-        import janitor
         categorical_cols = ['col1', 'col2', 'col4']
-        df = pd.DataFrame(...).encode_categorical(columns=categorical_cols)
+        df = (pd.DataFrame(...)
+                .encode_categorical(columns=categorical_cols)
+            )
+
+    - With ``kwargs``::
+
+        df = (
+            pd.DataFrame(...)
+            .encode_categorical(
+                col1 = (categories, order),
+                col2 = jn.As_Categorical(
+                            categories = [values],
+                            order="sort"/"appearance"/None
+                            )
+        )
+
 
     :param df: The pandas DataFrame object.
     :param column_names: A column name or an iterable (list or
         tuple) of column names.
+    :param kwargs: A pairing of column name to a tuple of (`categories`, `order`).
+        There is also the `janitor.As_Categorical` function, which creates a
+        namedtuple of (`categories`, `order`) to make it clearer what the arguments
+        are. This is useful in creating categorical columns that are ordered, or
+        if the user needs to explicitly specify the categories.
     :returns: A pandas DataFrame.
     :raises JanitorError: if a column specified within ``column_names``
         is not found in the DataFrame.
     :raises JanitorError: if ``column_names`` is not hashable
         nor iterable.
+    :raises ValueError: if both ``column_names`` and ``kwargs`` are provided.
     """  # noqa: E501
-    if isinstance(column_names, list) or isinstance(column_names, tuple):
-        for col in column_names:
-            if col not in df.columns:
-                raise JanitorError(f"{col} missing from DataFrame columns!")
-            df[col] = pd.Categorical(df[col])
-    elif isinstance(column_names, Hashable):
-        if column_names not in df.columns:
-            raise JanitorError(
-                f"{column_names} missing from DataFrame columns!"
-            )
-        df[column_names] = pd.Categorical(df[column_names])
-    else:
-        raise JanitorError(
-            "kwarg `column_names` must be hashable or iterable!"
+
+    df = df.copy()
+
+    if all((column_names, kwargs)):
+        raise ValueError(
+            """
+            Only one of `column_names` or `kwargs`
+            can be provided.
+            """
         )
+    # column_names deal with only category dtype (unordered)
+    # kwargs takes care of scenarios where user wants an ordered category
+    # or user supplies specific categories to create the categorical
+    if column_names:
+        if isinstance(column_names, (list, Tuple)):
+            for col in column_names:
+                if col not in df.columns:
+                    raise JanitorError(
+                        f"{col} missing from DataFrame columns!"
+                    )
+                df[col] = pd.Categorical(df[col])
+        elif isinstance(column_names, Hashable):
+            if column_names not in df.columns:
+                raise JanitorError(
+                    f"{column_names} missing from DataFrame columns!"
+                )
+            df[column_names] = pd.Categorical(df[column_names])
+        else:
+            raise JanitorError(
+                "kwarg `column_names` must be hashable or iterable!"
+            )
+        return df
+
+    df = _computations_as_categorical(df, **kwargs)
     return df
 
 
@@ -5262,6 +5488,7 @@ def pivot_wider(
     Pivoting on multiple columns is possible :
 
     .. code-block:: python
+
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2

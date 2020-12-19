@@ -4,12 +4,8 @@ import functools
 import os
 import sys
 import warnings
-<<<<<<< HEAD
-from itertools import chain, product, tee
-=======
 from collections import namedtuple
-from itertools import chain, product
->>>>>>> 6f9a241040abe1c80addd8317a96bb6c936c98c7
+from itertools import chain, product, tee
 from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 import numpy as np

@@ -410,8 +410,9 @@ def skiperror(
     return _wrapped
 
 
-def _check_instance(entry: Dict):
+def _grid_computation(entry: Dict) -> pd.DataFrame:
     """
+    # rewrite docstrings
     Function to check instances in the expand_grid function.
     This checks if entry is a dictionary,
     checks the instance of value in key:value pairs in entry,
@@ -423,19 +424,16 @@ def _check_instance(entry: Dict):
     if not entry:
         raise ValueError("passed dictionary cannot be empty")
 
-    # couple of checks that should cause the program to fail early
-    # if conditions are not met
-    entry = {
+    expanded_columns = []
+    expanded_grid = []
+    column_names = None
+    contents = None
+    for key, value in entry.items():
         # If it is a scalar value, then wrap in a list
         # this is necessary, as we will use the itertools.product function
         # which works only on iterables.
-        key: [value]
-        if isinstance(value, (type(None), int, float, bool, str, np.generic))
-        else value
-        for key, value in entry.items()
-    }
-
-    for key, value in entry.items():
+        if isinstance(value, (type(None), int, float, bool, str, np.generic)):
+            value = [value]
         check("key", key, [str])
         check(
             "value",
@@ -444,71 +442,16 @@ def _check_instance(entry: Dict):
         )
 
         if isinstance(value, np.ndarray):
-            if value.size == 0:
+            if not (value.size > 0):
                 raise ValueError("array cannot be empty")
             if value.ndim > 2:
                 raise ValueError(
                     "expand_grid works only on 1D and 2D structures."
                 )
-
-        if isinstance(value, (pd.DataFrame, pd.Series)):
-            if value.empty:
-                raise ValueError("passed DataFrame cannot be empty")
-            if isinstance(value, pd.DataFrame):
-                if isinstance(value.columns, pd.MultiIndex):
-                    raise ValueError(
-                        """
-                        Dataframes with MultiIndex columns
-                        are not supported in expand_grid.
-                        """
-                    )
-
-        if isinstance(value, (list, tuple, set)):
-            if not value:
-                raise ValueError("passed data cannot be empty")
-
-    return entry
-
-
-def _grid_computation(entry: Dict) -> pd.DataFrame:
-    """
-    Return the final output of the expand_grid function as a dataframe.
-     This kicks in after the ``_check_instance`` function is completed,
-     and essentially creates a cross join of the values in the `entry`
-     dictionary. If the `entry` dictionary is a collection of lists/tuples,
-     then `itertools.product` will be used for the cross join, before a
-    dataframe is created; if however, the `entry` contains a pandas dataframe
-    or a pandas series or a numpy array, then identical indices are created for
-    each entry and `pandas DataFrame join` is called to create the cross join.
-    """
-
-    # dictionary could be a mix of different types - dataframe/series/numpy/...
-    # so we check for each data type- if it is a pandas dataframe, then convert
-    # to numpy and add to `df_expand_grid`; the other data types are added to
-    # `df_expand_grid` as is. For each of the data types, new column names are
-    # created if they do not have, and modified if names already exist. These
-    # names are built through the for loop below and added to `df_columns`
-    expanded_columns = []
-    expanded_grid = []
-    column_names = None
-    contents = None
-    for key, value in entry.items():
-        if isinstance(value, pd.DataFrame):
-            column_names, contents = zip(*value.items())
-            column_names = [f"{key}_{name}" for name in column_names]
-            expanded_columns.extend(column_names)
-            expanded_grid.append(zip(*contents))
-        elif isinstance(value, pd.Series):
-            if value.name:
-                expanded_columns.append(f"{key}_{value.name}")
-            else:
-                expanded_columns.append(key)
-            expanded_grid.append(value.__iter__())
-        elif isinstance(value, np.ndarray):
             if value.ndim == 1:
                 expanded_columns.append(f"{key}_0")
                 expanded_grid.append(value)
-            elif value.ndim == 2:
+            else:
                 column_names = [
                     f"{key}_{ind}" for ind in range(value.shape[-1])
                 ]
@@ -517,11 +460,34 @@ def _grid_computation(entry: Dict) -> pd.DataFrame:
                     tuple(row) for row in value
                 )  # possible improvement?
                 expanded_grid.append([*contents])
-            else:
+
+        elif isinstance(value, (pd.DataFrame, pd.Series)):
+            if value.empty:
                 raise ValueError(
-                    """expand_grid supports only 1D or 2D arrays."""
+                    "passed pandas dataframe/series cannot be empty"
                 )
-        else:
+            if isinstance(value, pd.DataFrame):
+                if isinstance(value.columns, pd.MultiIndex):
+                    raise ValueError(
+                        """
+                        Dataframes with MultiIndex columns
+                        are not supported in expand_grid.
+                        """
+                    )
+                column_names, contents = zip(*value.items())
+                column_names = [f"{key}_{name}" for name in column_names]
+                expanded_columns.extend(column_names)
+                expanded_grid.append(zip(*contents))
+            else:  # pd.Series
+                if value.name:
+                    expanded_columns.append(f"{key}_{value.name}")
+                else:
+                    expanded_columns.append(key)
+                expanded_grid.append(value.__iter__())
+
+        else:  # list/set/tuple
+            if not value:
+                raise ValueError("passed data cannot be empty")
             expanded_columns.append(key)
             expanded_grid.append(value)
 

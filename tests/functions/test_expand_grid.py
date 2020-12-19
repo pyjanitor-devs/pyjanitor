@@ -6,7 +6,6 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from janitor.functions import expand_grid
-from janitor.utils import _check_instance
 
 not_others = [
     (None, [60, 70]),
@@ -126,6 +125,7 @@ def test_frames_series_multi_iIdex(multiIndex_data, multiIndex_outputs):
     assert_frame_equal(expand_grid(others=multiIndex_data), multiIndex_outputs)
 
 
+@pytest.mark.xfail
 def test_scalar_to_list():
     """Test that scalars are converted to lists."""
     data = {

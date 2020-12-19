@@ -33,7 +33,6 @@ from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
-    _check_instance,
     _clean_accounting_column,
     _complete_groupings,
     _computations_pivot_longer,
@@ -4134,13 +4133,6 @@ def expand_grid(
     if df is not None:
         df = df.copy()
 
-        # take this out
-        # expand_grid should work like merge
-        # where the indices are lost
-        if isinstance(df.index, pd.MultiIndex) or isinstance(
-            df.columns, pd.MultiIndex
-        ):
-            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
         if not df_key:
             raise KeyError(
                 """
@@ -4148,11 +4140,10 @@ def expand_grid(
                 requires that a string `df_key` be passed in.
                 """
             )
+
         others = {**{df_key: df}, **others}
 
-    entry = _check_instance(others)
-
-    return _grid_computation(entry)
+    return _grid_computation(others)
 
 
 @pf.register_dataframe_method

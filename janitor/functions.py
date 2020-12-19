@@ -4779,6 +4779,9 @@ def complete(
 
     .. code-block:: python
 
+        import pandas as pd
+        import janitor as jn
+
             group	item_id	    item_name	value1	value2
         0	1	    1	        a	1	4
         1	2	    2	        b	2	5
@@ -4817,9 +4820,6 @@ def complete(
     `Source Data <http://imachordata.com/2016/02/05/you-complete-me/>`_
 
     .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
 
             Year      Taxon         Abundance
         0   1999    Saccharina         4

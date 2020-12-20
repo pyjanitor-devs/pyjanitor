@@ -5470,13 +5470,8 @@ def pivot_wider(
     Reshapes data from long to wide form. The number of columns are
     increased, while decreasing the number of rows.
 
-<<<<<<< HEAD
-    It is the inverse of the `pivot_longer` method, and is a wrapper
-    around the `pd.DataFrame.unstack` method.
-=======
     It is the inverse of the `pivot_longer` method, and is a
     wrapper around `pd.DataFrame.unstack` method.
->>>>>>> ce668dd8ed0dba5cfaaf2eb2ea25a0aa00101494
 
     This method does not mutate the original DataFrame.
 
@@ -5534,7 +5529,6 @@ def pivot_wider(
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
 
-<<<<<<< HEAD
     Aggregations are also possible with the ``aggfunc`` parameter::
 
         df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
@@ -5575,12 +5569,6 @@ def pivot_wider(
 
     .. note:: An error is raised if the index is not unique and
         `aggfunc` is None.
-=======
-    .. note:: You may choose not to collapse the levels by passing `False`
-        to the ``collapse_levels`` argument.
-
-    .. note:: An error is raised if the index is not unique.
->>>>>>> ce668dd8ed0dba5cfaaf2eb2ea25a0aa00101494
 
     Functional usage syntax:
 

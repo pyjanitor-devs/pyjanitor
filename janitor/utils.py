@@ -1553,8 +1553,6 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     categories inferred from the column.
     """
 
-    df = df.copy()
-
     AsCategorical = namedtuple(
         "AsCategorical", ["categories", "order"], defaults=(None, None)
     )
@@ -1625,8 +1623,8 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 unique_values_in_column = df[column_name].unique()
             missing_values = np.setdiff1d(
                 unique_values_in_column,
-                categories_order_tuple.categories,
-                assume_unique=False,
+                pd.unique(categories_order_tuple.categories),
+                assume_unique=True,
             )
             # check if categories supplied does not match
             # with the values in the column

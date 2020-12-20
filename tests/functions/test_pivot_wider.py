@@ -358,7 +358,7 @@ def test_pivot_long_wide_long():
     result = df_in.pivot_wider(index=["a", "b"], names_from="name")
 
     result = result.pivot_longer(
-        index=["a", "b"], names_to=("name", ".value"), names_sep="_"
+        index=["a", "b"], names_to=("name", ".value"), names_sep="_",
     )
     assert_frame_equal(result, df_in)
 

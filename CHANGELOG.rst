@@ -17,6 +17,8 @@ new version (on deck)
 - [ENH] Improvements to `pivot_longer` function, with improved speed and cleaner code. @samukweku
 - [ENH] Add kwargs to ``encode_categorical`` function, to create ordered categorical columns,
   or categorical columns with explicit categories. @samukweku
+- [ENH] Improvements to `complete` method. Use `pd.merge` to handle duplicates and
+  null values. @samukweku
 - [ENH] Reused existing functions to check dtypes in expand_grid. @samukweku
 
 

@@ -3,7 +3,6 @@
 import collections
 import datetime as dt
 import inspect
-import itertools
 import re
 import unicodedata
 import warnings
@@ -36,8 +35,8 @@ from sklearn.preprocessing import LabelEncoder
 from .errors import JanitorError
 from .utils import (
     _clean_accounting_column,
-    _complete_groupings,
     _computations_as_categorical,
+    _computations_complete,
     _computations_pivot_longer,
     _computations_pivot_wider,
     _currency_column_to_numeric,
@@ -4760,21 +4759,65 @@ def groupby_topk(
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]],
+    columns: List[Union[List, Tuple, Dict, str]] = None,
     fill_value: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
-    This function shows all possible combinations in a dataframe, including
-    the missing values.
+    This function turns implicit missing values into explicit missing values.
 
-    This function is similar to tidyr's `complete` function.
+    It is modeled after tidyr's `complete` function, and is a wrapper around
+    `pd.DataFrame.merge` and `pd.DataFrame.fillna`.
 
-    Individual combinations or combinations with groupings are possible.
+    Combinations of column names or a list/tuple of column names, or even a
+    dictionary of column names and new values are possible. It can also handle
+    duplicated data.
+
+
+    `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
 
     .. code-block:: python
 
         import pandas as pd
         import janitor as jn
+
+            group	item_id	    item_name	value1	value2
+        0	1	    1	        a	1	4
+        1	2	    2	        b	2	5
+        2	1	    2	        b	3	6
+
+    To find all the unique combinations of `group`, `item_id`, and `item_name`,
+    including combinations not present in the data, each variable should be
+    passed in a list to the `columns` parameter::
+
+        df.complete(columns = ['group', 'item_id', 'item_name'])
+
+              group	item_id	    item_name	value1	value2
+        0	1	    1	        a	1.0	4.0
+        1	1	    1	        b	NaN	NaN
+        2	1	    2	        a	NaN	NaN
+        3	1	    2	        b	3.0	6.0
+        4	2	    1	        a	NaN	NaN
+        5	2	    1	        b	NaN	NaN
+        6	2	    2	        a	NaN	NaN
+        7	2	    2	        b	2.0	5.0
+
+    To expose just the missing values based only on the existing data,
+    `item_id` and `item_name` can be wrapped in a tuple, while `group`
+    is passed in as a separate variable::
+
+        df.complete(columns = ["group", ("item_id", "item_name")])
+
+            group	item_id	    item_name	value1	   value2
+        0	1	    1	        a	  1.0	    4.0
+        1	1	    2	        b	  3.0	    6.0
+        2	2	    1	        a	  NaN 	    NaN
+        3	2	    2	        b	  2.0	    5.0
+
+    Let's look at another example:
+
+    `Source Data <http://imachordata.com/2016/02/05/you-complete-me/>`_
+
+    .. code-block:: python
 
             Year      Taxon         Abundance
         0   1999    Saccharina         4
@@ -4783,10 +4826,8 @@ def complete(
         3   1999     Agarum            1
         4   2004     Agarum            8
 
-        Data Source - http://imachordata.com/2016/02/05/you-complete-me/
-
-        Note that Year 2000 and Agarum pairing is missing. Let's make it
-        explicit:
+    Note that Year 2000 and Agarum pairing is missing. Let's make it
+    explicit::
 
         df.complete(columns = ['Year', 'Taxon'])
 
@@ -4798,10 +4839,10 @@ def complete(
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
 
-        The null value can be replaced with the fill_value argument:
+    The null value can be replaced with the fill_value argument::
 
         df.complete(columns = ['Year', 'Taxon'],
-                    fill_value={"Abundance":0})
+                    fill_value = {"Abundance" : 0})
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -4811,14 +4852,14 @@ def complete(
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
 
-        What if we wanted the explicit missing values for all the years from
-        1999 to 2004? Easy - simply pass a dictionary pairing the column name
-        with the new values :
+    What if we wanted the explicit missing values for all the years from
+    1999 to 2004? Easy - simply pass a dictionary pairing the column name
+    with the new values::
 
-        df.complete(columns = [{"Year": range(df.Year.min(),
-                                              df.Year.max() + 1)},
-                                       "Taxon"],
-                    fill_value={"Abundance":0})
+        df.complete(columns = [{"Year": lambda x : range(x.Year.min(),
+                                                         x.Year.max() + 1)},
+                                "Taxon"],
+                    fill_value={"Abundance" : 0})
 
             Year      Taxon     Abundance
         0   1999     Agarum         1.0
@@ -4830,9 +4871,11 @@ def complete(
         6   2002     Agarum         0.0
         7   2002    Saccharina      0.0
         8   2003     Agarum         0.0
-        9  2003     Saccharina      0.0
+        9   2003     Saccharina     0.0
         10  2004     Agarum         8.0
         11  2004    Saccharina      2.0
+
+    .. note:: MultiIndex columns are not supported.
 
     Functional usage syntax:
 
@@ -4869,47 +4912,24 @@ def complete(
 
     :param df: A pandas dataframe.
     :param columns: This is a list containing the columns to be
-        completed. It could be column labels (string trype),
+        completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
-    :param fill_value: Dictionary pairing the columns with the null replacement
-        value.
+    :param fill_value: Dictionary pairing the columns with the null
+        replacement value.
     :returns: A pandas dataframe with modified column(s).
-    :raises ValueError: if `columns` is empty.
     :raises TypeError: if `columns` is not a list.
     :raises TypeError: if `fill_value` is not a dictionary.
     :raises ValueError: if entry in `columns` is not a
         str/dict/list/tuple.
     :raises ValueError: if entry in `columns` is a dict/list/tuple
         and is empty.
+
+    .. # noqa: DAR402
     """
     df = df.copy()
-    if not isinstance(columns, list):
-        raise TypeError("Columns should be in a list")
-    if not columns:
-        raise ValueError("columns cannot be empty")
-    # if there is no grouping within the list of columns :
-    if all(isinstance(column, str) for column in columns):
-        # Using sets gets more speed than say np.unique or drop_duplicates
-        reindex_columns = [set(df[item].array) for item in columns]
-        reindex_columns = itertools.product(*reindex_columns)
-        df = df.set_index(columns)
 
-    else:
-        df, reindex_columns = _complete_groupings(df, columns)
-
-    if df.index.has_duplicates:
-        reindex_columns = pd.DataFrame(
-            [], index=pd.Index(reindex_columns, names=columns)
-        )
-        df = df.join(reindex_columns, how="outer").reset_index()
-    else:
-        df = df.reindex(sorted(reindex_columns)).reset_index()
-
-    if fill_value is not None:
-        if not isinstance(fill_value, dict):
-            raise TypeError("fill_value should be a dictionary.")
-        df = df.fillna(fill_value)
+    df = _computations_complete(df, columns, fill_value)
 
     return df
 

@@ -20,14 +20,21 @@ new version (on deck)
 - [ENH] Improvements to `complete` method. Use `pd.merge` to handle duplicates and
   null values. @samukweku
 <<<<<<< HEAD
+<<<<<<< HEAD
 - [INF] Add ``aggfunc`` parameter to pivot_wider. @samukweku
 
 =======
+=======
+>>>>>>> ee781bfd0d423814b13d39da71349a3ad2c0c483
 - [ENH] Add `new_column_names` parameter to `process_text`, allowing a user to
   create a new column name after processing a text column. Also added a `merge_frame`
   parameter, allowing dataframe merging, if the result of the text processing is a
   dataframe.@samukweku
+<<<<<<< HEAD
 >>>>>>> 94b62137e3c54ab6492f5dc743b7d1abb3afc851
+=======
+- [INF] Add ``aggfunc`` parameter to pivot_wider. @samukweku
+>>>>>>> ee781bfd0d423814b13d39da71349a3ad2c0c483
 
 
 v0.20.10

@@ -19,8 +19,11 @@ new version (on deck)
   or categorical columns with explicit categories. @samukweku
 - [ENH] Improvements to `complete` method. Use `pd.merge` to handle duplicates and
   null values. @samukweku
+- [ENH] Add `new_column_names` parameter to `process_text`, allowing a user to
+  create a new column name after processing a text column. Also added a `merge_frame`
+  parameter, allowing dataframe merging, if the result of the text processing is a
+  dataframe.@samukweku
 - [INF] Add ``aggfunc`` parameter to pivot_wider. @samukweku
-
 
 
 v0.20.10

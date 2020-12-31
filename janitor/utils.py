@@ -1288,9 +1288,10 @@ def _data_checks_pivot_wider(
     values_from,
     names_sort,
     flatten_levels,
-    values_from_first,
+    names_from_position,
     names_prefix,
     names_sep,
+    aggfunc,
     fill_value,
 ):
 
@@ -1313,11 +1314,10 @@ def _data_checks_pivot_wider(
             "pivot_wider() missing 1 required argument: 'names_from'"
         )
 
-    if names_from is not None:
-        if isinstance(names_from, str):
-            names_from = [names_from]
-        check("names_from", names_from, [list])
-        check_column(df, names_from, present=True)
+    if isinstance(names_from, str):
+        names_from = [names_from]
+    check("names_from", names_from, [list])
+    check_column(df, names_from, present=True)
 
     if values_from is not None:
         check("values_from", values_from, [list, str])
@@ -1326,18 +1326,38 @@ def _data_checks_pivot_wider(
         else:
             check_column(df, values_from, present=True)
 
-    if values_from_first is not None:
-        check("values_from_first", values_from_first, [bool])
-
     check("names_sort", names_sort, [bool])
 
     check("flatten_levels", flatten_levels, [bool])
+
+    if names_from_position is not None:
+        check("names_from_position", names_from_position, [str])
+        if names_from_position not in ("first", "last"):
+            raise ValueError(
+                """
+                The position of `names_from`
+                must be either "first" or "last".
+                """
+            )
 
     if names_prefix is not None:
         check("names_prefix", names_prefix, [str])
 
     if names_sep is not None:
         check("names_sep", names_sep, [str])
+
+    if aggfunc is not None:
+        # cant apply the `check` function here
+        # because of the callable type
+        if not any(
+            (isinstance(aggfunc, (str, list, dict)), callable(aggfunc))
+        ):
+            raise TypeError(
+                """
+                aggfunc should be either a function,
+                string, list, or a dictionary.
+                """
+            )
 
     if fill_value is not None:
         check("fill_value", fill_value, [int, float, str])
@@ -1349,9 +1369,10 @@ def _data_checks_pivot_wider(
         values_from,
         names_sort,
         flatten_levels,
-        values_from_first,
+        names_from_position,
         names_prefix,
         names_sep,
+        aggfunc,
         fill_value,
     )
 
@@ -1363,52 +1384,56 @@ def _computations_pivot_wider(
     values_from: Optional[Union[List, str]] = None,
     names_sort: Optional[bool] = False,
     flatten_levels: Optional[bool] = True,
-    values_from_first: Optional[bool] = True,
+    names_from_position: Optional[str] = "first",
     names_prefix: Optional[str] = None,
     names_sep: Optional[str] = "_",
+    aggfunc: Optional[Union[str, list, dict, Callable]] = None,
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
-    If `values_from` is a list, then every item in `values_from`
-    will be added to the front of each output column. This option
-    can be turned off with the `values_from_first` argument, in
-    which case, the `names_from` variables (or `names_prefix`, if
-    present) start each column.
+
     The `unstack` method is used here, and not `pivot`; multiple
     labels in the `index` or `names_from` are supported in the
-    `pivot` function for Pandas 1.1 and above. Also, the
+    `pivot` function for Pandas 1.1 and above. Besides, pandas'
+    `pivot` function is built on the `unstack` method.
+
     `pivot_table` function is not used, because it is quite slow,
     compared to the `pivot` function and `unstack`.
+
+    By default, values from `names_from` are at the front of
+    each output column. If there are multiple `values_from`, this
+    can be changed via the `names_from_position`, by setting it to
+    `last`.
+
     The columns are sorted in the order of appearance from the
-    source data. This only occurs if `flatten_levels` is True.
+    source data. This only occurs if `flatten_levels` is `True`.
+    It can be turned off by setting `names_sort` to `True`.
     """
 
-    # TODO : include an aggfunc argument
     if values_from is None:
         if index:
             values_from = [
-                col for col in df.columns if col not in (index + names_from)
+                col for col in df if col not in (index + names_from)
             ]
         else:
-            values_from = [col for col in df.columns if col not in names_from]
+            values_from = [col for col in df if col not in names_from]
 
     dtypes = None
-    before = None
-    # ensure `names_sort` is in combination with `flatten_levels`
-    if all((names_sort is False, flatten_levels)):
+    names_sort_and_flatten_levels = all(
+        (names_sort is False, flatten_levels is True)
+    )
+    if names_sort_and_flatten_levels:
         # dtypes only needed for names_from
         # since that is what will become the new column names
         dtypes = {
             column_name: CategoricalDtype(
-                categories=column.unique(), ordered=True
+                categories=column.dropna().unique(), ordered=True
             )
-            for column_name, column in df.filter(names_from).items()
+            if column.hasnans
+            else CategoricalDtype(categories=column.unique(), ordered=True)
+            for column_name, column in df.loc[:, names_from].items()
         }
-        if index is not None:
-            before = df.filter(index)
-            if before.duplicated().any():
-                before = before.drop_duplicates()
 
         df = df.astype(dtypes)
 
@@ -1417,7 +1442,7 @@ def _computations_pivot_wider(
     else:
         df = df.set_index(index + names_from)
 
-    if not df.index.is_unique:
+    if (not df.index.is_unique) and (aggfunc is None):
         raise ValueError(
             """
             There are non-unique values in your combination
@@ -1427,35 +1452,65 @@ def _computations_pivot_wider(
         )
 
     df = df.loc[:, values_from]
-    df = df.unstack(names_from, fill_value=fill_value)  # noqa: PD010
-    if flatten_levels:
-        if isinstance(values_from, list):
-            df.columns = df.columns.set_names(level=0, names="values_from")
-            if not values_from_first:
-                df = df.reorder_levels(names_from + ["values_from"], axis=1)
-        if df.columns.nlevels > 1:
-            df.columns = [names_sep.join(entry) for entry in df]
-        if names_prefix:
-            df = df.add_prefix(names_prefix)
-        df.columns = list(
-            df.columns
-        )  # blanket approach that covers categories
 
-        if index:
-            # this way we avoid having to convert index
-            # from category to original dtype
-            # while still maintaining order of appearance
-            if names_sort is False:
-                df = before.merge(
-                    df, how="left", left_on=index, right_index=True
-                ).reset_index(drop=True)
-            else:
-                df = df.reset_index()
+    aggfunc_index = None
+    if aggfunc is not None:
+        aggfunc_index = list(range(df.index.nlevels))
+        # since names_from may be categoricals if `names_sort`
+        # is False and `flatten_levels` is True.
+        # observed is set to True, keeping results consistent
+        if names_sort_and_flatten_levels:
+            df = df.groupby(level=aggfunc_index, observed=True).agg(aggfunc)
         else:
-            # remove default index, since it is irrelevant
-            df = df.reset_index().iloc[:, 1:]
+            df = df.groupby(level=aggfunc_index).agg(aggfunc)
 
+    df = df.unstack(level=names_from, fill_value=fill_value)  # noqa: PD010
+
+    if not flatten_levels:
         return df
+
+    extra_levels = df.columns.nlevels - len(names_from)
+    if extra_levels == 1:
+        if len(df.columns.get_level_values(0).unique()) == 1:
+            df = df.droplevel(level=0, axis="columns")
+        else:
+            df.columns = df.columns.set_names(level=0, names="values_from")
+    elif extra_levels == 2:
+        df.columns = df.columns.set_names(
+            level=[0, 1], names=["values_from", "aggfunc"]
+        )
+        if len(df.columns.get_level_values("values_from").unique()) == 1:
+            df = df.droplevel("values_from", axis="columns")
+        if len(df.columns.get_level_values("aggfunc").unique()) == 1:
+            df = df.droplevel("aggfunc", axis="columns")
+
+    new_order_level = None
+    if df.columns.nlevels != len(names_from):
+        if names_from_position == "first":
+            new_order_level = pd.Index(names_from).union(
+                df.columns.names, sort=False
+            )
+            df = df.reorder_levels(order=new_order_level, axis="columns")
+
+    if names_sort:
+        df = df.sort_index(axis="columns", level=names_from)
+
+    if df.columns.nlevels > 1:
+        df.columns = [names_sep.join(column_tuples) for column_tuples in df]
+
+    if names_prefix:
+        df = df.add_prefix(names_prefix)
+
+    # if columns are of category type
+    # this returns columns to object dtype
+    # also, resetting index with category columns is not possible
+    df.columns = list(df.columns)
+
+    if index:
+        df = df.reset_index()
+
+    if df.columns.names:
+        df = df.rename_axis(columns=None)
 
     return df
 
@@ -1469,8 +1524,6 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     (None, None) and will return a categorical dtype with no order and
     categories inferred from the column.
     """
-
-    df = df.copy()
 
     AsCategorical = namedtuple(
         "AsCategorical", ["categories", "order"], defaults=(None, None)
@@ -1542,8 +1595,8 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 unique_values_in_column = df[column_name].unique()
             missing_values = np.setdiff1d(
                 unique_values_in_column,
-                categories_order_tuple.categories,
-                assume_unique=False,
+                pd.unique(categories_order_tuple.categories),
+                assume_unique=True,
             )
             # check if categories supplied does not match
             # with the values in the column

@@ -1,0 +1,132 @@
+name: pyjanitor tests
+
+on: [pull_request]
+
+jobs:
+  build_environment:
+    name: Build environment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # See: https://github.com/marketplace/actions/setup-conda
+      - name: Setup anaconda
+        uses: s-weigand/setup-conda@v1
+        with:
+          conda-channels: "conda-forge"
+
+      # Build cache of environment
+      - name: Cache conda environment
+        id: cache-environment
+        uses: actions/cache@v2
+        # Conda environment build step depends on two files,
+        # so we ensure that the hash key contains both their hashes.
+        with:
+          path: |
+            nams.tar.gz
+          key: ${{ runner.os }}-${{ hashFiles('environment.yml') }}-${{ hashFiles('scripts/ci/build_environment.sh') }}-env
+
+      - name: Build environment
+        if: steps.cache-environment.outputs.cache-hit != 'true'
+        run: |
+          conda env create -f environment.yml
+          pip install .
+
+      - name: Install conda-pack
+        run: conda install -c conda-forge conda-pack
+
+      - name: Run conda-pack
+        run: conda pack -n pyjanitor-dev -o pyjanitor-dev.tar.gz
+
+      # See: https://github.com/actions/upload-artifact
+      - name: Upload environment
+        uses: actions/upload-artifact@v2
+        with:
+          name: pyjanitor-dev-tarball
+          path: pyjanitor-dev.tar.gz
+
+  unit-tests:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # https://github.com/actions/download-artifact
+      - name: Download environment tarball
+        uses: actions/download-artifact@v2
+        with:
+          name: nams-tarball
+
+      - name: Unpack environment and activate it
+        run: |
+          mkdir -p pyjanitor-dev_env
+          tar -xzf pyjanitor-dev.tar.gz -C pyjanitor-dev_env
+          source pyjanitor-dev_env/bin/activate
+          conda-unpack
+
+      - name: Run tests
+        run: |
+          source pyjanitor-dev_env/bin/activate
+          pytest
+
+      - name: Upload code coverage
+        run: |
+          source pyjanitor-dev_env/bin/activate
+          bash <(curl -s https://codecov.io/bash)
+
+  jupyter-notebook:
+    name: Execute all Jupyter notebooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # https://github.com/actions/download-artifact
+      - name: Download environment tarball
+        uses: actions/download-artifact@v2
+        with:
+          name: nams-tarball
+
+      - name: Unpack environment and activate it
+        run: |
+          mkdir -p pyjanitor-dev_env
+          tar -xzf pyjanitor-dev.tar.gz -C pyjanitor-dev_env
+          source pyjanitor-dev_env/bin/activate
+          conda-unpack
+
+      - name: Execute Jupyter notebooks
+        run: |
+          source pyjanitor-dev_env/bin/activate
+          python -m ipykernel install --user --name pyjanitor-dev
+          jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
+
+  docs:
+    name: Build docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # https://github.com/actions/download-artifact
+      - name: Download environment tarball
+        uses: actions/download-artifact@v2
+        with:
+          name: nams-tarball
+
+      - name: Unpack environment and activate it
+        run: |
+          mkdir -p pyjanitor-dev_env
+          tar -xzf pyjanitor-dev.tar.gz -C pyjanitor-dev_env
+          source pyjanitor-dev_env/bin/activate
+          conda-unpack
+
+      - name: Build docs
+        run: |
+          source pyjanitor-dev_env/bin/activate
+          cd docs && make html

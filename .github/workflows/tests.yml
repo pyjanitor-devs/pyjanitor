@@ -32,7 +32,7 @@ jobs:
         if: steps.cache-environment.outputs.cache-hit != 'true'
         run: |
           conda env create -f environment-dev.yml
-          pip install .
+          python -m pip install .
 
       - name: Install conda-pack
         if: steps.cache-environment.outputs.cache-hit != 'true'
@@ -74,6 +74,7 @@ jobs:
       - name: Run tests
         run: |
           source pyjanitor-dev_env/bin/activate
+          python -m pip install .
           pytest
 
       - name: Upload code coverage
@@ -106,6 +107,7 @@ jobs:
       - name: Execute Jupyter notebooks
         run: |
           source pyjanitor-dev_env/bin/activate
+          python -m pip install .
           python -m ipykernel install --user --name pyjanitor-dev
           jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
 

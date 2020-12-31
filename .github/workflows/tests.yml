@@ -66,7 +66,7 @@ jobs:
 
       - name: Unpack environment and activate it
         run: |
-          mkdir -p pyjanitor-dev_env
+          mkdir -p /tmp/pyjanitor-dev_env
           tar -xzf pyjanitor-dev.tar.gz -C /tmp/pyjanitor-dev_env
           source /tmp/pyjanitor-dev_env/bin/activate
           conda-unpack
@@ -76,6 +76,10 @@ jobs:
           source /tmp/pyjanitor-dev_env/bin/activate
           python -m pip install .
           pytest
+
+      - name: Inspect coverage
+        run: |
+          cat coverage.xml
 
       - name: Upload code coverage
         run: |

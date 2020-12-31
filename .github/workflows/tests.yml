@@ -70,7 +70,7 @@ jobs:
       - name: Run tests
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
-          python -m pip install .
+          python -m pip install -e .
           pytest
 
       - name: Inspect coverage
@@ -103,7 +103,7 @@ jobs:
       - name: Execute Jupyter notebooks
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
-          python -m pip install .
+          python -m pip install -e .
           python -m ipykernel install --user --name pyjanitor-dev
           jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
 
@@ -129,6 +129,7 @@ jobs:
       - name: Build docs
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
+          python -m pip install -e .
           cd docs && make html
 
       - name: Netlify PR preview

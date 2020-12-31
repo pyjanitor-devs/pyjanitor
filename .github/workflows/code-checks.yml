@@ -18,7 +18,7 @@ jobs:
         run: python -m pip install black
 
       - name: Run black
-        run: black . --check
+        run: black --config pyproject.toml --check .
 
   interrogate:
     name: Check interrogate compliance.

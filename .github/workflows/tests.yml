@@ -35,9 +35,11 @@ jobs:
           pip install .
 
       - name: Install conda-pack
+        if: steps.cache-environment.outputs.cache-hit != 'true'
         run: conda install -c conda-forge conda-pack
 
       - name: Run conda-pack
+        if: steps.cache-environment.outputs.cache-hit != 'true'
         run: conda pack -n pyjanitor-dev -o pyjanitor-dev.tar.gz
 
       # See: https://github.com/actions/upload-artifact

@@ -5,7 +5,7 @@ new version (on deck)
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas
 - [ENH] ``pivot_longer`` can handle multiple values in paired columns, and can reshape
   using a list/tuple of regular expressions in ``names_pattern``. @samukweku
-- [ENH] Replaced default numeric conversion of dataframe with a `dtypes` argument,
+- [ENH] Replaced default numeric conversion of dataframe with a `dtypes` parameter,
   allowing the user to control the data types. - @samukweku
 - [INF] Loosen dependency specifications. Switch to pip-tools for managing
   dependencies. Issue #760. @MinchinWeb
@@ -14,7 +14,9 @@ new version (on deck)
   function. @samukweku
 - [INF] Add `openpyxl` to `environment-dev.yml`. @samukweku
 - [ENH] Reduce code by reusing existing functions for fill_direction. @samukweku
-- [ENH] Improvements to `pivot_longer` function, with improved speed and cleaner code. @samukweku
+- [ENH] Improvements to `pivot_longer` function, with improved speed and cleaner code.
+  `dtypes` parameter dropped; user can change dtypes with pandas' `astype` method, or
+  pyjanitor's `change_type` method. @samukweku
 - [ENH] Add kwargs to ``encode_categorical`` function, to create ordered categorical columns,
   or categorical columns with explicit categories. @samukweku
 - [ENH] Improvements to `complete` method. Use `pd.merge` to handle duplicates and
@@ -23,6 +25,8 @@ new version (on deck)
   create a new column name after processing a text column. Also added a `merge_frame`
   parameter, allowing dataframe merging, if the result of the text processing is a
   dataframe.@samukweku
+- [ENH] Add ``aggfunc`` parameter to pivot_wider. @samukweku
+
 
 
 v0.20.10

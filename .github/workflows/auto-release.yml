@@ -1,0 +1,34 @@
+# For @loganthomas!
+# Some hints for you :)
+
+# Give it an informative name.
+name: Some not so informative name
+
+# Decide what git events trigger this workflow.
+# One of the two entries below shouldn't be used (logically) for a release workflow.
+on:
+  push: [master]
+  pull_request: [master]
+
+# Define the jobs
+jobs:
+  # Give the job an informative "key"
+  release:
+    # Give the job an informative "name"
+    name: Some informative name
+    runs-on: ubuntu-latest
+
+    steps:
+      # Usually, the very first thing we'll need is to checkout the repository.
+      # See the "code-checks.yml" file to see the syntax.
+
+      # Now we build the package. You can either choose to run arbitrary commands,
+      # or use someone else's pre-built action.
+      # The filesystem state is passed on from build step to build step,
+      # but the environment variables are not necessarily so.
+
+      # Once the package is built, we can use this action:
+      # https://github.com/pypa/gh-action-pypi-publish
+      # to do the final publishing.
+      # I have already added the PYPI_API_TOKEN in as one of the repository secrets,
+      # so you don't have to worry about it.

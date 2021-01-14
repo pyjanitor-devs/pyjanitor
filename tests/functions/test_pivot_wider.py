@@ -74,7 +74,7 @@ combinations = [
         ["variable", "measure"],
         "value",
         None,
-        True,
+        "first",
     ),
     (
         pd.DataFrame(
@@ -95,7 +95,7 @@ combinations = [
         "n",
         "name",
         None,
-        True,
+        "first",
     ),
     (
         pd.DataFrame(
@@ -116,7 +116,7 @@ combinations = [
         "n",
         "name",
         "name",
-        True,
+        "first",
     ),
     (
         pd.DataFrame(
@@ -137,17 +137,17 @@ combinations = [
             {
                 "geoid": [1, 13],
                 "name": ["Alabama", "Georgia"],
-                "estimate_pop_renter": [1434765, 3592422],
-                "estimate_median_rent": [747, 927],
-                "error_pop_renter": [16736, 33385],
-                "error_median_rent": [3, 3],
+                "pop_renter_estimate": [1434765, 3592422],
+                "median_rent_estimate": [747, 927],
+                "pop_renter_error": [16736, 33385],
+                "median_rent_error": [3, 3],
             }
         ),
         ["geoid", "name"],
         "variable",
         ["estimate", "error"],
         None,
-        True,
+        "first",
     ),
     (
         pd.DataFrame(
@@ -168,29 +168,29 @@ combinations = [
             {
                 "geoid": {0: 1, 1: 13},
                 "name": {0: "Alabama", 1: "Georgia"},
-                "pop_renter_estimate": {0: 1434765, 1: 3592422},
-                "median_rent_estimate": {0: 747, 1: 927},
-                "pop_renter_error": {0: 16736, 1: 33385},
-                "median_rent_error": {0: 3, 1: 3},
+                "estimate_pop_renter": {0: 1434765, 1: 3592422},
+                "estimate_median_rent": {0: 747, 1: 927},
+                "error_pop_renter": {0: 16736, 1: 33385},
+                "error_median_rent": {0: 3, 1: 3},
             }
         ),
         ["geoid", "name"],
         "variable",
         ["estimate", "error"],
         None,
-        False,
+        "last",
     ),
 ]
 
 
 def test_type_index1(df_checks_output):
-    "Raise TypeError if wrong type is provided for the `index`."
+    """Raise TypeError if wrong type is provided for the `index`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index={"geoid"}, names_from="variable")
 
 
 def test_type_index2(df_checks_output):
-    "Raise TypeError if wrong type is provided for the `index`."
+    """Raise TypeError if wrong type is provided for the `index`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index=("geoid", "name"), names_from="variable"
@@ -198,31 +198,31 @@ def test_type_index2(df_checks_output):
 
 
 def test_type_names_from1(df_checks_output):
-    "Raise TypeError if wrong type is provided for `names_from`."
+    """Raise TypeError if wrong type is provided for `names_from`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index="geoid", names_from={"variable"})
 
 
 def test_type_names_from2(df_checks_output):
-    "Raise TypeError if wrong type is provided for `names_from`."
+    """Raise TypeError if wrong type is provided for `names_from`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index="geoid", names_from=("variable",))
 
 
 def test_names_from_None(df_checks_output):
-    "Raise ValueError if no value is provided for ``names_from``."
+    """Raise ValueError if no value is provided for ``names_from``."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geoid", names_from=None)
 
 
 def test_presence_index1(df_checks_output):
-    "Raise ValueError if labels in `index` do not exist."
+    """Raise ValueError if labels in `index` do not exist."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geo", names_from="variable")
 
 
 def test_presence_index2(df_checks_output):
-    "Raise ValueError if labels in `index` do not exist."
+    """Raise ValueError if labels in `index` do not exist."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(
             index=["geoid", "Name"], names_from="variable"
@@ -230,37 +230,27 @@ def test_presence_index2(df_checks_output):
 
 
 def test_presence_names_from1(df_checks_output):
-    "Raise ValueError if labels in `names_from` do not exist."
+    """Raise ValueError if labels in `names_from` do not exist."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geoid", names_from="estmt")
 
 
 def test_presence_names_from2(df_checks_output):
-    "Raise ValueError if labels in `names_from` do not exist."
+    """Raise ValueError if labels in `names_from` do not exist."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
 
 
-def test_values_from_first_wrong_type(df_checks_output):
-    "Raise TypeError if the wrong type is provided for `values_from_first`."
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name",
-            names_from=["estimate", "variable"],
-            values_from_first=2,
-        )
-
-
 def test_names_sort_wrong_type(df_checks_output):
-    "Raise TypeError if the wrong type is provided for `names_sort`."
+    """Raise TypeError if the wrong type is provided for `names_sort`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index="name", names_from=["estimate", "variable"], names_sort=2,
         )
 
 
-def test_flatten_levels_wrong_type(df_checks_output,):
-    "Raise TypeError if the wrong type is provided for `flatten_levels`."
+def test_flatten_levels_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `flatten_levels`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index="name",
@@ -269,8 +259,34 @@ def test_flatten_levels_wrong_type(df_checks_output,):
         )
 
 
+def test_names_from_position_wrong_type(df_checks_output):
+    """
+    Raise TypeError if the wrong type
+    is provided for `names_from_position`.
+    """
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name",
+            names_from=["estimate", "variable"],
+            names_from_position=2,
+        )
+
+
+def test_names_from_position_wrong_value(df_checks_output):
+    """
+    Raise ValueError if `names_from_position`
+    is not "first" or "last".
+    """
+    with pytest.raises(ValueError):
+        df_checks_output.pivot_wider(
+            index="name",
+            names_from=["estimate", "variable"],
+            names_from_position="1st",
+        )
+
+
 def test_name_prefix_wrong_type(df_checks_output):
-    "Raise TypeError if the wrong type is provided for `names_prefix`."
+    """Raise TypeError if the wrong type is provided for `names_prefix`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index="name", names_from=["estimate", "variable"], names_prefix=1
@@ -278,7 +294,7 @@ def test_name_prefix_wrong_type(df_checks_output):
 
 
 def test_name_sep_wrong_type(df_checks_output):
-    "Raise TypeError if the wrong type is provided for `names_sep`."
+    """Raise TypeError if the wrong type is provided for `names_sep`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index="name", names_from=["estimate", "variable"], names_sep=1
@@ -286,10 +302,18 @@ def test_name_sep_wrong_type(df_checks_output):
 
 
 def test_fill_value_wrong_type(df_checks_output):
-    "Raise TypeError if the wrong type is provided for `fill_value`."
+    """Raise TypeError if the wrong type is provided for `fill_value`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index="name", names_from=["estimate", "variable"], fill_value={2}
+        )
+
+
+def test_aggfunc_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `aggfunc`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], aggfunc={2}
         )
 
 
@@ -331,9 +355,7 @@ def test_pivot_long_wide_long():
         ]
     )
 
-    result = df_in.pivot_wider(
-        index=["a", "b"], names_from="name", values_from_first=False
-    )
+    result = df_in.pivot_wider(index=["a", "b"], names_from="name")
 
     result = result.pivot_longer(
         index=["a", "b"], names_to=("name", ".value"), names_sep="_",
@@ -368,7 +390,7 @@ def pivot_wide_long_wide():
 @pytest.mark.parametrize(
     """
     df_in,df_out,index,names_from,
-    values_from, names_prefix,values_from_first
+    values_from, names_prefix,names_from_position
     """,
     combinations,
 )
@@ -379,7 +401,7 @@ def test_pivot_wider_various(
     names_from,
     values_from,
     names_prefix,
-    values_from_first,
+    names_from_position,
 ):
     """
     Test `pivot_wider` function with various combinations.
@@ -389,13 +411,13 @@ def test_pivot_wider_various(
         names_from=names_from,
         values_from=values_from,
         names_prefix=names_prefix,
-        values_from_first=values_from_first,
+        names_from_position=names_from_position,
     )
     assert_frame_equal(result, df_out)
 
 
 def test_flatten_levels_false():
-    "Test output if `flatten_levels` is False."
+    """Test output if `flatten_levels` is False."""
 
     df_collapse = pd.DataFrame(
         {
@@ -424,7 +446,7 @@ def test_flatten_levels_false():
 
 
 def test_fill_values():
-    "Test output if `fill_value` is provided."
+    """Test output if `fill_value` is provided."""
 
     df_fill_value = pd.DataFrame(
         {
@@ -442,14 +464,10 @@ def test_fill_values():
         values_from="values",
         flatten_levels=False,
         fill_value=0,
-        names_sort=True,
     )
 
     expected_output = pd.DataFrame(
-        {
-            1: {(1, 1): 0, (1, 2): 2, (2, 1): 4, (2, 2): 0},
-            2: {(1, 1): 1, (1, 2): 0, (2, 1): 3, (2, 2): 5},
-        },
+        {1: [0, 2, 4, 0], 2: [1, 0, 3, 5]},
         index=pd.MultiIndex.from_tuples(
             [(1, 1), (1, 2), (2, 1), (2, 2)], names=["lev1", "lev2"]
         ),
@@ -459,7 +477,7 @@ def test_fill_values():
 
 
 def test_no_index():
-    "Test output if no `index` is supplied."
+    """Test output if no `index` is supplied."""
     df_in = pd.DataFrame(
         {
             "gender": ["Male", "Female", "Female", "Male", "Male"],
@@ -475,13 +493,13 @@ def test_no_index():
         }
     )
 
-    result = df_in.pivot_wider(names_from="gender")
+    result = df_in.pivot_wider(names_from="gender", names_prefix="contVar_")
 
     assert_frame_equal(result, expected_output)
 
 
 def test_no_index_names_sort_True():
-    "Test output if no `index` is supplied and `names_sort` is True."
+    """Test output if no `index` is supplied and `names_sort` is True."""
     df_in = pd.DataFrame(
         {
             "gender": ["Male", "Female", "Female", "Male", "Male"],
@@ -497,13 +515,15 @@ def test_no_index_names_sort_True():
         }
     )
 
-    result = df_in.pivot_wider(names_from="gender", names_sort=True)
+    result = df_in.pivot_wider(
+        names_from="gender", names_sort=True, names_prefix="contVar_"
+    )
 
     assert_frame_equal(result, expected_output)
 
 
 def test_index_names_sort_True():
-    "Test output if index is supplied and `names_sort ` is True."
+    """Test output if index is supplied and `names_sort ` is True."""
     df = pd.DataFrame(
         [
             {"stat": "mean", "score": 4, "var": "var1"},
@@ -524,3 +544,69 @@ def test_index_names_sort_True():
     )
 
     assert_frame_equal(result, expected_output)
+
+
+@pytest.fixture()
+def df_aggfunc():
+    return pd.DataFrame(
+        [
+            {"V4": "A", "variable": "V1", "value": 0},
+            {"V4": "A", "variable": "V1", "value": 0},
+            {"V4": "A", "variable": "V1", "value": 0},
+            {"V4": "B", "variable": "V1", "value": 4},
+            {"V4": "B", "variable": "V1", "value": 4},
+            {"V4": "B", "variable": "V1", "value": 1},
+            {"V4": "C", "variable": "V1", "value": 4},
+            {"V4": "C", "variable": "V1", "value": 1},
+            {"V4": "C", "variable": "V1", "value": 1},
+            {"V4": "A", "variable": "V2", "value": 3},
+            {"V4": "A", "variable": "V2", "value": 4},
+            {"V4": "A", "variable": "V2", "value": 7},
+            {"V4": "B", "variable": "V2", "value": 0},
+            {"V4": "B", "variable": "V2", "value": 8},
+            {"V4": "B", "variable": "V2", "value": 5},
+            {"V4": "C", "variable": "V2", "value": 5},
+            {"V4": "C", "variable": "V2", "value": 0},
+            {"V4": "C", "variable": "V2", "value": 9},
+        ]
+    )
+
+
+def test_aggfunc(df_aggfunc):
+    """Test output when `aggfunc` is provided."""
+    expected = pd.DataFrame(
+        {"V4": ["A", "B", "C"], "V1": [3, 3, 3], "V2": [3, 3, 3]}
+    )
+    result = df_aggfunc.pivot_wider(
+        index="V4", names_from="variable", aggfunc="size", flatten_levels=True
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_aggfunc_names_sort(df_aggfunc):
+    """
+    Test output when `aggfunc` is provided
+    and `names_sort` is True.
+    """
+    expected = pd.DataFrame(
+        {"V4": ["A", "B", "C"], "V1": [3, 3, 3], "V2": [3, 3, 3]}
+    )
+    result = df_aggfunc.pivot_wider(
+        index="V4",
+        names_from="variable",
+        aggfunc="size",
+        names_sort=True,
+        flatten_levels=True,
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_aggfunc_list(df_aggfunc):
+    """Test output when `aggfunc` is a list."""
+    expected = pd.DataFrame(
+        {"V4": ["A", "B", "C"], "V1": [0, 9, 6], "V2": [14, 13, 14]}
+    )
+    result = df_aggfunc.pivot_wider(
+        index="V4", names_from="variable", aggfunc=["sum"], flatten_levels=True
+    )
+    assert_frame_equal(result, expected)

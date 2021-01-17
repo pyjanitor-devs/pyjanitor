@@ -50,7 +50,17 @@ def test_select_columns_missing_columns(dataframe, columns):
 
 @pytest.mark.functions
 @pytest.mark.parametrize(
-    "columns", ["a", ("a", "Bell__Chart"), {"a", "Bell__Chart"}]
+    "columns",
+    [
+        pytest.param(
+            "a",
+            marks=pytest.mark.xfail(
+                reason="select_columns now accepts other data types"
+            ),
+        ),
+        ("a", "Bell__Chart"),
+        {"a", "Bell__Chart"},
+    ],
 )
 def test_select_columns_input(dataframe, columns):
     """Check that passing an iterable that is not a list raises TypeError."""

@@ -1,7 +1,9 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
+import fnmatch
 import functools
 import os
+import re
 import sys
 import warnings
 from collections import namedtuple
@@ -19,6 +21,7 @@ from .errors import JanitorError
 def check(varname: str, value, expected_types: list):
     """
     One-liner syntactic sugar for checking types.
+    It can also check callables.
 
     Should be used like this::
 
@@ -31,11 +34,14 @@ def check(varname: str, value, expected_types: list):
     """
     is_expected_type = False
     for t in expected_types:
-        if isinstance(value, t):
-            is_expected_type = True
+        if t is callable:
+            is_expected_type = t(value)
+        else:
+            is_expected_type = isinstance(value, t)
+        if is_expected_type is True:
             break
 
-    if not is_expected_type:
+    if is_expected_type is False:
         raise TypeError(
             "{varname} should be one of {expected_types}".format(
                 varname=varname, expected_types=expected_types
@@ -1671,3 +1677,164 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     df = df.astype(categories_dtypes)
 
     return df
+
+
+def _select_columns(
+    df: pd.DataFrame,
+    columns_to_select: Union[str, slice, Pattern, callable, list],
+) -> Union[list, pd.Index]:
+    """
+    Helper function to select columns from a dataframe.
+    The aim is to make this function a base for the various
+    functions in the janitor package that require column selection,
+    while offering a lot of options/flexibility. It is inspired
+    by R's dplyr's select function.
+
+    It accepts a string, slice, callable, regex,
+    a shell-style glob string (e.g., `*_thing_*`), or a list of
+    the previously mentioned options.
+
+    If it is a callable, it is applied to every series in the dataframe
+    and each series must return either True or False, resulting in a
+    sequence of booleans.
+
+    Data types are checked in this function as well.
+
+    A list or pandas Index of columns present in the dataframe is returned.
+    """
+
+    if not isinstance(columns_to_select, list):
+        check(
+            "column label", columns_to_select, [str, slice, Pattern, callable]
+        )
+        return __columns_not_a_list(df, columns_to_select)
+
+    for label in columns_to_select:
+        check("column label", label, [str, slice, Pattern, callable])
+
+    all_columns = []
+    for entry in columns_to_select:
+        outcome = __columns_not_a_list(df, entry)
+        all_columns.extend(outcome)
+
+    if not pd.Series(all_columns).is_unique:
+        return pd.unique(all_columns)
+
+    return all_columns
+
+
+def __columns_not_a_list(
+    df: pd.DataFrame, columns_to_select: Union[str, slice, Pattern, callable],
+) -> Union[list, pd.Index]:
+    """
+    Function to extract columns if `columns_to_select` is not a list.
+    A list of column names is returned.
+    """
+    filtered_column = None
+    start_check = None
+    stop_check = None
+    step_check = None
+    if isinstance(columns_to_select, str):
+        # takes care of the shell_like glob strings
+        if "*" in columns_to_select:
+            filtered_column = fnmatch.filter(df.columns, columns_to_select)
+        else:
+            if columns_to_select in df.columns:
+                filtered_column = [columns_to_select]
+        if not filtered_column:
+            raise NameError(f"No match was returned for '{columns_to_select}'")
+
+    elif isinstance(columns_to_select, slice):
+        # df.columns should be monotonic/unique,
+        # but we wont check for that
+        # onus is on the user to ensure that
+        start, stop, step = (
+            columns_to_select.start,
+            columns_to_select.stop,
+            columns_to_select.step,
+        )
+        start_check = any((start is None, isinstance(start, str)))
+        stop_check = any((stop is None, isinstance(stop, str)))
+        step_check = any((step is None, isinstance(step, int)))
+        if not start_check:
+            raise ValueError(
+                """
+                The start value for the slice
+                must either be a string or `None`.
+                """
+            )
+        if not stop_check:
+            raise ValueError(
+                """
+                The stop value for the slice
+                must either be a string or `None`.
+                """
+            )
+        if not step_check:
+            raise ValueError(
+                """
+                The stop value for the slice
+                must either be an integer or `None`.
+                """
+            )
+        start_check = any((start is None, start in df.columns))
+        stop_check = any((stop is None, stop in df.columns))
+        if not start_check:
+            raise ValueError(
+                """
+                The start value for the slice must either be `None`
+                or exist in the dataframe's columns.
+                """
+            )
+        if not stop_check:
+            raise ValueError(
+                """
+                The start value for the slice must either be `None`
+                or exist in the dataframe's columns.
+                """
+            )
+        filtered_column = df.columns.slice_locs(start=start, end=stop,)
+        # slice_locs fails when step has a value
+        # so this extra step is necessary to get the correct output
+        start, stop = filtered_column
+        filtered_column = df.columns[slice(start, stop, step)]
+
+    elif callable(columns_to_select):
+        # the function will be applied per series.
+        # this allows filtration based on the contents of the series
+        # or based on the name of the series,
+        # which happens to be a column name as well
+        # whatever the case may be,
+        # the returned values must be a sequence of booleans,
+        # with at least one True.
+        filtered_column = [
+            columns_to_select(column) for _, column in df.items()
+        ]
+
+        checks = any(
+            (isinstance(column, pd.Series) for column in filtered_column)
+        )
+
+        if checks:
+            raise ValueError(
+                "The callable provided must return a sequence of booleans."
+            )
+
+        if not any(filtered_column):
+            raise ValueError(
+                "No results were returned for the callable provided."
+            )
+
+        filtered_column = df.columns[filtered_column]
+
+    else:  # regex
+        filtered_column = [
+            column_name
+            for column_name in df
+            if re.search(columns_to_select, column_name)
+        ]
+
+        if not filtered_column:
+            raise ValueError("No column name matched the regular expression.")
+
+    return filtered_column

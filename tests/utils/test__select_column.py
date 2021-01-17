@@ -261,39 +261,3 @@ class Test_Columns_in_List_Various_Inputs:
             ),
             self.df.filter(regex="^(id|code)").columns,
         )
-
-
-# extra = pd.DataFrame(
-#         {
-#             "id": [1, 2, 3],
-#             "M_start_date_1": [201709, 201709, 201709],
-#             "M_end_date_1": [201905, 201905, 201905],
-#             "M_start_date_2": [202004, 202004, 202004],
-#             "M_end_date_2": [202005, 202005, 202005],
-#             "F_start_date_1": [201803, 201803, 201803],
-#             "F_end_date_1": [201904, 201904, 201904],
-#             "F_start_date_2": [201912, 201912, 201912],
-#             "F_end_date_2": [202007, 202007, 202007],
-#         }
-#     )
-
-
-box = pd.DataFrame(
-    {
-        "id": [0, 1],
-        "Name": ["ABC", "XYZ"],
-        "code": [1, 2],
-        "code1": [4, np.nan],
-        "code2": ["8", 5],
-        "type": ["S", "R"],
-        "type1": ["E", np.nan],
-        "type2": ["T", "U"],
-        "code3": pd.Series(["a", "b"], dtype="category"),
-        "type3": pd.to_datetime(
-            [np.datetime64("2018-01-01"), datetime.datetime(2018, 1, 1)]
-        ),
-    }
-)
-
-result = _select_columns(box, ["id", "code*", slice("code", "code2")])
-print(result)

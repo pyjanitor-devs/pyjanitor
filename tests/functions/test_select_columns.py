@@ -66,3 +66,38 @@ def test_select_columns_input(dataframe, columns):
     """Check that passing an iterable that is not a list raises TypeError."""
     with pytest.raises(TypeError):
         dataframe.select_columns(search_column_names=columns)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "invert,expected",
+    [
+        (False, ["Bell__Chart", "a", "decorated-elephant"]),
+        (True, ["animals@#$%^", "cities"]),
+    ],
+)
+def test_select_unique_columns(dataframe, invert, expected):
+    """Test that only unique columns are returned."""
+    columns = ["Bell__*", slice("a", "decorated-elephant")]
+    df = dataframe.select_columns(search_column_names=columns, invert=invert)
+
+    assert_frame_equal(df, dataframe[expected])
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "invert,expected",
+    [
+        (False, ["Bell__Chart", "decorated-elephant"]),
+        (True, ["a", "animals@#$%^", "cities"]),
+    ],
+)
+def test_select_callable_columns(dataframe, invert, expected):
+    """Test that columns are returned when a callable is passed."""
+
+    def columns(x):
+        return "-" in x.name or "_" in x.name
+
+    df = dataframe.select_columns(search_column_names=columns, invert=invert)
+
+    assert_frame_equal(df, dataframe[expected])

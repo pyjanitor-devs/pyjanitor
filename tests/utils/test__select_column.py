@@ -139,7 +139,7 @@ def test_regex_presence(df):
 
 class Test_Columns_not_List_Various_Inputs:
     @pytest.fixture(autouse=True)
-    def _base_data(self, df1):
+    def __init__(self, df1):
         self.df = df1
 
     def test_strings(self):
@@ -245,7 +245,7 @@ class Test_Columns_not_List_Various_Inputs:
 
 class Test_Columns_in_List_Various_Inputs:
     @pytest.fixture(autouse=True)
-    def _base_data(self, df1):
+    def __init__(self, df1):
         self.df = df1
 
     def test_list_various(self):

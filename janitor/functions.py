@@ -3094,6 +3094,8 @@ def select_columns(
     :returns: A pandas DataFrame with the specified columns selected.
     :raises NameError: if one or more of the specified column names or
         search strings are not found in DataFrame columns.
+
+    .. # noqa: DAR402
     """
 
     full_column_list = _select_columns(df, search_column_names)

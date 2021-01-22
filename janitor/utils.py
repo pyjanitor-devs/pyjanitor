@@ -1807,18 +1807,24 @@ def __columns_not_a_list(
         # whatever the case may be,
         # the returned values should be a sequence of booleans,
         # with at least one True.
+
         filtered_column = [
             columns_to_select(column) for _, column in df.items()
         ]
 
-        checks = all((isinstance(column, bool) for column in filtered_column))
+        # returns numpy bool, which does not work the same way as python's bool
+        # as such, cant use isinstance. pandas type check function helps out
+        checks = [pd.api.types.is_bool(column) for column in filtered_column]
 
-        if not checks:
+        if not all(checks):
             raise ValueError(
                 "The callable provided must return a sequence of booleans."
             )
 
-        checks = any((column is True for column in filtered_column))
+        # cant use `is` here, since it may be a numpy bool
+        checks = any(
+            (column == True for column in filtered_column)  # noqa: E712
+        )
 
         if checks is False:
             raise ValueError(

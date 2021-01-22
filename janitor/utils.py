@@ -1717,7 +1717,7 @@ def _select_columns(
         outcome = __columns_not_a_list(df, entry)
         all_columns.extend(outcome)
 
-    if not pd.Series(all_columns).is_unique:
+    if not pd.Series(all_columns).is_unique:  # remove duplicate column names
         return pd.unique(all_columns)
 
     return all_columns
@@ -1773,7 +1773,7 @@ def __columns_not_a_list(
         if not step_check:
             raise ValueError(
                 """
-                The stop value for the slice
+                The step value for the slice
                 must either be an integer or `None`.
                 """
             )
@@ -1789,11 +1789,11 @@ def __columns_not_a_list(
         if not stop_check:
             raise ValueError(
                 """
-                The start value for the slice must either be `None`
+                The stop value for the slice must either be `None`
                 or exist in the dataframe's columns.
                 """
             )
-        filtered_column = df.columns.slice_locs(start=start, end=stop,)
+        filtered_column = df.columns.slice_locs(start=start, end=stop)
         # slice_locs fails when step has a value
         # so this extra step is necessary to get the correct output
         start, stop = filtered_column
@@ -1803,24 +1803,24 @@ def __columns_not_a_list(
         # the function will be applied per series.
         # this allows filtration based on the contents of the series
         # or based on the name of the series,
-        # which happens to be a column name as well
+        # which happens to be a column name as well.
         # whatever the case may be,
-        # the returned values must be a sequence of booleans,
+        # the returned values should be a sequence of booleans,
         # with at least one True.
         filtered_column = [
             columns_to_select(column) for _, column in df.items()
         ]
 
-        checks = any(
-            (isinstance(column, pd.Series) for column in filtered_column)
-        )
+        checks = all((isinstance(column, bool) for column in filtered_column))
 
-        if checks:
+        if not checks:
             raise ValueError(
                 "The callable provided must return a sequence of booleans."
             )
 
-        if not any(filtered_column):
+        checks = any((column is True for column in filtered_column))
+
+        if checks is False:
             raise ValueError(
                 "No results were returned for the callable provided."
             )

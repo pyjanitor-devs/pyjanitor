@@ -21,6 +21,7 @@ dependencies:
 - lxml
 - make
 - missingno
+- multipledispatch
 - mypy
 - natsort
 - nbsphinx

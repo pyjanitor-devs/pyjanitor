@@ -329,11 +329,16 @@ def check_column(
     df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
 ):
     """
-    One-liner syntactic sugar for checking the presence or absence of a column.
+    One-liner syntactic sugar for checking the presence or absence of (a) column(s).
 
     Should be used like this::
 
         check(df, ['a', 'b'], present=True)
+
+    This will check whether columns "a" and "b" are present in df's columns.
+
+    One can also guarantee that "a" and "b" are not present
+    by switching to ``present = False``.
 
     :param df: The name of the variable.
     :param column_names: A list of column names we want to check to see if
@@ -344,7 +349,7 @@ def check_column(
     :raises ValueError: if data is not the expected type.
     """
     for column_name in column_names:
-        if present and column_name not in df.columns:
+        if present and column_name not in df.columns:  # skipcq: PYL-R1720
             raise ValueError(
                 f"{column_name} not present in dataframe columns!"
             )

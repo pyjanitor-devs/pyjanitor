@@ -386,7 +386,7 @@ def skiperror(
     f: Callable, return_x: bool = False, return_val=np.nan
 ) -> Callable:
     """
-    Decorator for escaping errors in a function
+    Decorator for escaping any error in a function.
 
     Should be used like this::
 
@@ -410,7 +410,7 @@ def skiperror(
     def _wrapped(x, *args, **kwargs):
         try:
             return f(x, *args, **kwargs)
-        except Exception:
+        except Exception:  # skipcq: PYL-W0703
             if return_x:
                 return x
             return return_val

@@ -794,7 +794,7 @@ def _label_encode(df, column_names):
 
 
 @dispatch(pd.DataFrame, str)
-def _label_encode(df, column_names):
+def _label_encode(df, column_names):  # noqa: F811
     le = LabelEncoder()
     check_column(df, column_names=column_names, present=True)
     df[f"{column_names}_enc"] = le.fit_transform(df[column_names])

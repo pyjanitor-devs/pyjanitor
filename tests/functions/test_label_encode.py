@@ -1,8 +1,6 @@
 import pandas as pd
 import pytest
 
-from janitor.errors import JanitorError
-
 
 @pytest.mark.functions
 def test_single_column_label_encode():

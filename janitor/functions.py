@@ -1,5 +1,6 @@
 """ General purpose data cleaning functions. """
 
+from multipledispatch import dispatch
 import collections
 import datetime as dt
 import inspect
@@ -778,27 +779,25 @@ def label_encode(
     :param column_names: A column name or an iterable (list
         or tuple) of column names.
     :returns: A pandas DataFrame.
-    :raises JanitorError: if a column specified within ``column_names``
-        is not found in the DataFrame.
-    :raises JanitorError: if ``column_names`` is not hashable
-        nor iterable.
     """
+    df = _label_encode(df, column_names)
+    return df
+
+
+@dispatch(pd.DataFrame, (list, tuple))
+def _label_encode(df, column_names):
     le = LabelEncoder()
-    if isinstance(column_names, list) or isinstance(column_names, tuple):
-        for col in column_names:
-            if col not in df.columns:
-                raise JanitorError(f"{col} missing from DataFrame columns!")
-            df[f"{col}_enc"] = le.fit_transform(df[col])
-    elif isinstance(column_names, Hashable):
-        if column_names not in df.columns:
-            raise JanitorError(
-                f"{column_names} missing from DataFrame columns!"
-            )
-        df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
-    else:
-        raise JanitorError(
-            "kwarg `column_names` must be hashable or iterable!"
-        )
+    check_column(df, column_names=column_names, present=True)
+    for col in column_names:
+        df[f"{col}_enc"] = le.fit_transform(df[col])
+    return df
+
+
+@dispatch(pd.DataFrame, str)
+def _label_encode(df, column_names):
+    le = LabelEncoder()
+    check_column(df, column_names=column_names, present=True)
+    df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     return df
 
 

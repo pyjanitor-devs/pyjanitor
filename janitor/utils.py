@@ -6,7 +6,16 @@ import sys
 import warnings
 from collections import namedtuple
 from itertools import chain, product
-from typing import Callable, Dict, List, Optional, Pattern, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -319,7 +328,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
 
 
 def check_column(
-    df: pd.DataFrame, old_column_names: List, present: bool = True
+    df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
 ):
     """
     One-liner syntactic sugar for checking the presence or absence of a column.
@@ -329,14 +338,14 @@ def check_column(
         check(df, ['a', 'b'], present=True)
 
     :param df: The name of the variable.
-    :param old_column_names: A list of column names we want to check to see if
+    :param column_names: A list of column names we want to check to see if
         present (or absent) in df.
-    :param present: If True (default), checks to see if all of old_column_names
-        are in df.columns. If False, checks that none of old_column_names are
+    :param present: If True (default), checks to see if all of column_names
+        are in df.columns. If False, checks that none of column_names are
         in df.columns.
     :raises ValueError: if data is not the expected type.
     """
-    for column_name in old_column_names:
+    for column_name in column_names:
         if present:
             if column_name not in df.columns:
                 raise ValueError(
@@ -1655,8 +1664,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
             if categories_order_tuple.order is None:
                 categories_dtypes[column_name] = CategoricalDtype(
-                    categories=categories_order_tuple.categories,
-                    ordered=False,
+                    categories=categories_order_tuple.categories, ordered=False
                 )
             elif categories_order_tuple.order == "sort":
                 categories_dtypes[column_name] = CategoricalDtype(
@@ -1665,7 +1673,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 )
             else:  # appearance
                 categories_dtypes[column_name] = CategoricalDtype(
-                    categories=categories_order_tuple.categories, ordered=True,
+                    categories=categories_order_tuple.categories, ordered=True
                 )
 
     df = df.astype(categories_dtypes)

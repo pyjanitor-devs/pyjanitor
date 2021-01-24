@@ -14,7 +14,7 @@ def test_single_column_label_encode():
 
 @pytest.mark.functions
 def test_single_column_fail_label_encode():
-    with pytest.raises(JanitorError):
+    with pytest.raises(ValueError):
         pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
         ).label_encode(
@@ -37,5 +37,5 @@ def test_multicolumn_label_encode():
 
 @pytest.mark.functions
 def test_label_encode_invalid_input(dataframe):
-    with pytest.raises(JanitorError):
+    with pytest.raises(NotImplementedError):
         dataframe.label_encode(1)

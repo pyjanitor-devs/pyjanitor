@@ -329,7 +329,7 @@ def check_column(
     df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
 ):
     """
-    One-liner syntactic sugar for checking the presence or absence columns.
+    One-liner syntactic sugar for checking the presence or absence of columns.
 
     Should be used like this::
 

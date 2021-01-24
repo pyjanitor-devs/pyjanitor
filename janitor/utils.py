@@ -348,7 +348,7 @@ def check_column(
             raise ValueError(
                 f"{column_name} not present in dataframe columns!"
             )
-        if column_name in df.columns:
+        elif not present and column_name in df.columns:
             raise ValueError(
                 f"{column_name} already present in dataframe columns!"
             )

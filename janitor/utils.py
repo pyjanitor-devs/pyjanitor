@@ -108,8 +108,7 @@ def _currency_column_to_numeric(x, cast_non_numeric=None) -> str:
             )
             return cast_non_numeric[x]
         return "".join(i for i in x if i in acceptable_currency_characters)
-    else:
-        return "".join(i for i in x if i in acceptable_currency_characters)
+    return "".join(i for i in x if i in acceptable_currency_characters)
 
 
 def _replace_empty_string_with_none(column_series):

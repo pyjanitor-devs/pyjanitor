@@ -107,8 +107,7 @@ def _currency_column_to_numeric(x, cast_non_numeric=None) -> str:
                 [int, float],
             )
             return cast_non_numeric[x]
-        else:
-            return "".join(i for i in x if i in acceptable_currency_characters)
+        return "".join(i for i in x if i in acceptable_currency_characters)
     else:
         return "".join(i for i in x if i in acceptable_currency_characters)
 
@@ -379,8 +378,7 @@ def skipna(f: Callable) -> Callable:
     def _wrapped(x, *args, **kwargs):
         if (type(x) is float and np.isnan(x)) or x is None:
             return np.nan
-        else:
-            return f(x, *args, **kwargs)
+        return f(x, *args, **kwargs)
 
     return _wrapped
 

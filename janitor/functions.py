@@ -102,7 +102,7 @@ def unionize_dataframe_categories(
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
         raise TypeError("Inputs must all be dataframes.")
 
-    elif column_names is None:
+    if column_names is None:
         # Find all columns across all dataframes that are categorical
 
         column_names = set()
@@ -307,7 +307,7 @@ def clean_names(
     original_column_names = list(df.columns)
 
     if enforce_string:
-        df = df.rename(columns=lambda x: str(x))
+        df = df.rename(columns=str)
 
     df = df.rename(columns=lambda x: _change_case(x, case_type))
 
@@ -1132,7 +1132,7 @@ def fill_empty(
     :raises JanitorError: if a column specified within ``column_names``
         is not found in the DataFrame.
     """
-    if isinstance(column_names, list) or isinstance(column_names, tuple):
+    if isinstance(column_names, (list, tuple)):
         for col in column_names:
             if col not in df.columns:
                 raise JanitorError(f"{col} missing from DataFrame columns!")
@@ -1187,8 +1187,7 @@ def expand_column(
     if concat:
         df = df.join(expanded_df)
         return df
-    else:
-        return expanded_df
+    return expanded_df
 
 
 @pf.register_dataframe_method
@@ -1455,8 +1454,7 @@ def filter_string(
     criteria = df[column_name].str.contains(search_string)
     if complement:
         return df[~criteria]
-    else:
-        return df[criteria]
+    return df[criteria]
 
 
 @pf.register_dataframe_method
@@ -1517,8 +1515,7 @@ def filter_on(
     """
     if complement:
         return df.query("not " + criteria)
-    else:
-        return df.query(criteria)
+    return df.query(criteria)
 
 
 @pf.register_dataframe_method
@@ -1788,8 +1785,7 @@ def filter_column_isin(
 
     if complement:
         return df[~criteria]
-    else:
-        return df[criteria]
+    return df[criteria]
 
 
 @pf.register_dataframe_method

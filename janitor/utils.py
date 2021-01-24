@@ -32,16 +32,16 @@ def check(varname: str, value, expected_types: list):
     :param expected_types: The types we expect the item to be.
     :raises TypeError: if data is not the expected type.
     """
-    is_expected_type = False
+    is_expected_type: bool = False
     for t in expected_types:
         if t is callable:
             is_expected_type = t(value)
         else:
             is_expected_type = isinstance(value, t)
-        if is_expected_type is True:
+        if is_expected_type:
             break
 
-    if is_expected_type is False:
+    if not is_expected_type:
         raise TypeError(
             "{varname} should be one of {expected_types}".format(
                 varname=varname, expected_types=expected_types
@@ -1685,18 +1685,19 @@ def _select_columns(
 ) -> Union[list, pd.Index]:
     """
     Helper function to select columns from a dataframe.
-    The aim is to make this function a base for the various
-    functions in the janitor package that require column selection,
-    while offering a lot of options/flexibility. It is inspired
-    by R's dplyr's select function.
+    The aim is to make this function a base
+    for the various functions in the janitor package
+    that require column selection,
+    while offering a lot of options/flexibility.
+    It is inspired by R's dplyr's select function.
 
     It accepts a string, slice, callable, regex,
-    a shell-style glob string (e.g., `*_thing_*`), or a list of
-    the previously mentioned options.
+    a shell-style glob string (e.g., `*_thing_*`),
+    or a list of the previously mentioned options.
 
-    If it is a callable, it is applied to every series in the dataframe
-    and each series must return either True or False, resulting in a
-    sequence of booleans.
+    If it is a callable, it is applied to every series in the dataframe;
+    each series must return either True or False,
+    resulting in a sequence of booleans.
 
     Data types are checked in this function as well.
 
@@ -1707,23 +1708,23 @@ def _select_columns(
         check(
             "column label", columns_to_select, [str, slice, Pattern, callable]
         )
-        return __columns_not_a_list(df, columns_to_select)
+        return _columns_not_a_list(df, columns_to_select)
 
     for label in columns_to_select:
         check("column label", label, [str, slice, Pattern, callable])
 
     all_columns = []
-    for entry in columns_to_select:
-        outcome = __columns_not_a_list(df, entry)
-        all_columns.extend(outcome)
 
-    if not pd.Series(all_columns).is_unique:  # remove duplicate column names
-        return pd.unique(all_columns)
+    for entry in columns_to_select:
+        outcome = [
+            c for c in _columns_not_a_list(df, entry) if c not in all_columns
+        ]
+        all_columns.extend(outcome)
 
     return all_columns
 
 
-def __columns_not_a_list(
+def _columns_not_a_list(
     df: pd.DataFrame, columns_to_select: Union[str, slice, Pattern, callable],
 ) -> Union[list, pd.Index]:
     """
@@ -1738,9 +1739,8 @@ def __columns_not_a_list(
         # takes care of the shell_like glob strings
         if "*" in columns_to_select:
             filtered_column = fnmatch.filter(df.columns, columns_to_select)
-        else:
-            if columns_to_select in df.columns:
-                filtered_column = [columns_to_select]
+        elif columns_to_select in df.columns:
+            filtered_column = [columns_to_select]
         if not filtered_column:
             raise NameError(f"No match was returned for '{columns_to_select}'")
 
@@ -1826,7 +1826,7 @@ def __columns_not_a_list(
             (column == True for column in filtered_column)  # noqa: E712
         )
 
-        if checks is False:
+        if not checks:
             raise ValueError(
                 "No results were returned for the callable provided."
             )

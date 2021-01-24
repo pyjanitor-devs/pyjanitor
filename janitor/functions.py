@@ -1529,7 +1529,7 @@ def filter_date(
     months: Optional[List] = None,
     days: Optional[List] = None,
     column_date_options: Optional[Dict] = None,
-    format: Optional[str] = None,
+    format: Optional[str] = None,  # skipcq: PYL-W0622
 ) -> pd.DataFrame:
     """Filter a date-based column based on certain criteria.
 

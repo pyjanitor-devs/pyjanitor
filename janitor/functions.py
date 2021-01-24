@@ -1722,12 +1722,11 @@ def filter_date(
     if days:
         _filter_list.append(df.loc[:, column_name].dt.day.isin(days))
 
-    if start_date and end_date:
-        if start_date > end_date:
-            warnings.warn(
-                f"Your start date of {start_date} is after your end date of "
-                f"{end_date}. Is this intended?"
-            )
+    if start_date and end_date and start_date > end_date:
+        warnings.warn(
+            f"Your start date of {start_date} is after your end date of "
+            f"{end_date}. Is this intended?"
+        )
 
     return df.loc[_date_filter_conditions(_filter_list), :]
 

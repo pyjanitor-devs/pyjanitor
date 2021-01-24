@@ -344,11 +344,10 @@ def check_column(
     :raises ValueError: if data is not the expected type.
     """
     for column_name in column_names:
-        if present:
-            if column_name not in df.columns:
-                raise ValueError(
-                    f"{column_name} not present in dataframe columns!"
-                )
+        if present and column_name not in df.columns:
+            raise ValueError(
+                f"{column_name} not present in dataframe columns!"
+            )
         else:  # Tests for exclusion
             if column_name in df.columns:
                 raise ValueError(
@@ -445,13 +444,11 @@ def _check_instance(entry: Dict):
                     "expand_grid works only on 1D and 2D structures."
                 )
 
-        if isinstance(value, (pd.DataFrame, pd.Series)):
-            if value.empty:
-                raise ValueError("passed DataFrame cannot be empty")
+        if isinstance(value, (pd.DataFrame, pd.Series)) and value.empty:
+            raise ValueError("passed DataFrame cannot be empty")
 
-        if isinstance(value, (list, tuple, set, dict)):
-            if not value:
-                raise ValueError("passed data cannot be empty")
+        if isinstance(value, (list, tuple, set, dict)) and not value:
+            raise ValueError("passed data cannot be empty")
 
     entry = {
         # If it is a scalar value, then wrap in a list
@@ -637,9 +634,11 @@ def _computations_complete(
             for _, value in group.items():
                 group_value = common.apply_if_callable(value, df)
                 # safe assumption to get unique values
-                if isinstance(group_value, pd.Series):
-                    if not group_value.is_unique:
-                        group_value = group_value.unique()
+                if (
+                    isinstance(group_value, pd.Series)
+                    and not group_value.is_unique
+                ):
+                    group_value = group_value.unique()
                 else:
                     group_value = set(group_value)
                 group_collection.append(group_value)
@@ -721,21 +720,17 @@ def _data_checks_pivot_longer(
                     """
             )
 
-        if ".value" in names_to:
-            if names_to.count(".value") > 1:
-                raise ValueError(
-                    "There can be only one `.value` in `names_to`."
-                )
-    if len(names_to) == 1:
-        # names_sep creates more than one column
-        # whereas regex with names_pattern can be limited to one column
-        if names_sep is not None:
-            raise ValueError(
-                """
+        if ".value" in names_to and names_to.count(".value") > 1:
+            raise ValueError("There can be only one `.value` in `names_to`.")
+    # names_sep creates more than one column
+    # whereas regex with names_pattern can be limited to one column
+    if len(names_to) == 1 and names_sep is not None:
+        raise ValueError(
+            """
                     For a single `names_to` value,
                     `names_sep` is not required.
                     """
-            )
+        )
     if names_pattern is not None:
         check("names_pattern", names_pattern, [str, Pattern, List, Tuple])
 
@@ -771,59 +766,61 @@ def _data_checks_pivot_longer(
 
     check("values_to", values_to, [str])
 
-    if values_to in df.columns:
-        if any(
-            (
-                ".value" not in names_to,
-                not isinstance(names_pattern, (list, tuple)),
-            )
-        ):
-            # copied from pandas' melt source code
-            # with a minor tweak
-            raise ValueError(
-                """
+    if values_to in df.columns and any(
+        (
+            ".value" not in names_to,
+            not isinstance(names_pattern, (list, tuple)),
+        )
+    ):
+        # copied from pandas' melt source code
+        # with a minor tweak
+        raise ValueError(
+            """
                 This dataframe has a column name that matches the
                 'values_to' column name of the resulting Dataframe.
                 Kindly set the 'values_to' parameter to a unique name.
                 """
-            )
+        )
 
     if column_level is not None:
         check("column_level", column_level, [int, str])
 
-    if any((names_sep, names_pattern)):
-        if isinstance(df.columns, pd.MultiIndex):
-            raise ValueError(
-                """
+    if any((names_sep, names_pattern)) and isinstance(
+        df.columns, pd.MultiIndex
+    ):
+        raise ValueError(
+            """
                 Unpivoting a MultiIndex column dataframe when
                 `names_sep` or `names_pattern` is supplied is
                 not supported.
                 """
-            )
+        )
 
     if all((names_sep is None, names_pattern is None)):
         # adapted from pandas' melt source code
-        if index is not None:
-            if isinstance(df.columns, pd.MultiIndex) and not isinstance(
-                index, list
-            ):
-                raise ValueError(
-                    """
+        if (
+            index is not None
+            and isinstance(df.columns, pd.MultiIndex)
+            and not isinstance(index, list)
+        ):
+            raise ValueError(
+                """
                     index must be a list of tuples
                     when columns are a MultiIndex.
                     """
-                )
+            )
 
-        if column_names is not None:
-            if isinstance(df.columns, pd.MultiIndex) and not isinstance(
-                column_names, list
-            ):
-                raise ValueError(
-                    """
+        if (
+            column_names is not None
+            and isinstance(df.columns, pd.MultiIndex)
+            and not isinstance(column_names, list)
+        ):
+            raise ValueError(
+                """
                     column_names must be a list of tuples
                     when columns are a MultiIndex.
                     """
-                )
+            )
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -1062,18 +1059,17 @@ def _pivot_longer_extractions(
     category_dtypes = None
     category_keys = None
     reindex_columns = None
-    if not dot_value:
-        if index:
-            # more efficient to do this, than having to
-            # set the index and resetting.
-            # This puts the index(or indices) into the first
-            # column and set the remaining columns to empty string
-            # on the same row(s). When melting, pd.melt will
-            # gracefully handle the empty cells and replicate the
-            # `index` values accordingly.
-            positions = df.columns.get_indexer(index)
-            mapping.iloc[positions, 0] = index
-            mapping.iloc[positions, 1:] = ""
+    if not dot_value and index:
+        # more efficient to do this, than having to
+        # set the index and resetting.
+        # This puts the index(or indices) into the first
+        # column and set the remaining columns to empty string
+        # on the same row(s). When melting, pd.melt will
+        # gracefully handle the empty cells and replicate the
+        # `index` values accordingly.
+        positions = df.columns.get_indexer(index)
+        mapping.iloc[positions, 0] = index
+        mapping.iloc[positions, 1:] = ""
 
     else:
         # this gets the complete pairings of all labels in `mapping`
@@ -1205,13 +1201,16 @@ def _computations_pivot_longer(
     if column_names is not None:
         check_column(df, column_names, present=True)
 
-    if (index is None) and column_names:
-        if len(df.columns) > len(column_names):
-            index = [
-                column_name
-                for column_name in df
-                if column_name not in column_names
-            ]
+    if (
+        (index is None)
+        and column_names
+        and len(df.columns) > len(column_names)
+    ):
+        index = [
+            column_name
+            for column_name in df
+            if column_name not in column_names
+        ]
 
     df_index = df.index
 
@@ -1379,18 +1378,17 @@ def _data_checks_pivot_wider(
     if names_sep is not None:
         check("names_sep", names_sep, [str])
 
-    if aggfunc is not None:
-        # cant apply the `check` function here
-        # because of the callable type
-        if not any(
-            (isinstance(aggfunc, (str, list, dict)), callable(aggfunc))
-        ):
-            raise TypeError(
-                """
-                aggfunc should be either a function,
-                string, list, or a dictionary.
-                """
-            )
+    # cant apply the `check` function here
+    # because of the callable type
+    if aggfunc is not None and not any(
+        (isinstance(aggfunc, (str, list, dict)), callable(aggfunc))
+    ):
+        raise TypeError(
+            """
+            aggfunc should be either a function,
+            string, list, or a dictionary.
+            """
+        )
 
     if fill_value is not None:
         check("fill_value", fill_value, [int, float, str])
@@ -1518,12 +1516,14 @@ def _computations_pivot_wider(
             df = df.droplevel("aggfunc", axis="columns")
 
     new_order_level = None
-    if df.columns.nlevels != len(names_from):
-        if names_from_position == "first":
-            new_order_level = pd.Index(names_from).union(
-                df.columns.names, sort=False
-            )
-            df = df.reorder_levels(order=new_order_level, axis="columns")
+    if (
+        df.columns.nlevels != len(names_from)
+        and names_from_position == "first"
+    ):
+        new_order_level = pd.Index(names_from).union(
+            df.columns.names, sort=False
+        )
+        df = df.reorder_levels(order=new_order_level, axis="columns")
 
     if names_sort:
         df = df.sort_index(axis="columns", level=names_from)

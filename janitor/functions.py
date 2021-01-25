@@ -1141,7 +1141,7 @@ def _fill_empty(df, column_names, value=None):
 
 
 @dispatch(pd.DataFrame, str)
-def _fill_empty(df, column_names, value=None):
+def _fill_empty(df, column_names, value=None):  # noqa: F811
     fill_mapping = {column_names: value}
     return df.fillna(value=fill_mapping)
 

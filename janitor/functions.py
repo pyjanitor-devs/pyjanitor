@@ -1129,22 +1129,21 @@ def fill_empty(
         those columns will all be filled with the same value.
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `Nan` values filled.
-    :raises JanitorError: if a column specified within ``column_names``
-        is not found in the DataFrame.
     """
-    if isinstance(column_names, (list, tuple)):
-        for col in column_names:
-            if col not in df.columns:
-                raise JanitorError(f"{col} missing from DataFrame columns!")
-            df[col] = df[col].fillna(value)
-    else:
-        if column_names not in df.columns:
-            raise JanitorError(
-                f"{column_names} missing from DataFrame columns!"
-            )
-        df[column_names] = df[column_names].fillna(value)
+    check_column(df, column_names)
+    return _fill_empty(df, column_names, value=value)
 
-    return df
+
+@dispatch(pd.DataFrame, (list, tuple))
+def _fill_empty(df, column_names, value=None):
+    fill_mapping = {c: value for c in column_names}
+    return df.fillna(value=fill_mapping)
+
+
+@dispatch(pd.DataFrame, str)
+def _fill_empty(df, column_names, value=None):
+    fill_mapping = {column_names: value}
+    return df.fillna(value=fill_mapping)
 
 
 @pf.register_dataframe_method

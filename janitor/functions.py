@@ -1136,12 +1136,14 @@ def fill_empty(
 
 @dispatch(pd.DataFrame, (list, tuple))
 def _fill_empty(df, column_names, value=None):
+    """Fill empty function for the case that column_names is list or tuple."""
     fill_mapping = {c: value for c in column_names}
     return df.fillna(value=fill_mapping)
 
 
 @dispatch(pd.DataFrame, str)
 def _fill_empty(df, column_names, value=None):  # noqa: F811
+    """Fill empty function for the case that column_names is a string."""
     fill_mapping = {column_names: value}
     return df.fillna(value=fill_mapping)
 

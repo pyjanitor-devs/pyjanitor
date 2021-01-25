@@ -1355,10 +1355,6 @@ def deconcatenate_column(
             df[column_name].to_list(), columns=new_column_names, index=df.index
         )
 
-    if preserve_position:
-        # Keep a copy of the original dataframe
-        df_original = df.copy()
-
     if new_column_names is None and autoname is None:
         raise ValueError(
             "One of `new_column_names` or `autoname` must be supplied."
@@ -1379,6 +1375,7 @@ def deconcatenate_column(
     df = pd.concat([df, df_deconcat], axis=1)
 
     if preserve_position:
+        df_original = df.copy()
         cols = list(df_original.columns)
         index_original = cols.index(column_name)
 

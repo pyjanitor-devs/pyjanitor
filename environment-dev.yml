@@ -21,6 +21,7 @@ dependencies:
 - lxml
 - make
 - missingno
+- multipledispatch
 - mypy
 - natsort
 - nbsphinx
@@ -37,7 +38,6 @@ dependencies:
 - pylint
 - pyspark
 - pytest
-- pytest-azurepipelines
 - pytest-cov
 - python-language-server
 - rdkit

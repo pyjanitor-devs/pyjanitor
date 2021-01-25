@@ -1,6 +1,5 @@
 """ General purpose data cleaning functions. """
 
-from multipledispatch import dispatch
 import collections
 import datetime as dt
 import inspect
@@ -31,6 +30,8 @@ from pandas.api.types import union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
+
+from multipledispatch import dispatch
 
 from .errors import JanitorError
 from .utils import (

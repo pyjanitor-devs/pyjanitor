@@ -50,13 +50,11 @@ def df1():
 def test_type(df):
     """Raise TypeError if `columns_to_select` is the wrong type."""
     with pytest.raises(TypeError):
-        _select_columns(df, 2.5)
+        _select_columns(2.5, df)
     with pytest.raises(TypeError):
-        _select_columns(df, 1)
+        _select_columns(1, df)
     with pytest.raises(TypeError):
-        _select_columns(df, ("id", "M_start_date_1"))
-    with pytest.raises(TypeError):
-        _select_columns(df, [3, "id"])
+        _select_columns([3, "id"], df)
 
 
 def test_strings(df):
@@ -65,9 +63,9 @@ def test_strings(df):
     and does not exist in the dataframe's columns.
     """
     with pytest.raises(NameError):
-        _select_columns(df, "word")
+        _select_columns("word", df)
     with pytest.raises(NameError):
-        _select_columns(df, "*starter")
+        _select_columns("*starter", df)
 
 
 def test_slice_dtypes(df):
@@ -77,11 +75,11 @@ def test_slice_dtypes(df):
     or the step value is not an integer.
     """
     with pytest.raises(ValueError):
-        _select_columns(df, slice(1, "M_end_date_2"))
+        _select_columns(slice(1, "M_end_date_2"), df)
     with pytest.raises(ValueError):
-        _select_columns(df, slice("id", 2))
+        _select_columns(slice("id", 2), df)
     with pytest.raises(ValueError):
-        _select_columns(df, slice("id", "M_end_date_2", "3"))
+        _select_columns(slice("id", "M_end_date_2", "3"), df)
 
 
 def test_slice_presence(df):
@@ -91,9 +89,9 @@ def test_slice_presence(df):
     in the dataframe.
     """
     with pytest.raises(ValueError):
-        _select_columns(df, slice("Id", "M_start_date_1"))
+        _select_columns(slice("Id", "M_start_date_1"), df)
     with pytest.raises(ValueError):
-        _select_columns(df, slice("id", "M_end_date"))
+        _select_columns(slice("id", "M_end_date"), df)
 
 
 def test_callable(df):
@@ -103,7 +101,7 @@ def test_callable(df):
     that makes the callable unapplicable.
     """
     with pytest.raises(TypeError):
-        _select_columns(df, object)
+        _select_columns(object, df)
 
 
 def test_callable_returns_Series(df):
@@ -112,7 +110,7 @@ def test_callable_returns_Series(df):
     callable, and returns a Series.
     """
     with pytest.raises(ValueError):
-        _select_columns(df, lambda x: x + 1)
+        _select_columns(lambda x: x + 1, df)
 
 
 def test_callable_no_match(df):
@@ -122,10 +120,10 @@ def test_callable_no_match(df):
     applied to each series in the dataframe.
     """
     with pytest.raises(ValueError):
-        _select_columns(df, pd.api.types.is_float_dtype)
+        _select_columns(pd.api.types.is_float_dtype, df)
 
     with pytest.raises(ValueError):
-        _select_columns(df, lambda x: "Date" in x.name)
+        _select_columns(lambda x: "Date" in x.name, df)
 
 
 def test_regex_presence(df):
@@ -134,153 +132,119 @@ def test_regex_presence(df):
     and none of the column names match.
     """
     with pytest.raises(ValueError):
-        _select_columns(df, re.compile(r"^\d+"))
+        _select_columns(re.compile(r"^\d+"), df)
 
 
-class Test_Columns_not_List_Various_Inputs:
-    @pytest.fixture(autouse=True)
-    def test_columns(self, df1):
-        self.df = df1
+def test_strings(df1):
+    assert _select_columns("id", df1) == ["id"]
+    assert _select_columns("*type*", df1) == [
+        "type",
+        "type1",
+        "type2",
+        "type3",
+    ]
 
-    def test_strings(self):
-        assert _select_columns(self.df, "id") == ["id"]
-        assert _select_columns(self.df, "*type*") == [
-            "type",
-            "type1",
-            "type2",
-            "type3",
-        ]
+def test_slice(df1):
+    assert_index_equal(
+        _select_columns(slice("code", "code2"), df1),
+        df1.loc[:, slice("code", "code2")].columns,
+    )
+    assert_index_equal(
+        _select_columns(slice("code2", None), df1),
+        df1.loc[:, slice("code2", None)].columns,
+    )
+    assert_index_equal(
+        _select_columns(slice(None, "code2"), df1),
+        df1.loc[:, slice(None, "code2")].columns,
+    )
+    assert_index_equal(
+        _select_columns(slice(None, None), df1), df1.columns
+    )
+    assert_index_equal(
+        _select_columns(slice(None, None, 2), df1),
+        df1.loc[:, slice(None, None, 2)].columns,
+    )
 
-    def test_slice(self):
-        assert_index_equal(
-            _select_columns(self.df, slice("code", "code2")),
-            self.df.loc[:, slice("code", "code2")].columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, slice("code2", None)),
-            self.df.loc[:, slice("code2", None)].columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, slice(None, "code2")),
-            self.df.loc[:, slice(None, "code2")].columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, slice(None, None)), self.df.columns
-        )
-        assert_index_equal(
-            _select_columns(self.df, slice(None, None, 2)),
-            self.df.loc[:, slice(None, None, 2)].columns,
-        )
+def test_callable_data_type(df1):
+    assert_index_equal(
+        _select_columns(pd.api.types.is_integer_dtype, df1),
+        df1.select_dtypes(int).columns,
+    )
+    assert_index_equal(
+        _select_columns(pd.api.types.is_float_dtype, df1),
+        df1.select_dtypes(float).columns,
+    )
+    assert_index_equal(
+        _select_columns(pd.api.types.is_numeric_dtype, df1),
+        df1.select_dtypes("number").columns,
+    )
+    assert_index_equal(
+        _select_columns(pd.api.types.is_categorical_dtype, df1),
+        df1.select_dtypes("category").columns,
+    )
+    assert_index_equal(
+        _select_columns(pd.api.types.is_datetime64_dtype, df1),
+        df1.select_dtypes(np.datetime64).columns,
+    )
+    assert_index_equal(
+        _select_columns(pd.api.types.is_object_dtype, df1),
+        df1.select_dtypes("object").columns,
+    )
 
-    def test_callable_data_type(self):
-        assert_index_equal(
-            _select_columns(self.df, pd.api.types.is_integer_dtype),
-            self.df.select_dtypes(int).columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, pd.api.types.is_float_dtype),
-            self.df.select_dtypes(float).columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, pd.api.types.is_numeric_dtype),
-            self.df.select_dtypes("number").columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, pd.api.types.is_categorical_dtype),
-            self.df.select_dtypes("category").columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, pd.api.types.is_datetime64_dtype),
-            self.df.select_dtypes(np.datetime64).columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, pd.api.types.is_object_dtype),
-            self.df.select_dtypes("object").columns,
-        )
+def test_callable_string_methods(df1):
+    assert_index_equal(
+        _select_columns(lambda x: x.name.startswith("type"), df1),
+        df1.filter(like="type").columns,
+    )
+    assert_index_equal(
+        _select_columns(
+            lambda x: x.name.endswith(("1", "2", "3")), df1
+        ),
+        df1.filter(regex=r"\d$").columns,
+    )
+    assert_index_equal(
+        _select_columns(lambda x: "d" in x.name, df1),
+        df1.filter(regex="d").columns,
+    )
+    assert_index_equal(
+        _select_columns(
+            
+            lambda x: x.name.startswith("code") and x.name.endswith("1"), df1
+        ),
+        df1.filter(regex=r"code.*1$").columns,
+    )
+    assert_index_equal(
+        _select_columns(
+            lambda x: x.name.startswith("code") or x.name.endswith("1"),df1
+        ),
+        df1.filter(regex=r"^code.*|.*1$").columns,
+    )
 
-    def test_callable_string_methods(self):
-        assert_index_equal(
-            _select_columns(self.df, lambda x: x.name.startswith("type")),
-            self.df.filter(like="type").columns,
-        )
-        assert_index_equal(
-            _select_columns(
-                self.df, lambda x: x.name.endswith(("1", "2", "3"))
-            ),
-            self.df.filter(regex=r"\d$").columns,
-        )
-        assert_index_equal(
-            _select_columns(self.df, lambda x: "d" in x.name),
-            self.df.filter(regex="d").columns,
-        )
-        assert_index_equal(
-            _select_columns(
-                self.df,
-                lambda x: x.name.startswith("code") and x.name.endswith("1"),
-            ),
-            self.df.filter(regex=r"code.*1$").columns,
-        )
-        assert_index_equal(
-            _select_columns(
-                self.df,
-                lambda x: x.name.startswith("code") or x.name.endswith("1"),
-            ),
-            self.df.filter(regex=r"^code.*|.*1$").columns,
-        )
+def test_callable_computations(df1):
+    assert_index_equal(
+        _select_columns(lambda x: x.isna().any(), df1),
+        df1.columns[df1.isna().any().array],
+    )
 
-    def test_callable_computations(self):
-        assert_index_equal(
-            _select_columns(self.df, lambda x: x.isna().any()),
-            self.df.columns[self.df.isna().any().array],
-        )
-
-    def test_regex(self):
-        assert _select_columns(self.df, re.compile(r"\d$")) == list(
-            self.df.filter(regex=r"\d$").columns
-        )
-        assert _select_columns(self.df, patterns(r"\d$")) == list(
-            self.df.filter(regex=r"\d$").columns
-        )
-
-
-class Test_Columns_in_List_Various_Inputs:
-    @pytest.fixture(autouse=True)
-    def test_columns_in_list(self, df1):
-        self.df = df1
-
-    def test_list_various(self):
-        assert _select_columns(self.df, ["id", "Name"]) == ["id", "Name"]
-        assert _select_columns(self.df, ["id", "code*"]) == list(
-            self.df.filter(regex="^id|^code").columns
-        )
-        assert_index_equal(
-            pd.Index(
-                _select_columns(
-                    self.df, ["id", "code*", slice("code", "code2")]
-                )
-            ),
-            self.df.filter(regex="^(id|code)").columns,
-        )
-
-
-df = pd.DataFrame(
-        {
-            "id": [0, 1],
-            "Name": ["ABC", "XYZ"],
-            "code": [1, 2],
-            "code1": [4, np.nan],
-            "code2": ["8", 5],
-            "type": ["S", "R"],
-            "type1": ["E", np.nan],
-            "type2": ["T", "U"],
-            "code3": pd.Series(["a", "b"], dtype="category"),
-            "type3": pd.to_datetime(
-                [np.datetime64("2018-01-01"), datetime.datetime(2018, 1, 1)]
-            ),
-        }
+def test_regex(df1):
+    assert _select_columns(re.compile(r"\d$"), df1) == list(
+        df1.filter(regex=r"\d$").columns
+    )
+    assert _select_columns(patterns(r"\d$"), df1) == list(
+        df1.filter(regex=r"\d$").columns
     )
 
 
-result = _select_columns(["id", "code*", slice("code", "code2"), lambda x: x.name.startswith("ty")], df)
-print(df, end="\n\n")
-print(result)
+def test_list_various(df1):
+    assert _select_columns(["id", "Name"], df1) == ["id", "Name"]
+    assert _select_columns(["id", "code*"], df1) == list(
+        df1.filter(regex="^id|^code").columns
+    )
+    assert_index_equal(
+        pd.Index(
+            _select_columns(
+                ["id", "code*", slice("code", "code2")], df1
+            )
+        ),
+        df1.filter(regex="^(id|code)").columns,
+    )

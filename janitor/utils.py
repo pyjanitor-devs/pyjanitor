@@ -1694,7 +1694,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 @functools.singledispatch
 def _select_columns(columns_to_select:str, df):
     filtered_columns = None
-    if "*" in columns_to_select:
+    if "*" in columns_to_select: # shell-style glob string (e.g., `*_thing_*`)
         filtered_columns = fnmatch.filter(df.columns, columns_to_select)
     elif columns_to_select in df.columns:
         filtered_columns = [columns_to_select]
@@ -1781,7 +1781,7 @@ def _(columns_to_select, df):
 
     # returns numpy bool, which does not work the same way as python's bool
     # as such, cant use isinstance. pandas type check function helps out
-    checks = [pd.api.types.is_bool(column) for column in filtered_columns]
+    checks = (pd.api.types.is_bool(column) for column in filtered_columns)
 
     if not all(checks):
         raise ValueError(
@@ -1820,9 +1820,7 @@ def _(columns_to_select, df):
 @_select_columns.register(list)
 def _(columns_to_select, df):
     filtered_columns = []
-    for label in columns_to_select:
-        check("column label", label, [str, slice, Pattern, callable])
-
+    
     for entry in columns_to_select:
         outcome = [
             c for c in _select_columns(entry, df) if c not in filtered_columns
@@ -1830,28 +1828,3 @@ def _(columns_to_select, df):
         filtered_columns.extend(outcome)
 
     return filtered_columns
-
-# def _select_columns(
-#     df: pd.DataFrame,
-#     columns_to_select: Union[str, slice, Pattern, callable, list],
-# ) -> Union[list, pd.Index]:
-#     """
-#     Helper function to select columns from a dataframe.
-#     The aim is to make this function a base
-#     for the various functions in the janitor package
-#     that require column selection,
-#     while offering a lot of options/flexibility.
-#     It is inspired by R's dplyr's select function.
-
-#     It accepts a string, slice, callable, regex,
-#     a shell-style glob string (e.g., `*_thing_*`),
-#     or a list of the previously mentioned options.
-
-#     If it is a callable, it is applied to every series in the dataframe;
-#     each series must return either True or False,
-#     resulting in a sequence of booleans.
-
-#     Data types are checked in this function as well.
-
-#     A list or pandas Index of columns present in the dataframe is returned.
-#     """

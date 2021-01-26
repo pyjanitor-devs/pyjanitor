@@ -23,6 +23,7 @@ from typing import (
 )
 
 import numpy as np
+from numpy.core.numeric import full
 import pandas as pd
 import pandas_flavor as pf
 from natsort import index_natsorted
@@ -3079,10 +3080,13 @@ def select_columns(
         df = pd.DataFrame(...).select_columns(['a', 'b', 'col_*'], invert=True)
 
     :param df: A pandas DataFrame.
-    :param search_column_names: A list of column names or search strings to be
-        used to select. Valid inputs include:
+    :param search_column_names: There are a couple of options available for column selection.
+        Valid inputs include:
         1) an exact column name to look for
         2) a shell-style glob string (e.g., `*_thing_*`)
+        3) a regular expression
+        4) a callable which is applicable to each Series in the dataframe
+        5) a list of all the aforementioned options.
     :param invert: Whether or not to invert the selection.
         This will result in selection of the complement of the columns
         provided.
@@ -3093,10 +3097,17 @@ def select_columns(
     .. # noqa: DAR402
     """
 
-    full_column_list = _select_columns(df, search_column_names)
-    return (
-        df.drop(columns=full_column_list) if invert else df[full_column_list]
-    )
+    check("search_column_names", search_column_names, [str, callable, Pattern, slice, list])
+    if isinstance(search_column_names, list):
+        for label in search_column_names:
+            check("column label", label, [str, slice, Pattern, callable])
+
+    full_column_list = _select_columns(search_column_names, df)
+
+    if invert:
+        return df.drop(columns = full_column_list)
+    return df.loc[:, full_column_list]
+
 
 
 @pf.register_dataframe_method

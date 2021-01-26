@@ -1382,7 +1382,9 @@ def deconcatenate_column(
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
 
-        df_new = df_new.select_columns(search_column_names=cols).drop(columns=column_name)
+        df_new = df_new.select_columns(search_column_names=cols).drop(
+            columns=column_name
+        )
 
     return df_new
 

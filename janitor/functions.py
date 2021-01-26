@@ -1372,7 +1372,7 @@ def deconcatenate_column(
         )
 
     df_deconcat.columns = new_column_names
-    df = pd.concat([df, df_deconcat], axis=1)
+    df_new = pd.concat([df, df_deconcat], axis=1)
 
     if preserve_position:
         df_original = df.copy()
@@ -1382,9 +1382,9 @@ def deconcatenate_column(
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
 
-        df = df[cols].drop(columns=column_name)
+        df_new = df_new.select_columns(search_column_names=cols).drop(columns=column_name)
 
-    return df
+    return df_new
 
 
 @pf.register_dataframe_method

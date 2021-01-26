@@ -1,5 +1,6 @@
 """ General purpose data cleaning functions. """
 
+from multipledispatch import dispatch
 import collections
 import datetime as dt
 import inspect
@@ -101,7 +102,7 @@ def unionize_dataframe_categories(
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
         raise TypeError("Inputs must all be dataframes.")
 
-    elif column_names is None:
+    if column_names is None:
         # Find all columns across all dataframes that are categorical
 
         column_names = set()
@@ -306,7 +307,7 @@ def clean_names(
     original_column_names = list(df.columns)
 
     if enforce_string:
-        df = df.rename(columns=lambda x: str(x))
+        df = df.rename(columns=str)
 
     df = df.rename(columns=lambda x: _change_case(x, case_type))
 
@@ -778,27 +779,25 @@ def label_encode(
     :param column_names: A column name or an iterable (list
         or tuple) of column names.
     :returns: A pandas DataFrame.
-    :raises JanitorError: if a column specified within ``column_names``
-        is not found in the DataFrame.
-    :raises JanitorError: if ``column_names`` is not hashable
-        nor iterable.
     """
+    df = _label_encode(df, column_names)
+    return df
+
+
+@dispatch(pd.DataFrame, (list, tuple))
+def _label_encode(df, column_names):
     le = LabelEncoder()
-    if isinstance(column_names, list) or isinstance(column_names, tuple):
-        for col in column_names:
-            if col not in df.columns:
-                raise JanitorError(f"{col} missing from DataFrame columns!")
-            df[f"{col}_enc"] = le.fit_transform(df[col])
-    elif isinstance(column_names, Hashable):
-        if column_names not in df.columns:
-            raise JanitorError(
-                f"{column_names} missing from DataFrame columns!"
-            )
-        df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
-    else:
-        raise JanitorError(
-            "kwarg `column_names` must be hashable or iterable!"
-        )
+    check_column(df, column_names=column_names, present=True)
+    for col in column_names:
+        df[f"{col}_enc"] = le.fit_transform(df[col])
+    return df
+
+
+@dispatch(pd.DataFrame, str)
+def _label_encode(df, column_names):  # noqa: F811
+    le = LabelEncoder()
+    check_column(df, column_names=column_names, present=True)
+    df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
     return df
 
 
@@ -1133,7 +1132,7 @@ def fill_empty(
     :raises JanitorError: if a column specified within ``column_names``
         is not found in the DataFrame.
     """
-    if isinstance(column_names, list) or isinstance(column_names, tuple):
+    if isinstance(column_names, (list, tuple)):
         for col in column_names:
             if col not in df.columns:
                 raise JanitorError(f"{col} missing from DataFrame columns!")
@@ -1188,8 +1187,7 @@ def expand_column(
     if concat:
         df = df.join(expanded_df)
         return df
-    else:
-        return expanded_df
+    return expanded_df
 
 
 @pf.register_dataframe_method
@@ -1456,8 +1454,7 @@ def filter_string(
     criteria = df[column_name].str.contains(search_string)
     if complement:
         return df[~criteria]
-    else:
-        return df[criteria]
+    return df[criteria]
 
 
 @pf.register_dataframe_method
@@ -1518,8 +1515,7 @@ def filter_on(
     """
     if complement:
         return df.query("not " + criteria)
-    else:
-        return df.query(criteria)
+    return df.query(criteria)
 
 
 @pf.register_dataframe_method
@@ -1533,7 +1529,7 @@ def filter_date(
     months: Optional[List] = None,
     days: Optional[List] = None,
     column_date_options: Optional[Dict] = None,
-    format: Optional[str] = None,
+    format: Optional[str] = None,  # skipcq: PYL-W0622
 ) -> pd.DataFrame:
     """Filter a date-based column based on certain criteria.
 
@@ -1726,12 +1722,11 @@ def filter_date(
     if days:
         _filter_list.append(df.loc[:, column_name].dt.day.isin(days))
 
-    if start_date and end_date:
-        if start_date > end_date:
-            warnings.warn(
-                f"Your start date of {start_date} is after your end date of "
-                f"{end_date}. Is this intended?"
-            )
+    if start_date and end_date and start_date > end_date:
+        warnings.warn(
+            f"Your start date of {start_date} is after your end date of "
+            f"{end_date}. Is this intended?"
+        )
 
     return df.loc[_date_filter_conditions(_filter_list), :]
 
@@ -1789,8 +1784,7 @@ def filter_column_isin(
 
     if complement:
         return df[~criteria]
-    else:
-        return df[criteria]
+    return df[criteria]
 
 
 @pf.register_dataframe_method

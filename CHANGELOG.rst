@@ -27,7 +27,8 @@ new version (on deck)
   dataframe.@samukweku
 - [ENH] Add ``aggfunc`` parameter to pivot_wider. @samukweku
 - [ENH] Modified the `check` function in utils to verify if a value is a callable. @samukweku
-- [ENH] Add a base `_select_column` function to allow for flexible column selection. @samukweku
+- [ENH] Add a base `_select_column` function, using ``functools.singledispatch``,
+  to allow for flexible columns selection. @samukweku
 
 
 

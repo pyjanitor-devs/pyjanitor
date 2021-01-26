@@ -7,6 +7,7 @@ import re
 import sys
 import warnings
 from collections import namedtuple
+from collections.abc import Callable as dispatch_callable
 from itertools import chain, product
 from typing import (
     Callable,
@@ -23,9 +24,6 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 from pandas.core import common
-
-from multipledispatch import dispatch
-from collections.abc import Callable as dispatch_callable
 
 from .errors import JanitorError
 
@@ -1692,15 +1690,16 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 
 @functools.singledispatch
-def _select_columns(columns_to_select:str, df):
+def _select_columns(columns_to_select: str, df):
     filtered_columns = None
-    if "*" in columns_to_select: # shell-style glob string (e.g., `*_thing_*`)
+    if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
         filtered_columns = fnmatch.filter(df.columns, columns_to_select)
     elif columns_to_select in df.columns:
         filtered_columns = [columns_to_select]
     if not filtered_columns:
         raise NameError(f"No match was returned for '{columns_to_select}'")
     return filtered_columns
+
 
 @_select_columns.register(slice)
 def _(columns_to_select, df):
@@ -1764,7 +1763,6 @@ def _(columns_to_select, df):
     return filtered_columns
 
 
-
 @_select_columns.register(dispatch_callable)
 def _(columns_to_select, df):
     # the function will be applied per series.
@@ -1775,12 +1773,12 @@ def _(columns_to_select, df):
     # the returned values should be a sequence of booleans,
     # with at least one True.
     filtered_columns = None
-    filtered_columns = [
-        columns_to_select(column) for _, column in df.items()
-    ]
+    filtered_columns = [columns_to_select(column) for _, column in df.items()]
 
-    # returns numpy bool, which does not work the same way as python's bool
-    # as such, cant use isinstance. pandas type check function helps out
+    # returns numpy bool,
+    # which does not work the same way as python's bool
+    # as such, cant use isinstance.
+    # pandas type check function helps out
     checks = (pd.api.types.is_bool(column) for column in filtered_columns)
 
     if not all(checks):
@@ -1789,20 +1787,18 @@ def _(columns_to_select, df):
         )
 
     # cant use `is` here, since it may be a numpy bool
-    checks = any(
-        (column == True for column in filtered_columns)  # noqa: E712
-    )
+    checks = any((column == True for column in filtered_columns))  # noqa: E712
 
     if not checks:
-        raise ValueError(
-            "No results were returned for the callable provided."
-        )
+        raise ValueError("No results were returned for the callable provided.")
 
     filtered_columns = df.columns[filtered_columns]
     return filtered_columns
 
+
 # hack to get it to recognize typing.Pattern
-#functools.singledispatch does not natively recognize types from the typing module
+# functools.singledispatch does not natively
+# recognize types from the typing module
 @_select_columns.register(type(re.compile(r"\d+")))
 def _(columns_to_select, df):
     filtered_columns = None
@@ -1817,10 +1813,11 @@ def _(columns_to_select, df):
 
     return filtered_columns
 
+
 @_select_columns.register(list)
 def _(columns_to_select, df):
     filtered_columns = []
-    
+
     for entry in columns_to_select:
         outcome = [
             c for c in _select_columns(entry, df) if c not in filtered_columns

@@ -57,7 +57,7 @@ def test_type(df):
         _select_columns([3, "id"], df)
 
 
-def test_strings(df):
+def test_strings_do_not_exist(df):
     """
     Raise NameError if `columns_to_select` is a string
     and does not exist in the dataframe's columns.
@@ -144,6 +144,7 @@ def test_strings(df1):
         "type3",
     ]
 
+
 def test_slice(df1):
     assert_index_equal(
         _select_columns(slice("code", "code2"), df1),
@@ -157,13 +158,12 @@ def test_slice(df1):
         _select_columns(slice(None, "code2"), df1),
         df1.loc[:, slice(None, "code2")].columns,
     )
-    assert_index_equal(
-        _select_columns(slice(None, None), df1), df1.columns
-    )
+    assert_index_equal(_select_columns(slice(None, None), df1), df1.columns)
     assert_index_equal(
         _select_columns(slice(None, None, 2), df1),
         df1.loc[:, slice(None, None, 2)].columns,
     )
+
 
 def test_callable_data_type(df1):
     assert_index_equal(
@@ -191,15 +191,14 @@ def test_callable_data_type(df1):
         df1.select_dtypes("object").columns,
     )
 
+
 def test_callable_string_methods(df1):
     assert_index_equal(
         _select_columns(lambda x: x.name.startswith("type"), df1),
         df1.filter(like="type").columns,
     )
     assert_index_equal(
-        _select_columns(
-            lambda x: x.name.endswith(("1", "2", "3")), df1
-        ),
+        _select_columns(lambda x: x.name.endswith(("1", "2", "3")), df1),
         df1.filter(regex=r"\d$").columns,
     )
     assert_index_equal(
@@ -208,23 +207,24 @@ def test_callable_string_methods(df1):
     )
     assert_index_equal(
         _select_columns(
-            
             lambda x: x.name.startswith("code") and x.name.endswith("1"), df1
         ),
         df1.filter(regex=r"code.*1$").columns,
     )
     assert_index_equal(
         _select_columns(
-            lambda x: x.name.startswith("code") or x.name.endswith("1"),df1
+            lambda x: x.name.startswith("code") or x.name.endswith("1"), df1
         ),
         df1.filter(regex=r"^code.*|.*1$").columns,
     )
+
 
 def test_callable_computations(df1):
     assert_index_equal(
         _select_columns(lambda x: x.isna().any(), df1),
         df1.columns[df1.isna().any().array],
     )
+
 
 def test_regex(df1):
     assert _select_columns(re.compile(r"\d$"), df1) == list(
@@ -242,9 +242,7 @@ def test_list_various(df1):
     )
     assert_index_equal(
         pd.Index(
-            _select_columns(
-                ["id", "code*", slice("code", "code2")], df1
-            )
+            _select_columns(["id", "code*", slice("code", "code2")], df1)
         ),
         df1.filter(regex="^(id|code)").columns,
     )

@@ -23,16 +23,14 @@ from typing import (
 )
 
 import numpy as np
-from numpy.core.numeric import full
 import pandas as pd
 import pandas_flavor as pf
+from multipledispatch import dispatch
 from natsort import index_natsorted
 from pandas.api.types import union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-
-from multipledispatch import dispatch
 
 from .errors import JanitorError
 from .utils import (
@@ -795,7 +793,7 @@ def _label_encode(df, column_names):
     return df
 
 
-@dispatch(pd.DataFrame, str)
+@dispatch(pd.DataFrame, str)  # noqa: F811
 def _label_encode(df, column_names):  # noqa: F811
     le = LabelEncoder()
     check_column(df, column_names=column_names, present=True)
@@ -3080,7 +3078,7 @@ def select_columns(
         df = pd.DataFrame(...).select_columns(['a', 'b', 'col_*'], invert=True)
 
     :param df: A pandas DataFrame.
-    :param search_column_names: There are a couple of options available for column selection.
+    :param search_column_names: There are various ways to select columns.
         Valid inputs include:
         1) an exact column name to look for
         2) a shell-style glob string (e.g., `*_thing_*`)
@@ -3097,7 +3095,11 @@ def select_columns(
     .. # noqa: DAR402
     """
 
-    check("search_column_names", search_column_names, [str, callable, Pattern, slice, list])
+    check(
+        "search_column_names",
+        search_column_names,
+        [str, callable, Pattern, slice, list],
+    )
     if isinstance(search_column_names, list):
         for label in search_column_names:
             check("column label", label, [str, slice, Pattern, callable])
@@ -3105,9 +3107,8 @@ def select_columns(
     full_column_list = _select_columns(search_column_names, df)
 
     if invert:
-        return df.drop(columns = full_column_list)
+        return df.drop(columns=full_column_list)
     return df.loc[:, full_column_list]
-
 
 
 @pf.register_dataframe_method

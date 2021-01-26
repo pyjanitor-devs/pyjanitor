@@ -25,6 +25,7 @@ from pandas.api.types import CategoricalDtype
 from pandas.core import common
 
 from multipledispatch import dispatch
+from collections.abc import Callable as dispatch_callable
 
 from .errors import JanitorError
 
@@ -1690,8 +1691,8 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     return df
 
 
-@dispatch(pd.DataFrame, str)
-def _select_columns(df, columns_to_select):
+@functools.singledispatch
+def _select_columns(columns_to_select:str, df):
     filtered_columns = None
     if "*" in columns_to_select:
         filtered_columns = fnmatch.filter(df.columns, columns_to_select)
@@ -1701,8 +1702,8 @@ def _select_columns(df, columns_to_select):
         raise NameError(f"No match was returned for '{columns_to_select}'")
     return filtered_columns
 
-@dispatch(pd.DataFrame, slice)
-def _select_columns(df, columns_to_select):
+@_select_columns.register(slice)
+def _(columns_to_select, df):
     filtered_columns = None
     start_check = None
     stop_check = None
@@ -1762,15 +1763,17 @@ def _select_columns(df, columns_to_select):
     filtered_columns = df.columns[slice(start, stop, step)]
     return filtered_columns
 
-@dispatch(pd.DataFrame, callable)
-def _select_columns(df, columns_to_select):
-        # the function will be applied per series.
-        # this allows filtration based on the contents of the series
-        # or based on the name of the series,
-        # which happens to be a column name as well.
-        # whatever the case may be,
-        # the returned values should be a sequence of booleans,
-        # with at least one True.
+
+
+@_select_columns.register(dispatch_callable)
+def _(columns_to_select, df):
+    # the function will be applied per series.
+    # this allows filtration based on the contents of the series
+    # or based on the name of the series,
+    # which happens to be a column name as well.
+    # whatever the case may be,
+    # the returned values should be a sequence of booleans,
+    # with at least one True.
     filtered_columns = None
     filtered_columns = [
         columns_to_select(column) for _, column in df.items()
@@ -1798,8 +1801,10 @@ def _select_columns(df, columns_to_select):
     filtered_columns = df.columns[filtered_columns]
     return filtered_columns
 
-@dispatch(pd.DataFrame, Pattern)
-def _select_columns(df, columns_to_select):
+# hack to get it to recognize typing.Pattern
+#functools.singledispatch does not natively recognize types from the typing module
+@_select_columns.register(type(re.compile(r"\d+")))
+def _(columns_to_select, df):
     filtered_columns = None
     filtered_columns = [
         column_name
@@ -1812,17 +1817,15 @@ def _select_columns(df, columns_to_select):
 
     return filtered_columns
 
-
-@dispatch(pd.DataFrame, list)
-def _select_columns(df, columns_to_select):
-
+@_select_columns.register(list)
+def _(columns_to_select, df):
     filtered_columns = []
     for label in columns_to_select:
         check("column label", label, [str, slice, Pattern, callable])
 
     for entry in columns_to_select:
         outcome = [
-            c for c in _select_columns(df, entry) if c not in filtered_columns
+            c for c in _select_columns(entry, df) if c not in filtered_columns
         ]
         filtered_columns.extend(outcome)
 

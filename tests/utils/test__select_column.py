@@ -261,3 +261,26 @@ class Test_Columns_in_List_Various_Inputs:
             ),
             self.df.filter(regex="^(id|code)").columns,
         )
+
+
+df = pd.DataFrame(
+        {
+            "id": [0, 1],
+            "Name": ["ABC", "XYZ"],
+            "code": [1, 2],
+            "code1": [4, np.nan],
+            "code2": ["8", 5],
+            "type": ["S", "R"],
+            "type1": ["E", np.nan],
+            "type2": ["T", "U"],
+            "code3": pd.Series(["a", "b"], dtype="category"),
+            "type3": pd.to_datetime(
+                [np.datetime64("2018-01-01"), datetime.datetime(2018, 1, 1)]
+            ),
+        }
+    )
+
+
+result = _select_columns(["id", "code*", slice("code", "code2"), lambda x: x.name.startswith("ty")], df)
+print(df, end="\n\n")
+print(result)

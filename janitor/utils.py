@@ -1691,6 +1691,13 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 @functools.singledispatch
 def _select_columns(columns_to_select: str, df):
+    """
+    Base function for column selection.
+    Applies only to strings.
+    It is also applicable to shell-like glob strings,
+    specifically, the `*`.
+    A list/pd.Index of column names is returned.
+    """
     filtered_columns = None
     if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
         filtered_columns = fnmatch.filter(df.columns, columns_to_select)
@@ -1703,6 +1710,14 @@ def _select_columns(columns_to_select: str, df):
 
 @_select_columns.register(slice)
 def _(columns_to_select, df):
+    """
+    Base function for column selection.
+    Applies only to slices.
+    The start slice value must be a string or None;
+    same goes for the stop slice value.
+    The step slice value should be an integer or None.
+    A list/pd.Index of column names is returned.
+    """
     filtered_columns = None
     start_check = None
     stop_check = None
@@ -1765,6 +1780,13 @@ def _(columns_to_select, df):
 
 @_select_columns.register(dispatch_callable)
 def _(columns_to_select, df):
+    """
+    Base function for column selection.
+    Applies only to callables.
+    The callable is applied to every column in the dataframe.
+    Either True or False is expected per column.
+    A list/pd.Index of column names is returned.
+    """
     # the function will be applied per series.
     # this allows filtration based on the contents of the series
     # or based on the name of the series,
@@ -1801,6 +1823,12 @@ def _(columns_to_select, df):
 # recognize types from the typing module
 @_select_columns.register(type(re.compile(r"\d+")))
 def _(columns_to_select, df):
+    """
+    Base function for column selection.
+    Applies only to regular expressions.
+    `re.compile` is required for the regular expression.
+    A list/pd.Index of column names is returned.
+    """
     filtered_columns = None
     filtered_columns = [
         column_name
@@ -1816,6 +1844,13 @@ def _(columns_to_select, df):
 
 @_select_columns.register(list)
 def _(columns_to_select, df):
+    """
+    Base function for column selection.
+    Applies only to list type.
+    It can take any of slice, str, callable, re.Pattern types,
+    or a combination of these types.
+    A list/pd.Index of column names is returned.
+    """
     filtered_columns = []
 
     for entry in columns_to_select:

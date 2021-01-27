@@ -1141,7 +1141,7 @@ def _fill_empty(df, column_names, value=None):
     return df.fillna(value=fill_mapping)
 
 
-@dispatch(pd.DataFrame, str)
+@dispatch(pd.DataFrame, str)  # noqa: F811
 def _fill_empty(df, column_names, value=None):  # noqa: F811
     """Fill empty function for the case that column_names is a string."""
     fill_mapping = {column_names: value}
@@ -3151,7 +3151,7 @@ def select_columns(
 
     - Select by regular expression::
 
-        df.select_columns(re.compile(r"\d+"))
+        df.select_columns(re.compile("\\d+"))
 
            code1 code2 type1 type2 code3      type3
         0    4.0     8     E     T     a 2018-01-01
@@ -3165,7 +3165,8 @@ def select_columns(
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
 
-    - Setting ``invert`` to ``True`` returns the complement of the columns provided::
+    - Setting ``invert`` to ``True``
+      returns the complement of the columns provided::
 
         df.select_columns(["id", "code*", slice("code", "code2")],
                           invert = True)

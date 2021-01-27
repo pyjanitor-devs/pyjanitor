@@ -3151,7 +3151,7 @@ def select_columns(
 
     - Select by regular expression::
 
-        df.select_columns(re.compile("\d+"))
+        df.select_columns(re.compile(r"\d+"))
 
            code1 code2 type1 type2 code3      type3
         0    4.0     8     E     T     a 2018-01-01

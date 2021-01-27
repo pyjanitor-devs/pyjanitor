@@ -1129,22 +1129,23 @@ def fill_empty(
         those columns will all be filled with the same value.
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `Nan` values filled.
-    :raises JanitorError: if a column specified within ``column_names``
-        is not found in the DataFrame.
     """
-    if isinstance(column_names, (list, tuple)):
-        for col in column_names:
-            if col not in df.columns:
-                raise JanitorError(f"{col} missing from DataFrame columns!")
-            df[col] = df[col].fillna(value)
-    else:
-        if column_names not in df.columns:
-            raise JanitorError(
-                f"{column_names} missing from DataFrame columns!"
-            )
-        df[column_names] = df[column_names].fillna(value)
+    check_column(df, column_names)
+    return _fill_empty(df, column_names, value=value)
 
-    return df
+
+@dispatch(pd.DataFrame, (list, tuple))
+def _fill_empty(df, column_names, value=None):
+    """Fill empty function for the case that column_names is list or tuple."""
+    fill_mapping = {c: value for c in column_names}
+    return df.fillna(value=fill_mapping)
+
+
+@dispatch(pd.DataFrame, str)
+def _fill_empty(df, column_names, value=None):  # noqa: F811
+    """Fill empty function for the case that column_names is a string."""
+    fill_mapping = {column_names: value}
+    return df.fillna(value=fill_mapping)
 
 
 @pf.register_dataframe_method
@@ -1354,10 +1355,6 @@ def deconcatenate_column(
             df[column_name].to_list(), columns=new_column_names, index=df.index
         )
 
-    if preserve_position:
-        # Keep a copy of the original dataframe
-        df_original = df.copy()
-
     if new_column_names is None and autoname is None:
         raise ValueError(
             "One of `new_column_names` or `autoname` must be supplied."
@@ -1375,18 +1372,21 @@ def deconcatenate_column(
         )
 
     df_deconcat.columns = new_column_names
-    df = pd.concat([df, df_deconcat], axis=1)
+    df_new = pd.concat([df, df_deconcat], axis=1)
 
     if preserve_position:
+        df_original = df.copy()
         cols = list(df_original.columns)
         index_original = cols.index(column_name)
 
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
 
-        df = df[cols].drop(columns=column_name)
+        df_new = df_new.select_columns(search_column_names=cols).drop(
+            columns=column_name
+        )
 
-    return df
+    return df_new
 
 
 @pf.register_dataframe_method

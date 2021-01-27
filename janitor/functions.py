@@ -3071,22 +3071,137 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
+    Examples
+    --------
+
+    ::
+
+        import pandas as pd
+        import numpy as np
+        import datetime
+        import re
+
+        df = pd.DataFrame(
+                {
+                    "id": [0, 1],
+                    "Name": ["ABC", "XYZ"],
+                    "code": [1, 2],
+                    "code1": [4, np.nan],
+                    "code2": ["8", 5],
+                    "type": ["S", "R"],
+                    "type1": ["E", np.nan],
+                    "type2": ["T", "U"],
+                    "code3": pd.Series(["a", "b"], dtype="category"),
+                    "type3": pd.to_datetime([np.datetime64("2018-01-01"),
+                                            datetime.datetime(2018, 1, 1)]),
+                }
+            )
+
+        df
+
+           id Name  code  code1 code2 type type1 type2 code3    type3
+        0   0  ABC     1    4.0     8    S     E     T     a 2018-01-01
+        1   1  XYZ     2    NaN     5    R   NaN     U     b 2018-01-01
+
+
+    - Select by string::
+
+        df.select_columns("id")
+           id
+       0   0
+       1   1
+
+    Select via shell-like glob strings (*) is possible::
+
+        df.select_columns("*type*")
+
+           type type1 type2      type3
+        0    S     E     T 2018-01-01
+        1    R   NaN     U 2018-01-01
+
+    - Select by slice::
+
+        df.select_columns(slice("code1", "type1"))
+
+           code1 code2 type type1
+        0    4.0     8    S     E
+        1    NaN     5    R   NaN
+
+    - Select by callable (the callable is applied to every column
+      and should return a single ``True`` or ``False`` per column)::
+
+        df.select_columns(pd.api.types.is_datetime64_dtype)
+
+               type3
+        0 2018-01-01
+        1 2018-01-01
+
+        df.select_columns(lambda x: x.name.startswith("code") or
+                                    x.name.endswith("1"))
+
+           code  code1 code2 type1 code3
+        0     1    4.0     8     E     a
+        1     2    NaN     5   NaN     b
+
+        df.select_columns(lambda x: x.isna().any())
+
+             code1 type1
+        0    4.0     E
+        1    NaN   NaN
+
+    - Select by regular expression::
+
+        df.select_columns(re.compile("\d+"))
+
+           code1 code2 type1 type2 code3      type3
+        0    4.0     8     E     T     a 2018-01-01
+        1    NaN     5   NaN     U     b 2018-01-01
+
+    - Select via a list (you can combine any of the previous options)::
+
+        df.select_columns(["id", "code*", slice("code", "code2")])
+
+           id  code  code1 code2 code3
+        0   0     1    4.0     8     a
+        1   1     2    NaN     5     b
+
+    - Setting ``invert`` to ``True`` returns the complement of the columns provided::
+
+        df.select_columns(["id", "code*", slice("code", "code2")],
+                          invert = True)
+
+           Name type type1 type2      type3
+        0  ABC    S     E     T 2018-01-01
+        1  XYZ    R   NaN     U 2018-01-01
+
+    Functional usage example::
+
+       import pandas as pd
+       import janitor as jn
+
+       df = pd.DataFrame(...)
+
+       df = jn.select_columns(['a', 'b', 'col_*'],
+                              invert=True)
+
     Method-chaining example:
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).select_columns(['a', 'b', 'col_*'], invert=True)
+        df = (pd.DataFrame(...)
+              .select_columns(['a', 'b', 'col_*'],
+              invert=True))
 
     :param df: A pandas DataFrame.
-    :param search_column_names: There are various ways to select columns.
-        Valid inputs include:
-        1) an exact column name to look for
-        2) a shell-style glob string (e.g., `*_thing_*`)
-        3) a regular expression
-        4) a callable which is applicable to each Series in the dataframe
-        5) a list of all the aforementioned options.
+    :param search_column_names: Valid inputs include:
+
+        - an exact column name to look for
+        - a shell-style glob string (e.g., `*_thing_*`)
+        - a regular expression
+        - a callable which is applicable to each Series in the dataframe
+        - a list of all the aforementioned options.
     :param invert: Whether or not to invert the selection.
-        This will result in selection of the complement of the columns
+        This will result in the selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
     :raises NameError: if one or more of the specified column names or

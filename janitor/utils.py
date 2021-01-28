@@ -1,10 +1,13 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
+import fnmatch
 import functools
 import os
+import re
 import sys
 import warnings
 from collections import namedtuple
+from collections.abc import Callable as dispatch_callable
 from itertools import chain, product
 from typing import (
     Callable,
@@ -28,6 +31,7 @@ from .errors import JanitorError
 def check(varname: str, value, expected_types: list):
     """
     One-liner syntactic sugar for checking types.
+    It can also check callables.
 
     Should be used like this::
 
@@ -38,10 +42,13 @@ def check(varname: str, value, expected_types: list):
     :param expected_types: The types we expect the item to be.
     :raises TypeError: if data is not the expected type.
     """
-    is_expected_type = False
+    is_expected_type: bool = False
     for t in expected_types:
-        if isinstance(value, t):
-            is_expected_type = True
+        if t is callable:
+            is_expected_type = t(value)
+        else:
+            is_expected_type = isinstance(value, t)
+        if is_expected_type:
             break
 
     if not is_expected_type:
@@ -1680,3 +1687,181 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     df = df.astype(categories_dtypes)
 
     return df
+
+
+@functools.singledispatch
+def _select_columns(columns_to_select: str, df):
+    """
+    Base function for column selection.
+    Applies only to strings.
+    It is also applicable to shell-like glob strings,
+    specifically, the `*`.
+    A list/pd.Index of column names is returned.
+    """
+    filtered_columns = None
+    if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
+        filtered_columns = fnmatch.filter(df.columns, columns_to_select)
+    elif columns_to_select in df.columns:
+        filtered_columns = [columns_to_select]
+    if not filtered_columns:
+        raise NameError(f"No match was returned for '{columns_to_select}'")
+    return filtered_columns
+
+
+@_select_columns.register(slice)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to slices.
+    The start slice value must be a string or None;
+    same goes for the stop slice value.
+    The step slice value should be an integer or None.
+    A list/pd.Index of column names is returned.
+    """
+    filtered_columns = None
+    start_check = None
+    stop_check = None
+    step_check = None
+    # df.columns should be monotonic/unique,
+    # but we wont check for that
+    # onus is on the user to ensure that
+    start, stop, step = (
+        columns_to_select.start,
+        columns_to_select.stop,
+        columns_to_select.step,
+    )
+    start_check = any((start is None, isinstance(start, str)))
+    stop_check = any((stop is None, isinstance(stop, str)))
+    step_check = any((step is None, isinstance(step, int)))
+    if not start_check:
+        raise ValueError(
+            """
+            The start value for the slice
+            must either be a string or `None`.
+            """
+        )
+    if not stop_check:
+        raise ValueError(
+            """
+            The stop value for the slice
+            must either be a string or `None`.
+            """
+        )
+    if not step_check:
+        raise ValueError(
+            """
+            The step value for the slice
+            must either be an integer or `None`.
+            """
+        )
+    start_check = any((start is None, start in df.columns))
+    stop_check = any((stop is None, stop in df.columns))
+    if not start_check:
+        raise ValueError(
+            """
+            The start value for the slice must either be `None`
+            or exist in the dataframe's columns.
+            """
+        )
+    if not stop_check:
+        raise ValueError(
+            """
+            The stop value for the slice must either be `None`
+            or exist in the dataframe's columns.
+            """
+        )
+    filtered_columns = df.columns.slice_locs(start=start, end=stop)
+    # slice_locs fails when step has a value
+    # so this extra step is necessary to get the correct output
+    start, stop = filtered_columns
+    filtered_columns = df.columns[slice(start, stop, step)]
+    return filtered_columns
+
+
+@_select_columns.register(dispatch_callable)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to callables.
+    The callable is applied to every column in the dataframe.
+    Either True or False is expected per column.
+    A list/pd.Index of column names is returned.
+    """
+    # the function will be applied per series.
+    # this allows filtration based on the contents of the series
+    # or based on the name of the series,
+    # which happens to be a column name as well.
+    # whatever the case may be,
+    # the returned values should be a sequence of booleans,
+    # with at least one True.
+    filtered_columns = None
+    filtered_columns = [columns_to_select(column) for _, column in df.items()]
+
+    # returns numpy bool,
+    # which does not work the same way as python's bool
+    # as such, cant use isinstance.
+    # pandas type check function helps out
+    checks = (pd.api.types.is_bool(column) for column in filtered_columns)
+
+    if not all(checks):
+        raise ValueError(
+            "The callable provided must return a sequence of booleans."
+        )
+
+    # cant use `is` here, since it may be a numpy bool
+    checks = any((column == True for column in filtered_columns))  # noqa: E712
+
+    if not checks:
+        raise ValueError("No results were returned for the callable provided.")
+
+    filtered_columns = df.columns[filtered_columns]
+    return filtered_columns
+
+
+# hack to get it to recognize typing.Pattern
+# functools.singledispatch does not natively
+# recognize types from the typing module
+# ``type(re.compile(r"\d+"))`` returns re.Pattern
+# which is a type and functools.singledispatch
+# accepts it without drama;
+# however, the same type from typing.Pattern
+# is not accepted.
+@_select_columns.register(type(re.compile(r"\d+")))  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to regular expressions.
+    `re.compile` is required for the regular expression.
+    A list/pd.Index of column names is returned.
+    """
+    filtered_columns = None
+    filtered_columns = [
+        column_name
+        for column_name in df
+        if re.search(columns_to_select, column_name)
+    ]
+
+    if not filtered_columns:
+        raise ValueError("No column name matched the regular expression.")
+
+    return filtered_columns
+
+
+@_select_columns.register(list)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to list type.
+    It can take any of slice, str, callable, re.Pattern types,
+    or a combination of these types.
+    A list/pd.Index of column names is returned.
+    """
+    filtered_columns = []
+
+    for entry in columns_to_select:
+        outcome = [
+            c for c in _select_columns(entry, df) if c not in filtered_columns
+        ]
+        filtered_columns.extend(outcome)
+
+    return filtered_columns

@@ -92,7 +92,7 @@ index_labels = [pd.Index(["region"]), {"2007", "region"}]
 column_labels = [{"region": 2007}, {"2007", "2009"}]
 names_to_labels = [1, {12, "newnames"}]
 
-index_does_not_exist = ["Region", [2007, "region"]]
+index_does_not_exist = ["Region", ["207", "region"]]
 column_does_not_exist = ["two thousand and seven", ("2007", 2009)]
 
 index_type_checks = (
@@ -170,14 +170,14 @@ def test_subtype_names_to(df, names_to):
 @pytest.mark.parametrize("df,index", index_presence_checks)
 def test_presence_index(df, index):
     """Raise ValueError if labels in `index` do not exist."""
-    with pytest.raises(ValueError):
+    with pytest.raises(NameError):
         df.pivot_longer(index=index)
 
 
 @pytest.mark.parametrize("df,column", column_presence_checks)
 def test_presence_columns(df, column):
     """Raise ValueError if labels in `column_names` do not exist."""
-    with pytest.raises(ValueError):
+    with pytest.raises(NameError):
         df.pivot_longer(column_names=column)
 
 

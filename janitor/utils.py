@@ -1709,7 +1709,7 @@ def _select_columns(columns_to_select: str, df):
 
 
 @_select_columns.register(slice)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to slices.
@@ -1779,7 +1779,7 @@ def _column_sel_dispatch(columns_to_select, df):
 
 
 @_select_columns.register(dispatch_callable)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to callables.
@@ -1827,7 +1827,7 @@ def _column_sel_dispatch(columns_to_select, df):
 # however, the same type from typing.Pattern
 # is not accepted.
 @_select_columns.register(type(re.compile(r"\d+")))  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to regular expressions.
@@ -1848,7 +1848,7 @@ def _column_sel_dispatch(columns_to_select, df):
 
 
 @_select_columns.register(list)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to list type.

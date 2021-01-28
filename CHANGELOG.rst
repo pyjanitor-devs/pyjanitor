@@ -29,6 +29,8 @@ new version (on deck)
 - [ENH] Modified the `check` function in utils to verify if a value is a callable. @samukweku
 - [ENH] Add a base `_select_column` function, using ``functools.singledispatch``,
   to allow for flexible columns selection. @samukweku
+- [ENH] pivot_longer and pivot_wider now support janitor.select_columns syntax,
+  allowing for more flexible and dynamic column selection. @samukweku
 
 
 

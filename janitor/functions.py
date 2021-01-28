@@ -3227,7 +3227,6 @@ def select_columns(
         [str, callable, Pattern, slice, list],
     )
 
-
     full_column_list = _select_columns(search_column_names, df)
 
     if invert:

@@ -1831,7 +1831,11 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     or a combination of these types.
     A list/pd.Index of column names is returned.
     """
+    for label in columns_to_select:
+        check("column label", label, [str, slice, Pattern, callable])
+    
     filtered_columns = []
+
 
     for entry in columns_to_select:
         outcome = [

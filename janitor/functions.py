@@ -3226,9 +3226,7 @@ def select_columns(
         search_column_names,
         [str, callable, Pattern, slice, list],
     )
-    if isinstance(search_column_names, list):
-        for label in search_column_names:
-            check("column label", label, [str, slice, Pattern, callable])
+
 
     full_column_list = _select_columns(search_column_names, df)
 

@@ -1708,8 +1708,8 @@ def _select_columns(columns_to_select: str, df):
     return filtered_columns
 
 
-@_select_columns.register(slice)
-def _(columns_to_select, df):
+@_select_columns.register(slice)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):
     """
     Base function for column selection.
     Applies only to slices.
@@ -1778,8 +1778,8 @@ def _(columns_to_select, df):
     return filtered_columns
 
 
-@_select_columns.register(dispatch_callable)
-def _(columns_to_select, df):
+@_select_columns.register(dispatch_callable)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):
     """
     Base function for column selection.
     Applies only to callables.
@@ -1821,8 +1821,13 @@ def _(columns_to_select, df):
 # hack to get it to recognize typing.Pattern
 # functools.singledispatch does not natively
 # recognize types from the typing module
-@_select_columns.register(type(re.compile(r"\d+")))
-def _(columns_to_select, df):
+# ``type(re.compile(r"\d+"))`` returns re.Pattern
+# which is a type and functools.singledispatch
+# accepts it without drama;
+# however, the same type from typing.Pattern
+# is not accepted.
+@_select_columns.register(type(re.compile(r"\d+")))  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):
     """
     Base function for column selection.
     Applies only to regular expressions.
@@ -1842,8 +1847,8 @@ def _(columns_to_select, df):
     return filtered_columns
 
 
-@_select_columns.register(list)
-def _(columns_to_select, df):
+@_select_columns.register(list)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):
     """
     Base function for column selection.
     Applies only to list type.

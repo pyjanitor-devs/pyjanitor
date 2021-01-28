@@ -136,6 +136,7 @@ def test_regex_presence(df):
 
 
 def test_strings(df1):
+    """Test _select_columns function on strings."""
     assert _select_columns("id", df1) == ["id"]
     assert _select_columns("*type*", df1) == [
         "type",
@@ -146,6 +147,7 @@ def test_strings(df1):
 
 
 def test_slice(df1):
+    """Test _select_columns function on slices."""
     assert_index_equal(
         _select_columns(slice("code", "code2"), df1),
         df1.loc[:, slice("code", "code2")].columns,
@@ -166,6 +168,10 @@ def test_slice(df1):
 
 
 def test_callable_data_type(df1):
+    """
+    Test _select_columns function on callables,
+    specifically for data type checks.
+    """
     assert_index_equal(
         _select_columns(pd.api.types.is_integer_dtype, df1),
         df1.select_dtypes(int).columns,
@@ -193,6 +199,10 @@ def test_callable_data_type(df1):
 
 
 def test_callable_string_methods(df1):
+    """
+    Test _select_columns function on callables,
+    specifically for column name checks.
+    """
     assert_index_equal(
         _select_columns(lambda x: x.name.startswith("type"), df1),
         df1.filter(like="type").columns,
@@ -220,6 +230,10 @@ def test_callable_string_methods(df1):
 
 
 def test_callable_computations(df1):
+    """
+    Test _select_columns function on callables,
+    specifically for computations.
+    """
     assert_index_equal(
         _select_columns(lambda x: x.isna().any(), df1),
         df1.columns[df1.isna().any().array],
@@ -227,6 +241,7 @@ def test_callable_computations(df1):
 
 
 def test_regex(df1):
+    """Test _select_columns function on regular expressions."""
     assert _select_columns(re.compile(r"\d$"), df1) == list(
         df1.filter(regex=r"\d$").columns
     )
@@ -236,6 +251,8 @@ def test_regex(df1):
 
 
 def test_list_various(df1):
+    """Test _select_columns function on list type."""
+
     assert _select_columns(["id", "Name"], df1) == ["id", "Name"]
     assert _select_columns(["id", "code*"], df1) == list(
         df1.filter(regex="^id|^code").columns

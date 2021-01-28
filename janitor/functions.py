@@ -1,13 +1,11 @@
 """ General purpose data cleaning functions. """
 
-from multipledispatch import dispatch
 import collections
 import datetime as dt
 import inspect
 import re
 import unicodedata
 import warnings
-from fnmatch import translate
 from functools import partial, reduce
 from typing import (
     Any,
@@ -27,6 +25,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from multipledispatch import dispatch
 from natsort import index_natsorted
 from pandas.api.types import union_categoricals
 from pandas.errors import OutOfBoundsDatetime
@@ -48,6 +47,7 @@ from .utils import (
     _pivot_longer_pattern_match,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
+    _select_columns,
     _strip_underscores,
     check,
     check_column,
@@ -793,7 +793,7 @@ def _label_encode(df, column_names):
     return df
 
 
-@dispatch(pd.DataFrame, str)
+@dispatch(pd.DataFrame, str)  # noqa: F811
 def _label_encode(df, column_names):  # noqa: F811
     le = LabelEncoder()
     check_column(df, column_names=column_names, present=True)
@@ -1141,7 +1141,7 @@ def _fill_empty(df, column_names, value=None):
     return df.fillna(value=fill_mapping)
 
 
-@dispatch(pd.DataFrame, str)
+@dispatch(pd.DataFrame, str)  # noqa: F811
 def _fill_empty(df, column_names, value=None):  # noqa: F811
     """Fill empty function for the case that column_names is a string."""
     fill_mapping = {column_names: value}
@@ -3061,7 +3061,9 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, search_column_names: List[str], invert: bool = False
+    df: pd.DataFrame,
+    search_column_names: Union[str, callable, Pattern, slice, list],
+    invert: bool = False,
 ) -> pd.DataFrame:
     """Method-chainable selection of columns.
 
@@ -3069,58 +3071,160 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
+    Examples
+    --------
+
+    ::
+
+        import pandas as pd
+        import numpy as np
+        import datetime
+        import re
+
+        df = pd.DataFrame(
+                {
+                    "id": [0, 1],
+                    "Name": ["ABC", "XYZ"],
+                    "code": [1, 2],
+                    "code1": [4, np.nan],
+                    "code2": ["8", 5],
+                    "type": ["S", "R"],
+                    "type1": ["E", np.nan],
+                    "type2": ["T", "U"],
+                    "code3": pd.Series(["a", "b"], dtype="category"),
+                    "type3": pd.to_datetime([np.datetime64("2018-01-01"),
+                                            datetime.datetime(2018, 1, 1)]),
+                }
+            )
+
+        df
+
+           id Name  code  code1 code2 type type1 type2 code3    type3
+        0   0  ABC     1    4.0     8    S     E     T     a 2018-01-01
+        1   1  XYZ     2    NaN     5    R   NaN     U     b 2018-01-01
+
+
+    - Select by string::
+
+        df.select_columns("id")
+           id
+       0   0
+       1   1
+
+    Select via shell-like glob strings (*) is possible::
+
+        df.select_columns("*type*")
+
+           type type1 type2      type3
+        0    S     E     T 2018-01-01
+        1    R   NaN     U 2018-01-01
+
+    - Select by slice::
+
+        df.select_columns(slice("code1", "type1"))
+
+           code1 code2 type type1
+        0    4.0     8    S     E
+        1    NaN     5    R   NaN
+
+    - Select by callable (the callable is applied to every column
+      and should return a single ``True`` or ``False`` per column)::
+
+        df.select_columns(pd.api.types.is_datetime64_dtype)
+
+               type3
+        0 2018-01-01
+        1 2018-01-01
+
+        df.select_columns(lambda x: x.name.startswith("code") or
+                                    x.name.endswith("1"))
+
+           code  code1 code2 type1 code3
+        0     1    4.0     8     E     a
+        1     2    NaN     5   NaN     b
+
+        df.select_columns(lambda x: x.isna().any())
+
+             code1 type1
+        0    4.0     E
+        1    NaN   NaN
+
+    - Select by regular expression::
+
+        df.select_columns(re.compile("\\d+"))
+
+           code1 code2 type1 type2 code3      type3
+        0    4.0     8     E     T     a 2018-01-01
+        1    NaN     5   NaN     U     b 2018-01-01
+
+    - Select via a list (you can combine any of the previous options)::
+
+        df.select_columns(["id", "code*", slice("code", "code2")])
+
+           id  code  code1 code2 code3
+        0   0     1    4.0     8     a
+        1   1     2    NaN     5     b
+
+    - Setting ``invert`` to ``True``
+      returns the complement of the columns provided::
+
+        df.select_columns(["id", "code*", slice("code", "code2")],
+                          invert = True)
+
+           Name type type1 type2      type3
+        0  ABC    S     E     T 2018-01-01
+        1  XYZ    R   NaN     U 2018-01-01
+
+    Functional usage example::
+
+       import pandas as pd
+       import janitor as jn
+
+       df = pd.DataFrame(...)
+
+       df = jn.select_columns(['a', 'b', 'col_*'],
+                              invert=True)
+
     Method-chaining example:
 
     .. code-block:: python
 
-        df = pd.DataFrame(...).select_columns(['a', 'b', 'col_*'], invert=True)
+        df = (pd.DataFrame(...)
+              .select_columns(['a', 'b', 'col_*'],
+              invert=True))
 
     :param df: A pandas DataFrame.
-    :param search_column_names: A list of column names or search strings to be
-        used to select. Valid inputs include:
-        1) an exact column name to look for
-        2) a shell-style glob string (e.g., `*_thing_*`)
+    :param search_column_names: Valid inputs include:
+
+        - an exact column name to look for
+        - a shell-style glob string (e.g., `*_thing_*`)
+        - a regular expression
+        - a callable which is applicable to each Series in the dataframe
+        - a list of all the aforementioned options.
     :param invert: Whether or not to invert the selection.
-        This will result in selection of the complement of the columns
+        This will result in the selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    :raises TypeError: if input is not passed as a list.
     :raises NameError: if one or more of the specified column names or
         search strings are not found in DataFrame columns.
+
+    .. # noqa: DAR402
     """
-    if not isinstance(search_column_names, list):
-        raise TypeError(
-            "Column name(s) or search string(s) must be passed as list"
-        )
 
-    wildcards = {col for col in search_column_names if "*" in col}
-    non_wildcards = set(search_column_names) - wildcards
-
-    if not non_wildcards.issubset(df.columns):
-        nonexistent_column_names = non_wildcards.difference(df.columns)
-        raise NameError(
-            f"{list(nonexistent_column_names)} missing from DataFrame"
-        )
-
-    missing_wildcards = []
-    full_column_list = []
-
-    for col in search_column_names:
-        search_string = translate(col)
-        columns = [col for col in df if re.match(search_string, col)]
-        if len(columns) == 0:
-            missing_wildcards.append(col)
-        else:
-            full_column_list.extend(columns)
-
-    if len(missing_wildcards) > 0:
-        raise NameError(
-            f"Search string(s) {missing_wildcards} not found in DataFrame"
-        )
-
-    return (
-        df.drop(columns=full_column_list) if invert else df[full_column_list]
+    check(
+        "search_column_names",
+        search_column_names,
+        [str, callable, Pattern, slice, list],
     )
+    if isinstance(search_column_names, list):
+        for label in search_column_names:
+            check("column label", label, [str, slice, Pattern, callable])
+
+    full_column_list = _select_columns(search_column_names, df)
+
+    if invert:
+        return df.drop(columns=full_column_list)
+    return df.loc[:, full_column_list]
 
 
 @pf.register_dataframe_method

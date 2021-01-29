@@ -546,7 +546,7 @@ def test_index_names_sort_True():
     assert_frame_equal(result, expected_output)
 
 
-@pytest.fixture()
+@pytest.fixture
 def df_aggfunc():
     return pd.DataFrame(
         [
@@ -569,6 +569,49 @@ def df_aggfunc():
             {"V4": "C", "variable": "V2", "value": 0},
             {"V4": "C", "variable": "V2", "value": 9},
         ]
+    )
+
+
+@pytest.fixture
+def df_aggfunc_multiple_names_from():
+    return pd.DataFrame(
+        {
+            "A": [
+                "foo",
+                "foo",
+                "foo",
+                "foo",
+                "foo",
+                "bar",
+                "bar",
+                "bar",
+                "bar",
+            ],
+            "B": [
+                "one",
+                "one",
+                "one",
+                "two",
+                "two",
+                "one",
+                "one",
+                "two",
+                "two",
+            ],
+            "C": [
+                "small",
+                "large",
+                "large",
+                "small",
+                "small",
+                "large",
+                "small",
+                "small",
+                "large",
+            ],
+            "D": [1, 2, 2, 3, 3, 4, 5, 6, 7],
+            "E": [2, 4, 5, 5, 6, 6, 8, 9, 9],
+        }
     )
 
 
@@ -609,4 +652,61 @@ def test_aggfunc_list(df_aggfunc):
     result = df_aggfunc.pivot_wider(
         index="V4", names_from="variable", aggfunc=["sum"], flatten_levels=True
     )
+    assert_frame_equal(result, expected)
+
+
+def test_aggfunc_multiple_names_from(df_aggfunc_multiple_names_from):
+    """Test output when ``names_from`` is more than one."""
+    expected = pd.DataFrame(
+        {
+            "A": ["bar", "bar", "foo", "foo"],
+            "C": ["large", "small", "large", "small"],
+            "one_D": [4.0, 5.0, 2.0, 1.0],
+            "two_D": [7.0, 6.0, np.nan, 3.0],
+            "one_E": [6.0, 8.0, 4.5, 2.0],
+            "two_E": [9.0, 9.0, np.nan, 5.5],
+        }
+    )
+    result = df_aggfunc_multiple_names_from.pivot_wider(
+        index=["A", "C"],
+        names_from=["B"],
+        values_from=["D", "E"],
+        aggfunc=["mean"],
+        flatten_levels=True,
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_df_multiple_aggfuncs():
+    """Test output when ``aggfunc`` is more than one."""
+
+    df_frame = pd.DataFrame([
+        {"A": "foo", "B": "one", "C": "small", "D": 1, "E": 2},
+        {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 4},
+        {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 5},
+        {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 5},
+        {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 6},
+        {"A": "bar", "B": "one", "C": "large", "D": 4, "E": 6},
+        {"A": "bar", "B": "one", "C": "small", "D": 5, "E": 8},
+        {"A": "bar", "B": "one", "C": "small", "D": 6, "E": 9},
+        {"A": "bar", "B": "one", "C": "large", "D": 7, "E": 9},
+    ])
+
+    expected = pd.DataFrame({
+        "A": ["bar", "bar", "foo", "foo"],
+        "C": ["large", "small", "large", "small"],
+        "one_D_mean": [5.5, 5.5, 2.0, 2.3333333333333335],
+        "one_D_sum": [11, 11, 4, 7],
+        "one_E_mean": [7.5, 8.5, 4.5, 4.333333333333333],
+        "one_E_sum": [15, 17, 9, 13],
+    })
+
+    result = df_frame.pivot_wider(
+        index=["A", "C"],
+        names_from=["B"],
+        values_from=["D", "E"],
+        aggfunc=["mean", "sum"],
+        flatten_levels=True,
+    )
+
     assert_frame_equal(result, expected)

@@ -1361,17 +1361,8 @@ def _data_checks_pivot_wider(
     if names_sep is not None:
         check("names_sep", names_sep, [str])
 
-    # cant apply the `check` function here
-    # because of the callable type
-    if aggfunc is not None and not any(
-        (isinstance(aggfunc, (str, list, dict)), callable(aggfunc))
-    ):
-        raise TypeError(
-            """
-            aggfunc should be either a function,
-            string, list, or a dictionary.
-            """
-        )
+    if aggfunc is not None:
+        check("aggfunc", aggfunc, [str, list, dict, callable])
 
     if fill_value is not None:
         check("fill_value", fill_value, [int, float, str])

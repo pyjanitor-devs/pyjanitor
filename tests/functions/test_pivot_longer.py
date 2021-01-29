@@ -169,15 +169,15 @@ def test_subtype_names_to(df, names_to):
 
 @pytest.mark.parametrize("df,index", index_presence_checks)
 def test_presence_index(df, index):
-    """Raise ValueError if labels in `index` do not exist."""
-    with pytest.raises(NameError):
+    """Raise KeyError if labels in `index` do not exist."""
+    with pytest.raises(KeyError):
         df.pivot_longer(index=index)
 
 
 @pytest.mark.parametrize("df,column", column_presence_checks)
 def test_presence_columns(df, column):
-    """Raise ValueError if labels in `column_names` do not exist."""
-    with pytest.raises(NameError):
+    """Raise KeyError if labels in `column_names` do not exist."""
+    with pytest.raises(KeyError):
         df.pivot_longer(column_names=column)
 
 

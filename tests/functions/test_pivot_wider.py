@@ -216,28 +216,28 @@ def test_names_from_None(df_checks_output):
 
 
 def test_presence_index1(df_checks_output):
-    """Raise ValueError if labels in `index` do not exist."""
-    with pytest.raises(NameError):
+    """Raise KeyError if labels in `index` do not exist."""
+    with pytest.raises(KeyError):
         df_checks_output.pivot_wider(index="geo", names_from="variable")
 
 
 def test_presence_index2(df_checks_output):
-    """Raise ValueError if labels in `index` do not exist."""
-    with pytest.raises(NameError):
+    """Raise KeyError if labels in `index` do not exist."""
+    with pytest.raises(KeyError):
         df_checks_output.pivot_wider(
             index=["geoid", "Name"], names_from="variable"
         )
 
 
 def test_presence_names_from1(df_checks_output):
-    """Raise ValueError if labels in `names_from` do not exist."""
-    with pytest.raises(NameError):
+    """Raise KeyError if labels in `names_from` do not exist."""
+    with pytest.raises(KeyError):
         df_checks_output.pivot_wider(index="geoid", names_from="estmt")
 
 
 def test_presence_names_from2(df_checks_output):
-    """Raise ValueError if labels in `names_from` do not exist."""
-    with pytest.raises(NameError):
+    """Raise KeyError if labels in `names_from` do not exist."""
+    with pytest.raises(KeyError):
         df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
 
 

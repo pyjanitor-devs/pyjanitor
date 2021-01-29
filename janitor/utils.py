@@ -1679,7 +1679,7 @@ def _select_columns(columns_to_select: str, df):
     elif columns_to_select in df.columns:
         filtered_columns = [columns_to_select]
     if not filtered_columns:
-        raise NameError(f"No match was returned for '{columns_to_select}'")
+        raise KeyError(f"No match was returned for '{columns_to_select}'")
     return filtered_columns
 
 
@@ -1817,9 +1817,20 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     ]
 
     if not filtered_columns:
-        raise ValueError("No column name matched the regular expression.")
+        raise KeyError("No column name matched the regular expression.")
 
     return filtered_columns
+
+@_select_columns.register(tuple)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to tuple type, and applies to MultiIndex columns.
+    A list/pd.Index of column names is returned.
+    """
+    if columns_to_select not in df.columns:
+        raise KeyError(f"No match was returned for {columns_to_select}")
+    return [columns_to_select]
 
 
 @_select_columns.register(list)  # noqa: F811
@@ -1832,7 +1843,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list/pd.Index of column names is returned.
     """
     for label in columns_to_select:
-        check("column label", label, [str, slice, Pattern, callable])
+        check("column label", label, [str, slice, Pattern, tuple, callable])
 
     filtered_columns = []
 

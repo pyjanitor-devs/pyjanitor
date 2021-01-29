@@ -59,12 +59,12 @@ def test_type(df):
 
 def test_strings_do_not_exist(df):
     """
-    Raise NameError if `columns_to_select` is a string
+    Raise KeyError if `columns_to_select` is a string
     and does not exist in the dataframe's columns.
     """
-    with pytest.raises(NameError):
+    with pytest.raises(KeyError):
         _select_columns("word", df)
-    with pytest.raises(NameError):
+    with pytest.raises(KeyError):
         _select_columns("*starter", df)
 
 
@@ -128,10 +128,10 @@ def test_callable_no_match(df):
 
 def test_regex_presence(df):
     """
-    Raise ValueError if `columns_to_select` is a regex
+    Raise KeyError if `columns_to_select` is a regex
     and none of the column names match.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         _select_columns(re.compile(r"^\d+"), df)
 
 

@@ -1821,6 +1821,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
     return filtered_columns
 
+
 @_select_columns.register(tuple)  # noqa: F811
 def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """

@@ -680,26 +680,30 @@ def test_aggfunc_multiple_names_from(df_aggfunc_multiple_names_from):
 def test_df_multiple_aggfuncs():
     """Test output when ``aggfunc`` is more than one."""
 
-    df_frame = pd.DataFrame([
-        {"A": "foo", "B": "one", "C": "small", "D": 1, "E": 2},
-        {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 4},
-        {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 5},
-        {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 5},
-        {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 6},
-        {"A": "bar", "B": "one", "C": "large", "D": 4, "E": 6},
-        {"A": "bar", "B": "one", "C": "small", "D": 5, "E": 8},
-        {"A": "bar", "B": "one", "C": "small", "D": 6, "E": 9},
-        {"A": "bar", "B": "one", "C": "large", "D": 7, "E": 9},
-    ])
+    df_frame = pd.DataFrame(
+        [
+            {"A": "foo", "B": "one", "C": "small", "D": 1, "E": 2},
+            {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 4},
+            {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 5},
+            {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 5},
+            {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 6},
+            {"A": "bar", "B": "one", "C": "large", "D": 4, "E": 6},
+            {"A": "bar", "B": "one", "C": "small", "D": 5, "E": 8},
+            {"A": "bar", "B": "one", "C": "small", "D": 6, "E": 9},
+            {"A": "bar", "B": "one", "C": "large", "D": 7, "E": 9},
+        ]
+    )
 
-    expected = pd.DataFrame({
-        "A": ["bar", "bar", "foo", "foo"],
-        "C": ["large", "small", "large", "small"],
-        "one_D_mean": [5.5, 5.5, 2.0, 2.3333333333333335],
-        "one_D_sum": [11, 11, 4, 7],
-        "one_E_mean": [7.5, 8.5, 4.5, 4.333333333333333],
-        "one_E_sum": [15, 17, 9, 13],
-    })
+    expected = pd.DataFrame(
+        {
+            "A": ["bar", "bar", "foo", "foo"],
+            "C": ["large", "small", "large", "small"],
+            "one_D_mean": [5.5, 5.5, 2.0, 2.3333333333333335],
+            "one_D_sum": [11, 11, 4, 7],
+            "one_E_mean": [7.5, 8.5, 4.5, 4.333333333333333],
+            "one_E_sum": [15, 17, 9, 13],
+        }
+    )
 
     result = df_frame.pivot_wider(
         index=["A", "C"],

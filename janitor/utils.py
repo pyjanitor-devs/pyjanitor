@@ -1654,9 +1654,12 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     return df
 
-
 @functools.singledispatch
-def _select_columns(columns_to_select: str, df):
+def _select_columns(columns_to_select, df):
+    raise TypeError("This type is not supported in column selection.")
+
+@_select_columns.register(str)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to strings.
@@ -1834,8 +1837,6 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     or a combination of these types.
     A list/pd.Index of column names is returned.
     """
-    for label in columns_to_select:
-        check("column label", label, [str, slice, Pattern, tuple, callable])
 
     filtered_columns = []
 

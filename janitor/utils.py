@@ -1654,9 +1654,11 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     return df
 
+
 @functools.singledispatch
 def _select_columns(columns_to_select, df):
     raise TypeError("This type is not supported in column selection.")
+
 
 @_select_columns.register(str)  # noqa: F811
 def _column_sel_dispatch(columns_to_select, df):  # noqa: F811

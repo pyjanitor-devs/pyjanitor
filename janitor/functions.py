@@ -4480,7 +4480,7 @@ def process_text(
     df: pd.DataFrame,
     column_name: str,
     new_column_names: Optional[Union[str, list]] = None,
-    merge_frame: Optional[bool] = None,
+    merge_frame: Optional[bool] = False,
     string_function: Optional[str] = None,
     **kwargs: str,
 ) -> pd.DataFrame:
@@ -4505,10 +4505,13 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({"text" : ["Ragnar","sammywemmy","ginger"],
+        df = pd.DataFrame({"text" : ["Ragnar",
+                                    "sammywemmy",
+                                    "ginger"],
                            "code" : [1, 2, 3]})
 
-        df.process_text(column_name = "text", string_function = "lower")
+        df.process_text(column_name = "text",
+                        string_function = "lower")
 
           text          code
         0 ragnar         1
@@ -4557,8 +4560,8 @@ def process_text(
         df = jn.process_text(
             df = df,
             column_name,
-            new_column_names = None,
-            merge_frame = None,
+            new_column_names = None/string/list_of_strings,
+            merge_frame = True/False,
             string_function = "string_func_name_here",
             kwargs
             )
@@ -4574,8 +4577,8 @@ def process_text(
             pd.DataFrame(...)
             .process_text(
                 column_name,
-                new_column_names = None,
-                merge_frame = None/True/False
+                new_column_names = None/string/list_of_strings,
+                merge_frame = True/False
                 string_function = "string_func_name_here",
                 kwargs
                 )

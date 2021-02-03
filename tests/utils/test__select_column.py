@@ -47,6 +47,19 @@ def df1():
     )
 
 
+@pytest.fixture
+def df_tuple():
+    frame = pd.DataFrame(
+        {
+            "A": {0: "a", 1: "b", 2: "c"},
+            "B": {0: 1, 1: 3, 2: 5},
+            "C": {0: 2, 1: 4, 2: 6},
+        }
+    )
+    frame.columns = [list("ABC"), list("DEF")]
+    return frame
+
+
 def test_type(df):
     """Raise TypeError if `columns_to_select` is the wrong type."""
     with pytest.raises(TypeError):
@@ -59,12 +72,12 @@ def test_type(df):
 
 def test_strings_do_not_exist(df):
     """
-    Raise NameError if `columns_to_select` is a string
+    Raise KeyError if `columns_to_select` is a string
     and does not exist in the dataframe's columns.
     """
-    with pytest.raises(NameError):
+    with pytest.raises(KeyError):
         _select_columns("word", df)
-    with pytest.raises(NameError):
+    with pytest.raises(KeyError):
         _select_columns("*starter", df)
 
 
@@ -128,11 +141,20 @@ def test_callable_no_match(df):
 
 def test_regex_presence(df):
     """
-    Raise ValueError if `columns_to_select` is a regex
+    Raise KeyError if `columns_to_select` is a regex
     and none of the column names match.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         _select_columns(re.compile(r"^\d+"), df)
+
+
+def test_tuple_presence(df_tuple):
+    """
+    Raise KeyError if `columns_to_select` is a tuple
+    and no match is returned.
+    """
+    with pytest.raises(KeyError):
+        _select_columns(("A", "C"), df_tuple)
 
 
 def test_strings(df1):
@@ -247,6 +269,13 @@ def test_regex(df1):
     )
     assert _select_columns(patterns(r"\d$"), df1) == list(
         df1.filter(regex=r"\d$").columns
+    )
+
+
+def test_tuple(df_tuple):
+    """Test _select_columns function on tuple."""
+    assert _select_columns(("A", "D"), df_tuple) == list(
+        df_tuple.loc[:, [("A", "D")]].columns
     )
 
 

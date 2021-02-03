@@ -44,7 +44,6 @@ from .utils import (
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
     _grid_computation,
-    _pivot_longer_pattern_match,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,
@@ -3077,9 +3076,11 @@ def select_columns(
     ::
 
         import pandas as pd
+        import janitor
         import numpy as np
         import datetime
         import re
+        from janitor import patterns
 
         df = pd.DataFrame(
                 {
@@ -3157,6 +3158,15 @@ def select_columns(
         0    4.0     8     E     T     a 2018-01-01
         1    NaN     5   NaN     U     b 2018-01-01
 
+        # same as above, with janitor.patterns
+        # simply a wrapper around re.compile
+
+        df.select_columns(patterns("\\d+"))
+
+           code1 code2 type1 type2 code3      type3
+        0    4.0     8     E     T     a 2018-01-01
+        1    NaN     5   NaN     U     b 2018-01-01
+
     - Select via a list (you can combine any of the previous options)::
 
         df.select_columns(["id", "code*", slice("code", "code2")])
@@ -3216,9 +3226,6 @@ def select_columns(
         search_column_names,
         [str, callable, Pattern, slice, list],
     )
-    if isinstance(search_column_names, list):
-        for label in search_column_names:
-            check("column label", label, [str, slice, Pattern, callable])
 
     full_column_list = _select_columns(search_column_names, df)
 
@@ -5533,15 +5540,15 @@ def pivot_longer(
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list/tuple of
-        column names. You can also dynamically select column names
-        by using a regular expression with the `janitor.patterns`
-        function. Index should be a list of tuples if the columns
-        are a MultiIndex.
+        column names. The `janitor.select_columns` syntax is supported here,
+        allowing for flexible and dynamic column selection.
+        Index should be a list of tuples if the columns are a MultiIndex.
     :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name or a list/tuple of column names. You can also
-        dynamically select column names by using a regular expression
-        with the `janitor.patterns` function. Column_names should be a
-        list of tuples if the columns are a MultiIndex.
+        a single column name or a list/tuple of column names.
+        The `janitor.select_columns` syntax is supported here,
+        allowing for flexible and dynamic column selection.
+        Column_names should be a list of tuples
+        if the columns are a MultiIndex.
     :param names_to: Name of new column as a string that will contain
         what were previously the column names in `column_names`.
         The default is `variable` if no value is provided. It can
@@ -5638,10 +5645,6 @@ def pivot_longer(
         names_pattern,
         sort_by_appearance,
         ignore_index,
-    )
-
-    df, index, column_names = _pivot_longer_pattern_match(
-        df, index, column_names
     )
 
     df = _computations_pivot_longer(
@@ -5824,15 +5827,22 @@ def pivot_wider(
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list of column names.
+        The `janitor.select_columns` syntax is supported here,
+        allowing for flexible and dynamic column selection.
         If `index` is not provided, the current dataframe's index is used.
     :param names_from: Name(s) of column(s) to use to make the new
         dataframe's columns. Should be either a single column name, or a
-        list of column names. A label or labels must be provided for
-        ``names_from``.
+        list of column names.
+        The `janitor.select_columns` syntax is supported here,
+        allowing for flexible and dynamic column selection.
+        A label or labels must be provided for ``names_from``.
     :param values_from: Name(s) of column(s) that will be used for populating
         the new dataframe's values. Should be either a single column name,
-        or a list of column names. If ``values_from`` is not specified, all
-        remaining columns will be used. If `flatten_levels` is ``False``,
+        or a list of column names.
+        The `janitor.select_columns` syntax is supported here,
+        allowing for flexible and dynamic column selection.
+        If ``values_from`` is not specified,
+        all remaining columns will be used. If `flatten_levels` is ``False``,
         a MultiIndex dataframe is created.
     :param names_sort: Default is `False`. Sorts columns by order of
         appearance. Applicable only if ``flatten_levels`` is `True`.

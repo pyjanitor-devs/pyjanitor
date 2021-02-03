@@ -45,6 +45,7 @@ from .utils import (
     _data_checks_pivot_wider,
     _grid_computation,
     _pivot_longer_pattern_match,
+    _process_text,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,
@@ -4612,11 +4613,15 @@ def process_text(
     check_column(df, [column_name])
 
     # new_column_names should not already exist in the dataframe
-    if new_column_names is not None:
+    if new_column_names:
+        check("new_column_names", new_column_names, [list, str])
         if isinstance(new_column_names, str):
             check_column(df, [new_column_names], present=False)
         else:
             check_column(df, new_column_names, present=False)
+
+    if merge_frame:
+        check("merge_frame", merge_frame, [bool])
 
     pandas_string_methods = [
         func.__name__
@@ -4624,7 +4629,7 @@ def process_text(
         if not func.__name__.startswith("_")
     ]
 
-    if string_function is None:
+    if not string_function:
         return df
 
     if string_function not in pandas_string_methods:
@@ -4638,85 +4643,18 @@ def process_text(
 
     result = getattr(df.loc[:, column_name].str, string_function)(**kwargs)
 
-    return _process_text(df, result, column_name=column_name, new_column_names=new_column_names, merge_frame=merge_frame)
-
     # TODO: Support for str.cat with `join` parameter
     # need a robust way to handle the results
     # if there is a `join` parameter, as this could create more
     # or less rows with varying indices or even duplicate indices
 
-
-@dispatch(pd.DataFrame, (str, pd.Series), str, str, bool)
-def _process_text(df, result, column_name, new_column_names, merge_frame):
-    if new_column_names:
-        return df.assign(new_column_names = result)
-    return df.assign(column_name = result)
-
-@dispatch(pd.DataFrame, pd.DataFrame, str, (str, list), bool)
-def _process_text(df, result, column_name, new_column_names, merge_frame):
-    if new_column_names:
-        result = _result_is_dataframe(result, new_column_names)
-    if not merge_frame:
-        return result
-    return _result_index_is_MultiIndex(result, result.index, df)
-
-@dispatch(pd.DataFrame, str)
-def _result_is_dataframe(result, new_column_names):
-    return result.add_prefix(new_column_names)
-
-@dispatch(pd.DataFrame, list)
-def _result_is_dataframe(result, new_column_names):
-    if len(new_column_names) != len(result.columns):
-            raise ValueError(
-                """
-                The length of `new_column_names` does not
-                match the number of columns in the new
-                dataframe generated from the text processing.
-                """
-                )
-    result.columns = new_column_names
-    return result
-
-@dispatch(pd.DataFrame, pd.Index, pd.DataFrame)
-def _result_index_is_MultiIndex(result, index, df):
-    return pd.concat([df, result], axis = "columns")
-
-@dispatch(pd.DataFrame, pd.MultiIndex, pd.DataFrame)
-def _result_index_is_MultiIndex(result, index, df):
-    # primarily for str.extractall, since at the moment this is the only
-    # string method that returns a MultiIndex.
-    # code will be modified if another string function that returns a
-    # MultIndex is added to Pandas string methods.
-    result = result.reset_index(level="match")
-    df = df.join(result, how="outer")
-    # droplevel gets rid of the extra index added at the start
-    # (# extra_index_line)
-    df = df.droplevel(-1).set_index("match", append=True)
-    return df
-
-# def _process_text_new_column_names(new_column_names):
-#     if isinstance(result, pd.DataFrame):
-#         if new_column_names is not None:
-#             if isinstance(new_column_names, str):
-#                 result = result.add_prefix(new_column_names)
-#             else:
-#                 if len(new_column_names) != len(result.columns):
-#                     raise ValueError(
-#                         """
-#                         The length of `new_column_names` does not
-#                         match the number of columns in the new
-#                         dataframe generated from the text processing.
-#                         """
-#                     )
-#                 result.columns = new_column_names
-
-#         if not merge_frame:
-#             return result
-
-#         if not isinstance(result.index, pd.MultiIndex):
-#             df = pd.concat([df, result], axis="columns")
-#             return df
-
+    return _process_text(
+        result,
+        df=df,
+        column_name=column_name,
+        new_column_names=new_column_names,
+        merge_frame=merge_frame,
+    )
 
 
 @pf.register_dataframe_method

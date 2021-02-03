@@ -44,11 +44,7 @@ from .utils import (
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
     _grid_computation,
-<<<<<<< HEAD
-    _pivot_longer_pattern_match,
     _process_text,
-=======
->>>>>>> 7ff7946ac662f0b73f58ffcb79baac5868de99c8
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,

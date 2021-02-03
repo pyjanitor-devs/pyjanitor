@@ -851,37 +851,6 @@ def _data_checks_pivot_longer(
     )
 
 
-def _pivot_longer_pattern_match(
-    df: pd.DataFrame,
-    index: Optional[Pattern] = None,
-    column_names: Optional[Pattern] = None,
-) -> Tuple:
-    """
-    This checks if a pattern (regular expression) is supplied
-    to index or column_names and extracts the column labels
-    that match the given regular expression.
-
-    A dataframe, along with the `index` and `column_names` are
-    returned.
-    """
-
-    # TODO: allow `janitor.patterns` to accept a list/tuple
-    # of regular expresssions.
-    if isinstance(column_names, Pattern):
-        column_names = [
-            column_name
-            for column_name in df
-            if column_names.search(column_name)
-        ]
-
-    if isinstance(index, Pattern):
-        index = [
-            column_name for column_name in df if index.search(column_name)
-        ]
-
-    return df, index, column_names
-
-
 def __tile_compat(arr: pd.Index, df: pd.DataFrame) -> pd.Index:
     """
     Repeats index multiple times.
@@ -1009,7 +978,8 @@ def _pivot_longer_extractions(
     if dot_value:
         # the extra indices (np.arange(len(df))) serve as a way to
         # associate each unpivoted value to a unique row identifier.
-        # It also aids in sorting by appearance. append is used in set_index,
+        # It also aids in sorting by appearance.
+        # append is used in set_index,
         # in case the user wishes to keep the original index.
         if index:
             df = df.set_index([*index, np.arange(len(df))], append=True)
@@ -1207,9 +1177,11 @@ def _computations_pivot_longer(
     """
 
     if index is not None:
+        index = _select_columns(index, df)
         check_column(df, index, present=True)
 
     if column_names is not None:
+        column_names = _select_columns(column_names, df)
         check_column(df, column_names, present=True)
 
     if (
@@ -1350,6 +1322,7 @@ def _data_checks_pivot_wider(
         if isinstance(index, str):
             index = [index]
         check("index", index, [list])
+        index = _select_columns(index, df)
         check_column(df, index, present=True)
 
     if names_from is None:
@@ -1360,14 +1333,13 @@ def _data_checks_pivot_wider(
     if isinstance(names_from, str):
         names_from = [names_from]
     check("names_from", names_from, [list])
+    names_from = _select_columns(names_from, df)
     check_column(df, names_from, present=True)
 
     if values_from is not None:
         check("values_from", values_from, [list, str])
-        if isinstance(values_from, str):
-            check_column(df, [values_from], present=True)
-        else:
-            check_column(df, values_from, present=True)
+        values_from = _select_columns(values_from, df)
+        check_column(df, values_from, present=True)
 
     check("names_sort", names_sort, [bool])
 
@@ -1389,17 +1361,8 @@ def _data_checks_pivot_wider(
     if names_sep is not None:
         check("names_sep", names_sep, [str])
 
-    # cant apply the `check` function here
-    # because of the callable type
-    if aggfunc is not None and not any(
-        (isinstance(aggfunc, (str, list, dict)), callable(aggfunc))
-    ):
-        raise TypeError(
-            """
-            aggfunc should be either a function,
-            string, list, or a dictionary.
-            """
-        )
+    if aggfunc is not None:
+        check("aggfunc", aggfunc, [str, list, dict, callable])
 
     if fill_value is not None:
         check("fill_value", fill_value, [int, float, str])
@@ -1494,6 +1457,9 @@ def _computations_pivot_wider(
         )
 
     df = df.loc[:, values_from]
+
+    if df.shape[-1] == 1:
+        df = df.iloc[:, 0]  # aligns with expected output if pd.pivot is used
 
     aggfunc_index = None
     if aggfunc is not None:
@@ -1690,7 +1656,12 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 
 @functools.singledispatch
-def _select_columns(columns_to_select: str, df):
+def _select_columns(columns_to_select, df):
+    raise TypeError("This type is not supported in column selection.")
+
+
+@_select_columns.register(str)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to strings.
@@ -1704,7 +1675,7 @@ def _select_columns(columns_to_select: str, df):
     elif columns_to_select in df.columns:
         filtered_columns = [columns_to_select]
     if not filtered_columns:
-        raise NameError(f"No match was returned for '{columns_to_select}'")
+        raise KeyError(f"No match was returned for '{columns_to_select}'")
     return filtered_columns
 
 
@@ -1842,9 +1813,21 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     ]
 
     if not filtered_columns:
-        raise ValueError("No column name matched the regular expression.")
+        raise KeyError("No column name matched the regular expression.")
 
     return filtered_columns
+
+
+@_select_columns.register(tuple)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to tuple type, and applies to MultiIndex columns.
+    A list/pd.Index of column names is returned.
+    """
+    if columns_to_select not in df.columns:
+        raise KeyError(f"No match was returned for {columns_to_select}")
+    return [columns_to_select]
 
 
 @_select_columns.register(list)  # noqa: F811
@@ -1856,6 +1839,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     or a combination of these types.
     A list/pd.Index of column names is returned.
     """
+
     filtered_columns = []
 
     for entry in columns_to_select:

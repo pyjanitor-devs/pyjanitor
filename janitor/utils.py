@@ -1879,7 +1879,7 @@ def _sub_process_text(
 
 
 @_process_text.register  # noqa: F811
-def _sub_process_text(
+def _sub_process_text(  # noqa: F811
     result: pd.DataFrame, df, column_name, new_column_names, merge_frame
 ):  # noqa: F811
     """

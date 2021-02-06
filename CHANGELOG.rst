@@ -1,5 +1,6 @@
 new version (on deck)
 =====================
+- [INF] Setup auto-release GitHub action. @loganthomas
 - [INF] Deploy ``darglint`` package for docstring linting. Issue #745. @loganthomas
 - [ENH] Added optional truncation to ``clean_names`` function. Issue #753. @richardqiu
 - [ENH] Added ``timeseries.flag_jumps()`` function. Issue #711. @loganthomas

@@ -1,34 +1,91 @@
-# For @loganthomas!
-# Some hints for you :)
+# Good example resources
+# https://riggaroo.dev/using-github-actions-to-automate-our-release-process/
+# https://blog.eizinger.io/12274/using-github-actions-to-automate-gitflow-style-releases
 
-# Give it an informative name.
-name: Some not so informative name
+name: Auto-release
 
-# Decide what git events trigger this workflow.
-# One of the two entries below shouldn't be used (logically) for a release workflow.
 on:
   push: [master]
   pull_request: [master]
 
-# Define the jobs
+  # Decide what the new version number will be
+  # @ericmjl I included this as not sure if this step can be automated...
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: 'Name of version (ie x.YY.MM)'
+        required: true
+
 jobs:
-  # Give the job an informative "key"
   release:
-    # Give the job an informative "name"
-    name: Some informative name
+    name: Create a new release
     runs-on: ubuntu-latest
 
     steps:
-      # Usually, the very first thing we'll need is to checkout the repository.
-      # See the "code-checks.yml" file to see the syntax.
+      - name: Make a pypirc file
+        run: |
+          touch ~/.pypirc
 
-      # Now we build the package. You can either choose to run arbitrary commands,
-      # or use someone else's pre-built action.
-      # The filesystem state is passed on from build step to build step,
-      # but the environment variables are not necessarily so.
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      # Once the package is built, we can use this action:
-      # https://github.com/pypa/gh-action-pypi-publish
-      # to do the final publishing.
-      # I have already added the PYPI_API_TOKEN in as one of the repository secrets,
-      # so you don't have to worry about it.
+      - name: Pull latest commits of dev branch
+        run: |
+          git checkout dev
+          git pull
+
+      # See https://github.com/marketplace/actions/wait-on-check
+      - name: Ensure all tests are passong on dev
+        uses: lewagon/wait-on-check-action@v0.2
+        with:
+          ref: dev  # can be commit SHA or tag
+          check-name: pyjanitor tests
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 60  # seconds
+
+      # See https://github.com/thomaseizinger/keep-a-changelog-new-release
+      - name: Update Changelog
+        uses: thomaseizinger/keep-a-changelog-new-release@v1
+        with:
+          version: ${{ github.event.inputs.versionName }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+
+      - name: Install bump2version
+        run: python -m pip install bumpversion  # installs bump2version
+
+      - name: Dry run bumpversion
+        run: |
+          bumpversion --dry-run ${{ github.event.inputs.versionName }} --allow-dirty --verbose
+
+      - name: Commit CHANGELOG updates
+        run: |
+          git add .
+          git commit -m "Update CHANGELOG for auto-release ${{ github.event.inputs.versionName }}"
+
+      - name: Ensure repo status is clean
+        run: git status
+
+      - name: Run bumpversion
+        run: bumpversion ${{ github.event.inputs.versionName }} -- verbose
+
+      - name: Ensure tag creation
+        run: git tag | grep ${{ github.event.inputs.versionName }}
+
+      - name: Push changes with tags
+        run: git push && git push --tags
+
+      - name: Build package
+        run: |
+          rm -f dist/*
+          python setup.py sdist bdist_wheel
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Ensure complete
+        run: echo "Auto-release complete!"

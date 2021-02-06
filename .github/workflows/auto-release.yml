@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Do we need this step? If so, how to safely inject username/password?
       - name: Make a pypirc file
         run: |
           touch ~/.pypirc

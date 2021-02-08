@@ -4,3 +4,4 @@ recursive-include tests
 include *.rst
 recursive-include docs
 include LICENSE
+include CHANGELOG.md

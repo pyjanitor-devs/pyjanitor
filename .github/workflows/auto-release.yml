@@ -8,7 +8,7 @@ on:
 
   # The below workflow_dispatch section  is for a "manual" kick off of the
   # auto-release script. To cut a new release, navigate to the Actions section
-  # of the repo and select this workflow (Auto-release) on the right hand side
+  # of the repo and select this workflow (Auto-release) on the right hand side.
   # Then, click "Run workflow" and you will be prompted to input the new
   # version (which should be 'major', 'minor', or 'patch').
   workflow_dispatch:
@@ -32,19 +32,13 @@ jobs:
           git pull
 
       # See https://github.com/marketplace/actions/wait-on-check
-      - name: Ensure all tests are passong on dev
+      - name: Ensure all tests are passing on dev
         uses: lewagon/wait-on-check-action@v0.2
         with:
           ref: dev  # can be commit SHA or tag
           check-name: pyjanitor tests
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 60  # seconds
-
-      # See https://github.com/thomaseizinger/keep-a-changelog-new-release
-      - name: Update Changelog
-        uses: thomaseizinger/keep-a-changelog-new-release@v1
-        with:
-          version: ${{ github.event.inputs.versionName }}
 
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -56,19 +50,34 @@ jobs:
         run: |
           bumpversion --dry-run ${{ github.event.inputs.versionName }} --allow-dirty --verbose
 
+      # This is lifted directly from the bump2version docs.
+      # Version number will be saved in `env` section of each consecutive stage
+      - name: Get new version number
+        run: |
+          echo "version_number=`bumpversion --dry-run --list ${{ github.event.inputs.versionName }} | grep new_version | sed -r s,"^.*=",,`" >> $GITHUB_ENV
+          echo "versionName: ${{ github.event.inputs.versionName }}"
+
+      # See https://github.com/thomaseizinger/keep-a-changelog-new-release
+      - name: Update Changelog
+        uses: thomaseizinger/keep-a-changelog-new-release@v1
+        with:
+          version: ${{ env.version_number }}
+
       - name: Commit CHANGELOG updates
         run: |
+          git config --global user.email "git@github.com"
+          git config --global user.name "GitHub Bot"
           git add .
-          git commit -m "Update CHANGELOG for auto-release ${{ github.event.inputs.versionName }}"
+          git commit -m "Update CHANGELOG for auto-release ${{ env.version_number }}"
 
       - name: Ensure repo status is clean
         run: git status
 
       - name: Run bumpversion
-        run: bumpversion ${{ github.event.inputs.versionName }} -- verbose
+        run: bumpversion ${{ github.event.inputs.versionName }} --verbose
 
       - name: Ensure tag creation
-        run: git tag | grep ${{ github.event.inputs.versionName }}
+        run: git tag | grep ${{ env.version_number }}
 
       - name: Push changes with tags
         run: git push && git push --tags

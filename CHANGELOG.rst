@@ -50,7 +50,6 @@ v0.20.10
 
 
 
-
 v0.20.9
 =======
 - [ENH] Updated groupby_agg function to account for null entries in the ``by`` argument. @samukweku

@@ -700,16 +700,9 @@ def _data_checks_pivot_longer(
     checking happens.
     """
 
-    if index is not None:
-        if isinstance(index, str):
-            index = [index]
-        check("index", index, [list, tuple, Pattern])
-
-    if column_names is not None:
-        if isinstance(column_names, str):
-            column_names = [column_names]
-        check("column_names", column_names, [list, tuple, Pattern])
-
+    # no need to do checks for `index` and `column_names`
+    # the `select_columns` function takes care of this
+    # within the `_computations_pivot_longer` function
     if isinstance(names_to, str):
         names_to = [names_to]
 
@@ -813,11 +806,13 @@ def _data_checks_pivot_longer(
             index is not None
             and isinstance(df.columns, pd.MultiIndex)
             and not isinstance(index, list)
+            and column_level is None
         ):
             raise ValueError(
                 """
-                    index must be a list of tuples
-                    when columns are a MultiIndex.
+                    `index` must be a list of tuples
+                    when the columns of the dataframe
+                    is a MultiIndex.
                     """
             )
 
@@ -825,10 +820,11 @@ def _data_checks_pivot_longer(
             column_names is not None
             and isinstance(df.columns, pd.MultiIndex)
             and not isinstance(column_names, list)
+            and column_level is None
         ):
             raise ValueError(
                 """
-                    column_names must be a list of tuples
+                    `column_names` must be a list of tuples
                     when columns are a MultiIndex.
                     """
             )
@@ -946,8 +942,8 @@ def _restore_index_and_sort_by_appearance(
 
 def _pivot_longer_extractions(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple]] = None,
-    column_names: Optional[Union[List, Tuple]] = None,
+    index: Optional[List] = None,
+    column_names: Optional[List] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[
@@ -1126,8 +1122,8 @@ def _pivot_longer_extractions(
 
 def _computations_pivot_longer(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple]] = None,
-    column_names: Optional[Union[List, Tuple]] = None,
+    index: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
+    column_names: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
     column_level: Optional[Union[int, str]] = None,
@@ -1178,11 +1174,9 @@ def _computations_pivot_longer(
 
     if index is not None:
         index = _select_columns(index, df)
-        check_column(df, index, present=True)
 
     if column_names is not None:
         column_names = _select_columns(column_names, df)
-        check_column(df, column_names, present=True)
 
     if (
         (index is None)
@@ -1323,7 +1317,6 @@ def _data_checks_pivot_wider(
             index = [index]
         check("index", index, [list])
         index = _select_columns(index, df)
-        check_column(df, index, present=True)
 
     if names_from is None:
         raise ValueError(
@@ -1334,12 +1327,10 @@ def _data_checks_pivot_wider(
         names_from = [names_from]
     check("names_from", names_from, [list])
     names_from = _select_columns(names_from, df)
-    check_column(df, names_from, present=True)
 
     if values_from is not None:
         check("values_from", values_from, [list, str])
         values_from = _select_columns(values_from, df)
-        check_column(df, values_from, present=True)
 
     check("names_sort", names_sort, [bool])
 
@@ -1384,8 +1375,8 @@ def _data_checks_pivot_wider(
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Optional[Union[List, str]] = None,
+    index: Optional[List] = None,
+    names_from: Optional[List] = None,
     values_from: Optional[Union[List, str]] = None,
     names_sort: Optional[bool] = False,
     flatten_levels: Optional[bool] = True,
@@ -1667,7 +1658,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to strings.
     It is also applicable to shell-like glob strings,
     specifically, the `*`.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     filtered_columns = None
     if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
@@ -1687,7 +1678,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     The start slice value must be a string or None;
     same goes for the stop slice value.
     The step slice value should be an integer or None.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     filtered_columns = None
     start_check = None
@@ -1746,7 +1737,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     # so this extra step is necessary to get the correct output
     start, stop = filtered_columns
     filtered_columns = df.columns[slice(start, stop, step)]
-    return filtered_columns
+    return list(filtered_columns)
 
 
 @_select_columns.register(dispatch_callable)  # noqa: F811
@@ -1756,7 +1747,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to callables.
     The callable is applied to every column in the dataframe.
     Either True or False is expected per column.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     # the function will be applied per series.
     # this allows filtration based on the contents of the series
@@ -1786,7 +1777,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         raise ValueError("No results were returned for the callable provided.")
 
     filtered_columns = df.columns[filtered_columns]
-    return filtered_columns
+    return list(filtered_columns)
 
 
 # hack to get it to recognize typing.Pattern
@@ -1803,7 +1794,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Base function for column selection.
     Applies only to regular expressions.
     `re.compile` is required for the regular expression.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     filtered_columns = None
     filtered_columns = [
@@ -1823,7 +1814,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to tuple type, and applies to MultiIndex columns.
-    A list/pd.Index of column names is returned.
+    A list, containing the tuple of column names is returned.
     """
     if columns_to_select not in df.columns:
         raise KeyError(f"No match was returned for {columns_to_select}")
@@ -1837,7 +1828,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to list type.
     It can take any of slice, str, callable, re.Pattern types,
     or a combination of these types.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
 
     filtered_columns = []

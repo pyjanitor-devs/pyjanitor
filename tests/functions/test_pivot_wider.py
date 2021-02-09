@@ -216,48 +216,28 @@ def test_names_from_None(df_checks_output):
 
 
 def test_presence_index1(df_checks_output):
-<<<<<<< HEAD
     """Raise KeyError if labels in `index` do not exist."""
     with pytest.raises(KeyError):
-=======
-    """Raise ValueError if labels in `index` do not exist."""
-    with pytest.raises(ValueError):
->>>>>>> Merge branch 'dev' of https://github.com/ericmjl/pyjanitor into dev
         df_checks_output.pivot_wider(index="geo", names_from="variable")
 
 
 def test_presence_index2(df_checks_output):
-<<<<<<< HEAD
     """Raise KeyError if labels in `index` do not exist."""
     with pytest.raises(KeyError):
-=======
-    """Raise ValueError if labels in `index` do not exist."""
-    with pytest.raises(ValueError):
->>>>>>> Merge branch 'dev' of https://github.com/ericmjl/pyjanitor into dev
         df_checks_output.pivot_wider(
             index=["geoid", "Name"], names_from="variable"
         )
 
 
 def test_presence_names_from1(df_checks_output):
-<<<<<<< HEAD
     """Raise KeyError if labels in `names_from` do not exist."""
     with pytest.raises(KeyError):
-=======
-    """Raise ValueError if labels in `names_from` do not exist."""
-    with pytest.raises(ValueError):
->>>>>>> Merge branch 'dev' of https://github.com/ericmjl/pyjanitor into dev
         df_checks_output.pivot_wider(index="geoid", names_from="estmt")
 
 
 def test_presence_names_from2(df_checks_output):
-<<<<<<< HEAD
     """Raise KeyError if labels in `names_from` do not exist."""
     with pytest.raises(KeyError):
-=======
-    """Raise ValueError if labels in `names_from` do not exist."""
-    with pytest.raises(ValueError):
->>>>>>> Merge branch 'dev' of https://github.com/ericmjl/pyjanitor into dev
         df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
 
 
@@ -566,11 +546,7 @@ def test_index_names_sort_True():
     assert_frame_equal(result, expected_output)
 
 
-<<<<<<< HEAD
 @pytest.fixture
-=======
-@pytest.fixture()
->>>>>>> Merge branch 'dev' of https://github.com/ericmjl/pyjanitor into dev
 def df_aggfunc():
     return pd.DataFrame(
         [
@@ -596,7 +572,6 @@ def df_aggfunc():
     )
 
 
-<<<<<<< HEAD
 @pytest.fixture
 def df_aggfunc_multiple_names_from():
     return pd.DataFrame(
@@ -640,8 +615,6 @@ def df_aggfunc_multiple_names_from():
     )
 
 
-=======
->>>>>>> Merge branch 'dev' of https://github.com/ericmjl/pyjanitor into dev
 def test_aggfunc(df_aggfunc):
     """Test output when `aggfunc` is provided."""
     expected = pd.DataFrame(
@@ -680,7 +653,6 @@ def test_aggfunc_list(df_aggfunc):
         index="V4", names_from="variable", aggfunc=["sum"], flatten_levels=True
     )
     assert_frame_equal(result, expected)
-<<<<<<< HEAD
 
 
 def test_aggfunc_multiple_names_from(df_aggfunc_multiple_names_from):
@@ -742,5 +714,3 @@ def test_df_multiple_aggfuncs():
     )
 
     assert_frame_equal(result, expected)
-=======
->>>>>>> Merge branch 'dev' of https://github.com/ericmjl/pyjanitor into dev

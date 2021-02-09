@@ -3061,7 +3061,7 @@ def currency_column_to_numeric(
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
     df: pd.DataFrame,
-    search_column_names: Union[str, callable, Pattern, slice, list],
+    search_column_names: Union[str, callable, Pattern, slice, list, tuple],
     invert: bool = False,
 ) -> pd.DataFrame:
     """Method-chainable selection of columns.
@@ -5166,8 +5166,8 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple, str, Pattern]] = None,
-    column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
+    index: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
+    column_names: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
     names_to: Optional[Union[List, Tuple, str]] = "variable",
     values_to: Optional[str] = "value",
     column_level: Optional[Union[int, str]] = None,

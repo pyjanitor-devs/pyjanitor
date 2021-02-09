@@ -5167,7 +5167,9 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
 def pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
-    column_names: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
+    column_names: Optional[
+        Union[str, callable, Pattern, slice, list, tuple]
+    ] = None,
     names_to: Optional[Union[List, Tuple, str]] = "variable",
     values_to: Optional[str] = "value",
     column_level: Optional[Union[int, str]] = None,

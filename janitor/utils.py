@@ -1123,7 +1123,9 @@ def _pivot_longer_extractions(
 def _computations_pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
-    column_names: Optional[Union[str, callable, Pattern, slice, list, tuple]] = None,
+    column_names: Optional[
+        Union[str, callable, Pattern, slice, list, tuple]
+    ] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
     column_level: Optional[Union[int, str]] = None,

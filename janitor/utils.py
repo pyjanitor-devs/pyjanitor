@@ -1667,7 +1667,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to strings.
     It is also applicable to shell-like glob strings,
     specifically, the `*`.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     filtered_columns = None
     if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
@@ -1687,7 +1687,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     The start slice value must be a string or None;
     same goes for the stop slice value.
     The step slice value should be an integer or None.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     filtered_columns = None
     start_check = None
@@ -1746,7 +1746,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     # so this extra step is necessary to get the correct output
     start, stop = filtered_columns
     filtered_columns = df.columns[slice(start, stop, step)]
-    return filtered_columns
+    return list(filtered_columns)
 
 
 @_select_columns.register(dispatch_callable)  # noqa: F811
@@ -1756,7 +1756,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to callables.
     The callable is applied to every column in the dataframe.
     Either True or False is expected per column.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     # the function will be applied per series.
     # this allows filtration based on the contents of the series
@@ -1786,7 +1786,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         raise ValueError("No results were returned for the callable provided.")
 
     filtered_columns = df.columns[filtered_columns]
-    return filtered_columns
+    return list(filtered_columns)
 
 
 # hack to get it to recognize typing.Pattern
@@ -1803,7 +1803,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Base function for column selection.
     Applies only to regular expressions.
     `re.compile` is required for the regular expression.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     filtered_columns = None
     filtered_columns = [
@@ -1823,7 +1823,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to tuple type, and applies to MultiIndex columns.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
     if columns_to_select not in df.columns:
         raise KeyError(f"No match was returned for {columns_to_select}")
@@ -1839,6 +1839,18 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     or a combination of these types.
     A list/pd.Index of column names is returned.
     """
+
+    # takes care of boolean entries
+    if all(map(pd.api.types.is_bool, columns_to_select)):
+        if len(columns_to_select) != len(df.columns):
+            raise ValueError(
+                """
+                The length of the list of booleans
+                does not match the number of columns
+                in the dataframe.
+                """
+            )
+        return df.columns[columns_to_select].tolist()
 
     filtered_columns = []
 

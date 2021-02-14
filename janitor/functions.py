@@ -3175,6 +3175,15 @@ def select_columns(
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
 
+    - You can also pass a list of booleans::
+
+        df.select_columns([True, False, True, True, True,
+                           False, False, False, True, False])
+
+           id  code  code1 code2 code3
+        0   0     1    4.0     8     a
+        1   1     2    NaN     5     b
+
     - Setting ``invert`` to ``True``
       returns the complement of the columns provided::
 

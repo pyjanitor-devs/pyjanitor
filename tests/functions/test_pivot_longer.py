@@ -6,6 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from janitor import patterns
+import janitor
 
 df_checks = pd.DataFrame(
     [
@@ -1956,3 +1957,5 @@ def test_float_suffix_irregular():
         sort_by_appearance=True,
     )
     assert_frame_equal(result, expected)
+
+

@@ -1,5 +1,6 @@
 import datetime
 import re
+from _pytest.monkeypatch import V
 
 import numpy as np
 import pandas as pd
@@ -68,6 +69,34 @@ def test_type(df):
     with pytest.raises(TypeError):
         _select_columns([3, "id"], df)
 
+def test_level_type(df_tuple):
+    """Raise TypeError if `level` is the wrong type."""
+    with pytest.raises(TypeError):
+        _select_columns('A', df_tuple, level=1.0)
+
+def test_level_nonexistent(df_tuple):
+    """
+    Raise ValueError if column is a MultiIndex
+    and level is `None`.
+    """
+    with pytest.raises(ValueError):
+        _select_columns('A', df_tuple)
+
+def test_tuple_callable(df_tuple):
+    """
+    Raise ValueError if dataframe has MultiIndex columns
+    and a callable is provided.
+    """
+    with pytest.raises(ValueError):
+        _select_columns(lambda df: df.name.startswith('A'), df_tuple)
+
+def test_tuple_regex(df_tuple):
+    """
+    Raise ValueError if dataframe has MultiIndex columns'
+    a regex is provided and level is None.
+    """
+    with pytest.raises(ValueError):
+     _select_columns(re.compile("A"), df_tuple)
 
 def test_strings_do_not_exist(df):
     """
@@ -162,13 +191,6 @@ def test_regex_presence(df):
         _select_columns(re.compile(r"^\d+"), df)
 
 
-@pytest.mark.xfail(
-    reason="""
-            no need to test for tuples,
-            as any function using `_select_columns`
-            should convert any list-like to lists.
-            """
-)
 def test_tuple_presence(df_tuple):
     """
     Raise KeyError if `columns_to_select` is a tuple
@@ -285,18 +307,15 @@ def test_regex(df1):
     )
 
 
-@pytest.mark.xfail(
-    reason="""
-            no need to test for tuples,
-            as any function using `_select_columns`
-            should convert any list-like to lists.
-            """
-)
 def test_tuple(df_tuple):
     """Test _select_columns function on tuple."""
     assert _select_columns(("A", "D"), df_tuple) == list(
         df_tuple.loc[:, [("A", "D")]].columns
     )
+
+    assert _select_columns("A", df_tuple, level = 0) == ['A']
+
+    assert _select_columns(re.compile("A"), df_tuple, level = 0) == ['A']
 
 
 def test_list_various(df1):
@@ -309,6 +328,7 @@ def test_list_various(df1):
     assert _select_columns(
         ["id", "code*", slice("code", "code2")], df1
     ), df1.filter(regex="^(id|code)").columns
+    assert _select_columns([('id', 'Name')], df1) == ["id", "Name"]
 
 
 def test_list_boolean(df):

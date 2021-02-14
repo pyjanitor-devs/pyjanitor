@@ -22,7 +22,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import CategoricalDtype, is_list_like
+from pandas.api.types import CategoricalDtype
 from pandas.core import common
 
 from .errors import JanitorError
@@ -700,15 +700,14 @@ def _data_checks_pivot_longer(
     checking happens.
     """
 
+    if column_level is not None:
+        check("column_level", column_level, [int, str])
+
     if index is not None:
-        if isinstance(index, str):
-            index = [index]
-        check("index", index, [list, tuple, Pattern])
+        index = _select_columns(index, df, level= column_level)
 
     if column_names is not None:
-        if isinstance(column_names, str):
-            column_names = [column_names]
-        check("column_names", column_names, [list, tuple, Pattern])
+        column_names = _select_columns(column_names, df, level= column_level)
 
     if isinstance(names_to, str):
         names_to = [names_to]
@@ -726,9 +725,9 @@ def _data_checks_pivot_longer(
         if all((names_pattern, names_sep)):
             raise ValueError(
                 """
-                    Only one of `names_pattern` or `names_sep`
-                    should be provided.
-                    """
+                Only one of `names_pattern` or `names_sep`
+                should be provided.
+                """
             )
 
         if ".value" in names_to and names_to.count(".value") > 1:
@@ -738,9 +737,9 @@ def _data_checks_pivot_longer(
     if len(names_to) == 1 and names_sep is not None:
         raise ValueError(
             """
-                    For a single `names_to` value,
-                    `names_sep` is not required.
-                    """
+            For a single `names_to` value,
+            `names_sep` is not required.
+            """
         )
     if names_pattern is not None:
         check("names_pattern", names_pattern, [str, Pattern, List, Tuple])
@@ -787,24 +786,22 @@ def _data_checks_pivot_longer(
         # with a minor tweak
         raise ValueError(
             """
-                This dataframe has a column name that matches the
-                'values_to' column name of the resulting Dataframe.
-                Kindly set the 'values_to' parameter to a unique name.
-                """
+            This dataframe has a column name that matches the
+            'values_to' column name of the resulting Dataframe.
+            Kindly set the 'values_to' parameter to a unique name.
+            """
         )
 
-    if column_level is not None:
-        check("column_level", column_level, [int, str])
 
     if any((names_sep, names_pattern)) and isinstance(
         df.columns, pd.MultiIndex
     ):
         raise ValueError(
             """
-                Unpivoting a MultiIndex column dataframe when
-                `names_sep` or `names_pattern` is supplied is
-                not supported.
-                """
+            Unpivoting a MultiIndex column dataframe when
+            `names_sep` or `names_pattern` is supplied is
+            not supported.
+            """
         )
 
     if all((names_sep is None, names_pattern is None)):
@@ -1176,15 +1173,6 @@ def _computations_pivot_longer(
     An unpivoted dataframe is returned.
     """
 
-    if index is not None:
-        if is_list_like(index):
-            index = list(index)
-        index = _select_columns(index, df)
-
-    if column_names is not None:
-        if is_list_like(column_names):
-            column_names = list(column_names)
-        column_names = _select_columns(column_names, df)
 
     if (
         (index is None)
@@ -1658,12 +1646,19 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 
 @functools.singledispatch
-def _select_columns(columns_to_select, df):
+def _select_columns(columns_to_select, df, level=None):
+    """
+    base function for column selection.
+    `level` parameter provided for selection in a MultiIndex.
+    Introduced primarily as a helper for `pivot_longer` function.
+    At the moment, not applied to the `select_columns` function,
+    since it is primarily focused on single indexed columns.
+    """
     raise TypeError("This type is not supported in column selection.")
 
 
 @_select_columns.register(str)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
     """
     Base function for column selection.
     Applies only to strings.
@@ -1672,9 +1667,17 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list of column names is returned.
     """
     filtered_columns = None
+    columns = None
+    if isinstance(df.columns, pd.MultiIndex):
+        if level is None:
+            raise ValueError("""Kindly provide a column level.""")
+        check("level", level, [str, int])
+        columns = df.columns.get_level_values(level)
+    else:
+        columns = df.columns
     if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
-        filtered_columns = fnmatch.filter(df.columns, columns_to_select)
-    elif columns_to_select in df.columns:
+        filtered_columns = fnmatch.filter(columns, columns_to_select)
+    elif columns.str.contains(columns_to_select).any():
         filtered_columns = [columns_to_select]
     if not filtered_columns:
         raise KeyError(f"No match was returned for '{columns_to_select}'")
@@ -1682,15 +1685,22 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
 
 @_select_columns.register(slice)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
     """
     Base function for column selection.
     Applies only to slices.
     The start slice value must be a string or None;
     same goes for the stop slice value.
     The step slice value should be an integer or None.
+    A slice, if passed correctly in a Multindex column,
+    returns a list of tuples across all levels of the
+    column.
     A list of column names is returned.
     """
+
+    # for MultiIndex, if passed correctly,
+    # a slice returns a list of tuples.
+
     filtered_columns = None
     start_check = None
     stop_check = None
@@ -1752,12 +1762,13 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
 
 @_select_columns.register(dispatch_callable)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
     """
     Base function for column selection.
     Applies only to callables.
     The callable is applied to every column in the dataframe.
     Either True or False is expected per column.
+    Not implemented for MultiIndex columns.
     A list of column names is returned.
     """
     # the function will be applied per series.
@@ -1767,6 +1778,14 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     # whatever the case may be,
     # the returned values should be a sequence of booleans,
     # with at least one True.
+
+    if isinstance(df.columns, pd.MultiIndex):
+        raise ValueError(
+            """
+            MultiIndex columns not applicable
+            for callables in column selection.
+            """
+        )
     filtered_columns = None
     filtered_columns = [columns_to_select(column) for _, column in df.items()]
 
@@ -1800,7 +1819,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 # however, the same type from typing.Pattern
 # is not accepted.
 @_select_columns.register(type(re.compile(r"\d+")))  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
     """
     Base function for column selection.
     Applies only to regular expressions.
@@ -1808,9 +1827,18 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list of column names is returned.
     """
     filtered_columns = None
+    columns = None
+    if isinstance(df.columns, pd.MultiIndex):
+        if level is None:
+            raise ValueError("""Kindly provide a column level.""")
+        check("level", level, [str, int])
+        columns = df.columns.get_level_values(level)
+    else:
+        columns = df.columns
+
     filtered_columns = [
         column_name
-        for column_name in df
+        for column_name in columns
         if re.search(columns_to_select, column_name)
     ]
 
@@ -1820,14 +1848,30 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     return filtered_columns
 
 
+@_select_columns.register(tuple)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to tuple type, and extends to MultiIndex columns.
+    A list of column names is returned.
+    The `level` parameter is not applied for tuples.
+    """
+    if isinstance(df.columns, pd.MultiIndex):
+        if columns_to_select not in df.columns:
+            raise KeyError(f"No match was returned for {columns_to_select}")
+        return [columns_to_select]
+    columns_to_select = list(columns_to_select)
+    return _select_columns(columns_to_select, df)
+
+
 @_select_columns.register(list)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
     """
     Base function for column selection.
     Applies only to list type.
     It can take any of slice, str, callable, re.Pattern types,
     or a combination of these types.
-    A list/pd.Index of column names is returned.
+    A list of column names is returned.
     """
 
     # takes care of boolean entries
@@ -1840,13 +1884,17 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
                 in the dataframe.
                 """
             )
+        # boolean applied to all levels if a MultiIndex
         return df.columns[columns_to_select].tolist()
 
     filtered_columns = []
 
+    # this avoids duplicate entries
     for entry in columns_to_select:
         outcome = [
-            c for c in _select_columns(entry, df) if c not in filtered_columns
+            c
+            for c in _select_columns(entry, df, level=level)
+            if c not in filtered_columns
         ]
         filtered_columns.extend(outcome)
 

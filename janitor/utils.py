@@ -1818,18 +1818,6 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     return filtered_columns
 
 
-@_select_columns.register(tuple)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
-    """
-    Base function for column selection.
-    Applies only to tuple type, and applies to MultiIndex columns.
-    A list of column names is returned.
-    """
-    if columns_to_select not in df.columns:
-        raise KeyError(f"No match was returned for {columns_to_select}")
-    return [columns_to_select]
-
-
 @_select_columns.register(list)  # noqa: F811
 def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """

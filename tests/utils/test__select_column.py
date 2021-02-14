@@ -162,6 +162,13 @@ def test_regex_presence(df):
         _select_columns(re.compile(r"^\d+"), df)
 
 
+@pytest.mark.xfail(
+    reason="""
+            no need to test for tuples,
+            as any function using `_select_columns`
+            should convert any list-like to lists.
+            """
+)
 def test_tuple_presence(df_tuple):
     """
     Raise KeyError if `columns_to_select` is a tuple
@@ -278,6 +285,13 @@ def test_regex(df1):
     )
 
 
+@pytest.mark.xfail(
+    reason="""
+            no need to test for tuples,
+            as any function using `_select_columns`
+            should convert any list-like to lists.
+            """
+)
 def test_tuple(df_tuple):
     """Test _select_columns function on tuple."""
     assert _select_columns(("A", "D"), df_tuple) == list(

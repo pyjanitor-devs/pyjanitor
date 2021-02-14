@@ -3064,7 +3064,11 @@ def select_columns(
     search_column_names: Union[str, callable, Pattern, slice, list],
     invert: bool = False,
 ) -> pd.DataFrame:
-    """Method-chainable selection of columns.
+    """
+    Method-chainable selection of columns.
+
+    It accepts a string, shell-like glob strings (*string*),
+    regex, slice, array-like object, or a list of the previous options.
 
     This method does not mutate the original DataFrame.
 
@@ -3235,6 +3239,11 @@ def select_columns(
         search_column_names,
         [str, callable, Pattern, slice, list],
     )
+
+    # applicable for any
+    # list-like object (ndarray, Series, pd.Index, tuple, ...)
+    if pd.api.types.is_list_like(search_column_names):
+        search_column_names = list(search_column_names)
 
     full_column_list = _select_columns(search_column_names, df)
 

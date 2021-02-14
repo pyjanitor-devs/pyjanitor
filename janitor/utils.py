@@ -1849,3 +1849,108 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         filtered_columns.extend(outcome)
 
     return filtered_columns
+
+
+# implement dispatch for process_text
+@functools.singledispatch
+def _process_text(result: str, df, column_name, new_column_names, merge_frame):
+    """
+    Base function for `process_text` when `result` is of ``str`` type.
+    """
+    if new_column_names:
+        df.loc[:, new_column_names] = result
+    else:
+        df.loc[:, column_name] = result
+    return df
+
+
+@_process_text.register
+def _sub_process_text(
+    result: pd.Series, df, column_name, new_column_names, merge_frame
+):
+    """
+    Base function for `process_text` when `result` is of ``pd.Series`` type.
+    """
+    if new_column_names:
+        df.loc[:, new_column_names] = result
+    else:
+        df.loc[:, column_name] = result
+    return df
+
+
+@_process_text.register  # noqa: F811
+def _sub_process_text(  # noqa: F811
+    result: pd.DataFrame, df, column_name, new_column_names, merge_frame
+):  # noqa: F811
+    """
+    Base function for `process_text` when `result` is of ``pd.DataFrame`` type.
+    """
+    result = _process_text_result_is_frame(new_column_names, result)
+    if not merge_frame:
+        return result
+    return _process_text_result_MultiIndex(result.index, result, df)
+
+
+@functools.singledispatch
+def _process_text_result_is_frame(new_column_names: str, result):
+    """
+    Function to modify `result` columns from `process_text` if
+    `result` is a dataframe. Applies only if `new_column_names`
+    is a string type.
+    """
+    if new_column_names:
+        return result.add_prefix(new_column_names)
+    return result
+
+
+@_process_text_result_is_frame.register
+def _sub_process_text_result_is_frame(new_column_names: list, result):
+    """
+    Function to modify `result` columns from `process_text` if
+    `result` is a dataframe. Applies only if `new_column_names`
+    is a list type.
+    """
+    if len(new_column_names) != len(result.columns):
+        raise ValueError(
+            """
+            The length of `new_column_names` does not
+            match the number of columns in the new
+            dataframe generated from the text processing.
+            """
+        )
+    result.columns = new_column_names
+    return result
+
+
+@functools.singledispatch
+def _process_text_result_MultiIndex(index: pd.Index, result, df):
+    """
+    Function to modify `result` columns from `process_text` if
+    `result` is a dataframe and it has a single Index.
+    """
+    return pd.concat([df, result], axis="columns")
+
+
+@_process_text_result_MultiIndex.register
+def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
+    """
+    Function to modify `result` columns from `process_text` if
+    `result` is a dataframe and it has a MultiIndex.
+    At the moment, this function is primarily to cater for `str.extractall`,
+    since at the moment,
+    this is the only string method that returns a MultiIndex.
+    The function may be modified,
+    if another string function that returns a  MultIndex
+    is added to Pandas string methods.
+
+    For this function, `df` has been converted to a MultiIndex,
+    with the extra index added to create unique indices.
+    This comes in handy when merging back the dataframe,
+    especially if `result` returns duplicate indices.
+    """
+    result = result.reset_index(level="match")
+    df = df.join(result, how="outer")
+    # droplevel gets rid of the extra index added at the start
+    # (# extra_index_line)
+    df = df.droplevel(-1).set_index("match", append=True)
+    return df

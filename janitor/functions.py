@@ -44,6 +44,7 @@ from .utils import (
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
     _grid_computation,
+    _process_text,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,
@@ -4486,7 +4487,7 @@ def process_text(
     df: pd.DataFrame,
     column_name: str,
     new_column_names: Optional[Union[str, list]] = None,
-    merge_frame: Optional[bool] = None,
+    merge_frame: Optional[bool] = False,
     string_function: Optional[str] = None,
     **kwargs: str,
 ) -> pd.DataFrame:
@@ -4511,10 +4512,13 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({"text" : ["Ragnar","sammywemmy","ginger"],
+        df = pd.DataFrame({"text" : ["Ragnar",
+                                    "sammywemmy",
+                                    "ginger"],
                            "code" : [1, 2, 3]})
 
-        df.process_text(column_name = "text", string_function = "lower")
+        df.process_text(column_name = "text",
+                        string_function = "lower")
 
           text          code
         0 ragnar         1
@@ -4563,8 +4567,8 @@ def process_text(
         df = jn.process_text(
             df = df,
             column_name,
-            new_column_names = None,
-            merge_frame = None,
+            new_column_names = None/string/list_of_strings,
+            merge_frame = True/False,
             string_function = "string_func_name_here",
             kwargs
             )
@@ -4580,8 +4584,8 @@ def process_text(
             pd.DataFrame(...)
             .process_text(
                 column_name,
-                new_column_names = None,
-                merge_frame = None/True/False
+                new_column_names = None/string/list_of_strings,
+                merge_frame = True/False
                 string_function = "string_func_name_here",
                 kwargs
                 )
@@ -4619,14 +4623,14 @@ def process_text(
     check_column(df, [column_name])
 
     # new_column_names should not already exist in the dataframe
-    if new_column_names is not None:
+    if new_column_names:
         check("new_column_names", new_column_names, [list, str])
         if isinstance(new_column_names, str):
             check_column(df, [new_column_names], present=False)
         else:
             check_column(df, new_column_names, present=False)
 
-    if merge_frame is not None:
+    if merge_frame:
         check("merge_frame", merge_frame, [bool])
 
     pandas_string_methods = [
@@ -4635,7 +4639,7 @@ def process_text(
         if not func.__name__.startswith("_")
     ]
 
-    if string_function is None:
+    if not string_function:
         return df
 
     if string_function not in pandas_string_methods:
@@ -4653,44 +4657,14 @@ def process_text(
     # need a robust way to handle the results
     # if there is a `join` parameter, as this could create more
     # or less rows with varying indices or even duplicate indices
-    if isinstance(result, (pd.Series, str)):
-        if not new_column_names:
-            df.loc[:, column_name] = result
-        else:
-            df.loc[:, new_column_names] = result
-        return df
 
-    if isinstance(result, pd.DataFrame):
-        if new_column_names is not None:
-            if isinstance(new_column_names, str):
-                result = result.add_prefix(new_column_names)
-            else:
-                if len(new_column_names) != len(result.columns):
-                    raise ValueError(
-                        """
-                        The length of `new_column_names` does not
-                        match the number of columns in the new
-                        dataframe generated from the text processing.
-                        """
-                    )
-                result.columns = new_column_names
-
-        if not merge_frame:
-            return result
-
-        if not isinstance(result.index, pd.MultiIndex):
-            df = pd.concat([df, result], axis="columns")
-            return df
-        # primarily for str.extractall, since at the moment this is the only
-        # string method that returns a MultiIndex.
-        # code will be modified if another string function that returns a
-        # MultIndex is added to Pandas string methods.
-        result = result.reset_index(level="match")
-        df = df.join(result, how="outer")
-        # droplevel gets rid of the extra index added at the start
-        # (# extra_index_line)
-        df = df.droplevel(-1).set_index("match", append=True)
-        return df
+    return _process_text(
+        result,
+        df=df,
+        column_name=column_name,
+        new_column_names=new_column_names,
+        merge_frame=merge_frame,
+    )
 
 
 @pf.register_dataframe_method

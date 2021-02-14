@@ -22,7 +22,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import CategoricalDtype
+from pandas.api.types import CategoricalDtype, is_list_like
 from pandas.core import common
 
 from .errors import JanitorError
@@ -1177,12 +1177,14 @@ def _computations_pivot_longer(
     """
 
     if index is not None:
+        if is_list_like(index):
+            index = list(index)
         index = _select_columns(index, df)
-        check_column(df, index, present=True)
 
     if column_names is not None:
+        if is_list_like(column_names):
+            column_names = list(column_names)
         column_names = _select_columns(column_names, df)
-        check_column(df, column_names, present=True)
 
     if (
         (index is None)

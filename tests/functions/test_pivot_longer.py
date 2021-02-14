@@ -174,7 +174,11 @@ def test_presence_index(df, index):
         df.pivot_longer(index=index)
 
 
-@pytest.mark.xfail(reason="will fix this in PR for pivot_longer specifically")
+@pytest.mark.xfail(
+    reason="""
+           First test will fail on TypeError instead since
+           `_select_columns` does not support integers"""
+)
 @pytest.mark.parametrize("df,column", column_presence_checks)
 def test_presence_columns(df, column):
     """Raise KeyError if labels in `column_names` do not exist."""

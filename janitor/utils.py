@@ -1867,7 +1867,8 @@ def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
     Applies only to list type.
     It can take any of slice, str, callable, re.Pattern types,
     or a combination of these types.
-    A list of column names is returned.
+    A tuple of column names is returned, if the columns is
+    a MultiIndex, else a list is returned.
     """
 
     # takes care of boolean entries
@@ -1884,14 +1885,18 @@ def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
         return df.columns[columns_to_select].tolist()
 
     filtered_columns = []
+    columns_to_select = (
+        _select_columns(entry, df, level=level) for entry in columns_to_select
+    )
+
+    columns_to_select = (
+        [entry] if isinstance(entry, tuple) else entry
+        for entry in columns_to_select
+    )
 
     # this avoids duplicate entries
     for entry in columns_to_select:
-        outcome = [
-            c
-            for c in _select_columns(entry, df, level=level)
-            if c not in filtered_columns
-        ]
+        outcome = [c for c in entry if c not in filtered_columns]
         filtered_columns.extend(outcome)
 
     return filtered_columns

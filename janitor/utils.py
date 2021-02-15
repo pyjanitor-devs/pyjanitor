@@ -1889,6 +1889,10 @@ def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
         _select_columns(entry, df, level=level) for entry in columns_to_select
     )
 
+    # this is required, as the next code uses the `extend` method for lists
+    # it allows `tuple` status to be maintained
+    # especially for `pivot_longer` that requires list of tuples
+    # when melting a MultiIndex column.
     columns_to_select = (
         [entry] if isinstance(entry, tuple) else entry
         for entry in columns_to_select

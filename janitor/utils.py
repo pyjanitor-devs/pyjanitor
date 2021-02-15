@@ -22,7 +22,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import CategoricalDtype
+from pandas.api.types import CategoricalDtype, is_list_like
 from pandas.core import common
 
 from .errors import JanitorError
@@ -704,10 +704,14 @@ def _data_checks_pivot_longer(
         check("column_level", column_level, [int, str])
 
     if index is not None:
-        index = _select_columns(index, df, level= column_level)
+        if is_list_like(index) and not isinstance(index, tuple):
+            index = list(index)
+        index = _select_columns(index, df, level=column_level)
 
     if column_names is not None:
-        column_names = _select_columns(column_names, df, level= column_level)
+        if is_list_like(column_names) and not isinstance(column_names, tuple):
+            column_names = list(column_names)
+        column_names = _select_columns(column_names, df, level=column_level)
 
     if isinstance(names_to, str):
         names_to = [names_to]
@@ -791,7 +795,6 @@ def _data_checks_pivot_longer(
             Kindly set the 'values_to' parameter to a unique name.
             """
         )
-
 
     if any((names_sep, names_pattern)) and isinstance(
         df.columns, pd.MultiIndex
@@ -1173,7 +1176,6 @@ def _computations_pivot_longer(
     An unpivoted dataframe is returned.
     """
 
-
     if (
         (index is None)
         and column_names
@@ -1309,27 +1311,22 @@ def _data_checks_pivot_wider(
     """
 
     if index is not None:
-        if isinstance(index, str):
-            index = [index]
-        check("index", index, [list])
+        if is_list_like(index):
+            index = list(index)
         index = _select_columns(index, df)
-        check_column(df, index, present=True)
 
     if names_from is None:
         raise ValueError(
             "pivot_wider() missing 1 required argument: 'names_from'"
         )
 
-    if isinstance(names_from, str):
-        names_from = [names_from]
-    check("names_from", names_from, [list])
+    if is_list_like(names_from):
+        names_from = list(names_from)
     names_from = _select_columns(names_from, df)
-    check_column(df, names_from, present=True)
 
     if values_from is not None:
         check("values_from", values_from, [list, str])
         values_from = _select_columns(values_from, df)
-        check_column(df, values_from, present=True)
 
     check("names_sort", names_sort, [bool])
 
@@ -1477,8 +1474,7 @@ def _computations_pivot_wider(
         df.columns = df.columns.set_names(
             level=[0, 1], names=["values_from", "aggfunc"]
         )
-        if len(df.columns.get_level_values("values_from").unique()) == 1:
-            df = df.droplevel("values_from", axis="columns")
+
         if len(df.columns.get_level_values("aggfunc").unique()) == 1:
             df = df.droplevel("aggfunc", axis="columns")
 
@@ -1677,7 +1673,7 @@ def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
         columns = df.columns
     if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
         filtered_columns = fnmatch.filter(columns, columns_to_select)
-    elif columns.str.contains(columns_to_select).any():
+    elif columns_to_select in columns:
         filtered_columns = [columns_to_select]
     if not filtered_columns:
         raise KeyError(f"No match was returned for '{columns_to_select}'")
@@ -1859,7 +1855,7 @@ def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
     if isinstance(df.columns, pd.MultiIndex):
         if columns_to_select not in df.columns:
             raise KeyError(f"No match was returned for {columns_to_select}")
-        return [columns_to_select]
+        return columns_to_select
     columns_to_select = list(columns_to_select)
     return _select_columns(columns_to_select, df)
 

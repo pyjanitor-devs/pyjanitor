@@ -6,7 +6,6 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from janitor import patterns
-import janitor
 
 df_checks = pd.DataFrame(
     [
@@ -137,6 +136,7 @@ names_pattern_type_check = [
 ]
 
 
+@pytest.mark.xfail(reason="list-like converted to lists.")
 @pytest.mark.parametrize("df,index", index_type_checks)
 def test_type_index(df, index):
     """Raise TypeError if wrong type is provided for the `index`."""
@@ -144,6 +144,7 @@ def test_type_index(df, index):
         df.pivot_longer(index=index)
 
 
+@pytest.mark.xfail(reason="list-like converted to list.")
 @pytest.mark.parametrize("df,column", column_type_checks)
 def test_type_column_names(df, column):
     """Raise TypeError if wrong type is provided for `column_names`."""
@@ -1957,5 +1958,3 @@ def test_float_suffix_irregular():
         sort_by_appearance=True,
     )
     assert_frame_equal(result, expected)
-
-

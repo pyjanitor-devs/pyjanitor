@@ -5218,7 +5218,7 @@ def case_when(
             df = pd.DataFrame({
                 "a" : [0, 0, 1, 2, "hi"],
                 "b" : [0, 3, 4, 5, "bye"],
-                "c" : [6, 7, 8, 9, "wait]
+                "c" : [6, 7, 8, 9, "wait"]
             })
 ​
             (df.
@@ -5230,7 +5230,7 @@ def case_when(
                 [True, df.c]
             ))
 ​
-            a   b    c    value  
+                 a   b    c    value  
             0    0   0    6      x
             1    0   3    7      0
             2    1   4    8      8

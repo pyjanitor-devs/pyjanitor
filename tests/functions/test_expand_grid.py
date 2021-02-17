@@ -6,7 +6,6 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from janitor.functions import expand_grid
-from janitor.utils import _check_instance
 
 
 def test_not_a_dict():
@@ -254,3 +253,16 @@ def test_expand_grid_others_only(grid_input, grid_output):
     is supplied.
     """
     assert_frame_equal(expand_grid(others=grid_input), grid_output)
+
+
+import janitor
+
+df1 = pd.DataFrame({"x":range(1,3), "y":[2,1]})
+df2 = pd.DataFrame({"x":[1,2,3],"y":[3,2,1]})
+df3 = pd.DataFrame({"x":[2,3],"y":["a","b"]})
+
+data = {"df1":df1, "df2":df2, "df3":df3}
+
+result = expand_grid(others=data)
+
+print(result)

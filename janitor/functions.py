@@ -34,7 +34,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
-    _check_instance,
+    _computations_expand_grid,
     _clean_accounting_column,
     _computations_as_categorical,
     _computations_complete,
@@ -43,7 +43,6 @@ from .utils import (
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
-    _grid_computation,
     _process_text,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
@@ -4455,19 +4454,14 @@ def expand_grid(
     :raises TypeError: if others is not a dictionary
     :raises KeyError: if there is a dataframe and no key is provided.
     """
-    # check if others is a dictionary
-    if not isinstance(others, dict):
-        # strictly name value pairs
-        # same idea as in R and tidyverse implementation
-        raise TypeError("others must be a dictionary")
+
+    check("others", others, [dict])
+
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
         df = df.copy()
-        if isinstance(df.index, pd.MultiIndex) or isinstance(
-            df.columns, pd.MultiIndex
-        ):
-            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
+
         if not df_key:
             raise KeyError(
                 """
@@ -4475,10 +4469,15 @@ def expand_grid(
                 requires that a string `df_key` be passed in.
                 """
             )
-        others = {**{df_key: df}, **others}
-    entry = _check_instance(others)
 
-    return _grid_computation(entry)
+        check("df_key", df_key, [str])
+
+        others = {**{df_key: df}, **others}
+
+    if not others:
+        raise ValueError("""`others` cannot be empty.""")
+
+    return _computations_expand_grid(others)
 
 
 @pf.register_dataframe_method

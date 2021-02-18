@@ -7,19 +7,18 @@ from pandas.testing import assert_frame_equal
 
 from janitor.functions import expand_grid
 
+others_not_a_dict = [
+    (None, [60, 70]),
+    (None, pd.DataFrame([60, 70])),
+    (pd.DataFrame({"x": [2, 3]}), [5, 4, 3, 2, 1]),
+]
 
-def test_not_a_dict():
-    """Test that entry(list) is not a dictionary."""
-    data = [60, 70]
+
+@pytest.mark.parametrize("frame, others", others_not_a_dict)
+def test_not_a_dict(frame, others):
+    """Test that `others` is not a dictionary."""
     with pytest.raises(TypeError):
-        expand_grid(others=data)
-
-
-def test_not_a_dict_1():
-    """Test that entry (dataframe) is not a dictionary."""
-    data = pd.DataFrame([60, 70])
-    with pytest.raises(TypeError):
-        expand_grid(others=data)
+        expand_grid(frame, others=others)
 
 
 def test_df_key():
@@ -28,14 +27,6 @@ def test_df_key():
     others = {"df": pd.DataFrame({"x": range(1, 6), "y": [5, 4, 3, 2, 1]})}
 
     with pytest.raises(KeyError):
-        expand_grid(df, others=others)
-
-
-def test_df_others():
-    """Raise error if others is not a dict."""
-    df = pd.DataFrame({"x": [2, 3]})
-    others = [5, 4, 3, 2, 1]
-    with pytest.raises(TypeError):
         expand_grid(df, others=others)
 
 
@@ -116,7 +107,7 @@ def test_frames_series_multi_iIdex(multiIndex_data, multiIndex_outputs):
     """
     assert_frame_equal(expand_grid(others=multiIndex_data), multiIndex_outputs)
 
-
+@pytest.mark.xfail(reason="""Tests not required for this""")
 def test_scalar_to_list():
     """Test that scalars are converted to lists."""
     data = {
@@ -142,7 +133,7 @@ def test_scalar_to_list():
         "f": range(2, 12),
     }
 
-    assert _check_instance(data) == expected
+    assert expand_grid(others = data) == expected
 
 
 def test_computation_output():
@@ -200,6 +191,7 @@ input_others = [
         "y": np.reshape(np.arange(5, 9), (2, -1), order="F"),
     },
     {"V1": (5, np.nan, 1), "V2": (1, 3, 2)},
+     {"V1": (5, np.nan, 1), "V2": pd.Index([1, 3, 2])}
 ]
 
 output_others = [
@@ -224,8 +216,8 @@ output_others = [
             "l2": ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
         }
     ),
-    pd.DataFrame({"x": [[2, 3], [4, 3]]}),
-    pd.DataFrame(np.array([2, 3]), columns=["x_0"]),
+    pd.DataFrame({'x_0': [2, 4], 'x_1': [3, 3]}),
+    pd.DataFrame(np.array([2, 3]), columns=["x"]),
     pd.DataFrame(np.array([[2, 3]]), columns=["x_0", "x_1"]),
     pd.DataFrame(
         {
@@ -241,6 +233,12 @@ output_others = [
             "V2": [1, 3, 2, 1, 3, 2, 1, 3, 2],
         }
     ),
+    pd.DataFrame(
+        {
+            "V1": [5.0, 5.0, 5.0, np.nan, np.nan, np.nan, 1.0, 1.0, 1.0],
+            "V2": [1, 3, 2, 1, 3, 2, 1, 3, 2],
+        }
+    )
 ]
 
 zip_others_only = zip(input_others, output_others)
@@ -249,20 +247,28 @@ zip_others_only = zip(input_others, output_others)
 @pytest.mark.parametrize("grid_input,grid_output", zip_others_only)
 def test_expand_grid_others_only(grid_input, grid_output):
     """
-    Tests that expand_grid output is correct when only the `others` argument
-    is supplied.
+    Tests that expand_grid output is correct
+    when only the `others` argument is supplied.
     """
     assert_frame_equal(expand_grid(others=grid_input), grid_output)
 
+def test_not_accepted_type():
+    """Raise TypeError if wrong data type is used in `others`."""
+    others = {"rar" : pd.MultiIndex.from_tuples([('A','B','C'), ('D','E','F')])}
 
-import janitor
+    with pytest.raises(TypeError):
+        expand_grid(others = others)
 
-df1 = pd.DataFrame({"x":range(1,3), "y":[2,1]})
-df2 = pd.DataFrame({"x":[1,2,3],"y":[3,2,1]})
-df3 = pd.DataFrame({"x":[2,3],"y":["a","b"]})
+# import janitor
 
-data = {"df1":df1, "df2":df2, "df3":df3}
+# df1 = pd.DataFrame({"x": range(1, 3), "y": [2, 1]})
+# df2 = pd.DataFrame({"x": [1, 2, 3], "y": [3, 2, 1]})
+# df3 = pd.DataFrame({"x": [2, 3], "y": ["a", "b"]})
 
-result = expand_grid(others=data)
+# data = {"df1": df1, "df2": df2, "df3": df3}
+# data = {"x": [[2, 3], [4, 3]]}
 
-print(result)
+# others = {"rar" : pd.MultiIndex.from_tuples([('A','B','C'), ('D','E','F')])}
+# result = expand_grid(others=others)
+
+# print(result)

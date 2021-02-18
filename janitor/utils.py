@@ -437,25 +437,37 @@ def skiperror(
 
 def check_expand_grid_Series(value):
     """
-    Check dtype of value in `others`
+    Check extension array dtype of value in `others`
     in _computations_expand_grid and convert to Series
     if True.
     Returns boolean value.
     """
-    check1 = is_extension_array_dtype(value)
-    check2 = isinstance(value, pd.Index)
-    return any((check1, check2))
+    return is_extension_array_dtype(value)
+
+
+def check_expand_grid_Index(value):
+    """
+    Check Index dtype of value in `others`
+    in _computations_expand_grid and convert to Series
+    if True.
+    Returns boolean value.
+    """
+    if isinstance(value, pd.Index):
+        if isinstance(value, pd.MultiIndex):
+            return False
+        return True
+    return False
 
 
 def check_expand_grid_list(value):
     """
-    Check dtype of value in `others`
+    Check list like dtype of value in `others`
     in _computations_expand_grid and convert to list
     if True.
     Returns boolean value.
     """
     check1 = is_list_like(value)
-    check2 = (pd.DataFrame, pd.Series, np.ndarray, list)
+    check2 = (pd.DataFrame, pd.Series, np.ndarray, list, pd.MultiIndex)
     check2 = not isinstance(value, check2)
     return all((check1, check2))
 
@@ -467,7 +479,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     )
     others = (
         (pd.Series(value), key)
-        if check_expand_grid_Series(value)
+        if check_expand_grid_Series(value) or check_expand_grid_Index(value)
         else (value, key)
         for value, key in others
     )
@@ -488,25 +500,19 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
         _expand_grid(value, key, mgrid_values)
         for value, key, mgrid_values in others
     )
-    others, new_names = zip(*others)
-    new_names = chain.from_iterable(new_names)
-    new_names = pd.Index(new_names)
-    if not new_names.is_unique:
-        raise ValueError(
-            """
-            There seem to be some duplicated names in the new columns. 
-            Kindly pass keys that will ensure unique column names.
-            """
-        )
-    others = pd.concat(others, axis = 'columns', sort = False, copy = False)
-    others.columns = new_names
+
+    others = pd.concat(others, axis="columns", sort=False, copy=False)
     return others
 
+
 @functools.singledispatch
-def _expand_grid(value, key, mgrid_values):
+def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
     """
     Base function for dispatch of `expand_grid`.
     """
+
+    # this should exclude MultiIndex indexes,
+    # and any other non-supported data types.
     raise TypeError(
         f"{type(value)} data type is not supported in `expand_grid`."
     )
@@ -528,73 +534,90 @@ def _sub_expand_grid(value, key, mgrid_values):
 
 
 @_expand_grid.register(np.ndarray)
-def _sub_expand_grid(value, key, mgrid_values):
+def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
     """
     Expands the numpy array based on `mgrid_values`.
     Ensures array dimension is either 1 or 2.
     Returns Series with name if 1-Dimensional array
     or DataFrame if 2-Dimensional array with column names.
+    The names are derived from the `key` parameter.
     """
     check("key", key, [str])
-    new_names = None
-    if not (value.ndim > 0):
+
+    if not (value.size > 0):
         raise ValueError("""array cannot be empty.""")
     if value.ndim > 2:
         raise ValueError("""expand_grid works only on 1D and 2D structures.""")
 
-    if value.ndim > 1:
-        new_names = [f"{key}_{num}" for num in np.arange(value.shape[-1])]
-    else:
-        new_names = [key]
-
-    value = value.take(mgrid_values, axis = 0)
+    value = value.take(mgrid_values, axis=0)
 
     if value.ndim == 1:
         value = pd.Series(value)
+        # a tiny bit faster than chaining with `rename`
+        value.name = key
     else:
         value = pd.DataFrame(value)
+        # a tiny bit faster than using `add_prefix`
+        value.columns = value.columns.map(lambda column: f"{key}_{column}")
 
-    return (value, new_names)
+    return value
 
 
 @_expand_grid.register(pd.Series)
-def _sub_expand_grid(value, key, mgrid_values):
+def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
     """
     Expands the Series based on `mgrid_values`.
+    `mode` parameter is added, to make the function reusable
+    in the `complete` function.
+
     Checks for empty Series and returns modified keys.
-    Returns Series and new Series name.
+    Returns Series with new Series name.
     """
     check("key", key, [str])
-    new_names = None
+
     if value.empty:
         raise ValueError("""Series cannot be empty.""")
-    if value.name:
-        new_names = f"{key}_{value.name}"
-    else:
-        new_names = key
+
     value = value.take(mgrid_values)
     value.index = np.arange(len(value))
-    return (value, [new_names])
+
+    if mode != "expand_grid":
+        return value
+
+    if value.name:
+        value.name = f"{key}_{value.name}"
+    else:
+        value.name = key
+    return value
 
 
 @_expand_grid.register(pd.DataFrame)
-def _sub_expand_grid(value, key, mgrid_values):
+def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
     """
     Expands the DataFrame based on `mgrid_values`.
+    `mode` parameter added, to make the function reusable
+    in the `complete` function.
+
     Checks for empty dataframe and returns modified keys.
     Returns a DataFrame with new column names.
     """
     check("key", key, [str])
-    new_names = None
+
     if value.empty:
         raise ValueError("""DataFrame cannot be empty.""")
-    if isinstance(value.columns, pd.MultiIndex):
-        new_names = [f"{key}_num" for num, _ in enumerate(value.columns)]
-    else:
-        new_names = [f"{key}_{name}" for name in value.columns]
+
     value = value.take(mgrid_values)
     value.index = np.arange(len(value))
-    return (value, new_names)
+
+    if mode != "expand_grid":
+        return value
+
+    if isinstance(value.columns, pd.MultiIndex):
+        value.columns = [f"{key}_{num}" for num, _ in enumerate(value.columns)]
+    else:
+        value.columns = value.columns.map(lambda column: f"{key}_{column}")
+
+    return value
 
 
 def _computations_complete(

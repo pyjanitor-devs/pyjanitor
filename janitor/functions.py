@@ -4372,8 +4372,14 @@ def expand_grid(
     """
     Creates a dataframe from a combination of all inputs.
 
+    It creates a cartesian product of all the inputs.
+
     This works with a dictionary of name value pairs,
-    and will work with structures that are not dataframes.
+    or keyword arguments (`kwargs`); it is also not restricted
+    to dataframes; it can work with any list-like structure
+    that is 1 or 2 dimensional.
+    MultiIndex objects are not supported though.
+
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
@@ -4446,7 +4452,7 @@ def expand_grid(
 
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe.
-        It becomes the column name of the dataframe.
+        It becomes part of the column names of the dataframe.
     :param others: A dictionary that contains the data
         to be combined with the dataframe.
         If no dataframe exists, all inputs

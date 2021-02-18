@@ -1898,9 +1898,11 @@ def _column_sel_dispatch(columns_to_select, df, level=None):  # noqa: F811
         for entry in columns_to_select
     )
 
-    # this avoids duplicate entries
-    for entry in columns_to_select:
-        outcome = [c for c in entry if c not in filtered_columns]
-        filtered_columns.extend(outcome)
+    columns_to_select = chain.from_iterable(columns_to_select)
+
+    # get rid of possible duplicates
+    for column_name in columns_to_select:
+        if column_name not in filtered_columns:
+            filtered_columns.append(column_name)
 
     return filtered_columns

@@ -4366,7 +4366,8 @@ def sort_naturally(
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
-    others: Dict = None,
+    others: Dict = {},
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Creates a dataframe from a combination of all inputs.
@@ -4450,12 +4451,19 @@ def expand_grid(
         to be combined with the dataframe.
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
+    :param kwargs: Keyword arguments are accepted.
     :returns: A pandas dataframe of all combinations of name value pairs.
-    :raises TypeError: if others is not a dictionary
+    :raises TypeError: if `others` is not a dictionary
     :raises KeyError: if there is a dataframe and no key is provided.
+    :raises ValueError: if `others` is empty.
+
+    .. # noqa: DAR402
+
     """
 
     check("others", others, [dict])
+
+    others = {**others, **kwargs}
 
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair

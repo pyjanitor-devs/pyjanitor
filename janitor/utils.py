@@ -29,8 +29,6 @@ from pandas.api.types import (
     is_list_like,
 )
 from pandas.core import common
-from pandas.core.indexes.multi import MultiIndex
-from pandas.io.stata import ValueLabelTypeMismatch
 
 from .errors import JanitorError
 
@@ -435,22 +433,13 @@ def skiperror(
     return _wrapped
 
 
-def check_expand_grid_Series(value):
-    """
-    Check extension array dtype of value in `others`
-    in _computations_expand_grid and convert to Series
-    if True.
-    Returns boolean value.
-    """
-    return is_extension_array_dtype(value)
-
-
 def check_expand_grid_Index(value):
     """
-    Check Index dtype of value in `others`
-    in _computations_expand_grid and convert to Series
-    if True.
-    Returns boolean value.
+    Returns True if dtype is pd.Index;.
+    returns False for MultiIndex.
+
+    # noqa: DAR201
+    # noqa: DAR101
     """
     if isinstance(value, pd.Index):
         if isinstance(value, pd.MultiIndex):
@@ -461,10 +450,13 @@ def check_expand_grid_Index(value):
 
 def check_expand_grid_list(value):
     """
-    Check list like dtype of value in `others`
-    in _computations_expand_grid and convert to list
-    if True.
-    Returns boolean value.
+    Returns True if `value` is list-like.
+
+    Excludes pd.Series, pd.DataFrame,
+    np.ndarray, list, and pd.MultiIndex.
+
+    # noqa: DAR201
+    # noqa: DAR101
     """
     check1 = is_list_like(value)
     check2 = (pd.DataFrame, pd.Series, np.ndarray, list, pd.MultiIndex)
@@ -479,7 +471,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     )
     others = (
         (pd.Series(value), key)
-        if check_expand_grid_Series(value) or check_expand_grid_Index(value)
+        if is_extension_array_dtype(value) or check_expand_grid_Index(value)
         else (value, key)
         for value, key in others
     )
@@ -518,11 +510,11 @@ def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
     )
 
 
-@_expand_grid.register(list)
-def _sub_expand_grid(value, key, mgrid_values):
+@_expand_grid.register(list)  # noqa: F811
+def _sub_expand_grid(value, key, mgrid_values):  # noqa: F811
     """
     Expands the list object based on `mgrid_values`.
-    Converts to an array and passes it 
+    Converts to an array and passes it
     to the `_expand_grid` function for arrays.
     Returns Series with name if 1-Dimensional array
     or DataFrame if 2-Dimensional array with column names.
@@ -534,7 +526,9 @@ def _sub_expand_grid(value, key, mgrid_values):
 
 
 @_expand_grid.register(np.ndarray)
-def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
+def _sub_expand_grid(  # noqa: F811
+    value, key, mgrid_values, mode="expand_grid"
+):
     """
     Expands the numpy array based on `mgrid_values`.
     Ensures array dimension is either 1 or 2.
@@ -564,7 +558,9 @@ def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
 
 
 @_expand_grid.register(pd.Series)
-def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
+def _sub_expand_grid(  # noqa: F811
+    value, key, mgrid_values, mode="expand_grid"
+):
     """
     Expands the Series based on `mgrid_values`.
     `mode` parameter is added, to make the function reusable
@@ -592,7 +588,9 @@ def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
 
 
 @_expand_grid.register(pd.DataFrame)
-def _sub_expand_grid(value, key, mgrid_values, mode="expand_grid"):
+def _sub_expand_grid(  # noqa: F811
+    value, key, mgrid_values, mode="expand_grid"
+):
     """
     Expands the DataFrame based on `mgrid_values`.
     `mode` parameter added, to make the function reusable

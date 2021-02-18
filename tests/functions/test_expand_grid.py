@@ -107,6 +107,7 @@ def test_frames_series_multi_iIdex(multiIndex_data, multiIndex_outputs):
     """
     assert_frame_equal(expand_grid(others=multiIndex_data), multiIndex_outputs)
 
+
 @pytest.mark.xfail(reason="""Tests not required for this""")
 def test_scalar_to_list():
     """Test that scalars are converted to lists."""
@@ -133,7 +134,7 @@ def test_scalar_to_list():
         "f": range(2, 12),
     }
 
-    assert expand_grid(others = data) == expected
+    assert expand_grid(others=data) == expected
 
 
 def test_computation_output():
@@ -191,7 +192,7 @@ input_others = [
         "y": np.reshape(np.arange(5, 9), (2, -1), order="F"),
     },
     {"V1": (5, np.nan, 1), "V2": (1, 3, 2)},
-     {"V1": (5, np.nan, 1), "V2": pd.Index([1, 3, 2])}
+    {"V1": (5, np.nan, 1), "V2": pd.Index([1, 3, 2])},
 ]
 
 output_others = [
@@ -216,7 +217,7 @@ output_others = [
             "l2": ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
         }
     ),
-    pd.DataFrame({'x_0': [2, 4], 'x_1': [3, 3]}),
+    pd.DataFrame({"x_0": [2, 4], "x_1": [3, 3]}),
     pd.DataFrame(np.array([2, 3]), columns=["x"]),
     pd.DataFrame(np.array([[2, 3]]), columns=["x_0", "x_1"]),
     pd.DataFrame(
@@ -238,7 +239,7 @@ output_others = [
             "V1": [5.0, 5.0, 5.0, np.nan, np.nan, np.nan, 1.0, 1.0, 1.0],
             "V2": [1, 3, 2, 1, 3, 2, 1, 3, 2],
         }
-    )
+    ),
 ]
 
 zip_others_only = zip(input_others, output_others)
@@ -252,23 +253,13 @@ def test_expand_grid_others_only(grid_input, grid_output):
     """
     assert_frame_equal(expand_grid(others=grid_input), grid_output)
 
+
 def test_not_accepted_type():
     """Raise TypeError if wrong data type is used in `others`."""
-    others = {"rar" : pd.MultiIndex.from_tuples([('A','B','C'), ('D','E','F')])}
+    others = {
+        "rar": pd.MultiIndex.from_tuples([("A", "B", "C"), ("D", "E", "F")])
+    }
 
     with pytest.raises(TypeError):
-        expand_grid(others = others)
+        expand_grid(others=others)
 
-# import janitor
-
-# df1 = pd.DataFrame({"x": range(1, 3), "y": [2, 1]})
-# df2 = pd.DataFrame({"x": [1, 2, 3], "y": [3, 2, 1]})
-# df3 = pd.DataFrame({"x": [2, 3], "y": ["a", "b"]})
-
-# data = {"df1": df1, "df2": df2, "df3": df3}
-# data = {"x": [[2, 3], [4, 3]]}
-
-# others = {"rar" : pd.MultiIndex.from_tuples([('A','B','C'), ('D','E','F')])}
-# result = expand_grid(others=others)
-
-# print(result)

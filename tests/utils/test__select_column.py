@@ -4,7 +4,6 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_index_equal
 
 from janitor import patterns
 from janitor.utils import _select_columns
@@ -70,6 +69,39 @@ def test_type(df):
         _select_columns([3, "id"], df)
 
 
+def test_level_type(df_tuple):
+    """Raise TypeError if `level` is the wrong type."""
+    with pytest.raises(TypeError):
+        _select_columns("A", df_tuple, level=1.0)
+
+
+def test_level_nonexistent(df_tuple):
+    """
+    Raise ValueError if column is a MultiIndex
+    and level is `None`.
+    """
+    with pytest.raises(ValueError):
+        _select_columns("A", df_tuple)
+
+
+def test_tuple_callable(df_tuple):
+    """
+    Raise ValueError if dataframe has MultiIndex columns
+    and a callable is provided.
+    """
+    with pytest.raises(ValueError):
+        _select_columns(lambda df: df.name.startswith("A"), df_tuple)
+
+
+def test_tuple_regex(df_tuple):
+    """
+    Raise ValueError if dataframe has MultiIndex columns'
+    a regex is provided and level is None.
+    """
+    with pytest.raises(ValueError):
+        _select_columns(re.compile("A"), df_tuple)
+
+
 def test_strings_do_not_exist(df):
     """
     Raise KeyError if `columns_to_select` is a string
@@ -79,6 +111,21 @@ def test_strings_do_not_exist(df):
         _select_columns("word", df)
     with pytest.raises(KeyError):
         _select_columns("*starter", df)
+
+
+def test_boolean_list_dtypes(df):
+    """
+    Raise ValueError if `columns_to_select` is a list of booleans
+    and the length is unequal to the number of columns
+    in the dataframe.
+    """
+    with pytest.raises(ValueError):
+        _select_columns([True, False], df)
+    with pytest.raises(ValueError):
+        _select_columns(
+            [True, True, True, False, False, False, True, True, True, False],
+            df,
+        )
 
 
 def test_slice_dtypes(df):
@@ -170,22 +217,25 @@ def test_strings(df1):
 
 def test_slice(df1):
     """Test _select_columns function on slices."""
-    assert_index_equal(
-        _select_columns(slice("code", "code2"), df1),
-        df1.loc[:, slice("code", "code2")].columns,
+    assert (
+        _select_columns(slice("code", "code2"), df1)
+        == df1.loc[:, slice("code", "code2")].columns.tolist()
     )
-    assert_index_equal(
-        _select_columns(slice("code2", None), df1),
-        df1.loc[:, slice("code2", None)].columns,
+
+    assert (
+        _select_columns(slice("code2", None), df1)
+        == df1.loc[:, slice("code2", None)].columns.tolist()
     )
-    assert_index_equal(
-        _select_columns(slice(None, "code2"), df1),
-        df1.loc[:, slice(None, "code2")].columns,
+
+    assert (
+        _select_columns(slice(None, "code2"), df1)
+        == df1.loc[:, slice(None, "code2")].columns.tolist()
     )
-    assert_index_equal(_select_columns(slice(None, None), df1), df1.columns)
-    assert_index_equal(
-        _select_columns(slice(None, None, 2), df1),
-        df1.loc[:, slice(None, None, 2)].columns,
+
+    assert _select_columns(slice(None, None), df1) == df1.columns.tolist()
+    assert (
+        _select_columns(slice(None, None, 2), df1)
+        == df1.loc[:, slice(None, None, 2)].columns.tolist()
     )
 
 
@@ -194,29 +244,34 @@ def test_callable_data_type(df1):
     Test _select_columns function on callables,
     specifically for data type checks.
     """
-    assert_index_equal(
-        _select_columns(pd.api.types.is_integer_dtype, df1),
-        df1.select_dtypes(int).columns,
+    assert (
+        _select_columns(pd.api.types.is_integer_dtype, df1)
+        == df1.select_dtypes(int).columns.tolist()
     )
-    assert_index_equal(
-        _select_columns(pd.api.types.is_float_dtype, df1),
-        df1.select_dtypes(float).columns,
+
+    assert (
+        _select_columns(pd.api.types.is_float_dtype, df1)
+        == df1.select_dtypes(float).columns.tolist()
     )
-    assert_index_equal(
-        _select_columns(pd.api.types.is_numeric_dtype, df1),
-        df1.select_dtypes("number").columns,
+
+    assert (
+        _select_columns(pd.api.types.is_numeric_dtype, df1)
+        == df1.select_dtypes("number").columns.tolist()
     )
-    assert_index_equal(
-        _select_columns(pd.api.types.is_categorical_dtype, df1),
-        df1.select_dtypes("category").columns,
+
+    assert (
+        _select_columns(pd.api.types.is_categorical_dtype, df1)
+        == df1.select_dtypes("category").columns.tolist()
     )
-    assert_index_equal(
-        _select_columns(pd.api.types.is_datetime64_dtype, df1),
-        df1.select_dtypes(np.datetime64).columns,
+
+    assert (
+        _select_columns(pd.api.types.is_datetime64_dtype, df1)
+        == df1.select_dtypes(np.datetime64).columns.tolist()
     )
-    assert_index_equal(
-        _select_columns(pd.api.types.is_object_dtype, df1),
-        df1.select_dtypes("object").columns,
+
+    assert (
+        _select_columns(pd.api.types.is_object_dtype, df1)
+        == df1.select_dtypes("object").columns.tolist()
     )
 
 
@@ -225,30 +280,25 @@ def test_callable_string_methods(df1):
     Test _select_columns function on callables,
     specifically for column name checks.
     """
-    assert_index_equal(
-        _select_columns(lambda x: x.name.startswith("type"), df1),
-        df1.filter(like="type").columns,
+    assert _select_columns(lambda x: x.name.startswith("type"), df1) == list(
+        df1.filter(like="type").columns
     )
-    assert_index_equal(
-        _select_columns(lambda x: x.name.endswith(("1", "2", "3")), df1),
-        df1.filter(regex=r"\d$").columns,
+
+    assert _select_columns(
+        lambda x: x.name.endswith(("1", "2", "3")), df1
+    ) == list(df1.filter(regex=r"\d$").columns)
+
+    assert _select_columns(lambda x: "d" in x.name, df1) == list(
+        df1.filter(regex="d").columns
     )
-    assert_index_equal(
-        _select_columns(lambda x: "d" in x.name, df1),
-        df1.filter(regex="d").columns,
-    )
-    assert_index_equal(
-        _select_columns(
-            lambda x: x.name.startswith("code") and x.name.endswith("1"), df1
-        ),
-        df1.filter(regex=r"code.*1$").columns,
-    )
-    assert_index_equal(
-        _select_columns(
-            lambda x: x.name.startswith("code") or x.name.endswith("1"), df1
-        ),
-        df1.filter(regex=r"^code.*|.*1$").columns,
-    )
+
+    assert _select_columns(
+        lambda x: x.name.startswith("code") and x.name.endswith("1"), df1
+    ) == list(df1.filter(regex=r"code.*1$").columns)
+
+    assert _select_columns(
+        lambda x: x.name.startswith("code") or x.name.endswith("1"), df1
+    ) == list(df1.filter(regex=r"^code.*|.*1$").columns)
 
 
 def test_callable_computations(df1):
@@ -256,9 +306,8 @@ def test_callable_computations(df1):
     Test _select_columns function on callables,
     specifically for computations.
     """
-    assert_index_equal(
-        _select_columns(lambda x: x.isna().any(), df1),
-        df1.columns[df1.isna().any().array],
+    assert _select_columns(lambda x: x.isna().any(), df1) == list(
+        df1.columns[df1.isna().any().array]
     )
 
 
@@ -274,9 +323,11 @@ def test_regex(df1):
 
 def test_tuple(df_tuple):
     """Test _select_columns function on tuple."""
-    assert _select_columns(("A", "D"), df_tuple) == list(
-        df_tuple.loc[:, [("A", "D")]].columns
-    )
+    assert _select_columns(("A", "D"), df_tuple) == ("A", "D")
+
+    assert _select_columns("A", df_tuple, level=0) == ["A"]
+
+    assert _select_columns(re.compile("A"), df_tuple, level=0) == ["A"]
 
 
 def test_list_various(df1):
@@ -286,9 +337,14 @@ def test_list_various(df1):
     assert _select_columns(["id", "code*"], df1) == list(
         df1.filter(regex="^id|^code").columns
     )
-    assert_index_equal(
-        pd.Index(
-            _select_columns(["id", "code*", slice("code", "code2")], df1)
-        ),
-        df1.filter(regex="^(id|code)").columns,
+    assert (
+        _select_columns(["id", "code*", slice("code", "code2")], df1)
+        == df1.filter(regex="^(id|code)").columns.tolist()
     )
+    assert _select_columns([("id", "Name")], df1) == ["id", "Name"]
+
+
+def test_list_boolean(df):
+    """Test _select_columns function on list of booleans."""
+    booleans = [True, True, True, False, False, False, True, True, True]
+    assert _select_columns(booleans, df) == list(df.columns[booleans])

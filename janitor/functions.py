@@ -4393,9 +4393,7 @@ def expand_grid(
     **kwargs,
 ) -> pd.DataFrame:
     """
-    Creates a dataframe from a combination of all inputs.
-
-    It creates a cartesian product of all the inputs.
+    Creates a dataframe from a cartesian combination of all inputs.
 
     This works with a dictionary of name value pairs,
     or keyword arguments (`kwargs`);
@@ -4435,7 +4433,7 @@ def expand_grid(
         #    2 |      1 |   2
         #    2 |      1 |   3
 
-        #create a dataframe from all combinations in a dictionary
+        # create a dataframe from all combinations in a dictionary
         data = {"x":range(1,4), "y":[1,2]}
 
         jn.expand_grid(others=data)

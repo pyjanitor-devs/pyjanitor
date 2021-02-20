@@ -467,7 +467,7 @@ def check_expand_grid_list(value):
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Numpy's `mgrid`, combined with the `take` method in numpy/Pandas,
+    Combines Numpy's `mgrid`, with the `take` method in numpy/Pandas,
     to expand each input to the length of the cumulative product of
     all inputs in `others`.
 
@@ -501,6 +501,11 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     others = list(others)
 
+    # this section gets the length of each data in others,
+    # creates a mesh, essentially a catersian product of indices
+    # for each data in `others`.
+    # the rest of the code then expands/explodes the data,
+    # based on its type, before concatenating into a dataframe.
     mgrid_values = [slice(len(value)) for value, _ in others]
     mgrid_values = np.mgrid[mgrid_values]
     mgrid_values = map(np.ravel, mgrid_values)

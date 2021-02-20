@@ -407,4 +407,3 @@ def test_complete_multiple_groupings():
     ).sort_values("project_id", ignore_index=True)
 
     assert_frame_equal(result, output3)
-

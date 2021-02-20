@@ -465,10 +465,28 @@ def check_expand_grid_list(value):
 
 
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
+    """
+    Creates a cartesian product of all the inputs in `others`.
+    Numpy's `mgrid`, combined with the `take` method in numpy/Pandas,
+    to expand each input to the length of the cumulative product of 
+    all inputs in `others`.
+
+    There is a performance penalty for small entries (length less than 10)
+    in using this method, instead of `itertools.product`; however, there is 
+    significant performance benefits as the size of the data increases.
+
+    Another benefit of this approach, 
+    in addition to the significant performance gains, 
+    is the preservation of data types. This is particularly noticeable for
+    Pandas' extension arrays dtypes (categoricals, nullable integers, ...).
+
+    A dataframe of all possible combinations is returned.
+    """
     others = (
         ([value], key) if is_scalar(value) else (value, key)
         for key, value in others.items()
     )
+
     others = (
         (pd.Series(value), key)
         if is_extension_array_dtype(value) or check_expand_grid_Index(value)
@@ -485,7 +503,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     mgrid_values = [slice(len(value)) for value, _ in others]
     mgrid_values = np.mgrid[mgrid_values]
-    mgrid_values = (np.ravel(value) for value in mgrid_values)
+    mgrid_values = map(np.ravel, mgrid_values)
     others = zip(others, mgrid_values)
     others = ((*left, right) for left, right in others)
     others = (
@@ -500,13 +518,18 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 @functools.singledispatch
 def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
     """
-    Base function for dispatch of `expand_grid`.
+    Base function for dispatch of `_expand_grid`.
+
+    `mode` parameter is added, to make the function reusable
+    in the `_computations_complete` function.
+    Also, allowing `key` as None enables reuse in the 
+    `_computations_complete` function.
     """
 
     # this should exclude MultiIndex indexes,
     # and any other non-supported data types.
     raise TypeError(
-        f"{type(value)} data type is not supported in `expand_grid`."
+        f"{type(value).__name__} data type is not supported in `expand_grid`."
     )
 
 
@@ -514,8 +537,15 @@ def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
 def _sub_expand_grid(value, key, mgrid_values):  # noqa: F811
     """
     Expands the list object based on `mgrid_values`.
+
     Converts to an array and passes it
     to the `_expand_grid` function for arrays.
+
+    `mode` parameter is added, to make the function reusable
+    in the `_computations_complete` function.
+    Also, allowing `key` as None enables reuse in the 
+    `_computations_complete` function.
+
     Returns Series with name if 1-Dimensional array
     or DataFrame if 2-Dimensional array with column names.
     """
@@ -531,12 +561,21 @@ def _sub_expand_grid(  # noqa: F811
 ):
     """
     Expands the numpy array based on `mgrid_values`.
+
     Ensures array dimension is either 1 or 2.
+
+    `mode` parameter is added, to make the function reusable
+    in the `_computations_complete` function.
+    Also, allowing `key` as None enables reuse in the 
+    `_computations_complete` function.
+
     Returns Series with name if 1-Dimensional array
     or DataFrame if 2-Dimensional array with column names.
+
     The names are derived from the `key` parameter.
     """
-    check("key", key, [str])
+    if key is not None:
+        check("key", key, [str])
 
     if not (value.size > 0):
         raise ValueError("""array cannot be empty.""")
@@ -563,13 +602,17 @@ def _sub_expand_grid(  # noqa: F811
 ):
     """
     Expands the Series based on `mgrid_values`.
+
     `mode` parameter is added, to make the function reusable
-    in the `complete` function.
+    in the `_computations_complete` function.
+    Also, allowing `key` as None enables reuse in the 
+    `_computations_complete` function.
 
     Checks for empty Series and returns modified keys.
     Returns Series with new Series name.
     """
-    check("key", key, [str])
+    if key is not None:
+        check("key", key, [str])
 
     if value.empty:
         raise ValueError("""Series cannot be empty.""")
@@ -593,13 +636,18 @@ def _sub_expand_grid(  # noqa: F811
 ):
     """
     Expands the DataFrame based on `mgrid_values`.
-    `mode` parameter added, to make the function reusable
-    in the `complete` function.
+
+    `mode` parameter is added, to make the function reusable
+    in the `_computations_complete` function.
+    Also, allowing `key` as None enables reuse in the 
+    `_computations_complete` function.
 
     Checks for empty dataframe and returns modified keys.
+    
     Returns a DataFrame with new column names.
     """
-    check("key", key, [str])
+    if key is not None:
+        check("key", key, [str])
 
     if value.empty:
         raise ValueError("""DataFrame cannot be empty.""")
@@ -628,7 +676,6 @@ def _computations_complete(
     TypeErrors are raised if column labels in the `columns`
     parameter do not exist in the dataframe, or if fill_value is
     not a dictionary.
-
     A dataframe with all possible combinations is returned.
     """
 

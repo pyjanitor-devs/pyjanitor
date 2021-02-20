@@ -4386,6 +4386,9 @@ def expand_grid(
     Note that if a MultiIndex dataframe or series is passed, the index/columns
     will be discarded, and a single indexed dataframe will be returned.
 
+    Existing data types are preserved in this function. 
+    This includes Pandas' extension array dtypes.
+
     The output will always be a dataframe.
 
     Example:
@@ -4964,33 +4967,23 @@ def complete(
 ) -> pd.DataFrame:
     """
     This function turns implicit missing values into explicit missing values.
-
     It is modeled after tidyr's `complete` function, and is a wrapper around
     `pd.DataFrame.merge` and `pd.DataFrame.fillna`.
-
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible. It can also handle
     duplicated data.
-
-
     `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
-
     .. code-block:: python
-
         import pandas as pd
         import janitor as jn
-
             group	item_id	    item_name	value1	value2
         0	1	    1	        a	1	4
         1	2	    2	        b	2	5
         2	1	    2	        b	3	6
-
     To find all the unique combinations of `group`, `item_id`, and `item_name`,
     including combinations not present in the data, each variable should be
     passed in a list to the `columns` parameter::
-
         df.complete(columns = ['group', 'item_id', 'item_name'])
-
               group	item_id	    item_name	value1	value2
         0	1	    1	        a	1.0	4.0
         1	1	    1	        b	NaN	NaN
@@ -5000,37 +4993,27 @@ def complete(
         5	2	    1	        b	NaN	NaN
         6	2	    2	        a	NaN	NaN
         7	2	    2	        b	2.0	5.0
-
     To expose just the missing values based only on the existing data,
     `item_id` and `item_name` can be wrapped in a tuple, while `group`
     is passed in as a separate variable::
-
         df.complete(columns = ["group", ("item_id", "item_name")])
-
             group	item_id	    item_name	value1	   value2
         0	1	    1	        a	  1.0	    4.0
         1	1	    2	        b	  3.0	    6.0
         2	2	    1	        a	  NaN 	    NaN
         3	2	    2	        b	  2.0	    5.0
-
     Let's look at another example:
-
     `Source Data <http://imachordata.com/2016/02/05/you-complete-me/>`_
-
     .. code-block:: python
-
             Year      Taxon         Abundance
         0   1999    Saccharina         4
         1   2000    Saccharina         5
         2   2004    Saccharina         2
         3   1999     Agarum            1
         4   2004     Agarum            8
-
     Note that Year 2000 and Agarum pairing is missing. Let's make it
     explicit::
-
         df.complete(columns = ['Year', 'Taxon'])
-
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
         1  1999     Saccharina     4.0
@@ -5038,12 +5021,9 @@ def complete(
         3  2000     Saccharina     5.0
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
-
     The null value can be replaced with the fill_value argument::
-
         df.complete(columns = ['Year', 'Taxon'],
                     fill_value = {"Abundance" : 0})
-
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
         1  1999     Saccharina     4.0
@@ -5051,16 +5031,13 @@ def complete(
         3  2000     Saccharina     5.0
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
-
     What if we wanted the explicit missing values for all the years from
     1999 to 2004? Easy - simply pass a dictionary pairing the column name
     with the new values::
-
         df.complete(columns = [{"Year": lambda x : range(x.Year.min(),
                                                          x.Year.max() + 1)},
                                 "Taxon"],
                     fill_value={"Abundance" : 0})
-
             Year      Taxon     Abundance
         0   1999     Agarum         1.0
         1   1999    Saccharina      4.0
@@ -5074,16 +5051,11 @@ def complete(
         9   2003     Saccharina     0.0
         10  2004     Agarum         8.0
         11  2004    Saccharina      2.0
-
     .. note:: MultiIndex columns are not supported.
-
     Functional usage syntax:
-
     .. code-block:: python
-
         import pandas as pd
         import janitor as jn
-
         df = pd.DataFrame(...)
         df = jn.complete(
             df = df,
@@ -5094,11 +5066,8 @@ def complete(
             ],
             fill_value = None
         )
-
     Method chaining syntax:
-
     .. code-block:: python
-
         df = (
             pd.DataFrame(...)
             .complete(columns=[
@@ -5108,8 +5077,6 @@ def complete(
             ],
             fill_value=None,
         )
-
-
     :param df: A pandas dataframe.
     :param columns: This is a list containing the columns to be
         completed. It could be column labels (string type),
@@ -5124,7 +5091,6 @@ def complete(
         str/dict/list/tuple.
     :raises ValueError: if entry in `columns` is a dict/list/tuple
         and is empty.
-
     .. # noqa: DAR402
     """
     df = df.copy()

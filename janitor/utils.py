@@ -468,15 +468,15 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
     Numpy's `mgrid`, combined with the `take` method in numpy/Pandas,
-    to expand each input to the length of the cumulative product of 
+    to expand each input to the length of the cumulative product of
     all inputs in `others`.
 
     There is a performance penalty for small entries (length less than 10)
-    in using this method, instead of `itertools.product`; however, there is 
+    in using this method, instead of `itertools.product`; however, there is
     significant performance benefits as the size of the data increases.
 
-    Another benefit of this approach, 
-    in addition to the significant performance gains, 
+    Another benefit of this approach,
+    in addition to the significant performance gains,
     is the preservation of data types. This is particularly noticeable for
     Pandas' extension arrays dtypes (categoricals, nullable integers, ...).
 
@@ -522,7 +522,7 @@ def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
 
     `mode` parameter is added, to make the function reusable
     in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the 
+    Also, allowing `key` as None enables reuse in the
     `_computations_complete` function.
     """
 
@@ -543,7 +543,7 @@ def _sub_expand_grid(value, key, mgrid_values):  # noqa: F811
 
     `mode` parameter is added, to make the function reusable
     in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the 
+    Also, allowing `key` as None enables reuse in the
     `_computations_complete` function.
 
     Returns Series with name if 1-Dimensional array
@@ -566,7 +566,7 @@ def _sub_expand_grid(  # noqa: F811
 
     `mode` parameter is added, to make the function reusable
     in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the 
+    Also, allowing `key` as None enables reuse in the
     `_computations_complete` function.
 
     Returns Series with name if 1-Dimensional array
@@ -605,7 +605,7 @@ def _sub_expand_grid(  # noqa: F811
 
     `mode` parameter is added, to make the function reusable
     in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the 
+    Also, allowing `key` as None enables reuse in the
     `_computations_complete` function.
 
     Checks for empty Series and returns modified keys.
@@ -639,11 +639,11 @@ def _sub_expand_grid(  # noqa: F811
 
     `mode` parameter is added, to make the function reusable
     in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the 
+    Also, allowing `key` as None enables reuse in the
     `_computations_complete` function.
 
     Checks for empty dataframe and returns modified keys.
-    
+
     Returns a DataFrame with new column names.
     """
     if key is not None:

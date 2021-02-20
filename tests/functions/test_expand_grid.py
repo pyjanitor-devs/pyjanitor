@@ -262,4 +262,3 @@ def test_not_accepted_type():
 
     with pytest.raises(TypeError):
         expand_grid(others=others)
-

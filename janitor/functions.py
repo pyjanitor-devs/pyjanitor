@@ -4398,8 +4398,8 @@ def expand_grid(
     It creates a cartesian product of all the inputs.
 
     This works with a dictionary of name value pairs,
-    or keyword arguments (`kwargs`); 
-    it is also not restricted to dataframes; 
+    or keyword arguments (`kwargs`);
+    it is also not restricted to dataframes;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
     MultiIndex objects are not supported though.
@@ -4410,7 +4410,7 @@ def expand_grid(
     Note that if a MultiIndex dataframe or series is passed, the index/columns
     will be discarded, and a single indexed dataframe will be returned.
 
-    Existing data types are preserved in this function. 
+    Existing data types are preserved in this function.
     This includes Pandas' extension array dtypes.
 
     The output will always be a dataframe.

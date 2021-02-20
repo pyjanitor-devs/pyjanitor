@@ -27,7 +27,7 @@ import pandas as pd
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import union_categoricals
+from pandas.api.types import union_categoricals, is_list_like
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
@@ -3064,7 +3064,13 @@ def select_columns(
     search_column_names: Union[str, callable, Pattern, slice, list],
     invert: bool = False,
 ) -> pd.DataFrame:
-    """Method-chainable selection of columns.
+    """
+    Method-chainable selection of columns.
+
+    Not applicable to MultiIndex columns.
+
+    It accepts a string, shell-like glob strings (*string*),
+    regex, slice, array-like object, or a list of the previous options.
 
     This method does not mutate the original DataFrame.
 
@@ -3175,6 +3181,15 @@ def select_columns(
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
 
+    - You can also pass a list of booleans::
+
+        df.select_columns([True, False, True, True, True,
+                           False, False, False, True, False])
+
+           id  code  code1 code2 code3
+        0   0     1    4.0     8     a
+        1   1     2    NaN     5     b
+
     - Setting ``invert`` to ``True``
       returns the complement of the columns provided::
 
@@ -3215,17 +3230,25 @@ def select_columns(
         This will result in the selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    :raises NameError: if one or more of the specified column names or
+    :raises KeyError: if one or more of the specified column names or
         search strings are not found in DataFrame columns.
+    :raises ValueError: if the columns is a MultiIndex.
 
     .. # noqa: DAR402
     """
 
-    check(
-        "search_column_names",
-        search_column_names,
-        [str, callable, Pattern, slice, list],
-    )
+    if isinstance(df.columns, pd.MultiIndex):
+        raise ValueError(
+            """
+            MultiIndex columns
+            not supported for `select_columns`.
+            """
+        )
+
+    # applicable for any
+    # list-like object (ndarray, Series, pd.Index, tuple, ...)
+    if is_list_like(search_column_names):
+        search_column_names = list(search_column_names)
 
     full_column_list = _select_columns(search_column_names, df)
 

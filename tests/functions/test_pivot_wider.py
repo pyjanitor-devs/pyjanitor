@@ -183,28 +183,24 @@ combinations = [
 ]
 
 
-def test_type_index1(df_checks_output):
+@pytest.mark.xfail(reason="list-like is converted to list.")
+def test_type_index(df_checks_output):
     """Raise TypeError if wrong type is provided for the `index`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index={"geoid"}, names_from="variable")
 
-
-def test_type_index2(df_checks_output):
-    """Raise TypeError if wrong type is provided for the `index`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index=("geoid", "name"), names_from="variable"
         )
 
 
-def test_type_names_from1(df_checks_output):
+@pytest.mark.xfail(reason="list-like is converted to list.")
+def test_type_names_from(df_checks_output):
     """Raise TypeError if wrong type is provided for `names_from`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index="geoid", names_from={"variable"})
 
-
-def test_type_names_from2(df_checks_output):
-    """Raise TypeError if wrong type is provided for `names_from`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index="geoid", names_from=("variable",))
 
@@ -714,3 +710,18 @@ def test_df_multiple_aggfuncs():
     )
 
     assert_frame_equal(result, expected)
+
+
+df = pd.DataFrame(
+    [
+        {"A": "foo", "B": "one", "C": "small", "D": 1, "E": 2},
+        {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 4},
+        {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 5},
+        {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 5},
+        {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 6},
+        {"A": "bar", "B": "one", "C": "large", "D": 4, "E": 6},
+        {"A": "bar", "B": "one", "C": "small", "D": 5, "E": 8},
+        {"A": "bar", "B": "one", "C": "small", "D": 6, "E": 9},
+        {"A": "bar", "B": "one", "C": "large", "D": 7, "E": 9},
+    ]
+)

@@ -1,4 +1,5 @@
 import pytest
+import pandas as pd
 from pandas.testing import assert_frame_equal
 
 
@@ -43,7 +44,7 @@ def test_select_columns_glob_inputs(dataframe, invert, expected):
     ],
 )
 def test_select_columns_missing_columns(dataframe, columns):
-    """Check that passing non-existent column names or search strings raises NameError"""  # noqa: E501
+    """Check that passing non-existent column names or search strings raises KeyError"""  # noqa: E501
     with pytest.raises(KeyError):
         dataframe.select_columns(search_column_names=columns)
 
@@ -55,11 +56,21 @@ def test_select_columns_missing_columns(dataframe, columns):
         pytest.param(
             "a",
             marks=pytest.mark.xfail(
-                reason="select_columns now accepts other data types"
+                reason="`select_columns` now accepts strings"
             ),
         ),
-        ("a", "Bell__Chart"),
-        {"a", "Bell__Chart"},
+        pytest.param(
+            ("a", "Bell__Chart"),
+            marks=pytest.mark.xfail(
+                reason="`select_columns` converts list-like into lists"
+            ),
+        ),
+        pytest.param(
+            {"a", "Bell__Chart"},
+            marks=pytest.mark.xfail(
+                reason="`select_columns` converts list-like into lists"
+            ),
+        ),
     ],
 )
 def test_select_columns_input(dataframe, columns):
@@ -101,3 +112,21 @@ def test_select_callable_columns(dataframe, invert, expected):
     df = dataframe.select_columns(search_column_names=columns, invert=invert)
 
     assert_frame_equal(df, dataframe[expected])
+
+
+def test_MultiIndex():
+    """
+    Raise ValueError if columns is a MultiIndex.
+    """
+    df = pd.DataFrame(
+        {
+            "A": {0: "a", 1: "b", 2: "c"},
+            "B": {0: 1, 1: 3, 2: 5},
+            "C": {0: 2, 1: 4, 2: 6},
+        }
+    )
+
+    df.columns = [list("ABC"), list("DEF")]
+
+    with pytest.raises(ValueError):
+        df.select_columns("A")

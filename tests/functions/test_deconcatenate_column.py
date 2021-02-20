@@ -114,3 +114,12 @@ def test_deconcatenate_column_autoname(dataframe):
     assert "col2" in df.columns
     assert "a" not in df.columns
     assert "decorated-elephant" not in df.columns
+
+
+data = {
+    "a": [1, 2, 3] * 3,
+    "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+    "decorated-elephant": [1, 2, 3] * 3,
+    "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
+    "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+}

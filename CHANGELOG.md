@@ -33,6 +33,7 @@
   to allow for flexible columns selection. @samukweku
 - [ENH] `pivot_longer` and `pivot_wider` now support `janitor.select_columns` syntax,
   allowing for more flexible and dynamic column selection. @samukweku
+- [ENH] Performance improvements to `expand_grid`. @samukweku
 
 
 ## v0.20.10

@@ -4389,7 +4389,7 @@ def sort_naturally(
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
-    others: Dict = {},
+    others: Optional[Dict] = None,
     **kwargs,
 ) -> pd.DataFrame:
     """

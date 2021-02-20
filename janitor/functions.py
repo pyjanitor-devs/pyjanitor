@@ -4996,8 +4996,8 @@ def complete(
     `pd.DataFrame.merge` and `pd.DataFrame.fillna`.
 
     Combinations of column names or a list/tuple of column names, or even a
-    dictionary of column names and new values are possible. 
-    
+    dictionary of column names and new values are possible.
+
     It can also handle duplicated data.
 
     `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
@@ -5153,7 +5153,7 @@ def complete(
 
     .. # noqa: DAR402
     """
-    
+
     df = df.copy()
 
     df = _computations_complete(df, columns, fill_value)

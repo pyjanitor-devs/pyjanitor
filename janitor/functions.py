@@ -4375,8 +4375,9 @@ def expand_grid(
     It creates a cartesian product of all the inputs.
 
     This works with a dictionary of name value pairs,
-    or keyword arguments (`kwargs`); it is also not restricted
-    to dataframes; it can work with any list-like structure
+    or keyword arguments (`kwargs`); 
+    it is also not restricted to dataframes; 
+    it can work with any list-like structure
     that is 1 or 2 dimensional.
     MultiIndex objects are not supported though.
 

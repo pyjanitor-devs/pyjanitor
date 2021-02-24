@@ -192,9 +192,9 @@ the package that it is today.
 
 [0.20.8]: https://github.com/ericmjl/pyjanitor/compare/v0.20.7...v0.20.8
 
-[0.20.7]: https://github.com/ericmjl/pyjanitor/compare/v0.20.6...v0.20.7
+[0.20.7]: https://github.com/ericmjl/pyjanitor/compare/v0.20.5...v0.20.7
 
-[0.20.6]: https://github.com/ericmjl/pyjanitor/compare/v0.20.5...v0.20.6
+[0.20.6]: https://github.com/ericmjl/pyjanitor/compare/v0.20.5...v0.20.7
 
 [0.20.5]: https://github.com/ericmjl/pyjanitor/compare/v0.20.1...v0.20.5
 

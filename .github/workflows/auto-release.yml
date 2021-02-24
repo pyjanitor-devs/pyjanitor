@@ -58,8 +58,8 @@ jobs:
 
       - name: Display new version number
         run: |
-            echo "version_name: ${{ github.event.inputs.version_name }}"
-            echo "version_number: v${{ env.version_number }}"
+          echo "version_name: ${{ github.event.inputs.version_name }}"
+          echo "version_number: v${{ env.version_number }}"
 
       # See https://github.com/thomaseizinger/keep-a-changelog-new-release
       - name: Update Changelog

@@ -79,10 +79,7 @@ jobs:
 
       - name: Ensure tag creation
         run: git tag | grep ${{ env.version_number }}
-
-      - name: Push changes with tags
-        run: git push && git push --tags
-
+        
       - name: Build package
         run: |
           rm -f dist/*
@@ -93,6 +90,9 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-
+          
+      - name: Push changes with tags
+        run: git push && git push --tags
+        
       - name: Ensure complete
         run: echo "Auto-release complete!"

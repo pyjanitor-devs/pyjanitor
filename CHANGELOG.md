@@ -4,7 +4,7 @@
 
 - [INF] Auto-release GitHub action maintenance. @loganthomas
 
-## [0.20.11] - 2021-02-24
+## [v0.20.11] - 2021-02-24
 
 -   [INF] Setup auto-release GitHub action. @loganthomas
 -   [INF] Deploy `darglint` package for docstring linting. Issue #745. @loganthomas
@@ -39,7 +39,7 @@
 -   [ENH] pivot_longer and pivot_wider now support janitor.select_columns syntax,
     allowing for more flexible and dynamic column selection. @samukweku
 
-## [0.20.10]
+## [v0.20.10]
 
 -   [ENH] Added function `sort_timestamps_monotonically` to timeseries functions @UGuntupalli
 -   [ENH] Added the complete function for converting implicit missing values
@@ -53,12 +53,12 @@
 -   [ENH] Fixed code to returns error if `fill_value` is not a dictionary. @samukweku
 -   [INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku
 
-## [0.20.9]
+## [v0.20.9]
 
 -   [ENH] Updated groupby_agg function to account for null entries in the `by` argument. @samukweku
 -   [ENH] Added function `groupby_topk` to janitor functions @mphirke
 
-## [0.20.8]
+## [v0.20.8]
 
 -   [ENH] Upgraded `update_where` function to use either the pandas query style,
     or boolean indexing via the `loc` method. Also updated `find_replace` function to use the `loc`
@@ -77,12 +77,12 @@
     for selected columns in a dataframe. @samukweku
 -   [ENH] Simpler logic and less lines of code for expand_grid function @samukweku
 
-## [0.20.7]
+## [v0.20.7]
 
 -   [TST] Add a test for transform_column to check for nonmutation. @VPerrollaz
 -   [ENH] Contributed `expand_grid` function by @samukweku
 
-## [0.20.6]
+## [v0.20.6]
 
 -   [DOC] Pep8 all examples. @VPerrollaz
 -   [TST] Add docstrings to tests @hectormz
@@ -91,18 +91,18 @@
     and also added option to transform column elementwise (via apply)
     or columnwise (thus operating on a series). @ericmjl
 
-## [0.20.5]
+## [v0.20.5]
 
 -   [INF] Replace `pycodestyle` with `flake8` in order to add `pandas-vet` linter @hectormz
 -   [ENH] `select_columns()` now raises `NameError` if column label in
     `search_columns_labels` is missing from `DataFrame` columns. @smu095
 
-## [0.20.1]
+## [v0.20.1]
 
 -   [DOC] Added an example for groupby_agg in general functions @samukweku
 -   [ENH] Contributed `sort_naturally()` function. @ericmjl
 
-## [0.20.0]
+## [v0.20.0]
 
 -   [DOC] Edited transform_column dest_column_name kwarg description to be clearer on defaults by @evan-anderson.
 -   [ENH] Replace `apply()` in favor of `pandas` functions in several functions. @hectormz
@@ -112,11 +112,11 @@
 -   [ENH] Change `find_replace` implementation to use keyword arguments to specify columns to perform find and replace on. @ericmjl
 -   [ENH] Add `jitter()` dataframe function by @rahosbach
 
-## [0.19.0]
+## [v0.19.0]
 
 -   [ENH] Add xarray support and clone_using / convert_datetime_to_number funcs by @zbarry.
 
-## [0.18.3]
+## [v0.18.3]
 
 -   [ENH] Series toset() functionality #570 @eyaltrabelsi
 -   [ENH] Added option to coalesce function to not delete coalesced columns. @gddcunh
@@ -131,7 +131,7 @@
 -   [DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal
 -   [INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal
 
-## [0.18.2]
+## [v0.18.2]
 
 -   [INF] Make requirements.txt smaller @eyaltrabelsi
 -   [ENH] Add a reset_index parameter to shuffle @eyaltrabelsi
@@ -152,7 +152,7 @@
 -   [ENH] Add count_cumulative_unique() method to janitor.functions submodule by @rahosbach
 -   [ENH] Add `update_where()` method to `janitor.spark.functions` submodule by @zjpoh
 
-## [0.18.1]
+## [v0.18.1]
 
 -   [ENH] extend find_replace functionality to allow both exact match and
     regular-expression-based fuzzy match by @shandou

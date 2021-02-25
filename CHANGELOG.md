@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - [ENH] Performance improvements to `expand_grid`. @samukweku
+- [HOTFIX] Add `multipledispatch` to pip requirements. @ericmjl
 
 ## [v0.20.12] - 2021-02-25
 

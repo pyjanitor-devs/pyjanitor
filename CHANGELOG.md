@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+## [v0.20.12] - 2021-02-25
 - [INF] Auto-release GitHub action maintenance. @loganthomas
 
 ## [v0.20.11] - 2021-02-24
@@ -182,7 +183,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/ericmjl/pyjanitor/compare/v0.20.11...HEAD
+[Unreleased]: https://github.com/ericmjl/pyjanitor/compare/v0.20.12...HEAD
+
+[v0.20.12]: https://github.com/ericmjl/pyjanitor/compare/v0.20.11...v0.20.12
 
 [v0.20.11]: https://github.com/ericmjl/pyjanitor/compare/v0.20.10...v0.20.11
 

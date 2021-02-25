@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 
+- [ENH] Performance improvements to `expand_grid`. @samukweku
+
 ## [v0.20.12] - 2021-02-25
+
 - [INF] Auto-release GitHub action maintenance. @loganthomas
 
 ## [v0.20.11] - 2021-02-24

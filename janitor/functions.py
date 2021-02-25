@@ -34,7 +34,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
-    _check_instance,
+    _computations_expand_grid,
     _clean_accounting_column,
     _computations_as_categorical,
     _computations_complete,
@@ -43,7 +43,6 @@ from .utils import (
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
-    _grid_computation,
     _process_text,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
@@ -4390,18 +4389,27 @@ def sort_naturally(
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
-    others: Dict = None,
+    others: Optional[Dict] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """
-    Creates a dataframe from a combination of all inputs.
+    Creates a dataframe from a cartesian combination of all inputs.
 
     This works with a dictionary of name value pairs,
-    and will work with structures that are not dataframes.
+    or keyword arguments (`kwargs`);
+    it is also not restricted to dataframes;
+    it can work with any list-like structure
+    that is 1 or 2 dimensional.
+    MultiIndex objects are not supported though.
+
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
     Note that if a MultiIndex dataframe or series is passed, the index/columns
     will be discarded, and a single indexed dataframe will be returned.
+
+    Existing data types are preserved in this function.
+    This includes Pandas' extension array dtypes.
 
     The output will always be a dataframe.
 
@@ -4425,7 +4433,7 @@ def expand_grid(
         #    2 |      1 |   2
         #    2 |      1 |   3
 
-        #create a dataframe from all combinations in a dictionary
+        # create a dataframe from all combinations in a dictionary
         data = {"x":range(1,4), "y":[1,2]}
 
         jn.expand_grid(others=data)
@@ -4469,28 +4477,30 @@ def expand_grid(
 
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe.
-        It becomes the column name of the dataframe.
+        It becomes part of the column names of the dataframe.
     :param others: A dictionary that contains the data
         to be combined with the dataframe.
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
+    :param kwargs: Keyword arguments are accepted.
     :returns: A pandas dataframe of all combinations of name value pairs.
-    :raises TypeError: if others is not a dictionary
+    :raises TypeError: if `others` is not a dictionary
     :raises KeyError: if there is a dataframe and no key is provided.
+    :raises ValueError: if `others` is empty.
+
+    .. # noqa: DAR402
+
     """
-    # check if others is a dictionary
-    if not isinstance(others, dict):
-        # strictly name value pairs
-        # same idea as in R and tidyverse implementation
-        raise TypeError("others must be a dictionary")
+
+    check("others", others, [dict])
+
+    others = {**others, **kwargs}
+
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
         df = df.copy()
-        if isinstance(df.index, pd.MultiIndex) or isinstance(
-            df.columns, pd.MultiIndex
-        ):
-            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
+
         if not df_key:
             raise KeyError(
                 """
@@ -4498,10 +4508,15 @@ def expand_grid(
                 requires that a string `df_key` be passed in.
                 """
             )
-        others = {**{df_key: df}, **others}
-    entry = _check_instance(others)
 
-    return _grid_computation(entry)
+        check("df_key", df_key, [str])
+
+        others = {**{df_key: df}, **others}
+
+    if not others:
+        raise ValueError("""`others` cannot be empty.""")
+
+    return _computations_expand_grid(others)
 
 
 @pf.register_dataframe_method
@@ -4979,9 +4994,9 @@ def complete(
     `pd.DataFrame.merge` and `pd.DataFrame.fillna`.
 
     Combinations of column names or a list/tuple of column names, or even a
-    dictionary of column names and new values are possible. It can also handle
-    duplicated data.
+    dictionary of column names and new values are possible.
 
+    It can also handle duplicated data.
 
     `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
 
@@ -5016,7 +5031,6 @@ def complete(
     is passed in as a separate variable::
 
         df.complete(columns = ["group", ("item_id", "item_name")])
-
             group	item_id	    item_name	value1	   value2
         0	1	    1	        a	  1.0	    4.0
         1	1	    2	        b	  3.0	    6.0
@@ -5095,6 +5109,7 @@ def complete(
         import janitor as jn
 
         df = pd.DataFrame(...)
+
         df = jn.complete(
             df = df,
             columns= [
@@ -5119,7 +5134,6 @@ def complete(
             fill_value=None,
         )
 
-
     :param df: A pandas dataframe.
     :param columns: This is a list containing the columns to be
         completed. It could be column labels (string type),
@@ -5137,6 +5151,7 @@ def complete(
 
     .. # noqa: DAR402
     """
+
     df = df.copy()
 
     df = _computations_complete(df, columns, fill_value)

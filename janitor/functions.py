@@ -4986,6 +4986,7 @@ def complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]] = None,
     fill_value: Optional[Dict] = None,
+    by: Optional[Union[list, str]] = None
 ) -> pd.DataFrame:
     """
     This function turns implicit missing values into explicit missing values.
@@ -5152,9 +5153,12 @@ def complete(
     .. # noqa: DAR402
     """
 
+    if not columns:
+        return df
+
     df = df.copy()
 
-    df = _computations_complete(df, columns, fill_value)
+    df = _computations_complete(df, columns, fill_value, by)
 
     return df
 

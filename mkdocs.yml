@@ -1,0 +1,58 @@
+site_name: pyjanitor
+site_url: https://ericmjl.github.io/pyjanitor
+
+docs_dir: mkdocs/
+
+theme:
+  name: "material"
+  palette:
+    primary: "indigo"
+    accent: "indigo"
+  icon:
+    logo: "fontawesome/solid/book"
+  features:
+    - instant
+    # - tabs
+  language: en
+
+# We customize the navigation by hand to control the order
+# in which pages show up.
+nav:
+  - Home: index.md
+  - Development Guide: devguide.md
+  - API Docs:
+    - Functions: api/functions.md
+    - Utils: api/utils.md
+  - Changelog: CHANGELOG.md
+
+plugins:
+  - search
+  - mkdocstrings
+  # - mknotebooks:
+  #     execute: true
+  #     write_markdown: true
+  #     allow_errors: true
+  #     timeout: 1200
+  #     binder: true
+  #     binder_service_name: "gh"
+  #     binder_branch: "master"
+
+# Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
+markdown_extensions:
+  - codehilite
+  - admonition
+  # - pymdownx.tabbed
+  # - pymdownx.arithmatex
+  # - pymdownx.details
+  # - pymdownx.superfences
+  # - markdown.extensions.attr_list
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+
+extra_css:
+  - css/nb_mods.css
+  - css/apidocs.css
+
+repo_name: "ericmjl/pyjanitor"
+repo_url: "https://github.com/ericmjl/pyjanitor"

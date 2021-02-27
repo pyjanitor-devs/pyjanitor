@@ -1,6 +1,5 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
-import collections
 import fnmatch
 import functools
 import os
@@ -18,7 +17,6 @@ from typing import (
     Optional,
     Pattern,
     Tuple,
-    Type,
     Union,
 )
 
@@ -743,10 +741,13 @@ def _computations_complete(
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
-    This is the main workhorse of the `complete` function.
+    This function computes the final output for the `complete` function.
 
-    It will be reused in `computation_complete`, dependent
-    on the presence of `by`.
+    If `by` is present, then the index for df is set within this function;
+    else the index for `df` is set within `_base_complete`.
+    This allows setting the index once before computing, as against
+    setting the index multiple times, when running `apply` on the groupby,
+    with `_base_complete`.
 
     A dataframe, with rows of missing values, if any, is returned.
     """
@@ -758,11 +759,13 @@ def _computations_complete(
         df = _base_complete(df, column_checker, columns)
 
     else:
-        df = df.set_index(column_checker, drop = False)
+        df = df.set_index(column_checker, drop=False)
         if not df.index.is_monotonic_increasing:
             df = df.sort_index()
-        df = df.groupby(by).apply(_base_complete, column_checker, columns, True)
-        df = df.drop(columns = by + column_checker)
+        df = df.groupby(by).apply(
+            _base_complete, column_checker, columns, True
+        )
+        df = df.drop(columns=by + column_checker)
 
     if fill_value:
         df = df.fillna(fill_value)
@@ -771,11 +774,12 @@ def _computations_complete(
 
     return df
 
+
 def _base_complete(
     df: pd.DataFrame,
     column_checker: List,
     columns: List[Union[List, Dict, str]],
-    by: bool = False
+    by: bool = False,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `complete` function.
@@ -812,53 +816,55 @@ def _base_complete(
             df = df.set_index(column_checker)
             if not df.index.is_monotonic_increasing:
                 df = df.sort_index()
-        indexer = indexer.set_index(column_checker)
-        if not indexer.index.is_monotonic_increasing:
-            indexer = indexer.sort_index()
-
-        if df.index.is_unique:
-            df = df.reindex(indexer.index)
-        else:
-            df = df.join(indexer, how="outer")
-
+            indexer = indexer.set_index(column_checker)
     else:
         indexer = indexer[0]
-        if isinstance(indexer, pd.Series):
-            if not indexer.is_monotonic_increasing:
-                indexer = indexer.sort_values()
-        else:
-            if not indexer.iloc[:, 0].is_monotonic_increasing:
-                indexer = indexer.sort_values(list(indexer.columns))
-        if df.index.is_unique:
-            df = df.reindex(indexer)
-        else:
-            indexer = pd.DataFrame([], index = indexer)
-            df = df.join(indexer, how = 'outer', sort = False)
+        indexer = pd.DataFrame([], index=indexer)
 
+    if not indexer.index.is_monotonic_increasing:
+        indexer = indexer.sort_index()
+
+    if df.index.is_unique:
+        # dictionary is not bound to contain same values
+        # as in the dataframe's column being referred to.
+        # As such, this checks if all values can be found
+        # in the new index; if True, then reindex is safe
+        # if not, then the join ensures no data is lost.
+        if dict_present:
+            if df.index.isin(indexer.index).all():
+                df = df.reindex(indexer.index)
+            else:
+                df = df.join(indexer, how="outer", sort=False)
+        else:
+            df = df.reindex(indexer.index)
+
+    else:
+        df = df.join(indexer, how="outer", sort=False)
 
     return df
-
 
 
 @functools.singledispatch
 def _complete_column(column, df):
     """
-    This function processes the labels/entries in the 
+    This function processes the labels/entries in the
     `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product, 
-    to reindex the original dataframe and expose the 
+    possibly from a cartesian product,
+    to reindex the original dataframe and expose the
     possibly missing values.
     """
-    raise TypeError("""This type is not supported in the `complete` function.""")
+    raise TypeError(
+        """This type is not supported in the `complete` function."""
+    )
 
 
 @_complete_column.register(str)  # noqa: F811
 def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the labels/entries in the 
+    This function processes the labels/entries in the
     `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product, 
-    to reindex the original dataframe and expose the 
+    possibly from a cartesian product,
+    to reindex the original dataframe and expose the
     possibly missing values.
 
     A Series is returned.
@@ -873,10 +879,10 @@ def _sub_complete_column(column, df):  # noqa: F811
 @_complete_column.register(list)  # noqa: F811
 def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the labels/entries in the 
+    This function processes the labels/entries in the
     `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product, 
-    to reindex the original dataframe and expose the 
+    possibly from a cartesian product,
+    to reindex the original dataframe and expose the
     possibly missing values.
 
     A DataFrame is returned.
@@ -891,10 +897,10 @@ def _sub_complete_column(column, df):  # noqa: F811
 @_complete_column.register(dict)  # noqa: F811
 def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the labels/entries in the 
+    This function processes the labels/entries in the
     `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product, 
-    to reindex the original dataframe and expose the 
+    possibly from a cartesian product,
+    to reindex the original dataframe and expose the
     possibly missing values.
 
     A list of Series is returned.
@@ -906,7 +912,7 @@ def _sub_complete_column(column, df):  # noqa: F811
         if not isinstance(arr, pd.Series):
             try:
                 arr = pd.Series(arr)
-            except:
+            except ValueError:
                 raise ValueError(
                     """
                     It seems the supplied pair in the dictionary

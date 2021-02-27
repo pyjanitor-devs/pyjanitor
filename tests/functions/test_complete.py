@@ -23,12 +23,12 @@ def df1():
 
 
 def test_empty_column(df1):
-    "Return dataframe if `columns` is empty."
+    """Return dataframe if `columns` is empty."""
     assert_frame_equal(df1.complete(), df1)
 
 
 def test_MultiIndex_column(df1):
-    "Raise ValueError if column is a MultiIndex."
+    """Raise ValueError if column is a MultiIndex."""
     df = df1
     df.columns = [["A", "B", "C"], list(df.columns)]
     with pytest.raises(ValueError):
@@ -36,7 +36,7 @@ def test_MultiIndex_column(df1):
 
 
 def test_column_duplicated(df1):
-    "Raise ValueError if column is duplicated in `columns`"
+    """Raise ValueError if column is duplicated in `columns`"""
     with pytest.raises(ValueError):
         df1.complete(
             columns=[
@@ -48,21 +48,30 @@ def test_column_duplicated(df1):
 
 
 def test_type_columns(df1):
-    "Raise error if columns is not a list object."
+    """Raise error if columns is not a list object."""
     with pytest.raises(TypeError):
         df1.complete(columns="Year")
 
 
 def test_fill_value_is_a_dict(df1):
-    "Raise error if fill_value is not a dictionary"
+    """Raise error if fill_value is not a dictionary"""
     with pytest.raises(TypeError):
         df1.complete(columns=["Year", "Taxon"], fill_value=0)
 
 
 def test_wrong_column_fill_value(df1):
-    "Raise ValueError if column in `fill_value` does not exist."
+    """Raise ValueError if column in `fill_value` does not exist."""
     with pytest.raises(ValueError):
         df1.complete(columns=["Taxon", "Year"], fill_value={"year": 0})
+
+
+def test_wrong_data_type_dict(df1):
+    """
+    Raise ValueError if value in dictionary
+    is not a 1-dimensional object.
+    """
+    with pytest.raises(ValueError):
+        df1.complete(columns=[{"Year": pd.DataFrame([2005, 2006, 2007])}])
 
 
 frame = pd.DataFrame(
@@ -220,6 +229,39 @@ def test_dict_series_duplicates(df1, df1_output):
         fill_value={"Abundance": 0},
     )
     assert_frame_equal(result, df1_output)
+
+
+def test_dict_values_outside_range(df1):
+    """
+    Test the output if a dictionary is present,
+    and none of the values in the dataframe,
+    for the corresponding label, is not present
+    in the dictionary's values.
+    """
+    result = df1.complete(
+        columns=[("Taxon", "Abundance"), {"Year": np.arange(2005, 2007)}]
+    )
+    expected = pd.DataFrame(
+        [
+            {"Taxon": "Agarum", "Abundance": 1, "Year": 1999},
+            {"Taxon": "Agarum", "Abundance": 1, "Year": 2005},
+            {"Taxon": "Agarum", "Abundance": 1, "Year": 2006},
+            {"Taxon": "Agarum", "Abundance": 8, "Year": 2004},
+            {"Taxon": "Agarum", "Abundance": 8, "Year": 2005},
+            {"Taxon": "Agarum", "Abundance": 8, "Year": 2006},
+            {"Taxon": "Saccharina", "Abundance": 2, "Year": 2004},
+            {"Taxon": "Saccharina", "Abundance": 2, "Year": 2005},
+            {"Taxon": "Saccharina", "Abundance": 2, "Year": 2006},
+            {"Taxon": "Saccharina", "Abundance": 4, "Year": 1999},
+            {"Taxon": "Saccharina", "Abundance": 4, "Year": 2005},
+            {"Taxon": "Saccharina", "Abundance": 4, "Year": 2006},
+            {"Taxon": "Saccharina", "Abundance": 5, "Year": 2000},
+            {"Taxon": "Saccharina", "Abundance": 5, "Year": 2005},
+            {"Taxon": "Saccharina", "Abundance": 5, "Year": 2006},
+        ]
+    )
+
+    assert_frame_equal(result, expected)
 
 
 # adapted from https://tidyr.tidyverse.org/reference/complete.html
@@ -508,7 +550,7 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        columns=[{"year": lambda x: range(x.year.min(), x.year.max() + 1)},],
+        columns=[{"year": lambda x: range(x.year.min(), x.year.max() + 1)}],
         by="state",
     )
 
@@ -534,18 +576,3 @@ def test_complete_groupby():
     )
 
     assert_frame_equal(result, expected)
-
-
-import janitor
-
-df = pd.DataFrame(
-    {
-        "state": ["CA", "CA", "HI", "HI", "HI", "NY", "NY"],
-        "year": [2010, 2013, 2010, 2012, 2016, 2009, 2013],
-        "value": [1, 3, 1, 2, 3, 2, 5],
-    }
-)
-result = df.complete(columns=[{"year": lambda df: np.arange(df.year.min(), df.year.max() + 1)}], by='state')
-
-print(df, end="\n\n")
-print(result)

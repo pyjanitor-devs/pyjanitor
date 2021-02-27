@@ -1,0 +1,38 @@
+steps:
+  - script: |
+      $(activate.command) pyjanitor-dev
+      flake8 . --exclude ./nbconvert_config.py
+    displayName: 'Code style: flake8'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      black
+    displayName: 'Code style: black'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      interrogate
+    displayName: 'Docstring coverage: interrogate'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      darglint janitor -v 2
+    displayName: 'Docstring linter: darglint'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      pytest
+    displayName: 'Unit tests.'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      python scripts/check-autodoc.py
+    displayName: 'Check that all general functions have been added to docs.'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      bash <(curl -s https://codecov.io/bash) -t c4aaeb6c-be8f-44b2-a529-6871f3537261
+    displayName: 'Upload code coverage.'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      python -m ipykernel install --user --name pyjanitor-dev
+      jupyter nbconvert --to notebook --config nbconvert_config.py --execute --template full
+    displayName: 'Test that all notebooks execute correctly.'
+  - script: |
+      $(activate.command) pyjanitor-dev
+      cd docs && make html
+    displayName: 'Test that HTML docs all build correctly.'

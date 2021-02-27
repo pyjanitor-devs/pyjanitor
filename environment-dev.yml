@@ -3,15 +3,17 @@ channels:
 - conda-forge
 - rdkit
 dependencies:
-- python>=3.6
+- python>=3.6, <3.9
 - biopython
-- black
+- black=19.10b0
 - bumpversion
 - cairo
 - conda
+- darglint
 - doc8
 - flake8
 - hypothesis>=4.4.0
+- interrogate
 - ipykernel
 - ipython
 - isort
@@ -19,13 +21,16 @@ dependencies:
 - lxml
 - make
 - missingno
+- multipledispatch
 - mypy
 - natsort
 - nbsphinx
 - nox
 - numpy>=1.16
+- openpyxl
 - pandas-flavor
-- pandas>=1.0.0
+- pandas-vet
+- pandas>=1.1.0
 - pip
 - pipreqs
 - pre-commit
@@ -33,7 +38,6 @@ dependencies:
 - pylint
 - pyspark
 - pytest
-- pytest-azurepipelines
 - pytest-cov
 - python-language-server
 - rdkit
@@ -44,7 +48,6 @@ dependencies:
 - sphinxcontrib-fulltoc
 - twine
 - unyt
+- xarray
 - xlrd
 - xorg-libxrender
-- xarray
-- pandas-vet

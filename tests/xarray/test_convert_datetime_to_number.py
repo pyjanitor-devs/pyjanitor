@@ -1,3 +1,4 @@
+"""Tests for datetime_conversion."""
 import numpy as np
 import pytest
 import xarray as xr
@@ -5,6 +6,7 @@ import xarray as xr
 
 @pytest.mark.xarray
 def test_datetime_conversion(da):
+    """Test that datetime conversion works on DataArrays."""
     seconds_arr = np.arange(512)
 
     # dataarrays

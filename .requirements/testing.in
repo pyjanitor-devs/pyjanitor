@@ -1,0 +1,6 @@
+pytest-cov
+pytest>=3.4.2
+hypothesis>=4.4.0
+interrogate
+pandas-vet
+py>=1.10.0

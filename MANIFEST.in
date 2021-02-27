@@ -1,6 +1,4 @@
-include requirements.txt
-recursive-include examples
-recursive-include tests
+include .requirements/*
 include *.rst
-recursive-include docs
 include LICENSE
+include CHANGELOG.md

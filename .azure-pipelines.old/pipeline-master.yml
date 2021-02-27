@@ -1,0 +1,66 @@
+pr:
+- dev
+
+jobs:
+  - job: linux
+    variables:
+      activate.command: "source activate"
+      JANITOR_CI_MACHINE: 1
+    strategy:
+      matrix:
+        py37:
+          python.version: "3.7"
+
+    pool:
+      vmImage: ubuntu-16.04
+
+    steps:
+    - bash: echo "##vso[task.prependpath]$CONDA/bin"
+      displayName: Add conda to PATH
+    - template: templates/create-env.yml
+    - template: templates/run-tests.yml
+    # - template: templates/release.yml
+
+  - job: macos
+    variables:
+      activate.command: "source activate"
+      JANITOR_CI_MACHINE: 1
+    strategy:
+      matrix:
+        py37:
+          python.version: "3.7"
+
+    pool:
+      vmImage: macOS-10.14
+
+    steps:
+    - bash: echo "##vso[task.prependpath]$CONDA/bin"
+      displayName: Add conda to PATH
+
+    # On Hosted macOS, the agent user doesn't have ownership of Miniconda's installation directory/
+    # We need to take ownership if we want to update conda or install packages globally
+    - bash: sudo chown -R $USER $CONDA
+      displayName: Take ownership of conda installation
+    - template: templates/create-env.yml
+    - template: templates/run-tests.yml
+    # - template: templates/release.yml
+
+  # Commenting out Windows build because it never fails when it should...
+  # - job: windows
+  #   variables:
+  #     activate.command: "activate"
+  #     JANITOR_CI_MACHINE: 1
+  #   strategy:
+  #     matrix:
+  #       py37:
+  #         python.version: "3.7"
+
+  #   pool:
+  #     vmImage: vs2017-win2016
+
+  #   steps:
+  #   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+  #     displayName: Add conda to PATH
+  #   - template: templates/create-env.yml
+  #   - template: templates/run-tests.yml
+  #   # - template: templates/release.yml

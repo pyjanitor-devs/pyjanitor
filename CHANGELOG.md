@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [ENH] `complete` adds a `by` parameter to expose explicit missing values per group, via groupby. @samukweku
 
 ## [v0.20.13] - 2021-02-25
 

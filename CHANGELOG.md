@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 - [ENH] Add `dropna` parameter to groupby_agg. @samukweku
+- [ENH] `complete` adds a `by` parameter to expose explicit missing values per group, via groupby. @samukweku
+
 ## [v0.20.13] - 2021-02-25
 
 -   [ENH] Performance improvements to `expand_grid`. @samukweku

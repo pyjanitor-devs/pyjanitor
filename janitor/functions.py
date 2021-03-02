@@ -4986,12 +4986,14 @@ def complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]] = None,
     fill_value: Optional[Dict] = None,
+    by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
     This function turns implicit missing values into explicit missing values.
 
     It is modeled after tidyr's `complete` function, and is a wrapper around
-    `pd.DataFrame.merge` and `pd.DataFrame.fillna`.
+    `expand_grid`, `pd.DataFrame.reindex`, `pd.DataFrame.join`
+    and `pd.DataFrame.fillna`.
 
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible.
@@ -5063,10 +5065,12 @@ def complete(
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
 
-    The null value can be replaced with the fill_value argument::
+    The null value can be replaced with the `fill_value` argument::
 
-        df.complete(columns = ['Year', 'Taxon'],
-                    fill_value = {"Abundance" : 0})
+        df.complete(
+            columns = ['Year', 'Taxon'],
+            fill_value = {"Abundance" : 0}
+        )
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5080,10 +5084,12 @@ def complete(
     1999 to 2004? Easy - simply pass a dictionary pairing the column name
     with the new values::
 
-        df.complete(columns = [{"Year": lambda x : range(x.Year.min(),
-                                                         x.Year.max() + 1)},
-                                "Taxon"],
-                    fill_value={"Abundance" : 0})
+        df.complete(
+            columns = [{"Year": lambda df : range(df.Year.min(),
+                                                 df.Year.max() + 1)},
+                        "Taxon"],
+            fill_value={"Abundance" : 0}
+        )
 
             Year      Taxon     Abundance
         0   1999     Agarum         1.0
@@ -5098,6 +5104,44 @@ def complete(
         9   2003     Saccharina     0.0
         10  2004     Agarum         8.0
         11  2004    Saccharina      2.0
+
+    It is also possible to expose missing values within a groupby,
+    by using the `by` parameter::
+
+          state  year  value
+        0    CA  2010      1
+        1    CA  2013      3
+        2    HI  2010      1
+        3    HI  2012      2
+        4    HI  2016      3
+        5    NY  2009      2
+        6    NY  2013      5
+
+    Let's get all the missing years per state::
+
+        df.complete(
+            columns = [{'year': lambda df: np.arange(df.year.min(),
+                                                     df.year.max()+1)}],
+            by='state'
+        )
+
+            state  year  value
+        0     CA  2010    1.0
+        1     CA  2011    NaN
+        2     CA  2012    NaN
+        3     CA  2013    3.0
+        4     HI  2010    1.0
+        5     HI  2011    NaN
+        6     HI  2012    2.0
+        7     HI  2013    NaN
+        8     HI  2014    NaN
+        9     HI  2015    NaN
+        10    HI  2016    3.0
+        11    NY  2009    2.0
+        12    NY  2010    NaN
+        13    NY  2011    NaN
+        14    NY  2012    NaN
+        15    NY  2013    5.0
 
     .. note:: MultiIndex columns are not supported.
 
@@ -5117,7 +5161,8 @@ def complete(
                 (column1, column2, ...),
                 {column1: new_values, ...}
             ],
-            fill_value = None
+            fill_value = None,
+            by = label/list_of_labels
         )
 
     Method chaining syntax:
@@ -5132,6 +5177,7 @@ def complete(
                 {column1: new_values, ...},
             ],
             fill_value=None,
+            by = label/list_of_labels
         )
 
     :param df: A pandas dataframe.
@@ -5141,6 +5187,8 @@ def complete(
         column labels with new values.
     :param fill_value: Dictionary pairing the columns with the null
         replacement value.
+    :param by: label or list of labels to group by.
+        The explicit missing values are returned per group.
     :returns: A pandas dataframe with modified column(s).
     :raises TypeError: if `columns` is not a list.
     :raises TypeError: if `fill_value` is not a dictionary.
@@ -5152,9 +5200,12 @@ def complete(
     .. # noqa: DAR402
     """
 
+    if not columns:
+        return df
+
     df = df.copy()
 
-    df = _computations_complete(df, columns, fill_value)
+    df = _computations_complete(df, columns, fill_value, by)
 
     return df
 

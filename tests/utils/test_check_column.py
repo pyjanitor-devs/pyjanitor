@@ -27,7 +27,7 @@ def test_check_column_single(dataframe):
     with pytest.raises(ValueError):
         check_column(dataframe, 2)
 
-    dataframe[2] = 'asdf'
+    dataframe[2] = "asdf"
 
     assert check_column(dataframe, 2) is None
 

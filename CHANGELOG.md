@@ -4,9 +4,7 @@
 
 - [ENH] Add `dropna` parameter to groupby_agg. @samukweku
 - [ENH] `complete` adds a `by` parameter to expose explicit missing values per group, via groupby. @samukweku
-
-- [ENH] Add `dropna` parameter to groupby_agg. @samukweku
-- [ENH] `complete` adds a `by` parameter to expose explicit missing values per group, via groupby. @samukweku
+- [ENH] Fix check_column to support single inputs - fixes `label_encode`. @zbarry
 
 ## [v0.20.13] - 2021-02-25
 

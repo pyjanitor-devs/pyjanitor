@@ -12,6 +12,27 @@ def test_check_column(dataframe):
 
 
 @pytest.mark.utils
+def test_check_column_single(dataframe):
+    """
+    Check works with a single input
+    """
+
+    assert check_column(dataframe, "a") is None
+
+    with pytest.raises(ValueError):
+        check_column(dataframe, "b")
+
+    # should also work with non-string inputs
+
+    with pytest.raises(ValueError):
+        check_column(dataframe, 2)
+
+    dataframe[2] = "asdf"
+
+    assert check_column(dataframe, 2) is None
+
+
+@pytest.mark.utils
 def test_check_column_absent_column(dataframe):
     """
     check_column should raise an error if the column is absent.

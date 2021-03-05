@@ -42,7 +42,7 @@ def check(varname: str, value, expected_types: list):
 
         check('x', x, [int, float])
 
-    :param varname: The name of the variable.
+    :param varname: The name of the variable (for diagnostic error message).
     :param value: The value of the varname.
     :param expected_types: The types we expect the item to be.
     :raises TypeError: if data is not the expected type.
@@ -360,6 +360,9 @@ def check_column(
         in df.columns.
     :raises ValueError: if data is not the expected type.
     """
+    if isinstance(column_names, str) or not isinstance(column_names, Iterable):
+        column_names = [column_names]
+
     for column_name in column_names:
         if present and column_name not in df.columns:  # skipcq: PYL-R1720
             raise ValueError(

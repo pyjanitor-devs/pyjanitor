@@ -69,12 +69,14 @@ def test_type(df):
         _select_columns([3, "id"], df)
 
 
+@pytest.mark.xfail(reason="level parameter removed.")
 def test_level_type(df_tuple):
     """Raise TypeError if `level` is the wrong type."""
     with pytest.raises(TypeError):
-        _select_columns("A", df_tuple, level=1.0)
+        _select_columns("A", df_tuple)
 
 
+@pytest.mark.xfail(reason="level parameter removed.")
 def test_level_nonexistent(df_tuple):
     """
     Raise ValueError if column is a MultiIndex
@@ -84,6 +86,7 @@ def test_level_nonexistent(df_tuple):
         _select_columns("A", df_tuple)
 
 
+@pytest.mark.xfail(reason="level parameter removed.")
 def test_tuple_callable(df_tuple):
     """
     Raise ValueError if dataframe has MultiIndex columns
@@ -93,6 +96,7 @@ def test_tuple_callable(df_tuple):
         _select_columns(lambda df: df.name.startswith("A"), df_tuple)
 
 
+@pytest.mark.xfail(reason="level parameter removed.")
 def test_tuple_regex(df_tuple):
     """
     Raise ValueError if dataframe has MultiIndex columns'
@@ -325,10 +329,6 @@ def test_tuple(df_tuple):
     """Test _select_columns function on tuple."""
     assert _select_columns(("A", "D"), df_tuple) == ("A", "D")
 
-    assert _select_columns("A", df_tuple, level=0) == ["A"]
-
-    assert _select_columns(re.compile("A"), df_tuple, level=0) == ["A"]
-
 
 def test_list_various(df1):
     """Test _select_columns function on list type."""
@@ -341,7 +341,7 @@ def test_list_various(df1):
         _select_columns(["id", "code*", slice("code", "code2")], df1)
         == df1.filter(regex="^(id|code)").columns.tolist()
     )
-    assert _select_columns([("id", "Name")], df1) == ["id", "Name"]
+    assert _select_columns(["id", "Name"], df1) == ["id", "Name"]
 
 
 def test_list_boolean(df):

@@ -3218,6 +3218,7 @@ def select_columns(
               .select_columns(['a', 'b', 'col_*'],
               invert=True))
 
+
     :param df: A pandas DataFrame.
     :param search_column_names: Valid inputs include:
 
@@ -3241,13 +3242,16 @@ def select_columns(
         raise ValueError(
             """
             MultiIndex columns
-            not supported for `select_columns`.
+            are not supported for `select_columns`.
             """
         )
 
     # applicable for any
-    # list-like object (ndarray, Series, pd.Index, tuple, ...)
-    if is_list_like(search_column_names):
+    # list-like object (ndarray, Series, pd.Index, ...)
+    # excluding tuples, which are returned as is
+    if is_list_like(search_column_names) and (
+        not isinstance(search_column_names, tuple)
+    ):
         search_column_names = list(search_column_names)
 
     full_column_list = _select_columns(search_column_names, df)
@@ -5577,10 +5581,12 @@ def pivot_longer(
     `Team`. It then looks for columns that start with `Score` and collate all
     the values associated with these columns to a single column named `Score`.
 
-    You can also take advantage of `janitor.patterns` function, which allows
-    selection of columns via a regular expression; this can come in handy if
-    you have a lot of column names to pass to the `index` or `column_names`
-    paramenters, and you do not wish to manually type them all.
+    You can also take advantage of `janitor.patterns` function,
+    or the `select_columns` syntax,
+    which allows selection of columns via a regular expression;
+    this can come in handy if you have a lot of column names
+    to pass to the `index` or `column_names`  parameters,
+    and you do not wish to manually type them all.
 
     .. code-block:: python
 

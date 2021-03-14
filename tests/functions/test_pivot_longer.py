@@ -88,8 +88,8 @@ def df_multi():
     )
 
 
-index_labels = [pd.Index(["region"]), {"2007", "region"}]
-column_labels = [{"region": 2007}, {"2007", "2009"}]
+index_labels = [2007, 20.09]
+column_labels = [2007, 20.99]
 names_to_labels = [1, {12, "newnames"}]
 
 index_does_not_exist = ["Region", ["207", "region"]]
@@ -136,7 +136,6 @@ names_pattern_type_check = [
 ]
 
 
-@pytest.mark.xfail(reason="list-like converted to lists.")
 @pytest.mark.parametrize("df,index", index_type_checks)
 def test_type_index(df, index):
     """Raise TypeError if wrong type is provided for the `index`."""
@@ -144,7 +143,6 @@ def test_type_index(df, index):
         df.pivot_longer(index=index)
 
 
-@pytest.mark.xfail(reason="list-like converted to list.")
 @pytest.mark.parametrize("df,column", column_type_checks)
 def test_type_column_names(df, column):
     """Raise TypeError if wrong type is provided for `column_names`."""
@@ -176,11 +174,6 @@ def test_presence_index(df, index):
         df.pivot_longer(index=index)
 
 
-@pytest.mark.xfail(
-    reason="""
-           First test will fail on TypeError instead since
-           `_select_columns` does not support integers"""
-)
 @pytest.mark.parametrize("df,column", column_presence_checks)
 def test_presence_columns(df, column):
     """Raise KeyError if labels in `column_names` do not exist."""
@@ -191,8 +184,10 @@ def test_presence_columns(df, column):
 @pytest.mark.parametrize("df,names_to, names_sep", names_sep_not_required)
 def test_name_sep_names_to_len(df, names_to, names_sep):
     """
-    Raise ValueError if the `names_to` is a string, or `names_to` is a
-    list/tuple, its length is one, and `names_sep` is provided.
+    Raise ValueError if `names_to` is a string,
+    or `names_to` is a list/tuple,
+    its length is one,
+    and `names_sep` is provided.
     """
     with pytest.raises(ValueError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
@@ -304,19 +299,25 @@ def test_both_names_sep_and_pattern():
 def test_names_pattern_column_MultiIndex(df_multi):
     """Raise ValueError if `names_pattern` and MultiIndex column"""
     with pytest.raises(ValueError):
-        df_multi.pivot_longer(
-            index="name", column_level=0, names_pattern=r"(.+)(.)"
-        )
+        df_multi.pivot_longer(index="name", names_pattern=r"(.+)(.)")
 
 
 def test_index_tuple_MultiIndex(df_multi):
-    """Raise ValueError if `index` is a tuple and MultiIndex column"""
+    """
+    Raise ValueError if `index` is a tuple,
+    instead of a list of tuples,
+    and the dataframe's column is a MultiIndex.
+    """
     with pytest.raises(ValueError):
         df_multi.pivot_longer(index=("name", "a"))
 
 
 def test_column_names_tuple_MultiIndex(df_multi):
-    """Raise ValueError if `column_names` is a tuple and MultiIndex column"""
+    """
+    Raise ValueError if `column_names` is a tuple,
+    instead of a list of tuples,
+    and the dataframe's column is a MultiIndex.
+    """
     with pytest.raises(ValueError):
         df_multi.pivot_longer(column_names=("names", "aa"))
 
@@ -1130,7 +1131,8 @@ paired_columns_pattern = [
                 "instance": ["1", "2", "3"],
                 "a": ["a", "b", "c"],
                 "A": ["A", "B", "C"],
-            }
+            },
+            index=[0, 0, 0],
         ),
         "id",
         (".value", "instance"),
@@ -1946,11 +1948,12 @@ def test_float_suffix_irregular():
     expected = pd.DataFrame(
         {
             "A": ["X1", "X1", "X1", "X1", "X2", "X2", "X2", "X2"],
-            "colname": ["1", "1.1", "1.2", "2.1", "1", "1.1", "1.2", "2.1"],
-            "treatment": [np.nan, 1.0, np.nan, 3.0, np.nan, 2.0, np.nan, 4.0],
-            "result": [0.0, np.nan, 5.0, np.nan, 9.0, np.nan, 6.0, np.nan],
+            "colname": ["1.1", "2.1", "1.2", "1", "1.1", "2.1", "1.2", "1"],
+            "treatment": [1.0, 3.0, np.nan, np.nan, 2.0, 4.0, np.nan, np.nan],
+            "result": [np.nan, np.nan, 5.0, 0.0, np.nan, np.nan, 6.0, 9.0],
         }
     )
+
     result = df.pivot_longer(
         index="A",
         names_to=(".value", "colname"),

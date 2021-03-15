@@ -1375,7 +1375,7 @@ def _computations_pivot_longer(
         if df.columns.nlevels == 1:
             df = [
                 df.loc[:, name].melt(ignore_index=False)
-                # changing thename in rename
+                # changing the name in `rename`
                 # instead of passing it to `melt`
                 # avoids name collision,
                 # especially if `name` exists in `df`

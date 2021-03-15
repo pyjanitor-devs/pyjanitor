@@ -1961,3 +1961,103 @@ def test_float_suffix_irregular():
         sort_by_appearance=True,
     )
     assert_frame_equal(result, expected)
+
+
+def test_multiple_column_names():
+    """
+    Test output for scenario where the pairing
+    in the column name is more than 2.
+    """
+
+    df = pd.DataFrame(
+        {
+            "Sony | TV | Model | value": {0: "A222", 1: "A234", 2: "A4345"},
+            "Sony | TV | Quantity | value": {0: 5, 1: 5, 2: 4},
+            "Sony | TV | Max-quant | value": {0: 10, 1: 9, 2: 9},
+            "Panasonic | TV | Model | value": {
+                0: "T232",
+                1: "S3424",
+                2: "X3421",
+            },
+            "Panasonic | TV | Quantity | value": {0: 1, 1: 5, 2: 1},
+            "Panasonic | TV | Max-quant | value": {0: 10, 1: 12, 2: 11},
+            "Sanyo | Radio | Model | value": {0: "S111", 1: "S1s1", 2: "S1s2"},
+            "Sanyo | Radio | Quantity | value": {0: 4, 1: 2, 2: 4},
+            "Sanyo | Radio | Max-quant | value": {0: 9, 1: 9, 2: 10},
+        }
+    )
+
+    expected = pd.DataFrame(
+        [
+            {
+                "Manufacturer": "Sony ",
+                "Device": " TV ",
+                " Model ": "A222",
+                " Quantity ": 5,
+                " Max-quant ": 10,
+            },
+            {
+                "Manufacturer": "Sony ",
+                "Device": " TV ",
+                " Model ": "A234",
+                " Quantity ": 5,
+                " Max-quant ": 9,
+            },
+            {
+                "Manufacturer": "Sony ",
+                "Device": " TV ",
+                " Model ": "A4345",
+                " Quantity ": 4,
+                " Max-quant ": 9,
+            },
+            {
+                "Manufacturer": "Panasonic ",
+                "Device": " TV ",
+                " Model ": "T232",
+                " Quantity ": 1,
+                " Max-quant ": 10,
+            },
+            {
+                "Manufacturer": "Panasonic ",
+                "Device": " TV ",
+                " Model ": "S3424",
+                " Quantity ": 5,
+                " Max-quant ": 12,
+            },
+            {
+                "Manufacturer": "Panasonic ",
+                "Device": " TV ",
+                " Model ": "X3421",
+                " Quantity ": 1,
+                " Max-quant ": 11,
+            },
+            {
+                "Manufacturer": "Sanyo ",
+                "Device": " Radio ",
+                " Model ": "S111",
+                " Quantity ": 4,
+                " Max-quant ": 9,
+            },
+            {
+                "Manufacturer": "Sanyo ",
+                "Device": " Radio ",
+                " Model ": "S1s1",
+                " Quantity ": 2,
+                " Max-quant ": 9,
+            },
+            {
+                "Manufacturer": "Sanyo ",
+                "Device": " Radio ",
+                " Model ": "S1s2",
+                " Quantity ": 4,
+                " Max-quant ": 10,
+            },
+        ]
+    )
+
+    result = df.pivot_longer(
+        names_to=("Manufacturer", "Device", ".value"),
+        names_pattern=r"(.+)\|(.+)\|(.+)\|.*",
+    )
+
+    assert_frame_equal(result, expected)

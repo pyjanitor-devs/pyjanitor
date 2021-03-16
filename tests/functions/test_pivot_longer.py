@@ -475,8 +475,8 @@ def test_pivot_column_only(df_checks_output):
 
 def test_pivot_index_patterns_only_sort_by_appearance(df_checks_output):
     """
-    Test output if the `patterns` function is passed to `index`, and
-    `sort_by_appearance` is ``True``.
+    Test output if the `patterns` function is passed to `index`,
+    and `sort_by_appearance` is ``True``.
     """
     result = df_checks.pivot_longer(
         index=patterns(r"[^\d+]"),
@@ -515,8 +515,9 @@ def test_pivot_columns_patterns_only(df_checks_output):
 
 def test_length_mismatch():
     """
-    Raise error if `names_to` is a list/tuple and its length
-    does not match the number of extracted columns.
+    Raise error if `names_to` is a list/tuple,
+    and its length  does not match
+    the number of extracted columns.
     """
     data = pd.DataFrame(
         {
@@ -545,8 +546,9 @@ def test_empty_mapping(test_df):
 
 def test_len_mapping_gt_len_names_to(test_df):
     """
-    Raise error if `names_pattern` is a regex and returns number of
-    matches more than length of `names_to`.
+    Raise error if `names_pattern` is a regex,
+    and the number of  matches returned
+    is more than length of `names_to`.
     """
     with pytest.raises(ValueError):
         test_df.pivot_longer(
@@ -712,8 +714,8 @@ def test_multiple_values_pattern(
     df_in, df_out, index, names_to, names_pattern, sort_by_appearance
 ):
     """
-    Test function to extract multiple columns, using the `names_to` and
-    names_pattern arguments.
+    Test function to extract multiple columns,
+    using the `names_to` and `names_pattern` arguments.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1027,8 +1029,8 @@ def test_multiple_values_sep(
     df_in, df_out, index, names_to, names_sep, sort_by_appearance
 ):
     """
-    Test function to extract multiple columns, using the `names_to` and
-    names_sep arguments.
+    Test function to extract multiple columns,
+    using the `names_to` and `names_sep` arguments.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1229,7 +1231,7 @@ def test_extract_column_names_pattern(
 ):
     """
     Test output if `.value` is in the `names_to`
-    argument and names_pattern is used.
+    argument and `names_pattern` is used.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1573,7 +1575,7 @@ def test_extract_column_names_sep(
 ):
     """
     Test output if `.value` is in the `names_to` argument
-    and names_sep is used.
+    and `names_sep` is used.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1704,7 +1706,8 @@ def test_paired_columns_no_index_pattern(
 ):
     """
     Test function where `.value` is in the `names_to` argument,
-    names_pattern is used and no index is supplied.
+    names_pattern is used,
+    and no `index` is supplied.
     """
     result = df_in.pivot_longer(
         names_to=names_to,
@@ -1886,7 +1889,7 @@ def test_single_column_names_pattern(
     Test output if `names_to` is a string and
     `names_pattern` returns a single column.
     Also tests when both `index` and `column_names`
-    is supplied, and only a subset of the dataframe
+    are supplied, and only a subset of the dataframe
     is transformed.
     """
     result = df_in.pivot_longer(
@@ -1899,6 +1902,9 @@ def test_single_column_names_pattern(
     assert_frame_equal(result, df_out)
 
 
+# not relevant anymore;
+# leaving it though
+# the more tests, the merrier
 def test_group_present():
     """Test output if 'group' is in `names_to`."""
     df_in = pd.DataFrame(

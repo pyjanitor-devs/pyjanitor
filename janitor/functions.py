@@ -17,6 +17,7 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -3238,14 +3239,6 @@ def select_columns(
     .. # noqa: DAR402
     """
 
-    if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError(
-            """
-            MultiIndex columns
-            are not supported for `select_columns`.
-            """
-        )
-
     # applicable for any
     # list-like object (ndarray, Series, pd.Index, ...)
     # excluding tuples, which are returned as is
@@ -5787,10 +5780,10 @@ def pivot_longer(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Optional[Union[List, str]] = None,
-    values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
+    index: Optional[Union[Sequence[str], str]] = None,
+    names_from: Optional[Union[Sequence[str], str]] = None,
+    values_from: Optional[Union[Sequence[str], str]] = None,
+    names_sort: Optional[bool] = True,
     flatten_levels: Optional[bool] = True,
     names_from_position: Optional[str] = "first",
     names_prefix: Optional[str] = None,
@@ -5803,7 +5796,7 @@ def pivot_wider(
     increased, while decreasing the number of rows.
 
     It is the inverse of the `pivot_longer` method, and is a
-    wrapper around `pd.DataFrame.unstack` method.
+    wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.
 
@@ -5899,7 +5892,7 @@ def pivot_wider(
     .. note:: You may choose not to collapse the levels by passing `False`
         to the ``flatten_levels`` argument.
 
-    .. note:: An error is raised if the index is not unique and
+    .. note:: A ValueError is raised if the index is not unique and
         `aggfunc` is None.
 
     Functional usage syntax:
@@ -5965,24 +5958,23 @@ def pivot_wider(
         If ``values_from`` is not specified,
         all remaining columns will be used. If `flatten_levels` is ``False``,
         a MultiIndex dataframe is created.
-    :param names_sort: Default is `False`. Sorts columns by order of
-        appearance. Applicable only if ``flatten_levels`` is `True`.
+    :param names_sort: Default is `True`. Sorts columns by order of
+        appearance.
         Set as `True` to get the columns sorted lexicographicially,
         or if the columns are of category type.
     :param flatten_levels: Default is `True`. If `False`, the dataframe stays
         as a MultiIndex.
     :param names_from_position: By default, the values in ``names_from`` stay
-        at the front of the new column names, even when ``values_from`` or
-        ``aggfunc`` is a list. This can be changed to "last"; this places the
-        values in ``names_from`` at the tail of the column names. Applicable
-        only when ``flatten_levels`` is ``True``. Default is "first".
+        at the front of the new column names. This can be changed to "last";
+        this places the values in ``names_from``
+        at the tail of the column names.
     :param names_prefix: String to be added to the front of each output column.
         Can be handy if the values in ``names_from`` are numeric data types.
         Applicable only if ``flatten_levels`` is True.
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is ``_``. Applicable only if
-        ``flatten_levels`` is ``True``.
+        to use as a column name. Default is ``_``.
+        Applicable only if ``flatten_levels`` is ``True``.
     :param aggfunc: An aggregate function. It can be a function, a string,
         list of functions, or a dictionary, pairing column name with aggregate
         function.

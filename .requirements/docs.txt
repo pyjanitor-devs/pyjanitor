@@ -44,7 +44,7 @@ ipython==7.18.1
     # via -r docs.in
 jedi==0.17.2
     # via ipython
-jinja2==2.11.2
+jinja2==2.11.3
     # via
     #   nbconvert
     #   nbsphinx

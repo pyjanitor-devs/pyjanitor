@@ -42,7 +42,7 @@ def test_column_duplicated(df1):
             columns=[
                 "Year",
                 "Taxon",
-                {"Year": lambda x: range(x.Year.min().x.Year.max() + 1)},
+                {"Year": lambda x: range(x.min().x.max() + 1)},
             ]
         )
 
@@ -52,17 +52,17 @@ def test_type_columns(df1):
     with pytest.raises(TypeError):
         df1.complete(columns="Year")
 
-
+@pytest.mark.xfail(reason="fill_value dropped. fillna better.")
 def test_fill_value_is_a_dict(df1):
     """Raise error if fill_value is not a dictionary"""
     with pytest.raises(TypeError):
-        df1.complete(columns=["Year", "Taxon"], fill_value=0)
+        df1.complete(columns=["Year", "Taxon"])
 
-
+@pytest.mark.xfail(reason="fill_value dropped. fillna better.")
 def test_wrong_column_fill_value(df1):
     """Raise ValueError if column in `fill_value` does not exist."""
     with pytest.raises(ValueError):
-        df1.complete(columns=["Taxon", "Year"], fill_value={"year": 0})
+        df1.complete(columns=["Taxon", "Year"])
 
 
 def test_wrong_data_type_dict(df1):
@@ -114,7 +114,7 @@ def test_empty_subcols(frame, empty_sub_cols):
     with pytest.raises(ValueError):
         frame.complete(columns=empty_sub_cols)
 
-
+@pytest.mark.xfail(reason="fill_value dropped. fillna is better.")
 def test_fill_value(df1):
     """Test fill_value argument."""
     output1 = pd.DataFrame(
@@ -133,8 +133,7 @@ def test_fill_value(df1):
     )
 
     result = df1.complete(
-        columns=["Year", "Taxon"], fill_value={"Abundance": 0}
-    )
+        columns=["Year", "Taxon"]).fillna({"Abundance": 0} )
     assert_frame_equal(result, output1)
 
 
@@ -174,7 +173,6 @@ def df1_output():
         }
     )
 
-
 def test_fill_value_all_years(df1, df1_output):
     """
     Test the complete function accurately replicates for
@@ -183,13 +181,11 @@ def test_fill_value_all_years(df1, df1_output):
 
     result = df1.complete(
         columns=[
-            {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
+            {"Year": lambda x: range(x.min(), x.max() + 1)},
             "Taxon",
-        ],
-        fill_value={"Abundance": 0},
-    )
+        ]
+    ).fillna(0)
     assert_frame_equal(result, df1_output)
-
 
 def test_dict_series(df1, df1_output):
     """
@@ -201,13 +197,11 @@ def test_dict_series(df1, df1_output):
         columns=[
             {
                 "Year": lambda x: pd.Series(
-                    range(x.Year.min(), x.Year.max() + 1)
+                    range(x.min(), x.max() + 1)
                 )
             },
             "Taxon",
-        ],
-        fill_value={"Abundance": 0},
-    )
+        ]).fillna(0)
     assert_frame_equal(result, df1_output)
 
 
@@ -225,9 +219,7 @@ def test_dict_series_duplicates(df1, df1_output):
                 )
             },
             "Taxon",
-        ],
-        fill_value={"Abundance": 0},
-    )
+        ]).fillna(0)
     assert_frame_equal(result, df1_output)
 
 
@@ -376,7 +368,7 @@ def test_duplicates(duplicates):
         }
     )
 
-    result = df.complete(columns=["row", "column"], fill_value={"value": 0})
+    result = df.complete(columns=["row", "column"]).fillna({"value": 0})
 
     assert_frame_equal(result, duplicates)
 
@@ -408,7 +400,7 @@ def test_unsorted_duplicates(duplicates):
         }
     )
 
-    result = df.complete(columns=["row", "column"], fill_value={"value": 0})
+    result = df.complete(columns=["row", "column"]).fillna({"value": 0})
 
     assert_frame_equal(result, duplicates)
 
@@ -480,8 +472,7 @@ def test_complete_multiple_groupings():
 
     result = df3.complete(
         columns=[("meta", "domain1"), ("project_id", "question_count")],
-        fill_value={"tag_count": 0},
-    )
+        ).fillna({"tag_count": 0})
     assert_frame_equal(result, output3)
 
 
@@ -531,7 +522,7 @@ def test_dict_tuple(df1, output_dict_tuple):
 
     result = df1.complete(
         columns=[
-            {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
+            {"Year": lambda x: range(x.min(), x.max() + 1)},
             ("Taxon", "Abundance"),
         ]
     )
@@ -550,7 +541,7 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        columns=[{"year": lambda x: range(x.year.min(), x.year.max() + 1)}],
+        columns=[{"year": lambda x: range(x.min(), x.max() + 1)}],
         by="state",
     )
 

@@ -4439,26 +4439,22 @@ def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
     others: Optional[Dict] = None,
-    **kwargs,
 ) -> pd.DataFrame:
     """
     Creates a dataframe from a cartesian combination of all inputs.
 
-    This works with a dictionary of name value pairs,
-    or keyword arguments (`kwargs`);
-    it is also not restricted to dataframes;
+    This works with a dictionary of name value pairs.
+
+    It is also not restricted to dataframes;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
-    MultiIndex objects are not supported though.
 
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
-    Note that if a MultiIndex dataframe or series is passed, the index/columns
-    will be discarded, and a single indexed dataframe will be returned.
 
-    Existing data types are preserved in this function.
-    This includes Pandas' extension array dtypes.
+    Data types are preserved in this function,
+    including Pandas' extension array dtypes.
 
     The output will always be a dataframe.
 
@@ -4495,6 +4491,8 @@ def expand_grid(
         #  3 |   1
         #  3 |   2
 
+    .. note:: If a MultiIndex DataFrame or Series is passed, the index/columns
+        will be discarded, and a single indexed dataframe will be returned.
 
     Functional usage syntax:
 
@@ -4543,8 +4541,6 @@ def expand_grid(
 
     check("others", others, [dict])
 
-    others = {**others, **kwargs}
-
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
@@ -4586,8 +4582,8 @@ def process_text(
     This modifies an existing column and can also be used to create a new
     column.
 
-    .. note:: In versions < 0.20.11, this function did not support creation of
-        new columns.
+    .. note:: In versions < 0.20.11, this function did not support the
+        creation of new columns.
 
     A list of all the string methods in Pandas can be accessed `here
     <https://pandas.pydata.org/docs/user_guide/text.html#method-summary>`__.
@@ -5034,7 +5030,6 @@ def groupby_topk(
 def complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]] = None,
-    fill_value: Optional[Dict] = None,
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -5114,12 +5109,9 @@ def complete(
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
 
-    The null value can be replaced with the `fill_value` argument::
+    The null value can be replaced with the Pandas `fillna` argument::
 
-        df.complete(
-            columns = ['Year', 'Taxon'],
-            fill_value = {"Abundance" : 0}
-        )
+        df.complete(columns = ['Year', 'Taxon']).fillna(0)
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5133,11 +5125,10 @@ def complete(
     1999 to 2004? Easy - simply pass a dictionary pairing the column name
     with the new values::
 
-        df.complete(
-            columns = [{"Year": lambda df : range(df.Year.min(),
-                                                 df.Year.max() + 1)},
-                        "Taxon"],
-            fill_value={"Abundance" : 0}
+        new_year_values = lambda year: range(year.min(), year.max() + 1)
+
+        (df.complete(columns = [{"Year": new_year_values}, "Taxon"])
+           .fillna(0) # get rid of fillna and just show the data with nulls
         )
 
             Year      Taxon     Abundance
@@ -5169,8 +5160,7 @@ def complete(
     Let's get all the missing years per state::
 
         df.complete(
-            columns = [{'year': lambda df: np.arange(df.year.min(),
-                                                     df.year.max()+1)}],
+            columns = [{'year': new_year_values}],
             by='state'
         )
 
@@ -5210,7 +5200,6 @@ def complete(
                 (column1, column2, ...),
                 {column1: new_values, ...}
             ],
-            fill_value = None,
             by = label/list_of_labels
         )
 
@@ -5225,7 +5214,6 @@ def complete(
                 (column1, column2, ...),
                 {column1: new_values, ...},
             ],
-            fill_value=None,
             by = label/list_of_labels
         )
 
@@ -5234,13 +5222,10 @@ def complete(
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
-    :param fill_value: Dictionary pairing the columns with the null
-        replacement value.
     :param by: label or list of labels to group by.
         The explicit missing values are returned per group.
     :returns: A pandas dataframe with modified column(s).
     :raises TypeError: if `columns` is not a list.
-    :raises TypeError: if `fill_value` is not a dictionary.
     :raises ValueError: if entry in `columns` is not a
         str/dict/list/tuple.
     :raises ValueError: if entry in `columns` is a dict/list/tuple
@@ -5254,7 +5239,7 @@ def complete(
 
     df = df.copy()
 
-    df = _computations_complete(df, columns, fill_value, by)
+    df = _computations_complete(df, columns, by)
 
     return df
 

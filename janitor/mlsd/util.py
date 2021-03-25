@@ -29,7 +29,7 @@ class janitor_Error(Exception):
 
 def raise_janitor_Error(msg):
     logger.error(msg)
-    raise Photonai_Error(msg)
+    raise janitor_Error(msg)
 
 
 ####  for interna use

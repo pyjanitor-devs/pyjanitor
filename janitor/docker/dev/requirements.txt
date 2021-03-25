@@ -1,0 +1,33 @@
+###### Requirements with temporary Version Specifiers ######
+# created with 
+numpy==1.20.1
+matplotlib==3.3.4
+scikit-learn==0.24.1
+pandas==1.2.3
+plotly==4.14.3
+pymodm==0.4.3
+scipy==1.6.1
+statsmodels==0.12.2
+prettytable==2.1.0
+seaborn==0.11.1
+joblib==1.0.1
+dask==2.30.0
+distributed==2.30.1
+scikit-optimize==0.8.1
+xlrd==2.0.1
+# photonai extensions
+pytest==6.2.2
+loguru==0.5.3
+numba==0.53.0
+pydataset==0.2.0
+tqdm==4.45.0
+pandas_flavor==0.2.0
+multipledispatch==0.6.0
+natsort==7.1.1
+#pyjanitor==0.20.13
+colorama==0.4.4
+plotly_express==0.4.1
+probscale==0.2.4
+sklearn_pandas==2.1.0
+pandas_summary==0.0.7
+

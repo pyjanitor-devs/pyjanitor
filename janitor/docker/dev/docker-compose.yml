@@ -1,0 +1,16 @@
+version: '3'
+services:
+  dev:
+    build: '.'
+    security_opt:
+      - seccomp:unconfined
+    ports:
+        - "127.0.0.1:8889:8888"
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '11.750'
+#          memory: 24000M
+    volumes:
+      - ../../../../.:/docker
+    working_dir: /docker

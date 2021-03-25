@@ -241,7 +241,9 @@ def test_names_sort_wrong_type(df_checks_output):
     """Raise TypeError if the wrong type is provided for `names_sort`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
-            index="name", names_from=["estimate", "variable"], names_sort=2,
+            index="name",
+            names_from=["estimate", "variable"],
+            names_sort=2,
         )
 
 
@@ -354,7 +356,9 @@ def test_pivot_long_wide_long():
     result = df_in.pivot_wider(index=["a", "b"], names_from="name")
 
     result = result.pivot_longer(
-        index=["a", "b"], names_to=("name", ".value"), names_sep="_",
+        index=["a", "b"],
+        names_to=("name", ".value"),
+        names_sep="_",
     )
     assert_frame_equal(result, df_in)
 
@@ -437,7 +441,9 @@ def test_flatten_levels_false():
     )
 
     assert_frame_equal(
-        result, expected_output, check_dtype=False,
+        result,
+        expected_output,
+        check_dtype=False,
     )
 
 

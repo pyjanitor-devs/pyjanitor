@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import pytest
 
-# import paso.pasoBase
 
 from sklearn.datasets import fetch_california_housing
 

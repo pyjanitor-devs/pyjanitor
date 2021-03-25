@@ -53,7 +53,7 @@ def devops_step(serial_script_cmd: str, nstep: int, return_code: int):
 nstep = 1
 return_code = 0
 # black pep-8 formatting
-serial_script_cmd = "black -v janitor tests"
+serial_script_cmd = "black -v janitor/mlsd tests"
 nstep, rc = devops_step(serial_script_cmd, nstep, return_code)
 
 # mypy type checking

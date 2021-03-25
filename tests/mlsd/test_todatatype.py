@@ -15,9 +15,9 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # photonai imports
-from janitor.mlsd.util import raise_Photonai_Error
+from janitor.mlsd.util import raise_janitor_Error
 
-from janitor.mlsd.util import Photonai_Error
+from janitor.mlsd.util import janitor_Error
 
 from janitor.mlsd.todatatype import toDataFrame, toCategory
 from janitor.mlsd.todatatype import toContinuousCategory
@@ -65,7 +65,7 @@ def test_2d_numpy_columns_default(X, cn):
 # 4
 @pytest.mark.mlsd
 def test_1d_numpy_bad_arg(y, cn):
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         toDataFrame(y)
 
 
@@ -92,7 +92,7 @@ def test_Blank_Arg_Transform():
 # 8
 @pytest.mark.mlsd
 def test_Empty_list_Arg_Transform():
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         toDataFrame([])
 
 
@@ -165,7 +165,7 @@ def test_toDataFrame_array3d_error():
     r = 100
     c = 10
     arr = np.ndarray(shape=(2, r, c), dtype=float, order="F")
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         assert toDataFrame(arr, columns=[]).shape == (r, c)
 
 
@@ -474,7 +474,7 @@ def test_toCategory_df_internet_traffic_ignore_datetime_and_integers_method(
 # 1
 @pytest.mark.mlsd
 def test_df_toDatetimeComponents_WrongArgType():
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         toDatetimeComponents([1, 2, 3])
 
 
@@ -516,7 +516,7 @@ def test_toDatetimeComponents_passed_All_Components_drop_Date_False(
 @pytest.mark.mlsd
 def test_toDatetimeComponents_with_NA_ValueError(df_small_NA):
 
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         toDatetimeComponents(df_small_NA)
 
 
@@ -534,7 +534,7 @@ def test_toDatetimeComponents_passed_Year_Component_drop_Date_True_Default(
             errors="ignore",
             infer_datetime_format=True,
         )
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         toDatetimeComponents(dt, components=["Year"])
 
 
@@ -737,7 +737,7 @@ def test_toDatetimeComponents_passed_All_Components_drop_Date_False_method(
 @pytest.mark.mlsd
 def test_toDatetimeComponents_with_NA_ValueError_method(df_small_NA):
 
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         df_small_NA.toDatetimeComponents()
 
 
@@ -755,7 +755,7 @@ def test_toDatetimeComponents_passed_Year_Component_drop_Date_True_Default_metho
             errors="ignore",
             infer_datetime_format=True,
         )
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         dt.toDatetimeComponents(components=["Year"])
 
 

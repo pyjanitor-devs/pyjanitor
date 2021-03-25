@@ -32,7 +32,7 @@ from janitor.mlsd.util import _Check_No_NA_F_Values, isDataFrame, isSeries
 
 @pytest.mark.mlsd
 def test_Class_PhotonError():
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         raise_Photonai_Error("bad_error_test")
 
 
@@ -99,7 +99,7 @@ def test_must_be_str() -> None:
 # 10 DataFrame error
 @pytest.mark.mlsd
 def test_must_be_BadArg() -> None:
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         x = pd.DataFrame()
         assert _must_be_list_tuple_int_float_str(x) == x
 
@@ -107,7 +107,7 @@ def test_must_be_BadArg() -> None:
 # 11 nparray error
 @pytest.mark.mlsd
 def test_must_be_BadArg2() -> None:
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         x = np.ndarray([2, 2])
         assert _must_be_list_tuple_int_float_str(x) == x
 
@@ -128,7 +128,7 @@ def test_Check_No_NA_F_Values_bad(City: pd.DataFrame) -> None:
 # 14
 @pytest.mark.mlsd
 def test_Check_No_NA_F_Values_bad2(City: pd.DataFrame) -> None:
-    with pytest.raises(Photonai_Error):
+    with pytest.raises(janitor_Error):
         City.loc[1, "MEDV"] = None
         assert _Check_No_NA_F_Values(City, "MEDV")
 

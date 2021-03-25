@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 #
 
-from janitor.mlsd.util import raise_Photonai_Error, Photonai_Error
+from janitor.mlsd.util import raise_janitor_Error, janitor_Error
 from janitor.mlsd.util import _add_target_to_df, _strip_off_target
 from janitor.mlsd.util import _must_be_list_tuple_int_float_str
 from janitor.mlsd.util import _Check_No_NA_F_Values, isDataFrame, isSeries
@@ -33,7 +33,7 @@ from janitor.mlsd.util import _Check_No_NA_F_Values, isDataFrame, isSeries
 @pytest.mark.mlsd
 def test_Class_PhotonError():
     with pytest.raises(janitor_Error):
-        raise_Photonai_Error("bad_error_test")
+        raise_janitor_Error("bad_error_test")
 
 
 # 2

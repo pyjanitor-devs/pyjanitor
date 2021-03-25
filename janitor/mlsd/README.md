@@ -1,5 +1,5 @@
 #pre-processing
-Directory contains any janitor/mlsd (machine learni strutued data) data pre-processing functions:
+Directory contains any janitor/mlsd (machine learning structued data) data pre-processing functions:
 
 - (3/20/2021) port to pyjanitor package
     - fork bcottman/pyjanitor

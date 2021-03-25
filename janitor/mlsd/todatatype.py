@@ -24,11 +24,16 @@ warnings.filterwarnings("ignore")
 from janitor.mlsd.util import _Check_No_NA_F_Values
 from janitor.mlsd.util import isDataFrame, isSeries
 from janitor.mlsd.util import raise_janitor_Error
-from janitor.mlsd.util import _must_be_list_tuple_int_float_str  # , _dict_value
+from janitor.mlsd.util import (
+    _must_be_list_tuple_int_float_str,
+)  # , _dict_value
 from janitor.mlsd.util import register_DataFrame_method
 from loguru import logger
 
-def toDataFrame(X: any, labels: list = [], verbose: bool = True) -> pd.DataFrame:
+
+def toDataFrame(
+    X: any, labels: list = [], verbose: bool = True
+) -> pd.DataFrame:
     """
     Transform a list, tuple, csr_matrix, numpy 1-D or 2-D array,
     or pandas Series  into a  DataFrame.
@@ -73,7 +78,9 @@ def toDataFrame(X: any, labels: list = [], verbose: bool = True) -> pd.DataFrame
     _fun_name = toDataFrame.__name__
 
     if len(X) == 0:
-        raise_janitor_Error("{} X:any is of length O: {} ".format(_fun_name, str(type(X))))
+        raise_janitor_Error(
+            "{} X:any is of length O: {} ".format(_fun_name, str(type(X)))
+        )
     if not isinstance(X, pd.DataFrame):
         if isinstance(X, pd.Series):
             X = pd.DataFrame(X, copy=True)
@@ -82,7 +89,8 @@ def toDataFrame(X: any, labels: list = [], verbose: bool = True) -> pd.DataFrame
             X = pd.DataFrame(np.transpose(X), copy=True)
         elif isinstance(X, (np.generic, np.ndarray)):
             if X.ndim != 2:
-                raise_janitor_Error("{} X (1st arg): wrong dimension. must be 2: was {} dim ".format(
+                raise_janitor_Error(
+                    "{} X (1st arg): wrong dimension. must be 2: was {} dim ".format(
                         _fun_name, str(X.ndim)
                     )
                 )
@@ -106,51 +114,59 @@ def toDataFrame(X: any, labels: list = [], verbose: bool = True) -> pd.DataFrame
 
     return X
 
+
 #
 #
 # helper
-def _binary_value_to_integer( X: pd.DataFrame,
-                    verbose: bool,
-                    _fun_name: str = 'fn'
-                    ) -> pd.DataFrame:
+def _binary_value_to_integer(
+    X: pd.DataFrame, verbose: bool, _fun_name: str = "fn"
+) -> pd.DataFrame:
     for feature in X.columns:
         if X[feature].nunique() == 2:
             uniques = X[feature].unique()
             X[feature] = X[feature].astype("category")
-            X[feature].replace(to_replace=uniques[0], value=int(0), inplace=True)
-            X[feature].replace(to_replace=uniques[1], value=int(1), inplace=True)
+            X[feature].replace(
+                to_replace=uniques[0], value=int(0), inplace=True
+            )
+            X[feature].replace(
+                to_replace=uniques[1], value=int(1), inplace=True
+            )
             if verbose:
                 logger.info(
-                    "{} binary feature {} converted from: {} to 1/0".format(_fun_name, feature, uniques)
-            )
+                    "{} binary feature {} converted from: {} to 1/0".format(
+                        _fun_name, feature, uniques
+                    )
+                )
 
     return X
-#2
+
+
+# 2
 @register_DataFrame_method
 def binary_value_to_integer(
     oX: pd.DataFrame, inplace: bool = True, verbose: bool = True
 ) -> pd.DataFrame:
     """
-   Encoding and scaling
-    and other data-set preprocessing should not be done here.
+    Encoding and scaling
+     and other data-set preprocessing should not be done here.
 
-         Parameters:
-           oX: dataset
+          Parameters:
+            oX: dataset
 
-        Keywords:
-            inplace:
-                True: mutate X, return X
-                False: do no change X, return df-stats
+         Keywords:
+             inplace:
+                 True: mutate X, return X
+                 False: do no change X, return df-stats
 
-            verbose:
-                True: output (default)
-                False: silent
+             verbose:
+                 True: output (default)
+                 False: silent
 
-        Returns:
-            pd.DataFrame
+         Returns:
+             pd.DataFrame
 
-        Note:
-            All NaN values should be imputed or removed.
+         Note:
+             All NaN values should be imputed or removed.
     """
     _fun_name = binary_value_to_integer.__name__
     # todo put in decorator
@@ -163,45 +179,53 @@ def binary_value_to_integer(
         X = X.to_frame()
 
     if isDataFrame(X):
-        return(_binary_value_to_integer(X, verbose, _fun_name))
+        return _binary_value_to_integer(X, verbose, _fun_name)
     # change  from whatever to 0,1
-
 
     return X
 
+
 #
 # helper
-def _toCategory( X: pd.DataFrame,
-                    boolean: bool = True,
-                    integer: bool = True,
-                    object_: str = True,
-                    verbose: bool = True,
-                    _fun_name: str = 'fn'
-                    ) -> pd.DataFrame:
+def _toCategory(
+    X: pd.DataFrame,
+    boolean: bool = True,
+    integer: bool = True,
+    object_: str = True,
+    verbose: bool = True,
+    _fun_name: str = "fn",
+) -> pd.DataFrame:
     for feature in X.columns:
         if X[feature].dtype == np.bool and boolean:
             X[feature] = X[feature].astype("category")
             if verbose:
                 logger.info(
-                    "{} boolean feature converted : {}".format(_fun_name, feature)
+                    "{} boolean feature converted : {}".format(
+                        _fun_name, feature
+                    )
                 )
         elif X[feature].dtype == np.object and object_:
             X[feature] = X[feature].astype("category")
             if verbose:
                 logger.info(
-                    "{} object(str) feature converted : {}".format(_fun_name, feature)
+                    "{} object(str) feature converted : {}".format(
+                        _fun_name, feature
+                    )
                 )
         elif X[feature].dtype == np.integer and integer:
             X[feature] = X[feature].astype("category")
             if verbose:
                 logger.info(
-                    "{} integer feature converted : {}".format(_fun_name, feature)
+                    "{} integer feature converted : {}".format(
+                        _fun_name, feature
+                    )
                 )
         else:
             pass
     return X
 
-#3
+
+# 3
 @register_DataFrame_method
 def toCategory(
     oX: pd.DataFrame,
@@ -209,7 +233,7 @@ def toCategory(
     integer: bool = True,
     object_: str = True,
     inplace: bool = True,
-    verbose: bool = True
+    verbose: bool = True,
 ) -> pd.DataFrame:
 
     """
@@ -253,7 +277,7 @@ def toCategory(
         previous to this step so that ``datetime`` components (which are of type
         ``np.nmnber``) can be converted to ``category``. The default
         behavior of this step is NOT to convert ``datetime`` to ``category``.
-   """
+    """
     _fun_name = toCategory.__name__
     # todo put in decorator
     if inplace:
@@ -265,10 +289,10 @@ def toCategory(
         X = X.to_frame()
 
     if isDataFrame(X):
-        return(_toCategory(X, boolean, integer,
-            object_, verbose,  _fun_name))
+        return _toCategory(X, boolean, integer, object_, verbose, _fun_name)
 
-#4
+
+# 4
 @register_DataFrame_method
 def toContinuousCategory(
     oX: pd.DataFrame,
@@ -396,7 +420,9 @@ def toContinuousCategory(
         features = X.columns
 
     for nth, feature in enumerate(features):
-        if (float_ and X[feature].dtype == float) or (integer and X[feature].dtype == int):
+        if (float_ and X[feature].dtype == float) or (
+            integer and X[feature].dtype == int
+        ):
             nbin = _must_be_list_tuple_int_float_str(nbin)
             # import pdb; pdb.set_trace() # debugging starts here
             if quantile:
@@ -413,7 +439,8 @@ def toContinuousCategory(
 
     return X
 
-#5
+
+# 5
 @register_DataFrame_method
 def toColumnNamesFixedLen(
     oX: pd.DataFrame,
@@ -423,47 +450,47 @@ def toColumnNamesFixedLen(
     verbose: bool = True,
 ) -> pd.DataFrame:
     """
-    Truncate column name to a specific length.  If column length is
-    shorter, then column length left as is.
+        Truncate column name to a specific length.  If column length is
+        shorter, then column length left as is.
 
-    This method mutates the original DataFrame.
+        This method mutates the original DataFrame.
 
-    Method chaining will truncate all columns to a given length and append
-    a given separator character with the index of duplicate columns, except
-    for the first distinct column name.
+        Method chaining will truncate all columns to a given length and append
+        a given separator character with the index of duplicate columns, except
+        for the first distinct column name.
 
-    Parameters:
-        X: dataset
+        Parameters:
+            X: dataset
 
-    Keywords:
+        Keywords:
 
-        column_length: 3 (default)
-            Character length for which to truncate all columns.
-            The column separator value and number for duplicate
-            column name does not contribute to total string length.
-            If all columns string lenths are truncated to 10
-            characters, the first distinct column will be 10
-            characters and the remaining columns are
-            12 characters with a column separator of one
-            character).
+            column_length: 3 (default)
+                Character length for which to truncate all columns.
+                The column separator value and number for duplicate
+                column name does not contribute to total string length.
+                If all columns string lenths are truncated to 10
+                characters, the first distinct column will be 10
+                characters and the remaining columns are
+                12 characters with a column separator of one
+                character).
 
-        column_separator: "_" (default)
-            The separator to append plus incremental Int to create
-            unique column names. Care should be taken in choosing
-            non-default str so as to create legal pandas column
-            names.
+            column_separator: "_" (default)
+                The separator to append plus incremental Int to create
+                unique column names. Care should be taken in choosing
+                non-default str so as to create legal pandas column
+                names.
 
-        verbose: True (default)
-            True: output
-            False: silent
+            verbose: True (default)
+                True: output
+                False: silent
 
-        inplace: True  (default)
-            True: replace 1st argument with resulting dataframe
-            False:  (boolean)change unplace the dataframe X
+            inplace: True  (default)
+                True: replace 1st argument with resulting dataframe
+                False:  (boolean)change unplace the dataframe X
 
-    Returns: A pandas DataFrame (pd.DataFrame) with truncated column lengths.
+        Returns: A pandas DataFrame (pd.DataFrame) with truncated column lengths.
 
-`
+    `
     """
 
     _fun_name = toColumnNamesFixedLen.__name__
@@ -499,7 +526,9 @@ def toColumnNamesFixedLen(
     final_col_names = []
     for idx, col_name in enumerate(col_names):
         if col_name_count[idx] > 0:
-            col_name_to_append = col_name + column_separator + str(col_name_count[idx])
+            col_name_to_append = (
+                col_name + column_separator + str(col_name_count[idx])
+            )
             final_col_names.append(col_name_to_append)
         else:
             final_col_names.append(col_name)
@@ -529,14 +558,13 @@ class DatetimetoComponents(object):
         "Is_year_start": 1,
     }
 
-
     @classmethod
     def _add_DatetimetoComponents_Year(cls):
         DatetimetoComponents.COMPONENT_DICT["Elapsed"] = (
             #            DatetimetoComponents.COMPONENT_DICT["Year"] *
-                DatetimetoComponents.COMPONENT_DICT["Dayofyear"]
-                * 24
-                * 3600
+            DatetimetoComponents.COMPONENT_DICT["Dayofyear"]
+            * 24
+            * 3600
         )  # unit seconds/year
         return cls
 
@@ -551,12 +579,12 @@ def DatetimeComponents():
 
 @register_DataFrame_method
 def toDatetimeComponents(
-        oX: pd.DataFrame,
-        drop: bool = True,
-        components: list = [],
-        prefix: bool = True,
-        inplace: bool = True,
-        verbose: bool = True,
+    oX: pd.DataFrame,
+    drop: bool = True,
+    components: list = [],
+    prefix: bool = True,
+    inplace: bool = True,
+    verbose: bool = True,
 ) -> pd.DataFrame:
     #    import pdb; pdb.set_trace() # debugging starts here
     """
@@ -643,13 +671,13 @@ def toDatetimeComponents(
             if prefix:
                 fn = feature + "_"
             else:
-                fn = feature[0: DatetimetoComponents._PREFIX_LENGTH_] + "_"
+                fn = feature[0 : DatetimetoComponents._PREFIX_LENGTH_] + "_"
 
             for component in components:
                 if component.lower() == "Elapsed".lower():
-                    X[fn + "Elapsed"] = (X[feature].astype(np.int64) // 10 ** 9).astype(
-                        np.int32
-                    )
+                    X[fn + "Elapsed"] = (
+                        X[feature].astype(np.int64) // 10 ** 9
+                    ).astype(np.int32)
                 else:
                     X[fn + component] = getattr(
                         X[feature].dt, component.lower()
@@ -657,7 +685,9 @@ def toDatetimeComponents(
 
                 if verbose:
                     logger.info(
-                        "datetime feature component added: {}".format(fn + component)
+                        "datetime feature component added: {}".format(
+                            fn + component
+                        )
                     )
             if verbose:
                 logger.info("datetime feature dropped: {}".format(feature))
@@ -665,5 +695,3 @@ def toDatetimeComponents(
             pass  # tryed but in dt format
 
     return X
-
-

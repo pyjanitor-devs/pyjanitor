@@ -34,7 +34,10 @@ def raise_janitor_Error(msg):
 
 ####  for interna use
 
-def _add_target_to_df(X: pd.DataFrame, y: np.ndarray, target:str='target') -> pd.DataFrame:
+
+def _add_target_to_df(
+    X: pd.DataFrame, y: np.ndarray, target: str = "target"
+) -> pd.DataFrame:
     """
         Tranform X(DataFrame and y (numpy vector) into one DataFame X
 
@@ -52,7 +55,9 @@ def _add_target_to_df(X: pd.DataFrame, y: np.ndarray, target:str='target') -> pd
     return X
 
 
-def _strip_off_target(X: pd.DataFrame, target: str='target') ->(pd.DataFrame, np.ndarray):
+def _strip_off_target(
+    X: pd.DataFrame, target: str = "target"
+) -> (pd.DataFrame, np.ndarray):
     """
     Strips off column 'target'as  y as a numpy array from dataframe X. X remains dataframe
     Parameters:
@@ -78,6 +83,7 @@ def _must_be_list_tuple_int_float_str(attribute):
             )
         )
 
+
 def isSeries(X) -> bool:
     """
     Parameters:
@@ -101,6 +107,7 @@ def isDataFrame(X) -> bool:
     """
     return isinstance(X, (pd.core.frame.DataFrame, pd.core.series.Series))
 
+
 # must be dataFrame or series
 def _Check_is_DataFrame(X) -> List:
     if isDataFrame(X):
@@ -112,11 +119,13 @@ def _Check_is_DataFrame(X) -> List:
             )
         )
 
+
 def _Check_No_NA_F_Values(df: pd.DataFrame, feature: str) -> bool:
     if not df[feature].isna().any():
         return True
     else:
         raise_Photonai_Error("Passed dataset, DataFrame, contained NA")
+
 
 def _Check_No_NA_Series_Values(ds: pd.DataFrame):
     if not ds.isna().any():
@@ -124,10 +133,12 @@ def _Check_No_NA_Series_Values(ds: pd.DataFrame):
     else:
         raise_Photonai_Error("Passed dataset, DataFrame, contained NA")
 
+
 def _Check_No_NA_Values(df: pd.DataFrame):
     for feature in df.columns:
         if _Check_No_NA_F_Values(df, feature):
             pass
+
 
 @jit
 def _float_range(start, stop, step):
@@ -152,15 +163,18 @@ def _fixed_width_labels(X, nbins, miny, maxy):
         ff = lf + 1 if (lf > hf) else hf + 1
         fs = "(%2." + str(ff) + "f, %2." + str(ff) + "f]"
 
-    lbl = np.array([fs % (edges[i], edges[i + 1]) for i in range(len(edges) - 1)])
+    lbl = np.array(
+        [fs % (edges[i], edges[i + 1]) for i in range(len(edges) - 1)]
+    )
     return lbl
-
 
 
 ### pasoDecorators class
 # adapted from pandas-flavor 11/13/2019
 from pandas.api.extensions import register_dataframe_accessor
 from functools import wraps
+
+
 def register_DataFrame_method(method):
     """Register a function as a method attached to the Pandas DataFrame.
     Example
@@ -180,6 +194,7 @@ def register_DataFrame_method(method):
         def row_by_value(self, col, value):
             return self._data[self._data[col] == value].squeeze()
     """
+
     def inner(*args, **kwargs):
         class AccessorMethod(object):
             def __init__(self, pandas_obj):
@@ -191,7 +206,10 @@ def register_DataFrame_method(method):
 
         register_dataframe_accessor(method.__name__)(AccessorMethod)
         return method
+
     return inner()
+
+
 #####no tests
 
 
@@ -239,7 +257,7 @@ def _stat_arrays_in_dict(d: Dict) -> Dict:
     }
 
 
-def _merge_dicts(d1: Dict, d2: Dict)-> Dict:
+def _merge_dicts(d1: Dict, d2: Dict) -> Dict:
     return {**d2, **d1}
 
 
@@ -252,7 +270,6 @@ def _add_dicts(d1: Dict, d2: Dict) -> Dict:
 
 def _array_to_string(array: np.ndarray) -> List:
     return [str(item) for item in array]
-
 
 
 def _new_feature_names(X: pd.DataFrame, names: List) -> pd.DataFrame:
@@ -276,6 +293,7 @@ def _new_feature_names(X: pd.DataFrame, names: List) -> pd.DataFrame:
         c[0:1] = [labels]
     X.columns = c
     return X
+
 
 def set_modelDict_value(v, at):
     """
@@ -315,7 +333,7 @@ def _dict_value(dictnary: Dict, key: str, default):
         return default
 
 
-def _dict_value2(fdictnary: Dict, dictnary: Dict, key:str , default):
+def _dict_value2(fdictnary: Dict, dictnary: Dict, key: str, default):
     """
     used to variable to dict or fdict (2nd dict) value or default.
     if key in dict or fdict return key-value
@@ -331,11 +349,12 @@ def _dict_value2(fdictnary: Dict, dictnary: Dict, key:str , default):
         result = fdictnary[key]  # precedence to ontoloical file
     return result
 
+
 def _exists_Attribute(object_, attribute_string) -> str:
     return hasattr(object_, attribute_string)
 
 
-def _exists_key(dictnary: Dict, key: str  , error: bool =True):
+def _exists_key(dictnary: Dict, key: str, error: bool = True):
     if key in dictnary:
         return dictnary[key]
     else:
@@ -352,6 +371,3 @@ def _exists_key(dictnary: Dict, key: str  , error: bool =True):
                 )
             )
             return False
-
-
-

@@ -168,6 +168,7 @@ def test_callable(df):
         _select_columns(object, df)
 
 
+@pytest.mark.xfail(reason="Indexing in Pandas is possible with a Series.")
 def test_callable_returns_Series(df):
     """
     Check that error is raised if `columns_to_select` is a
@@ -179,9 +180,8 @@ def test_callable_returns_Series(df):
 
 def test_callable_no_match(df):
     """
-    Raise ValueError if `columns_to_select` is a callable, and
-    no boolean results are returned, when the callable is
-    applied to each series in the dataframe.
+    Raise ValueError if `columns_to_select` is a callable,
+    and no value is returned.
     """
     with pytest.raises(ValueError):
         _select_columns(pd.api.types.is_float_dtype, df)

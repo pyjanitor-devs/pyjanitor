@@ -536,11 +536,22 @@ def test_length_mismatch():
         data.pivot_longer(names_to=["event", "year"], names_sep="-")
 
 
-def test_empty_mapping(test_df):
+def test_empty_mapping_all(test_df):
     """Raise error if `names_pattern` is a regex and returns no matches."""
     with pytest.raises(ValueError):
         test_df.pivot_longer(
             names_to=[".value", "value"], names_pattern=r"(\d+)([A-Z])"
+        )
+
+
+def test_empty_mapping_any(test_df):
+    """
+    Raise error if `names_pattern` is a regex
+    and returns incomplete matches.
+    """
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern=r"(.+)_(loc)"
         )
 
 
@@ -576,7 +587,7 @@ def names_pattern_list_df():
     )
 
 
-def test_names_pattern_list_empty(names_pattern_list_df):
+def test_names_pattern_list_empty_all(names_pattern_list_df):
     """
     Raise ValueError if `names_pattern` is a list,
     and nothing is returned.
@@ -586,6 +597,19 @@ def test_names_pattern_list_empty(names_pattern_list_df):
             index="ID",
             names_to=("DateRangeStart", "DateRangeEnd", "Value"),
             names_pattern=("^Start", "^End", "Value$"),
+        )
+
+
+def test_names_pattern_list_empty_any(names_pattern_list_df):
+    """
+    Raise ValueError if `names_pattern` is a list,
+    and not all matches are returned.
+    """
+    with pytest.raises(ValueError):
+        names_pattern_list_df.pivot_longer(
+            index="ID",
+            names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+            names_pattern=("Start", "End", "Value$"),
         )
 
 
@@ -1969,101 +1993,229 @@ def test_float_suffix_irregular():
     assert_frame_equal(result, expected)
 
 
-def test_multiple_column_names():
+multiple_column_names = [
+    (
+        pd.DataFrame(
+            {
+                "Sony | TV | Model | value": {
+                    0: "A222",
+                    1: "A234",
+                    2: "A4345",
+                },
+                "Sony | TV | Quantity | value": {0: 5, 1: 5, 2: 4},
+                "Sony | TV | Max-quant | value": {0: 10, 1: 9, 2: 9},
+                "Panasonic | TV | Model | value": {
+                    0: "T232",
+                    1: "S3424",
+                    2: "X3421",
+                },
+                "Panasonic | TV | Quantity | value": {0: 1, 1: 5, 2: 1},
+                "Panasonic | TV | Max-quant | value": {0: 10, 1: 12, 2: 11},
+                "Sanyo | Radio | Model | value": {
+                    0: "S111",
+                    1: "S1s1",
+                    2: "S1s2",
+                },
+                "Sanyo | Radio | Quantity | value": {0: 4, 1: 2, 2: 4},
+                "Sanyo | Radio | Max-quant | value": {0: 9, 1: 9, 2: 10},
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A222",
+                    " Quantity ": 5,
+                    " Max-quant ": 10,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A234",
+                    " Quantity ": 5,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A4345",
+                    " Quantity ": 4,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "T232",
+                    " Quantity ": 1,
+                    " Max-quant ": 10,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "S3424",
+                    " Quantity ": 5,
+                    " Max-quant ": 12,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "X3421",
+                    " Quantity ": 1,
+                    " Max-quant ": 11,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S111",
+                    " Quantity ": 4,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s1",
+                    " Quantity ": 2,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s2",
+                    " Quantity ": 4,
+                    " Max-quant ": 10,
+                },
+            ]
+        ),
+    ),
+    (
+        pd.DataFrame(
+            {
+                "Sony | TV | Model | value": {
+                    0: "A222",
+                    1: "A234",
+                    2: "A4345",
+                },
+                "Sony | TV | Quantity | value": {0: 5, 1: 5, 2: 4},
+                "Sony | TV | Max-quant | value": {0: 10, 1: 9, 2: 9},
+                "Panasonic | TV | Model | value": {
+                    0: "T232",
+                    1: "S3424",
+                    2: "X3421",
+                },
+                "Panasonic | TV | Quantity | value": {0: 1, 1: 5, 2: 1},
+                "Panasonic | TV | Max-quant | value": {0: 10, 1: 12, 2: 11},
+                "Sanyo | Radio | Model | value": {
+                    0: "S111",
+                    1: "S1s1",
+                    2: "S1s2",
+                },
+                "Sanyo | Radio | Quantity | value": {0: 4, 1: 2, 2: 4},
+                "Sanyo | radio | Max-quant | value": {0: 9, 1: 9, 2: 10},
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A222",
+                    " Quantity ": 5.0,
+                    " Max-quant ": 10.0,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A234",
+                    " Quantity ": 5.0,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A4345",
+                    " Quantity ": 4.0,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "T232",
+                    " Quantity ": 1.0,
+                    " Max-quant ": 10.0,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "S3424",
+                    " Quantity ": 5.0,
+                    " Max-quant ": 12.0,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "X3421",
+                    " Quantity ": 1.0,
+                    " Max-quant ": 11.0,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S111",
+                    " Quantity ": 4.0,
+                    " Max-quant ": np.nan,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s1",
+                    " Quantity ": 2.0,
+                    " Max-quant ": np.nan,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s2",
+                    " Quantity ": 4.0,
+                    " Max-quant ": np.nan,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " radio ",
+                    " Model ": np.nan,
+                    " Quantity ": np.nan,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " radio ",
+                    " Model ": np.nan,
+                    " Quantity ": np.nan,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " radio ",
+                    " Model ": np.nan,
+                    " Quantity ": np.nan,
+                    " Max-quant ": 10.0,
+                },
+            ]
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize("df_in, df_out", multiple_column_names)
+def test_multiple_column_names(df_in, df_out):
     """
     Test output for scenario where the pairing
     in the column name is more than 2.
     """
 
-    df = pd.DataFrame(
-        {
-            "Sony | TV | Model | value": {0: "A222", 1: "A234", 2: "A4345"},
-            "Sony | TV | Quantity | value": {0: 5, 1: 5, 2: 4},
-            "Sony | TV | Max-quant | value": {0: 10, 1: 9, 2: 9},
-            "Panasonic | TV | Model | value": {
-                0: "T232",
-                1: "S3424",
-                2: "X3421",
-            },
-            "Panasonic | TV | Quantity | value": {0: 1, 1: 5, 2: 1},
-            "Panasonic | TV | Max-quant | value": {0: 10, 1: 12, 2: 11},
-            "Sanyo | Radio | Model | value": {0: "S111", 1: "S1s1", 2: "S1s2"},
-            "Sanyo | Radio | Quantity | value": {0: 4, 1: 2, 2: 4},
-            "Sanyo | Radio | Max-quant | value": {0: 9, 1: 9, 2: 10},
-        }
-    )
-
-    expected = pd.DataFrame(
-        [
-            {
-                "Manufacturer": "Sony ",
-                "Device": " TV ",
-                " Model ": "A222",
-                " Quantity ": 5,
-                " Max-quant ": 10,
-            },
-            {
-                "Manufacturer": "Sony ",
-                "Device": " TV ",
-                " Model ": "A234",
-                " Quantity ": 5,
-                " Max-quant ": 9,
-            },
-            {
-                "Manufacturer": "Sony ",
-                "Device": " TV ",
-                " Model ": "A4345",
-                " Quantity ": 4,
-                " Max-quant ": 9,
-            },
-            {
-                "Manufacturer": "Panasonic ",
-                "Device": " TV ",
-                " Model ": "T232",
-                " Quantity ": 1,
-                " Max-quant ": 10,
-            },
-            {
-                "Manufacturer": "Panasonic ",
-                "Device": " TV ",
-                " Model ": "S3424",
-                " Quantity ": 5,
-                " Max-quant ": 12,
-            },
-            {
-                "Manufacturer": "Panasonic ",
-                "Device": " TV ",
-                " Model ": "X3421",
-                " Quantity ": 1,
-                " Max-quant ": 11,
-            },
-            {
-                "Manufacturer": "Sanyo ",
-                "Device": " Radio ",
-                " Model ": "S111",
-                " Quantity ": 4,
-                " Max-quant ": 9,
-            },
-            {
-                "Manufacturer": "Sanyo ",
-                "Device": " Radio ",
-                " Model ": "S1s1",
-                " Quantity ": 2,
-                " Max-quant ": 9,
-            },
-            {
-                "Manufacturer": "Sanyo ",
-                "Device": " Radio ",
-                " Model ": "S1s2",
-                " Quantity ": 4,
-                " Max-quant ": 10,
-            },
-        ]
-    )
-
-    result = df.pivot_longer(
+    result = df_in.pivot_longer(
         names_to=("Manufacturer", "Device", ".value"),
         names_pattern=r"(.+)\|(.+)\|(.+)\|.*",
     )
 
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, df_out)

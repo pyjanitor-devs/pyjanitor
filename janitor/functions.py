@@ -3245,7 +3245,7 @@ def select_columns(
     if is_list_like(search_column_names) and (
         not isinstance(search_column_names, tuple)
     ):
-        search_column_names = list(search_column_names)
+        search_column_names = [*search_column_names]
 
     full_column_list = _select_columns(search_column_names, df)
 
@@ -4529,7 +4529,6 @@ def expand_grid(
         to be combined with the dataframe.
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
-    :param kwargs: Keyword arguments are accepted.
     :returns: A pandas dataframe of all combinations of name value pairs.
     :raises TypeError: if `others` is not a dictionary
     :raises KeyError: if there is a dataframe and no key is provided.
@@ -4734,7 +4733,7 @@ def process_text(
         # duplicated indices in the original dataframe
         df = df.set_index(np.arange(len(df)), append=True)  # extra_index_line
 
-    result = getattr(df.loc[:, column_name].str, string_function)(**kwargs)
+    result = getattr(df[column_name].str, string_function)(**kwargs)
 
     # TODO: Support for str.cat with `join` parameter
     # need a robust way to handle the results
@@ -5127,23 +5126,21 @@ def complete(
 
         new_year_values = lambda year: range(year.min(), year.max() + 1)
 
-        (df.complete(columns = [{"Year": new_year_values}, "Taxon"])
-           .fillna(0) # get rid of fillna and just show the data with nulls
-        )
+        df.complete(columns = [{"Year": new_year_values}, "Taxon"])
 
-            Year      Taxon     Abundance
-        0   1999     Agarum         1.0
-        1   1999    Saccharina      4.0
-        2   2000     Agarum         0.0
-        3   2000    Saccharina      5.0
-        4   2001     Agarum         0.0
-        5   2001    Saccharina      0.0
-        6   2002     Agarum         0.0
-        7   2002    Saccharina      0.0
-        8   2003     Agarum         0.0
-        9   2003     Saccharina     0.0
-        10  2004     Agarum         8.0
-        11  2004    Saccharina      2.0
+            Year       Taxon  Abundance
+        0   1999      Agarum        1.0
+        1   1999  Saccharina        4.0
+        2   2000      Agarum        NaN
+        3   2000  Saccharina        5.0
+        4   2001      Agarum        NaN
+        5   2001  Saccharina        NaN
+        6   2002      Agarum        NaN
+        7   2002  Saccharina        NaN
+        8   2003      Agarum        NaN
+        9   2003  Saccharina        NaN
+        10  2004      Agarum        8.0
+        11  2004  Saccharina        2.0
 
     It is also possible to expose missing values within a groupby,
     by using the `by` parameter::

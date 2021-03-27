@@ -760,28 +760,28 @@ def _computations_complete(
 
     dict_present = any((isinstance(entry, dict) for entry in columns))
     all_strings = all(isinstance(column, str) for column in columns)
-    any_nulls = any(df[col].hasnans for col in column_checker)
 
     df = df.set_index(column_checker)
 
-    if not by:
-        df = _base_complete(
-            df, columns, column_checker, all_strings, any_nulls, dict_present
-        )
+    df_index = df.index
+    df_names = df_index.names
 
-    # a better way would be to create a dataframe
+    any_nulls = any(
+        df_index.get_level_values(name).hasnans for name in df_names
+    )
+
+    if not by:
+
+        df = _base_complete(df, columns, all_strings, any_nulls, dict_present)
+
+    # a better (and faster) way would be to create a dataframe
     # from the groupby ...
     # solution here got me thinking
     # https://stackoverflow.com/a/66667034/7175713
     # still thinking on how to improve speed of groupby apply
     else:
         df = df.groupby(by).apply(
-            _base_complete,
-            columns,
-            column_checker,
-            all_strings,
-            any_nulls,
-            dict_present,
+            _base_complete, columns, all_strings, any_nulls, dict_present
         )
         df = df.drop(columns=by)
 
@@ -793,69 +793,61 @@ def _computations_complete(
 def _base_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
-    column_checker: List,
     all_strings: bool,
     any_nulls: bool,
     dict_present: bool,
 ) -> pd.DataFrame:
 
-    df_empty = False
-    duplicated_index = df.index.has_duplicates
+    df_empty = df.empty
+    df_index = df.index
+    unique_index = df_index.is_unique
+    columns_to_stack = None
 
-    if (
-        all_strings
-        and (not any_nulls)
-        and (len(columns) > 1)
-        and (not duplicated_index)
-    ):
-        if df.empty:
-            df_empty = True
+    if all_strings and (not any_nulls) and (len(columns) > 1) and unique_index:
+        if df_empty:
             df["dummy"] = 1
 
-        df = df.unstack(columns[1:]).stack(columns[1:], dropna=False)
+        columns_to_stack = columns[1:]
+        df = df.unstack(columns_to_stack)  # noqa: PD010
+        df = df.stack(columns_to_stack, dropna=False)  # noqa: PD013
         if df_empty:
             df = df.drop(columns="dummy")
+        columns_to_stack = None
+        return df
+
+    indexer = _create_indexer_for_complete(df_index, columns)
+
+    if unique_index:
+        if dict_present:
+            indexer = df_index.union(indexer, sort=None)
+        df = df.reindex(indexer)
 
     else:
-        indexer = _create_indexer_for_complete(df, columns)
-
-        if not duplicated_index:
-            if dict_present:
-                indexer = df.index.union(indexer, sort=None)
-            df = df.reindex(indexer)
-
-        else:
-            df = df.join(pd.DataFrame([], index=indexer), how="outer")
+        df = df.join(pd.DataFrame([], index=indexer), how="outer")
 
     return df
 
 
 def _create_indexer_for_complete(
-    df: pd.DataFrame, columns: List[Union[List, Dict, str]],
+    df_index: pd.Index, columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
-    This creates the index that wiill be used
+    This creates the index that will be used
     to expand the dataframe in the `complete` function.
 
     A pandas Index is returned.
     """
 
-    all_strings = all(isinstance(column, str) for column in columns)
-    if all_strings:
-        if len(columns) > 1:
-            indexer = pd.MultiIndex.from_product(df.index.levels)
-        else:
-            indexer = df.index
-        return indexer
+    complete_columns = (
+        _complete_column(column, df_index) for column in columns
+    )
 
-    complete_columns = [_complete_column(column, df) for column in columns]
-
-    indexer = []
-    for entry in complete_columns:
-        if isinstance(entry, list):
-            indexer.extend(entry)
-        else:
-            indexer.append(entry)
+    complete_columns = (
+        (entry,) if not isinstance(entry, list) else entry
+        for entry in complete_columns
+    )
+    complete_columns = chain.from_iterable(complete_columns)
+    indexer = [*complete_columns]
 
     if len(indexer) > 1:
         indexer = _complete_indexer_expand_grid(indexer)
@@ -886,22 +878,27 @@ def _complete_indexer_expand_grid(indexer):
 
     for entry in indexer:
         if isinstance(entry, pd.MultiIndex):
-            val = [entry.get_level_values(name) for name in entry.names]
+            names = entry.names
+            val = (entry.get_level_values(name) for name in names)
             indexers.extend(val)
         else:
             indexers.append(entry)
     indexer = pd.MultiIndex.from_arrays(indexers)
+    indexers = None
     return indexer
 
 
 @functools.singledispatch
-def _complete_column(column, df):
+def _complete_column(column, index):
     """
-    This function processes the labels/entries in the
-    `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product,
-    to reindex the original dataframe and expose the
-    possibly missing values.
+    This function processes the `columns` argument,
+    to create a pandas Index or a list.
+
+    Args:
+        column : str/list/dict
+        index: pandas Index
+
+    A unique pandas Index or a list of unique pandas Indices is returned.
     """
     raise TypeError(
         """This type is not supported in the `complete` function."""
@@ -909,64 +906,64 @@ def _complete_column(column, df):
 
 
 @_complete_column.register(str)  # noqa: F811
-def _sub_complete_column(column, df):  # noqa: F811
+def _sub_complete_column(column, index):  # noqa: F811
     """
-    This function processes the labels/entries in the
-    `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product,
-    to reindex the original dataframe and expose the
-    possibly missing values.
+    This function processes the `columns` argument,
+    to create a pandas Index.
 
-    A Series is returned.
-    """
+    Args:
+        column : str
+        index: pandas Index
 
-    if isinstance(df.index, pd.MultiIndex):
-        name_level = zip(df.index.names, df.index.levels)
-        for name, level in name_level:
-            if name == column:
-                arr = level
-                break
-    else:
-        arr = df.index
-        if arr.has_duplicates:
-            arr = arr.drop_duplicates()
-    return arr
-
-
-@_complete_column.register(list)  # noqa: F811
-def _sub_complete_column(column, df):  # noqa: F811
-    """
-    This function processes the labels/entries in the
-    `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product,
-    to reindex the original dataframe and expose the
-    possibly missing values.
-
-    A DataFrame is returned.
+    Returns:
+        pd.Index: A pandas Index with a single level
     """
 
-    level_to_drop = [name for name in df.index.names if name not in column]
-    arr = df.index.droplevel(level_to_drop)
-    if arr.has_duplicates:
+    arr = index.get_level_values(column)
+
+    if not arr.is_unique:
         arr = arr.drop_duplicates()
     return arr
 
 
-@_complete_column.register(dict)  # noqa: F811
-def _sub_complete_column(column, df):  # noqa: F811
+@_complete_column.register(list)  # noqa: F811
+def _sub_complete_column(column, index):  # noqa: F811
     """
-    This function processes the labels/entries in the
-    `columns` argument, to ultimately create an Index,
-    possibly from a cartesian product,
-    to reindex the original dataframe and expose the
-    possibly missing values.
+    This function processes the `columns` argument,
+    to create a pandas Index.
 
-    A list of pandas Index is returned.
+    Args:
+        column : list
+        index: pandas Index
+
+    Returns:
+        pd.MultiIndex
+    """
+
+    level_to_drop = [name for name in index.names if name not in column]
+    arr = index.droplevel(level_to_drop)
+    if not arr.is_unique:
+        return arr.drop_duplicates()
+    return arr
+
+
+@_complete_column.register(dict)  # noqa: F811
+def _sub_complete_column(column, index):  # noqa: F811
+    """
+    This function processes the `columns` argument,
+    to create a pandas Index or a list.
+
+    Args:
+        column : dict
+        index: pandas Index
+
+    Returns:
+        list: A list of unique pandas Indices.
     """
 
     collection = []
     for key, value in column.items():
-        arr = apply_if_callable(value, df.index.get_level_values(key))
+        arr = apply_if_callable(value, index.get_level_values(key))
         if not is_list_like(arr):
             raise ValueError(
                 """
@@ -1009,7 +1006,7 @@ def _sub_complete_column(column, df):  # noqa: F811
                 """
             )
 
-        if arr.has_duplicates:
+        if not arr.is_unique:
             arr = arr.drop_duplicates()
 
         collection.append(arr)
@@ -1293,7 +1290,7 @@ def _pivot_longer_extractions(
                 """
             )
 
-        if any(mapping[col].hasnans for col in mapping):
+        if mapping.isna().any(axis=None):
             raise ValueError(
                 """
                 The regular expression in ``names_pattern``
@@ -1352,30 +1349,26 @@ def _pivot_longer_extractions(
     first = None
     last = None
     complete_index = None
+    df_columns = None
     df_column_names = None
     dtypes = None
     if dot_value:
+        df_columns = df.columns
         if not isinstance(df.columns, pd.MultiIndex):
-            outcome = df.columns
-            if outcome.has_duplicates:
-                dtypes = CategoricalDtype(
-                    categories=outcome.drop_duplicates(), ordered=True
-                )
-            else:
-                dtypes = CategoricalDtype(categories=outcome, ordered=True)
+            dtypes = CategoricalDtype(
+                categories=df_columns.drop_duplicates(), ordered=True
+            )
             df.columns = df.columns.astype(dtypes)
 
         else:
-            df_column_names = df.columns.names
+            df_column_names = df_columns.names
             outcome = [
-                df.columns.get_level_values(name) for name in df_column_names
+                df_columns.get_level_values(name) for name in df_column_names
             ]
             dtypes = [
                 CategoricalDtype(
                     categories=entry.drop_duplicates(), ordered=True
                 )
-                if entry.has_duplicates
-                else CategoricalDtype(categories=entry, ordered=True)
                 for entry in outcome
             ]
             outcome = [
@@ -1385,8 +1378,9 @@ def _pivot_longer_extractions(
             df.columns = outcome
 
             # test if all combinations are present
-            first = df.columns.get_level_values(".value")
-            last = df.columns.droplevel(".value")
+            df_columns = df.columns
+            first = df_columns.get_level_values(".value")
+            last = df_columns.droplevel(".value")
             outcome = first.groupby(last)
             outcome = (value for _, value in outcome.items())
             outcome = combinations(outcome, 2)
@@ -1396,12 +1390,12 @@ def _pivot_longer_extractions(
                     indexer = (first.drop_duplicates(), last.drop_duplicates())
                     complete_index = _complete_indexer_expand_grid(indexer)
                     complete_index = complete_index.reorder_levels(
-                        [*df.columns.names]
+                        [*df_columns.names]
                     )
 
                 else:
                     complete_index = pd.MultiIndex.from_product(
-                        df.columns.levels
+                        df_columns.levels
                     )
                 df = df.reindex(columns=complete_index)
 
@@ -1502,36 +1496,38 @@ def _computations_pivot_longer(
         names_pattern=names_pattern,
     )
 
-    if ".value" not in df.columns.names:
+    df_columns = df.columns
+
+    if ".value" not in df_columns.names:
         df = pd.melt(
             df, id_vars=None, value_name=values_to, ignore_index=False
         )
 
     else:  # .value
-        if df.columns.nlevels == 1:
+        if df_columns.nlevels == 1:
             df = [
-                df.loc[:, name].melt(ignore_index=False)
+                df[name].melt(ignore_index=False)
                 # changing the name in `rename`
                 # instead of passing it to `melt`
                 # avoids name collision,
                 # especially if `name` exists in `df`
                 # during melt
                 .iloc[:, -1].rename(name)
-                for name in df.columns.unique()
+                for name in df_columns.unique()
             ]
 
-            df = pd.concat(df, axis="columns")
+            df = pd.concat(df, axis=1)
 
         else:
             # ensures that the correct values are aligned,
             # in preparation for the recombination
             # of the columns downstream
-            df = df.sort_index(axis="columns")
+            df = df.sort_index(axis=1)
             df = [
-                df.xs(key=name, level=".value", axis="columns").melt(
+                df.xs(key=name, level=".value", axis=1).melt(
                     ignore_index=False, value_name=name
                 )
-                for name in df.columns.get_level_values(".value").unique()
+                for name in df_columns.get_level_values(".value").unique()
             ]
 
             first, *rest = df
@@ -1546,7 +1542,7 @@ def _computations_pivot_longer(
             # with the categorical dtype creation,
             # followed by the sorting on the columns earlier.
             rest = [frame.iloc[:, -1] for frame in rest]
-            df = pd.concat([first, *rest], axis="columns")
+            df = pd.concat([first, *rest], axis=1)
 
     if index:
         df = df.reset_index(level=index)
@@ -1694,14 +1690,14 @@ def _computations_pivot_wider(
 
         if values_from:
             df = df.groupby(
-                level=list(range(df.index.nlevels)),
+                level=[*range(df.index.nlevels)],
                 observed=True,
                 dropna=False,
                 sort=False,
             )[values_from].agg(aggfunc)
         else:
             df = df.groupby(
-                level=list(range(df.index.nlevels)),
+                level=[*range(df.index.nlevels)],
                 observed=True,
                 dropna=False,
                 sort=False,
@@ -1720,16 +1716,18 @@ def _computations_pivot_wider(
 
     other_levels = None
     names_from_levels = None
+    df_columns = df.columns
+    df_columns_names = df_columns.names
     if names_from_position == "first":
-        if df.columns.names[: len(names_from)] != names_from:
+        if df_columns_names[: len(names_from)] != names_from:
             other_levels = [
                 num
-                for num, name in enumerate(df.columns.names)
+                for num, name in enumerate(df_columns_names)
                 if name not in names_from
             ]
             names_from_levels = [
                 num
-                for num, name in enumerate(df.columns.names)
+                for num, name in enumerate(df_columns_names)
                 if name in names_from
             ]
             df = df.reorder_levels(
@@ -1739,7 +1737,7 @@ def _computations_pivot_wider(
     if not flatten_levels:
         return df
 
-    if df.columns.nlevels > 1:
+    if df_columns.nlevels > 1:
         df.columns = [names_sep.join(column_tuples) for column_tuples in df]
 
     if names_prefix:
@@ -1749,7 +1747,7 @@ def _computations_pivot_wider(
     # this returns columns to object dtype
     # also, resetting index with category columns is not possible
     if names_sort:
-        df.columns = list(df.columns)
+        df.columns = [*df.columns]
 
     if index:
         df = df.reset_index()
@@ -1933,16 +1931,20 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list of column names is returned.
     """
 
-    # for MultiIndex, if passed correctly,
-    # a slice returns a list of tuples.
-
     filtered_columns = None
     start_check = None
     stop_check = None
     step_check = None
-    # df.columns should be monotonic/unique,
-    # but we wont check for that
-    # onus is on the user to ensure that
+
+    if df.columns.has_duplicates:
+        raise ValueError(
+            """
+            The column labels are not unique.
+            Kindly ensure the labels are unique
+            to ensure the correct output.
+            """
+        )  # write test for this
+
     start, stop, step = (
         columns_to_select.start,
         columns_to_select.stop,
@@ -1988,12 +1990,22 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             or exist in the dataframe's columns.
             """
         )
-    filtered_columns = df.columns.slice_locs(start=start, end=stop)
-    # slice_locs fails when step has a value
-    # so this extra step is necessary to get the correct output
-    start, stop = filtered_columns
-    filtered_columns = df.columns[slice(start, stop, step)]
-    return list(filtered_columns)
+
+    if start is None:
+        start = 0
+    else:
+        start = df.columns.get_loc(start)
+    if stop is None:
+        stop = len(df.columns) + 1
+    else:
+        stop = df.columns.get_loc(stop)
+
+    # allows for reverse selection - write test for this
+    if start > stop:
+        filtered_columns = df.columns[slice(stop, start + 1, step)][::-1]
+    else:
+        filtered_columns = df.columns[slice(start, stop + 1, step)]
+    return [*filtered_columns]
 
 
 @_select_columns.register(dispatch_callable)  # noqa: F811
@@ -2013,28 +2025,16 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     # the returned values should be a sequence of booleans,
     # with at least one True.
 
-    filtered_columns = None
-    filtered_columns = [columns_to_select(column) for _, column in df.items()]
+    filtered_columns = df.agg(columns_to_select)
 
-    # returns numpy bool,
-    # which does not work the same way as python's bool
-    # as such, cant use isinstance.
-    # pandas type check function helps out
-    checks = (pd.api.types.is_bool(column) for column in filtered_columns)
-
-    if not all(checks):
+    if not filtered_columns.any():
         raise ValueError(
-            "The callable provided must return a sequence of booleans."
+            """
+            No match was returned for the provided callable.
+            """
         )
 
-    # cant use `is` here, since it may be a numpy bool
-    checks = any((column == True for column in filtered_columns))  # noqa: E712
-
-    if not checks:
-        raise ValueError("No results were returned for the callable provided.")
-
-    filtered_columns = df.columns[filtered_columns]
-    return list(filtered_columns)
+    return [*df.columns[filtered_columns]]
 
 
 # hack to get it to recognize typing.Pattern
@@ -2053,18 +2053,15 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     `re.compile` is required for the regular expression.
     A list of column names is returned.
     """
-    filtered_columns = None
 
-    filtered_columns = [
-        column_name
-        for column_name in df.columns
-        if re.search(columns_to_select, column_name)
-    ]
+    filtered_columns = df.columns.str.contains(
+        columns_to_select, na=False, regex=True
+    )
 
-    if not filtered_columns:
+    if not np.any(filtered_columns):
         raise KeyError("No column name matched the regular expression.")
 
-    return filtered_columns
+    return [*df.columns[filtered_columns]]
 
 
 @_select_columns.register(tuple)  # noqa: F811
@@ -2100,7 +2097,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
                 """
             )
 
-        return list(df.columns[columns_to_select])
+        return [*df.columns[columns_to_select]]
 
     filtered_columns = []
     columns_to_select = (
@@ -2125,16 +2122,14 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     return filtered_columns
 
 
-# implement dispatch for process_text
 @functools.singledispatch
 def _process_text(result: str, df, column_name, new_column_names, merge_frame):
     """
     Base function for `process_text` when `result` is of ``str`` type.
     """
     if new_column_names:
-        df.loc[:, new_column_names] = result
-    else:
-        df.loc[:, column_name] = result
+        return df.assign(**{new_column_names: result})
+    df[column_name] = result
     return df
 
 
@@ -2146,9 +2141,8 @@ def _sub_process_text(
     Base function for `process_text` when `result` is of ``pd.Series`` type.
     """
     if new_column_names:
-        df.loc[:, new_column_names] = result
-    else:
-        df.loc[:, column_name] = result
+        return df.assign(**{new_column_names: result})
+    df[column_name] = result
     return df
 
 

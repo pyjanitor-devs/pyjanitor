@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- drop `fill_value` parameter from `complete`. Users can use `fillna` instead. @samukweku
 
 ## [v0.20.14] - 2021-03-25
 

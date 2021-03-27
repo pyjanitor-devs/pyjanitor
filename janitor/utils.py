@@ -772,7 +772,9 @@ def _computations_complete(
 
     if not by:
 
-        df = _base_complete(df, columns, all_strings, any_nulls, dict_present)
+        df = _base_complete(
+            df, columns, column_checker, all_strings, any_nulls, dict_present
+        )
 
     # a better (and faster) way would be to create a dataframe
     # from the groupby ...
@@ -781,7 +783,12 @@ def _computations_complete(
     # still thinking on how to improve speed of groupby apply
     else:
         df = df.groupby(by).apply(
-            _base_complete, columns, all_strings, any_nulls, dict_present
+            _base_complete,
+            columns,
+            column_checker,
+            all_strings,
+            any_nulls,
+            dict_present,
         )
         df = df.drop(columns=by)
 
@@ -793,6 +800,7 @@ def _computations_complete(
 def _base_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
+    column_checker: List,
     all_strings: bool,
     any_nulls: bool,
     dict_present: bool,
@@ -815,7 +823,7 @@ def _base_complete(
         columns_to_stack = None
         return df
 
-    indexer = _create_indexer_for_complete(df_index, columns)
+    indexer = _create_indexer_for_complete(df_index, columns, column_checker)
 
     if unique_index:
         if dict_present:
@@ -829,7 +837,9 @@ def _base_complete(
 
 
 def _create_indexer_for_complete(
-    df_index: pd.Index, columns: List[Union[List, Dict, str]],
+    df_index: pd.Index,
+    columns: List[Union[List, Dict, str]],
+    column_checker: List,
 ) -> pd.DataFrame:
     """
     This creates the index that will be used
@@ -850,7 +860,7 @@ def _create_indexer_for_complete(
     indexer = [*complete_columns]
 
     if len(indexer) > 1:
-        indexer = _complete_indexer_expand_grid(indexer)
+        indexer = _complete_indexer_expand_grid(indexer, column_checker)
 
     else:
         indexer = indexer[0]
@@ -858,7 +868,7 @@ def _create_indexer_for_complete(
     return indexer
 
 
-def _complete_indexer_expand_grid(indexer):
+def _complete_indexer_expand_grid(indexer, column_checker):
     """
     Generate indices to expose explicitly missing values,
     using the `expand_grid` function.
@@ -883,7 +893,7 @@ def _complete_indexer_expand_grid(indexer):
             indexers.extend(val)
         else:
             indexers.append(entry)
-    indexer = pd.MultiIndex.from_arrays(indexers)
+    indexer = pd.MultiIndex.from_arrays(indexers, names=column_checker)
     indexers = None
     return indexer
 
@@ -1388,7 +1398,10 @@ def _pivot_longer_extractions(
             if not all(outcome):
                 if isinstance(last, pd.MultiIndex):
                     indexer = (first.drop_duplicates(), last.drop_duplicates())
-                    complete_index = _complete_indexer_expand_grid(indexer)
+                    names = [first.name] + last.names
+                    complete_index = _complete_indexer_expand_grid(
+                        indexer, names
+                    )
                     complete_index = complete_index.reorder_levels(
                         [*df_columns.names]
                     )

@@ -2,9 +2,11 @@
 
 ## [Unreleased]
 
-- [ENH] Add `dropna` parameter to groupby_agg. @samukweku
-- [ENH] `complete` adds a `by` parameter to expose explicit missing values per group, via groupby. @samukweku
-- [ENH] Fix check_column to support single inputs - fixes `label_encode`. @zbarry
+## [v0.20.14] - 2021-03-25
+
+-   [ENH] Add `dropna` parameter to groupby_agg. @samukweku
+-   [ENH] `complete` adds a `by` parameter to expose explicit missing values per group, via groupby. @samukweku
+-   [ENH] Fix check_column to support single inputs - fixes `label_encode`. @zbarry
 
 ## [v0.20.13] - 2021-02-25
 
@@ -193,7 +195,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/ericmjl/pyjanitor/compare/v0.20.13...HEAD
+[Unreleased]: https://github.com/ericmjl/pyjanitor/compare/v0.20.14...HEAD
+
+[v0.20.14]: https://github.com/ericmjl/pyjanitor/compare/v0.20.13...v0.20.14
 
 [v0.20.13]: https://github.com/ericmjl/pyjanitor/compare/v0.20.12...v0.20.13
 

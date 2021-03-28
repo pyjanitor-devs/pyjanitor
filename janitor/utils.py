@@ -772,9 +772,7 @@ def _computations_complete(
 
     if not by:
 
-        df = _base_complete(
-            df, columns, column_checker, all_strings, any_nulls, dict_present
-        )
+        df = _base_complete(df, columns, all_strings, any_nulls, dict_present)
 
     # a better (and faster) way would be to create a dataframe
     # from the groupby ...
@@ -783,12 +781,7 @@ def _computations_complete(
     # still thinking on how to improve speed of groupby apply
     else:
         df = df.groupby(by).apply(
-            _base_complete,
-            columns,
-            column_checker,
-            all_strings,
-            any_nulls,
-            dict_present,
+            _base_complete, columns, all_strings, any_nulls, dict_present,
         )
         df = df.drop(columns=by)
 
@@ -800,7 +793,6 @@ def _computations_complete(
 def _base_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
-    column_checker: List,
     all_strings: bool,
     any_nulls: bool,
     dict_present: bool,
@@ -823,7 +815,7 @@ def _base_complete(
         columns_to_stack = None
         return df
 
-    indexer = _create_indexer_for_complete(df_index, columns, column_checker)
+    indexer = _create_indexer_for_complete(df_index, columns)
 
     if unique_index:
         if dict_present:
@@ -837,9 +829,7 @@ def _base_complete(
 
 
 def _create_indexer_for_complete(
-    df_index: pd.Index,
-    columns: List[Union[List, Dict, str]],
-    column_checker: List,
+    df_index: pd.Index, columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
     This creates the index that will be used
@@ -860,7 +850,7 @@ def _create_indexer_for_complete(
     indexer = [*complete_columns]
 
     if len(indexer) > 1:
-        indexer = _complete_indexer_expand_grid(indexer, column_checker)
+        indexer = _complete_indexer_expand_grid(indexer)
 
     else:
         indexer = indexer[0]
@@ -868,7 +858,7 @@ def _create_indexer_for_complete(
     return indexer
 
 
-def _complete_indexer_expand_grid(indexer, column_checker):
+def _complete_indexer_expand_grid(indexer):
     """
     Generate indices to expose explicitly missing values,
     using the `expand_grid` function.
@@ -893,7 +883,7 @@ def _complete_indexer_expand_grid(indexer, column_checker):
             indexers.extend(val)
         else:
             indexers.append(entry)
-    indexer = pd.MultiIndex.from_arrays(indexers, names=column_checker)
+    indexer = pd.MultiIndex.from_arrays(indexers)
     indexers = None
     return indexer
 
@@ -1018,6 +1008,9 @@ def _sub_complete_column(column, index):  # noqa: F811
 
         if not arr.is_unique:
             arr = arr.drop_duplicates()
+
+        if arr.name is None:
+            arr.name = key
 
         collection.append(arr)
 
@@ -1355,62 +1348,72 @@ def _pivot_longer_extractions(
         ((".value" in names_to), isinstance(names_pattern, (list, tuple)))
     )
 
-    outcome = None
     first = None
     last = None
     complete_index = None
-    df_columns = None
-    df_column_names = None
     dtypes = None
+    cumcount = None
     if dot_value:
-        df_columns = df.columns
-        if not isinstance(df.columns, pd.MultiIndex):
+        if not isinstance(mapping, pd.MultiIndex):
             dtypes = CategoricalDtype(
-                categories=df_columns.drop_duplicates(), ordered=True
+                categories=mapping.drop_duplicates(), ordered=True
             )
             df.columns = df.columns.astype(dtypes)
 
         else:
-            df_column_names = df_columns.names
-            outcome = [
-                df_columns.get_level_values(name) for name in df_column_names
+            if not mapping.is_unique:
+                cumcount = pd.factorize(mapping)[0]
+                cumcount = pd.Series(cumcount).groupby(cumcount).cumcount()
+            cumcount_check = cumcount is not None
+            mapping_names = mapping.names
+            mapping = [
+                mapping.get_level_values(name) for name in mapping_names
             ]
             dtypes = [
                 CategoricalDtype(
                     categories=entry.drop_duplicates(), ordered=True
                 )
-                for entry in outcome
+                for entry in mapping
             ]
-            outcome = [
-                entry.astype(dtype) for entry, dtype in zip(outcome, dtypes)
+            mapping = [
+                entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
             ]
-            outcome = pd.MultiIndex.from_arrays(outcome)
-            df.columns = outcome
+
+            if cumcount_check:
+                mapping.append(cumcount)
+            mapping = pd.MultiIndex.from_arrays(mapping)
+            df.columns = mapping
+
+            mapping = df.columns
+            if cumcount_check:
+                mapping = mapping.droplevel(-1)
 
             # test if all combinations are present
-            df_columns = df.columns
-            first = df_columns.get_level_values(".value")
-            last = df_columns.droplevel(".value")
+            first = mapping.get_level_values(".value")
+            last = mapping.droplevel(".value")
             outcome = first.groupby(last)
             outcome = (value for _, value in outcome.items())
             outcome = combinations(outcome, 2)
-            outcome = (left.difference(right).empty for left, right in outcome)
+            outcome = (
+                left.symmetric_difference(right).empty
+                for left, right in outcome
+            )
+
+            # include all combinations into the columns
             if not all(outcome):
                 if isinstance(last, pd.MultiIndex):
                     indexer = (first.drop_duplicates(), last.drop_duplicates())
-                    names = [first.name] + last.names
-                    complete_index = _complete_indexer_expand_grid(
-                        indexer, names
-                    )
+                    complete_index = _complete_indexer_expand_grid(indexer)
                     complete_index = complete_index.reorder_levels(
-                        [*df_columns.names]
+                        [*mapping.names]
                     )
 
                 else:
-                    complete_index = pd.MultiIndex.from_product(
-                        df_columns.levels
-                    )
+                    complete_index = pd.MultiIndex.from_product(mapping.levels)
+
                 df = df.reindex(columns=complete_index)
+            if cumcount_check:
+                df = df.droplevel(-1, axis="columns")
 
     return df
 
@@ -1528,7 +1531,6 @@ def _computations_pivot_longer(
                 .iloc[:, -1].rename(name)
                 for name in df_columns.unique()
             ]
-
             df = pd.concat(df, axis=1)
 
         else:
@@ -1555,6 +1557,7 @@ def _computations_pivot_longer(
             # with the categorical dtype creation,
             # followed by the sorting on the columns earlier.
             rest = [frame.iloc[:, -1] for frame in rest]
+            # df = first.join(rest, how = 'outer', sort = False)
             df = pd.concat([first, *rest], axis=1)
 
     if index:
@@ -2066,15 +2069,17 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     `re.compile` is required for the regular expression.
     A list of column names is returned.
     """
+    df_columns = df.columns
+    filtered_columns = [
+        column_name
+        for column_name in df_columns
+        if re.search(columns_to_select, column_name)
+    ]
 
-    filtered_columns = df.columns.str.contains(
-        columns_to_select, na=False, regex=True
-    )
-
-    if not np.any(filtered_columns):
+    if not filtered_columns:
         raise KeyError("No column name matched the regular expression.")
 
-    return [*df.columns[filtered_columns]]
+    return filtered_columns
 
 
 @_select_columns.register(tuple)  # noqa: F811

@@ -286,8 +286,63 @@ def test_dict_values_outside_range(df1):
     assert_frame_equal(result, expected)
 
 
-# adapted from https://tidyr.tidyverse.org/reference/complete.html
 complete_parameters = [
+    (
+        pd.DataFrame(
+            [
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "red",
+                    "orders": 7,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-21 00:00:00"),
+                    "colour": "red",
+                    "orders": 10,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "yellow",
+                    "orders": 3,
+                },
+            ]
+        ),
+        [{"date": pd.date_range("2014-10-20", "2014-10-22")}, "colour"],
+        pd.DataFrame(
+            [
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "red",
+                    "orders": 7.0,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "yellow",
+                    "orders": 3.0,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-21 00:00:00"),
+                    "colour": "red",
+                    "orders": 10.0,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-21 00:00:00"),
+                    "colour": "yellow",
+                    "orders": np.nan,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-22 00:00:00"),
+                    "colour": "red",
+                    "orders": np.nan,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-22 00:00:00"),
+                    "colour": "yellow",
+                    "orders": np.nan,
+                },
+            ]
+        ),
+    ),
     (
         pd.DataFrame(
             {

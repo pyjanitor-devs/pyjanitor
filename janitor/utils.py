@@ -1923,13 +1923,15 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list of column names is returned.
     """
     filtered_columns = None
+    df_columns = df.columns
     if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
-        filtered_columns = fnmatch.filter(df.columns, columns_to_select)
-    elif columns_to_select in df.columns:
+        filtered_columns = fnmatch.filter(df_columns, columns_to_select)
+    elif columns_to_select in df_columns:
         filtered_columns = [columns_to_select]
         return filtered_columns
     if not filtered_columns:
         raise KeyError(f"No match was returned for '{columns_to_select}'")
+    df_columns = None
     return filtered_columns
 
 
@@ -1947,19 +1949,20 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list of column names is returned.
     """
 
+    df_columns = df.columns
     filtered_columns = None
     start_check = None
     stop_check = None
     step_check = None
 
-    if df.columns.has_duplicates:
+    if not df_columns.is_unique:
         raise ValueError(
             """
             The column labels are not unique.
             Kindly ensure the labels are unique
             to ensure the correct output.
             """
-        )  # write test for this
+        )
 
     start, stop, step = (
         columns_to_select.start,
@@ -1990,8 +1993,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             must either be an integer or `None`.
             """
         )
-    start_check = any((start is None, start in df.columns))
-    stop_check = any((stop is None, stop in df.columns))
+    start_check = any((start is None, start in df_columns))
+    stop_check = any((stop is None, stop in df_columns))
     if not start_check:
         raise ValueError(
             """
@@ -2010,17 +2013,18 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     if start is None:
         start = 0
     else:
-        start = df.columns.get_loc(start)
+        start = df_columns.get_loc(start)
     if stop is None:
-        stop = len(df.columns) + 1
+        stop = len(df_columns) + 1
     else:
-        stop = df.columns.get_loc(stop)
+        stop = df_columns.get_loc(stop)
 
     # allows for reverse selection - write test for this
     if start > stop:
-        filtered_columns = df.columns[slice(stop, start + 1, step)][::-1]
+        filtered_columns = df_columns[slice(stop, start + 1, step)][::-1]
     else:
-        filtered_columns = df.columns[slice(start, stop + 1, step)]
+        filtered_columns = df_columns[slice(start, stop + 1, step)]
+    df_columns = None
     return [*filtered_columns]
 
 
@@ -2078,6 +2082,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
     if not filtered_columns:
         raise KeyError("No column name matched the regular expression.")
+    df_columns = None
 
     return filtered_columns
 

@@ -1,0 +1,33 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python application
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+name: Line check
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  scc_job:
+    runs-on: ubuntu-latest
+    name: A job to count the lines of code.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get the lines of code.
+        id: scc
+        uses: iryanbell/scc-docker-action@v1.0.0
+        with:
+          args: ${{ env.workspace }} -i js,go,html,css
+
+    runs-on: ubuntu-latest

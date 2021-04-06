@@ -4059,6 +4059,11 @@ def join_apply(
 
 
 @pf.register_dataframe_method
+def join_conditional(df: pd.DataFrame) -> pd.DataFrame:
+    pass
+
+
+@pf.register_dataframe_method
 def flag_nulls(
     df: pd.DataFrame,
     column_name: Optional[Hashable] = "null_flag",

@@ -101,7 +101,7 @@ ptyprocess==0.6.0
     # via pexpect
 py4j==0.10.9
     # via pyspark
-pygments==2.7.1
+pygments==2.7.4
     # via
     #   ipython
     #   jupyterlab-pygments

@@ -4060,8 +4060,12 @@ def join_apply(
 
 @pf.register_dataframe_method
 def join_conditional(
-        df: pd.DataFrame, left_column: str, right_column: str, join_operator: str) -> pd.DataFrame:
-    pass
+        df: pd.DataFrame,
+        #left_column: str, right_column:
+        # str, join_operator: str
+        ) -> pd.DataFrame:
+    print("Test")
+    return df
 
 
 @pf.register_dataframe_method

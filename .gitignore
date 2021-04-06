@@ -141,3 +141,4 @@ tags
 
 # Other stuff
 *.profraw
+/scratch.py

@@ -114,6 +114,7 @@ def test_select_callable_columns(dataframe, invert, expected):
     assert_frame_equal(df, dataframe[expected])
 
 
+@pytest.mark.xfail(reason="Allow tuples which are acceptable in MultiIndex.")
 def test_MultiIndex():
     """
     Raise ValueError if columns is a MultiIndex.

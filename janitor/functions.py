@@ -4065,17 +4065,21 @@ def join_conditional(
     This is a rough idea of what I think we are supposed to be accomplishing, we iterate each row and select specific
     columns in the data frame, check condition based on the operator and then add it to a new dataframe we could look
     into passing in a function instead of a string for the operator and those functions could check the condition
+
     return_df = pd.DataFrame()
     for index, row in df.iterrows:
         if join_operator == ">":
             if row['left_column'] > row['right_column']:
-                return_df.append(df.iloc(index))
+
+                ----I don't believe the syntax is right for appending the row of the dataframe-----
+
+                return_df.append(df.iloc[index])
         elif join_operator == "<":
             if row['left_column'] < row['right_column']:
-                return_df.append(df.iloc(index))
+                return_df.append(df.iloc[index]))
         elif join_operator == "!=":
             if row['left_column'] != row['right_column']:
-                return_df.append(df.iloc(index))
+                return_df.append(df.iloc[index]))
         else:
             return None
     return return_df

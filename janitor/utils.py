@@ -1362,66 +1362,54 @@ def _pivot_longer_extractions(
     dtypes = None
     cumcount = None
     if dot_value:
-        if not isinstance(mapping, pd.MultiIndex):
-            dtypes = CategoricalDtype(
-                categories=mapping.drop_duplicates(), ordered=True
-            )
-            df.columns = df.columns.astype(dtypes)
+        if not mapping.is_unique:
+            cumcount = pd.factorize(mapping)[0]
+            cumcount = pd.Series(cumcount).groupby(cumcount).cumcount()
+        cumcount_check = cumcount is not None
+        mapping_names = mapping.names
+        mapping = [mapping.get_level_values(name) for name in mapping_names]
+        dtypes = [
+            CategoricalDtype(categories=entry.unique(), ordered=True)
+            for entry in mapping
+        ]
+        mapping = [
+            entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
+        ]
 
-        else:
-            if not mapping.is_unique:
-                cumcount = pd.factorize(mapping)[0]
-                cumcount = pd.Series(cumcount).groupby(cumcount).cumcount()
-            cumcount_check = cumcount is not None
-            mapping_names = mapping.names
-            mapping = [
-                mapping.get_level_values(name) for name in mapping_names
-            ]
-            dtypes = [
-                CategoricalDtype(
-                    categories=entry.drop_duplicates(), ordered=True
+        if cumcount_check:
+            mapping.append(cumcount)
+        mapping = pd.MultiIndex.from_arrays(mapping)
+        df.columns = mapping
+
+        mapping = df.columns
+        if cumcount_check:
+            mapping = mapping.droplevel(-1)
+
+        # test if all combinations are present
+        first = mapping.get_level_values(".value")
+        last = mapping.droplevel(".value")
+        outcome = first.groupby(last)
+        outcome = (value for _, value in outcome.items())
+        outcome = combinations(outcome, 2)
+        outcome = (
+            left.symmetric_difference(right).empty for left, right in outcome
+        )
+
+        # include all combinations into the columns
+        if not all(outcome):
+            if isinstance(last, pd.MultiIndex):
+                indexer = (first.drop_duplicates(), last.drop_duplicates())
+                complete_index = _complete_indexer_expand_grid(indexer)
+                complete_index = complete_index.reorder_levels(
+                    [*mapping.names]
                 )
-                for entry in mapping
-            ]
-            mapping = [
-                entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
-            ]
 
-            if cumcount_check:
-                mapping.append(cumcount)
-            mapping = pd.MultiIndex.from_arrays(mapping)
-            df.columns = mapping
+            else:
+                complete_index = pd.MultiIndex.from_product(mapping.levels)
 
-            mapping = df.columns
-            if cumcount_check:
-                mapping = mapping.droplevel(-1)
-
-            # test if all combinations are present
-            first = mapping.get_level_values(".value")
-            last = mapping.droplevel(".value")
-            outcome = first.groupby(last)
-            outcome = (value for _, value in outcome.items())
-            outcome = combinations(outcome, 2)
-            outcome = (
-                left.symmetric_difference(right).empty
-                for left, right in outcome
-            )
-
-            # include all combinations into the columns
-            if not all(outcome):
-                if isinstance(last, pd.MultiIndex):
-                    indexer = (first.drop_duplicates(), last.drop_duplicates())
-                    complete_index = _complete_indexer_expand_grid(indexer)
-                    complete_index = complete_index.reorder_levels(
-                        [*mapping.names]
-                    )
-
-                else:
-                    complete_index = pd.MultiIndex.from_product(mapping.levels)
-
-                df = df.reindex(columns=complete_index)
-            if cumcount_check:
-                df = df.droplevel(-1, axis=1)
+            df = df.reindex(columns=complete_index)
+        if cumcount_check:
+            df = df.droplevel(-1, axis=1)
 
     return df, single_index_mapping
 
@@ -1535,7 +1523,7 @@ def _computations_pivot_longer(
         )
 
     else:
-        unique_names = df.columns.get_level_values(".value").unique()
+        unique_names = df.columns.get_level_values(".value").categories
         if single_index_mapping:
             # passing `drop_column` to `melt` downstream
             # avoids any name conflict with `var_name`,

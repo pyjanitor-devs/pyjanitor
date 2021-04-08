@@ -4067,18 +4067,21 @@ def join_conditional(
     # into passing in a function instead of a string for the operator and those functions could check the condition
 
     return_df = pd.DataFrame()
+    currIn = 0
     for index, row in df.iterrows():
         if join_operator == ">":
             if row[left_column] > row[right_column]:
                 # ----I don't believe the syntax is right for appending the row of the dataframe-----
-                return_df.append(df.iloc[[index]])
+                return_df.loc[currIn] = list(df.loc[index])
+                currIn +=1
         elif join_operator == "<":
             if row[left_column] < row[right_column]:
-                return_df.append(df.iloc[[index]])
+                return_df.loc[currIn] = list(df.loc[index])
+                currIn += 1
         elif join_operator == "!=":
             if row[left_column] != row[right_column]:
-                return_df.append(df.iloc[[index]])
-
+                return_df.loc[currIn] = list(df.loc[index])
+                currIn+=1
     return return_df
 
 

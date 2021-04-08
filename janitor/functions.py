@@ -4071,13 +4071,13 @@ def join_conditional(
         if join_operator == ">":
             if row[left_column] > row[right_column]:
                 # ----I don't believe the syntax is right for appending the row of the dataframe-----
-                return_df.append(df.iloc[index])
+                return_df.append(df.iloc[[index]])
         elif join_operator == "<":
             if row[left_column] < row[right_column]:
-                return_df.append(df.iloc[index])
+                return_df.append(df.iloc[[index]])
         elif join_operator == "!=":
             if row[left_column] != row[right_column]:
-                return_df.append(df.iloc[index])
+                return_df.append(df.iloc[[index]])
 
     return return_df
 

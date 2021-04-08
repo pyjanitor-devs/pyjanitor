@@ -4066,7 +4066,7 @@ def join_conditional(
     # columns in the data frame, check condition based on the operator and then add it to a new dataframe we could look
     # into passing in a function instead of a string for the operator and those functions could check the condition
 
-    return_df = pd.DataFrame()
+    return_df = pd.DataFrame(columns = df.columns.tolist())
     currIn = 0
     for index, row in df.iterrows():
         if join_operator == ">":

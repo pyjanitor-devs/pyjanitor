@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 - drop `fill_value` parameter from `complete`. Users can use `fillna` instead. @samukweku
+- fix bug in `pivot_longer` with single level columns. @samukweku
 
 ## [v0.20.14] - 2021-03-25
 

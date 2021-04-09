@@ -25,6 +25,7 @@ def test_make_currency_api_request():
     assert r.status_code == 200
 
 
+@pytest.mark.xfail(reason="changes madeto API prevent this from running")
 @pytest.mark.finance
 def test_make_new_currency_col(dataframe):
     """Test converting to same currency equals original currency column."""

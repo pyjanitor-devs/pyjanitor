@@ -3,9 +3,8 @@ Finance-specific data cleaning functions.
 """
 
 import json
-from datetime import date, datetime
+from datetime import date
 from functools import lru_cache
-from typing import Optional
 
 import pandas as pd
 import pandas_flavor as pf
@@ -322,6 +321,7 @@ wb_country_dict = {
 
 
 def _check_currency(currency: str):
+    """Check that currency is in supported set."""
     if currency not in currency_set:
         raise ValueError(
             f"currency {currency} not in supported currency set, "
@@ -330,6 +330,7 @@ def _check_currency(currency: str):
 
 
 def _check_wb_country(country: str):
+    """Check that world bank country is in supported set."""
     if (country not in wb_country_dict.keys()) & (
         country not in wb_country_dict.values()  # noqa: PD011
     ):
@@ -340,6 +341,7 @@ def _check_wb_country(country: str):
 
 
 def _check_wb_years(year: int):
+    """Check that year is in world bank dataset years."""
     if year < 1960:
         raise ValueError("year value must be 1960 or later")
 
@@ -413,6 +415,7 @@ def convert_currency(
     historical_date: date = None,
     make_new_column: bool = False,
 ) -> pd.DataFrame:
+    """Deprecated function."""
     raise JanitorError(
         "The `convert_currency` function has been temporarily disabled due to "
         "exchangeratesapi.io disallowing free pinging of its API. "

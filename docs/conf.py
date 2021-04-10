@@ -11,6 +11,7 @@
 # -- Path setup --------------------------------------------------------------
 
 import datetime
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -215,5 +216,5 @@ todo_include_todos = True
 # -- Other options -----------------------------------------------------------
 
 autosummary_generate = True  # Make _autosummary files and include them
-nbsphinx_execute = 'never'
+nbsphinx_execute = "never"
 

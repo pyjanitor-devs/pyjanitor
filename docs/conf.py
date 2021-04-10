@@ -103,7 +103,7 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "**.ipynb_checkpoints",
-    "inflating_converting_currency.ipynb",
+    "inflating_converting_currency*",
 ]
 
 # The name of the Pygments (syntax highlighting) style to use.

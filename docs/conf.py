@@ -46,7 +46,7 @@ project = "pyjanitor"
 now = datetime.datetime.now()
 CurrentYear = str(now.year)
 copyright = CurrentYear + ", PyJanitor devs"
-author = "Eric J. Ma"
+author = "pyjanitor devs"
 
 # The short X.Y version
 version = "0.1.0"
@@ -98,7 +98,13 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**.ipynb_checkpoints",
+    "inflating_converting_currency.ipynb",
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"

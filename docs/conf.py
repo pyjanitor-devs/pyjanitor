@@ -215,3 +215,5 @@ todo_include_todos = True
 # -- Other options -----------------------------------------------------------
 
 autosummary_generate = True  # Make _autosummary files and include them
+nbsphinx_execute = 'never'
+

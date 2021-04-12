@@ -421,10 +421,10 @@ def convert_currency(
         "exchangeratesapi.io disallowing free pinging of its API. "
         "(Our tests started to fail due to this issue.) "
         "There is no easy way around this problem "
-        "except to find a new API to hit."
+        "except to find a new API to call on."
         "Please comment on issue #829 "
         "(https://github.com/pyjanitor-devs/pyjanitor/issues/829) "
-        "if you know of an alternative API that we can hit, "
+        "if you know of an alternative API that we can call on, "
         "otherwise the function will be removed in pyjanitor's 1.0 release."
     )
 

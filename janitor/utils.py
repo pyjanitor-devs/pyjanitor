@@ -1342,6 +1342,14 @@ def _pivot_longer_extractions(
                 """
             )
 
+    outcome = None
+    single_index_mapping = not isinstance(mapping, pd.MultiIndex)
+    if single_index_mapping:
+        outcome = pd.Series(mapping)
+        outcome = outcome.groupby(outcome).cumcount()
+        mapping = pd.MultiIndex.from_arrays([mapping, outcome])
+        outcome = None
+
     df.columns = mapping
 
     dot_value = any(
@@ -1354,68 +1362,56 @@ def _pivot_longer_extractions(
     dtypes = None
     cumcount = None
     if dot_value:
-        if not isinstance(mapping, pd.MultiIndex):
-            dtypes = CategoricalDtype(
-                categories=mapping.drop_duplicates(), ordered=True
-            )
-            df.columns = df.columns.astype(dtypes)
+        if not mapping.is_unique:
+            cumcount = pd.factorize(mapping)[0]
+            cumcount = pd.Series(cumcount).groupby(cumcount).cumcount()
+        cumcount_check = cumcount is not None
+        mapping_names = mapping.names
+        mapping = [mapping.get_level_values(name) for name in mapping_names]
+        dtypes = [
+            CategoricalDtype(categories=entry.unique(), ordered=True)
+            for entry in mapping
+        ]
+        mapping = [
+            entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
+        ]
 
-        else:
-            if not mapping.is_unique:
-                cumcount = pd.factorize(mapping)[0]
-                cumcount = pd.Series(cumcount).groupby(cumcount).cumcount()
-            cumcount_check = cumcount is not None
-            mapping_names = mapping.names
-            mapping = [
-                mapping.get_level_values(name) for name in mapping_names
-            ]
-            dtypes = [
-                CategoricalDtype(
-                    categories=entry.drop_duplicates(), ordered=True
+        if cumcount_check:
+            mapping.append(cumcount)
+        mapping = pd.MultiIndex.from_arrays(mapping)
+        df.columns = mapping
+
+        mapping = df.columns
+        if cumcount_check:
+            mapping = mapping.droplevel(-1)
+
+        # test if all combinations are present
+        first = mapping.get_level_values(".value")
+        last = mapping.droplevel(".value")
+        outcome = first.groupby(last)
+        outcome = (value for _, value in outcome.items())
+        outcome = combinations(outcome, 2)
+        outcome = (
+            left.symmetric_difference(right).empty for left, right in outcome
+        )
+
+        # include all combinations into the columns
+        if not all(outcome):
+            if isinstance(last, pd.MultiIndex):
+                indexer = (first.drop_duplicates(), last.drop_duplicates())
+                complete_index = _complete_indexer_expand_grid(indexer)
+                complete_index = complete_index.reorder_levels(
+                    [*mapping.names]
                 )
-                for entry in mapping
-            ]
-            mapping = [
-                entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
-            ]
 
-            if cumcount_check:
-                mapping.append(cumcount)
-            mapping = pd.MultiIndex.from_arrays(mapping)
-            df.columns = mapping
+            else:
+                complete_index = pd.MultiIndex.from_product(mapping.levels)
 
-            mapping = df.columns
-            if cumcount_check:
-                mapping = mapping.droplevel(-1)
+            df = df.reindex(columns=complete_index)
+        if cumcount_check:
+            df = df.droplevel(-1, axis=1)
 
-            # test if all combinations are present
-            first = mapping.get_level_values(".value")
-            last = mapping.droplevel(".value")
-            outcome = first.groupby(last)
-            outcome = (value for _, value in outcome.items())
-            outcome = combinations(outcome, 2)
-            outcome = (
-                left.symmetric_difference(right).empty
-                for left, right in outcome
-            )
-
-            # include all combinations into the columns
-            if not all(outcome):
-                if isinstance(last, pd.MultiIndex):
-                    indexer = (first.drop_duplicates(), last.drop_duplicates())
-                    complete_index = _complete_indexer_expand_grid(indexer)
-                    complete_index = complete_index.reorder_levels(
-                        [*mapping.names]
-                    )
-
-                else:
-                    complete_index = pd.MultiIndex.from_product(mapping.levels)
-
-                df = df.reindex(columns=complete_index)
-            if cumcount_check:
-                df = df.droplevel(-1, axis="columns")
-
-    return df
+    return df, single_index_mapping
 
 
 def _computations_pivot_longer(
@@ -1503,7 +1499,7 @@ def _computations_pivot_longer(
 
         return df
 
-    df = _pivot_longer_extractions(
+    df, single_index_mapping = _pivot_longer_extractions(
         df=df,
         index=index,
         column_names=column_names,
@@ -1512,53 +1508,57 @@ def _computations_pivot_longer(
         names_pattern=names_pattern,
     )
 
-    df_columns = df.columns
+    # df_columns = df.columns
+    unique_names = None
+    drop_column = None
+    dot_value = ".value" in df.columns.names
 
-    if ".value" not in df_columns.names:
+    if not dot_value:
+        if single_index_mapping:
+            unique_names = df.columns.names[0]
+            drop_column = "_".join([unique_names, values_to])
+            df.columns.names = [unique_names, drop_column]
         df = pd.melt(
             df, id_vars=None, value_name=values_to, ignore_index=False
         )
 
-    else:  # .value
-        if df_columns.nlevels == 1:
-            df = [
-                df[name].melt(ignore_index=False)
-                # changing the name in `rename`
-                # instead of passing it to `melt`
-                # avoids name collision,
-                # especially if `name` exists in `df`
-                # during melt
-                .iloc[:, -1].rename(name)
-                for name in df_columns.unique()
-            ]
-            df = pd.concat(df, axis=1)
+    else:
+        unique_names = df.columns.get_level_values(".value").categories
+        if single_index_mapping:
+            # passing `drop_column` to `melt` downstream
+            # avoids any name conflict with `var_name`,
+            # especially if var_name exists in the names
+            # associated with .value.
+            drop_column = "_".join(unique_names)
+        # ensures that the correct values are aligned,
+        # in preparation for the recombination
+        # of the columns downstream
+        df = df.sort_index(axis=1)
 
-        else:
-            # ensures that the correct values are aligned,
-            # in preparation for the recombination
-            # of the columns downstream
-            df = df.sort_index(axis=1)
-            df = [
-                df.xs(key=name, level=".value", axis=1).melt(
-                    ignore_index=False, value_name=name
-                )
-                for name in df_columns.get_level_values(".value").unique()
-            ]
+        df = [
+            df.xs(key=name, level=".value", axis=1).melt(
+                ignore_index=False, var_name=drop_column, value_name=name
+            )
+            for name in unique_names
+        ]
 
-            first, *rest = df
+        first, *rest = df
 
-            # `first` has all the required columns;
-            # as such, there is no need to keep these columns in
-            # the other dataframes in `rest`;
-            # plus, we avoid duplicate columns during concatenation
-            # the only column we need is the last column,
-            # from each dataframe in `rest`
-            # uniformity in the data is already assured
-            # with the categorical dtype creation,
-            # followed by the sorting on the columns earlier.
-            rest = [frame.iloc[:, -1] for frame in rest]
-            # df = first.join(rest, how = 'outer', sort = False)
-            df = pd.concat([first, *rest], axis=1)
+        # `first` has all the required columns;
+        # as such, there is no need to keep these columns in
+        # the other dataframes in `rest`;
+        # plus, we avoid duplicate columns during concatenation
+        # the only column we need is the last column,
+        # from each dataframe in `rest`
+        # uniformity in the data is already assured
+        # with the categorical dtype creation,
+        # followed by the sorting on the columns earlier.
+        rest = [frame.iloc[:, -1] for frame in rest]
+        # df = first.join(rest, how = 'outer', sort = False)
+        df = pd.concat([first, *rest], axis=1)
+
+    if single_index_mapping:
+        df = df.drop(columns=drop_column)
 
     if index:
         df = df.reset_index(level=index)

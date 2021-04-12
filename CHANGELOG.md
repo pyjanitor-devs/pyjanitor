@@ -1,7 +1,10 @@
 # Changelog
 
 ## [Unreleased]
-- drop `fill_value` parameter from `complete`. Users can use `fillna` instead. @samukweku
+
+-   [ENH] Drop `fill_value` parameter from `complete`. Users can use `fillna` instead. @samukweku
+-   [BUG] Fix bug in `pivot_longer` with single level columns. @samukweku
+-   [BUG] Disable exchange rates API until we can find another one to hit. @ericmjl
 
 ## [v0.20.14] - 2021-03-25
 

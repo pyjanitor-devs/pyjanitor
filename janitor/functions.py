@@ -3661,6 +3661,45 @@ def to_datetime(
 
 
 @pf.register_dataframe_method
+def trunc_datetime(
+        datepart: str, timestamp: dt.datetime, first_default = True):
+    """
+    :param datepart: Truncation precision, Year, Month, Day, Hour, Minute, Second.
+    :param timestamp: expecting a datetime from python datetime class (dt)
+    :param first_default: datetime requires a month 1..12, this gives the option
+                 of including JAN as the month when truncating the year or not
+    :returns" a truncated datetime object to the precision specified by datepart.
+    """
+    recurrence = [0,1,1,0,0,0]  # [Year, Month, Day, Hour, Minute, Second]
+    datepart = datepart.upper()
+    ENUM = {
+        "YEAR": 0,
+        "MONTH": 1,
+        "DAY": 2,
+        "HOUR": 3,
+        "MINUTE:": 4,
+        "SECOND": 5,
+        0: timestamp.year,
+        1: timestamp.month,
+        2: timestamp.day,
+        3: timestamp.hour,
+        4: timestamp.minute,
+        5: timestamp.second
+    }
+    if (ENUM.get(datepart) == 0) and (first_default == False):
+        return timestamp.year
+    elif(ENUM.get(datepart) == 1) and (first_default == False):
+        return timestamp.year, timestamp.month
+
+    for i in range(ENUM.get(datepart) + 1):
+        print(ENUM.get(i))
+        recurrence[i] = ENUM.get(i)
+
+    return dt.datetime(recurrence[0], recurrence[1], recurrence[2],
+                       recurrence[3], recurrence[4], recurrence[5])
+
+
+@pf.register_dataframe_method
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
         df: pd.DataFrame,
@@ -4100,9 +4139,6 @@ def join_conditional(df: pd.DataFrame, left_column: str, right_column: str, join
     0        Jan     150.0     180.0     400.0
     1        Feb     200.0     250.0     500.0
     2      April     400.0     500.0     675.0
-
-
-
 
    :param df: A pandas DataFrame.
    :param left_column: A string that represents the left side of the comparison e.g. 1 < 5; 1 being the left col

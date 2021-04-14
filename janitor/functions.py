@@ -4142,7 +4142,7 @@ def join_conditional(df: pd.DataFrame, left_column: str, right_column: str, join
 
    :param df: A pandas DataFrame.
    :param left_column: A string that represents the left side of the comparison e.g. 1 < 5; 1 being the left col
-   :param right_column: A string that represents the right side of the comparison e.g. 5 being the right col in above ex.
+   :param right_column: A string that represents the right side of the comparison e.g. 5 being the right col in above ex
    :param join_operator: A string that represents the operator in the comparison e.g. < in the above ex.
    :returns: A pandas DataFrame with rows that matched our comparison.
 

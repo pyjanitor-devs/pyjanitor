@@ -74,6 +74,7 @@ combinations = [
         ["variable", "measure"],
         "value",
         None,
+        True,
         "first",
     ),
     (
@@ -95,6 +96,7 @@ combinations = [
         "n",
         "name",
         None,
+        True,
         "first",
     ),
     (
@@ -116,6 +118,7 @@ combinations = [
         "n",
         "name",
         "name",
+        True,
         "first",
     ),
     (
@@ -147,6 +150,7 @@ combinations = [
         "variable",
         ["estimate", "error"],
         None,
+        False,
         "first",
     ),
     (
@@ -178,33 +182,30 @@ combinations = [
         "variable",
         ["estimate", "error"],
         None,
+        False,
         "last",
     ),
 ]
 
 
-def test_type_index1(df_checks_output):
+@pytest.mark.xfail(reason="list-like is converted to list.")
+def test_type_index(df_checks_output):
     """Raise TypeError if wrong type is provided for the `index`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index={"geoid"}, names_from="variable")
 
-
-def test_type_index2(df_checks_output):
-    """Raise TypeError if wrong type is provided for the `index`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index=("geoid", "name"), names_from="variable"
         )
 
 
-def test_type_names_from1(df_checks_output):
+@pytest.mark.xfail(reason="list-like is converted to list.")
+def test_type_names_from(df_checks_output):
     """Raise TypeError if wrong type is provided for `names_from`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index="geoid", names_from={"variable"})
 
-
-def test_type_names_from2(df_checks_output):
-    """Raise TypeError if wrong type is provided for `names_from`."""
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(index="geoid", names_from=("variable",))
 
@@ -363,7 +364,8 @@ def test_pivot_long_wide_long():
     assert_frame_equal(result, df_in)
 
 
-def pivot_wide_long_wide():
+@pytest.mark.xfail(reason="doesnt match, since pivot implicitly sorts")
+def test_pivot_wide_long_wide():
     """
     Test that transformation from pivot_longer to wider and
     back to longer returns the same source dataframe.
@@ -390,7 +392,8 @@ def pivot_wide_long_wide():
 @pytest.mark.parametrize(
     """
     df_in,df_out,index,names_from,
-    values_from, names_prefix,names_from_position
+    values_from, names_prefix,
+    names_sort,names_from_position
     """,
     combinations,
 )
@@ -401,6 +404,7 @@ def test_pivot_wider_various(
     names_from,
     values_from,
     names_prefix,
+    names_sort,
     names_from_position,
 ):
     """
@@ -411,6 +415,7 @@ def test_pivot_wider_various(
         names_from=names_from,
         values_from=values_from,
         names_prefix=names_prefix,
+        names_sort=names_sort,
         names_from_position=names_from_position,
     )
     assert_frame_equal(result, df_out)
@@ -434,6 +439,7 @@ def test_flatten_levels_false():
         values_from=["baz", "zoo"],
         flatten_levels=False,
         names_sort=True,
+        names_from_position="last",
     )
 
     expected_output = df_collapse.pivot(  # noqa: PD010
@@ -467,7 +473,7 @@ def test_fill_values():
     )
 
     expected_output = pd.DataFrame(
-        {1: [0, 2, 4, 0], 2: [1, 0, 3, 5]},
+        {1: [0, 2.0, 4, 0], 2: [1, 0, 3.0, 5]},
         index=pd.MultiIndex.from_tuples(
             [(1, 1), (1, 2), (2, 1), (2, 2)], names=["lev1", "lev2"]
         ),
@@ -488,8 +494,8 @@ def test_no_index():
 
     expected_output = pd.DataFrame(
         {
-            "contVar_Male": [22379.0, 23831.0, 29234.0],
             "contVar_Female": [24523.0, 23421.0, np.nan],
+            "contVar_Male": [22379.0, 23831.0, 29234.0],
         }
     )
 
@@ -647,7 +653,7 @@ def test_aggfunc_names_sort(df_aggfunc):
 def test_aggfunc_list(df_aggfunc):
     """Test output when `aggfunc` is a list."""
     expected = pd.DataFrame(
-        {"V4": ["A", "B", "C"], "V1": [0, 9, 6], "V2": [14, 13, 14]}
+        {"V4": ["A", "B", "C"], "V1_sum": [0, 9, 6], "V2_sum": [14, 13, 14]}
     )
     result = df_aggfunc.pivot_wider(
         index="V4", names_from="variable", aggfunc=["sum"], flatten_levels=True
@@ -661,10 +667,10 @@ def test_aggfunc_multiple_names_from(df_aggfunc_multiple_names_from):
         {
             "A": ["bar", "bar", "foo", "foo"],
             "C": ["large", "small", "large", "small"],
-            "one_D": [4.0, 5.0, 2.0, 1.0],
-            "two_D": [7.0, 6.0, np.nan, 3.0],
-            "one_E": [6.0, 8.0, 4.5, 2.0],
-            "two_E": [9.0, 9.0, np.nan, 5.5],
+            "one_D_mean": [4.0, 5.0, 2.0, 1.0],
+            "two_D_mean": [7.0, 6.0, np.nan, 3.0],
+            "one_E_mean": [6.0, 8.0, 4.5, 2.0],
+            "two_E_mean": [9.0, 9.0, np.nan, 5.5],
         }
     )
     result = df_aggfunc_multiple_names_from.pivot_wider(
@@ -707,6 +713,74 @@ def test_df_multiple_aggfuncs():
 
     result = df_frame.pivot_wider(
         index=["A", "C"],
+        names_from=["B"],
+        values_from=["D", "E"],
+        aggfunc=["mean", "sum"],
+        flatten_levels=True,
+    )
+
+    assert_frame_equal(result, expected)
+
+
+def test_df_aggfunc_no_index():
+    """Test output when for `aggfunc` if no `index is provided."""
+
+    df = pd.DataFrame(
+        [
+            {"A": "foo", "B": "one", "C": "small", "D": 1, "E": 2},
+            {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 4},
+            {"A": "foo", "B": "one", "C": "large", "D": 2, "E": 5},
+            {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 5},
+            {"A": "foo", "B": "one", "C": "small", "D": 3, "E": 6},
+            {"A": "bar", "B": "one", "C": "large", "D": 4, "E": 6},
+            {"A": "bar", "B": "one", "C": "small", "D": 5, "E": 8},
+            {"A": "bar", "B": "one", "C": "small", "D": 6, "E": 9},
+            {"A": "bar", "B": "one", "C": "large", "D": 7, "E": 9},
+        ]
+    )
+
+    df = df.set_index(["A", "C"])
+
+    expected = pd.DataFrame(
+        [
+            {
+                "one_D_mean": 5.5,
+                "one_D_sum": 11,
+                "one_E_mean": 7.5,
+                "one_E_sum": 15,
+            },
+            {
+                "one_D_mean": 5.5,
+                "one_D_sum": 11,
+                "one_E_mean": 8.5,
+                "one_E_sum": 17,
+            },
+            {
+                "one_D_mean": 2.0,
+                "one_D_sum": 4,
+                "one_E_mean": 4.5,
+                "one_E_sum": 9,
+            },
+            {
+                "one_D_mean": 2.3333333333333335,
+                "one_D_sum": 7,
+                "one_E_mean": 4.333333333333333,
+                "one_E_sum": 13,
+            },
+        ],
+        index=pd.MultiIndex.from_tuples(
+            [
+                ("bar", "large"),
+                ("bar", "small"),
+                ("foo", "large"),
+                ("foo", "small"),
+            ],
+            names=["A", "C"],
+        ),
+    )
+
+    result = df.pivot_wider(
+        index=None,
         names_from=["B"],
         values_from=["D", "E"],
         aggfunc=["mean", "sum"],

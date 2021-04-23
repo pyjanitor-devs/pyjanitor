@@ -17,6 +17,7 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -27,14 +28,14 @@ import pandas as pd
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import union_categoricals
+from pandas.api.types import union_categoricals, is_list_like
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
-    _check_instance,
+    _computations_expand_grid,
     _clean_accounting_column,
     _computations_as_categorical,
     _computations_complete,
@@ -43,7 +44,7 @@ from .utils import (
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
-    _grid_computation,
+    _process_text,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,
@@ -3064,7 +3065,13 @@ def select_columns(
     search_column_names: Union[str, callable, Pattern, slice, list],
     invert: bool = False,
 ) -> pd.DataFrame:
-    """Method-chainable selection of columns.
+    """
+    Method-chainable selection of columns.
+
+    Not applicable to MultiIndex columns.
+
+    It accepts a string, shell-like glob strings (*string*),
+    regex, slice, array-like object, or a list of the previous options.
 
     This method does not mutate the original DataFrame.
 
@@ -3175,6 +3182,15 @@ def select_columns(
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
 
+    - You can also pass a list of booleans::
+
+        df.select_columns([True, False, True, True, True,
+                           False, False, False, True, False])
+
+           id  code  code1 code2 code3
+        0   0     1    4.0     8     a
+        1   1     2    NaN     5     b
+
     - Setting ``invert`` to ``True``
       returns the complement of the columns provided::
 
@@ -3203,6 +3219,7 @@ def select_columns(
               .select_columns(['a', 'b', 'col_*'],
               invert=True))
 
+
     :param df: A pandas DataFrame.
     :param search_column_names: Valid inputs include:
 
@@ -3215,17 +3232,20 @@ def select_columns(
         This will result in the selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    :raises NameError: if one or more of the specified column names or
+    :raises KeyError: if one or more of the specified column names or
         search strings are not found in DataFrame columns.
+    :raises ValueError: if the columns is a MultiIndex.
 
     .. # noqa: DAR402
     """
 
-    check(
-        "search_column_names",
-        search_column_names,
-        [str, callable, Pattern, slice, list],
-    )
+    # applicable for any
+    # list-like object (ndarray, Series, pd.Index, ...)
+    # excluding tuples, which are returned as is
+    if is_list_like(search_column_names) and (
+        not isinstance(search_column_names, tuple)
+    ):
+        search_column_names = [*search_column_names]
 
     full_column_list = _select_columns(search_column_names, df)
 
@@ -3645,8 +3665,10 @@ def groupby_agg(
     new_column_name: str,
     agg_column_name: str,
     agg: Union[Callable, str],
+    dropna: bool = True,
 ) -> pd.DataFrame:
-    """Shortcut for assigning a groupby-transform to a new column.
+    """
+    Shortcut for assigning a groupby-transform to a new column.
 
     This method does not mutate the original DataFrame.
 
@@ -3665,9 +3687,75 @@ def groupby_agg(
         df = pd.DataFrame(...).groupby_agg(by='group',
                                            agg='mean',
                                            agg_column_name="col1"
-                                           new_column_name='col1_mean_by_group')
+                                           new_column_name='col1_mean_by_group',
+                                           dropna = True/False)
 
-    Example Link : https://pyjanitor.readthedocs.io/notebooks/groupby_agg.html
+    Examples::
+
+        import pandas as pd
+        import janitor as jn
+
+            group  var1
+        0      1     1
+        1      1     1
+        2      1     1
+        3      1     1
+        4      1     2
+        5      2     1
+        6      2     2
+        7      2     2
+        8      2     2
+        9      2     3
+
+    Let's get the count per `group` and `var1`::
+
+        df.groupby_agg(
+            by = ['group', 'var1'],
+            agg = 'size',
+            agg_column_name = 'var1',
+            new_column_name = 'count'
+        )
+
+            group  var1  size
+        0      1     1     4
+        1      1     1     4
+        2      1     1     4
+        3      1     1     4
+        4      1     2     1
+        5      2     1     1
+        6      2     2     3
+        7      2     2     3
+        8      2     2     3
+        9      2     3     1
+
+    If the data has null values,
+    you can include the null values by passing `False` to `dropna`;
+    this feature was introduced in Pandas 1.1::
+
+            name   type  num  nulls
+        0  black  chair    4    1.0
+        1  black  chair    5    1.0
+        2  black   sofa   12    NaN
+        3    red   sofa    4    NaN
+        4    red  plate    3    3.0
+
+    Let's get the count, including the null values,
+    grouping on `nulls` column::
+
+        df.groupby_agg(
+            by="nulls",
+            new_column_name="num_count",
+            agg_column_name="num",
+            agg="size",
+            dropna=False,
+        )
+
+            name   type  num  nulls  num_count
+        0  black  chair    4    1.0          2
+        1  black  chair    5    1.0          2
+        2  black   sofa   12    NaN          2
+        3    red   sofa    4    NaN          2
+        4    red  plate    3    3.0          1
 
     :param df: A pandas DataFrame.
     :param by: Column(s) to groupby on, either a `str` or
@@ -3675,31 +3763,15 @@ def groupby_agg(
     :param new_column_name: Name of the aggregation output column.
     :param agg_column_name: Name of the column to aggregate over.
     :param agg: How to aggregate.
+    :param dropna: Whether or not to include null values,
+        if present in the `by` column(s). Default is True.
     :returns: A pandas DataFrame.
     """
     df = df.copy()
-    # convert to list
-    # needed when creating a mapping through the iteration
-    if isinstance(by, str):
-        by = [by]
-    # this is a temporary measure, till the minimum Pandas version is 1.1,
-    # which supports null values in the group by
-    # If any of the grouping columns has null values, we temporarily
-    # replace the values with some outrageous value, that should not exist
-    # in the column. Also, the hasnans property is significantly faster than
-    # .isnull().any()
-    if any(df[col].hasnans for col in by):
 
-        mapping = {
-            column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
-        }
-
-        df[new_column_name] = (
-            df.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
-        )
-
-    else:
-        df[new_column_name] = df.groupby(by)[agg_column_name].transform(agg)
+    df[new_column_name] = df.groupby(by, dropna=dropna)[
+        agg_column_name
+    ].transform(agg)
     return df
 
 
@@ -4366,18 +4438,23 @@ def sort_naturally(
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
-    others: Dict = None,
+    others: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
-    Creates a dataframe from a combination of all inputs.
+    Creates a dataframe from a cartesian combination of all inputs.
 
-    This works with a dictionary of name value pairs,
-    and will work with structures that are not dataframes.
+    This works with a dictionary of name value pairs.
+
+    It is also not restricted to dataframes;
+    it can work with any list-like structure
+    that is 1 or 2 dimensional.
+
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
-    Note that if a MultiIndex dataframe or series is passed, the index/columns
-    will be discarded, and a single indexed dataframe will be returned.
+
+    Data types are preserved in this function,
+    including Pandas' extension array dtypes.
 
     The output will always be a dataframe.
 
@@ -4401,7 +4478,7 @@ def expand_grid(
         #    2 |      1 |   2
         #    2 |      1 |   3
 
-        #create a dataframe from all combinations in a dictionary
+        # create a dataframe from all combinations in a dictionary
         data = {"x":range(1,4), "y":[1,2]}
 
         jn.expand_grid(others=data)
@@ -4414,6 +4491,8 @@ def expand_grid(
         #  3 |   1
         #  3 |   2
 
+    .. note:: If a MultiIndex DataFrame or Series is passed, the index/columns
+        will be discarded, and a single indexed dataframe will be returned.
 
     Functional usage syntax:
 
@@ -4445,28 +4524,27 @@ def expand_grid(
 
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe.
-        It becomes the column name of the dataframe.
+        It becomes part of the column names of the dataframe.
     :param others: A dictionary that contains the data
         to be combined with the dataframe.
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
     :returns: A pandas dataframe of all combinations of name value pairs.
-    :raises TypeError: if others is not a dictionary
+    :raises TypeError: if `others` is not a dictionary
     :raises KeyError: if there is a dataframe and no key is provided.
+    :raises ValueError: if `others` is empty.
+
+    .. # noqa: DAR402
+
     """
-    # check if others is a dictionary
-    if not isinstance(others, dict):
-        # strictly name value pairs
-        # same idea as in R and tidyverse implementation
-        raise TypeError("others must be a dictionary")
+
+    check("others", others, [dict])
+
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
         df = df.copy()
-        if isinstance(df.index, pd.MultiIndex) or isinstance(
-            df.columns, pd.MultiIndex
-        ):
-            raise TypeError("`expand_grid` does not work with pd.MultiIndex")
+
         if not df_key:
             raise KeyError(
                 """
@@ -4474,10 +4552,15 @@ def expand_grid(
                 requires that a string `df_key` be passed in.
                 """
             )
-        others = {**{df_key: df}, **others}
-    entry = _check_instance(others)
 
-    return _grid_computation(entry)
+        check("df_key", df_key, [str])
+
+        others = {**{df_key: df}, **others}
+
+    if not others:
+        raise ValueError("""`others` cannot be empty.""")
+
+    return _computations_expand_grid(others)
 
 
 @pf.register_dataframe_method
@@ -4486,7 +4569,7 @@ def process_text(
     df: pd.DataFrame,
     column_name: str,
     new_column_names: Optional[Union[str, list]] = None,
-    merge_frame: Optional[bool] = None,
+    merge_frame: Optional[bool] = False,
     string_function: Optional[str] = None,
     **kwargs: str,
 ) -> pd.DataFrame:
@@ -4498,8 +4581,8 @@ def process_text(
     This modifies an existing column and can also be used to create a new
     column.
 
-    .. note:: In versions < 0.20.11, this function did not support creation of
-        new columns.
+    .. note:: In versions < 0.20.11, this function did not support the
+        creation of new columns.
 
     A list of all the string methods in Pandas can be accessed `here
     <https://pandas.pydata.org/docs/user_guide/text.html#method-summary>`__.
@@ -4511,10 +4594,13 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({"text" : ["Ragnar","sammywemmy","ginger"],
+        df = pd.DataFrame({"text" : ["Ragnar",
+                                    "sammywemmy",
+                                    "ginger"],
                            "code" : [1, 2, 3]})
 
-        df.process_text(column_name = "text", string_function = "lower")
+        df.process_text(column_name = "text",
+                        string_function = "lower")
 
           text          code
         0 ragnar         1
@@ -4563,8 +4649,8 @@ def process_text(
         df = jn.process_text(
             df = df,
             column_name,
-            new_column_names = None,
-            merge_frame = None,
+            new_column_names = None/string/list_of_strings,
+            merge_frame = True/False,
             string_function = "string_func_name_here",
             kwargs
             )
@@ -4580,8 +4666,8 @@ def process_text(
             pd.DataFrame(...)
             .process_text(
                 column_name,
-                new_column_names = None,
-                merge_frame = None/True/False
+                new_column_names = None/string/list_of_strings,
+                merge_frame = True/False
                 string_function = "string_func_name_here",
                 kwargs
                 )
@@ -4619,14 +4705,14 @@ def process_text(
     check_column(df, [column_name])
 
     # new_column_names should not already exist in the dataframe
-    if new_column_names is not None:
+    if new_column_names:
         check("new_column_names", new_column_names, [list, str])
         if isinstance(new_column_names, str):
             check_column(df, [new_column_names], present=False)
         else:
             check_column(df, new_column_names, present=False)
 
-    if merge_frame is not None:
+    if merge_frame:
         check("merge_frame", merge_frame, [bool])
 
     pandas_string_methods = [
@@ -4635,7 +4721,7 @@ def process_text(
         if not func.__name__.startswith("_")
     ]
 
-    if string_function is None:
+    if not string_function:
         return df
 
     if string_function not in pandas_string_methods:
@@ -4647,50 +4733,20 @@ def process_text(
         # duplicated indices in the original dataframe
         df = df.set_index(np.arange(len(df)), append=True)  # extra_index_line
 
-    result = getattr(df.loc[:, column_name].str, string_function)(**kwargs)
+    result = getattr(df[column_name].str, string_function)(**kwargs)
 
     # TODO: Support for str.cat with `join` parameter
     # need a robust way to handle the results
     # if there is a `join` parameter, as this could create more
     # or less rows with varying indices or even duplicate indices
-    if isinstance(result, (pd.Series, str)):
-        if not new_column_names:
-            df.loc[:, column_name] = result
-        else:
-            df.loc[:, new_column_names] = result
-        return df
 
-    if isinstance(result, pd.DataFrame):
-        if new_column_names is not None:
-            if isinstance(new_column_names, str):
-                result = result.add_prefix(new_column_names)
-            else:
-                if len(new_column_names) != len(result.columns):
-                    raise ValueError(
-                        """
-                        The length of `new_column_names` does not
-                        match the number of columns in the new
-                        dataframe generated from the text processing.
-                        """
-                    )
-                result.columns = new_column_names
-
-        if not merge_frame:
-            return result
-
-        if not isinstance(result.index, pd.MultiIndex):
-            df = pd.concat([df, result], axis="columns")
-            return df
-        # primarily for str.extractall, since at the moment this is the only
-        # string method that returns a MultiIndex.
-        # code will be modified if another string function that returns a
-        # MultIndex is added to Pandas string methods.
-        result = result.reset_index(level="match")
-        df = df.join(result, how="outer")
-        # droplevel gets rid of the extra index added at the start
-        # (# extra_index_line)
-        df = df.droplevel(-1).set_index("match", append=True)
-        return df
+    return _process_text(
+        result,
+        df=df,
+        column_name=column_name,
+        new_column_names=new_column_names,
+        merge_frame=merge_frame,
+    )
 
 
 @pf.register_dataframe_method
@@ -4973,18 +5029,19 @@ def groupby_topk(
 def complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]] = None,
-    fill_value: Optional[Dict] = None,
+    by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
     This function turns implicit missing values into explicit missing values.
 
     It is modeled after tidyr's `complete` function, and is a wrapper around
-    `pd.DataFrame.merge` and `pd.DataFrame.fillna`.
+    `expand_grid`, `pd.DataFrame.reindex`, `pd.DataFrame.join`
+    and `pd.DataFrame.fillna`.
 
     Combinations of column names or a list/tuple of column names, or even a
-    dictionary of column names and new values are possible. It can also handle
-    duplicated data.
+    dictionary of column names and new values are possible.
 
+    It can also handle duplicated data.
 
     `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
 
@@ -5019,7 +5076,6 @@ def complete(
     is passed in as a separate variable::
 
         df.complete(columns = ["group", ("item_id", "item_name")])
-
             group	item_id	    item_name	value1	   value2
         0	1	    1	        a	  1.0	    4.0
         1	1	    2	        b	  3.0	    6.0
@@ -5052,10 +5108,9 @@ def complete(
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
 
-    The null value can be replaced with the fill_value argument::
+    The null value can be replaced with the Pandas `fillna` argument::
 
-        df.complete(columns = ['Year', 'Taxon'],
-                    fill_value = {"Abundance" : 0})
+        df.complete(columns = ['Year', 'Taxon']).fillna(0)
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5069,24 +5124,60 @@ def complete(
     1999 to 2004? Easy - simply pass a dictionary pairing the column name
     with the new values::
 
-        df.complete(columns = [{"Year": lambda x : range(x.Year.min(),
-                                                         x.Year.max() + 1)},
-                                "Taxon"],
-                    fill_value={"Abundance" : 0})
+        new_year_values = lambda year: range(year.min(), year.max() + 1)
 
-            Year      Taxon     Abundance
-        0   1999     Agarum         1.0
-        1   1999    Saccharina      4.0
-        2   2000     Agarum         0.0
-        3   2000    Saccharina      5.0
-        4   2001     Agarum         0.0
-        5   2001    Saccharina      0.0
-        6   2002     Agarum         0.0
-        7   2002    Saccharina      0.0
-        8   2003     Agarum         0.0
-        9   2003     Saccharina     0.0
-        10  2004     Agarum         8.0
-        11  2004    Saccharina      2.0
+        df.complete(columns = [{"Year": new_year_values}, "Taxon"])
+
+            Year       Taxon  Abundance
+        0   1999      Agarum        1.0
+        1   1999  Saccharina        4.0
+        2   2000      Agarum        NaN
+        3   2000  Saccharina        5.0
+        4   2001      Agarum        NaN
+        5   2001  Saccharina        NaN
+        6   2002      Agarum        NaN
+        7   2002  Saccharina        NaN
+        8   2003      Agarum        NaN
+        9   2003  Saccharina        NaN
+        10  2004      Agarum        8.0
+        11  2004  Saccharina        2.0
+
+    It is also possible to expose missing values within a groupby,
+    by using the `by` parameter::
+
+          state  year  value
+        0    CA  2010      1
+        1    CA  2013      3
+        2    HI  2010      1
+        3    HI  2012      2
+        4    HI  2016      3
+        5    NY  2009      2
+        6    NY  2013      5
+
+    Let's get all the missing years per state::
+
+        df.complete(
+            columns = [{'year': new_year_values}],
+            by='state'
+        )
+
+            state  year  value
+        0     CA  2010    1.0
+        1     CA  2011    NaN
+        2     CA  2012    NaN
+        3     CA  2013    3.0
+        4     HI  2010    1.0
+        5     HI  2011    NaN
+        6     HI  2012    2.0
+        7     HI  2013    NaN
+        8     HI  2014    NaN
+        9     HI  2015    NaN
+        10    HI  2016    3.0
+        11    NY  2009    2.0
+        12    NY  2010    NaN
+        13    NY  2011    NaN
+        14    NY  2012    NaN
+        15    NY  2013    5.0
 
     .. note:: MultiIndex columns are not supported.
 
@@ -5098,6 +5189,7 @@ def complete(
         import janitor as jn
 
         df = pd.DataFrame(...)
+
         df = jn.complete(
             df = df,
             columns= [
@@ -5105,7 +5197,7 @@ def complete(
                 (column1, column2, ...),
                 {column1: new_values, ...}
             ],
-            fill_value = None
+            by = label/list_of_labels
         )
 
     Method chaining syntax:
@@ -5119,20 +5211,18 @@ def complete(
                 (column1, column2, ...),
                 {column1: new_values, ...},
             ],
-            fill_value=None,
+            by = label/list_of_labels
         )
-
 
     :param df: A pandas dataframe.
     :param columns: This is a list containing the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
-    :param fill_value: Dictionary pairing the columns with the null
-        replacement value.
+    :param by: label or list of labels to group by.
+        The explicit missing values are returned per group.
     :returns: A pandas dataframe with modified column(s).
     :raises TypeError: if `columns` is not a list.
-    :raises TypeError: if `fill_value` is not a dictionary.
     :raises ValueError: if entry in `columns` is not a
         str/dict/list/tuple.
     :raises ValueError: if entry in `columns` is a dict/list/tuple
@@ -5140,9 +5230,13 @@ def complete(
 
     .. # noqa: DAR402
     """
+
+    if not columns:
+        return df
+
     df = df.copy()
 
-    df = _computations_complete(df, columns, fill_value)
+    df = _computations_complete(df, columns, by)
 
     return df
 
@@ -5462,10 +5556,12 @@ def pivot_longer(
     `Team`. It then looks for columns that start with `Score` and collate all
     the values associated with these columns to a single column named `Score`.
 
-    You can also take advantage of `janitor.patterns` function, which allows
-    selection of columns via a regular expression; this can come in handy if
-    you have a lot of column names to pass to the `index` or `column_names`
-    paramenters, and you do not wish to manually type them all.
+    You can also take advantage of `janitor.patterns` function,
+    or the `select_columns` syntax,
+    which allows selection of columns via a regular expression;
+    this can come in handy if you have a lot of column names
+    to pass to the `index` or `column_names`  parameters,
+    and you do not wish to manually type them all.
 
     .. code-block:: python
 
@@ -5666,10 +5762,10 @@ def pivot_longer(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Optional[Union[List, str]] = None,
-    values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
+    index: Optional[Union[Sequence[str], str]] = None,
+    names_from: Optional[Union[Sequence[str], str]] = None,
+    values_from: Optional[Union[Sequence[str], str]] = None,
+    names_sort: Optional[bool] = True,
     flatten_levels: Optional[bool] = True,
     names_from_position: Optional[str] = "first",
     names_prefix: Optional[str] = None,
@@ -5682,7 +5778,7 @@ def pivot_wider(
     increased, while decreasing the number of rows.
 
     It is the inverse of the `pivot_longer` method, and is a
-    wrapper around `pd.DataFrame.unstack` method.
+    wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.
 
@@ -5778,7 +5874,7 @@ def pivot_wider(
     .. note:: You may choose not to collapse the levels by passing `False`
         to the ``flatten_levels`` argument.
 
-    .. note:: An error is raised if the index is not unique and
+    .. note:: A ValueError is raised if the index is not unique and
         `aggfunc` is None.
 
     Functional usage syntax:
@@ -5844,24 +5940,23 @@ def pivot_wider(
         If ``values_from`` is not specified,
         all remaining columns will be used. If `flatten_levels` is ``False``,
         a MultiIndex dataframe is created.
-    :param names_sort: Default is `False`. Sorts columns by order of
-        appearance. Applicable only if ``flatten_levels`` is `True`.
+    :param names_sort: Default is `True`. Sorts columns by order of
+        appearance.
         Set as `True` to get the columns sorted lexicographicially,
         or if the columns are of category type.
     :param flatten_levels: Default is `True`. If `False`, the dataframe stays
         as a MultiIndex.
     :param names_from_position: By default, the values in ``names_from`` stay
-        at the front of the new column names, even when ``values_from`` or
-        ``aggfunc`` is a list. This can be changed to "last"; this places the
-        values in ``names_from`` at the tail of the column names. Applicable
-        only when ``flatten_levels`` is ``True``. Default is "first".
+        at the front of the new column names. This can be changed to "last";
+        this places the values in ``names_from``
+        at the tail of the column names.
     :param names_prefix: String to be added to the front of each output column.
         Can be handy if the values in ``names_from`` are numeric data types.
         Applicable only if ``flatten_levels`` is True.
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is ``_``. Applicable only if
-        ``flatten_levels`` is ``True``.
+        to use as a column name. Default is ``_``.
+        Applicable only if ``flatten_levels`` is ``True``.
     :param aggfunc: An aggregate function. It can be a function, a string,
         list of functions, or a dictionary, pairing column name with aggregate
         function.

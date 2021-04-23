@@ -1,3 +1,5 @@
+"""Spark fixtures."""
+
 import pytest
 
 try:
@@ -13,8 +15,9 @@ except ImportError:
     pass
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture  # (scope="session")
 def spark():
+    """Create spark session."""
     spark = SparkSession.builder.getOrCreate()
     yield spark
     spark.stop()
@@ -22,6 +25,7 @@ def spark():
 
 @pytest.fixture
 def spark_df(spark):
+    """Create spark dataframe."""
     schema = StructType(
         [
             StructField("a", IntegerType(), True),
@@ -36,4 +40,5 @@ def spark_df(spark):
 
 @pytest.fixture
 def spark_dataframe(spark, dataframe):
+    """Another function to create spark dataframe."""
     return spark.createDataFrame(dataframe)

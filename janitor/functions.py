@@ -1,6 +1,7 @@
 """ General purpose data cleaning functions. """
 
 import collections
+
 import datetime as dt
 import inspect
 import re
@@ -31,7 +32,7 @@ from pandas.api.types import union_categoricals, is_list_like
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-
+from unicodedata import normalize
 from .errors import JanitorError
 from .utils import (
     _computations_expand_grid,
@@ -247,6 +248,7 @@ def clean_names(
         preserve_original_columns: bool = True,
         enforce_string: bool = True,
         truncate_limit: int = None,
+
 ) -> pd.DataFrame:
     """
     Clean column names.
@@ -319,6 +321,7 @@ def clean_names(
         df = df.rename(columns=_strip_accents)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
+
     df = _strip_underscores(df, strip_underscores)
 
     df = df.rename(columns=lambda x: x[:truncate_limit])
@@ -331,6 +334,7 @@ def clean_names(
 
 def _change_case(col: str, case_type: str) -> str:
     """Change case of a column name."""
+
     case_types = ["preserve", "upper", "lower", "snake"]
     if case_type.lower() not in case_types:
         raise JanitorError(f"case_type must be one of: {case_types}")
@@ -346,8 +350,16 @@ def _change_case(col: str, case_type: str) -> str:
     return col
 
 
+def clean_normalize_whitespace(col: str) -> str:
+    if isinstance(col, str):
+        return normalize('NFKC', col).replace(u'\xa0', ' ')
+    else:
+        return col
+
+
 def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
+
     return "".join(
         item for item in str(col_name) if item.isalnum() or "_" in item
     )
@@ -363,7 +375,6 @@ def _camel2snake(col_name: str) -> str:
     Implementation taken from: https://gist.github.com/jaytaylor/3660565
     by @jtaylor
     """
-
     subbed = _underscorer1.sub(r"\1_\2", col_name)  # noqa: PD005
     return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
@@ -373,6 +384,7 @@ FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
 
 def _normalize_1(col_name: Hashable) -> str:
     """Perform normalization of column name."""
+
     result = str(col_name)
     for search, replace in FIXES:
         result = re.sub(search, replace, result)  # noqa: PD005
@@ -3662,7 +3674,7 @@ def to_datetime(
 
 @pf.register_dataframe_method
 def trunc_datetime(
-        datepart: str, timestamp: dt.datetime, first_default = True):
+        datepart: str, timestamp: dt.datetime, first_default=True):
     """
     :param datepart: Truncation precision, Year, Month, Day, Hour, Minute, Second.
     :param timestamp: expecting a datetime from python datetime class (dt)
@@ -3670,7 +3682,7 @@ def trunc_datetime(
                  of including JAN as the month when truncating the year or not
     :returns" a truncated datetime object to the precision specified by datepart.
     """
-    recurrence = [0,1,1,0,0,0]  # [Year, Month, Day, Hour, Minute, Second]
+    recurrence = [0, 1, 1, 0, 0, 0]  # [Year, Month, Day, Hour, Minute, Second]
     datepart = datepart.upper()
     ENUM = {
         "YEAR": 0,
@@ -3688,7 +3700,7 @@ def trunc_datetime(
     }
     if (ENUM.get(datepart) == 0) and (first_default == False):
         return timestamp.year
-    elif(ENUM.get(datepart) == 1) and (first_default == False):
+    elif (ENUM.get(datepart) == 1) and (first_default == False):
         return timestamp.year, timestamp.month
 
     for i in range(ENUM.get(datepart) + 1):
@@ -5282,7 +5294,7 @@ def complete(
 
         df.complete(
             columns = [{'year': lambda df: np.arange(df.year.min(),
-                                                     df.year.max()+1)}],
+                                               df.year.max()+1)}],
             by='state'
         )
 

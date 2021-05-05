@@ -379,7 +379,7 @@ def _camel2snake(col_name: str) -> str:
     return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
 
-FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
+FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
 
 
 def _normalize_1(col_name: Hashable) -> str:

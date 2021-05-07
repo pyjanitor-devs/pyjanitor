@@ -3679,6 +3679,10 @@ def trunc_datetime(
     Truncate times down to a user-specified precision of
     year, month, day, hour, minute, or second.
 
+    Call on datetime object to truncate it.
+    Calling on existing df will not alter the contents
+    of said df.
+
     Note: Truncating down to a Month or Day will yields 0s,
     as there is no 0 month or 0 day in most datetime systems.
 

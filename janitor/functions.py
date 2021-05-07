@@ -3674,13 +3674,18 @@ def to_datetime(
 
 @pf.register_dataframe_method
 def trunc_datetime(
-        datepart: str, timestamp: dt.datetime, first_default=True):
+        datepart: str, timestamp: dt.datetime):
     """
+    Truncate times down to a user-specified precision of
+    year, month, day, hour, minute, or second.
+
+    Note: Truncating down to a Month or Day will yields 0s,
+    as there is no 0 month or 0 day in most datetime systems.
+
     :param datepart: Truncation precision, Year, Month, Day, Hour, Minute, Second.
     :param timestamp: expecting a datetime from python datetime class (dt)
-    :param first_default: datetime requires a month 1..12, this gives the option
-                 of including JAN as the month when truncating the year or not
-    :returns" a truncated datetime object to the precision specified by datepart.
+
+    :returns: a truncated datetime object to the precision specified by datepart.
     """
     recurrence = [0, 1, 1, 0, 0, 0]  # [Year, Month, Day, Hour, Minute, Second]
     datepart = datepart.upper()
@@ -3698,11 +3703,6 @@ def trunc_datetime(
         4: timestamp.minute,
         5: timestamp.second
     }
-    if (ENUM.get(datepart) == 0) and (first_default == False):
-        return timestamp.year
-    elif (ENUM.get(datepart) == 1) and (first_default == False):
-        return timestamp.year, timestamp.month
-
     for i in range(ENUM.get(datepart) + 1):
         print(ENUM.get(i))
         recurrence[i] = ENUM.get(i)

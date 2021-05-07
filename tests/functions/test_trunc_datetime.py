@@ -1,7 +1,9 @@
 from datetime import datetime
 from janitor import trunc_datetime
+import pytest
 
 
+@pytest.mark.functions
 def test_trunc_datetime():
     x = datetime.now()
     print(x)

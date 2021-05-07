@@ -16,7 +16,7 @@ exclude = '''
 '''
 include = '\.pyi?$'
 line-length = 79
-target-version = ['py36', 'py37']
+target-version = ['py36', 'py37', 'py38']
 
 [tool.interrogate]
 exclude = ["setup.py", "docs", "nbconvert_config.py"]

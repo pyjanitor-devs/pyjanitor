@@ -883,8 +883,8 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def reorder_columns(
-        df: pd.DataFrame, column_order: Union[Iterable[str],
-            pd.Index, Hashable]
+        df: pd.DataFrame,
+        column_order: Union[Iterable[str], pd.Index, Hashable]
 ) -> pd.DataFrame:
     """Reorder DataFrame columns by specifying desired order as list of col names.
 
@@ -1113,7 +1113,8 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def fill_empty(
-        df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
+        df: pd.DataFrame,
+        column_names: Union[str, Iterable[str], Hashable], value
 ) -> pd.DataFrame:
     """Fill `NaN` values in specified columns with a given value.
 

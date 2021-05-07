@@ -4114,20 +4114,29 @@ def join_apply(
 
 
 @pf.register_dataframe_method
-def join_conditional(df: pd.DataFrame, left_column: str, right_column: str, join_operator: str) -> pd.DataFrame:
+def join_conditional(df: pd.DataFrame, left_column: str,
+                     right_column: str,
+                     join_operator: str) -> pd.DataFrame:
     """
-   Create a new DataFrame based on the comparison applied using the parameters listed
+   Create a new DataFrame based on the
+   comparison applied using the parameters listed
 
    This method does not change the original DataFrame.
 
-    This function is supposed to emulate SQL and R's implementation of conditional or non-equi joins. This exact
-    implementation though is based on the example found in the request issue, typically a conditional join is based on
-    two tables. We may implement it like that just to keep it closer to the actual definition of the conditional join.
+    This function is supposed to emulate SQL and R's
+    implementation of conditional or non-equi joins.
+    This exact implementation though is based on the
+    example found in the request issue, typically a
+    conditional join is based on two tables. We may
+    implement it like that just to keep it closer
+    to the actual definition of the conditional join.
 
     Notes:
         - This is an unoptimized implementation
         - This function treats NaN as 0
-        - join_conditional param only handles <, >, != comparators just like SQL and R's conditional joins / non-equi do
+        - join_conditional param only handles
+            <, >, != comparators just like SQL and R's
+            conditional joins / non-equi do
    ex:
     company_sales = {
         'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
@@ -4147,7 +4156,8 @@ def join_conditional(df: pd.DataFrame, left_column: str, right_column: str, join
 
     return_df = join_conditional(df, "Company1", "Company2", "<")
 
-    The comparison that is occurring is for each row in the DataFrame, append row if Company 1 value < Company 2 value
+    The comparison that is occurring is for each row in the
+    DataFrame, append row if Company 1 value < Company 2 value
 
     The resulting DataFrame will look as follows.
 
@@ -4157,9 +4167,12 @@ def join_conditional(df: pd.DataFrame, left_column: str, right_column: str, join
     2      April     400.0     500.0     675.0
 
    :param df: A pandas DataFrame.
-   :param left_column: A string that represents the left side of the comparison e.g. 1 < 5; 1 being the left col
-   :param right_column: A string that represents the right side of the comparison e.g. 5 being the right col in above ex
-   :param join_operator: A string that represents the operator in the comparison e.g. < in the above ex.
+   :param left_column: A string that represents the left side of
+        the comparison e.g. 1 < 5; 1 being the left col
+   :param right_column: A string that represents the right side of
+        the comparison e.g. 5 being the right col in above ex
+   :param join_operator: A string that represents the operator
+        in the comparison e.g. < in the above ex.
    :returns: A pandas DataFrame with rows that matched our comparison.
 
 

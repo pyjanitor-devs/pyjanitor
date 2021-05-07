@@ -1,8 +1,4 @@
-import numpy as np
-import pandas as pd
-import pytest
 from datetime import datetime
-from pandas.testing import assert_frame_equal
 from janitor import trunc_datetime
 
 
@@ -19,5 +15,5 @@ def test_trunc_datetime():
                 'Second': [x.second],
             }
 
-        assert time['Day'][0] == 1  # x.day returns datetime object, needs indexing
+        assert time['Day'][0] == 1  # returns datetime object, needs indexing
         assert time['Month'] == datetime.now().month

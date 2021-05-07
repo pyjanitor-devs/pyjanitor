@@ -56,7 +56,8 @@ from .utils import (
 
 
 def unionize_dataframe_categories(
-        *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
+        *dataframes,
+        column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -882,7 +883,8 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def reorder_columns(
-        df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable]
+        df: pd.DataFrame, column_order: Union[Iterable[str],
+            pd.Index, Hashable]
 ) -> pd.DataFrame:
     """Reorder DataFrame columns by specifying desired order as list of col names.
 
@@ -3686,10 +3688,12 @@ def trunc_datetime(
     Note: Truncating down to a Month or Day will yields 0s,
     as there is no 0 month or 0 day in most datetime systems.
 
-    :param datepart: Truncation precision, Year, Month, Day, Hour, Minute, Second.
+    :param datepart: Truncation precision, Year, Month, Day,
+        Hour, Minute, Second.
     :param timestamp: expecting a datetime from python datetime class (dt)
 
-    :returns: a truncated datetime object to the precision specified by datepart.
+    :returns: a truncated datetime object to
+        the precision specified by datepart.
     """
     recurrence = [0, 1, 1, 0, 0, 0]  # [Year, Month, Day, Hour, Minute, Second]
     datepart = datepart.upper()
@@ -4346,9 +4350,9 @@ def count_cumulative_unique(
                 .assign(dummyabcxyz=1)
                 .dummyabcxyz.cumsum()
         )
-            .reindex(df.index)
-            .ffill()
-            .astype(int)
+        .reindex(df.index)
+        .ffill()
+        .astype(int)
     )
 
     return df

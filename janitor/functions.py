@@ -4347,9 +4347,9 @@ def count_cumulative_unique(
     df[dest_column_name] = (
         (
             df[[column_name]]
-                .drop_duplicates()
-                .assign(dummyabcxyz=1)
-                .dummyabcxyz.cumsum()
+            .drop_duplicates()
+            .assign(dummyabcxyz=1)
+            .dummyabcxyz.cumsum()
         )
         .reindex(df.index)
         .ffill()

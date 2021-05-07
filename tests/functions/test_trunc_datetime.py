@@ -15,5 +15,6 @@ def test_trunc_datetime():
                 'Second': [x.second],
             }
 
-        assert time['Day'][0] == 1  # returns datetime object, needs indexing
-        assert time['Month'] == datetime.now().month
+        # time[] returns datetime object, needs indexing.
+        assert time['Day'][0] == 1
+        assert time['Month'][0] == datetime.now().month

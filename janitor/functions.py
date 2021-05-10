@@ -1,7 +1,6 @@
 """ General purpose data cleaning functions. """
 
 import collections
-
 import datetime as dt
 import inspect
 import re
@@ -32,7 +31,7 @@ from pandas.api.types import union_categoricals, is_list_like
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-from unicodedata import normalize
+
 from .errors import JanitorError
 from .utils import (
     _computations_expand_grid,
@@ -349,12 +348,6 @@ def _change_case(col: str, case_type: str) -> str:
     return col
 
 
-def clean_normalize_whitespace(col: str) -> str:
-    if isinstance(col, str):
-        return normalize("NFKC", col).replace("\xa0", " ")
-    else:
-        return col
-
 
 def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
@@ -378,7 +371,7 @@ def _camel2snake(col_name: str) -> str:
     return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
 
-FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
+FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""),(r"[\xa0]", "_")]
 
 
 def _normalize_1(col_name: Hashable) -> str:

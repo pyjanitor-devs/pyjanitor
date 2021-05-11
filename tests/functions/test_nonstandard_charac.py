@@ -22,4 +22,4 @@ def test_space():
 
     df = df.clean_names(strip_underscores=True, case_type='lower')
 
-    assert ("in %" in df.columns.values) == False
+    assert ("in %" in df.columns.values) is False

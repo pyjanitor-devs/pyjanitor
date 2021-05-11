@@ -23,5 +23,5 @@ def test_trunc_datetime():
     assert time["Month"][0] == datetime.now().month
     assert time["Month"][0] == x.month
 
-    #bad data, error handling test
-    assert y.month is None
+    # bad data, error handling test
+    assert y is None

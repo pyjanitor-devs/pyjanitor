@@ -1813,7 +1813,7 @@ def remove_columns(
     return df.drop(columns=column_names)
 
 
-def get_occurrences(df: iter, columns, selected_columns=None) -> pd.DataFrame:
+def get_occurrences(df: iter,og_index=None) -> pd.DataFrame:
     """
     This is a helper function for our remove_dupes function.
     This function will return the first occurrences based on
@@ -1821,11 +1821,7 @@ def get_occurrences(df: iter, columns, selected_columns=None) -> pd.DataFrame:
 
     :param df: This is our iterable object
 
-    :param columns: This is a list of column names
-        we will be checking **not handled yet**
-
-    :param selected_columns: This is a list of
-        column names we compare against **not handled yet**
+    :param og_index: This is our index to be added back to the DataFrame
 
     :return: We return a pandas DataFrame object
 
@@ -1834,10 +1830,13 @@ def get_occurrences(df: iter, columns, selected_columns=None) -> pd.DataFrame:
     for row in df:
         if not (row in test_list):
             test_list[row] = 0
-    return pd.DataFrame.from_dict(test_list.keys())
+    df = pd.DataFrame.from_dict(test_list.keys())
+    if og_index is not None:
+        df = df.set_index(og_index)
+    return df
 
 
-def remove_dupes(df: pd.DataFrame, columns=None, keep="first") -> pd.DataFrame:
+def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
     """
     This function will remove duplicates in a pandas DataFrame,
     if the DataFrame contains two rows that are the exact
@@ -1872,13 +1871,20 @@ def remove_dupes(df: pd.DataFrame, columns=None, keep="first") -> pd.DataFrame:
     :return: The returned object is a pandas DataFrame with the removed values
 
     """
-    iterable_df = df.itertuples(index=False)
-    if keep == "last":
-        df = get_occurrences(reversed(iterable_df), list(df), columns)
-    else:
-        df = get_occurrences(iterable_df, list(df), columns)
-
-    return df
+    try:
+        index = df.index.name
+        df.insert(len(df.columns), index, df.index.values)
+        iterable_df = df.itertuples(index=False)
+        if keep == "last":
+            df = get_occurrences(reversed(iterable_df), og_index=index)
+        else:
+            df = get_occurrences(iterable_df, og_index=index)
+        return df
+    except AttributeError:
+        print(
+            "AttributeError: Invalid Argument Type, Make Sure The First "
+            + "Argument is a Pandas DataFrame")
+        return pd.DataFrame()
 
 
 @pf.register_dataframe_method

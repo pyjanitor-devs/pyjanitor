@@ -3753,6 +3753,13 @@ def trunc_datetime(datepart: str, timestamp: dt.datetime):
         4: timestamp.minute,
         5: timestamp.second,
     }
+    try:
+        ENUM[datepart]
+    except KeyError:
+        print("Invalid truncation")
+        print("Please enter Year, Month, Day, Hour, Minute, or Second")
+        return
+
     for i in range(ENUM.get(datepart) + 1):
         print(ENUM.get(i))
         recurrence[i] = ENUM.get(i)

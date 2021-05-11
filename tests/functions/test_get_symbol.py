@@ -1,4 +1,5 @@
 from janitor.functions import get_symbol
+import pytest
 
 def test_get_symbol():
   assert (get_symbol("GME") == "GameStop Corp.")

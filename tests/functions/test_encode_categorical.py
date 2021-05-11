@@ -384,7 +384,9 @@ def test_various(df_in, df_out, kwargs):
     """
     Test output for various combinations.
     """
-    result = df_in.encode_categorical(**kwargs,)
+    result = df_in.encode_categorical(
+        **kwargs,
+    )
     assert_frame_equal(result, df_out)
 
 

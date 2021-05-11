@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from janitor.functions import sort_column_value_order
+import pytest
 def test_sort_column_value_order():
     company_sales = {
         'SalesMonth': ['Jan', 'Feb', 'Feb', 'Mar', 'April'],

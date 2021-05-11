@@ -1,5 +1,6 @@
 from janitor.functions import remove_dupes
-import pandas as pd, numpy as np
+import pandas as pd
+import numpy as np
 import pytest
 
 
@@ -31,4 +32,4 @@ def test_remove_dupes():
     df_2 = df_2.set_index("Company1")
     # assert (pd.DataFrame() == remove_dupes([], keep="first"))
     assert (df_2.equals(remove_dupes(df, keep="first")))
-    assert (pd.DataFrame() == remove_dupes(pd.DataFrame(), keep="first"))
+    assert (pd.DataFrame().equals(remove_dupes(pd.DataFrame(), keep="first")))

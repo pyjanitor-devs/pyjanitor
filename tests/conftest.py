@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from janitor.testing_utils import date_data
+from pyjanitor.janitor.testing_utils import date_data
 
 TEST_DATA_DIR = "tests/test_data"
 EXAMPLES_DIR = "examples/"

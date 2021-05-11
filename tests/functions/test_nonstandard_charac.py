@@ -1,9 +1,10 @@
-import pytest
 import pandas as pd
 
 
 def test_charac():
-    table_GDP = pd.read_html('https://en.wikipedia.org/wiki/Economy_of_the_United_States', match='Nominal GDP')
+    table_GDP = pd.read_html(
+        'https://en.wikipedia.org/wiki/Economy_of_the_United_States',
+        match='Nominal GDP')
     df = table_GDP[0]
 
     df = df.clean_names(strip_underscores=True, case_type='lower')
@@ -14,7 +15,9 @@ def test_charac():
 
 
 def test_space():
-    table_GDP = pd.read_html('https://en.wikipedia.org/wiki/Economy_of_Russia', match='Year')
+    table_GDP = pd.read_html(
+        'https://en.wikipedia.org/wiki/Economy_of_Russia',
+        match='Year')
     df = table_GDP[0]
 
     df = df.clean_names(strip_underscores=True, case_type='lower')

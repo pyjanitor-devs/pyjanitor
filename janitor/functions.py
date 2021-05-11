@@ -1816,12 +1816,18 @@ def remove_columns(
 
 def get_occurrences(df: iter, columns, selected_columns=None) -> pd.DataFrame:
     """
-    This is a helper function for our remove_dupes function. This function will return the first occurrences based on
+    This is a helper function for our remove_dupes function.
+    This function will return the first occurrences based on
     the order of a passed in iterator.
 
     :param df: This is our iterable object
-    :param columns: This is a list of column names we will be checking **not handled yet**
-    :param selected_columns: This is a list of column names we compare against **not handled yet**
+
+    :param columns: This is a list of column names
+        we will be checking **not handled yet**
+
+    :param selected_columns: This is a list of
+        column names we compare against **not handled yet**
+
     :return: We return a pandas DataFrame object
 
     """
@@ -1834,8 +1840,10 @@ def get_occurrences(df: iter, columns, selected_columns=None) -> pd.DataFrame:
 
 def remove_dupes(df: pd.DataFrame, columns=None, keep="first") -> pd.DataFrame:
     """
-    This function will remove duplicates in a pandas DataFrame, if the DataFrame contains two rows that are the exact
-    same, the user can specify whether to keep the first or last occurrence of the row.
+    This function will remove duplicates in a pandas DataFrame,
+    if the DataFrame contains two rows that are the exact
+    same, the user can specify whether to keep the first
+    or last occurrence of the row.
 
     Example:
 
@@ -1848,14 +1856,20 @@ def remove_dupes(df: pd.DataFrame, columns=None, keep="first") -> pd.DataFrame:
         3	Mar	        300.0	    NaN	        600.0
         4	April	    400.0	    500.0	    675.0
 
-        if we run remove dupes and wish to keep the first occurrence then row index 1 will be in the returned
-        DataFrame, if keep is set to last then row index 2 will be in the returned DataFrame:
+        if we run remove dupes and wish to keep the first
+        occurrence then row index 1 will be in the returned
+        DataFrame, if keep is set to last then row
+        index 2 will be in the returned DataFrame:
 
             df = remove_dupes(df,keep="first")
 
-    :param df: This is our pandas DataFrame that we are removing the duplicate rows from
-    :param keep: This is our value of either first or last that determines which row occurrences we want in the returned
-    DataFrame
+    :param df: This is our pandas DataFrame that we
+            are removing the duplicate rows from
+
+    :param keep: This is our value of either first
+            or last that determines which row occurrences
+            we want in the returned DataFrame
+
     :return: The returned object is a pandas DataFrame with the removed values
 
     """
@@ -1866,6 +1880,7 @@ def remove_dupes(df: pd.DataFrame, columns=None, keep="first") -> pd.DataFrame:
         df = get_occurrences(iterable_df, list(df), columns)
 
     return df
+
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")

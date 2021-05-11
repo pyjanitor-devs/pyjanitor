@@ -7,6 +7,8 @@ import re
 import unicodedata
 import warnings
 from functools import partial, reduce
+import requests
+import socket
 from typing import (
     Any,
     Callable,
@@ -53,7 +55,68 @@ from .utils import (
     deprecated_alias,
 )
 
+def get_symbol(symbol: str) -> str:
+    """
+    This is a helper function to get a companies full name based on the stock symbol.
 
+    Example:
+        print(get_symbol("aapl"))
+        console >> Apple Inc.
+
+    :param symbol: This is our stock symbol that we use to query te api for the companies full name.
+    :return: This is the company name
+    """
+    result = requests.get("http://d.yimg.com/autoc.finance.yahoo.com/autoc?query={}&region=1&lang=en"
+                          .format(symbol)).json()
+
+    for x in result['ResultSet']['Result']:
+        if x['symbol'] == symbol:
+            return x['name']
+        else:
+            return "Not found."
+
+
+def is_connected(url: str) -> bool:
+    """
+    This is a helper function to check if the client is connected to the internet.
+
+    Example:
+        print(is_connected("www.google.com"))
+        console >> True
+
+    :param url: We take a test url to check if we are able to create a valid connection.
+    :return: We return a boolean that signifies our connection to the internet
+    """
+    try:
+        sock = socket.create_connection((url, 80))
+        if sock is not None:
+            sock.close()
+            return True
+    except OSError:
+        pass
+    return False
+
+
+def convert_stock(stock_symbol: str) -> str:
+    """
+    This function takes in a stock symbol as a parameter, queries an API for the companies full name
+    and returns it
+
+    Example:
+        print(convert_stock("aapl"))
+
+        console >> Apple Inc.
+
+    :param stock_symbol: This is our input stock symbol to be converted
+    :return: We return the full company name
+    """
+    if is_connected("www.google.com"):
+        stock_symbol = stock_symbol.upper()
+        return get_symbol(stock_symbol.upper())
+    else:
+        print("Connection Error: Client Not Connected to Internet")
+        return ""
+    
 def unionize_dataframe_categories(
     *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:

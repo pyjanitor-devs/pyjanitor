@@ -254,6 +254,7 @@ def test_expand_grid_others_only(grid_input, grid_output):
     assert_frame_equal(expand_grid(others=grid_input), grid_output)
 
 
+@pytest.mark.xfail(reason="Indexes now converted to Series/DataFrame.")
 def test_not_accepted_type():
     """Raise TypeError if wrong data type is used in `others`."""
     others = {

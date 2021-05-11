@@ -42,7 +42,7 @@ def test_column_duplicated(df1):
             columns=[
                 "Year",
                 "Taxon",
-                {"Year": lambda x: range(x.Year.min().x.Year.max() + 1)},
+                {"Year": lambda x: range(x.min().x.max() + 1)},
             ]
         )
 
@@ -53,16 +53,18 @@ def test_type_columns(df1):
         df1.complete(columns="Year")
 
 
+@pytest.mark.xfail(reason="fill_value dropped. fillna better.")
 def test_fill_value_is_a_dict(df1):
     """Raise error if fill_value is not a dictionary"""
     with pytest.raises(TypeError):
-        df1.complete(columns=["Year", "Taxon"], fill_value=0)
+        df1.complete(columns=["Year", "Taxon"])
 
 
+@pytest.mark.xfail(reason="fill_value dropped. fillna better.")
 def test_wrong_column_fill_value(df1):
     """Raise ValueError if column in `fill_value` does not exist."""
     with pytest.raises(ValueError):
-        df1.complete(columns=["Taxon", "Year"], fill_value={"year": 0})
+        df1.complete(columns=["Taxon", "Year"])
 
 
 def test_wrong_data_type_dict(df1):
@@ -72,6 +74,37 @@ def test_wrong_data_type_dict(df1):
     """
     with pytest.raises(ValueError):
         df1.complete(columns=[{"Year": pd.DataFrame([2005, 2006, 2007])}])
+
+
+def test_not_list_like_type_dict(df1):
+    """
+    Raise ValueError if value in dictionary
+    is not a list-like object.
+    """
+    with pytest.raises(ValueError):
+        df1.complete(columns=[{"Year": "2001, 2002, 2003"}])
+
+
+def test_MultiIndex_type_dict(df1):
+    """
+    Raise ValueError if value in dictionary
+    is a MultiIndex.
+    """
+    with pytest.raises(ValueError):
+        df1.complete(
+            columns=[
+                {"Year": pd.MultiIndex.from_tuples([(1, 2001), (2, 2002)])}
+            ]
+        )
+
+
+def test_empty_type_dict(df1):
+    """
+    Raise ValueError if value in dictionary
+    is empty.
+    """
+    with pytest.raises(ValueError):
+        df1.complete(columns=[{"Year": pd.Index([])}])
 
 
 frame = pd.DataFrame(
@@ -115,6 +148,7 @@ def test_empty_subcols(frame, empty_sub_cols):
         frame.complete(columns=empty_sub_cols)
 
 
+@pytest.mark.xfail(reason="fill_value dropped. fillna is better.")
 def test_fill_value(df1):
     """Test fill_value argument."""
     output1 = pd.DataFrame(
@@ -132,9 +166,7 @@ def test_fill_value(df1):
         }
     )
 
-    result = df1.complete(
-        columns=["Year", "Taxon"], fill_value={"Abundance": 0}
-    )
+    result = df1.complete(columns=["Year", "Taxon"]).fillna({"Abundance": 0})
     assert_frame_equal(result, output1)
 
 
@@ -182,12 +214,8 @@ def test_fill_value_all_years(df1, df1_output):
     """
 
     result = df1.complete(
-        columns=[
-            {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
-            "Taxon",
-        ],
-        fill_value={"Abundance": 0},
-    )
+        columns=[{"Year": lambda x: range(x.min(), x.max() + 1)}, "Taxon"]
+    ).fillna(0)
     assert_frame_equal(result, df1_output)
 
 
@@ -199,15 +227,10 @@ def test_dict_series(df1, df1_output):
 
     result = df1.complete(
         columns=[
-            {
-                "Year": lambda x: pd.Series(
-                    range(x.Year.min(), x.Year.max() + 1)
-                )
-            },
+            {"Year": lambda x: pd.Series(range(x.min(), x.max() + 1))},
             "Taxon",
-        ],
-        fill_value={"Abundance": 0},
-    )
+        ]
+    ).fillna(0)
     assert_frame_equal(result, df1_output)
 
 
@@ -225,9 +248,8 @@ def test_dict_series_duplicates(df1, df1_output):
                 )
             },
             "Taxon",
-        ],
-        fill_value={"Abundance": 0},
-    )
+        ]
+    ).fillna(0)
     assert_frame_equal(result, df1_output)
 
 
@@ -264,8 +286,204 @@ def test_dict_values_outside_range(df1):
     assert_frame_equal(result, expected)
 
 
-# adapted from https://tidyr.tidyverse.org/reference/complete.html
 complete_parameters = [
+    (
+        pd.DataFrame(
+            [
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "red",
+                    "orders": 7,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-21 00:00:00"),
+                    "colour": "red",
+                    "orders": 10,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "yellow",
+                    "orders": 3,
+                },
+            ]
+        ),
+        [{"date": pd.date_range("2014-10-20", "2014-10-22")}, "colour"],
+        pd.DataFrame(
+            [
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "red",
+                    "orders": 7.0,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-20 00:00:00"),
+                    "colour": "yellow",
+                    "orders": 3.0,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-21 00:00:00"),
+                    "colour": "red",
+                    "orders": 10.0,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-21 00:00:00"),
+                    "colour": "yellow",
+                    "orders": np.nan,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-22 00:00:00"),
+                    "colour": "red",
+                    "orders": np.nan,
+                },
+                {
+                    "date": pd.Timestamp("2014-10-22 00:00:00"),
+                    "colour": "yellow",
+                    "orders": np.nan,
+                },
+            ]
+        ),
+    ),
+    (
+        pd.DataFrame(
+            {
+                "id": [1, 2, 3],
+                "choice": [5, 6, 7],
+                "c": [9.0, np.nan, 11.0],
+                "d": [
+                    pd.NaT,
+                    pd.Timestamp("2015-09-30 00:00:00"),
+                    pd.Timestamp("2015-09-29 00:00:00"),
+                ],
+            }
+        ),
+        ["id", "c"],
+        pd.DataFrame(
+            [
+                {"id": 1, "c": 9.0, "choice": 5.0, "d": pd.NaT},
+                {"id": 1, "c": np.nan, "choice": np.nan, "d": pd.NaT},
+                {"id": 1, "c": 11.0, "choice": np.nan, "d": pd.NaT},
+                {"id": 2, "c": 9.0, "choice": np.nan, "d": pd.NaT},
+                {
+                    "id": 2,
+                    "c": np.nan,
+                    "choice": 6.0,
+                    "d": pd.Timestamp("2015-09-30 00:00:00"),
+                },
+                {"id": 2, "c": 11.0, "choice": np.nan, "d": pd.NaT},
+                {"id": 3, "c": 9.0, "choice": np.nan, "d": pd.NaT},
+                {"id": 3, "c": np.nan, "choice": np.nan, "d": pd.NaT},
+                {
+                    "id": 3,
+                    "c": 11.0,
+                    "choice": 7.0,
+                    "d": pd.Timestamp("2015-09-29 00:00:00"),
+                },
+            ]
+        ),
+    ),
+    (
+        pd.DataFrame(
+            {
+                "row": {
+                    0: "22.08.2020",
+                    1: "22.08.2020",
+                    2: "21.08.2020",
+                    3: "21.08.2020",
+                    4: "21.08.2020",
+                    5: "21.08.2020",
+                    6: "22.08.2020",
+                },
+                "column": {
+                    0: "B",
+                    1: "B",
+                    2: "A",
+                    3: "A",
+                    4: "B",
+                    5: "C",
+                    6: "A",
+                },
+                "value": {0: 40, 1: 34, 2: 43, 3: 36, 4: 36, 5: 28, 6: 16},
+            }
+        ),
+        ["row", "column"],
+        pd.DataFrame(
+            [
+                {"row": "21.08.2020", "column": "A", "value": 43.0},
+                {"row": "21.08.2020", "column": "A", "value": 36.0},
+                {"row": "21.08.2020", "column": "B", "value": 36.0},
+                {"row": "21.08.2020", "column": "C", "value": 28.0},
+                {"row": "22.08.2020", "column": "A", "value": 16.0},
+                {"row": "22.08.2020", "column": "B", "value": 40.0},
+                {"row": "22.08.2020", "column": "B", "value": 34.0},
+                {"row": "22.08.2020", "column": "C", "value": np.nan},
+            ]
+        ),
+    ),
+    (
+        pd.DataFrame(
+            {
+                "row": {
+                    0: "21.08.2020",
+                    1: "21.08.2020",
+                    2: "21.08.2020",
+                    3: "21.08.2020",
+                    4: "22.08.2020",
+                    5: "22.08.2020",
+                    6: "22.08.2020",
+                },
+                "column": {
+                    0: "A",
+                    1: "A",
+                    2: "B",
+                    3: "C",
+                    4: "A",
+                    5: "B",
+                    6: "B",
+                },
+                "value": {0: 43, 1: 36, 2: 36, 3: 28, 4: 16, 5: 40, 6: 34},
+            }
+        ),
+        ["row", "column"],
+        pd.DataFrame(
+            [
+                {"row": "21.08.2020", "column": "A", "value": 43.0},
+                {"row": "21.08.2020", "column": "A", "value": 36.0},
+                {"row": "21.08.2020", "column": "B", "value": 36.0},
+                {"row": "21.08.2020", "column": "C", "value": 28.0},
+                {"row": "22.08.2020", "column": "A", "value": 16.0},
+                {"row": "22.08.2020", "column": "B", "value": 40.0},
+                {"row": "22.08.2020", "column": "B", "value": 34.0},
+                {"row": "22.08.2020", "column": "C", "value": np.nan},
+            ]
+        ),
+    ),
+    (
+        pd.DataFrame(
+            [
+                {"YEAR": 1946, "Region": 1},
+                {"YEAR": 1946, "Region": 2},
+                {"YEAR": 1946, "Region": 3},
+                {"YEAR": 1946, "Region": 5},
+                {"YEAR": 1947, "Region": 3},
+                {"YEAR": 1947, "Region": 4},
+            ]
+        ),
+        ["YEAR", "Region"],
+        pd.DataFrame(
+            [
+                {"YEAR": 1946, "Region": 1},
+                {"YEAR": 1946, "Region": 2},
+                {"YEAR": 1946, "Region": 3},
+                {"YEAR": 1946, "Region": 4},
+                {"YEAR": 1946, "Region": 5},
+                {"YEAR": 1947, "Region": 1},
+                {"YEAR": 1947, "Region": 2},
+                {"YEAR": 1947, "Region": 3},
+                {"YEAR": 1947, "Region": 4},
+                {"YEAR": 1947, "Region": 5},
+            ]
+        ),
+    ),
     (
         pd.DataFrame(
             {
@@ -335,84 +553,6 @@ def test_complete(df, columns, output):
     assert_frame_equal(df.complete(columns), output)
 
 
-@pytest.fixture
-def duplicates():
-    return pd.DataFrame(
-        {
-            "row": [
-                "21.08.2020",
-                "21.08.2020",
-                "21.08.2020",
-                "21.08.2020",
-                "22.08.2020",
-                "22.08.2020",
-                "22.08.2020",
-                "22.08.2020",
-            ],
-            "column": ["A", "A", "B", "C", "A", "B", "B", "C"],
-            "value": [43.0, 36, 36, 28, 16, 40, 34, 0],
-        }
-    )
-
-
-# https://stackoverflow.com/questions/63541729/
-# pandas-how-to-include-all-columns-for-all-rows-although-value-is-missing-in-a-d
-# /63543164#63543164
-def test_duplicates(duplicates):
-    """Test that the complete function works for duplicate values."""
-    df = pd.DataFrame(
-        {
-            "row": {
-                0: "21.08.2020",
-                1: "21.08.2020",
-                2: "21.08.2020",
-                3: "21.08.2020",
-                4: "22.08.2020",
-                5: "22.08.2020",
-                6: "22.08.2020",
-            },
-            "column": {0: "A", 1: "A", 2: "B", 3: "C", 4: "A", 5: "B", 6: "B"},
-            "value": {0: 43, 1: 36, 2: 36, 3: 28, 4: 16, 5: 40, 6: 34},
-        }
-    )
-
-    result = df.complete(columns=["row", "column"], fill_value={"value": 0})
-
-    assert_frame_equal(result, duplicates)
-
-
-def test_unsorted_duplicates(duplicates):
-    """Test output for unsorted duplicates."""
-
-    df = pd.DataFrame(
-        {
-            "row": {
-                0: "22.08.2020",
-                1: "22.08.2020",
-                2: "21.08.2020",
-                3: "21.08.2020",
-                4: "21.08.2020",
-                5: "21.08.2020",
-                6: "22.08.2020",
-            },
-            "column": {
-                0: "B",
-                1: "B",
-                2: "A",
-                3: "A",
-                4: "B",
-                5: "C",
-                6: "A",
-            },
-            "value": {0: 40, 1: 34, 2: 43, 3: 36, 4: 36, 5: 28, 6: 16},
-        }
-    )
-
-    result = df.complete(columns=["row", "column"], fill_value={"value": 0})
-
-    assert_frame_equal(result, duplicates)
-
-
 # https://stackoverflow.com/questions/32874239/
 # how-do-i-use-tidyr-to-fill-in-completed-rows-within-each-value-of-a-grouping-var
 def test_grouping_first_columns():
@@ -480,8 +620,7 @@ def test_complete_multiple_groupings():
 
     result = df3.complete(
         columns=[("meta", "domain1"), ("project_id", "question_count")],
-        fill_value={"tag_count": 0},
-    )
+    ).fillna({"tag_count": 0})
     assert_frame_equal(result, output3)
 
 
@@ -531,7 +670,7 @@ def test_dict_tuple(df1, output_dict_tuple):
 
     result = df1.complete(
         columns=[
-            {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
+            {"Year": lambda x: range(x.min(), x.max() + 1)},
             ("Taxon", "Abundance"),
         ]
     )
@@ -550,8 +689,7 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        columns=[{"year": lambda x: range(x.year.min(), x.year.max() + 1)}],
-        by="state",
+        columns=[{"year": lambda x: range(x.min(), x.max() + 1)}], by="state",
     )
 
     expected = pd.DataFrame(

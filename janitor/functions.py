@@ -1864,6 +1864,8 @@ def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
     :param df: This is our pandas DataFrame that we
             are removing the duplicate rows from
 
+    :param columns: *To be written*
+
     :param keep: This is our value of either first
             or last that determines which row occurrences
             we want in the returned DataFrame

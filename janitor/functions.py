@@ -4656,10 +4656,8 @@ def sort_naturally(
 
 
 def sort_column_value_order(
-        df: pd.DataFrame,
-        column: str,
-        column_value_order: dict,
-        columns=None) -> pd.DataFrame:
+    df: pd.DataFrame, column: str, column_value_order: dict, columns=None
+) -> pd.DataFrame:
     """
     This function adds precedence to certain values in a specified column, then
     sorts based on that column and any other specified columns.
@@ -4693,26 +4691,23 @@ def sort_column_value_order(
         200.0	    Feb	        250.0	    500.0
         150.0	    Jan	        180.0	    400.0
 
-
     :param df: This is our DataFrame that we are manipulating
     :param column: This is a column name as a string we are using to specify
-    which column to sort by
+     which column to sort by
     :param column_value_order: This is a dictionary of values that will
-    represent precedence of the values in the specified column
+     represent precedence of the values in the specified column
     :param columns: This is a list of additional columns that we can sort by
     :return: This function returns a Pandas DataFrame
     """
     if len(column_value_order) > 0:
         if column in df.columns:
-            df['cond_order'] = df[column].replace(column_value_order)
+            df["cond_order"] = df[column].replace(column_value_order)
             if columns is None:
-                new_df = \
-                    df.sort_values('cond_order')
-                del new_df['cond_order']
+                new_df = df.sort_values("cond_order")
+                del new_df["cond_order"]
             else:
-                new_df = \
-                    df.sort_values(columns + ['cond_order'])
-                del new_df['cond_order']
+                new_df = df.sort_values(columns + ["cond_order"])
+                del new_df["cond_order"]
             return new_df
         else:
             print("ValueError: Column Name not in DataFrame")

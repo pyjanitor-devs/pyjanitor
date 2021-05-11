@@ -1884,7 +1884,7 @@ def remove_columns(
     return df.drop(columns=column_names)
 
 
-def get_occurrences(df: iter, og_index=None) -> pd.DataFrame:
+def get_occurrences(df: iter,og_index=None) -> pd.DataFrame:
     """
     This is a helper function for our remove_dupes function.
     This function will return the first occurrences based on
@@ -1935,6 +1935,8 @@ def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
     :param df: This is our pandas DataFrame that we
             are removing the duplicate rows from
 
+    :param columns: *To be written*
+
     :param keep: This is our value of either first
             or last that determines which row occurrences
             we want in the returned DataFrame
@@ -1954,8 +1956,7 @@ def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
     except AttributeError:
         print(
             "AttributeError: Invalid Argument Type, Make Sure The First "
-            + "Argument is a Pandas DataFrame"
-        )
+            + "Argument is a Pandas DataFrame")
         return pd.DataFrame()
 
 

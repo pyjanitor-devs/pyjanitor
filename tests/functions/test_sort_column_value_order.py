@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 from janitor.functions import sort_column_value_order
-import pytest
+
+
 def test_sort_column_value_order():
     company_sales = {
         'SalesMonth': ['Jan', 'Feb', 'Feb', 'Mar', 'April'],
@@ -21,26 +22,26 @@ def test_sort_column_value_order():
     df2 = df2.set_index("Company1")
     assert (pd.DataFrame().equals(
       sort_column_value_order(pd.DataFrame(),
-                                          "", 
-                                          {})))
+                              "",
+                              {})))
     assert (pd.DataFrame().equals(sort_column_value_order(
                                                    df, 
                                                    "",
                                                    {
-                                                     'April': 1, 
-                                                     'Mar': 2, 
-                                                     'Feb': 3, 
+                                                     'April': 1,
+                                                     'Mar': 2,
+                                                     'Feb': 3,
                                                      'Jan': 4
                                                    }
                                                     )))
     assert (
         df2.equals(sort_column_value_order(
-                                            df, 
+                                            df,
                                            "SalesMonth",
                                            {
-                                             'April': 1, 
-                                             'Mar': 2, 
-                                             'Feb': 3, 
+                                             'April': 1,
+                                             'Mar': 2,
+                                             'Feb': 3,
                                              'Jan': 4
                                            }
         )))

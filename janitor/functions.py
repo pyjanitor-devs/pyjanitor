@@ -55,21 +55,22 @@ from .utils import (
     deprecated_alias,
 )
 
+
 def get_symbol(symbol: str) -> str:
     """
-    This is a helper function to get a companies full 
+    This is a helper function to get a companies full
     name based on the stock symbol.
 
     Example:
         print(get_symbol("aapl"))
         console >> Apple Inc.
 
-    :param symbol: This is our stock symbol that we use 
-    to query te api for the companies full name.
+    :param symbol: This is our stock symbol that we use
+        to query te api for the companies full name.
     :return: This is the company name
     """
-    result = requests.get("http://d.yimg.com/autoc."
-      + "finance.yahoo.com/autoc?query={}&region=1&lang=en"
+    result = requests.get("http://d.yimg.com/autoc." +
+                          "finance.yahoo.com/autoc?query={}&region=1&lang=en"
                           .format(symbol)).json()
 
     for x in result['ResultSet']['Result']:
@@ -81,17 +82,17 @@ def get_symbol(symbol: str) -> str:
 
 def is_connected(url: str) -> bool:
     """
-    This is a helper function to check if the client 
+    This is a helper function to check if the client
     is connected to the internet.
 
     Example:
         print(is_connected("www.google.com"))
         console >> True
 
-    :param url: We take a test url to check if we are 
-    able to create a valid connection.
-    :return: We return a boolean that signifies our 
-    connection to the internet
+    :param url: We take a test url to check if we are
+        able to create a valid connection.
+    :return: We return a boolean that signifies our
+        connection to the internet
     """
     try:
         sock = socket.create_connection((url, 80))
@@ -105,8 +106,8 @@ def is_connected(url: str) -> bool:
 
 def convert_stock(stock_symbol: str) -> str:
     """
-    This function takes in a stock symbol as a parameter, 
-    queries an API for the companies full name and returns 
+    This function takes in a stock symbol as a parameter,
+    queries an API for the companies full name and returns
     it
 
     Example:
@@ -114,8 +115,8 @@ def convert_stock(stock_symbol: str) -> str:
 
         console >> Apple Inc.
 
-    :param stock_symbol: This is our input stock symbol 
-    to be converted
+    :param stock_symbol: This is our input stock symbol
+        to be converted
     :return: We return the full company name
     """
     if is_connected("www.google.com"):
@@ -124,7 +125,8 @@ def convert_stock(stock_symbol: str) -> str:
     else:
         print("Connection Error: Client Not Connected to Internet")
         return ""
-    
+
+
 def unionize_dataframe_categories(
     *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:
@@ -1884,7 +1886,7 @@ def remove_columns(
     return df.drop(columns=column_names)
 
 
-def get_occurrences(df: iter,og_index=None) -> pd.DataFrame:
+def get_occurrences(df: iter, og_index=None) -> pd.DataFrame:
     """
     This is a helper function for our remove_dupes function.
     This function will return the first occurrences based on
@@ -1934,8 +1936,6 @@ def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
 
     :param df: This is our pandas DataFrame that we
             are removing the duplicate rows from
-
-    :param columns: *To be written*
 
     :param keep: This is our value of either first
             or last that determines which row occurrences

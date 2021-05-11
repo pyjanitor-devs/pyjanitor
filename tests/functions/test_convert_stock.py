@@ -1,5 +1,5 @@
-from janitor.functions import convert_stock
-import pytest
+from janitor import get_symbol
+
 
 def test_convert_stock():
     assert(get_symbol("GME") == "GameStop Corp.")

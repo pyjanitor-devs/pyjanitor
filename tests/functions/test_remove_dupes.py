@@ -1,4 +1,4 @@
-from pyjanitor.janitor.functions import remove_dupes
+from janitor import remove_dupes
 import pandas as pd
 import numpy as np
 import pytest

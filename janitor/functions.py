@@ -55,10 +55,9 @@ from .utils import (
     deprecated_alias,
 )
 
-
 def get_symbol(symbol: str) -> str:
     """
-    This is a helper function to get a companies full
+    This is a helper function to get a companies full 
     name based on the stock symbol.
 
     Example:
@@ -69,14 +68,13 @@ def get_symbol(symbol: str) -> str:
         to query te api for the companies full name.
     :return: This is the company name
     """
-    result = requests.get(
-        "http://d.yimg.com/autoc."
-        + "finance.yahoo.com/autoc?query={}&region=1&lang=en".format(symbol)
-    ).json()
+    result = requests.get("http://d.yimg.com/autoc." +
+                          "finance.yahoo.com/autoc?query={}&region=1&lang=en"
+                          .format(symbol)).json()
 
-    for x in result["ResultSet"]["Result"]:
-        if x["symbol"] == symbol:
-            return x["name"]
+    for x in result['ResultSet']['Result']:
+        if x['symbol'] == symbol:
+            return x['name']
         else:
             return "Not found."
 
@@ -1957,8 +1955,7 @@ def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
     except AttributeError:
         print(
             "AttributeError: Invalid Argument Type, Make Sure The First "
-            + "Argument is a Pandas DataFrame"
-        )
+            + "Argument is a Pandas DataFrame")
         return pd.DataFrame()
 
 

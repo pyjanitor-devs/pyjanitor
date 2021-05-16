@@ -2019,7 +2019,6 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     else:
         stop = df_columns.get_loc(stop)
 
-    # allows for reverse selection - write test for this
     if start > stop:
         filtered_columns = df_columns[slice(stop, start + 1, step)][::-1]
     else:

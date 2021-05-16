@@ -3653,31 +3653,47 @@ def update_where(
     """
     Add multiple conditions to update a column in the dataframe.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Example usage:
 
     .. code-block:: python
 
-        # The dataframe must be assigned to a variable first.
         data = {
             "a": [1, 2, 3, 4],
             "b": [5, 6, 7, 8],
             "c": [0, 0, 0, 0]
         }
         df = pd.DataFrame(data)
-        df = (
-            df
-            .update_where(
-                condition=("a > 2 and b < 8",
-                target_column_name='c',
-                target_val=10)
-            )
-        # a b  c
-        # 1 5  0
-        # 2 6  0
-        # 3 7 10
-        # 4 8  0
+
+           a  b  c
+        0  1  5  0
+        1  2  6  0
+        2  3  7  0
+        3  4  8  0
+
+        df.update_where(conditions = (df.a > 2) & (df.b < 8),
+                        target_column_name = 'c',
+                        target_val = 10)
+
+           a  b   c
+        0  1  5   0
+        1  2  6   0
+        2  3  7  10
+        3  4  8   0
+
+    `update_where` also supports pandas *query* style string expressions::
+
+        df.update_where(conditions = "a > 2 and b < 8",
+                        target_column_name = 'c',
+                        target_val = 10)
+
+           a  b   c
+        0  1  5   0
+        1  2  6   0
+        2  3  7  10
+        3  4  8   0
+
 
     :param df: The pandas DataFrame object.
     :param conditions: Conditions used to update a target column
@@ -3695,12 +3711,13 @@ def update_where(
     .. # noqa: DAR402
     """
 
+    df = df.copy()
+
     # use query mode if a string expression is passed
     if isinstance(conditions, str):
-        conditions_index = df.query(conditions).index
-    else:
-        conditions_index = df.loc[conditions].index
-    df.loc[conditions_index, target_column_name] = target_val
+        conditions = df.eval(conditions)
+
+    df.loc[conditions, target_column_name] = target_val
 
     return df
 

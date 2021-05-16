@@ -3702,7 +3702,7 @@ def update_where(
         in dataframe, a new column will be created; note that entries that do
         not get set in the new column will be null.
     :param target_val: Value to be updated
-    :returns: An updated pandas DataFrame.
+    :returns: A pandas DataFrame.
     :raises IndexError: if ``conditions`` does not have the same length as
         ``df``.
     :raises TypeError: if ``conditions`` is not a pandas-compatible string

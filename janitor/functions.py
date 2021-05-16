@@ -959,7 +959,8 @@ def coalesce(
         1  2.0  10.0  10
         2  NaN   NaN   7
 
-        df.coalesce(['A', 'B', 'C'], 'D')
+        df.coalesce(column_names = ['A', 'B', 'C'],
+                    target_column_name = 'D')
 
             A     B   C    D
         0  1.0   NaN   5  1.0
@@ -969,7 +970,7 @@ def coalesce(
     If no target column is provided, then the first column is updated,
     with the null values removed::
 
-        df.coalesce(['A', 'B', 'C'])
+        df.coalesce(column_names = ['A', 'B', 'C'])
 
             A     B   C
         0  1.0   NaN   5

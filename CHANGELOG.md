@@ -5,6 +5,9 @@
 -   [ENH] Drop `fill_value` parameter from `complete`. Users can use `fillna` instead. @samukweku
 -   [BUG] Fix bug in `pivot_longer` with single level columns. @samukweku
 -   [BUG] Disable exchange rates API until we can find another one to hit. @ericmjl
+-   [ENH] Change `coalesce` to return columns; also use `bfill`, `ffill`,
+    which is faster than `combine_first` @samukweku
+-   [ENH] Use `eval` for string conditions in `update_where`. @samukweku
 
 ## [v0.20.14] - 2021-03-25
 

@@ -28,7 +28,7 @@ import pandas as pd
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import union_categoricals, is_list_like
+from pandas.api.types import union_categoricals, is_list_like, is_bool_dtype
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
@@ -3707,6 +3707,8 @@ def update_where(
         ``df``.
     :raises TypeError: if ``conditions`` is not a pandas-compatible string
         query.
+    :raises ValueError: if ``conditions`` does not return a boolean array-like
+        data structure.
 
     .. # noqa: DAR402
     """
@@ -3716,6 +3718,14 @@ def update_where(
     # use query mode if a string expression is passed
     if isinstance(conditions, str):
         conditions = df.eval(conditions)
+
+    if not is_bool_dtype(conditions):
+        raise ValueError(
+            """
+            Kindly ensure that `conditions` passed
+            evaluates to a Boolean dtype.
+            """
+        )
 
     df.loc[conditions, target_column_name] = target_val
 

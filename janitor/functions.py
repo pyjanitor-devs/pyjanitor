@@ -3847,10 +3847,10 @@ def trunc_datetime(datepart: str, timestamp: dt.datetime):
     }
     try:
         ENUM[datepart]
+    # Capture the error but replace it with explicit instructions.
     except KeyError:
-        print("Invalid truncation")
-        print("Please enter Year, Month, Day, Hour, Minute, or Second")
-        return
+        msg = "Invalid truncation. Please enter any one of 'year', 'month', 'day', 'hour', 'minute' or 'second'."
+        raise KeyError(msg)
 
     for i in range(ENUM.get(datepart) + 1):
         print(ENUM.get(i))

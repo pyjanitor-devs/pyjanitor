@@ -101,8 +101,10 @@ def is_connected(url: str) -> bool:
         if sock is not None:
             sock.close()
             return True
-    except OSError:
-        pass
+    except OSError as e:
+        import warnings
+        warnings.warn("There was an issue connecting to the internet. Please see original error below.")
+        raise e
     return False
 
 

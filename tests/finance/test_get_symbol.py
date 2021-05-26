@@ -1,4 +1,4 @@
-from janitor import get_symbol
+from janitor.finance import get_symbol
 
 """
 tests the convert_symbol helper function.

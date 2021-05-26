@@ -30,11 +30,10 @@ Test 4 asserts that if bad data is passed
 
 
 @pytest.mark.functions
-def test_trunc_datetime():
+def test_truncate_datetime():
     x = datetime.now()
     x = truncate_datetime("month", x)
-    y = datetime.now()
-    y = truncate_datetime("mon", x)
+
     time = {
         "Year": [x.year],
         "Month": [x.month],
@@ -49,5 +48,11 @@ def test_trunc_datetime():
     assert time["Month"][0] == datetime.now().month
     assert time["Month"][0] == x.month
 
-    # bad data, error handling test
-    assert y is None
+
+# bad data, error handling test
+@pytest.mark.functions
+def test_bad_data():
+    with pytest.raises(KeyError):
+        y = datetime.now()
+        y = truncate_datetime("mon", y)
+        assert y is None

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from janitor.functions import sort_column_value_order
 
@@ -13,12 +14,9 @@ The values found in each row are the same
     company_sales's Jan row contains the
     same values as company_sales_2's Jan row
 
-Test 1 asserts sort_column may have parameters
-    which will not alter the df passed without
-    issue.
+Test 1 asserts that dfcannot be blank
 
-Test 2 asserts that columns may be ordered
-    without issue
+Test 2 asserts that column cannot be blank
 
 Test 3 asserts that company_sales_2 and
     company_sales with columns sorted
@@ -44,14 +42,16 @@ def test_sort_column_value_order():
     }
     df2 = pd.DataFrame.from_dict(company_sales_2)
     df2 = df2.set_index("Company1")
-    assert pd.DataFrame().equals(
-        sort_column_value_order(pd.DataFrame(), "", {})
-    )
-    assert pd.DataFrame().equals(
-        sort_column_value_order(
-            df, "", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
+    with pytest.raises(ValueError):
+        assert pd.DataFrame().equals(
+            sort_column_value_order(pd.DataFrame(), "", {})
         )
-    )
+    with pytest.raises(ValueError):
+        assert pd.DataFrame().equals(
+            sort_column_value_order(
+                df, "", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
+            )
+        )
     assert df2.equals(
         sort_column_value_order(
             df, "SalesMonth", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}

@@ -10,7 +10,7 @@ company_sales_2 is inverted, April is the first month
     where in comapny_sales Jan is the first month
 
 The values found in each row are the same
-    company_sales's Jan row contains the 
+    company_sales's Jan row contains the
     same values as company_sales_2's Jan row
 
 Test 1 asserts sort_column may have parameters

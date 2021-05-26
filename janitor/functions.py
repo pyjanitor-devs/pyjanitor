@@ -53,32 +53,8 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
+    is_connected
 )
-
-
-def convert_stock(stock_symbol: str) -> str:
-    """
-    This function takes in a stock symbol as a parameter,
-    queries an API for the companies full name and returns
-    it
-
-    Example:
-        print(convert_stock("aapl"))
-
-        console >> Apple Inc.
-
-    :param stock_symbol: This is our input stock symbol
-        to be converted
-    :return: We return the full company name
-    """
-    if is_connected("www.google.com"):
-        stock_symbol = stock_symbol.upper()
-        return get_symbol(stock_symbol.upper())
-    else:
-        raise ConnectionError(
-            "Connection Error: Client Not Connected to Internet"
-        )
-
 
 def unionize_dataframe_categories(
     *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
@@ -3803,7 +3779,8 @@ def truncate_datetime(datepart: str, timestamp: dt.datetime):
         ENUM[datepart]
     # Capture the error but replace it with explicit instructions.
     except KeyError:
-        msg = "Invalid truncation. Please enter any one of 'year', 'month', 'day', 'hour', 'minute' or 'second'."
+        msg = "Invalid truncation. Please enter any one of 'year', " \
+              "'month', 'day', 'hour', 'minute' or 'second'."
         raise KeyError(msg)
 
     for i in range(ENUM.get(datepart) + 1):

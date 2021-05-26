@@ -1,5 +1,5 @@
 from datetime import datetime
-from janitor import trunc_datetime
+from janitor import truncate_datetime
 import pytest
 
 '''
@@ -29,9 +29,9 @@ Test 4 asserts that if bad data is passed
 @pytest.mark.functions
 def test_trunc_datetime():
     x = datetime.now()
-    x = trunc_datetime("month", x)
+    x = truncate_datetime("month", x)
     y = datetime.now()
-    y = trunc_datetime("mon", x)
+    y = truncate_datetime("mon", x)
     time = {
         "Year": [x.year],
         "Month": [x.month],

@@ -13,7 +13,7 @@ import requests
 from janitor import check
 from janitor.errors import JanitorError
 
-from .utils import deprecated_alias
+from .utils import deprecated_alias, is_connected
 
 currency_set = {
     "AUD",
@@ -694,6 +694,30 @@ def inflate_currency(
         df[column_name] = df[column_name] * inflator
 
     return df
+
+
+def convert_stock(stock_symbol: str) -> str:
+    """
+    This function takes in a stock symbol as a parameter,
+    queries an API for the companies full name and returns
+    it
+
+    Example:
+        print(convert_stock("aapl"))
+
+        console >> Apple Inc.
+
+    :param stock_symbol: This is our input stock symbol
+        to be converted
+    :return: We return the full company name
+    """
+    if is_connected("www.google.com"):
+        stock_symbol = stock_symbol.upper()
+        return get_symbol(stock_symbol.upper())
+    else:
+        raise ConnectionError(
+            "Connection Error: Client Not Connected to Internet"
+        )
 
 
 def get_symbol(symbol: str):

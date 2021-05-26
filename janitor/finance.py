@@ -694,3 +694,28 @@ def inflate_currency(
         df[column_name] = df[column_name] * inflator
 
     return df
+
+
+def get_symbol(symbol: str):
+    """
+    This is a helper function to get a companies full
+    name based on the stock symbol.
+
+    Example:
+        print(get_symbol("aapl"))
+        console >> Apple Inc.
+
+    :param symbol: This is our stock symbol that we use
+        to query te api for the companies full name.
+    :return: This is the company name
+    """
+    result = requests.get(
+        "http://d.yimg.com/autoc."
+        + "finance.yahoo.com/autoc?query={}&region=1&lang=en".format(symbol)
+    ).json()
+
+    for x in result["ResultSet"]["Result"]:
+        if x["symbol"] == symbol:
+            return x["name"]
+        else:
+            return None

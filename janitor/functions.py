@@ -4,7 +4,6 @@ import collections
 import datetime as dt
 import inspect
 import re
-import socket
 import unicodedata
 import warnings
 from functools import partial, reduce
@@ -57,60 +56,6 @@ from .utils import (
 )
 
 
-def get_symbol(symbol: str) -> str:
-    """
-    This is a helper function to get a companies full
-    name based on the stock symbol.
-
-    Example:
-        print(get_symbol("aapl"))
-        console >> Apple Inc.
-
-    :param symbol: This is our stock symbol that we use
-        to query te api for the companies full name.
-    :return: This is the company name
-    """
-    result = requests.get(
-        "http://d.yimg.com/autoc."
-        + "finance.yahoo.com/autoc?query={}&region=1&lang=en".format(symbol)
-    ).json()
-
-    for x in result["ResultSet"]["Result"]:
-        if x["symbol"] == symbol:
-            return x["name"]
-        else:
-            return "Not found."
-
-
-def is_connected(url: str) -> bool:
-    """
-    This is a helper function to check if the client
-    is connected to the internet.
-
-    Example:
-        print(is_connected("www.google.com"))
-        console >> True
-
-    :param url: We take a test url to check if we are
-        able to create a valid connection.
-    :return: We return a boolean that signifies our
-        connection to the internet
-    """
-    try:
-        sock = socket.create_connection((url, 80))
-        if sock is not None:
-            sock.close()
-            return True
-    except OSError as e:
-        import warnings
-
-        warnings.warn(
-            "There was an issue connecting to the internet. Please see original error below."
-        )
-        raise e
-    return False
-
-
 def convert_stock(stock_symbol: str) -> str:
     """
     This function takes in a stock symbol as a parameter,
@@ -130,8 +75,9 @@ def convert_stock(stock_symbol: str) -> str:
         stock_symbol = stock_symbol.upper()
         return get_symbol(stock_symbol.upper())
     else:
-        print("Connection Error: Client Not Connected to Internet")
-        return ""
+        raise ConnectionError(
+            "Connection Error: Client Not Connected to Internet"
+        )
 
 
 def unionize_dataframe_categories(
@@ -1893,79 +1839,80 @@ def remove_columns(
     return df.drop(columns=column_names)
 
 
-def get_occurrences(df: iter, og_index=None) -> pd.DataFrame:
-    """
-    This is a helper function for our remove_dupes function.
-    This function will return the first occurrences based on
-    the order of a passed in iterator.
-
-    :param df: This is our iterable object
-
-    :param og_index: This is our index to be added back to the DataFrame
-
-    :return: We return a pandas DataFrame object
-
-    """
-    test_list = {}
-    for row in df:
-        if not (row in test_list):
-            test_list[row] = 0
-    df = pd.DataFrame.from_dict(test_list.keys())
-    if og_index is not None:
-        df = df.set_index(og_index)
-    return df
-
-
-def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
-    """
-    This function will remove duplicates in a pandas DataFrame,
-    if the DataFrame contains two rows that are the exact
-    same, the user can specify whether to keep the first
-    or last occurrence of the row.
-
-    Example:
-
-        This is our test DataFrame:
-
-            SalesMonth	Company1	Company2	Company3
-        0	Jan	        150.0	     180.0	    400.0
-        1	Feb	        200.0	    250.0	    500.0
-        2	Feb	        200.0	    250.0	    500.0
-        3	Mar	        300.0	    NaN	        600.0
-        4	April	    400.0	    500.0	    675.0
-
-        if we run remove dupes and wish to keep the first
-        occurrence then row index 1 will be in the returned
-        DataFrame, if keep is set to last then row
-        index 2 will be in the returned DataFrame:
-
-            df = remove_dupes(df,keep="first")
-
-    :param df: This is our pandas DataFrame that we
-            are removing the duplicate rows from
-
-    :param keep: This is our value of either first
-            or last that determines which row occurrences
-            we want in the returned DataFrame
-
-    :return: The returned object is a pandas DataFrame with the removed values
-
-    """
-    try:
-        index = df.index.name
-        df.insert(len(df.columns), index, df.index.values)
-        iterable_df = df.itertuples(index=False)
-        if keep == "last":
-            df = get_occurrences(reversed(iterable_df), og_index=index)
-        else:
-            df = get_occurrences(iterable_df, og_index=index)
-        return df
-    except AttributeError:
-        print(
-            "AttributeError: Invalid Argument Type, Make Sure The First "
-            + "Argument is a Pandas DataFrame"
-        )
-        return pd.DataFrame()
+#
+# def get_occurrences(df: iter, og_index=None) -> pd.DataFrame:
+#     """
+#     This is a helper function for our remove_dupes function.
+#     This function will return the first occurrences based on
+#     the order of a passed in iterator.
+#
+#     :param df: This is our iterable object
+#
+#     :param og_index: This is our index to be added back to the DataFrame
+#
+#     :return: We return a pandas DataFrame object
+#
+#     """
+#     test_list = {}
+#     for row in df:
+#         if not (row in test_list):
+#             test_list[row] = 0
+#     df = pd.DataFrame.from_dict(test_list.keys())
+#     if og_index is not None:
+#         df = df.set_index(og_index)
+#     return df
+#
+#
+# def remove_dupes(df: pd.DataFrame, keep="first") -> pd.DataFrame:
+#     """
+#     This function will remove duplicates in a pandas DataFrame,
+#     if the DataFrame contains two rows that are the exact
+#     same, the user can specify whether to keep the first
+#     or last occurrence of the row.
+#
+#     Example:
+#
+#         This is our test DataFrame:
+#
+#             SalesMonth	Company1	Company2	Company3
+#         0	Jan	        150.0	     180.0	    400.0
+#         1	Feb	        200.0	    250.0	    500.0
+#         2	Feb	        200.0	    250.0	    500.0
+#         3	Mar	        300.0	    NaN	        600.0
+#         4	April	    400.0	    500.0	    675.0
+#
+#         if we run remove dupes and wish to keep the first
+#         occurrence then row index 1 will be in the returned
+#         DataFrame, if keep is set to last then row
+#         index 2 will be in the returned DataFrame:
+#
+#             df = remove_dupes(df,keep="first")
+#
+#     :param df: This is our pandas DataFrame that we
+#             are removing the duplicate rows from
+#
+#     :param keep: This is our value of either first
+#             or last that determines which row occurrences
+#             we want in the returned DataFrame
+#
+#     :return: The returned object is a pandas DataFrame with the removed values
+#
+#     """
+#     try:
+#         index = df.index.name
+#         df.insert(len(df.columns), index, df.index.values)
+#         iterable_df = df.itertuples(index=False)
+#         if keep == "last":
+#             df = get_occurrences(reversed(iterable_df), og_index=index)
+#         else:
+#             df = get_occurrences(iterable_df, og_index=index)
+#         return df
+#     except AttributeError:
+#         print(
+#             "AttributeError: Invalid Argument Type, Make Sure The First "
+#             + "Argument is a Pandas DataFrame"
+#         )
+#         return pd.DataFrame()
 
 
 @pf.register_dataframe_method
@@ -3858,7 +3805,6 @@ def trunc_datetime(datepart: str, timestamp: dt.datetime):
         raise KeyError(msg)
 
     for i in range(ENUM.get(datepart) + 1):
-        print(ENUM.get(i))
         recurrence[i] = ENUM.get(i)
 
     return dt.datetime(
@@ -4267,89 +4213,6 @@ def join_apply(
     """
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df
-
-
-@pf.register_dataframe_method
-def join_conditional(
-    df: pd.DataFrame, left_column: str, right_column: str, join_operator: str
-) -> pd.DataFrame:
-    """
-    Create a new DataFrame based on the
-    comparison applied using the parameters listed
-
-    This method does not change the original DataFrame.
-
-     This function is supposed to emulate SQL and R's
-     implementation of conditional or non-equi joins.
-     This exact implementation though is based on the
-     example found in the request issue, typically a
-     conditional join is based on two tables. We may
-     implement it like that just to keep it closer
-     to the actual definition of the conditional join.
-
-     Notes:
-         - This is an unoptimized implementation
-         - This function treats NaN as 0
-         - join_conditional param only handles
-             <, >, != comparators just like SQL and R's
-             conditional joins / non-equi do
-    ex:
-     company_sales = {
-         'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
-         'Company1': [150.0, 200.0, 300.0, 400.0],
-         'Company2': [180.0, 250.0, np.nan, 500.0],
-         'Company3': [400.0, 500.0, 600.0, 675.0]
-     }
-     df = pd.DataFrame.from_dict(company_sales)
-
-     The input DataFrame will look as follows
-
-         SalesMonth  Company1  Company2  Company3
-     0        Jan     150.0     180.0     400.0
-     1        Feb     200.0     250.0     500.0
-     2        Mar     300.0       NaN     600.0
-     3      April     400.0     500.0     675.0
-
-     return_df = join_conditional(df, "Company1", "Company2", "<")
-
-     The comparison that is occurring is for each row in the
-     DataFrame, append row if Company 1 value < Company 2 value
-
-     The resulting DataFrame will look as follows.
-
-       SalesMonth  Company1  Company2  Company3
-     0        Jan     150.0     180.0     400.0
-     1        Feb     200.0     250.0     500.0
-     2      April     400.0     500.0     675.0
-
-    :param df: A pandas DataFrame.
-    :param left_column: A string that represents the left side of
-         the comparison e.g. 1 < 5; 1 being the left col
-    :param right_column: A string that represents the right side of
-         the comparison e.g. 5 being the right col in above ex
-    :param join_operator: A string that represents the operator
-         in the comparison e.g. < in the above ex.
-    :returns: A pandas DataFrame with rows that matched our comparison.
-
-
-    """
-
-    return_df = pd.DataFrame(columns=df.columns.tolist())
-    curr_in = 0
-    for index, row in df.iterrows():
-        if join_operator == ">":
-            if row[left_column] > row[right_column]:
-                return_df.loc[curr_in] = list(df.loc[index])
-                curr_in += 1
-        elif join_operator == "<":
-            if row[left_column] < row[right_column]:
-                return_df.loc[curr_in] = list(df.loc[index])
-                curr_in += 1
-        elif join_operator == "!=":
-            if row[left_column] != row[right_column]:
-                return_df.loc[curr_in] = list(df.loc[index])
-                curr_in += 1
-    return return_df
 
 
 @pf.register_dataframe_method
@@ -4786,11 +4649,9 @@ def sort_column_value_order(
                 del new_df["cond_order"]
             return new_df
         else:
-            print("ValueError: Column Name not in DataFrame")
-            return pd.DataFrame()
+            raise ValueError("Column Name not in DataFrame")
     else:
-        print("ValueError: column_value_order dictionary cannot be empty")
-        return pd.DataFrame()
+        raise ValueError("column_value_order dictionary cannot be empty")
 
 
 @pf.register_dataframe_method

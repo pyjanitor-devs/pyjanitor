@@ -4,8 +4,8 @@ import fnmatch
 import functools
 import os
 import re
+import socket
 import sys
-
 import warnings
 from collections import namedtuple
 from collections.abc import Callable as dispatch_callable
@@ -25,12 +25,12 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import (
     CategoricalDtype,
-    is_scalar,
     is_extension_array_dtype,
     is_list_like,
+    is_scalar,
 )
-
 from pandas.core.common import apply_if_callable
+
 from .errors import JanitorError
 
 
@@ -781,7 +781,11 @@ def _computations_complete(
     # still thinking on how to improve speed of groupby apply
     else:
         df = df.groupby(by).apply(
-            _base_complete, columns, all_strings, any_nulls, dict_present,
+            _base_complete,
+            columns,
+            all_strings,
+            any_nulls,
+            dict_present,
         )
         df = df.drop(columns=by)
 
@@ -829,7 +833,8 @@ def _base_complete(
 
 
 def _create_indexer_for_complete(
-    df_index: pd.Index, columns: List[Union[List, Dict, str]],
+    df_index: pd.Index,
+    columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
     This creates the index that will be used
@@ -2245,3 +2250,32 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     # (# extra_index_line)
     df = df.droplevel(-1).set_index("match", append=True)
     return df
+
+
+def is_connected(url: str) -> bool:
+    """
+    This is a helper function to check if the client
+    is connected to the internet.
+
+    Example:
+        print(is_connected("www.google.com"))
+        console >> True
+
+    :param url: We take a test url to check if we are
+        able to create a valid connection.
+    :return: We return a boolean that signifies our
+        connection to the internet
+    """
+    try:
+        sock = socket.create_connection((url, 80))
+        if sock is not None:
+            sock.close()
+            return True
+    except OSError as e:
+        import warnings
+
+        warnings.warn(
+            "There was an issue connecting to the internet. Please see original error below."
+        )
+        raise e
+    return False

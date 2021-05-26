@@ -1,4 +1,4 @@
-from janitor.functions import is_connected
+from janitor.utils import is_connected
 
 """
 Tests the is_connected helper function,

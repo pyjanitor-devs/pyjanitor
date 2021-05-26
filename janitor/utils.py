@@ -2275,7 +2275,8 @@ def is_connected(url: str) -> bool:
         import warnings
 
         warnings.warn(
-            "There was an issue connecting to the internet. Please see original error below."
+            "There was an issue connecting to the internet. "
+            "Please see original error below."
         )
         raise e
     return False

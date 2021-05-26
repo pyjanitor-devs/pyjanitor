@@ -162,6 +162,7 @@ def test_clean_names_camelcase_to_snake_multi(dataframe):
         "snakes_on_a_plane3",
     ]
 
+
 @pytest.mark.functions
 def test_clean_names_enforce_string(dataframe):
     df = dataframe.rename(columns={"a": 1}).clean_names(enforce_string=True)
@@ -174,12 +175,14 @@ def test_clean_names_truncate_limit(dataframe):
     df = dataframe.clean_names(truncate_limit=7)
     expected_columns = ["a", "bell_ch", "decorat", "animals", "cities"]
     assert set(df.columns) == set(expected_columns)
-    
+
 
 '''
-The following tests ensure nonstandard characters 
+The following tests ensure nonstandard characters
 and spaces have been cleaned up.
 '''
+
+
 @pytest.mark.functions
 def test_charac():
     table_GDP = pd.read_html(
@@ -192,7 +195,7 @@ def test_charac():
 
     assert "current_accountbalance_in_%_of_gdp" in df.columns.values
 
-    
+
 @pytest.mark.functions
 def test_space():
     table_GDP = pd.read_html(

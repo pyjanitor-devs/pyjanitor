@@ -26,7 +26,6 @@ from typing import (
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-import requests
 from multipledispatch import dispatch
 from natsort import index_natsorted
 from pandas.api.types import is_list_like, union_categoricals

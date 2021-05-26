@@ -2,26 +2,30 @@ import pandas as pd
 import numpy as np
 from janitor.functions import sort_column_value_order
 
+
 '''
 Below, company_sales and company_sales_2 are both dfs.
+
 company_sales_2 is inverted, April is the first month
-    where in comapny_sales Jan is the fisrt month
+    where in comapny_sales Jan is the first month
+
 The values found in each row are the same
     company_sales's Jan row contains the 
     same values as company_sales_2's Jan row
-    
+
 Test 1 asserts sort_column may have parameters
     which will not alter the df passed without
     issue.
-    
+
 Test 2 asserts that columns may be ordered
     without issue
-    
+
 Test 3 asserts that company_sales_2 and
     company_sales with columns sorted
     will become equivilent, meaning
     the columns have been successfully ordered.
 '''
+
 
 def test_sort_column_value_order():
     company_sales = {

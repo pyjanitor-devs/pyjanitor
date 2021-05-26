@@ -3762,7 +3762,9 @@ def to_datetime(
 
 
 @pf.register_dataframe_method
-def trunc_datetime(datepart: str, timestamp: dt.datetime):
+def truncate_datetime(datepart: str, timestamp: dt.datetime):
+    # TODO: Implement it such that it works with
+    # TODO: the pattern df.truncate_datetime(...)
     """
     Truncate times down to a user-specified precision of
     year, month, day, hour, minute, or second.

@@ -1,7 +1,6 @@
 from janitor.functions import is_connected
 
-
-'''
+"""
 Tests the is_connected helper function,
 which is a function to check if the client
 is connected to the internet.
@@ -20,7 +19,7 @@ at time of testing, anyway).
 If test 3 fails, perhaps this is because
 the website now exists. If that is the case,
 alter or delete the test.
-'''
+"""
 
 
 def test_is_connected():

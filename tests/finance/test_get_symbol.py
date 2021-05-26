@@ -1,7 +1,6 @@
 from janitor import get_symbol
 
-
-'''
+"""
 tests the convert_symbol helper function.
 
 Test 1: GME is Gamestop Corp. Test should run fine.
@@ -11,7 +10,7 @@ Test 3: A little redundant, but it's another
     abbreviations than just the one tested so far.
 Test 4: ZZZZ does not belong to any company,
     it should therefore it should be None
-'''
+"""
 
 
 def test_get_symbol():

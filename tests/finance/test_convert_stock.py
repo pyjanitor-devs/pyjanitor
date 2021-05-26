@@ -1,7 +1,6 @@
 from janitor import get_symbol
 
-
-'''
+"""
 Tests get_symbol function,
 get_symbol should return appropriate string
 corresponding to abbreviation.
@@ -16,7 +15,7 @@ Example:
 If the symbol does not have a corresponding
 company, Nonetype should be returned.
 
-'''
+"""
 
 
 def test_convert_stock():

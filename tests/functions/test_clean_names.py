@@ -177,10 +177,10 @@ def test_clean_names_truncate_limit(dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-'''
+"""
 The following tests ensure nonstandard characters
 and spaces have been cleaned up.
-'''
+"""
 
 
 @pytest.mark.functions

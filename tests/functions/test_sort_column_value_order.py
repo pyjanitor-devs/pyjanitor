@@ -1,9 +1,9 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from janitor.functions import sort_column_value_order
 
-
-'''
+"""
 Below, company_sales and company_sales_2 are both dfs.
 
 company_sales_2 is inverted, April is the first month
@@ -24,7 +24,7 @@ Test 3 asserts that company_sales_2 and
     company_sales with columns sorted
     will become equivilent, meaning
     the columns have been successfully ordered.
-'''
+"""
 
 
 def test_sort_column_value_order():

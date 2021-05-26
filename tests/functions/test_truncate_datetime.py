@@ -1,9 +1,10 @@
 from datetime import datetime
-from janitor import truncate_datetime
+
 import pytest
 
+from janitor import truncate_datetime
 
-'''
+"""
 Creates 2 datetime objects, one
     will be a valid object and the
     other will be Nonetype.
@@ -25,7 +26,7 @@ Test 4 asserts that if bad data is passed
     appropriate error handling will
     take care of it.
 
-'''
+"""
 
 
 @pytest.mark.functions

@@ -4,11 +4,10 @@ import collections
 import datetime as dt
 import inspect
 import re
+import socket
 import unicodedata
 import warnings
 from functools import partial, reduce
-import requests
-import socket
 from typing import (
     Any,
     Callable,
@@ -28,19 +27,20 @@ from typing import (
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+import requests
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import union_categoricals, is_list_like
+from pandas.api.types import is_list_like, union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
-    _computations_expand_grid,
     _clean_accounting_column,
     _computations_as_categorical,
     _computations_complete,
+    _computations_expand_grid,
     _computations_pivot_longer,
     _computations_pivot_wider,
     _currency_column_to_numeric,
@@ -103,7 +103,10 @@ def is_connected(url: str) -> bool:
             return True
     except OSError as e:
         import warnings
-        warnings.warn("There was an issue connecting to the internet. Please see original error below.")
+
+        warnings.warn(
+            "There was an issue connecting to the internet. Please see original error below."
+        )
         raise e
     return False
 

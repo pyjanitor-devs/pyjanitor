@@ -1909,6 +1909,36 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     return df
 
 
+def is_connected(url: str) -> bool:
+    """
+    This is a helper function to check if the client
+    is connected to the internet.
+
+    Example:
+        print(is_connected("www.google.com"))
+        console >> True
+
+    :param url: We take a test url to check if we are
+        able to create a valid connection.
+    :return: We return a boolean that signifies our
+        connection to the internet
+    """
+    try:
+        sock = socket.create_connection((url, 80))
+        if sock is not None:
+            sock.close()
+            return True
+    except OSError as e:
+        import warnings
+
+        warnings.warn(
+            "There was an issue connecting to the internet. "
+            "Please see original error below."
+        )
+        raise e
+    return False
+
+
 @functools.singledispatch
 def _select_columns(columns_to_select, df):
     """
@@ -2250,33 +2280,3 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     # (# extra_index_line)
     df = df.droplevel(-1).set_index("match", append=True)
     return df
-
-
-def is_connected(url: str) -> bool:
-    """
-    This is a helper function to check if the client
-    is connected to the internet.
-
-    Example:
-        print(is_connected("www.google.com"))
-        console >> True
-
-    :param url: We take a test url to check if we are
-        able to create a valid connection.
-    :return: We return a boolean that signifies our
-        connection to the internet
-    """
-    try:
-        sock = socket.create_connection((url, 80))
-        if sock is not None:
-            sock.close()
-            return True
-    except OSError as e:
-        import warnings
-
-        warnings.warn(
-            "There was an issue connecting to the internet. "
-            "Please see original error below."
-        )
-        raise e
-    return False

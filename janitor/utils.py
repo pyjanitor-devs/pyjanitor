@@ -1808,7 +1808,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
     This function is executed before proceeding to the computation phase.
 
     If all checks pass, the dataframe,
-    and a pairing of column names and namedtuples
+    and a pairing of column names and namedtuple
     of (categories, order) is returned.
 
     :param df: The pandas DataFrame object.
@@ -1830,7 +1830,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
     for column_name, value in kwargs.items():
         check("Pair of `categories` and `order`", value, [tuple])
         if len(value) != 2:
-            raise ValueError("Must provide tuples of (categories, order).")
+            raise ValueError("Must provide tuple of (categories, order).")
         value = asCategorical(*value)
         value_categories = value.categories
         if value_categories is not None:
@@ -1875,8 +1875,12 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     categories_dtypes = {}
     for column_name, ascategorical in categories_dict.items():
-        categories = _encode_categories(ascategorical.categories, df, column_name)
-        categories_dtypes[column_name] = _encode_order(ascategorical.order, categories)
+        categories = _encode_categories(
+            ascategorical.categories, df, column_name
+        )
+        categories_dtypes[column_name] = _encode_order(
+            ascategorical.order, categories
+        )
 
     df = df.astype(categories_dtypes)
 
@@ -1956,13 +1960,13 @@ def _encode_order(order, categories):
     in `_computations_as_categorical`.
     Returns a pd.CategoricalDtype().
     """
-    raise TypeError("This type is not supported in `categories`.")
+    raise TypeError("This type is not supported in `order`.")
 
 
 @_encode_order.register(type(None))  # noqa: F811
 def _sub_encode_order(order, categories):  # noqa: F811
     """
-    base function for processing `categories`
+    base function for processing `order`
     in `_computations_as_categorical`.
     Apllies to only NoneType.
     Returns a pd.CategoricalDtype().
@@ -1976,7 +1980,7 @@ def _sub_encode_order(order, categories):  # noqa: F811
 @_encode_order.register(str)  # noqa: F811
 def _sub_encode_order(order, categories):  # noqa: F811
     """
-    base function for processing `categories`
+    base function for processing `order`
     in `_computations_as_categorical`.
     Apllies to only strings.
     Returns a pd.CategoricalDtype().

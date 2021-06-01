@@ -1,6 +1,5 @@
 """ General purpose data cleaning functions. """
 
-import collections
 import datetime as dt
 import inspect
 import re
@@ -52,6 +51,7 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
+    asCategorical,
 )
 
 
@@ -469,26 +469,19 @@ def get_dupes(
 
 
 def As_Categorical(
-    categories: Optional[
-        Union[List, Set, Tuple, pd.Series, np.ndarray]
-    ] = None,
-    order: Optional[str] = None,
+    categories: Optional[List] = None, order: Optional[str] = None,
 ) -> NamedTuple:
     """
     Helper function for `encode_categorical`. It makes creating the
     `categories` and `order` more explicit. Inspired by pd.NamedAgg.
-
     :param categories: list-like object to create new categorical column.
     :param order: string object that can be either "sort" or "appearance".
         If "sort", the `categories` argument will be sorted with np.sort;
         if "apperance", the `categories` argument will be used as is.
     :returns: A namedtuple of (`categories`, `order`).
     """
-    AsCategorical = collections.namedtuple(
-        "AsCategorical", ["categories", "order"], defaults=(None, None)
-    )
 
-    return AsCategorical._make((categories, order))
+    return asCategorical(categories=categories, order=order)
 
 
 @pf.register_dataframe_method
@@ -686,7 +679,7 @@ def encode_categorical(
             .encode_categorical(
                 col1 = (categories, order),
                 col2 = jn.As_Categorical(
-                            categories = [values],
+                            categories = [values]/None,
                             order="sort"/"appearance"/None
                             )
         )
@@ -1463,9 +1456,7 @@ def deconcatenate_column(
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
 
-        df_new = df_new.select_columns(search_column_names=cols).drop(
-            columns=column_name
-        )
+        df_new = df_new.select_columns(cols).drop(columns=column_name)
 
     return df_new
 
@@ -3142,9 +3133,7 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame,
-    search_column_names: Union[str, callable, Pattern, slice, list],
-    invert: bool = False,
+    df: pd.DataFrame, *args, invert: bool = False,
 ) -> pd.DataFrame:
     """
     Method-chainable selection of columns.
@@ -3257,7 +3246,7 @@ def select_columns(
 
     - Select via a list (you can combine any of the previous options)::
 
-        df.select_columns(["id", "code*", slice("code", "code2")])
+        df.select_columns("id", "code*", slice("code", "code2"))
 
            id  code  code1 code2 code3
         0   0     1    4.0     8     a
@@ -3275,7 +3264,7 @@ def select_columns(
     - Setting ``invert`` to ``True``
       returns the complement of the columns provided::
 
-        df.select_columns(["id", "code*", slice("code", "code2")],
+        df.select_columns("id", "code*", slice("code", "code2"),
                           invert = True)
 
            Name type type1 type2      type3
@@ -3289,7 +3278,7 @@ def select_columns(
 
        df = pd.DataFrame(...)
 
-       df = jn.select_columns(['a', 'b', 'col_*'],
+       df = jn.select_columns('a', 'b', 'col_*',
                               invert=True)
 
     Method-chaining example:
@@ -3297,18 +3286,19 @@ def select_columns(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .select_columns(['a', 'b', 'col_*'],
+              .select_columns('a', 'b', 'col_*',
               invert=True))
 
 
     :param df: A pandas DataFrame.
-    :param search_column_names: Valid inputs include:
+    :param args: Valid inputs include:
 
         - an exact column name to look for
         - a shell-style glob string (e.g., `*_thing_*`)
         - a regular expression
         - a callable which is applicable to each Series in the dataframe
-        - a list of all the aforementioned options.
+        - a list of booleans.
+        - variable arguments of all the aforementioned.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.
@@ -3323,10 +3313,14 @@ def select_columns(
     # applicable for any
     # list-like object (ndarray, Series, pd.Index, ...)
     # excluding tuples, which are returned as is
-    if is_list_like(search_column_names) and (
-        not isinstance(search_column_names, tuple)
-    ):
-        search_column_names = [*search_column_names]
+    search_column_names = []
+    for arg in args:
+        if is_list_like(arg) and (not isinstance(arg, tuple)):
+            search_column_names.extend([*arg])
+        else:
+            search_column_names.append(arg)
+    if len(search_column_names) == 1:
+        search_column_names = search_column_names[0]
 
     full_column_list = _select_columns(search_column_names, df)
 

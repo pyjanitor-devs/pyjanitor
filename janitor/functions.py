@@ -3244,7 +3244,8 @@ def select_columns(
         0    4.0     8     E     T     a 2018-01-01
         1    NaN     5   NaN     U     b 2018-01-01
 
-    - Select via a list (you can combine any of the previous options)::
+    - Select a combination of the above
+      (you can combine any of the previous options)::
 
         df.select_columns("id", "code*", slice("code", "code2"))
 
@@ -3252,7 +3253,7 @@ def select_columns(
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
 
-    - You can also pass a list of booleans::
+    - You can also pass a sequence of booleans::
 
         df.select_columns([True, False, True, True, True,
                            False, False, False, True, False])
@@ -3297,8 +3298,8 @@ def select_columns(
         - a shell-style glob string (e.g., `*_thing_*`)
         - a regular expression
         - a callable which is applicable to each Series in the dataframe
-        - a list of booleans.
         - variable arguments of all the aforementioned.
+        - a sequence of booleans.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.

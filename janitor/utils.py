@@ -1874,9 +1874,9 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     df, categories_dict = as_categorical_checks(df, **kwargs)
 
     categories_dtypes = {}
-    for column_name, (categories, order) in categories_dict.items():
-        categories = _encode_categories(categories, df, column_name)
-        categories_dtypes[column_name] = _encode_order(order, categories)
+    for column_name, ascategorical in categories_dict.items():
+        categories = _encode_categories(ascategorical.categories, df, column_name)
+        categories_dtypes[column_name] = _encode_order(ascategorical.order, categories)
 
     df = df.astype(categories_dtypes)
 

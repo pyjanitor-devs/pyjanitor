@@ -9,7 +9,7 @@
     which is faster than `combine_first` @samukweku
 -   [ENH] Use `eval` for string conditions in `update_where`. @samukweku
 -   [ENH] Add clearer error messages for `pivot_longer`. h/t to @tdhock
-    for the observation.
+    for the observation. -@samukweku
 -   [ENH] `select_columns` now uses variable arguments (*args),
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions

@@ -3769,9 +3769,25 @@ def to_datetime(
 
 
 @pf.register_dataframe_method
+def truncate_datetime_dataframe(
+        df: pd.DataFrame, datepart: str
+) -> pd.DataFrame:
+    for i in df.columns:
+        for j in df.index:
+            try:
+                df[i][j] = truncate_datetime(datepart, df[i][j])
+            except KeyError:
+                pass
+            except TypeError:
+                pass
+            except AttributeError:
+                pass
+
+    return df
+
+
+@pf.register_dataframe_method
 def truncate_datetime(datepart: str, timestamp: dt.datetime):
-    # TODO: Implement it such that it works with
-    # TODO: the pattern df.truncate_datetime(...)
     """
     Truncate times down to a user-specified precision of
     year, month, day, hour, minute, or second.

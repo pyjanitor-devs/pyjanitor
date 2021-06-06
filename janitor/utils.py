@@ -20,7 +20,7 @@ from typing import (
     Union,
     NamedTuple,
 )
-
+from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from pandas.api.types import (
@@ -28,6 +28,9 @@ from pandas.api.types import (
     is_scalar,
     is_extension_array_dtype,
     is_list_like,
+    is_numeric_dtype,
+    is_string_dtype,
+    is_datetime64_dtype,
 )
 
 from pandas.core.common import apply_if_callable
@@ -2333,3 +2336,68 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     # (# extra_index_line)
     df = df.droplevel(-1).set_index("match", append=True)
     return df
+
+
+@dataclass
+class lt_join:
+    left_column: str
+    right_column: str
+
+
+@dataclass
+class le_join:
+    left_column: str
+    right_column: str
+
+
+@dataclass
+class gt_join:
+    left_column: str
+    right_column: str
+
+
+@dataclass
+class ge_join:
+    left_column: str
+    right_column: str
+
+
+@functools.singledispatch
+def _conditional_join(condition, df, right):
+    """
+    Base function to process conditional join.
+    """
+    raise TypeError("This type is not supported in conditional_join.")
+
+
+@_conditional_join.register(le_join)  # noqa: F811
+def _sub_conditional_join(condition, df, right):  # noqa: F811
+    """
+    Base function to process conditional join.
+    Specific for conditions where the left_column
+    is less than or equal to the right_column.
+    """
+
+    left_column = condition.left_column
+    right_column = condition.right_column
+    check("left_column", left_column, [str])
+    check("right_column", right_column, [str])
+    check_column(df, [left_column])
+    check_column(right, [right_column])
+
+    left_column = df[left_column]
+    right_column = right[right_column]
+
+    numeric_type = all(map(is_numeric_dtype, (left_column, right_column)))
+    date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
+    string_type = all(map(is_string_dtype, (left_column, right_column)))
+
+    if not any((numeric_type, date_type, string_type)):
+        raise ValueError(
+            """
+            Conditional_join only supports 
+            numeric, date or string dtypes.
+            """
+        )
+    return df
+

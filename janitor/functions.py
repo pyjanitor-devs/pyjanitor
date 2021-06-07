@@ -6865,9 +6865,9 @@ def case_when(
     df: pd.DataFrame, column_name: str, *args,
 ) -> pd.DataFrame:
     """
-    Similar to both SQL's CASE statement and R's 'dplyr::case_when' function, pass a list of multiple 
+    Similar to both SQL's CASE statement and R's 'dplyr::case_when' function, pass a list of multiple
     conditional queries with replacement values to an existing column or to a new column. When conditions
-    are met, the corresponding values will be replaced. Conditions must evaluate to 'bool' and can 
+    are met, the corresponding values will be replaced. Conditions must evaluate to 'bool' and can
     come from multiple columns.
 ​
     This method does not mutate the original DataFrame.
@@ -6888,7 +6888,7 @@ def case_when(
                 [True, df.c]
             ))
 ​
-                 a   b    c    value  
+                 a   b    c    value
             0    0   0    6      x
             1    0   3    7      0
             2    1   4    8      8
@@ -6900,7 +6900,7 @@ def case_when(
 ​
         import pandas as pd
         import numpy as np
-        import janitor jn 
+        import janitor jn
 ​
         df = pd.DataFrame(...)
         df = jn.case_when(
@@ -6920,7 +6920,7 @@ def case_when(
             [(True/False) & (True/False), replacement],
             [True, replacement])
         )
-        
+
         :param df: A pandas dataframe.
         :param column_name: Column name where replacements will be updated.
         :param *args: List with two elements; elements[0] passess the conditions while

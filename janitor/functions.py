@@ -3770,7 +3770,7 @@ def to_datetime(
 
 @pf.register_dataframe_method
 def truncate_datetime_dataframe(
-        df: pd.DataFrame, datepart: str
+    df: pd.DataFrame, datepart: str
 ) -> pd.DataFrame:
     for i in df.columns:
         for j in df.index:

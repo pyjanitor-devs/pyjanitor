@@ -1782,7 +1782,7 @@ def _computations_pivot_wider(
     return df
 
 
-class asCategorical(NamedTuple):
+class As_Categorical(NamedTuple):
     """
     Helper class for `encode_categorical`. It makes creating the
     `categories` and `order` more explicit. Inspired by pd.NamedAgg.
@@ -1834,7 +1834,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
         check("Pair of `categories` and `order`", value, [tuple])
         if len(value) != 2:
             raise ValueError("Must provide tuple of (categories, order).")
-        value = asCategorical(*value)
+        value = As_Categorical(*value)
         value_categories = value.categories
         if value_categories is not None:
             if not is_list_like(value_categories):
@@ -1857,7 +1857,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
                     "appearance", "sort" or `None`.
                     """
                 )
-        categories_dict[column_name] = asCategorical(
+        categories_dict[column_name] = As_Categorical(
             categories=value_categories, order=value_order
         )
 
@@ -2362,6 +2362,126 @@ class ge_join:
     right_column: str
 
 
+def conditional_join_type_check(
+    left_column: pd.Series, right_column: pd.Series
+) -> pd.DataFrame:
+
+    """
+    Raise error if type is not any of numeric, datetime, or string.
+    """
+
+    numeric_type = all(map(is_numeric_dtype, (left_column, right_column)))
+    date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
+    string_type = all(map(is_string_dtype, (left_column, right_column)))
+
+    if not any((numeric_type, date_type, string_type)):
+        raise ValueError(
+            """
+            Conditional_join only supports 
+            numeric, date or string dtypes.
+            """
+        )
+
+    return None
+
+
+def generic_less_than_inequality_join(left_column, right_column, df, right):
+    """
+    Generic implementation for less than joins.
+    This covers less than or equal joins as well.
+    """
+
+    check("left_column", left_column, [str])
+    check("right_column", right_column, [str])
+    check_column(df, [left_column])
+    check_column(right, [right_column])
+
+    left_c = df[left_column]
+    right_c = right[right_column]
+
+    conditional_join_type_check(left_c, right_c)
+
+    if left_c.hasnans:
+        df = df.dropna(subset=[left_column])
+        left_c = df[left_column]
+    if right_c.hasnans:
+        right = right.dropna(subset=[right_column])
+        right_c = right[right_column]
+    if not right_c.is_unique:
+        right_c = right_c.drop_duplicates()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
+    if left_c.min() > right_c.max():
+        return None
+
+    len_right_c = len(right_c)
+    search_sorted_indices = right_c.searchsorted(left_c, side="left")
+    positions_to_include = search_sorted_indices < len_right_c
+    if np.any(positions_to_include):
+        search_sorted_indices = search_sorted_indices[positions_to_include]
+        df = df.loc[positions_to_include]
+    length_per_left_c = len_right_c - search_sorted_indices
+    values_for_left = tuple(
+        slice(n, len_right_c) for n in search_sorted_indices
+    )
+    values_for_left = np.r_[values_for_left]
+    left_reindex = np.arange(len(df)).repeat(length_per_left_c)
+    df = df.take(left_reindex)
+    len_df_columns = len(df.columns)
+    left_header = ["left"] * len_df_columns
+    df.columns = pd.MultiIndex.from_arrays([left_header, df.columns])
+    new_column = ("right", right_column)
+    df.loc[:, new_column] = right_c.take(values_for_left).array
+    return df
+
+
+def generic_greater_than_inequality_join(left_column, right_column, df, right):
+    """
+    Generic implementation for greater than joins.
+    This covers greater than or equal joins as well.
+    """
+
+    check("left_column", left_column, [str])
+    check("right_column", right_column, [str])
+    check_column(df, [left_column])
+    check_column(right, [right_column])
+
+    left_c = df[left_column]
+    right_c = right[right_column]
+
+    conditional_join_type_check(left_c, right_c)
+
+    if left_c.hasnans:
+        df = df.dropna(subset=[left_column])
+        left_c = df[left_column]
+    if right_c.hasnans:
+        right = right.dropna(subset=[right_column])
+        right_c = right[right_column]
+    if not right_c.is_unique:
+        right_c = right_c.drop_duplicates()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
+    if left_c.max() < right_c.min():
+        return None
+
+    search_sorted_indices = right_c.searchsorted(left_c, side="right")
+    positions_to_include = search_sorted_indices > 0
+    if np.any(positions_to_include):
+        search_sorted_indices = search_sorted_indices[positions_to_include]
+        df = df.loc[positions_to_include]
+
+    values_for_left = tuple(slice(0, n) for n in search_sorted_indices)
+    values_for_left = np.r_[values_for_left]
+    left_reindex = np.arange(len(df)).repeat(search_sorted_indices)
+    df = df.take(left_reindex)
+    len_df_columns = len(df.columns)
+    left_header = ["left"] * len_df_columns
+    df.columns = pd.MultiIndex.from_arrays([left_header, df.columns])
+    new_column = ("right", right_column)
+    df.loc[:, new_column] = right_c.take(values_for_left).array
+    return df
+
+
 @functools.singledispatch
 def _conditional_join(condition, df, right):
     """
@@ -2380,24 +2500,93 @@ def _sub_conditional_join(condition, df, right):  # noqa: F811
 
     left_column = condition.left_column
     right_column = condition.right_column
-    check("left_column", left_column, [str])
-    check("right_column", right_column, [str])
-    check_column(df, [left_column])
-    check_column(right, [right_column])
 
-    left_column = df[left_column]
-    right_column = right[right_column]
+    return generic_less_than_inequality_join(
+        left_column=left_column, right_column=right_column, df=df, right=right
+    )
 
-    numeric_type = all(map(is_numeric_dtype, (left_column, right_column)))
-    date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
-    string_type = all(map(is_string_dtype, (left_column, right_column)))
 
-    if not any((numeric_type, date_type, string_type)):
-        raise ValueError(
-            """
-            Conditional_join only supports 
-            numeric, date or string dtypes.
-            """
-        )
+@_conditional_join.register(lt_join)  # noqa: F811
+def _sub_conditional_join(condition, df, right):  # noqa: F811
+    """
+    Base function to process conditional join.
+    Specific for conditions where the left_column
+    is less than the right_column.
+    """
+
+    left_column = condition.left_column
+    right_column = condition.right_column
+    df = generic_less_than_inequality_join(
+        left_column=left_column, right_column=right_column, df=df, right=right
+    )
+
+    remove_equals = df[("left", left_column)] != df[("right", right_column)]
+    return df.loc[remove_equals]
+
+
+@_conditional_join.register(ge_join)  # noqa: F811
+def _sub_conditional_join(condition, df, right):  # noqa: F811
+    """
+    Base function to process conditional join.
+    Specific for conditions where the left_column
+    is greater than or equal to the right_column.
+    """
+
+    left_column = condition.left_column
+    right_column = condition.right_column
+    return generic_greater_than_inequality_join(
+        left_column=left_column, right_column=right_column, df=df, right=right
+    )
+
+
+@_conditional_join.register(gt_join)  # noqa: F811
+def _sub_conditional_join(condition, df, right):  # noqa: F811
+    """
+    Base function to process conditional join.
+    Specific for conditions where the left_column
+    is greater than the right_column.
+    """
+
+    left_column = condition.left_column
+    right_column = condition.right_column
+    df = generic_greater_than_inequality_join(
+        left_column=left_column, right_column=right_column, df=df, right=right
+    )
+
+    remove_equals = df[("left", left_column)] != df[("right", right_column)]
+    return df.loc[remove_equals]
+
+
+def _computations_conditional_join(
+    df: pd.DataFrame, right: pd.DataFrame, conditions
+) -> pd.DataFrame:
+    """
+    Combine results from _conditional_join
+    with matching values from the `right` dataframe|Series
+    to get the final output.
+
+    A MultiIndex dataframe is returned,
+    with headers `left` and `right`,
+    pointing to `df` and `right` columns respectively.
+    """
+
+    if len(conditions) == 1:
+        conditions = conditions[0]
+        right_label = conditions.right_column
+        df_columns = df.columns
+        right_columns = right.columns
+        df = _conditional_join(conditions, df, right)
+        header_right = ["right"] * len(right_columns)
+        header_right = pd.MultiIndex.from_arrays([header_right, right_columns])
+        headers = ["left"] * len(df_columns)
+        headers = pd.MultiIndex.from_arrays([headers, df_columns])
+        headers = headers.union(header_right, sort=False)
+        if df is None:
+            return pd.DataFrame([], columns=headers)
+        right.columns = header_right
+    df = df.set_index(("right", right_label))
+    right = right.set_index(("right", right_label))
+    df = df.join(right, how="inner", sort=False)
+    df = df.reset_index()
+    df = df.reindex(columns=headers)
     return df
-

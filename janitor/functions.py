@@ -52,12 +52,12 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    asCategorical,
-    _conditional_join,
+    As_Categorical,
     le_join,
     lt_join,
     ge_join,
     gt_join,
+     _computations_conditional_join
 )
 
 
@@ -474,20 +474,6 @@ def get_dupes(
     return df[dupes == True]  # noqa: E712
 
 
-def As_Categorical(
-    categories: Optional[List] = None, order: Optional[str] = None,
-) -> NamedTuple:
-    """
-    Helper function for `encode_categorical`. It makes creating the
-    `categories` and `order` more explicit. Inspired by pd.NamedAgg.
-    :param categories: list-like object to create new categorical column.
-    :param order: string object that can be either "sort" or "appearance".
-        If "sort", the `categories` argument will be sorted with np.sort;
-        if "apperance", the `categories` argument will be used as is.
-    :returns: A namedtuple of (`categories`, `order`).
-    """
-
-    return asCategorical(categories=categories, order=order)
 
 
 @pf.register_dataframe_method
@@ -6345,7 +6331,12 @@ def conditional_join(
     .. # noqa: DAR402
     """
 
+    if isinstance(df.columns, pd.MultiIndex):
+        raise ValueError("Conditional Join does not support MultiIndex columns.")
     check("`right`", right, [pd.DataFrame, pd.Series])
+
+    if isinstance(right, pd.DataFrame) and isinstance(right.columns, pd.MultiIndex):
+        raise ValueError("Conditional Join does not support MultiIndex columns.")
 
     if not conditions:
         raise ValueError("Kindly provide at least a condition for the join.")
@@ -6357,7 +6348,6 @@ def conditional_join(
             raise ValueError("conditional_join only supports named Series.")
         right = right.to_frame()
 
-    for condition in conditions:
-        df = _conditional_join(condition, df, right)
+    df =  _computations_conditional_join(df, right, conditions)
 
     return df

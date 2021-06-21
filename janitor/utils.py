@@ -2406,32 +2406,30 @@ def generic_less_than_inequality_join(left_column, right_column, df, right):
         left_c = df[left_column]
     if right_c.hasnans:
         right = right.dropna(subset=[right_column])
-        right_c = right[right_column]
-    if not right_c.is_unique:
-        right_c = right_c.drop_duplicates()
     if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
+        right = right.sort_values(by=right_column)
+    right_c = right[right_column]
     if left_c.min() > right_c.max():
         return None
 
     len_right_c = len(right_c)
-    search_sorted_indices = right_c.searchsorted(left_c, side="left")
-    positions_to_include = search_sorted_indices < len_right_c
+    search_indices = right_c.searchsorted(left_c, side="left")
+    positions_to_include = search_indices < len_right_c
     if np.any(positions_to_include):
-        search_sorted_indices = search_sorted_indices[positions_to_include]
+        search_indices = search_indices[positions_to_include]
         df = df.loc[positions_to_include]
-    length_per_left_c = len_right_c - search_sorted_indices
     values_for_left = tuple(
-        slice(n, len_right_c) for n in search_sorted_indices
+        slice(n, len_right_c) for n in search_indices
     )
     values_for_left = np.r_[values_for_left]
-    left_reindex = np.arange(len(df)).repeat(length_per_left_c)
-    df = df.take(left_reindex)
-    len_df_columns = len(df.columns)
-    left_header = ["left"] * len_df_columns
-    df.columns = pd.MultiIndex.from_arrays([left_header, df.columns])
-    new_column = ("right", right_column)
-    df.loc[:, new_column] = right_c.take(values_for_left).array
+    right = right.take(values_for_left)
+    search_indices = len_right_c - search_indices
+    search_indices = np.arange(len(df)).repeat(search_indices)
+    df = df.take(search_indices)
+    new_index = np.arange(len(df))
+    df.index = new_index
+    right.index = new_index
+    df = pd.concat([df, right], axis = 'columns', keys = ['left', 'right'])
     return df
 
 
@@ -2451,34 +2449,37 @@ def generic_greater_than_inequality_join(left_column, right_column, df, right):
 
     conditional_join_type_check(left_c, right_c)
 
+    # we need to check for duplicates in right
+    # the complete rows
     if left_c.hasnans:
         df = df.dropna(subset=[left_column])
         left_c = df[left_column]
     if right_c.hasnans:
         right = right.dropna(subset=[right_column])
-        right_c = right[right_column]
-    if not right_c.is_unique:
-        right_c = right_c.drop_duplicates()
     if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
+        right = right.sort_values(by=right_column)
+    right_c = right[right_column]
     if left_c.max() < right_c.min():
         return None
 
-    search_sorted_indices = right_c.searchsorted(left_c, side="right")
-    positions_to_include = search_sorted_indices > 0
+    search_indices = right_c.searchsorted(left_c, side="right")
+    positions_to_include = search_indices > 0
     if np.any(positions_to_include):
-        search_sorted_indices = search_sorted_indices[positions_to_include]
+        search_indices = search_indices[positions_to_include]
         df = df.loc[positions_to_include]
 
-    values_for_left = tuple(slice(0, n) for n in search_sorted_indices)
+    values_for_left = tuple(slice(0, n) for n in search_indices)
     values_for_left = np.r_[values_for_left]
-    left_reindex = np.arange(len(df)).repeat(search_sorted_indices)
-    df = df.take(left_reindex)
-    len_df_columns = len(df.columns)
-    left_header = ["left"] * len_df_columns
-    df.columns = pd.MultiIndex.from_arrays([left_header, df.columns])
-    new_column = ("right", right_column)
-    df.loc[:, new_column] = right_c.take(values_for_left).array
+    right = right.take(values_for_left)
+    # no need to calculate lengths here, 
+    # this is effectively same as search_sorted_indices - 0
+    # since we are collating downwards
+    search_indices = np.arange(len(df)).repeat(search_indices)
+    df = df.take(search_indices)    
+    new_index = np.arange(len(df))
+    df.index = new_index
+    right.index = new_index
+    df = pd.concat([df, right], axis = 'columns', keys = ['left', 'right'])
     return df
 
 
@@ -2500,6 +2501,7 @@ def _sub_conditional_join(condition, df, right):  # noqa: F811
 
     left_column = condition.left_column
     right_column = condition.right_column
+
 
     return generic_less_than_inequality_join(
         left_column=left_column, right_column=right_column, df=df, right=right
@@ -2571,22 +2573,6 @@ def _computations_conditional_join(
     """
 
     if len(conditions) == 1:
-        conditions = conditions[0]
-        right_label = conditions.right_column
-        df_columns = df.columns
-        right_columns = right.columns
+        conditions =  conditions[0]
         df = _conditional_join(conditions, df, right)
-        header_right = ["right"] * len(right_columns)
-        header_right = pd.MultiIndex.from_arrays([header_right, right_columns])
-        headers = ["left"] * len(df_columns)
-        headers = pd.MultiIndex.from_arrays([headers, df_columns])
-        headers = headers.union(header_right, sort=False)
-        if df is None:
-            return pd.DataFrame([], columns=headers)
-        right.columns = header_right
-    df = df.set_index(("right", right_label))
-    right = right.set_index(("right", right_label))
-    df = df.join(right, how="inner", sort=False)
-    df = df.reset_index()
-    df = df.reindex(columns=headers)
     return df

@@ -6343,6 +6343,7 @@ def conditional_join(
 
     df = df.copy()
     right = right.copy()
+
     if isinstance(right, pd.Series):
         if not right.name:
             raise ValueError("conditional_join only supports named Series.")

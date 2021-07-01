@@ -55,6 +55,17 @@ def test_encode_categorical_invalid_input(df):
         df.encode_categorical(1)
 
 
+@pytest.mark.functions
+@given(df=df_strategy())
+def test_encode_categorical_invalid_input_2(df):
+    """
+    Raise JanitorError for wrong input type
+    for `column_names`.
+    """
+    with pytest.raises(JanitorError):
+        df.encode_categorical({"names"})
+
+
 @pytest.fixture
 def df_categorical():
     return pd.DataFrame(
@@ -113,7 +124,27 @@ def test_categories_type_in_kwargs(df_categorical):
     the `categories` parameter in kwargs.
     """
     with pytest.raises(TypeError):
-        df_categorical.encode_categorical(col1=({1: 2, 3: 3}, None))
+        df_categorical.encode_categorical(col1=("category", None))
+
+
+def test_categories_ndim_gt_1_in_kwargs(df_categorical):
+    """
+    Raise ValueError if the argument supplied to
+    the `categories` parameter in kwargs is not
+    1-D array-like.
+    """
+    arrays = [[1, 1, 2, 2], ["red", "blue", "red", "blue"]]
+    arrays = pd.MultiIndex.from_arrays(arrays, names=("number", "color"))
+    with pytest.raises(ValueError):
+        df_categorical.encode_categorical(col1=(arrays, None))
+
+
+def test_categories_null_in_categories(df_categorical):
+    """
+     Raise ValueError if there are nulls in the `categories`.
+    """
+    with pytest.raises(ValueError):
+        df_categorical.encode_categorical(col1=([None, 2, 3], None))
 
 
 def test_order_type_in_kwargs(df_categorical):
@@ -384,10 +415,22 @@ def test_various(df_in, df_out, kwargs):
     """
     Test output for various combinations.
     """
-    result = df_in.encode_categorical(
-        **kwargs,
-    )
-    assert_frame_equal(result, df_out)
+    # result = df_in.encode_categorical(
+    #     **kwargs,
+    # )
+    # assert_frame_equal(result, df_out)
+    result = df_in.encode_categorical(**kwargs,)
+    # directly comparing columns is safe -
+    # if the columns have differing categories
+    # (especially for ordered True) it will fail.
+    # if both categories are unordered, then the
+    # order is not considered.
+    # comparing with assert_frame_equal fails
+    # for unordered categoricals, as internally
+    # the order of the categories are compared
+    # which is irrelevant for unordered categoricals
+    for key, _ in kwargs.items():
+        assert df_out[key].equals(result[key])
 
 
 df_warnings = [

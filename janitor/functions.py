@@ -3794,14 +3794,16 @@ def truncate_datetime(datepart: str, timestamp: dt.datetime):
     Note: Truncating down to a Month or Day will yields 0s,
     as there is no 0 month or 0 day in most datetime systems.
 
-    :param datepart: Truncation precision, Year, Month, Day,
-        Hour, Minute, Second.
+    :param datepart: Truncation precision, YEAR, MONTH, DAY,
+        HOUR, MINUTE, SECOND. (String is automagically
+        capitalized)
     :param timestamp: expecting a datetime from python datetime class (dt)
+    :raises KeyError: if inappropriate precision is passed
 
     :returns: a truncated datetime object to
         the precision specified by datepart.
     """
-    recurrence = [0, 1, 1, 0, 0, 0]  # [Year, Month, Day, Hour, Minute, Second]
+    recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND.]
     datepart = datepart.upper()
     ENUM = {
         "YEAR": 0,

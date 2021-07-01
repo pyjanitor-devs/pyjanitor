@@ -163,6 +163,7 @@ def test_clean_names_camelcase_to_snake_multi(dataframe):
     ]
 
 
+@pytest.mark.functions
 def test_clean_names_enforce_string(dataframe):
     df = dataframe.rename(columns={"a": 1}).clean_names(enforce_string=True)
     for c in df.columns:
@@ -174,3 +175,34 @@ def test_clean_names_truncate_limit(dataframe):
     df = dataframe.clean_names(truncate_limit=7)
     expected_columns = ["a", "bell_ch", "decorat", "animals", "cities"]
     assert set(df.columns) == set(expected_columns)
+
+
+"""
+The following tests ensure nonstandard characters
+and spaces have been cleaned up.
+"""
+
+
+@pytest.mark.functions
+def test_charac():
+    table_GDP = pd.read_html(
+        "https://en.wikipedia.org/wiki/Economy_of_the_United_States",
+        match="Nominal GDP",
+    )
+    df = table_GDP[0]
+
+    df = df.clean_names(strip_underscores=True, case_type="lower")
+
+    assert "current_accountbalance_in_%_of_gdp" in df.columns.values
+
+
+@pytest.mark.functions
+def test_space():
+    table_GDP = pd.read_html(
+        "https://en.wikipedia.org/wiki/Economy_of_Russia", match="Year"
+    )
+    df = table_GDP[0]
+
+    df = df.clean_names(strip_underscores=True, case_type="lower")
+
+    assert ("in %" in df.columns.values) is False

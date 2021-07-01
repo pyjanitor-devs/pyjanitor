@@ -126,9 +126,7 @@ def test_str_cat(no_nulls_df):
     """Test outcome for Pandas ``.str.cat()`` method."""
 
     result = no_nulls_df.process_text(
-        column_name="text",
-        string_function="cat",
-        others=["A", "B", "C", "D"],
+        column_name="text", string_function="cat", others=["A", "B", "C", "D"],
     )
 
     expected = no_nulls_df.assign(
@@ -145,8 +143,7 @@ def test_str_cat_result_is_a_string(no_nulls_df):
     """
 
     result = no_nulls_df.process_text(
-        column_name="text",
-        string_function="cat",
+        column_name="text", string_function="cat",
     )
 
     expected = no_nulls_df.assign(text=no_nulls_df["text"].str.cat())

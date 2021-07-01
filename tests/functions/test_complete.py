@@ -689,8 +689,7 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        columns=[{"year": lambda x: range(x.min(), x.max() + 1)}],
-        by="state",
+        columns=[{"year": lambda x: range(x.min(), x.max() + 1)}], by="state",
     )
 
     expected = pd.DataFrame(

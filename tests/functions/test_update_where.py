@@ -45,7 +45,5 @@ def test_not_boolean_conditions(df):
     """Raise Error if `conditions` is not a boolean type."""
     with pytest.raises(ValueError):
         df.update_where(
-            conditions=(df.a + 5),
-            target_column_name="c",
-            target_val=10,
+            conditions=(df.a + 5), target_column_name="c", target_val=10,
         )

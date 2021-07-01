@@ -781,11 +781,7 @@ def _computations_complete(
     # still thinking on how to improve speed of groupby apply
     else:
         df = df.groupby(by).apply(
-            _base_complete,
-            columns,
-            all_strings,
-            any_nulls,
-            dict_present,
+            _base_complete, columns, all_strings, any_nulls, dict_present,
         )
         df = df.drop(columns=by)
 
@@ -833,8 +829,7 @@ def _base_complete(
 
 
 def _create_indexer_for_complete(
-    df_index: pd.Index,
-    columns: List[Union[List, Dict, str]],
+    df_index: pd.Index, columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
     This creates the index that will be used

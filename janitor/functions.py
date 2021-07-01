@@ -3803,7 +3803,7 @@ def truncate_datetime(datepart: str, timestamp: dt.datetime):
     :returns: a truncated datetime object to
         the precision specified by datepart.
     """
-    recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND.]
+    recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND]
     datepart = datepart.upper()
     ENUM = {
         "YEAR": 0,

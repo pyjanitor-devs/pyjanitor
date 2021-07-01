@@ -1898,6 +1898,8 @@ def is_connected(url: str) -> bool:
 
     :param url: We take a test url to check if we are
         able to create a valid connection.
+    :raises OSError: if connection to ``URL`` cannot be
+        established
     :return: We return a boolean that signifies our
         connection to the internet
     """

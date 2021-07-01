@@ -709,6 +709,7 @@ def convert_stock(stock_symbol: str) -> str:
 
     :param stock_symbol: This is our input stock symbol
         to be converted
+    :raises ConnectionError: if stock ticker data cannot be retrieved
     :return: We return the full company name
     """
     if is_connected("www.google.com"):

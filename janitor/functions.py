@@ -4661,6 +4661,8 @@ def sort_column_value_order(
     :param column_value_order: This is a dictionary of values that will
         represent precedence of the values in the specified column
     :param columns: This is a list of additional columns that we can sort by
+    :raises ValueError: raises error if chosen Column Name is not in
+        Dataframe, or if column_value_order dictionary is empty.
     :return: This function returns a Pandas DataFrame
     """
     if len(column_value_order) > 0:

@@ -1,10 +1,12 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
+from operator import itemgetter
 import fnmatch
 import functools
 import os
 import re
 import sys
+from turtle import left
 
 import warnings
 from collections.abc import Callable as dispatch_callable
@@ -20,7 +22,6 @@ from typing import (
     Union,
     NamedTuple,
 )
-from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from pandas.api.types import (
@@ -2338,31 +2339,7 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     return df
 
 
-@dataclass
-class lt_join:
-    left_column: str
-    right_column: str
-
-
-@dataclass
-class le_join:
-    left_column: str
-    right_column: str
-
-
-@dataclass
-class gt_join:
-    left_column: str
-    right_column: str
-
-
-@dataclass
-class ge_join:
-    left_column: str
-    right_column: str
-
-
-def conditional_join_type_check(
+def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series
 ) -> pd.DataFrame:
 
@@ -2385,194 +2362,231 @@ def conditional_join_type_check(
     return None
 
 
-def generic_less_than_inequality_join(left_column, right_column, df, right):
+# code copied from Stack Overflow
+# https://stackoverflow.com/a/47126435/7175713
+def _le_create_ranges(indices, len_right):
+    l = len_right - indices
+    cum_length = l.cumsum()
+    ids = np.ones(cum_length[-1], dtype=int)
+    ids[0] = indices[0]
+    ids[cum_length[:-1]] = indices[1:] - len_right + 1
+    return ids.cumsum()
+
+
+def _ge_create_ranges(indices):
+    cum_length = indices.cumsum()
+    ids = np.ones(cum_length[-1], dtype=int)
+    ids[0] = 0
+    ids[cum_length[:-1]] = -1 * indices[:-1] + 1
+    return ids.cumsum()
+
+
+def _generic_less_than_inequality(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_on: str,
+    right_on: str,
+    strict: bool = False,
+):
     """
     Generic implementation for less than joins.
     This covers less than or equal joins as well.
+    If `strict` is True, then only rows where
+    the left side is strictly less than the right side
+    are kept.
+    If there are no matches, None is returned.
     """
 
-    check("left_column", left_column, [str])
-    check("right_column", right_column, [str])
-    check_column(df, [left_column])
-    check_column(right, [right_column])
+    left_c = df[left_on]
+    right_c = right[right_on]
 
-    left_c = df[left_column]
-    right_c = right[right_column]
+    _conditional_join_type_check(left_c, right_c)
 
-    conditional_join_type_check(left_c, right_c)
+    if not right_c.is_monotonic_increasing:
+        right = right.sort_values(by=right_on)
+
+    right_c = right[right_on]
+    right_c.index = np.arange(len(right_c))
 
     if left_c.hasnans:
-        df = df.dropna(subset=[left_column])
-        left_c = df[left_column]
+        left_c = left_c.dropna()
     if right_c.hasnans:
-        right = right.dropna(subset=[right_column])
-    if not right_c.is_monotonic_increasing:
-        right = right.sort_values(by=right_column)
-    right_c = right[right_column]
+        right_c = right_c.dropna()
     if left_c.min() > right_c.max():
         return None
 
-    len_right_c = len(right_c)
+    len_right_c = right_c.size
     search_indices = right_c.searchsorted(left_c, side="left")
     positions_to_include = search_indices < len_right_c
-    if np.any(positions_to_include):
+    if positions_to_include.any():
         search_indices = search_indices[positions_to_include]
-        df = df.loc[positions_to_include]
-    values_for_left = tuple(
-        slice(n, len_right_c) for n in search_indices
-    )
-    values_for_left = np.r_[values_for_left]
-    right = right.take(values_for_left)
+        left_c = left_c[positions_to_include]
+    right_index = _le_create_ranges(indices=search_indices, len_right=len_right_c)
     search_indices = len_right_c - search_indices
-    search_indices = np.arange(len(df)).repeat(search_indices)
-    df = df.take(search_indices)
-    new_index = np.arange(len(df))
-    df.index = new_index
-    right.index = new_index
-    df = pd.concat([df, right], axis = 'columns', keys = ['left', 'right'])
-    return df
+
+    if strict:
+        right_c = right_c[right_index]
+        left_c = left_c.repeat(search_indices)
+        not_equal = left_c.array != right_c.array
+        left_c = left_c.index[not_equal]
+        right_c = right_c.index[not_equal]
+        right_c = right.index[right_c]
+        return left_c, right_c
+    right_c = right.index[right_index]
+    left_c = left_c.index.repeat(search_indices)
+    return left_c, right_c
 
 
-def generic_greater_than_inequality_join(left_column, right_column, df, right):
+
+def _generic_greater_than_inequality(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_on: str,
+    right_on: str,
+    strict: bool = False,
+):
     """
     Generic implementation for greater than joins.
     This covers greater than or equal joins as well.
+    If `strict` is True, then only rows where
+    the left side is strictly greater than the right side
+    are kept.
+    If there are no matches, None is returned.
     """
 
-    check("left_column", left_column, [str])
-    check("right_column", right_column, [str])
-    check_column(df, [left_column])
-    check_column(right, [right_column])
+    left_c = df[left_on]
+    right_c = right[right_on]
 
-    left_c = df[left_column]
-    right_c = right[right_column]
+    _conditional_join_type_check(left_c, right_c)
 
-    conditional_join_type_check(left_c, right_c)
-
-    # we need to check for duplicates in right
-    # the complete rows
-    if left_c.hasnans:
-        df = df.dropna(subset=[left_column])
-        left_c = df[left_column]
-    if right_c.hasnans:
-        right = right.dropna(subset=[right_column])
     if not right_c.is_monotonic_increasing:
-        right = right.sort_values(by=right_column)
-    right_c = right[right_column]
+        right = right.sort_values(by=right_on)
+
+    right_c = right[right_on]
+    right_c.index = np.arange(len(right_c))
+
+    if left_c.hasnans:
+        left_c = left_c.dropna()
+    if right_c.hasnans:
+        right_c = right_c.dropna()
     if left_c.max() < right_c.min():
         return None
 
     search_indices = right_c.searchsorted(left_c, side="right")
     positions_to_include = search_indices > 0
-    if np.any(positions_to_include):
+    if positions_to_include.any():
         search_indices = search_indices[positions_to_include]
-        df = df.loc[positions_to_include]
-
-    values_for_left = tuple(slice(0, n) for n in search_indices)
-    values_for_left = np.r_[values_for_left]
-    right = right.take(values_for_left)
-    # no need to calculate lengths here, 
-    # this is effectively same as search_sorted_indices - 0
-    # since we are collating downwards
-    search_indices = np.arange(len(df)).repeat(search_indices)
-    df = df.take(search_indices)    
-    new_index = np.arange(len(df))
-    df.index = new_index
-    right.index = new_index
-    df = pd.concat([df, right], axis = 'columns', keys = ['left', 'right'])
-    return df
+        left_c = left_c[positions_to_include]
+    right_index = _ge_create_ranges(search_indices)
 
 
-@functools.singledispatch
-def _conditional_join(condition, df, right):
+    if strict:
+        right_c = right_c[right_index]
+        left_c = left_c.repeat(search_indices)
+        not_equal = left_c.array != right_c.array
+        left_c = left_c.index[not_equal]
+        right_c = right_c.index[not_equal]
+        right_c = right.index[right_c]
+        return left_c, right_c
+    right_c = right.index[right_index]
+    left_c = left_c.index.repeat(search_indices)
+    return left_c, right_c
+
+
+class Inequality_Condition(NamedTuple):
     """
-    Base function to process conditional join.
-    """
-    raise TypeError("This type is not supported in conditional_join.")
+    Helper class for `cond_merge`.
+    It makes creating the conditional merge conditions more explicit. 
+    Inspired by pd.NamedAgg.
 
-
-@_conditional_join.register(le_join)  # noqa: F811
-def _sub_conditional_join(condition, df, right):  # noqa: F811
-    """
-    Base function to process conditional join.
-    Specific for conditions where the left_column
-    is less than or equal to the right_column.
+    :param left_on: column label from `df`. Has to be a single column.
+    :param right_on: column label from `right`. Has to be a single column.
+    :param operator: The non-equi operation. Should be one of `le`, `lt`, `ge`, or `gt`.
     """
 
-    left_column = condition.left_column
-    right_column = condition.right_column
+    left_on: str
+    right_on: str
+    operator: str
 
 
-    return generic_less_than_inequality_join(
-        left_column=left_column, right_column=right_column, df=df, right=right
-    )
-
-
-@_conditional_join.register(lt_join)  # noqa: F811
-def _sub_conditional_join(condition, df, right):  # noqa: F811
+def _conditional_merge_compute(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    inequality_conditions: list,
+    how: str,
+    suffixes: tuple,
+):
     """
-    Base function to process conditional join.
-    Specific for conditions where the left_column
-    is less than the right_column.
-    """
-
-    left_column = condition.left_column
-    right_column = condition.right_column
-    df = generic_less_than_inequality_join(
-        left_column=left_column, right_column=right_column, df=df, right=right
-    )
-
-    remove_equals = df[("left", left_column)] != df[("right", right_column)]
-    return df.loc[remove_equals]
-
-
-@_conditional_join.register(ge_join)  # noqa: F811
-def _sub_conditional_join(condition, df, right):  # noqa: F811
-    """
-    Base function to process conditional join.
-    Specific for conditions where the left_column
-    is greater than or equal to the right_column.
+    Compute dataframe where how = "inner"
     """
 
-    left_column = condition.left_column
-    right_column = condition.right_column
-    return generic_greater_than_inequality_join(
-        left_column=left_column, right_column=right_column, df=df, right=right
-    )
+    inequality_arrays = []
+    for condition in inequality_conditions:
+        left_on = condition.left_on
+        right_on = condition.right_on
+        operator = condition.operator
+        strict = False
+        if operator in ("lt", "gt"):
+            strict = True
+        if operator in ("lt", "le"):
+            outcome = _generic_less_than_inequality(
+                df=df,
+                right=right,
+                left_on=left_on,
+                right_on=right_on,
+                strict=strict,
+            )
+        else:
+            outcome = _generic_greater_than_inequality(
+                df=df,
+                right=right,
+                left_on=left_on,
+                right_on=right_on,
+                strict=strict,
+            )
+        if outcome is None:
+            break
+        inequality_arrays.append(outcome)
+
+    common_columns = df.columns.intersection(right.columns, sort=False)
+
+    if not common_columns.empty:
+        left_suffix, right_suffix = suffixes
+
+        if left_suffix:
+            mapping = {col: f"{col}{left_suffix}" for col in common_columns}
+            df = df.rename(columns=mapping)
+        if right_suffix:
+            mapping = {col: f"{col}{right_suffix}" for col in common_columns}
+            right = right.rename(columns=mapping)
+    if not inequality_arrays:
+         columns = df.columns.union(right.columns, sort=False)
+         return pd.DataFrame([], columns=columns)
+    if len(inequality_arrays) == 1:
+        left_index, right_index = inequality_arrays[0]
+    else:
+        first, *rest = inequality_arrays
+        if len(rest) == 1:
+            rest = set(zip(*rest[0]))
+        else:
+            rest = (set(zip(*tupled)) for tupled in rest)
+            rest = set.intersection(*rest)
+        first = pd.MultiIndex.from_arrays(first)
+        intersection_rows = first.isin(rest)
+        if not intersection_rows.any():
+            columns = df.columns.union(right.columns, sort=False)
+            return pd.DataFrame([], columns=columns)
+        first = first[intersection_rows]
+        left_index = first.get_level_values(0)
+        right_index = first.get_level_values(-1)
 
 
-@_conditional_join.register(gt_join)  # noqa: F811
-def _sub_conditional_join(condition, df, right):  # noqa: F811
-    """
-    Base function to process conditional join.
-    Specific for conditions where the left_column
-    is greater than the right_column.
-    """
+    
 
-    left_column = condition.left_column
-    right_column = condition.right_column
-    df = generic_greater_than_inequality_join(
-        left_column=left_column, right_column=right_column, df=df, right=right
-    )
+    df_inner = df.loc[left_index]
+    right_inner = right.loc[right_index]
+    new_index = np.arange(len(df_inner))
+    df_inner.index = new_index
+    right_inner.index = new_index
+    return pd.concat([df_inner, right_inner], axis="columns", join="inner")
 
-    remove_equals = df[("left", left_column)] != df[("right", right_column)]
-    return df.loc[remove_equals]
-
-
-def _computations_conditional_join(
-    df: pd.DataFrame, right: pd.DataFrame, conditions
-) -> pd.DataFrame:
-    """
-    Combine results from _conditional_join
-    with matching values from the `right` dataframe|Series
-    to get the final output.
-
-    A MultiIndex dataframe is returned,
-    with headers `left` and `right`,
-    pointing to `df` and `right` columns respectively.
-    """
-
-    if len(conditions) == 1:
-        conditions =  conditions[0]
-        df = _conditional_join(conditions, df, right)
-    return df

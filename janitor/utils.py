@@ -1,15 +1,14 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
-from operator import itemgetter
 import fnmatch
 import functools
 import os
 import re
 import sys
-from turtle import left
 
 import warnings
 from collections.abc import Callable as dispatch_callable
+from collections import defaultdict
 from itertools import chain, combinations
 from typing import (
     Callable,
@@ -2339,6 +2338,99 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     return df
 
 
+def _non_equi_preliminary_checks(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    left_on: str,
+    right_on: str,
+    suffixes=("_x", "_y"),
+) -> pd.DataFrame:
+
+    """
+    Preliminary checks are conducted here.
+    This function checks for conditions such as MultiIndexed dataframe columns,
+    improper `suffixes` configuration, as well as unnamed Series.
+
+    A tuple of (`df`, `right`, `left_on`, `right_on`) is returned.
+    """
+    if isinstance(df.columns, pd.MultiIndex):
+        raise ValueError(
+            "MultiIndex columns are not supported for non-equi joins."
+        )
+    check("`right`", right, [pd.DataFrame, pd.Series])
+
+    if isinstance(right, pd.Series):
+        if not right.name:
+            raise ValueError(
+                "Unnamed Series are not supported for non-equi joins."
+            )
+        right = right.to_frame()
+
+    right_is_multiindex = isinstance(right.columns, pd.MultiIndex)
+    if isinstance(right, pd.DataFrame) and right_is_multiindex:
+        raise ValueError(
+            "MultiIndex columns are not supported for non-equi joins."
+        )
+    df = df.copy()
+    right = right.copy()
+
+    check("left_on", left_on, [str])
+    check("right_on", right_on, [str])
+    check_column(df, left_on)
+    check_column(right, right_on)
+
+    check("suffixes", suffixes, [tuple])
+
+    if len(suffixes) != 2:
+        raise ValueError("`suffixes` argument must be a 2-length tuple")
+
+    if suffixes == (None, None):
+        raise ValueError("At least one of the suffixes should be non-null.")
+
+    for suffix in suffixes:
+        check("suffix", suffix, [str, type(None)])
+
+    common_columns = df.columns.intersection(right.columns, sort=False)
+
+    if not common_columns.empty:
+        left_suffix, right_suffix = suffixes
+
+        if left_suffix:
+            mapping = {}
+            for common in common_columns:
+                new_label = f"{common}{left_suffix}"
+                if new_label in df.columns:
+                    raise ValueError(
+                        f"""
+                        {new_label} is present in `df` columns. 
+                        Kindly provide unique suffixes to create 
+                        columns that are not present in `df`.
+                        """
+                    )
+                if left_on == common:
+                    left_on = new_label
+                mapping[common] = new_label
+            df = df.rename(columns=mapping)
+        if right_suffix:
+            mapping = {}
+            for common in common_columns:
+                new_label = f"{common}{right_suffix}"
+                if new_label in df.columns:
+                    raise ValueError(
+                        f"""
+                        {new_label} is present in `right` columns. 
+                        Kindly provide unique suffixes to create 
+                        columns that are not present in `right`.
+                        """
+                    )
+                if right_on == common:
+                    right_on = new_label
+                mapping[common] = new_label
+            right = right.rename(columns=mapping)
+
+    return df, right, left_on, right_on
+
+
 def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series
 ) -> pd.DataFrame:
@@ -2362,25 +2454,6 @@ def _conditional_join_type_check(
     return None
 
 
-# code copied from Stack Overflow
-# https://stackoverflow.com/a/47126435/7175713
-def _le_create_ranges(indices, len_right):
-    l = len_right - indices
-    cum_length = l.cumsum()
-    ids = np.ones(cum_length[-1], dtype=int)
-    ids[0] = indices[0]
-    ids[cum_length[:-1]] = indices[1:] - len_right + 1
-    return ids.cumsum()
-
-
-def _ge_create_ranges(indices):
-    cum_length = indices.cumsum()
-    ids = np.ones(cum_length[-1], dtype=int)
-    ids[0] = 0
-    ids[cum_length[:-1]] = -1 * indices[:-1] + 1
-    return ids.cumsum()
-
-
 def _generic_less_than_inequality(
     df: pd.DataFrame,
     right: pd.DataFrame,
@@ -2402,40 +2475,41 @@ def _generic_less_than_inequality(
 
     _conditional_join_type_check(left_c, right_c)
 
-    if not right_c.is_monotonic_increasing:
-        right = right.sort_values(by=right_on)
-
-    right_c = right[right_on]
-    right_c.index = np.arange(len(right_c))
-
-    if left_c.hasnans:
-        left_c = left_c.dropna()
-    if right_c.hasnans:
-        right_c = right_c.dropna()
     if left_c.min() > right_c.max():
         return None
 
+    sort_positions_right = right_c.argsort().array
+    actual_positions = np.arange(right_c.size)
+    nulls = sort_positions_right == -1
+    if nulls.any():
+        right_c = right_c[~nulls]
+        sort_positions_right = sort_positions_right[~nulls]
+        actual_positions = actual_positions[~nulls]
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.take(sort_positions_right)
+    _, left_c = pd.factorize(left_c)
     len_right_c = right_c.size
     search_indices = right_c.searchsorted(left_c, side="left")
-    positions_to_include = search_indices < len_right_c
-    if positions_to_include.any():
-        search_indices = search_indices[positions_to_include]
-        left_c = left_c[positions_to_include]
-    right_index = _le_create_ranges(indices=search_indices, len_right=len_right_c)
-    search_indices = len_right_c - search_indices
+    positions_to_exclude = search_indices == len_right_c
+    if positions_to_exclude.any():
+        search_indices = search_indices[~positions_to_exclude]
+        left_c = left_c[~positions_to_exclude]
+    left_c = left_c.repeat(len_right_c - search_indices)
+    right_positions = [
+        np.arange(start, len_right_c) for start in search_indices
+    ]
+    right_positions = np.concatenate(right_positions)
+    right_c = right_c.take(right_positions)
 
     if strict:
-        right_c = right_c[right_index]
-        left_c = left_c.repeat(search_indices)
-        not_equal = left_c.array != right_c.array
-        left_c = left_c.index[not_equal]
-        right_c = right_c.index[not_equal]
-        right_c = right.index[right_c]
-        return left_c, right_c
-    right_c = right.index[right_index]
-    left_c = left_c.index.repeat(search_indices)
-    return left_c, right_c
+        equals = left_c == right_c
+        if equals.any():
+            left_c = left_c[~equals]
+            right_c = right_c[~equals]
 
+    right = right.take(right_c.index)
+    right[left_on] = left_c
+    return right
 
 
 def _generic_greater_than_inequality(
@@ -2459,134 +2533,34 @@ def _generic_greater_than_inequality(
 
     _conditional_join_type_check(left_c, right_c)
 
-    if not right_c.is_monotonic_increasing:
-        right = right.sort_values(by=right_on)
-
-    right_c = right[right_on]
-    right_c.index = np.arange(len(right_c))
-
-    if left_c.hasnans:
-        left_c = left_c.dropna()
-    if right_c.hasnans:
-        right_c = right_c.dropna()
     if left_c.max() < right_c.min():
         return None
 
+    sort_positions_right = right_c.argsort().array
+    actual_positions = np.arange(right_c.size)
+    nulls = sort_positions_right == -1
+    if nulls.any():
+        right_c = right_c[~nulls]
+        sort_positions_right = sort_positions_right[~nulls]
+        actual_positions = actual_positions[~nulls]
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.take(sort_positions_right)
+    _, left_c = pd.factorize(left_c)
     search_indices = right_c.searchsorted(left_c, side="right")
-    positions_to_include = search_indices > 0
-    if positions_to_include.any():
-        search_indices = search_indices[positions_to_include]
-        left_c = left_c[positions_to_include]
-    right_index = _ge_create_ranges(search_indices)
-
+    positions_to_exclude = search_indices == 0
+    if positions_to_exclude.any():
+        search_indices = search_indices[~positions_to_exclude]
+        left_c = left_c[~positions_to_exclude]
+    left_c = left_c.repeat(search_indices)
+    right_positions = [np.arange(start) for start in search_indices]
+    right_positions = np.concatenate(right_positions)
+    right_c = right_c.take(right_positions)
 
     if strict:
-        right_c = right_c[right_index]
-        left_c = left_c.repeat(search_indices)
-        not_equal = left_c.array != right_c.array
-        left_c = left_c.index[not_equal]
-        right_c = right_c.index[not_equal]
-        right_c = right.index[right_c]
-        return left_c, right_c
-    right_c = right.index[right_index]
-    left_c = left_c.index.repeat(search_indices)
-    return left_c, right_c
-
-
-class Inequality_Condition(NamedTuple):
-    """
-    Helper class for `cond_merge`.
-    It makes creating the conditional merge conditions more explicit. 
-    Inspired by pd.NamedAgg.
-
-    :param left_on: column label from `df`. Has to be a single column.
-    :param right_on: column label from `right`. Has to be a single column.
-    :param operator: The non-equi operation. Should be one of `le`, `lt`, `ge`, or `gt`.
-    """
-
-    left_on: str
-    right_on: str
-    operator: str
-
-
-def _conditional_merge_compute(
-    df: pd.DataFrame,
-    right: Union[pd.DataFrame, pd.Series],
-    inequality_conditions: list,
-    how: str,
-    suffixes: tuple,
-):
-    """
-    Compute dataframe where how = "inner"
-    """
-
-    inequality_arrays = []
-    for condition in inequality_conditions:
-        left_on = condition.left_on
-        right_on = condition.right_on
-        operator = condition.operator
-        strict = False
-        if operator in ("lt", "gt"):
-            strict = True
-        if operator in ("lt", "le"):
-            outcome = _generic_less_than_inequality(
-                df=df,
-                right=right,
-                left_on=left_on,
-                right_on=right_on,
-                strict=strict,
-            )
-        else:
-            outcome = _generic_greater_than_inequality(
-                df=df,
-                right=right,
-                left_on=left_on,
-                right_on=right_on,
-                strict=strict,
-            )
-        if outcome is None:
-            break
-        inequality_arrays.append(outcome)
-
-    common_columns = df.columns.intersection(right.columns, sort=False)
-
-    if not common_columns.empty:
-        left_suffix, right_suffix = suffixes
-
-        if left_suffix:
-            mapping = {col: f"{col}{left_suffix}" for col in common_columns}
-            df = df.rename(columns=mapping)
-        if right_suffix:
-            mapping = {col: f"{col}{right_suffix}" for col in common_columns}
-            right = right.rename(columns=mapping)
-    if not inequality_arrays:
-         columns = df.columns.union(right.columns, sort=False)
-         return pd.DataFrame([], columns=columns)
-    if len(inequality_arrays) == 1:
-        left_index, right_index = inequality_arrays[0]
-    else:
-        first, *rest = inequality_arrays
-        if len(rest) == 1:
-            rest = set(zip(*rest[0]))
-        else:
-            rest = (set(zip(*tupled)) for tupled in rest)
-            rest = set.intersection(*rest)
-        first = pd.MultiIndex.from_arrays(first)
-        intersection_rows = first.isin(rest)
-        if not intersection_rows.any():
-            columns = df.columns.union(right.columns, sort=False)
-            return pd.DataFrame([], columns=columns)
-        first = first[intersection_rows]
-        left_index = first.get_level_values(0)
-        right_index = first.get_level_values(-1)
-
-
-    
-
-    df_inner = df.loc[left_index]
-    right_inner = right.loc[right_index]
-    new_index = np.arange(len(df_inner))
-    df_inner.index = new_index
-    right_inner.index = new_index
-    return pd.concat([df_inner, right_inner], axis="columns", join="inner")
-
+        equals = left_c == right_c
+        if equals.any():
+            left_c = left_c[~equals]
+            right_c = right_c[~equals]
+    right = right.take(right_c.index)
+    right[left_on] = left_c
+    return right

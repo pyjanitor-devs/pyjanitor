@@ -51,8 +51,9 @@ from .utils import (
     check_column,
     deprecated_alias,
     As_Categorical,
-    Inequality_Condition,
-    _conditional_merge_compute,
+    _non_equi_preliminary_checks,
+    _generic_greater_than_inequality,
+    _generic_less_than_inequality,
 )
 
 
@@ -6114,92 +6115,152 @@ def pivot_wider(
 
 
 @pf.register_dataframe_method
-def cond_merge(
+def le_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
-    *conditions,
-    how: str = "inner",
-    suffixes: tuple = ("_x", "_y"),
+    left_on: str,
+    right_on: str,
+    suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
     Similar to ``pd.merge``, but supports only non-equi merge.
-    The merge is done only on the columns. MultiIndex columns are not supported.
-    The inequality condition should be a tuple of (`left_on`, `right_on`, `operator`),
-    where `left_on` is the column label from `df`, `right_on` is the column label from `right`,
-    while `operator` is the inequality type, which should be one of `lt`,`le`,`gt`,`ge`.
-    The `Inequality_Condition` NamedTuple can be used to make the condition more explicit.
-    If there are common columns in both `df` and `right`, the `suffixes` argument 
-    is used to distinguish between them.
+    This returns rows where values for `left_on` from `df` are
+    less than or equal to values for `right_on` for `right`.
+    The function uses binary search to get these rows, avoiding
+    the cartesian product, to make non-equi joins faster and less
+    memory intensive. This allows for multiple non-equi joins, where subsequent
+    conditions can be achieved within the joined dataframe, via `pandas.query`, 
+    or `pandas.loc`, using boolean masks.
+    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    Only inner join is supported.
 
     .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
               and replaced with an integer index. If you wish to preserve the labeled indices,
-              you can convert them to columns.
+              you can convert them to columns before running the non-equi join.
     """
 
-    if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError("cond_merge does not support MultiIndex columns.")
-    check("`right`", right, [pd.DataFrame, pd.Series])
+    df, right, left_on, right_on = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, suffixes
+    )
+    right_columns = right.columns
+    right = _generic_less_than_inequality(df, right, left_on, right_on, strict = False)
 
-    if isinstance(right, pd.Series):
-        if not right.name:
-            raise ValueError("cond_merge only supports named Series.")
-        right = right.to_frame()
+    if right is None:
+        columns = df.columns.union(right_columns, sort=False)
+        return pd.DataFrame([], columns=columns)
 
-    right_is_multiindex = isinstance(right.columns, pd.MultiIndex)
-    if isinstance(right, pd.DataFrame) and right_is_multiindex:
-        raise ValueError("cond_merge does not support MultiIndex columns.")
+    return df.merge(right, on = left_on, how = 'inner')
 
-    df = df.copy()
-    right = right.copy()
 
-    check("how", how, [str])
+@pf.register_dataframe_method
+def lt_join(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    left_on: str,
+    right_on: str,
+    suffixes=("_x", "_y"),
+) -> pd.DataFrame:
+    """
+    Similar to ``pd.merge``, but supports only non-equi merge.
+    This returns rows where values for `left_on` from `df` are
+    less than values for `right_on` for `right`.
+    The function uses binary search to get these rows, avoiding
+    the cartesian product, to make non-equi joins faster and less
+    memory intensive. This allows for multiple non-equi joins, where subsequent
+    conditions can be achieved within the joined dataframe, via `pandas.query`, 
+    or `pandas.loc`, using boolean masks.
+    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    Only inner join is supported.
 
-    if how not in ("inner", "outer", "left", "right"):
-        raise ValueError(
-            """`how` should be one of inner, outer, left, right """
-        )
+    .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
+              and replaced with an integer index. If you wish to preserve the labeled indices,
+              you can convert them to columns before running the non-equi join.
+    """
 
-    check("suffixes", suffixes, [tuple])
+    df, right, left_on, right_on = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, suffixes
+    )
+    right_columns = right.columns
+    right = _generic_less_than_inequality(df, right, left_on, right_on, strict = True)
 
-    if len(suffixes) != 2:
-        raise ValueError("`suffixes` argument must be a 2-length tuple")
+    if right is None:
+        columns = df.columns.union(right_columns, sort=False)
+        return pd.DataFrame([], columns=columns)
+         
+    return df.merge(right, on = left_on, how = 'inner')
 
-    if suffixes == (None, None):
-        raise ValueError("At least one of the suffixes should be non-null.")
+@pf.register_dataframe_method
+def ge_join(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    left_on: str,
+    right_on: str,
+    suffixes=("_x", "_y"),
+) -> pd.DataFrame:
+    """
+    Similar to ``pd.merge``, but supports only non-equi merge.
+    This returns rows where values for `left_on` from `df` are
+    greater than or equal to values for `right_on` for `right`.
+    The function uses binary search to get these rows, avoiding
+    the cartesian product, to make non-equi joins faster and less
+    memory intensive. This allows for multiple non-equi joins, where subsequent
+    conditions can be achieved within the joined dataframe, via `pandas.query`, 
+    or `pandas.loc`, using boolean masks.
+    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    Only inner join is supported.
 
-    for suffix in suffixes:
-        check("suffix", suffix, [str, type(None)])
+    .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
+              and replaced with an integer index. If you wish to preserve the labeled indices,
+              you can convert them to columns before running the non-equi join.
+    """
 
-    inequality_conditions = []
-    for condition in conditions:
-        check("Inequality_Condition", condition, [tuple])
-        if len(condition) != 3:
-            raise ValueError(
-                """
-                The Inequality_Condition tuple should have three entries: 
-                `(left_on, right_on, operator)`
-                """
-            )
-        inequality_condition = Inequality_Condition(*condition)
-        left_on, right_on, operator = inequality_condition
-        check("left_on", left_on, [str])
-        check("right_on", right_on, [str])
-        check("operator", operator, [str])
-        check_column(df, left_on)
-        check_column(right, right_on)
-        if operator not in ("lt", "le", "ge", "gt"):
-            raise ValueError(
-                """
-                The Inequality_Condition operator 
-                should be one of lt, le, gt, ge 
-                """
-            )
-        inequality_conditions.append(inequality_condition)
+    df, right, left_on, right_on = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, suffixes
+    )
+    right_columns = right.columns
+    right = _generic_greater_than_inequality(df, right, left_on, right_on, strict = False)
 
-    df.index = np.arange(len(df))
-    right.index = np.arange(len(right))
+    if right is None:
+        columns = df.columns.union(right_columns, sort=False)
+        return pd.DataFrame([], columns=columns)
+         
+    return df.merge(right, on = left_on, how = 'inner')
 
-    return _conditional_merge_compute(
-        df, right, inequality_conditions, how, suffixes,
+@pf.register_dataframe_method
+def gt_join(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    left_on: str,
+    right_on: str,
+    suffixes=("_x", "_y"),
+) -> pd.DataFrame:
+    """
+    Similar to ``pd.merge``, but supports only non-equi merge.
+    This returns rows where values for `left_on` from `df` are
+    greater than values for `right_on` for `right`.
+    The function uses binary search to get these rows, avoiding
+    the cartesian product, to make non-equi joins faster and less
+    memory intensive. This allows for multiple non-equi joins, where subsequent
+    conditions can be achieved within the joined dataframe, via `pandas.query`, 
+    or `pandas.loc`, using boolean masks.
+    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    Only inner join is supported.
+
+    .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
+              and replaced with an integer index. If you wish to preserve the labeled indices,
+              you can convert them to columns before running the non-equi join.
+    """
+
+    df, right, left_on, right_on = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, suffixes
     )
 
+    right_columns = right.columns
+    right = _generic_greater_than_inequality(df, right, left_on, right_on, strict = True)
+   
+
+    if right is None:
+        columns = df.columns.union(right_columns, sort=False)
+        return pd.DataFrame([], columns=columns)
+         
+    return df.merge(right, on = left_on, how = 'inner')

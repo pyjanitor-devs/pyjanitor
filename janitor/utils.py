@@ -2342,7 +2342,7 @@ def _non_equi_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
-    sort_by_appearance: bool = False,
+    order_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -2379,7 +2379,7 @@ def _non_equi_preliminary_checks(
     check_column(df, left_on)
     check_column(right, right_on)
 
-    check("sort_by_appearance", sort_by_appearance, [bool])
+    check("sort_by_appearance", order_by_appearance, [bool])
 
     check("suffixes", suffixes, [tuple])
 
@@ -2430,7 +2430,7 @@ def _non_equi_preliminary_checks(
                 mapping[common] = new_label
             right = right.rename(columns=mapping)
 
-    return df, right, left_on, right_on, sort_by_appearance
+    return df, right, left_on, right_on, order_by_appearance
 
 
 def _conditional_join_type_check(
@@ -2462,7 +2462,7 @@ def _generic_less_than_inequality(
     right: pd.DataFrame,
     left_on: str,
     right_on: str,
-    sort_by_appearance: bool = False,
+    order_by_appearance: bool = False,
     strict: bool = False,
 ):
     """
@@ -2505,7 +2505,7 @@ def _generic_less_than_inequality(
             right_marker = right_marker[~exclude_rows]
     else:
         right_c = right_c.index.take(right_indices)
-    if sort_by_appearance is True:
+    if order_by_appearance is True:
         ind = np.lexsort((right_c, right_marker))
         right_marker = right_marker[ind]
         right_c = right_c[ind]
@@ -2522,7 +2522,7 @@ def _generic_greater_than_inequality(
     right: pd.DataFrame,
     left_on: str,
     right_on: str,
-    sort_by_appearance: bool = False,
+    order_by_appearance: bool = False,
     strict: bool = False,
 ):
     """
@@ -2568,7 +2568,7 @@ def _generic_greater_than_inequality(
             right_marker = right_marker[~exclude_rows]
     else:
         right_c = right_c.index.take(right_indices)
-    if sort_by_appearance is True:
+    if order_by_appearance is True:
         ind = np.lexsort((right_c, right_marker))
         right_marker = right_marker[ind]
         right_c = right_c[ind]

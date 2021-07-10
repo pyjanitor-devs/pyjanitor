@@ -6135,7 +6135,7 @@ def le_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
-    sort_by_appearance: bool = False,
+    order_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6151,17 +6151,114 @@ def le_join(
     MultiIndex columns are not supported.
     Only inner join is supported.
 
+    Example :
+
+    .. code-block:: python
+
+        df1
+
+           x    y  v
+        0  b  1.0  1
+        1  b  3.0  2
+        2  b  6.0  3
+        3  a  1.0  4
+        4  a  3.0  5
+        5  a  6.0  6
+        6  c  1.0  7
+        7  c  3.0  8
+        8  c  6.0  9
+        9  c  NaN  9
+
+        df2
+
+           x  v  foo
+        0  c  8  4.0
+        1  b  7  2.0
+        2  b  7  NaN
+
+
+        df1.le_join(right = df2, 
+                    left_on = 'y', 
+                    right_on = 'foo', 
+                    order_by_appearance = True
+                    )
+
+           x_x    y  v_x x_y  v_y  foo
+        0   b  1.0    1   c    8  4.0
+        1   b  1.0    1   b    7  2.0
+        2   b  3.0    2   c    8  4.0
+        3   a  1.0    4   c    8  4.0
+        4   a  1.0    4   b    7  2.0
+        5   a  3.0    5   c    8  4.0
+        6   c  1.0    7   c    8  4.0
+        7   c  1.0    7   b    7  2.0
+        8   c  3.0    8   c    8  4.0
+
+    If you do not care for the order from the `right` dataframe,
+    you can set `order_by_appearance` to `False`(this is the default):
+
+        df1.le_join(right = df2, 
+                    left_on = 'y', 
+                    right_on = 'foo', 
+                    order_by_appearance = False
+                    )
+
+           x_x    y  v_x x_y  v_y  foo
+        0   b  1.0    1   b    7  2.0
+        1   b  1.0    1   c    8  4.0
+        2   b  3.0    2   c    8  4.0
+        3   a  1.0    4   b    7  2.0
+        4   a  1.0    4   c    8  4.0
+        5   a  3.0    5   c    8  4.0
+        6   c  1.0    7   b    7  2.0
+        7   c  1.0    7   c    8  4.0
+        8   c  3.0    8   c    8  4.0
+
     .. note:: If `df` or `right` has labeled indices,
               it will be lost after the merge,
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
-              you can convert them to columns before running the non-equi join.
+              you can convert them to columns 
+              before running the non-equi join.
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.le_join(
+            df = df,
+            right = right,
+            left_on = column name from `df`,
+            right_on = column name from `right`,
+            order_by_appearance = True/False,
+            suffixes = ("_x", "_y),
+        )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = df.le_join(
+                df = df,
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
+
 
     :param df: A pandas dataframe.
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param sort_by_appearance: Default is `False`. If True, values from `right`
+    :param order_by_appearance: Default is `False`. If True, values from `right`
         that meet the join condition will be returned in the final dataframe
         in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
@@ -6187,15 +6284,15 @@ def le_join(
         right,
         left_on,
         right_on,
-        sort_by_appearance,
+        order_by_appearance,
     ) = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, sort_by_appearance, suffixes
+        df, right, left_on, right_on, order_by_appearance, suffixes
     )
 
     right.index = np.arange(len(right))
     right_columns = right.columns
     right = _generic_less_than_inequality(
-        df, right, left_on, right_on, sort_by_appearance, strict=False
+        df, right, left_on, right_on, order_by_appearance, strict=False
     )
 
     if right is None:
@@ -6210,7 +6307,7 @@ def lt_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
-    sort_by_appearance: bool = False,
+    order_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6237,7 +6334,7 @@ def lt_join(
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param sort_by_appearance: Default is `False`. If True, values from `right`
+    :param order_by_appearance: Default is `False`. If True, values from `right`
         that meet the join condition will be returned in the final dataframe
         in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
@@ -6263,15 +6360,15 @@ def lt_join(
         right,
         left_on,
         right_on,
-        sort_by_appearance,
+        order_by_appearance,
     ) = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, sort_by_appearance, suffixes
+        df, right, left_on, right_on, order_by_appearance, suffixes
     )
 
     right.index = np.arange(len(right))
     right_columns = right.columns
     right = _generic_less_than_inequality(
-        df, right, left_on, right_on, sort_by_appearance, strict=True
+        df, right, left_on, right_on, order_by_appearance, strict=True
     )
 
     if right is None:
@@ -6286,7 +6383,7 @@ def ge_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
-    sort_by_appearance: bool = False,
+    order_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6312,7 +6409,7 @@ def ge_join(
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param sort_by_appearance: Default is `False`. If True, values from `right`
+    :param order_by_appearance: Default is `False`. If True, values from `right`
         that meet the join condition will be returned in the final dataframe
         in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
@@ -6338,15 +6435,15 @@ def ge_join(
         right,
         left_on,
         right_on,
-        sort_by_appearance,
+        order_by_appearance,
     ) = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, sort_by_appearance, suffixes
+        df, right, left_on, right_on, order_by_appearance, suffixes
     )
 
     right.index = np.arange(len(right))
     right_columns = right.columns
     right = _generic_greater_than_inequality(
-        df, right, left_on, right_on, sort_by_appearance, strict=False
+        df, right, left_on, right_on, order_by_appearance, strict=False
     )
 
     if right is None:
@@ -6361,7 +6458,7 @@ def gt_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
-    sort_by_appearance: bool = False,
+    order_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6387,7 +6484,7 @@ def gt_join(
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param sort_by_appearance: Default is `False`. If True, values from `right`
+    :param order_by_appearance: Default is `False`. If True, values from `right`
         that meet the join condition will be returned in the final dataframe
         in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
@@ -6413,15 +6510,15 @@ def gt_join(
         right,
         left_on,
         right_on,
-        sort_by_appearance,
+        order_by_appearance,
     ) = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, sort_by_appearance, suffixes
+        df, right, left_on, right_on, order_by_appearance, suffixes
     )
 
     right.index = np.arange(len(right))
     right_columns = right.columns
     right = _generic_greater_than_inequality(
-        df, right, left_on, right_on, sort_by_appearance, strict=True
+        df, right, left_on, right_on, order_by_appearance, strict=True
     )
 
     if right is None:

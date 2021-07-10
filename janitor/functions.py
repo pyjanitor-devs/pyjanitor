@@ -6175,11 +6175,11 @@ def le_join(
         2  b  7  NaN
 
     Join df1 with df2, where ``y <= foo``::
-    
+
         df1.le_join(
-            right = df2, 
-            left_on = 'y', 
-            right_on = 'foo', 
+            right = df2,
+            left_on = 'y',
+            right_on = 'foo',
             order_by_appearance = True
             )
 
@@ -6198,9 +6198,9 @@ def le_join(
     you can set `order_by_appearance` to  ``False`` (this is the default)::
 
         df1.le_join(
-            right = df2, 
-            left_on = 'y', 
-            right_on = 'foo', 
+            right = df2,
+            left_on = 'y',
+            right_on = 'foo',
             order_by_appearance = False
             )
 
@@ -6219,7 +6219,7 @@ def le_join(
               it will be lost after the merge,
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
-              you can convert them to columns 
+              you can convert them to columns
               before running the non-equi join.
 
     Functional usage syntax:
@@ -6258,9 +6258,9 @@ def le_join(
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param order_by_appearance: Default is `False`. If True, values from `right`
-        that meet the join condition will be returned in the final dataframe
-        in the same order that they were in `right`.
+    :param order_by_appearance: Default is `False`. If True,
+        values from `right` that meet the join condition will be returned
+        in the final dataframe in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
         where each element is optionally a string indicating the suffix to add
         to overlapping column names in left and right respectively.
@@ -6354,11 +6354,11 @@ def lt_join(
         2  b  7  NaN
 
     Join df1 with df2, where ``v < v``::
-    
+
         df1.lt_join(
-            right = df2, 
-            left_on = 'v', 
-            right_on = 'v', 
+            right = df2,
+            left_on = 'v',
+            right_on = 'v',
             order_by_appearance = True
             )
 
@@ -6387,9 +6387,9 @@ def lt_join(
     you can set `order_by_appearance` to  ``False`` (this is the default)::
 
         df1.lt_join(
-            right = df2, 
-            left_on = 'v', 
-            right_on = 'v', 
+            right = df2,
+            left_on = 'v',
+            right_on = 'v',
             order_by_appearance = False
             )
 
@@ -6418,7 +6418,7 @@ def lt_join(
               it will be lost after the merge,
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
-              you can convert them to columns 
+              you can convert them to columns
               before running the non-equi join.
 
     Functional usage syntax:
@@ -6457,9 +6457,9 @@ def lt_join(
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param order_by_appearance: Default is `False`. If True, values from `right`
-        that meet the join condition will be returned in the final dataframe
-        in the same order that they were in `right`.
+    :param order_by_appearance: Default is `False`. If True,
+        values from `right` that meet the join condition will be returned
+        in the final dataframe in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
         where each element is optionally a string indicating the suffix to add
         to overlapping column names in left and right respectively.
@@ -6552,11 +6552,11 @@ def ge_join(
         2  b  7  NaN
 
     Join df1 with df2, where ``y >= foo``::
-    
+
         df1.ge_join(
-            right = df2, 
-            left_on = 'y', 
-            right_on = 'foo', 
+            right = df2,
+            left_on = 'y',
+            right_on = 'foo',
             order_by_appearance = True
             )
 
@@ -6575,9 +6575,9 @@ def ge_join(
     you can set `order_by_appearance` to  ``False`` (this is the default)::
 
         df1.ge_join(
-            right = df2, 
-            left_on = 'y', 
-            right_on = 'foo', 
+            right = df2,
+            left_on = 'y',
+            right_on = 'foo',
             order_by_appearance = False
             )
 
@@ -6596,7 +6596,7 @@ def ge_join(
               it will be lost after the merge,
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
-              you can convert them to columns 
+              you can convert them to columns
               before running the non-equi join.
 
     Functional usage syntax:
@@ -6635,9 +6635,9 @@ def ge_join(
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param order_by_appearance: Default is `False`. If True, values from `right`
-        that meet the join condition will be returned in the final dataframe
-        in the same order that they were in `right`.
+    :param order_by_appearance: Default is `False`. If True,
+        values from `right` that meet the join condition will be returned
+        in the final dataframe in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
         where each element is optionally a string indicating the suffix to add
         to overlapping column names in left and right respectively.
@@ -6654,7 +6654,7 @@ def ge_join(
 
 
     .. # noqa: DAR402
-    
+
     """
 
     (
@@ -6725,11 +6725,11 @@ def gt_join(
         2  b  7  NaN
 
     Join df1 with df2, where ``v > v``::
-    
+
         df1.gt_join(
-            right = df2, 
-            left_on = 'v', 
-            right_on = 'v', 
+            right = df2,
+            left_on = 'v',
+            right_on = 'v',
             order_by_appearance = True
             )
 
@@ -6747,9 +6747,9 @@ def gt_join(
     you can set `order_by_appearance` to  ``False`` (this is the default)::
 
         df1.gt_join(
-            right = df2, 
-            left_on = 'v', 
-            right_on = 'v', 
+            right = df2,
+            left_on = 'v',
+            right_on = 'v',
             order_by_appearance = False
             )
 
@@ -6767,7 +6767,7 @@ def gt_join(
               it will be lost after the merge,
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
-              you can convert them to columns 
+              you can convert them to columns
               before running the non-equi join.
 
     Functional usage syntax:
@@ -6806,9 +6806,9 @@ def gt_join(
     :param right: Named Series or DataFrame to join to.
     :param left_on: Column name from `df` that will be used in the join.
     :param right_on: Column name from `right` that will be used in the join.
-    :param order_by_appearance: Default is `False`. If True, values from `right`
-        that meet the join condition will be returned in the final dataframe
-        in the same order that they were in `right`.
+    :param order_by_appearance: Default is `False`. If True,
+        values from `right` that meet the join condition will be returned
+        in the final dataframe in the same order that they were in `right`.
     :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
         where each element is optionally a string indicating the suffix to add
         to overlapping column names in left and right respectively.

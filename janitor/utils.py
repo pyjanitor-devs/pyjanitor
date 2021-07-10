@@ -2350,7 +2350,7 @@ def _non_equi_preliminary_checks(
     This function checks for conditions such as MultiIndexed dataframe columns,
     improper `suffixes` configuration, as well as unnamed Series.
 
-    A tuple of (`df`, `right`, `left_on`, `right_on`, `sort_by_appearance`)
+    A tuple of (`df`, `right`, `left_on`, `right_on`, `order_by_appearance`)
     is returned.
     """
     if isinstance(df.columns, pd.MultiIndex):
@@ -2479,23 +2479,35 @@ def _generic_less_than_inequality(
 
     _conditional_join_type_check(left_c, right_c)
 
+    # no point going through all the hassle
     if left_c.min() > right_c.max():
         return None
+
+
     right_argsort = right_c.argsort().to_numpy(copy=False)
-    exclude_rows = right_argsort == -1
+    exclude_rows = right_argsort == -1 # check for nulls
     if exclude_rows.any():
         right_c = right_c[~exclude_rows]
         right_argsort = right_argsort[~exclude_rows]
+    # binary search requires a sorted data
     if not right_c.is_monotonic_increasing:
         right_c = right_c.take(right_argsort)
     search_indices = right_c.searchsorted(left_c, side="left")
     len_right_c = right_c.size
     len_left = len_right_c - search_indices
+    # build indices to get matching rows
+    # rows where start is equal to length of `right_c`
+    # will return empty array
     right_indices = [np.arange(start, len_right_c) for start in search_indices]
     right_indices = np.concatenate(right_indices)
+
+    # this serves as identifier for `df`
+    # comes in handy when joining the output from `right` to `df`
     left_marker = np.arange(search_indices.size)
+    # we are blowing up left_marker to be the same size as `right_indices`
+    # and also matching the appropriate rows for each value in `left_c`
     right_marker = np.repeat(left_marker, len_left)
-    if strict is True:
+    if strict is True: # strictly less than
         right_c = right_c.take(right_indices)
         left_c = left_c.repeat(len_left)
         exclude_rows = right_c.array == left_c.array
@@ -2505,13 +2517,18 @@ def _generic_less_than_inequality(
             right_marker = right_marker[~exclude_rows]
     else:
         right_c = right_c.index.take(right_indices)
+    # user prefers output to maintain order from `right`
     if order_by_appearance is True:
+        # during profiling, it is observed that sorting
+        # has a significant impact on the speed
         ind = np.lexsort((right_c, right_marker))
         right_marker = right_marker[ind]
         right_c = right_c[ind]
     right = right.take(right_c)
+    # set index for `df` and `right` before joining
     right.index = right_marker
     df.index = left_marker
+    # other major speed impacter here, after profiling
     right = df.join(right, how="inner", sort=False)
     right.index = np.arange(len(right))
     return right
@@ -2539,26 +2556,35 @@ def _generic_greater_than_inequality(
 
     _conditional_join_type_check(left_c, right_c)
 
+    # quick break, avoiding the hassle
     if left_c.max() < right_c.min():
         return None
 
     right_argsort = right_c.argsort().to_numpy(copy=False)
-    exclude_rows = right_argsort == -1
+    exclude_rows = right_argsort == -1 # check for nulls
     if exclude_rows.any():
         right_c = right_c[~exclude_rows]
         right_argsort = right_argsort[~exclude_rows]
+    # binary search requires sorted data
     if not right_c.is_monotonic_increasing:
         right_c = right_c.take(right_argsort)
-    if left_c.hasnans:
+    if left_c.hasnans: # get rid of NaNs
         exclude_rows = left_c.isna()
         left_c = left_c[~exclude_rows]
         df = df.loc[~exclude_rows]
     search_indices = right_c.searchsorted(left_c, side="right")
+    # get indices from 0 to start
+    # this captures all values in `right_c` are less than or equal to
+    # the relevant value in `left_c`
     right_indices = [np.arange(0, start) for start in search_indices]
     right_indices = np.concatenate(right_indices)
+    # required to keep track between `df` and `right`
+    # comes in handy when creating the final dataframe
     left_marker = np.arange(search_indices.size)
+    # ensure match between each value in `left_c`
+    # and each value in `right_c` that is less than or equal
     right_marker = np.repeat(left_marker, search_indices)
-    if strict is True:
+    if strict is True: # strictly greater than
         right_c = right_c.take(right_indices)
         left_c = left_c.repeat(search_indices)
         exclude_rows = right_c.array == left_c.array
@@ -2568,13 +2594,19 @@ def _generic_greater_than_inequality(
             right_marker = right_marker[~exclude_rows]
     else:
         right_c = right_c.index.take(right_indices)
+    # user prefers order from `right` is maintained
     if order_by_appearance is True:
+        # has a significant impact on speed
         ind = np.lexsort((right_c, right_marker))
         right_marker = right_marker[ind]
         right_c = right_c[ind]
     right = right.take(right_c)
+    # set indices for `df` and `right`
+    # before creating final dataframe
     right.index = right_marker
     df.index = left_marker
+    # also has a significant impact on speed;
+    # not sure if it is avoidable
     right = df.join(right, how="inner", sort=False)
     right.index = np.arange(len(right))
     return right

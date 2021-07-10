@@ -30,7 +30,7 @@ from pandas.api.types import union_categoricals, is_list_like, is_bool_dtype
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
-
+from typing import NamedTuple
 from .errors import JanitorError
 from .utils import (
     _computations_expand_grid,
@@ -50,7 +50,6 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    As_Categorical,
     _non_equi_preliminary_checks,
     _generic_greater_than_inequality,
     _generic_less_than_inequality,
@@ -468,6 +467,22 @@ def get_dupes(
     """
     dupes = df.duplicated(subset=column_names, keep=False)
     return df[dupes == True]  # noqa: E712
+
+
+class As_Categorical(NamedTuple):
+    """
+    Helper class for `encode_categorical`. It makes creating the
+    `categories` and `order` more explicit. Inspired by pd.NamedAgg.
+
+    :param categories: list-like object to create new categorical column.
+    :param order: string object that can be either "sort" or "appearance".
+        If "sort", the `categories` argument will be sorted with np.sort;
+        if "apperance", the `categories` argument will be used as is.
+    :returns: A namedtuple of (`categories`, `order`).
+    """
+
+    categories: list = None
+    order: str = None
 
 
 @pf.register_dataframe_method
@@ -6120,7 +6135,7 @@ def le_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
-    sort_by_appearance:bool=False,
+    sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6130,23 +6145,58 @@ def le_join(
     The function uses binary search to get these rows, avoiding
     the cartesian product, to make non-equi joins faster and less
     memory intensive. This allows for multiple non-equi joins, where subsequent
-    conditions can be achieved within the joined dataframe, via `pandas.query`, 
+    conditions can be achieved within the joined dataframe, via `pandas.query`,
     or `pandas.loc`, using boolean masks.
-    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    The non-equi join is done only on the columns.
+    MultiIndex columns are not supported.
     Only inner join is supported.
 
-    .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
-              and replaced with an integer index. If you wish to preserve the labeled indices,
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
               you can convert them to columns before running the non-equi join.
+
+    :param df: A pandas dataframe.
+    :param right: Named Series or DataFrame to join to.
+    :param left_on: Column name from `df` that will be used in the join.
+    :param right_on: Column name from `right` that will be used in the join.
+    :param sort_by_appearance: Default is `False`. If True, values from `right`
+        that meet the join condition will be returned in the final dataframe
+        in the same order that they were in `right`.
+    :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
+        where each element is optionally a string indicating the suffix to add
+        to overlapping column names in left and right respectively.
+        Pass a value of None instead of a string to indicate that the
+        column name from `df` or `right` should be left as-is, with no suffix.
+        At least one of the values must not be None.
+    :returns: A pandas DataFrame of the two merged Pandas objects.
+    :raises ValueError: if columns from `df` or `right` is a MultiIndex.
+    :raises ValueError: if `right` is an unnamed Series.
+    :raises ValueError: if `left_on` or `right_on` is not in `df` or `right`
+        respectively.
+    :raises ValueError: if `left_on` and `right` are not both numeric,
+        or string, or datetime.
+
+
+    .. # noqa: DAR402
     """
 
-    df, right, left_on, right_on, sort_by_appearance = _non_equi_preliminary_checks(
+    (
+        df,
+        right,
+        left_on,
+        right_on,
+        sort_by_appearance,
+    ) = _non_equi_preliminary_checks(
         df, right, left_on, right_on, sort_by_appearance, suffixes
     )
 
-    right.index = range(len(right))
+    right.index = np.arange(len(right))
     right_columns = right.columns
-    right = _generic_less_than_inequality(df, right, left_on, right_on, sort_by_appearance, strict = False)
+    right = _generic_less_than_inequality(
+        df, right, left_on, right_on, sort_by_appearance, strict=False
+    )
 
     if right is None:
         columns = df.columns.union(right_columns, sort=False)
@@ -6160,6 +6210,7 @@ def lt_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
+    sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6168,28 +6219,66 @@ def lt_join(
     less than values for `right_on` for `right`.
     The function uses binary search to get these rows, avoiding
     the cartesian product, to make non-equi joins faster and less
-    memory intensive. This allows for multiple non-equi joins, where subsequent
-    conditions can be achieved within the joined dataframe, via `pandas.query`, 
-    or `pandas.loc`, using boolean masks.
-    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    memory intensive. This allows for multiple non-equi joins,
+    where subsequent conditions can be achieved within the
+    joined dataframe, via `pandas.query`, or `pandas.loc`,
+    using boolean masks.
+    The non-equi join is done only on the columns.
+    MultiIndex columns are not supported.
     Only inner join is supported.
 
-    .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
-              and replaced with an integer index. If you wish to preserve the labeled indices,
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
               you can convert them to columns before running the non-equi join.
+
+    :param df: A pandas dataframe.
+    :param right: Named Series or DataFrame to join to.
+    :param left_on: Column name from `df` that will be used in the join.
+    :param right_on: Column name from `right` that will be used in the join.
+    :param sort_by_appearance: Default is `False`. If True, values from `right`
+        that meet the join condition will be returned in the final dataframe
+        in the same order that they were in `right`.
+    :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
+        where each element is optionally a string indicating the suffix to add
+        to overlapping column names in left and right respectively.
+        Pass a value of None instead of a string to indicate that the
+        column name from `df` or `right` should be left as-is, with no suffix.
+        At least one of the values must not be None.
+    :returns: A pandas DataFrame of the two merged Pandas objects.
+    :raises ValueError: if columns from `df` or `right` is a MultiIndex.
+    :raises ValueError: if `right` is an unnamed Series.
+    :raises ValueError: if `left_on` or `right_on` is not in `df` or `right`
+        respectively.
+    :raises ValueError: if `left_on` and `right` are not both numeric,
+        or string, or datetime.
+
+
+    .. # noqa: DAR402
     """
 
-    df, right, left_on, right_on = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, suffixes
+    (
+        df,
+        right,
+        left_on,
+        right_on,
+        sort_by_appearance,
+    ) = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, sort_by_appearance, suffixes
     )
+
+    right.index = np.arange(len(right))
     right_columns = right.columns
-    right = _generic_less_than_inequality(df, right, left_on, right_on, strict = True)
+    right = _generic_less_than_inequality(
+        df, right, left_on, right_on, sort_by_appearance, strict=True
+    )
 
     if right is None:
         columns = df.columns.union(right_columns, sort=False)
         return pd.DataFrame([], columns=columns)
-         
-    return df.merge(right, on = left_on, how = 'inner')
+    return right
+
 
 @pf.register_dataframe_method
 def ge_join(
@@ -6197,6 +6286,7 @@ def ge_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
+    sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6206,27 +6296,64 @@ def ge_join(
     The function uses binary search to get these rows, avoiding
     the cartesian product, to make non-equi joins faster and less
     memory intensive. This allows for multiple non-equi joins, where subsequent
-    conditions can be achieved within the joined dataframe, via `pandas.query`, 
+    conditions can be achieved within the joined dataframe, via `pandas.query`,
     or `pandas.loc`, using boolean masks.
-    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    The non-equi join is done only on the columns.
+    MultiIndex columns are not supported.
     Only inner join is supported.
 
-    .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
-              and replaced with an integer index. If you wish to preserve the labeled indices,
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
               you can convert them to columns before running the non-equi join.
+
+    :param df: A pandas dataframe.
+    :param right: Named Series or DataFrame to join to.
+    :param left_on: Column name from `df` that will be used in the join.
+    :param right_on: Column name from `right` that will be used in the join.
+    :param sort_by_appearance: Default is `False`. If True, values from `right`
+        that meet the join condition will be returned in the final dataframe
+        in the same order that they were in `right`.
+    :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
+        where each element is optionally a string indicating the suffix to add
+        to overlapping column names in left and right respectively.
+        Pass a value of None instead of a string to indicate that the
+        column name from `df` or `right` should be left as-is, with no suffix.
+        At least one of the values must not be None.
+    :returns: A pandas DataFrame of the two merged Pandas objects.
+    :raises ValueError: if columns from `df` or `right` is a MultiIndex.
+    :raises ValueError: if `right` is an unnamed Series.
+    :raises ValueError: if `left_on` or `right_on` is not in `df` or `right`
+        respectively.
+    :raises ValueError: if `left_on` and `right` are not both numeric,
+        or string, or datetime.
+
+
+    .. # noqa: DAR402
     """
 
-    df, right, left_on, right_on = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, suffixes
+    (
+        df,
+        right,
+        left_on,
+        right_on,
+        sort_by_appearance,
+    ) = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, sort_by_appearance, suffixes
     )
+
+    right.index = np.arange(len(right))
     right_columns = right.columns
-    right = _generic_greater_than_inequality(df, right, left_on, right_on, strict = False)
+    right = _generic_greater_than_inequality(
+        df, right, left_on, right_on, sort_by_appearance, strict=False
+    )
 
     if right is None:
         columns = df.columns.union(right_columns, sort=False)
         return pd.DataFrame([], columns=columns)
-         
-    return df.merge(right, on = left_on, how = 'inner')
+    return right
+
 
 @pf.register_dataframe_method
 def gt_join(
@@ -6234,6 +6361,7 @@ def gt_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
+    sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6243,26 +6371,60 @@ def gt_join(
     The function uses binary search to get these rows, avoiding
     the cartesian product, to make non-equi joins faster and less
     memory intensive. This allows for multiple non-equi joins, where subsequent
-    conditions can be achieved within the joined dataframe, via `pandas.query`, 
+    conditions can be achieved within the joined dataframe, via `pandas.query`,
     or `pandas.loc`, using boolean masks.
-    The non-equi join is done only on the columns. MultiIndex columns are not supported.
+    The non-equi join is done only on the columns.
+    MultiIndex columns are not supported.
     Only inner join is supported.
 
-    .. note:: If `df` or `right` has labeled indices, it will be lost after the merge,
-              and replaced with an integer index. If you wish to preserve the labeled indices,
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
               you can convert them to columns before running the non-equi join.
+
+    :param df: A pandas dataframe.
+    :param right: Named Series or DataFrame to join to.
+    :param left_on: Column name from `df` that will be used in the join.
+    :param right_on: Column name from `right` that will be used in the join.
+    :param sort_by_appearance: Default is `False`. If True, values from `right`
+        that meet the join condition will be returned in the final dataframe
+        in the same order that they were in `right`.
+    :param suffixes: tuple, default is (“_x”, “_y”). A length-2 sequence
+        where each element is optionally a string indicating the suffix to add
+        to overlapping column names in left and right respectively.
+        Pass a value of None instead of a string to indicate that the
+        column name from `df` or `right` should be left as-is, with no suffix.
+        At least one of the values must not be None.
+    :returns: A pandas DataFrame of the two merged Pandas objects.
+    :raises ValueError: if columns from `df` or `right` is a MultiIndex.
+    :raises ValueError: if `right` is an unnamed Series.
+    :raises ValueError: if `left_on` or `right_on` is not in `df` or `right`
+        respectively.
+    :raises ValueError: if `left_on` and `right` are not both numeric,
+        or string, or datetime.
+
+
+    .. # noqa: DAR402
     """
 
-    df, right, left_on, right_on = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, suffixes
+    (
+        df,
+        right,
+        left_on,
+        right_on,
+        sort_by_appearance,
+    ) = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, sort_by_appearance, suffixes
     )
 
+    right.index = np.arange(len(right))
     right_columns = right.columns
-    right = _generic_greater_than_inequality(df, right, left_on, right_on, strict = True)
-   
+    right = _generic_greater_than_inequality(
+        df, right, left_on, right_on, sort_by_appearance, strict=True
+    )
 
     if right is None:
         columns = df.columns.union(right_columns, sort=False)
         return pd.DataFrame([], columns=columns)
-         
-    return df.merge(right, on = left_on, how = 'inner')
+    return right

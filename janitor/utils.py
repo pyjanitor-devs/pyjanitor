@@ -5,11 +5,9 @@ import functools
 import os
 import re
 import sys
-from turtle import left
 
 import warnings
 from collections.abc import Callable as dispatch_callable
-from collections import defaultdict
 from itertools import chain, combinations
 from typing import (
     Callable,
@@ -2344,16 +2342,16 @@ def _non_equi_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
-    sort_by_appearance:bool=False,
+    sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
-
     """
     Preliminary checks are conducted here.
     This function checks for conditions such as MultiIndexed dataframe columns,
     improper `suffixes` configuration, as well as unnamed Series.
 
-    A tuple of (`df`, `right`, `left_on`, `right_on`) is returned.
+    A tuple of (`df`, `right`, `left_on`, `right_on`, `sort_by_appearance`)
+    is returned.
     """
     if isinstance(df.columns, pd.MultiIndex):
         raise ValueError(
@@ -2406,8 +2404,8 @@ def _non_equi_preliminary_checks(
                 if new_label in df.columns:
                     raise ValueError(
                         f"""
-                        {new_label} is present in `df` columns. 
-                        Kindly provide unique suffixes to create 
+                        {new_label} is present in `df` columns.
+                        Kindly provide unique suffixes to create
                         columns that are not present in `df`.
                         """
                     )
@@ -2422,8 +2420,8 @@ def _non_equi_preliminary_checks(
                 if new_label in right.columns:
                     raise ValueError(
                         f"""
-                        {new_label} is present in `right` columns. 
-                        Kindly provide unique suffixes to create 
+                        {new_label} is present in `right` columns.
+                        Kindly provide unique suffixes to create
                         columns that are not present in `right`.
                         """
                     )
@@ -2453,11 +2451,10 @@ def _conditional_join_type_check(
 
     raise ValueError(
         """
-        non-equi join only supports 
+        non-equi join only supports
         numeric, date or string dtypes.
         """
     )
-
 
 
 def _generic_less_than_inequality(
@@ -2465,7 +2462,7 @@ def _generic_less_than_inequality(
     right: pd.DataFrame,
     left_on: str,
     right_on: str,
-    sort_by_appearance:bool=False,
+    sort_by_appearance: bool = False,
     strict: bool = False,
 ):
     """
@@ -2480,7 +2477,6 @@ def _generic_less_than_inequality(
     left_c = df[left_on]
     right_c = right[right_on]
 
-
     _conditional_join_type_check(left_c, right_c)
 
     if left_c.min() > right_c.max():
@@ -2492,7 +2488,7 @@ def _generic_less_than_inequality(
         right_argsort = right_argsort[~exclude_rows]
     if not right_c.is_monotonic_increasing:
         right_c = right_c.take(right_argsort)
-    search_indices = right_c.searchsorted(left_c, side='left')
+    search_indices = right_c.searchsorted(left_c, side="left")
     len_right_c = right_c.size
     len_left = len_right_c - search_indices
     right_indices = [np.arange(start, len_right_c) for start in search_indices]
@@ -2503,8 +2499,9 @@ def _generic_less_than_inequality(
         right_c = right_c.take(right_indices)
         left_c = left_c.repeat(len_left)
         exclude_rows = right_c.array == left_c.array
+        right_c = right_c.index
         if exclude_rows.any():
-            right_c = right_c.index[~exclude_rows]
+            right_c = right_c[~exclude_rows]
             right_marker = right_marker[~exclude_rows]
     else:
         right_c = right_c.index.take(right_indices)
@@ -2513,12 +2510,11 @@ def _generic_less_than_inequality(
         right_marker = right_marker[ind]
         right_c = right_c[ind]
     right = right.take(right_c)
-    right.index = right_marker  
+    right.index = right_marker
     df.index = left_marker
-    right = df.join(right, how ='inner', sort = False, lsuffix="_x", rsuffix="_y")
+    right = df.join(right, how="inner", sort=False)
     right.index = np.arange(len(right))
     return right
-
 
 
 def _generic_greater_than_inequality(
@@ -2526,7 +2522,7 @@ def _generic_greater_than_inequality(
     right: pd.DataFrame,
     left_on: str,
     right_on: str,
-    sort_by_appearance:bool=False,
+    sort_by_appearance: bool = False,
     strict: bool = False,
 ):
     """
@@ -2546,4 +2542,39 @@ def _generic_greater_than_inequality(
     if left_c.max() < right_c.min():
         return None
 
-    return left_c, right_c
+    right_argsort = right_c.argsort().to_numpy(copy=False)
+    exclude_rows = right_argsort == -1
+    if exclude_rows.any():
+        right_c = right_c[~exclude_rows]
+        right_argsort = right_argsort[~exclude_rows]
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.take(right_argsort)
+    if left_c.hasnans:
+        exclude_rows = left_c.isna()
+        left_c = left_c[~exclude_rows]
+        df = df.loc[~exclude_rows]
+    search_indices = right_c.searchsorted(left_c, side="right")
+    right_indices = [np.arange(0, start) for start in search_indices]
+    right_indices = np.concatenate(right_indices)
+    left_marker = np.arange(search_indices.size)
+    right_marker = np.repeat(left_marker, search_indices)
+    if strict is True:
+        right_c = right_c.take(right_indices)
+        left_c = left_c.repeat(search_indices)
+        exclude_rows = right_c.array == left_c.array
+        right_c = right_c.index
+        if exclude_rows.any():
+            right_c = right_c[~exclude_rows]
+            right_marker = right_marker[~exclude_rows]
+    else:
+        right_c = right_c.index.take(right_indices)
+    if sort_by_appearance is True:
+        ind = np.lexsort((right_c, right_marker))
+        right_marker = right_marker[ind]
+        right_c = right_c[ind]
+    right = right.take(right_c)
+    right.index = right_marker
+    df.index = left_marker
+    right = df.join(right, how="inner", sort=False)
+    right.index = np.arange(len(right))
+    return right

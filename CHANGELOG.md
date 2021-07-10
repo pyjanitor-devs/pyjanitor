@@ -14,6 +14,7 @@
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions
     via `functools.dispatch`. - @samukweku
+-   [ENH] `le_join`, `lt_join`, `ge_join`, `gt_join` functions that help with non-equi joins. @samukweku
 
 ## [v0.20.14] - 2021-03-25
 

@@ -93,4 +93,7 @@ Other
     complete
     pivot_longer
     pivot_wider
-    as_categorical
+    le_join
+    lt_join
+    ge_join
+    gt_join

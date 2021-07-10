@@ -60,10 +60,10 @@ def test_right_unnamed_Series(left_df, sequence):
         left_df.le_join(sequence, "col_a", "col_a")
 
 
-def test_wrong_type_sort_by_appearance(left_df, right_df):
-    """Raise TypeError if wrong type is provided for `sort_by_appearance`."""
+def test_wrong_type_order_by_appearance(left_df, right_df):
+    """Raise TypeError if wrong type is provided for `order_by_appearance`."""
     with pytest.raises(TypeError):
-        left_df.le_join(right_df, "col_a", "col_a", sort_by_appearance="True")
+        left_df.le_join(right_df, "col_a", "col_a", order_by_appearance="True")
 
 
 def test_wrong_column_presence_right(left_df, right_df):
@@ -480,6 +480,6 @@ def test_various_scenarios(
 ):
     """Test various scenarios for le_join"""
     expected = left_df.le_join(
-        right_df, left_on, right_on, sort_by_appearance=appearance
+        right_df, left_on, right_on, order_by_appearance=appearance
     )
     assert_frame_equal(expected, actual)

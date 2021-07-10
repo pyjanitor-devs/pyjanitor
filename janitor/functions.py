@@ -6139,7 +6139,7 @@ def le_join(
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
-    Similar to ``pd.merge``, but supports only non-equi merge.
+    Similar to ``pd.merge``, but supports only non-equi joins.
     This returns rows where values for `left_on` from `df` are
     less than or equal to values for `right_on` for `right`.
     The function uses binary search to get these rows, avoiding
@@ -6153,9 +6153,7 @@ def le_join(
 
     Example :
 
-    .. code-block:: python
-
-        df1
+    df1::
 
            x    y  v
         0  b  1.0  1
@@ -6169,21 +6167,23 @@ def le_join(
         8  c  6.0  9
         9  c  NaN  9
 
-        df2
+    df2::
 
            x  v  foo
         0  c  8  4.0
         1  b  7  2.0
         2  b  7  NaN
 
+    Join df1 with df2, where ``y <= foo``::
+    
+        df1.le_join(
+            right = df2, 
+            left_on = 'y', 
+            right_on = 'foo', 
+            order_by_appearance = True
+            )
 
-        df1.le_join(right = df2, 
-                    left_on = 'y', 
-                    right_on = 'foo', 
-                    order_by_appearance = True
-                    )
-
-           x_x    y  v_x x_y  v_y  foo
+           x_x   y   v_x x_y  v_y foo
         0   b  1.0    1   c    8  4.0
         1   b  1.0    1   b    7  2.0
         2   b  3.0    2   c    8  4.0
@@ -6194,16 +6194,17 @@ def le_join(
         7   c  1.0    7   b    7  2.0
         8   c  3.0    8   c    8  4.0
 
-    If you do not care for the order from the `right` dataframe,
-    you can set `order_by_appearance` to `False`(this is the default):
+    If you do not care for the order from `right`,
+    you can set `order_by_appearance` to  ``False`` (this is the default)::
 
-        df1.le_join(right = df2, 
-                    left_on = 'y', 
-                    right_on = 'foo', 
-                    order_by_appearance = False
-                    )
+        df1.le_join(
+            right = df2, 
+            left_on = 'y', 
+            right_on = 'foo', 
+            order_by_appearance = False
+            )
 
-           x_x    y  v_x x_y  v_y  foo
+           x_x   y   v_x x_y  v_y foo
         0   b  1.0    1   b    7  2.0
         1   b  1.0    1   c    8  4.0
         2   b  3.0    2   c    8  4.0
@@ -6232,20 +6233,19 @@ def le_join(
         right = pd.DataFrame(...)
 
         df = jn.le_join(
-            df = df,
-            right = right,
-            left_on = column name from `df`,
-            right_on = column name from `right`,
-            order_by_appearance = True/False,
-            suffixes = ("_x", "_y),
-        )
+                df = df,
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
 
     Method chaining syntax:
 
     .. code-block:: python
 
         df = df.le_join(
-                df = df,
                 right = right,
                 left_on = column name from `df`,
                 right_on = column name from `right`,
@@ -6311,7 +6311,7 @@ def lt_join(
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
-    Similar to ``pd.merge``, but supports only non-equi merge.
+    Similar to ``pd.merge``, but supports only non-equi joins.
     This returns rows where values for `left_on` from `df` are
     less than values for `right_on` for `right`.
     The function uses binary search to get these rows, avoiding
@@ -6329,6 +6329,129 @@ def lt_join(
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
               you can convert them to columns before running the non-equi join.
+
+    Example :
+
+    df1::
+
+           x    y  v
+        0  b  1.0  1
+        1  b  3.0  2
+        2  b  6.0  3
+        3  a  1.0  4
+        4  a  3.0  5
+        5  a  6.0  6
+        6  c  1.0  7
+        7  c  3.0  8
+        8  c  6.0  9
+        9  c  NaN  9
+
+    df2::
+
+           x  v  foo
+        0  c  8  4.0
+        1  b  7  2.0
+        2  b  7  NaN
+
+    Join df1 with df2, where ``v < v``::
+    
+        df1.lt_join(
+            right = df2, 
+            left_on = 'v', 
+            right_on = 'v', 
+            order_by_appearance = True
+            )
+
+            x_x   y  v_x x_y  v_y  foo
+        0    b  1.0    1   c    8  4.0
+        1    b  1.0    1   b    7  2.0
+        2    b  1.0    1   b    7  NaN
+        3    b  3.0    2   c    8  4.0
+        4    b  3.0    2   b    7  2.0
+        5    b  3.0    2   b    7  NaN
+        6    b  6.0    3   c    8  4.0
+        7    b  6.0    3   b    7  2.0
+        8    b  6.0    3   b    7  NaN
+        9    a  1.0    4   c    8  4.0
+        10   a  1.0    4   b    7  2.0
+        11   a  1.0    4   b    7  NaN
+        12   a  3.0    5   c    8  4.0
+        13   a  3.0    5   b    7  2.0
+        14   a  3.0    5   b    7  NaN
+        15   a  6.0    6   c    8  4.0
+        16   a  6.0    6   b    7  2.0
+        17   a  6.0    6   b    7  NaN
+        18   c  1.0    7   c    8  4.0
+
+    If you do not care for the order from `right`,
+    you can set `order_by_appearance` to  ``False`` (this is the default)::
+
+        df1.lt_join(
+            right = df2, 
+            left_on = 'v', 
+            right_on = 'v', 
+            order_by_appearance = False
+            )
+
+            x_x   y  v_x x_y  v_y  foo
+        0    b  1.0    1   b    7  2.0
+        1    b  1.0    1   b    7  NaN
+        2    b  1.0    1   c    8  4.0
+        3    b  3.0    2   b    7  2.0
+        4    b  3.0    2   b    7  NaN
+        5    b  3.0    2   c    8  4.0
+        6    b  6.0    3   b    7  2.0
+        7    b  6.0    3   b    7  NaN
+        8    b  6.0    3   c    8  4.0
+        9    a  1.0    4   b    7  2.0
+        10   a  1.0    4   b    7  NaN
+        11   a  1.0    4   c    8  4.0
+        12   a  3.0    5   b    7  2.0
+        13   a  3.0    5   b    7  NaN
+        14   a  3.0    5   c    8  4.0
+        15   a  6.0    6   b    7  2.0
+        16   a  6.0    6   b    7  NaN
+        17   a  6.0    6   c    8  4.0
+        18   c  1.0    7   c    8  4.0
+
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
+              you can convert them to columns 
+              before running the non-equi join.
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.lt_join(
+                df = df,
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = df.lt_join(
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
+
 
     :param df: A pandas dataframe.
     :param right: Named Series or DataFrame to join to.
@@ -6387,7 +6510,7 @@ def ge_join(
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
-    Similar to ``pd.merge``, but supports only non-equi merge.
+    Similar to ``pd.merge``, but supports only non-equi joins.
     This returns rows where values for `left_on` from `df` are
     greater than or equal to values for `right_on` for `right`.
     The function uses binary search to get these rows, avoiding
@@ -6404,6 +6527,109 @@ def ge_join(
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
               you can convert them to columns before running the non-equi join.
+
+    Example :
+
+    df1::
+
+           x    y  v
+        0  b  1.0  1
+        1  b  3.0  2
+        2  b  6.0  3
+        3  a  1.0  4
+        4  a  3.0  5
+        5  a  6.0  6
+        6  c  1.0  7
+        7  c  3.0  8
+        8  c  6.0  9
+        9  c  NaN  9
+
+    df2::
+
+           x  v  foo
+        0  c  8  4.0
+        1  b  7  2.0
+        2  b  7  NaN
+
+    Join df1 with df2, where ``y >= foo``::
+    
+        df1.ge_join(
+            right = df2, 
+            left_on = 'y', 
+            right_on = 'foo', 
+            order_by_appearance = True
+            )
+
+            x_x  y  v_x x_y  v_y  foo
+        0   b  3.0    2   b    7  2.0
+        1   b  6.0    3   c    8  4.0
+        2   b  6.0    3   b    7  2.0
+        3   a  3.0    5   b    7  2.0
+        4   a  6.0    6   c    8  4.0
+        5   a  6.0    6   b    7  2.0
+        6   c  3.0    8   b    7  2.0
+        7   c  6.0    9   c    8  4.0
+        8   c  6.0    9   b    7  2.0
+
+    If you do not care for the order from `right`,
+    you can set `order_by_appearance` to  ``False`` (this is the default)::
+
+        df1.ge_join(
+            right = df2, 
+            left_on = 'y', 
+            right_on = 'foo', 
+            order_by_appearance = False
+            )
+
+            x_x  y  v_x x_y  v_y  foo
+        0   b  3.0    2   b    7  2.0
+        1   b  6.0    3   b    7  2.0
+        2   b  6.0    3   c    8  4.0
+        3   a  3.0    5   b    7  2.0
+        4   a  6.0    6   b    7  2.0
+        5   a  6.0    6   c    8  4.0
+        6   c  3.0    8   b    7  2.0
+        7   c  6.0    9   b    7  2.0
+        8   c  6.0    9   c    8  4.0
+
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
+              you can convert them to columns 
+              before running the non-equi join.
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.ge_join(
+                df = df,
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = df.ge_join(
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
+
 
     :param df: A pandas dataframe.
     :param right: Named Series or DataFrame to join to.
@@ -6428,6 +6654,7 @@ def ge_join(
 
 
     .. # noqa: DAR402
+    
     """
 
     (
@@ -6462,7 +6689,7 @@ def gt_join(
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
-    Similar to ``pd.merge``, but supports only non-equi merge.
+    Similar to ``pd.merge``, but supports only non-equi joins.
     This returns rows where values for `left_on` from `df` are
     greater than values for `right_on` for `right`.
     The function uses binary search to get these rows, avoiding
@@ -6474,11 +6701,106 @@ def gt_join(
     MultiIndex columns are not supported.
     Only inner join is supported.
 
+    Example :
+
+    df1::
+
+           x    y  v
+        0  b  1.0  1
+        1  b  3.0  2
+        2  b  6.0  3
+        3  a  1.0  4
+        4  a  3.0  5
+        5  a  6.0  6
+        6  c  1.0  7
+        7  c  3.0  8
+        8  c  6.0  9
+        9  c  NaN  9
+
+    df2::
+
+           x  v  foo
+        0  c  8  4.0
+        1  b  7  2.0
+        2  b  7  NaN
+
+    Join df1 with df2, where ``v > v``::
+    
+        df1.gt_join(
+            right = df2, 
+            left_on = 'v', 
+            right_on = 'v', 
+            order_by_appearance = True
+            )
+
+            x_x  y  v_x x_y  v_y  foo
+        0   c  3.0    8   b    7  2.0
+        1   c  3.0    8   b    7  NaN
+        2   c  6.0    9   c    8  4.0
+        3   c  6.0    9   b    7  2.0
+        4   c  6.0    9   b    7  NaN
+        5   c  NaN    9   c    8  4.0
+        6   c  NaN    9   b    7  2.0
+        7   c  NaN    9   b    7  NaN
+
+    If you do not care for the order from `right`,
+    you can set `order_by_appearance` to  ``False`` (this is the default)::
+
+        df1.gt_join(
+            right = df2, 
+            left_on = 'v', 
+            right_on = 'v', 
+            order_by_appearance = False
+            )
+
+            x_x  y  v_x x_y  v_y  foo
+        0   c  3.0    8   b    7  2.0
+        1   c  3.0    8   b    7  NaN
+        2   c  6.0    9   b    7  2.0
+        3   c  6.0    9   b    7  NaN
+        4   c  6.0    9   c    8  4.0
+        5   c  NaN    9   b    7  2.0
+        6   c  NaN    9   b    7  NaN
+        7   c  NaN    9   c    8  4.0
+
     .. note:: If `df` or `right` has labeled indices,
               it will be lost after the merge,
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
-              you can convert them to columns before running the non-equi join.
+              you can convert them to columns 
+              before running the non-equi join.
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.gt_join(
+                df = df,
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = df.gt_join(
+                right = right,
+                left_on = column name from `df`,
+                right_on = column name from `right`,
+                order_by_appearance = True/False,
+                suffixes = ("_x", "_y),
+                )
+
 
     :param df: A pandas dataframe.
     :param right: Named Series or DataFrame to join to.
@@ -6504,7 +6826,6 @@ def gt_join(
 
     .. # noqa: DAR402
     """
-
     (
         df,
         right,

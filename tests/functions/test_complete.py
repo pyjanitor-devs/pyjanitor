@@ -32,18 +32,14 @@ def test_MultiIndex_column(df1):
     df = df1
     df.columns = [["A", "B", "C"], list(df.columns)]
     with pytest.raises(ValueError):
-        df1.complete(["Year", "Taxon"])
+        df1.complete("Year", "Taxon")
 
 
 def test_column_duplicated(df1):
     """Raise ValueError if column is duplicated in `columns`"""
     with pytest.raises(ValueError):
         df1.complete(
-            columns=[
-                "Year",
-                "Taxon",
-                {"Year": lambda x: range(x.min().x.max() + 1)},
-            ]
+            "Year", "Taxon", {"Year": lambda x: range(x.min().x.max() + 1)},
         )
 
 
@@ -57,14 +53,14 @@ def test_type_columns(df1):
 def test_fill_value_is_a_dict(df1):
     """Raise error if fill_value is not a dictionary"""
     with pytest.raises(TypeError):
-        df1.complete(columns=["Year", "Taxon"])
+        df1.complete("Year", "Taxon")
 
 
 @pytest.mark.xfail(reason="fill_value dropped. fillna better.")
 def test_wrong_column_fill_value(df1):
     """Raise ValueError if column in `fill_value` does not exist."""
     with pytest.raises(ValueError):
-        df1.complete(columns=["Taxon", "Year"])
+        df1.complete("Taxon", "Year")
 
 
 def test_wrong_data_type_dict(df1):
@@ -73,7 +69,7 @@ def test_wrong_data_type_dict(df1):
     is not a 1-dimensional object.
     """
     with pytest.raises(ValueError):
-        df1.complete(columns=[{"Year": pd.DataFrame([2005, 2006, 2007])}])
+        df1.complete({"Year": pd.DataFrame([2005, 2006, 2007])})
 
 
 def test_not_list_like_type_dict(df1):
@@ -82,7 +78,7 @@ def test_not_list_like_type_dict(df1):
     is not a list-like object.
     """
     with pytest.raises(ValueError):
-        df1.complete(columns=[{"Year": "2001, 2002, 2003"}])
+        df1.complete({"Year": "2001, 2002, 2003"})
 
 
 def test_MultiIndex_type_dict(df1):
@@ -92,9 +88,7 @@ def test_MultiIndex_type_dict(df1):
     """
     with pytest.raises(ValueError):
         df1.complete(
-            columns=[
-                {"Year": pd.MultiIndex.from_tuples([(1, 2001), (2, 2002)])}
-            ]
+            {"Year": pd.MultiIndex.from_tuples([(1, 2001), (2, 2002)])}
         )
 
 
@@ -104,7 +98,7 @@ def test_empty_type_dict(df1):
     is empty.
     """
     with pytest.raises(ValueError):
-        df1.complete(columns=[{"Year": pd.Index([])}])
+        df1.complete({"Year": pd.Index([])})
 
 
 frame = pd.DataFrame(
@@ -138,14 +132,14 @@ empty_sub_columns = [
 def test_wrong_columns(frame, wrong_columns):
     """Test that ValueError is raised if wrong column is supplied."""
     with pytest.raises(ValueError):
-        frame.complete(columns=wrong_columns)
+        frame.complete(*wrong_columns)
 
 
 @pytest.mark.parametrize("frame,empty_sub_cols", empty_sub_columns)
 def test_empty_subcols(frame, empty_sub_cols):
     """Raise ValueError for an empty group in columns"""
     with pytest.raises(ValueError):
-        frame.complete(columns=empty_sub_cols)
+        frame.complete(*empty_sub_cols)
 
 
 @pytest.mark.xfail(reason="fill_value dropped. fillna is better.")
@@ -166,7 +160,7 @@ def test_fill_value(df1):
         }
     )
 
-    result = df1.complete(columns=["Year", "Taxon"]).fillna({"Abundance": 0})
+    result = df1.complete("Year", "Taxon").fillna({"Abundance": 0})
     assert_frame_equal(result, output1)
 
 
@@ -214,7 +208,7 @@ def test_fill_value_all_years(df1, df1_output):
     """
 
     result = df1.complete(
-        columns=[{"Year": lambda x: range(x.min(), x.max() + 1)}, "Taxon"]
+        {"Year": lambda x: range(x.min(), x.max() + 1)}, "Taxon"
     ).fillna(0)
     assert_frame_equal(result, df1_output)
 
@@ -226,10 +220,7 @@ def test_dict_series(df1, df1_output):
     """
 
     result = df1.complete(
-        columns=[
-            {"Year": lambda x: pd.Series(range(x.min(), x.max() + 1))},
-            "Taxon",
-        ]
+        {"Year": lambda x: pd.Series(range(x.min(), x.max() + 1))}, "Taxon",
     ).fillna(0)
     assert_frame_equal(result, df1_output)
 
@@ -241,14 +232,12 @@ def test_dict_series_duplicates(df1, df1_output):
     """
 
     result = df1.complete(
-        columns=[
-            {
-                "Year": pd.Series(
-                    [1999, 2000, 2000, 2001, 2002, 2002, 2002, 2003, 2004]
-                )
-            },
-            "Taxon",
-        ]
+        {
+            "Year": pd.Series(
+                [1999, 2000, 2000, 2001, 2002, 2002, 2002, 2003, 2004]
+            )
+        },
+        "Taxon",
     ).fillna(0)
     assert_frame_equal(result, df1_output)
 
@@ -261,7 +250,7 @@ def test_dict_values_outside_range(df1):
     in the dictionary's values.
     """
     result = df1.complete(
-        columns=[("Taxon", "Abundance"), {"Year": np.arange(2005, 2007)}]
+        ("Taxon", "Abundance"), {"Year": np.arange(2005, 2007)}
     )
     expected = pd.DataFrame(
         [
@@ -550,7 +539,7 @@ complete_parameters = [
 @pytest.mark.parametrize("df,columns,output", complete_parameters)
 def test_complete(df, columns, output):
     "Test the complete function, with and without groupings."
-    assert_frame_equal(df.complete(columns), output)
+    assert_frame_equal(df.complete(*columns), output)
 
 
 # https://stackoverflow.com/questions/32874239/
@@ -591,7 +580,7 @@ def test_grouping_first_columns():
             "choice": [5, 6, 7, 5, 6, 7, 5, 6, 7],
         }
     )
-    result = df2.complete(columns=[("id", "c", "d"), "choice"])
+    result = df2.complete(("id", "c", "d"), "choice")
     assert_frame_equal(result, output2)
 
 
@@ -619,7 +608,7 @@ def test_complete_multiple_groupings():
     )
 
     result = df3.complete(
-        columns=[("meta", "domain1"), ("project_id", "question_count")],
+        ("meta", "domain1"), ("project_id", "question_count"),
     ).fillna({"tag_count": 0})
     assert_frame_equal(result, output3)
 
@@ -669,10 +658,8 @@ def test_dict_tuple(df1, output_dict_tuple):
     """
 
     result = df1.complete(
-        columns=[
-            {"Year": lambda x: range(x.min(), x.max() + 1)},
-            ("Taxon", "Abundance"),
-        ]
+        {"Year": lambda x: range(x.min(), x.max() + 1)},
+        ("Taxon", "Abundance"),
     )
 
     assert_frame_equal(result, output_dict_tuple)
@@ -689,7 +676,7 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        columns=[{"year": lambda x: range(x.min(), x.max() + 1)}], by="state",
+        {"year": lambda x: range(x.min(), x.max() + 1)}, by="state",
     )
 
     expected = pd.DataFrame(

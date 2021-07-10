@@ -695,8 +695,6 @@ def _data_checks_complete(
             """
         )
 
-    check("columns", columns, [list])
-
     columns = [
         list(grouping) if isinstance(grouping, tuple) else grouping
         for grouping in columns

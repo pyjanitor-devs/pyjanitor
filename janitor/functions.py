@@ -6120,6 +6120,7 @@ def le_join(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
+    sort_by_appearance:bool=False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6139,17 +6140,18 @@ def le_join(
               you can convert them to columns before running the non-equi join.
     """
 
-    df, right, left_on, right_on = _non_equi_preliminary_checks(
-        df, right, left_on, right_on, suffixes
+    df, right, left_on, right_on, sort_by_appearance = _non_equi_preliminary_checks(
+        df, right, left_on, right_on, sort_by_appearance, suffixes
     )
+
+    right.index = range(len(right))
     right_columns = right.columns
-    right = _generic_less_than_inequality(df, right, left_on, right_on, strict = False)
+    right = _generic_less_than_inequality(df, right, left_on, right_on, sort_by_appearance, strict = False)
 
     if right is None:
         columns = df.columns.union(right_columns, sort=False)
         return pd.DataFrame([], columns=columns)
-
-    return df.merge(right, on = left_on, how = 'inner')
+    return right
 
 
 @pf.register_dataframe_method

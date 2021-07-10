@@ -5,6 +5,7 @@ import functools
 import os
 import re
 import sys
+from turtle import left
 
 import warnings
 from collections.abc import Callable as dispatch_callable
@@ -2343,6 +2344,7 @@ def _non_equi_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     left_on: str,
     right_on: str,
+    sort_by_appearance:bool=False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
 
@@ -2378,6 +2380,8 @@ def _non_equi_preliminary_checks(
     check("right_on", right_on, [str])
     check_column(df, left_on)
     check_column(right, right_on)
+
+    check("sort_by_appearance", sort_by_appearance, [bool])
 
     check("suffixes", suffixes, [tuple])
 
@@ -2415,7 +2419,7 @@ def _non_equi_preliminary_checks(
             mapping = {}
             for common in common_columns:
                 new_label = f"{common}{right_suffix}"
-                if new_label in df.columns:
+                if new_label in right.columns:
                     raise ValueError(
                         f"""
                         {new_label} is present in `right` columns. 
@@ -2428,30 +2432,32 @@ def _non_equi_preliminary_checks(
                 mapping[common] = new_label
             right = right.rename(columns=mapping)
 
-    return df, right, left_on, right_on
+    return df, right, left_on, right_on, sort_by_appearance
 
 
 def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series
-) -> pd.DataFrame:
+) -> None:
 
     """
-    Raise error if type is not any of numeric, datetime, or string.
+    Raise error if column type is not any of numeric, datetime, or string.
     """
 
     numeric_type = all(map(is_numeric_dtype, (left_column, right_column)))
     date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
     string_type = all(map(is_string_dtype, (left_column, right_column)))
 
-    if not any((numeric_type, date_type, string_type)):
-        raise ValueError(
-            """
-            Conditional_join only supports 
-            numeric, date or string dtypes.
-            """
-        )
+    numeric_date_string = numeric_type, date_type, string_type
+    if any(numeric_date_string):
+        return None
 
-    return None
+    raise ValueError(
+        """
+        non-equi join only supports 
+        numeric, date or string dtypes.
+        """
+    )
+
 
 
 def _generic_less_than_inequality(
@@ -2459,6 +2465,7 @@ def _generic_less_than_inequality(
     right: pd.DataFrame,
     left_on: str,
     right_on: str,
+    sort_by_appearance:bool=False,
     strict: bool = False,
 ):
     """
@@ -2473,43 +2480,45 @@ def _generic_less_than_inequality(
     left_c = df[left_on]
     right_c = right[right_on]
 
+
     _conditional_join_type_check(left_c, right_c)
 
     if left_c.min() > right_c.max():
         return None
-
-    sort_positions_right = right_c.argsort().array
-    actual_positions = np.arange(right_c.size)
-    nulls = sort_positions_right == -1
-    if nulls.any():
-        right_c = right_c[~nulls]
-        sort_positions_right = sort_positions_right[~nulls]
-        actual_positions = actual_positions[~nulls]
+    right_argsort = right_c.argsort().to_numpy(copy=False)
+    exclude_rows = right_argsort == -1
+    if exclude_rows.any():
+        right_c = right_c[~exclude_rows]
+        right_argsort = right_argsort[~exclude_rows]
     if not right_c.is_monotonic_increasing:
-        right_c = right_c.take(sort_positions_right)
-    _, left_c = pd.factorize(left_c)
+        right_c = right_c.take(right_argsort)
+    search_indices = right_c.searchsorted(left_c, side='left')
     len_right_c = right_c.size
-    search_indices = right_c.searchsorted(left_c, side="left")
-    positions_to_exclude = search_indices == len_right_c
-    if positions_to_exclude.any():
-        search_indices = search_indices[~positions_to_exclude]
-        left_c = left_c[~positions_to_exclude]
-    left_c = left_c.repeat(len_right_c - search_indices)
-    right_positions = [
-        np.arange(start, len_right_c) for start in search_indices
-    ]
-    right_positions = np.concatenate(right_positions)
-    right_c = right_c.take(right_positions)
-
-    if strict:
-        equals = left_c == right_c
-        if equals.any():
-            left_c = left_c[~equals]
-            right_c = right_c[~equals]
-
-    right = right.take(right_c.index)
-    right[left_on] = left_c
+    len_left = len_right_c - search_indices
+    right_indices = [np.arange(start, len_right_c) for start in search_indices]
+    right_indices = np.concatenate(right_indices)
+    left_marker = np.arange(search_indices.size)
+    right_marker = np.repeat(left_marker, len_left)
+    if strict is True:
+        right_c = right_c.take(right_indices)
+        left_c = left_c.repeat(len_left)
+        exclude_rows = right_c.array == left_c.array
+        if exclude_rows.any():
+            right_c = right_c.index[~exclude_rows]
+            right_marker = right_marker[~exclude_rows]
+    else:
+        right_c = right_c.index.take(right_indices)
+    if sort_by_appearance is True:
+        ind = np.lexsort((right_c, right_marker))
+        right_marker = right_marker[ind]
+        right_c = right_c[ind]
+    right = right.take(right_c)
+    right.index = right_marker  
+    df.index = left_marker
+    right = df.join(right, how ='inner', sort = False, lsuffix="_x", rsuffix="_y")
+    right.index = np.arange(len(right))
     return right
+
 
 
 def _generic_greater_than_inequality(
@@ -2517,6 +2526,7 @@ def _generic_greater_than_inequality(
     right: pd.DataFrame,
     left_on: str,
     right_on: str,
+    sort_by_appearance:bool=False,
     strict: bool = False,
 ):
     """
@@ -2536,31 +2546,4 @@ def _generic_greater_than_inequality(
     if left_c.max() < right_c.min():
         return None
 
-    sort_positions_right = right_c.argsort().array
-    actual_positions = np.arange(right_c.size)
-    nulls = sort_positions_right == -1
-    if nulls.any():
-        right_c = right_c[~nulls]
-        sort_positions_right = sort_positions_right[~nulls]
-        actual_positions = actual_positions[~nulls]
-    if not right_c.is_monotonic_increasing:
-        right_c = right_c.take(sort_positions_right)
-    _, left_c = pd.factorize(left_c)
-    search_indices = right_c.searchsorted(left_c, side="right")
-    positions_to_exclude = search_indices == 0
-    if positions_to_exclude.any():
-        search_indices = search_indices[~positions_to_exclude]
-        left_c = left_c[~positions_to_exclude]
-    left_c = left_c.repeat(search_indices)
-    right_positions = [np.arange(start) for start in search_indices]
-    right_positions = np.concatenate(right_positions)
-    right_c = right_c.take(right_positions)
-
-    if strict:
-        equals = left_c == right_c
-        if equals.any():
-            left_c = left_c[~equals]
-            right_c = right_c[~equals]
-    right = right.take(right_c.index)
-    right[left_on] = left_c
-    return right
+    return left_c, right_c

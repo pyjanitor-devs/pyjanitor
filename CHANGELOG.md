@@ -14,7 +14,7 @@
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions
     via `functools.dispatch`. - @samukweku
--   [ENH] `complete` now uses *args, allowing for variable number of columns. @samukweku
+-   [ENH] `complete` now uses *columns, allowing for variable number of columns. @samukweku
 
 ## [v0.20.14] - 2021-03-25
 

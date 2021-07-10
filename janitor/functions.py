@@ -5158,9 +5158,8 @@ def complete(
         1	2	    2	        b	2	5
         2	1	    2	        b	3	6
 
-    To find all the unique combinations of `group`, `item_id`, and `item_name`,
-    including combinations not present in the data, each variable should be
-    passed in a list to the `columns` parameter::
+    Find all the unique combinations of `group`, `item_id`, and `item_name`,
+    including combinations not present in the data::
 
         df.complete('group', 'item_id', 'item_name')
 
@@ -5175,8 +5174,8 @@ def complete(
         7	2	    2	        b	2.0	5.0
 
     To expose just the missing values based only on the existing data,
-    `item_id` and `item_name` can be wrapped in a tuple, while `group`
-    is passed in as a separate variable::
+    `item_id` and `item_name` column names can be wrapped in a list/tuple,
+    while `group` is passed in as a separate variable::
 
         df.complete("group", ("item_id", "item_name"))
             group	item_id	    item_name	value1	   value2

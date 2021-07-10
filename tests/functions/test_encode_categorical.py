@@ -415,6 +415,10 @@ def test_various(df_in, df_out, kwargs):
     """
     Test output for various combinations.
     """
+    # result = df_in.encode_categorical(
+    #     **kwargs,
+    # )
+    # assert_frame_equal(result, df_out)
     result = df_in.encode_categorical(**kwargs,)
     # directly comparing columns is safe -
     # if the columns have differing categories

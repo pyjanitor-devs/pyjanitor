@@ -26,17 +26,17 @@ import pandas as pd
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import union_categoricals, is_list_like, is_bool_dtype
+from pandas.api.types import is_bool_dtype, is_list_like, union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 from sklearn.preprocessing import LabelEncoder
 from typing import NamedTuple
 from .errors import JanitorError
 from .utils import (
-    _computations_expand_grid,
     _clean_accounting_column,
     _computations_as_categorical,
     _computations_complete,
+    _computations_expand_grid,
     _computations_pivot_longer,
     _computations_pivot_wider,
     _currency_column_to_numeric,
@@ -321,6 +321,7 @@ def clean_names(
         df = df.rename(columns=_strip_accents)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
+
     df = _strip_underscores(df, strip_underscores)
 
     df = df.rename(columns=lambda x: x[:truncate_limit])
@@ -333,6 +334,7 @@ def clean_names(
 
 def _change_case(col: str, case_type: str) -> str:
     """Change case of a column name."""
+
     case_types = ["preserve", "upper", "lower", "snake"]
     if case_type.lower() not in case_types:
         raise JanitorError(f"case_type must be one of: {case_types}")
@@ -350,6 +352,7 @@ def _change_case(col: str, case_type: str) -> str:
 
 def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
+
     return "".join(
         item for item in str(col_name) if item.isalnum() or "_" in item
     )
@@ -365,16 +368,16 @@ def _camel2snake(col_name: str) -> str:
     Implementation taken from: https://gist.github.com/jaytaylor/3660565
     by @jtaylor
     """
-
     subbed = _underscorer1.sub(r"\1_\2", col_name)  # noqa: PD005
     return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
 
-FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
+FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
 
 
 def _normalize_1(col_name: Hashable) -> str:
     """Perform normalization of column name."""
+
     result = str(col_name)
     for search, replace in FIXES:
         result = re.sub(search, replace, result)  # noqa: PD005
@@ -3762,6 +3765,85 @@ def to_datetime(
 
 
 @pf.register_dataframe_method
+def truncate_datetime_dataframe(
+    df: pd.DataFrame, datepart: str
+) -> pd.DataFrame:
+    for i in df.columns:
+        for j in df.index:
+            try:
+                df[i][j] = truncate_datetime(datepart, df[i][j])
+            except KeyError:
+                pass
+            except TypeError:
+                pass
+            except AttributeError:
+                pass
+
+    return df
+
+
+@pf.register_dataframe_method
+def truncate_datetime(datepart: str, timestamp: dt.datetime):
+    """
+    Truncate times down to a user-specified precision of
+    year, month, day, hour, minute, or second.
+
+    Call on datetime object to truncate it.
+    Calling on existing df will not alter the contents
+    of said df.
+
+    Note: Truncating down to a Month or Day will yields 0s,
+    as there is no 0 month or 0 day in most datetime systems.
+
+    :param datepart: Truncation precision, YEAR, MONTH, DAY,
+        HOUR, MINUTE, SECOND. (String is automagically
+        capitalized)
+    :param timestamp: expecting a datetime from python datetime class (dt)
+    :raises KeyError: if inappropriate precision is passed
+
+    :returns: a truncated datetime object to
+        the precision specified by datepart.
+    """
+    recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND]
+    datepart = datepart.upper()
+    ENUM = {
+        "YEAR": 0,
+        "MONTH": 1,
+        "DAY": 2,
+        "HOUR": 3,
+        "MINUTE:": 4,
+        "SECOND": 5,
+        0: timestamp.year,
+        1: timestamp.month,
+        2: timestamp.day,
+        3: timestamp.hour,
+        4: timestamp.minute,
+        5: timestamp.second,
+    }
+    try:
+        ENUM[datepart]
+    # Capture the error but replace it with explicit instructions.
+    except KeyError:
+        msg = (
+            "Invalid truncation. Please enter any one of 'year', "
+            "'month', 'day', 'hour', 'minute' or 'second'."
+        )
+        raise KeyError(msg)
+
+    for i in range(ENUM.get(datepart) + 1):
+        recurrence[i] = ENUM.get(i)
+
+    return dt.datetime(
+        recurrence[0],
+        recurrence[1],
+        recurrence[2],
+        recurrence[3],
+        recurrence[4],
+        recurrence[5],
+    )
+
+
+@pf.register_dataframe_method
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
     df: pd.DataFrame,
@@ -4538,6 +4620,68 @@ def sort_naturally(
     return df.iloc[new_order, :]
 
 
+def sort_column_value_order(
+    df: pd.DataFrame, column: str, column_value_order: dict, columns=None
+) -> pd.DataFrame:
+    """
+    This function adds precedence to certain values in a specified column, then
+    sorts based on that column and any other specified columns.
+
+    Example:
+                    SalesMonth	Company2	Company3
+        Company1
+        150.0	    Jan	        180.0	    400.0
+        200.0	    Feb	        250.0	    500.0
+        200.0	    Feb	        250.0	    500.0
+        300.0	    Mar	        NaN	        600.0
+        400.0	    April	    500.0	    675.0
+
+        Given the current DataFrame, we want to order the sales month in desc
+        order. To achieve this we would assign the later months with smaller
+        values with the latest month, such as April with the precedence of 0.
+
+        df = sort_column_value_order(
+        df,
+        'SalesMonth',
+        {'April':1,'Mar':2,'Feb':3,'Jan':4}
+        )
+
+        The returned DataFrame will look as follows.
+
+                    SalesMonth	Company2	Company3
+        Company1
+        400.0	    April	    500.0	    675.0
+        300.0	    Mar	        NaN	        600.0
+        200.0	    Feb	        250.0	    500.0
+        200.0	    Feb	        250.0	    500.0
+        150.0	    Jan	        180.0	    400.0
+
+    :param df: This is our DataFrame that we are manipulating
+    :param column: This is a column name as a string we are using to specify
+        which column to sort by
+    :param column_value_order: This is a dictionary of values that will
+        represent precedence of the values in the specified column
+    :param columns: This is a list of additional columns that we can sort by
+    :raises ValueError: raises error if chosen Column Name is not in
+        Dataframe, or if column_value_order dictionary is empty.
+    :return: This function returns a Pandas DataFrame
+    """
+    if len(column_value_order) > 0:
+        if column in df.columns:
+            df["cond_order"] = df[column].replace(column_value_order)
+            if columns is None:
+                new_df = df.sort_values("cond_order")
+                del new_df["cond_order"]
+            else:
+                new_df = df.sort_values(columns + ["cond_order"])
+                del new_df["cond_order"]
+            return new_df
+        else:
+            raise ValueError("Column Name not in DataFrame")
+    else:
+        raise ValueError("column_value_order dictionary cannot be empty")
+
+
 @pf.register_dataframe_method
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
@@ -5261,6 +5405,7 @@ def complete(
     Let's get all the missing years per state::
 
         df.complete(
+
             columns = [{'year': new_year_values}],
             by='state'
         )

@@ -73,9 +73,9 @@ jobs:
           python -m pip install -e .
           pytest
 
-      - name: Inspect coverage
-        run: |
-          cat coverage.xml
+#      - name: Inspect coverage
+#        run: |
+#          cat coverage.xml
 
       - name: Upload code coverage
         run: |

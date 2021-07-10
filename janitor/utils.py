@@ -2483,9 +2483,8 @@ def _generic_less_than_inequality(
     if left_c.min() > right_c.max():
         return None
 
-
     right_argsort = right_c.argsort().to_numpy(copy=False)
-    exclude_rows = right_argsort == -1 # check for nulls
+    exclude_rows = right_argsort == -1  # check for nulls
     if exclude_rows.any():
         right_c = right_c[~exclude_rows]
         right_argsort = right_argsort[~exclude_rows]
@@ -2507,7 +2506,7 @@ def _generic_less_than_inequality(
     # we are blowing up left_marker to be the same size as `right_indices`
     # and also matching the appropriate rows for each value in `left_c`
     right_marker = np.repeat(left_marker, len_left)
-    if strict is True: # strictly less than
+    if strict is True:  # strictly less than
         right_c = right_c.take(right_indices)
         left_c = left_c.repeat(len_left)
         exclude_rows = right_c.array == left_c.array
@@ -2561,14 +2560,14 @@ def _generic_greater_than_inequality(
         return None
 
     right_argsort = right_c.argsort().to_numpy(copy=False)
-    exclude_rows = right_argsort == -1 # check for nulls
+    exclude_rows = right_argsort == -1  # check for nulls
     if exclude_rows.any():
         right_c = right_c[~exclude_rows]
         right_argsort = right_argsort[~exclude_rows]
     # binary search requires sorted data
     if not right_c.is_monotonic_increasing:
         right_c = right_c.take(right_argsort)
-    if left_c.hasnans: # get rid of NaNs
+    if left_c.hasnans:  # get rid of NaNs
         exclude_rows = left_c.isna()
         left_c = left_c[~exclude_rows]
         df = df.loc[~exclude_rows]
@@ -2584,7 +2583,7 @@ def _generic_greater_than_inequality(
     # ensure match between each value in `left_c`
     # and each value in `right_c` that is less than or equal
     right_marker = np.repeat(left_marker, search_indices)
-    if strict is True: # strictly greater than
+    if strict is True:  # strictly greater than
         right_c = right_c.take(right_indices)
         left_c = left_c.repeat(search_indices)
         exclude_rows = right_c.array == left_c.array

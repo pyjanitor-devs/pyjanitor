@@ -4997,14 +4997,9 @@ def fill_direction(
         elif direction == "down":
             df[column] = df[column].ffill(limit=limit)
         elif direction == "updown":
-            df[column] = (
-                df[column].bfill(limit=limit).ffill(limit=limit)
-            )
+            df[column] = df[column].bfill(limit=limit).ffill(limit=limit)
         else:  # downup
-            df[column] = (
-                df[column]
-                .ffill(limit=limit).bfill(limit=limit)
-            )
+            df[column] = df[column].ffill(limit=limit).bfill(limit=limit)
     return df
 
 
@@ -5131,9 +5126,7 @@ def groupby_topk(
 
 @pf.register_dataframe_method
 def complete(
-    df: pd.DataFrame,
-    *columns,
-    by: Optional[Union[list, str]] = None,
+    df: pd.DataFrame, *columns, by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
     This function turns implicit missing values into explicit missing values.

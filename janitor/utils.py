@@ -4,8 +4,8 @@ import fnmatch
 import functools
 import os
 import re
+import socket
 import sys
-
 import warnings
 from collections.abc import Callable as dispatch_callable
 from itertools import chain, combinations
@@ -25,12 +25,12 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import (
     CategoricalDtype,
-    is_scalar,
     is_extension_array_dtype,
     is_list_like,
+    is_scalar,
 )
-
 from pandas.core.common import apply_if_callable
+
 from .errors import JanitorError
 
 
@@ -1885,6 +1885,38 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     df = df.astype(categories_dtypes)
 
     return df
+
+
+def is_connected(url: str) -> bool:
+    """
+    This is a helper function to check if the client
+    is connected to the internet.
+
+    Example:
+        print(is_connected("www.google.com"))
+        console >> True
+
+    :param url: We take a test url to check if we are
+        able to create a valid connection.
+    :raises OSError: if connection to ``URL`` cannot be
+        established
+    :return: We return a boolean that signifies our
+        connection to the internet
+    """
+    try:
+        sock = socket.create_connection((url, 80))
+        if sock is not None:
+            sock.close()
+            return True
+    except OSError as e:
+        import warnings
+
+        warnings.warn(
+            "There was an issue connecting to the internet. "
+            "Please see original error below."
+        )
+        raise e
+    return False
 
 
 @functools.singledispatch

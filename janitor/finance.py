@@ -13,7 +13,7 @@ import requests
 from janitor import check
 from janitor.errors import JanitorError
 
-from .utils import deprecated_alias
+from .utils import deprecated_alias, is_connected
 
 currency_set = {
     "AUD",
@@ -694,3 +694,53 @@ def inflate_currency(
         df[column_name] = df[column_name] * inflator
 
     return df
+
+
+def convert_stock(stock_symbol: str) -> str:
+    """
+    This function takes in a stock symbol as a parameter,
+    queries an API for the companies full name and returns
+    it
+
+    Example:
+        print(convert_stock("aapl"))
+
+        console >> Apple Inc.
+
+    :param stock_symbol: This is our input stock symbol
+        to be converted
+    :raises ConnectionError: if stock ticker data cannot be retrieved
+    :return: We return the full company name
+    """
+    if is_connected("www.google.com"):
+        stock_symbol = stock_symbol.upper()
+        return get_symbol(stock_symbol.upper())
+    else:
+        raise ConnectionError(
+            "Connection Error: Client Not Connected to Internet"
+        )
+
+
+def get_symbol(symbol: str):
+    """
+    This is a helper function to get a companies full
+    name based on the stock symbol.
+
+    Example:
+        print(get_symbol("aapl"))
+        console >> Apple Inc.
+
+    :param symbol: This is our stock symbol that we use
+        to query te api for the companies full name.
+    :return: This is the company name
+    """
+    result = requests.get(
+        "http://d.yimg.com/autoc."
+        + "finance.yahoo.com/autoc?query={}&region=1&lang=en".format(symbol)
+    ).json()
+
+    for x in result["ResultSet"]["Result"]:
+        if x["symbol"] == symbol:
+            return x["name"]
+        else:
+            return None

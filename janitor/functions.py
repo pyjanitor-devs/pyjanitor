@@ -4993,16 +4993,17 @@ def fill_direction(
     # API change.
     for column, direction in directions.items():
         if direction == "up":
-            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
+            df[column] = df[column].bfill(limit=limit)
         elif direction == "down":
-            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
+            df[column] = df[column].ffill(limit=limit)
         elif direction == "updown":
-            df.loc[:, column] = (
-                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
+            df[column] = (
+                df[column].bfill(limit=limit).ffill(limit=limit)
             )
         else:  # downup
-            df.loc[:, column] = (
-                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
+            df[column] = (
+                df[column]
+                .ffill(limit=limit).bfill(limit=limit)
             )
     return df
 

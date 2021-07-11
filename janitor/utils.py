@@ -446,7 +446,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     There is a performance penalty for small entries (length less than 10)
     in using this method, instead of `itertools.product`; however, there is
-    significant performance benefits as the size of the data increases.
+    significant performance benefit as the size of the data increases.
 
     Another benefit of this approach,
     in addition to the significant performance gains,
@@ -696,7 +696,7 @@ def _data_checks_complete(
         )
 
     columns = [
-        list(grouping) if isinstance(grouping, tuple) else grouping
+        [*grouping] if isinstance(grouping, tuple) else grouping
         for grouping in columns
     ]
     column_checker = []
@@ -801,6 +801,8 @@ def _base_complete(
     unique_index = df_index.is_unique
     columns_to_stack = None
 
+    # stack...unstack implemented here if conditions are met
+    # usually faster than reindex
     if all_strings and (not any_nulls) and (len(columns) > 1) and unique_index:
         if df_empty:
             df["dummy"] = 1
@@ -820,7 +822,7 @@ def _base_complete(
             indexer = df_index.union(indexer, sort=None)
         df = df.reindex(indexer)
 
-    else:
+    else: #reindex not possible on duplicate indices
         df = df.join(pd.DataFrame([], index=indexer), how="outer")
 
     return df

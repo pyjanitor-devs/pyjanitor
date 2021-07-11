@@ -1094,7 +1094,10 @@ def convert_excel_date(
     """  # noqa: E501
 
     if not is_numeric_dtype(df[column_name]):
-        raise ValueError("There are non-numeric values in the column. All values must be numeric")
+        raise ValueError(
+            "There are non-numeric values in the column. \
+    All values must be numeric"
+        )
 
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"

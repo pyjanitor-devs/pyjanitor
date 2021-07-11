@@ -822,7 +822,7 @@ def _base_complete(
             indexer = df_index.union(indexer, sort=None)
         df = df.reindex(indexer)
 
-    else: #reindex not possible on duplicate indices
+    else:  # reindex not possible on duplicate indices
         df = df.join(pd.DataFrame([], index=indexer), how="outer")
 
     return df

@@ -14,6 +14,7 @@
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions
     via `functools.dispatch`. - @samukweku
+-   [DOC] Updated Broken links in the README and contributing docs. -@nvamsikrishna05
 
 ## [v0.20.14] - 2021-03-25
 

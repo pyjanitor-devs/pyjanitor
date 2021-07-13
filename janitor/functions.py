@@ -24,6 +24,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
@@ -1089,7 +1090,15 @@ def convert_excel_date(
     :param df: A pandas DataFrame.
     :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
+    :raises ValueError: if There are non numeric values in the column.
     """  # noqa: E501
+
+    if not is_numeric_dtype(df[column_name]):
+        raise ValueError(
+            "There are non-numeric values in the column. \
+    All values must be numeric"
+        )
+
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"
     ) + dt.datetime(

@@ -99,3 +99,4 @@ Contributors
 - `@Sousa8697 <https://github.com/Sousa8697>
 - `@MollyCroke <https://github.com/MollyCroke>
 - `@ericclessantostv <https://github.com/ericlessantostv>
+- `@nvamsikrishna05 <https://github.com/nvamsikrishna05>`_ |  `contributions <https://github.com/ericmjl/pyjanitor/issues?q=is%3Aclosed+mentions%3Anvamsikrishna05>`

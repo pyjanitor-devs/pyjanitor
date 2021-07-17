@@ -102,7 +102,7 @@ jobs:
       - name: Create release in GitHub repo
         uses: ncipollo/release-action@v1
         with:
-            body: "Contribution details can be found in CHANGELOG.rst"
+            body: "Contribution details can be found in CHANGELOG.md"
             token: ${{ secrets.GITHUB_TOKEN }}
             tag: v${{ env.version_number}}
 

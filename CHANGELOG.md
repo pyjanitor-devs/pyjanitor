@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas
 -   [INF] Add GitHub Release pointer to auto-release script. Issue #818. @loganthomas
 
 ## [v0.21.0] - 2021-07-16

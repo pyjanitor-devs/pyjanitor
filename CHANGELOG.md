@@ -18,6 +18,8 @@
 -   [ENH] `encode_categoricals` refactored to use generic functions
     via `functools.dispatch`. - @samukweku
 -   [ENH] Updated convert_excel_date to throw meaningful error when values contain non-numeric. @nvamsikrishna05
+-   [DOC] Updated Broken links in the README and contributing docs. -@nvamsikrishna05
+
 
 ## [v0.20.14] - 2021-03-25
 

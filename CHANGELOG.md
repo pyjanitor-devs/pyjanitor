@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+-   [DOC] Fix references and broken links in AUTHORS.rst. @loganthomas
+-   [DOC] Updated Broken links in the README and contributing docs. @nvamsikrishna05
 -   [INF] Add GitHub Release pointer to auto-release script. Issue #818. @loganthomas
 
 ## [v0.21.0] - 2021-07-16
@@ -18,8 +20,6 @@
 -   [ENH] `encode_categoricals` refactored to use generic functions
     via `functools.dispatch`. - @samukweku
 -   [ENH] Updated convert_excel_date to throw meaningful error when values contain non-numeric. @nvamsikrishna05
--   [DOC] Updated Broken links in the README and contributing docs. -@nvamsikrishna05
-
 
 ## [v0.20.14] - 2021-03-25
 

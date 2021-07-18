@@ -791,7 +791,7 @@ def _factorize(df, column_names, suffix, **kwargs):
 
 
 @dispatch(pd.DataFrame, str, str)
-def _factorize(df, column_name, suffix, **kwargs):
+def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
     check_column(df, column_names=column_name, present=True)
     df[f"{column_name}{suffix}"] = pd.factorize(df[column_name], **kwargs)[0]
     return df

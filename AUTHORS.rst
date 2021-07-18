@@ -96,7 +96,7 @@ Contributors
 - `@richardqiu <https://github.com/richardqiu>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Arichardqiu>`_
 - `@MinchinWeb <https://github.com/MinchinWeb>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AMinchinWeb>`_
 - `@BaritoneBeard <https://github.com/BaritoneBeard>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ABaritoneBeard>`_
-- `@Sousa8697 <https://github.com/Sousa8697>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ASousa8697 >`_
+- `@Sousa8697 <https://github.com/Sousa8697>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ASousa8697>`_
 - `@MollyCroke <https://github.com/MollyCroke>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AMollyCroke>`_
 - `@ericclessantostv <https://github.com/ericlessantostv>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aericclessantostv>`_
-- `@nvamsikrishna05 <https://github.com/nvamsikrishna05>`_ |  `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Anvamsikrishna05>`
+- `@nvamsikrishna05 <https://github.com/nvamsikrishna05>`_ |  `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Anvamsikrishna05>`_

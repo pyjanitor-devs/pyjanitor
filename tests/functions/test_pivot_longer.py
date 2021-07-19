@@ -379,7 +379,9 @@ def test_pivot_index_only_and_sort_by_appearance(df_checks_output):
 def test_pivot_index_only():
     """Test output if only `index` is passed."""
     result = df_checks.pivot_longer(
-        index="region", names_to="year", values_to="num_nests",
+        index="region",
+        names_to="year",
+        values_to="num_nests",
     )
 
     df_out = pd.DataFrame(
@@ -1251,7 +1253,12 @@ paired_columns_pattern = [
     paired_columns_pattern,
 )
 def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern, sort_by_appearance,
+    df_in,
+    df_out,
+    index,
+    names_to,
+    names_pattern,
+    sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to`
@@ -1595,7 +1602,12 @@ paired_columns_sep = [
     paired_columns_sep,
 )
 def test_extract_column_names_sep(
-    df_in, df_out, index, names_to, names_sep, sort_by_appearance,
+    df_in,
+    df_out,
+    index,
+    names_to,
+    names_sep,
+    sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to` argument
@@ -1830,7 +1842,12 @@ names_single_value = [
     names_single_value,
 )
 def test_single_value(
-    df_in, df_out, index, names_pattern, ignore_index, sort_by_appearance,
+    df_in,
+    df_out,
+    index,
+    names_pattern,
+    ignore_index,
+    sort_by_appearance,
 ):
     """Test function where names_to is a string and == `.value`."""
     result = df_in.pivot_longer(
@@ -1951,7 +1968,9 @@ def test_group_present():
     )
 
     result = df_in.pivot_longer(
-        index="id", names_to=[".value", "group"], names_pattern="(.)(.)",
+        index="id",
+        names_to=[".value", "group"],
+        names_pattern="(.)(.)",
     )
 
     assert_frame_equal(result, df_out)

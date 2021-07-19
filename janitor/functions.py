@@ -473,7 +473,8 @@ def get_dupes(
 
 
 def As_Categorical(
-    categories: Optional[List] = None, order: Optional[str] = None,
+    categories: Optional[List] = None,
+    order: Optional[str] = None,
 ) -> NamedTuple:
     """
     Helper function for `encode_categorical`. It makes creating the
@@ -3145,7 +3146,9 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, *args, invert: bool = False,
+    df: pd.DataFrame,
+    *args,
+    invert: bool = False,
 ) -> pd.DataFrame:
     """
     Method-chainable selection of columns.

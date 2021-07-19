@@ -22,7 +22,7 @@ def test_convert_excel_date():
 
 @pytest.mark.functions
 def test_convert_excel_date_with_string_data():
-    """ Raises ValueError if values of column are not numeric """
+    """Raises ValueError if values of column are not numeric"""
     df = pd.read_excel(
         Path(pytest.EXAMPLES_DIR) / "notebooks" / "dirty_data.xlsx",
         engine="openpyxl",

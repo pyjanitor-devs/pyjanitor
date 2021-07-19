@@ -3,6 +3,7 @@
 ## [Unreleased]
 -   [INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas
 -   [INF] Add GitHub Release pointer to auto-release script. Issue #818. @loganthomas
+-   [INF] Updated black version in github actions code-checks to match pre-commit hooks. @nvamsikrishna05
 
 ## [v0.21.0] - 2021-07-16
 

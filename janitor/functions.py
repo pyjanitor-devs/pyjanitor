@@ -2370,7 +2370,7 @@ def row_to_names(
 
     # .. code-block:: python
 
- 	#    	1	1	1	rabbit	Cambridge
+ 	#   _	1	1	1	rabbit	Cambridge
 	# 	0	2	2	2	leopard	Shanghai
 	# 	1	3	3	3	lion	Basel
 	# 	2	1	1	1	rabbit	Cambridge
@@ -2417,7 +2417,7 @@ def row_to_names(
 
     # .. code-block:: python
 
-	#     	3	3	3	lion	Basel
+	#   _ 	3	3	3	lion	Basel
 	# 	0	1	1	1	rabbit	Cambridge
 	# 	1	2	2	2	leopard	Shanghai
 	# 	2	3	3	3	lion	Basel

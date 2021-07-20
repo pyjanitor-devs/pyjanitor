@@ -42,7 +42,6 @@ dependencies:
 - python-language-server
 - rdkit
 - recommonmark
-- scikit-learn
 - seaborn
 - sphinx
 - sphinxcontrib-fulltoc

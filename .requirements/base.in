@@ -4,5 +4,5 @@
 natsort
 # seaborn
 pandas_flavor
-scikit-learn
+# scikit-learn
 multipledispatch

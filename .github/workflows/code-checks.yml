@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-python@v2
 
       - name: Install black
-        run: python -m pip install black==19.10b0
+        run: python -m pip install black==21.7b0
 
       - name: Run black
         run: black --config pyproject.toml --check .

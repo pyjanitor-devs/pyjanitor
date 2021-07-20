@@ -18,3 +18,15 @@ def test_convert_excel_date():
     )
 
     assert df["hire_date"].dtype == "M8[ns]"
+
+
+@pytest.mark.functions
+def test_convert_excel_date_with_string_data():
+    """Raises ValueError if values of column are not numeric"""
+    df = pd.read_excel(
+        Path(pytest.EXAMPLES_DIR) / "notebooks" / "dirty_data.xlsx",
+        engine="openpyxl",
+    ).clean_names()
+
+    with pytest.raises(ValueError):
+        df.convert_excel_date("hire_date_str")

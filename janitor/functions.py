@@ -797,23 +797,6 @@ def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
     return df
 
 
-# @dispatch(pd.DataFrame, (list, tuple))
-# def _label_encode(df, column_names):
-#     le = LabelEncoder()
-#     check_column(df, column_names=column_names, present=True)
-#     for col in column_names:
-#         df[f"{col}_enc"] = le.fit_transform(df[col])
-#     return df
-
-
-# @dispatch(pd.DataFrame, str)  # noqa: F811
-# def _label_encode(df, column_names):  # noqa: F811
-#     le = LabelEncoder()
-#     check_column(df, column_names=column_names, present=True)
-#     df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
-#     return df
-
-
 @pf.register_dataframe_method
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(

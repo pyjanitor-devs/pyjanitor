@@ -73,6 +73,7 @@ jobs:
           python -m pip install -e .
           pytest
 
+      # https://github.com/codecov/codecov-action
       - name: Upload code coverage
         uses: codecov/codecov-action@v2
         with:

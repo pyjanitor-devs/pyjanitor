@@ -31,7 +31,6 @@ from natsort import index_natsorted
 from pandas.api.types import is_bool_dtype, is_list_like, union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
-from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
@@ -778,24 +777,23 @@ def label_encode(
         or tuple) of column names.
     :returns: A pandas DataFrame.
     """
-    df = _label_encode(df, column_names)
+    warnings.warn("label_encode will be deprecated in a 1.x release")
+    df = _factorize(df, column_names, "_enc")
     return df
 
 
-@dispatch(pd.DataFrame, (list, tuple))
-def _label_encode(df, column_names):
-    le = LabelEncoder()
+@dispatch(pd.DataFrame, (list, tuple), str)
+def _factorize(df, column_names, suffix, **kwargs):
     check_column(df, column_names=column_names, present=True)
     for col in column_names:
-        df[f"{col}_enc"] = le.fit_transform(df[col])
+        df[f"{col}{suffix}"] = pd.factorize(df[col], **kwargs)[0]
     return df
 
 
-@dispatch(pd.DataFrame, str)  # noqa: F811
-def _label_encode(df, column_names):  # noqa: F811
-    le = LabelEncoder()
-    check_column(df, column_names=column_names, present=True)
-    df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
+@dispatch(pd.DataFrame, str, str)
+def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
+    check_column(df, column_names=column_name, present=True)
+    df[f"{column_name}{suffix}"] = pd.factorize(df[column_name], **kwargs)[0]
     return df
 
 

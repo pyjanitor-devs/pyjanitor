@@ -71,7 +71,7 @@ jobs:
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
           python -m pip install -e .
-          pytest
+          make test
 
       # https://github.com/codecov/codecov-action
       - name: Upload code coverage

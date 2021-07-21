@@ -28,3 +28,6 @@ ignore-private = false
 ignore-semiprivate = false
 quiet = false
 verbose = 2
+
+[tool.pytest]
+addopts = "--cov=janitor/ --cov-report html --cov-report xml"

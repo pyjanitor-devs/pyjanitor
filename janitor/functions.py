@@ -778,7 +778,8 @@ def label_encode(
     :returns: A pandas DataFrame.
     """
     warnings.warn(
-        "label_encode will be deprecated in a 1.x release. Use factorize_columns instead"
+        "label_encode will be deprecated in a 1.x release. \
+        Use factorize_columns instead"
     )
     df = _factorize(df, column_names, "_enc")
     return df

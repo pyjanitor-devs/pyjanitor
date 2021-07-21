@@ -2357,8 +2357,8 @@ def row_to_names(
     #     6  1  1  1   rabbit  Cambridge
     #     7  2  2  2  leopard   Shanghai
 
-    # :Example: Move first row to column names and remove row
-    #  while resetting the index:
+    # :Example: Move first row to column names and 
+    #  remove row while resetting the index:
 
     # .. code-block:: python
 
@@ -2379,8 +2379,8 @@ def row_to_names(
     #   6   2   2   2   leopard Shanghai
     #   7   3   3   3   lion    Basel
 
-    # :Example: Move first row to column names and remove row \
-    #   without resetting the index:
+    # :Example: Move first row to column names and remove
+    #   row without resetting the index:
 
     # .. code-block:: python
 
@@ -2402,9 +2402,9 @@ def row_to_names(
     #     7  2  2  2  leopard   Shanghai
     #     8  3  3  3     lion      Basel
 
-    # :Example: Move first row to column names, remove row, \
-    # and remove rows above selected row without resetting \
-    # index:
+    # :Example: Move first row to column names, remove row
+    #   and remove rows above selected row without resetting
+    #   index:
 
     # .. code-block:: python
 
@@ -2424,8 +2424,9 @@ def row_to_names(
     #   4   2   2   2   leopard Shanghai
     #   5   3   3   3   lion    Basel
 
-    # :Example: Move first row to column names, remove row, \
-    # and remove rows above selected row without resetting index:
+    # :Example: Move first row to column names, remove row,
+    # and remove rows above selected row without resetting
+    # index:
 
     # .. code-block:: python
 

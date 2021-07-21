@@ -77,7 +77,7 @@ jobs:
       - name: Upload code coverage
         uses: codecov/codecov-action@v2
         with:
-          fail_ci_if_error: false # optional (default = false)
+          fail_ci_if_error: true # optional (default = false)
           verbose: true # optional (default = false)
 
   jupyter-notebook:

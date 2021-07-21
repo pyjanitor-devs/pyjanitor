@@ -2368,30 +2368,30 @@ def row_to_names(
 
     # .. code-block:: python
 
- 	#   		1	1	1	rabbit	Cambridge
-	# 	0	2	2	2	leopard	Shanghai
-	# 	1	3	3	3	lion	Basel
-	# 	2	1	1	1	rabbit	Cambridge
-	# 	3	2	2	2	leopard	Shanghai
-	# 	4	3	3	3	lion	Basel
-	# 	5	1	1	1	rabbit	Cambridge
-	# 	6	2	2	2	leopard	Shanghai
-	# 	7	3	3	3	lion	Basel
+    #       1   1   1   rabbit  Cambridge
+    #   0   2   2   2   leopard Shanghai
+    #   1   3   3   3   lion    Basel
+    #   2   1   1   1   rabbit  Cambridge
+    #   3   2   2   2   leopard Shanghai
+    #   4   3   3   3   lion    Basel
+    #   5   1   1   1   rabbit  Cambridge
+    #   6   2   2   2   leopard Shanghai
+    #   7   3   3   3   lion    Basel
 
-	# :Example: Move first row to column names and remove row \
-	# 	without resetting the index:
+    # :Example: Move first row to column names and remove row \
+    #   without resetting the index:
 
-	# .. code-block:: python
+    # .. code-block:: python
 
-	#     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(0, remove_row=True,\
-    #		reset_index=False)
+    #       reset_index=False)
 
-	# :Output:
+    # :Output:
 
-	# .. code-block:: python
+    # .. code-block:: python
 
-	#        1  1  1   rabbit  Cambridge
+    #        1  1  1   rabbit  Cambridge
     #     1  2  2  2  leopard   Shanghai
     #     2  3  3  3     lion      Basel
     #     3  1  1  1   rabbit  Cambridge
@@ -2409,19 +2409,19 @@ def row_to_names(
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
-    #  		remove_rows_above=True)
+    #       remove_rows_above=True)
 
     # :Output:
 
     # .. code-block:: python
 
-	#   	  	3	3	3	lion	Basel
-	# 	0	1	1	1	rabbit	Cambridge
-	# 	1	2	2	2	leopard	Shanghai
-	# 	2	3	3	3	lion	Basel
-	# 	3	1	1	1	rabbit	Cambridge
-	# 	4	2	2	2	leopard	Shanghai
-	# 	5	3	3	3	lion	Basel
+    #       3   3   3   lion    Basel
+    #   0   1   1   1   rabbit  Cambridge
+    #   1   2   2   2   leopard Shanghai
+    #   2   3   3   3   lion    Basel
+    #   3   1   1   1   rabbit  Cambridge
+    #   4   2   2   2   leopard Shanghai
+    #   5   3   3   3   lion    Basel
 
     # :Example: Move first row to column names, remove row, \
     # and remove rows above selected row without resetting index:
@@ -2430,7 +2430,7 @@ def row_to_names(
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
-    #  		remove_rows_above=True, reset_index= False)
+    #       remove_rows_above=True, reset_index= False)
 
     # :Output:
 
@@ -2456,7 +2456,8 @@ def row_to_names(
         df = df.drop(df.index[range(row_number)])
 
     if reset_index:
-    	df.reset_index(drop=['index'], inplace=True)
+        df.reset_index(drop=['index'], inplace=True)
+        
     return df
 
 

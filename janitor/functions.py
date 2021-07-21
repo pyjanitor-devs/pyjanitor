@@ -777,8 +777,21 @@ def label_encode(
         or tuple) of column names.
     :returns: A pandas DataFrame.
     """
-    warnings.warn("label_encode will be deprecated in a 1.x release")
+    warnings.warn(
+        "label_encode will be deprecated in a 1.x release. Use factorize_columns instead"
+    )
     df = _factorize(df, column_names, "_enc")
+    return df
+
+
+@pf.register_dataframe_method
+def factorize_columns(
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable],
+    suffix="_enc",
+    **kwargs,
+) -> pd.DataFrame:
+    df = _factorize(df, column_names, suffix, **kwargs)
     return df
 
 

@@ -73,14 +73,11 @@ jobs:
           python -m pip install -e .
           pytest
 
-#      - name: Inspect coverage
-#        run: |
-#          cat coverage.xml
-
       - name: Upload code coverage
-        run: |
-          source /tmp/pyjanitor-dev_env/bin/activate
-          bash <(curl -s https://codecov.io/bash)
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: false # optional (default = false)
+          verbose: true # optional (default = false)
 
   jupyter-notebook:
     name: Execute all Jupyter notebooks
@@ -124,7 +121,6 @@ jobs:
 
       - name: Unpack environment and activate it
         run: bash scripts/ci/unpack_environment.sh
-
 
       - name: Build docs
         run: |

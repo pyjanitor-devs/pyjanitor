@@ -29,11 +29,9 @@ ignore-semiprivate = false
 quiet = false
 verbose = 2
 
-[tool.pytest]
-addopts = "--cov=janitor/ --cov-report html --cov-report xml"
-
 # https://docs.pytest.org/en/6.2.x/mark.html#registering-marks
 [tool.pytest.ini_options]
+addopts = "--cov=janitor/ --cov-report=html --cov-report=xml --cov-report=term-missing"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "biology",

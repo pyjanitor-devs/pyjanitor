@@ -20,7 +20,7 @@ format:
 
 test:
 	@echo "Running test suite..."
-	pytest --cov-report html
+	pytest
 
 lint:
 	@echo "Checking code formatting..."

@@ -2357,7 +2357,7 @@ def row_to_names(
     #     6  1  1  1   rabbit  Cambridge
     #     7  2  2  2  leopard   Shanghai
 
-    # :Example: Move first row to column names and 
+    # :Example: Move first row to column names and
     #  remove row while resetting the index:
 
     # .. code-block:: python
@@ -2459,7 +2459,7 @@ def row_to_names(
 
     if reset_index:
         df.reset_index(drop=['index'], inplace=True)
-        
+
     return df
 
 

@@ -24,11 +24,15 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_numeric_dtype
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import is_bool_dtype, is_list_like, union_categoricals
+from pandas.api.types import (
+    is_bool_dtype,
+    is_list_like,
+    is_numeric_dtype,
+    union_categoricals,
+)
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 
@@ -48,10 +52,10 @@ from .utils import (
     _replace_original_empty_string_with_none,
     _select_columns,
     _strip_underscores,
+    asCategorical,
     check,
     check_column,
     deprecated_alias,
-    asCategorical,
 )
 
 
@@ -2289,7 +2293,7 @@ def row_to_names(
     row_number: int = None,
     remove_row: bool = False,
     remove_rows_above: bool = False,
-    reset_index: bool = True
+    reset_index: bool = True,
 ) -> pd.DataFrame:
     """Elevates a row to be the column names of a DataFrame.
 
@@ -2458,7 +2462,7 @@ def row_to_names(
         df = df.drop(df.index[range(row_number)])
 
     if reset_index:
-        df.reset_index(drop=['index'], inplace=True)
+        df.reset_index(drop=["index"], inplace=True)
 
     return df
 

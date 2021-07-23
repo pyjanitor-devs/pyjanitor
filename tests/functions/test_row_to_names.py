@@ -21,6 +21,7 @@ def test_row_to_names_delete_this_row(dataframe):
     assert df.iloc[2, 4] == "Cambridge"
     assert df.iloc[2].name == 2
 
+
 @pytest.mark.functions
 def test_row_to_names_delete_the_row_without_resetting_index(dataframe):
     df = dataframe.row_to_names(2, remove_row=True, reset_index=False)
@@ -31,6 +32,7 @@ def test_row_to_names_delete_the_row_without_resetting_index(dataframe):
     assert df.iloc[2, 4] == "Cambridge"
     assert df.iloc[2].name == 3
 
+
 @pytest.mark.functions
 def test_row_to_names_delete_above(dataframe):
     df = dataframe.row_to_names(2, remove_rows_above=True)
@@ -40,6 +42,7 @@ def test_row_to_names_delete_above(dataframe):
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
     assert df.iloc[0].name == 0
+
 
 @pytest.mark.functions
 def test_row_to_names_delete_above_without_resetting_index(dataframe):

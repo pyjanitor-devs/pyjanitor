@@ -132,6 +132,19 @@ def df_duplicated_columns():
     return clean_df
 
 
+@pytest.fixture
+def df_constant_columns():
+    data = {
+        "a": [1] * 9,
+        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+        "decorated-elephant": [1, 2, 3] * 3,
+        "animals@#$%^": ["rabbit"] * 9,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+    }
+    df = pd.DataFrame(data)
+    return df
+
+
 def pytest_configure():
     pytest.TEST_DATA_DIR = TEST_DATA_DIR
     pytest.EXAMPLES_DIR = EXAMPLES_DIR

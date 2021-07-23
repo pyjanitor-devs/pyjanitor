@@ -795,7 +795,8 @@ def factorize_columns(
     """Converts labels into numerical data
 
     This method will create a new column with the string "_enc" appended
-    after the original column's name.This can be overriden with the suffix parameter
+    after the original column's name.
+    This can be overriden with the suffix parameter
 
     This method is a convenience method over the pandas factorize method.
     It takes in optional suffix and keyword arguments also
@@ -806,7 +807,8 @@ def factorize_columns(
 
     .. code-block:: python
 
-        df = factorize_columns(df, column_names="my_categorical_column", suffix="_enc")  # one way
+        df = factorize_columns(df, column_names="my_categorical_column",
+                                        suffix="_enc")  # one way
 
     Method chaining syntax:
 
@@ -815,7 +817,9 @@ def factorize_columns(
         import pandas as pd
         import janitor
         categorical_cols = ['col1', 'col2', 'col4']
-        df = pd.DataFrame(...).factorize_columns(column_names=categorical_cols, suffix="_enc")
+        df = pd.DataFrame(...).factorize_columns(
+                                column_names=categorical_cols,
+                                suffix="_enc")
 
     :param df: The pandas DataFrame object.
     :param column_names: A column name or an iterable (list
@@ -823,7 +827,7 @@ def factorize_columns(
     :param suffix: Suffix to be used for the new column. Default value is _enc.
         An empty string suffix means, it will override the existing column
     :param **kwargs: Keyword arguments. It takes any of the keyword arguments,
-        which the pandas factorize method takeslike sort, na_sentinel, size_hint
+        which the pandas factorize method takeslike sort,na_sentinel,size_hint
 
     :returns: A pandas DataFrame.
     """

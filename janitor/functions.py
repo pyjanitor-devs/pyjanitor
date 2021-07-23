@@ -4327,6 +4327,7 @@ def flag_nulls(
     return df
 
 
+@pf.register_dataframe_method
 def drop_constant_columns(
     df: pd.DataFrame,
 ) -> pd.DataFrame:

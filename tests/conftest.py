@@ -134,6 +134,7 @@ def df_duplicated_columns():
 
 @pytest.fixture
 def df_constant_columns():
+    """Return a dataframe that has columns with constant values."""
     data = {
         "a": [1] * 9,
         "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,

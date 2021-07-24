@@ -798,7 +798,7 @@ def factorize_columns(
     after the original column's name.
     This can be overriden with the suffix parameter
 
-    This method is a convenience method over the pandas factorize method.
+    Internally this method uses pandas factorize method.
     It takes in optional suffix and keyword arguments also
 
     This method mutates the origin DataFrame

@@ -2322,7 +2322,7 @@ def row_to_names(
         Defaults to False.
     :param remove_rows_above: Whether the rows above the selected row should
         be removed from the DataFrame. Defaults to False.
-    :param reset_index : Whether the index should be reset on the returning
+    :param reset_index: Whether the index should be reset on the returning
         DataFrame. Defaults to True.
     :returns: A pandas DataFrame with set column names.
     """

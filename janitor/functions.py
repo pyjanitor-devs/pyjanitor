@@ -789,7 +789,7 @@ def label_encode(
 def factorize_columns(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable],
-    suffix="_enc",
+    suffix: str = "_enc",
     **kwargs,
 ) -> pd.DataFrame:
     """Converts labels into numerical data
@@ -799,7 +799,8 @@ def factorize_columns(
     This can be overriden with the suffix parameter
 
     Internally this method uses pandas factorize method.
-    It takes in optional suffix and keyword arguments also
+    It takes in optional suffix and keyword arguments also.
+    An empty string as suffix will override the existing column
 
     This method mutates the origin DataFrame
 
@@ -827,7 +828,7 @@ def factorize_columns(
     :param suffix: Suffix to be used for the new column. Default value is _enc.
         An empty string suffix means, it will override the existing column
     :param **kwargs: Keyword arguments. It takes any of the keyword arguments,
-        which the pandas factorize method takeslike sort,na_sentinel,size_hint
+        which the pandas factorize method takes like sort,na_sentinel,size_hint
 
     :returns: A pandas DataFrame.
     """

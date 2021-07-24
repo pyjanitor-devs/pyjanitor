@@ -5,6 +5,7 @@ from pandas.testing import assert_frame_equal
 
 @pytest.mark.functions
 def test_drop_constant_columns(df_constant_columns):
+    """Test that executes drop_constant_columns function."""
     processed_df = df_constant_columns.drop_constant_columns()
     expected_col_list = ["Bell__Chart", "decorated-elephant", "cities"]
     assert processed_df.columns.to_list() == expected_col_list

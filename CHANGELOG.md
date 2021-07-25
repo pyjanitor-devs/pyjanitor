@@ -8,6 +8,7 @@
 -   [INF] Updated black version in github actions code-checks to match pre-commit hooks. @nvamsikrishna05
 -   [ENH] Updated `label_encode` to use pandas factorize instead of scikit-learn LabelEncoder. @nvamsikrishna05
 -   [INF] Removed the scikit-learn package from the dependencies from environment-dev.yml and base.in files. @nvamsikrishna05
+-   [ENH] Added `factorize_columns` method which will deprecate the `label_encode` method in future release. @nvamsikrishna05
 
 ## [v0.21.0] - 2021-07-16
 

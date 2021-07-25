@@ -28,7 +28,7 @@ def test_row_to_names_delete_the_row_without_resetting_index(dataframe):
     """Test that executes row_to_names while deleting the given row
     index while not resetting the index"""
     df = dataframe.row_to_names(2, remove_row=True, reset_index=False)
-    expected_index = pd.Index([0, 1, 3, 4, 5, 6, 7, 9])
+    expected_index = pd.Index([0, 1, 3, 4, 5, 6, 7, 8])
     pd.testing.assert_index_equal(df.index, expected_index)
 
 

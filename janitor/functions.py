@@ -802,7 +802,7 @@ def factorize_columns(
     It takes in optional suffix and keyword arguments also.
     An empty string as suffix will override the existing column
 
-    This method mutates the origin DataFrame
+    This method mutates the original DataFrame
 
     Functional usage syntax:
 

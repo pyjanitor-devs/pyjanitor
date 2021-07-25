@@ -3,6 +3,9 @@ Author: Vamsi Krishna
 Date: 23 July 2021
 
 The intent of these tests is to test factorize_columns function works.
+Because underneath the hood we are using `pd.factorize`,
+we intentionally do not test the values of the resultant dataframe.
+That would be duplicating the tests from what the `pandas` library provides.
 """
 import pandas as pd
 import pytest

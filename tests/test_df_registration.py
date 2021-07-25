@@ -22,80 +22,105 @@ def dataframe():
 
 
 def test_clean_names_registration(dataframe):
+    """Test if DataFrame has clean_method method"""
     assert dataframe.__getattr__("clean_names")
 
 
 def test_remove_empty_registration(dataframe):
+    """Test if DataFrame has remove_empty method"""
     assert dataframe.__getattr__("remove_empty")
 
 
 def test_get_dupes_registration(dataframe):
+    """Test if DataFrame has get_dupes method"""
     assert dataframe.__getattr__("get_dupes")
 
 
 def test_encode_categorical_registration(dataframe):
+    """Test if DataFrame has encode_categorical method"""
     assert dataframe.__getattr__("encode_categorical")
 
 
 def test_label_encode_registration(dataframe):
+    """Test if DataFrame has label_encode method"""
     assert dataframe.__getattr__("label_encode")
 
 
+def test_factorize_columns_registration(dataframe):
+    """Test if DataFrame has factorize_columns method"""
+    assert dataframe.__getattr__("factorize_columns")
+
+
 def test_get_features_targets_registration(dataframe):
+    """Test if DataFrame has get_features_targets method"""
     assert dataframe.__getattr__("get_features_targets")
 
 
 def test_rename_column_registration(dataframe):
+    """Test if DataFrame has rename_column method"""
     assert dataframe.__getattr__("rename_column")
 
 
 def test_coalesce_registration(dataframe):
+    """Test if DataFrame has coalesce method"""
     assert dataframe.__getattr__("coalesce")
 
 
 def test_convert_excel_date_registration(dataframe):
+    """Test if DataFrame has convert_excel_date method"""
     assert dataframe.__getattr__("convert_excel_date")
 
 
 def test_convert_matlab_date_registration(dataframe):
+    """Test if DataFrame has convert_matlab_date method"""
     assert dataframe.__getattr__("convert_matlab_date")
 
 
 def test_convert_unix_date_registration(dataframe):
+    """Test if DataFrame has convert_unix_date method"""
     assert dataframe.__getattr__("convert_unix_date")
 
 
 def test_fill_empty_registration(dataframe):
+    """Test if DataFrame has fill_empty method"""
     assert dataframe.__getattr__("fill_empty")
 
 
 def test_expand_column_registration(dataframe):
+    """Test if DataFrame has expand_column method"""
     assert dataframe.__getattr__("expand_column")
 
 
 def test_concatenate_columns_registration(dataframe):
+    """Test if DataFrame has concatenate_columns method"""
     assert dataframe.__getattr__("concatenate_columns")
 
 
 def test_deconcatenate_column_registration(dataframe):
+    """Test if DataFrame has deconcatenate_column method"""
     assert dataframe.__getattr__("deconcatenate_column")
 
 
 def test_filter_string_registration(dataframe):
+    """Test if DataFrame has filter_string method"""
     assert dataframe.__getattr__("filter_string")
 
 
 def test_filter_on_registration(dataframe):
+    """Test if DataFrame has filter_on method"""
     assert dataframe.__getattr__("filter_on")
 
 
 def test_remove_columns_registration(dataframe):
+    """Test if DataFrame has remove_columns method"""
     assert dataframe.__getattr__("remove_columns")
 
 
 def test_change_type_registration(dataframe):
+    """Test if DataFrame has change_type method"""
     assert dataframe.__getattr__("change_type")
 
 
 def test_filter_date_registration(dataframe):
+    """Test if DataFrame has filter_date method"""
     assert dataframe.__getattr__("filter_date")

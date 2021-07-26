@@ -4382,6 +4382,90 @@ def flag_nulls(
 
 
 @pf.register_dataframe_method
+def drop_constant_columns(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Finds and drops the constant columns from a Pandas data frame
+
+    This method does not mutate the original DataFrame.
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        data_dict = {
+        "a": [1, 1, 1] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 1, 1] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+        }
+
+        df = pd.DataFrame(data_dict)
+
+        df = jn.functions.drop_constant_columns(df)
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        df = pd.DataFrame(...)
+
+        df = df.drop_constant_columns()
+
+    :param df: Input Pandas dataframe
+    :returns: The Pandas data frame with the constant columns dropped.
+    """
+
+    # :Example 1: Drop columns with a single value:
+
+    # .. code-block:: python
+
+    #         import pandas as pd
+    #         import janitor as jn
+
+    #         data_dict = {
+    #         "a": [1, 1, 1] * 3,
+    #         "Bell": [1, 2, 3] * 3,
+    #         "decorated-elephant": [1, 1, 1] * 3,
+    #         "animals": ["rabbit", "leopard", "lion"] * 3,
+    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+    #         }
+
+    # .. code-block:: python
+
+    #     df.drop_constant_columns()
+
+    # .. code-block:: python
+
+    #     Bell  animals cities
+    #   0   1   rabbit  Cambridge
+    #   1   2   leopard Shanghai
+    #   2   3   lion    Basel
+    #   3   1   rabbit  Cambridge
+    #   4   2   leopard Shanghai
+    #   5   3   lion    Basel
+    #   6   1   rabbit  Cambridge
+    #   7   2   leopard Shanghai
+    #   8   3   lion    Basel
+
+    # Find the constant columns
+    constant_columns = []
+    for col in df.columns:
+        if len(df[col].unique()) == 1:
+            constant_columns.append(col)
+
+    # Drop constant columns from df and return it
+    return df.drop(labels=constant_columns, axis=1)
+
+
+@pf.register_dataframe_method
 def count_cumulative_unique(
     df: pd.DataFrame,
     column_name: Hashable,

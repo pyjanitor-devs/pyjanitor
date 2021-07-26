@@ -9,6 +9,7 @@
 -   [ENH] Updated `label_encode` to use pandas factorize instead of scikit-learn LabelEncoder. @nvamsikrishna05
 -   [INF] Removed the scikit-learn package from the dependencies from environment-dev.yml and base.in files. @nvamsikrishna05
 -   [ENH] `complete` now uses *columns, allowing for variable number of columns. @samukweku
+-   [ENH] Add function to remove constant columsn. @fireddd
 -   [ENH] Added `factorize_columns` method which will deprecate the `label_encode` method in future release. @nvamsikrishna05
 
 ## [v0.21.0] - 2021-07-16

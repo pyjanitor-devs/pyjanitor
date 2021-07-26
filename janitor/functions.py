@@ -24,13 +24,13 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
 from pandas.api.types import is_bool_dtype, is_list_like, union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
-from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
@@ -472,7 +472,8 @@ def get_dupes(
 
 
 def As_Categorical(
-    categories: Optional[List] = None, order: Optional[str] = None,
+    categories: Optional[List] = None,
+    order: Optional[str] = None,
 ) -> NamedTuple:
     """
     Helper function for `encode_categorical`. It makes creating the
@@ -776,24 +777,77 @@ def label_encode(
         or tuple) of column names.
     :returns: A pandas DataFrame.
     """
-    df = _label_encode(df, column_names)
+    warnings.warn(
+        "label_encode will be deprecated in a 1.x release. \
+        Please use factorize_columns instead"
+    )
+    df = _factorize(df, column_names, "_enc")
     return df
 
 
-@dispatch(pd.DataFrame, (list, tuple))
-def _label_encode(df, column_names):
-    le = LabelEncoder()
+@pf.register_dataframe_method
+def factorize_columns(
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable],
+    suffix: str = "_enc",
+    **kwargs,
+) -> pd.DataFrame:
+    """Converts labels into numerical data
+
+    This method will create a new column with the string "_enc" appended
+    after the original column's name.
+    This can be overriden with the suffix parameter
+
+    Internally this method uses pandas factorize method.
+    It takes in optional suffix and keyword arguments also.
+    An empty string as suffix will override the existing column
+
+    This method mutates the original DataFrame
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        df = factorize_columns(df, column_names="my_categorical_column",
+                                        suffix="_enc")  # one way
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        categorical_cols = ['col1', 'col2', 'col4']
+        df = pd.DataFrame(...).factorize_columns(
+                                column_names=categorical_cols,
+                                suffix="_enc")
+
+    :param df: The pandas DataFrame object.
+    :param column_names: A column name or an iterable (list
+        or tuple) of column names.
+    :param suffix: Suffix to be used for the new column. Default value is _enc.
+        An empty string suffix means, it will override the existing column
+    :param **kwargs: Keyword arguments. It takes any of the keyword arguments,
+        which the pandas factorize method takes like sort,na_sentinel,size_hint
+
+    :returns: A pandas DataFrame.
+    """
+    df = _factorize(df, column_names, suffix, **kwargs)
+    return df
+
+
+@dispatch(pd.DataFrame, (list, tuple), str)
+def _factorize(df, column_names, suffix, **kwargs):
     check_column(df, column_names=column_names, present=True)
     for col in column_names:
-        df[f"{col}_enc"] = le.fit_transform(df[col])
+        df[f"{col}{suffix}"] = pd.factorize(df[col], **kwargs)[0]
     return df
 
 
-@dispatch(pd.DataFrame, str)  # noqa: F811
-def _label_encode(df, column_names):  # noqa: F811
-    le = LabelEncoder()
-    check_column(df, column_names=column_names, present=True)
-    df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
+@dispatch(pd.DataFrame, str, str)
+def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
+    check_column(df, column_names=column_name, present=True)
+    df[f"{column_name}{suffix}"] = pd.factorize(df[column_name], **kwargs)[0]
     return df
 
 
@@ -1089,7 +1143,15 @@ def convert_excel_date(
     :param df: A pandas DataFrame.
     :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
+    :raises ValueError: if There are non numeric values in the column.
     """  # noqa: E501
+
+    if not is_numeric_dtype(df[column_name]):
+        raise ValueError(
+            "There are non-numeric values in the column. \
+    All values must be numeric"
+        )
+
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"
     ) + dt.datetime(
@@ -3136,7 +3198,9 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, *args, invert: bool = False,
+    df: pd.DataFrame,
+    *args,
+    invert: bool = False,
 ) -> pd.DataFrame:
     """
     Method-chainable selection of columns.
@@ -4315,6 +4379,90 @@ def flag_nulls(
     df = df.copy()
     df[column_name] = null_array.astype(int)
     return df
+
+
+@pf.register_dataframe_method
+def drop_constant_columns(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Finds and drops the constant columns from a Pandas data frame
+
+    This method does not mutate the original DataFrame.
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        data_dict = {
+        "a": [1, 1, 1] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 1, 1] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+        }
+
+        df = pd.DataFrame(data_dict)
+
+        df = jn.functions.drop_constant_columns(df)
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        df = pd.DataFrame(...)
+
+        df = df.drop_constant_columns()
+
+    :param df: Input Pandas dataframe
+    :returns: The Pandas data frame with the constant columns dropped.
+    """
+
+    # :Example 1: Drop columns with a single value:
+
+    # .. code-block:: python
+
+    #         import pandas as pd
+    #         import janitor as jn
+
+    #         data_dict = {
+    #         "a": [1, 1, 1] * 3,
+    #         "Bell": [1, 2, 3] * 3,
+    #         "decorated-elephant": [1, 1, 1] * 3,
+    #         "animals": ["rabbit", "leopard", "lion"] * 3,
+    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+    #         }
+
+    # .. code-block:: python
+
+    #     df.drop_constant_columns()
+
+    # .. code-block:: python
+
+    #     Bell  animals cities
+    #   0   1   rabbit  Cambridge
+    #   1   2   leopard Shanghai
+    #   2   3   lion    Basel
+    #   3   1   rabbit  Cambridge
+    #   4   2   leopard Shanghai
+    #   5   3   lion    Basel
+    #   6   1   rabbit  Cambridge
+    #   7   2   leopard Shanghai
+    #   8   3   lion    Basel
+
+    # Find the constant columns
+    constant_columns = []
+    for col in df.columns:
+        if len(df[col].unique()) == 1:
+            constant_columns.append(col)
+
+    # Drop constant columns from df and return it
+    return df.drop(labels=constant_columns, axis=1)
 
 
 @pf.register_dataframe_method

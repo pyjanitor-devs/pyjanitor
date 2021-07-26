@@ -97,5 +97,14 @@ jobs:
       - name: Push changes with tags
         run: git push && git push --tags
 
+      # This will create an actual pointer in the "Release" section of the GitHub repo
+      # The intent is to always have "latest" point to <this> release
+      - name: Create release in GitHub repo
+        uses: ncipollo/release-action@v1
+        with:
+            body: "Contribution details can be found in CHANGELOG.md"
+            token: ${{ secrets.GITHUB_TOKEN }}
+            tag: v${{ env.version_number}}
+
       - name: Ensure complete
         run: echo "Auto-release complete!"

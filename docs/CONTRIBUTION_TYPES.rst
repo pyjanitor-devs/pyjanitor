@@ -44,7 +44,7 @@ you can propose as fixes or enhancements to the library.
 Report Bugs
 ------------
 
-Report bugs at https://github.com/ericmjl/pyjanitor/issues.
+Report bugs at https://github.com/pyjanitor-devs/pyjanitor/issues.
 
 If you are reporting a bug, please include:
 
@@ -503,7 +503,7 @@ or add your own test data to that file by following the same fixture pattern.
 Submit Feedback
 -----------------
 
-The best way to send feedback is to file an issue at https://github.com/ericmjl/pyjanitor/issues.
+The best way to send feedback is to file an issue at https://github.com/pyjanitor-devs/pyjanitor/issues.
 
 If you are proposing a feature:
 

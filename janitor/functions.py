@@ -24,20 +24,20 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import union_categoricals, is_list_like, is_bool_dtype
+from pandas.api.types import is_bool_dtype, is_list_like, union_categoricals
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
-from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
 from .utils import (
-    _computations_expand_grid,
     _clean_accounting_column,
     _computations_as_categorical,
     _computations_complete,
+    _computations_expand_grid,
     _computations_pivot_longer,
     _computations_pivot_wider,
     _currency_column_to_numeric,
@@ -320,6 +320,7 @@ def clean_names(
         df = df.rename(columns=_strip_accents)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
+
     df = _strip_underscores(df, strip_underscores)
 
     df = df.rename(columns=lambda x: x[:truncate_limit])
@@ -332,6 +333,7 @@ def clean_names(
 
 def _change_case(col: str, case_type: str) -> str:
     """Change case of a column name."""
+
     case_types = ["preserve", "upper", "lower", "snake"]
     if case_type.lower() not in case_types:
         raise JanitorError(f"case_type must be one of: {case_types}")
@@ -349,6 +351,7 @@ def _change_case(col: str, case_type: str) -> str:
 
 def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
+
     return "".join(
         item for item in str(col_name) if item.isalnum() or "_" in item
     )
@@ -364,16 +367,16 @@ def _camel2snake(col_name: str) -> str:
     Implementation taken from: https://gist.github.com/jaytaylor/3660565
     by @jtaylor
     """
-
     subbed = _underscorer1.sub(r"\1_\2", col_name)  # noqa: PD005
     return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
 
-FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
+FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
 
 
 def _normalize_1(col_name: Hashable) -> str:
     """Perform normalization of column name."""
+
     result = str(col_name)
     for search, replace in FIXES:
         result = re.sub(search, replace, result)  # noqa: PD005
@@ -469,7 +472,8 @@ def get_dupes(
 
 
 def As_Categorical(
-    categories: Optional[List] = None, order: Optional[str] = None,
+    categories: Optional[List] = None,
+    order: Optional[str] = None,
 ) -> NamedTuple:
     """
     Helper function for `encode_categorical`. It makes creating the
@@ -773,24 +777,77 @@ def label_encode(
         or tuple) of column names.
     :returns: A pandas DataFrame.
     """
-    df = _label_encode(df, column_names)
+    warnings.warn(
+        "label_encode will be deprecated in a 1.x release. \
+        Please use factorize_columns instead"
+    )
+    df = _factorize(df, column_names, "_enc")
     return df
 
 
-@dispatch(pd.DataFrame, (list, tuple))
-def _label_encode(df, column_names):
-    le = LabelEncoder()
+@pf.register_dataframe_method
+def factorize_columns(
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable],
+    suffix: str = "_enc",
+    **kwargs,
+) -> pd.DataFrame:
+    """Converts labels into numerical data
+
+    This method will create a new column with the string "_enc" appended
+    after the original column's name.
+    This can be overriden with the suffix parameter
+
+    Internally this method uses pandas factorize method.
+    It takes in optional suffix and keyword arguments also.
+    An empty string as suffix will override the existing column
+
+    This method mutates the original DataFrame
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        df = factorize_columns(df, column_names="my_categorical_column",
+                                        suffix="_enc")  # one way
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        categorical_cols = ['col1', 'col2', 'col4']
+        df = pd.DataFrame(...).factorize_columns(
+                                column_names=categorical_cols,
+                                suffix="_enc")
+
+    :param df: The pandas DataFrame object.
+    :param column_names: A column name or an iterable (list
+        or tuple) of column names.
+    :param suffix: Suffix to be used for the new column. Default value is _enc.
+        An empty string suffix means, it will override the existing column
+    :param **kwargs: Keyword arguments. It takes any of the keyword arguments,
+        which the pandas factorize method takes like sort,na_sentinel,size_hint
+
+    :returns: A pandas DataFrame.
+    """
+    df = _factorize(df, column_names, suffix, **kwargs)
+    return df
+
+
+@dispatch(pd.DataFrame, (list, tuple), str)
+def _factorize(df, column_names, suffix, **kwargs):
     check_column(df, column_names=column_names, present=True)
     for col in column_names:
-        df[f"{col}_enc"] = le.fit_transform(df[col])
+        df[f"{col}{suffix}"] = pd.factorize(df[col], **kwargs)[0]
     return df
 
 
-@dispatch(pd.DataFrame, str)  # noqa: F811
-def _label_encode(df, column_names):  # noqa: F811
-    le = LabelEncoder()
-    check_column(df, column_names=column_names, present=True)
-    df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
+@dispatch(pd.DataFrame, str, str)
+def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
+    check_column(df, column_names=column_name, present=True)
+    df[f"{column_name}{suffix}"] = pd.factorize(df[column_name], **kwargs)[0]
     return df
 
 
@@ -1086,7 +1143,15 @@ def convert_excel_date(
     :param df: A pandas DataFrame.
     :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
+    :raises ValueError: if There are non numeric values in the column.
     """  # noqa: E501
+
+    if not is_numeric_dtype(df[column_name]):
+        raise ValueError(
+            "There are non-numeric values in the column. \
+    All values must be numeric"
+        )
+
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"
     ) + dt.datetime(
@@ -3133,7 +3198,9 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame, *args, invert: bool = False,
+    df: pd.DataFrame,
+    *args,
+    invert: bool = False,
 ) -> pd.DataFrame:
     """
     Method-chainable selection of columns.
@@ -3761,6 +3828,85 @@ def to_datetime(
 
 
 @pf.register_dataframe_method
+def truncate_datetime_dataframe(
+    df: pd.DataFrame, datepart: str
+) -> pd.DataFrame:
+    for i in df.columns:
+        for j in df.index:
+            try:
+                df[i][j] = truncate_datetime(datepart, df[i][j])
+            except KeyError:
+                pass
+            except TypeError:
+                pass
+            except AttributeError:
+                pass
+
+    return df
+
+
+@pf.register_dataframe_method
+def truncate_datetime(datepart: str, timestamp: dt.datetime):
+    """
+    Truncate times down to a user-specified precision of
+    year, month, day, hour, minute, or second.
+
+    Call on datetime object to truncate it.
+    Calling on existing df will not alter the contents
+    of said df.
+
+    Note: Truncating down to a Month or Day will yields 0s,
+    as there is no 0 month or 0 day in most datetime systems.
+
+    :param datepart: Truncation precision, YEAR, MONTH, DAY,
+        HOUR, MINUTE, SECOND. (String is automagically
+        capitalized)
+    :param timestamp: expecting a datetime from python datetime class (dt)
+    :raises KeyError: if inappropriate precision is passed
+
+    :returns: a truncated datetime object to
+        the precision specified by datepart.
+    """
+    recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND]
+    datepart = datepart.upper()
+    ENUM = {
+        "YEAR": 0,
+        "MONTH": 1,
+        "DAY": 2,
+        "HOUR": 3,
+        "MINUTE:": 4,
+        "SECOND": 5,
+        0: timestamp.year,
+        1: timestamp.month,
+        2: timestamp.day,
+        3: timestamp.hour,
+        4: timestamp.minute,
+        5: timestamp.second,
+    }
+    try:
+        ENUM[datepart]
+    # Capture the error but replace it with explicit instructions.
+    except KeyError:
+        msg = (
+            "Invalid truncation. Please enter any one of 'year', "
+            "'month', 'day', 'hour', 'minute' or 'second'."
+        )
+        raise KeyError(msg)
+
+    for i in range(ENUM.get(datepart) + 1):
+        recurrence[i] = ENUM.get(i)
+
+    return dt.datetime(
+        recurrence[0],
+        recurrence[1],
+        recurrence[2],
+        recurrence[3],
+        recurrence[4],
+        recurrence[5],
+    )
+
+
+@pf.register_dataframe_method
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
     df: pd.DataFrame,
@@ -4236,6 +4382,90 @@ def flag_nulls(
 
 
 @pf.register_dataframe_method
+def drop_constant_columns(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Finds and drops the constant columns from a Pandas data frame
+
+    This method does not mutate the original DataFrame.
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        data_dict = {
+        "a": [1, 1, 1] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 1, 1] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+        }
+
+        df = pd.DataFrame(data_dict)
+
+        df = jn.functions.drop_constant_columns(df)
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        df = pd.DataFrame(...)
+
+        df = df.drop_constant_columns()
+
+    :param df: Input Pandas dataframe
+    :returns: The Pandas data frame with the constant columns dropped.
+    """
+
+    # :Example 1: Drop columns with a single value:
+
+    # .. code-block:: python
+
+    #         import pandas as pd
+    #         import janitor as jn
+
+    #         data_dict = {
+    #         "a": [1, 1, 1] * 3,
+    #         "Bell": [1, 2, 3] * 3,
+    #         "decorated-elephant": [1, 1, 1] * 3,
+    #         "animals": ["rabbit", "leopard", "lion"] * 3,
+    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+    #         }
+
+    # .. code-block:: python
+
+    #     df.drop_constant_columns()
+
+    # .. code-block:: python
+
+    #     Bell  animals cities
+    #   0   1   rabbit  Cambridge
+    #   1   2   leopard Shanghai
+    #   2   3   lion    Basel
+    #   3   1   rabbit  Cambridge
+    #   4   2   leopard Shanghai
+    #   5   3   lion    Basel
+    #   6   1   rabbit  Cambridge
+    #   7   2   leopard Shanghai
+    #   8   3   lion    Basel
+
+    # Find the constant columns
+    constant_columns = []
+    for col in df.columns:
+        if len(df[col].unique()) == 1:
+            constant_columns.append(col)
+
+    # Drop constant columns from df and return it
+    return df.drop(labels=constant_columns, axis=1)
+
+
+@pf.register_dataframe_method
 def count_cumulative_unique(
     df: pd.DataFrame,
     column_name: Hashable,
@@ -4535,6 +4765,68 @@ def sort_naturally(
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]
+
+
+def sort_column_value_order(
+    df: pd.DataFrame, column: str, column_value_order: dict, columns=None
+) -> pd.DataFrame:
+    """
+    This function adds precedence to certain values in a specified column, then
+    sorts based on that column and any other specified columns.
+
+    Example:
+                    SalesMonth	Company2	Company3
+        Company1
+        150.0	    Jan	        180.0	    400.0
+        200.0	    Feb	        250.0	    500.0
+        200.0	    Feb	        250.0	    500.0
+        300.0	    Mar	        NaN	        600.0
+        400.0	    April	    500.0	    675.0
+
+        Given the current DataFrame, we want to order the sales month in desc
+        order. To achieve this we would assign the later months with smaller
+        values with the latest month, such as April with the precedence of 0.
+
+        df = sort_column_value_order(
+        df,
+        'SalesMonth',
+        {'April':1,'Mar':2,'Feb':3,'Jan':4}
+        )
+
+        The returned DataFrame will look as follows.
+
+                    SalesMonth	Company2	Company3
+        Company1
+        400.0	    April	    500.0	    675.0
+        300.0	    Mar	        NaN	        600.0
+        200.0	    Feb	        250.0	    500.0
+        200.0	    Feb	        250.0	    500.0
+        150.0	    Jan	        180.0	    400.0
+
+    :param df: This is our DataFrame that we are manipulating
+    :param column: This is a column name as a string we are using to specify
+        which column to sort by
+    :param column_value_order: This is a dictionary of values that will
+        represent precedence of the values in the specified column
+    :param columns: This is a list of additional columns that we can sort by
+    :raises ValueError: raises error if chosen Column Name is not in
+        Dataframe, or if column_value_order dictionary is empty.
+    :return: This function returns a Pandas DataFrame
+    """
+    if len(column_value_order) > 0:
+        if column in df.columns:
+            df["cond_order"] = df[column].replace(column_value_order)
+            if columns is None:
+                new_df = df.sort_values("cond_order")
+                del new_df["cond_order"]
+            else:
+                new_df = df.sort_values(columns + ["cond_order"])
+                del new_df["cond_order"]
+            return new_df
+        else:
+            raise ValueError("Column Name not in DataFrame")
+    else:
+        raise ValueError("column_value_order dictionary cannot be empty")
 
 
 @pf.register_dataframe_method
@@ -5260,6 +5552,7 @@ def complete(
     Let's get all the missing years per state::
 
         df.complete(
+
             columns = [{'year': new_year_values}],
             by='state'
         )

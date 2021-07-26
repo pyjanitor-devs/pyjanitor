@@ -141,7 +141,7 @@ def test_categories_ndim_gt_1_in_kwargs(df_categorical):
 
 def test_categories_null_in_categories(df_categorical):
     """
-     Raise ValueError if there are nulls in the `categories`.
+    Raise ValueError if there are nulls in the `categories`.
     """
     with pytest.raises(ValueError):
         df_categorical.encode_categorical(col1=([None, 2, 3], None))
@@ -415,7 +415,13 @@ def test_various(df_in, df_out, kwargs):
     """
     Test output for various combinations.
     """
-    result = df_in.encode_categorical(**kwargs,)
+    # result = df_in.encode_categorical(
+    #     **kwargs,
+    # )
+    # assert_frame_equal(result, df_out)
+    result = df_in.encode_categorical(
+        **kwargs,
+    )
     # directly comparing columns is safe -
     # if the columns have differing categories
     # (especially for ordered True) it will fail.

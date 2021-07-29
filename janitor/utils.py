@@ -29,6 +29,9 @@ from pandas.api.types import (
     is_extension_array_dtype,
     is_list_like,
     is_scalar,
+    is_numeric_dtype,
+    is_string_dtype,
+    is_datetime64_dtype,
 )
 from pandas.core.common import apply_if_callable
 
@@ -2374,7 +2377,6 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     # (# extra_index_line)
     df = df.droplevel(-1).set_index("match", append=True)
     return df
-
 
 
 def _check_operator(op: str):

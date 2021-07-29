@@ -53,7 +53,7 @@ from .utils import (
     deprecated_alias,
     asCategorical,
     _conditional_join_preliminary_checks,
-    _conditional_join_compute
+    _conditional_join_compute,
 )
 
 

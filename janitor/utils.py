@@ -7,6 +7,7 @@ import re
 import socket
 import sys
 import warnings
+import operator
 from collections.abc import Callable as dispatch_callable
 from itertools import chain, combinations
 from typing import (
@@ -2373,3 +2374,807 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     # (# extra_index_line)
     df = df.droplevel(-1).set_index("match", append=True)
     return df
+
+
+
+def _check_operator(op: str):
+    """
+    Check that operator is one of
+    `>`, `>=`, `==`, `!=`, `<`, `<=`.
+    Used in `conditional_join`.
+    """
+    if op not in ("<", ">", "<=", ">=", "==", "!="):
+        raise ValueError(
+            """
+            The conditional join operator
+            should be one of <, >, <=, >= , "==", "!="
+            """
+        )
+    return None
+
+
+def _conditional_join_preliminary_checks(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    conditions,
+    how: str = "inner",
+    order_by_appearance: bool = False,
+    suffixes=("_x", "_y"),
+) -> tuple:
+    """
+    Preliminary checks are conducted here.
+    This function checks for conditions such as
+    MultiIndexed dataframe columns,
+    improper `suffixes` configuration,
+    as well as unnamed Series.
+
+    A tuple of
+    (`df`, `right`,
+     `left_on`, `right_on`,
+     `operator`, `order_by_appearance`)
+    is returned.
+    """
+
+    if df.empty:
+        raise ValueError(
+            """
+            The dataframe on the left should not be empty.
+            """
+        )
+
+    if isinstance(df.columns, pd.MultiIndex):
+        raise ValueError(
+            """
+            MultiIndex columns are not
+            supported for conditional_join.
+            """
+        )
+
+    check("`right`", right, [pd.DataFrame, pd.Series])
+
+    if isinstance(right, pd.Series):
+        if not right.name:
+            raise ValueError(
+                """
+                Unnamed Series are not supported
+                for conditional_join.
+                """
+            )
+        right = right.to_frame()
+
+    if right.empty:
+        raise ValueError(
+            """
+            The Pandas object on the right
+            should not be empty.
+            """
+        )
+
+    if isinstance(right.columns, pd.MultiIndex):
+        raise ValueError(
+            """
+            MultiIndex columns are not supported
+            for conditional joins.
+            """
+        )
+
+    df = df.copy()
+    right = right.copy()
+
+    # each condition should be a tuple of length 3:
+    for condition in conditions:
+        check("condition", condition, [tuple])
+        if len(condition) != 3:
+            raise ValueError(
+                f"""
+                condition should have only three elements.
+                Your condition however is of length {len(condition)}
+                """
+            )
+
+    for left_on, right_on, op in conditions:
+        check("left_on", left_on, [str])
+        check("right_on", right_on, [str])
+        check("operator", op, [str])
+        check_column(df, left_on)
+        check_column(right, right_on)
+        _check_operator(op)
+
+    check("how", how, [str])
+
+    if how not in ("inner", "left", "right"):
+        raise ValueError("`how` should be one of inner, left, or right.")
+
+    check("order_by_appearance", order_by_appearance, [bool])
+
+    check("suffixes", suffixes, [tuple])
+
+    if len(suffixes) != 2:
+        raise ValueError("`suffixes` argument should be a 2-length tuple")
+
+    if suffixes == (None, None):
+        raise ValueError("At least one of the suffixes should be non-null.")
+
+    for suffix in suffixes:
+        check("suffix", suffix, [str, type(None)])
+
+    common_columns = df.columns.intersection(right.columns, sort=False)
+
+    left_on, right_on, operators = zip(*conditions)
+    if not common_columns.empty:
+        left_suffix, right_suffix = suffixes
+
+        if left_suffix:
+            mapping = {}
+            for common in common_columns:
+                new_label = f"{common}{left_suffix}"
+                if new_label in df.columns:
+                    raise ValueError(
+                        f"""
+                        {new_label} is present in `df` columns.
+                        Kindly provide unique suffixes to create
+                        columns that are not present in `df`.
+                        """
+                    )
+                mapping[common] = new_label
+            left_on = [
+                f"{label}{left_suffix}" if label in common_columns else label
+                for label in left_on
+            ]
+            df = df.rename(columns=mapping)
+        if right_suffix:
+            mapping = {}
+            for common in common_columns:
+                new_label = f"{common}{right_suffix}"
+                if new_label in right.columns:
+                    raise ValueError(
+                        f"""
+                        {new_label} is present in `right` columns.
+                        Kindly provide unique suffixes to create
+                        columns that are not present in `right`.
+                        """
+                    )
+
+                mapping[common] = new_label
+            right_on = [
+                f"{label}{right_suffix}" if label in common_columns else label
+                for label in right_on
+            ]
+            right = right.rename(columns=mapping)
+
+    conditions = [*zip(left_on, right_on, operators)]
+
+    return (
+        df,
+        right,
+        conditions,
+        how,
+        order_by_appearance,
+    )
+
+
+def _conditional_join_type_check(
+    left_column: pd.Series, right_column: pd.Series
+) -> None:
+
+    """
+    Raise error if column type is not any of
+    numeric, datetime, or string.
+    """
+
+    numeric_type = all(map(is_numeric_dtype, (left_column, right_column)))
+    date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
+    string_type = all(map(is_string_dtype, (left_column, right_column)))
+
+    numeric_date_string = numeric_type, date_type, string_type
+    if any(numeric_date_string):
+        return None, None
+
+    raise ValueError(
+        """
+        conditional_join only supports
+        numeric, date, or string dtypes.
+        """
+    )
+
+
+# code copied from Stack Overflow
+# https://stackoverflow.com/a/47126435/7175713
+def _le_create_ranges(indices, len_right):
+    cum_length = len_right - indices
+    cum_length = cum_length.cumsum()
+    ids = np.ones(cum_length[-1], dtype=int)
+    ids[0] = indices[0]
+    ids[cum_length[:-1]] = indices[1:] - len_right + 1
+    return ids.cumsum()
+
+
+def _ge_create_ranges(indices):
+    cum_length = indices.cumsum()
+    ids = np.ones(cum_length[-1], dtype=int)
+    ids[0] = 0
+    ids[cum_length[:-1]] = -1 * indices[:-1] + 1
+    return ids.cumsum()
+
+
+def _equal_indices(left_c: pd.Series, right_c: pd.Series):
+    """
+    This uses binary search to get indices where
+    `left_c` is exactly equal to `right_c`.
+
+    Returns a tuple of (left_c, right_c)
+    """
+
+    # sorted data is a key requirement for binary search
+    right_group = right_c.groupby(right_c, sort=True)
+    # get the unique values and create a Pandas object
+    right_keys = [keys for keys, _ in right_group]
+    right_keys = pd.Index(right_keys)
+
+    # if there isn't any value from left_c in `right_keys`
+    # then there is no point in running the binary search
+    rows_to_keep = left_c.isin(right_keys)
+    if not rows_to_keep.any():
+        return None, None
+
+    # keep only values that definitely exist in `right_c`
+    left_c = left_c[rows_to_keep]
+    # get relative positions of `left_c` in
+    # the unique values from `right_keys`
+    search_indices = right_keys.searchsorted(left_c, side="left")
+
+    right_keys = right_keys.take(search_indices)
+
+    # keep only rows where `left` == `right`
+    rows_to_keep = left_c.array == right_keys
+
+    left_c = left_c.index[rows_to_keep]
+    right_keys = right_keys[rows_to_keep]
+
+    # get the index locations for the unique values in `right_c`
+    right_indices = right_group.indices
+    # map the indices to `right_keys`
+    # and subsequently concatenate to get
+    # the complete matched values from `right_c`
+    right_c = right_keys.map(right_indices)
+    right_c = np.concatenate(right_c)
+
+    # the counts of each unique value
+    # is used to `explode` left_c
+    # to match the number of rows from `right_c`
+    lengths = right_group.size()
+    lengths = right_keys.map(lengths)
+    left_c = left_c.repeat(lengths)
+
+    return left_c, right_c
+
+
+def _not_equal_indices(left_c: pd.Series, right_c: pd.Series):
+    """
+    This uses binary search to get indices where
+    `left_c` is exactly  not equal to `right_c`.
+    It is a combination of strictly less than
+    and strictly greater than indices.
+
+    Returns a tuple of (left_c, right_c)
+    """
+    # a bit of nested ifs here ... can be better?
+
+    # get less than indices
+
+    # no point going through all the hassle
+    if left_c.min() > right_c.max():
+        lt_left = pd.Index([])
+        lt_right = np.array([], dtype=int)
+
+    else:
+        # get index positions, as well as the unique values from `right_c`
+        right_group = right_c.groupby(right_c, sort=True)
+        right_keys = [keys for keys, _ in right_group]
+        right_keys = pd.Index(right_keys)
+
+        lt_left = left_c.copy()
+        search_indices = right_keys.searchsorted(lt_left, side="left")
+        # get rid of indices where left_c is not less than any
+        # value in right_c
+        len_right = right_keys.size
+        rows_equal = search_indices == len_right
+        if rows_equal.any():
+            lt_left = lt_left[~rows_equal]
+            search_indices = search_indices[~rows_equal]
+        # move index position forward by 1,
+        # to get values from right_c that are strictly greater than
+        # equivalent values in left_c
+        rows_equal = right_keys.take(search_indices).array
+        rows_equal = lt_left == rows_equal
+        if rows_equal.any():
+            search_indices = np.where(
+                rows_equal, search_indices + 1, search_indices
+            )
+
+            # indices could become same size as len_right
+            # due to the shift above
+            rows_equal = search_indices == len_right
+            if rows_equal.any():
+                lt_left = lt_left[~rows_equal]
+                search_indices = search_indices[~rows_equal]
+
+        # all values from left are greater than the max of
+        # right_c?
+        if search_indices.size == 0:
+            lt_left = pd.Index([])
+            lt_right = np.array([], dtype=int)
+
+        else:
+            # get all the indices for each value in right_c
+            # that is greater than left_c
+            # this returns the relevant indices per value
+            positions = _le_create_ranges(search_indices, len_right)
+            # get the actual index positions from right_c
+            # and map to right_keys, to get the complete view
+            right_indices = right_group.indices
+            right_positions = right_keys.take(positions)
+            lt_right = right_positions.map(right_indices)
+            # lump it into one hole
+            lt_right = np.concatenate(lt_right)
+            # blow up left to match right_keys
+            lt_left = lt_left.index.repeat(len_right - search_indices)
+            search_indices = right_positions.map(right_group.size())
+            # blow left again to match all the index positions from right_c
+            lt_left = lt_left.repeat(search_indices)
+
+    # strictly greater than
+
+    # quick break, avoiding the hassle
+    if left_c.max() < right_c.min():
+        gt_left = pd.Index([])
+        gt_right = np.array([], dtype=int)
+
+    else:
+
+        gt_left = left_c.copy()
+        right_group = right_c.groupby(right_c, sort=True)
+        right_keys = [keys for keys, _ in right_group]
+        right_keys = pd.Index(right_keys)
+        search_indices = right_keys.searchsorted(gt_left, side="right")
+        # get rid of zero index positions
+        rows_equal = search_indices == 0
+        if rows_equal.any():
+            gt_left = gt_left[~rows_equal]
+            search_indices = search_indices[~rows_equal]
+        # adjust index positions to keep only strictly greater than
+        rows_equal = right_keys.take(search_indices - 1).array
+        rows_equal = gt_left == rows_equal
+        if rows_equal.any():
+            search_indices = np.where(
+                rows_equal, search_indices - 1, search_indices
+            )
+            # the shift above may have created new zeros
+            rows_equal = search_indices == 0
+            if rows_equal.any():
+                gt_left = gt_left[~rows_equal]
+                search_indices = search_indices[~rows_equal]
+
+        if search_indices.size == 0:
+            gt_left = pd.Index([])
+            gt_right = np.array([], dtype=int)
+
+        else:
+            positions = _ge_create_ranges(search_indices)
+            # get the actual index positions from right_c
+            # and map to right_keys, to get the complete view
+            right_positions = right_keys.take(positions)
+            right_indices = right_group.indices
+            gt_right = right_positions.map(right_indices)
+            gt_right = np.concatenate(gt_right)
+            gt_left = gt_left.index.repeat(search_indices)
+            # blow up left to match right_keys
+            search_indices = right_positions.map(right_group.size())
+            # blow left again to match all the index positions from right_c
+            gt_left = gt_left.repeat(search_indices)
+
+    if (
+        (lt_right.size == 0)
+        and (gt_right.size == 0)
+        and not any((right_c.hasnans, left_c.hasnans))
+    ):
+        return None, None
+
+    # nulls dont match anything, so throw it into the mix
+    right_nulls = []
+    left_nulls = []
+    if right_c.hasnans:
+        right_c_isna = right_c.isna()
+        nulls_count_right = right_c_isna.sum()
+        nulls_right = right_c.index[right_c_isna]
+        # tile is used here to ensure that every value in left_c
+        # is matched to all the nulls
+        nulls_right = np.tile(nulls_right, left_c.size)
+        right_nulls.append(nulls_right)
+        # if number of nulls from right_c is more than 1
+        # then we repeat it ... else, it is just a pairing
+        # from the right null to each of left_c
+        if nulls_count_right > 1:
+            left_nulls.append(left_c.index.repeat(nulls_count_right))
+        else:
+            left_nulls.append(left_c.index)
+
+    if left_c.hasnans:
+        left_c_isna = left_c.isna()
+        nulls_count_left = left_c_isna.sum()
+        nulls_left = left_c.index[left_c_isna]
+        # each value in right_c must be matched to all the null groups
+        nulls_left = np.tile(nulls_left, right_c.size)
+        left_nulls.append(pd.Int64Index(nulls_left))
+        # blow up right_c to match number of nulls in left
+        if nulls_count_left > 1:
+            right_nulls.append(right_c.index.repeat(nulls_count_left))
+        else:
+            right_nulls.append(right_c.index)
+
+    right_c = np.concatenate([lt_right, gt_right, *right_nulls])
+    left_c = lt_left.append([gt_left, *left_nulls])
+
+    return left_c, right_c
+
+
+def _less_than_indices(
+    left_c: pd.Series, right_c: pd.Series, strict: bool = False
+):
+    """
+    This uses binary search to get indices where left_c is less than
+    or equal to right_c. If strict is True, then only indices where `left_c`
+    is less than (but not equal to) `right_c` are returned.
+
+    Returns a tuple of (left_c, right_c)
+    """
+
+    # no point going through all the hassle
+    if left_c.min() > right_c.max():
+        return None, None
+
+    # sorted data is a key requirement for binary search
+    right_group = right_c.groupby(right_c, sort=True)
+    # get the unique values and create a Pandas object
+    right_keys = [keys for keys, _ in right_group]
+    right_keys = pd.Index(right_keys)
+
+    search_indices = right_keys.searchsorted(left_c, side="left")
+
+    # if any of the positions in `search_indices`
+    # is equal to the length of `right_keys`
+    # that means the respective position in `left_c`
+    # has no values from `right_c` that are less than
+    # or equal, and should therefore be discarded
+    len_right = right_keys.size
+    rows_equal = search_indices == len_right
+    if rows_equal.any():
+        left_c = left_c[~rows_equal]
+        search_indices = search_indices[~rows_equal]
+
+    # if there are any rows where left === right
+    # then the search index position should be moved
+    # forward by 1 ... this way we keep only values
+    # that are strictly less than -
+    # when the indices are created by _le_create_ranges,
+    # the indices generate will be strictly positions
+    # that are less than
+    # exact comparision is used here, instead of `isin`,
+    # as isin can give silent errors when comparing ints
+    # to floats
+    if strict:
+        rows_equal = right_keys.take(search_indices).array
+        rows_equal = left_c == rows_equal
+        if rows_equal.any():
+            search_indices = np.where(
+                rows_equal, search_indices + 1, search_indices
+            )
+            # it is possible for index positions in search_indices
+            # become same size as `right_keys`, due to the shift
+            # from the code above
+            rows_equal = search_indices == len_right
+            if rows_equal.any():
+                left_c = left_c[~rows_equal]
+                search_indices = search_indices[~rows_equal]
+    # if search_indices is empty, exit
+    if search_indices.size == 0:
+        return None, None
+
+    # for each index in `search_indices`,
+    # generate all indices for `right_keys`,
+    # where the values in `right_keys` are greater than
+    # or equal to `left_c`, depending on the value of `strict`
+    positions = _le_create_ranges(search_indices, len_right)
+
+    # get the index locations for the unique values in `right_c`
+    right_indices = right_group.indices
+    # map the indices to `right_keys`
+    # and subsequently concatenate to get
+    # the complete matched values from `right_c`
+    right_positions = right_keys.take(positions)
+    right_c = right_positions.map(right_indices)
+    right_c = np.concatenate(right_c)
+
+    # Index.repeat twice
+    # first to align left_c to right_c
+    # second time, it is to align to the total combination
+    # of indices from right_c
+    left_c = left_c.index.repeat(len_right - search_indices)
+    search_indices = right_positions.map(right_group.size())
+    left_c = left_c.repeat(search_indices)
+    return left_c, right_c
+
+
+def _greater_than_indices(
+    left_c: pd.Series, right_c: pd.Series, strict: bool = False
+):
+    """
+    This uses binary search to get indices where left_c is greater than
+    or equal to right_c. If strict is True, then only indices where `left_c`
+    is greater than (but not equal to) `right_c` are returned.
+
+    Returns a tuple of (left_c, right_c)
+    """
+
+    # quick break, avoiding the hassle
+    if left_c.max() < right_c.min():
+        return None, None
+
+    # sorted data is a key requirement for binary search
+    right_group = right_c.groupby(right_c, sort=True)
+    # get the unique values and create a Pandas object
+    right_keys = [keys for keys, _ in right_group]
+    right_keys = pd.Index(right_keys)
+
+    search_indices = right_keys.searchsorted(left_c, side="right")
+
+    # if any of the positions in `search_indices`
+    # is equal to 0
+    # that means the respective position in `left_c`
+    # has no values from `right_c` that are greater than
+    # or equal, and should therefore be discarded
+    rows_equal = search_indices == 0
+    if rows_equal.any():
+        left_c = left_c[~rows_equal]
+        search_indices = search_indices[~rows_equal]
+
+    # if there are any rows where left === right
+    # then the search index position should be moved
+    # backwards by 1 ... this way we keep only values
+    # that are strictly greater than
+    # when creating the ranges in _ge_create_ranges,
+    # the indices are created up to the search index -1
+    # similar to python's range
+    # (range(start, end) generates start up to end - 1)
+    # exact comparision is used here, instead of isin
+    # to avoid silent errors that may result when comparing
+    # especially ints with floats
+    if strict:
+        # subtracting 1 aligns the positions,
+        # similar to searchsorted with `side=left`
+        # thought process here ... 0s have been removed
+        # in earlier code ... so there is no danger of getting -1s
+        # any indice equal to len of right_keys will be normalised
+        # to len of right_keys - 1
+        # avoiding an index error, while still aligning to
+        # closest value.
+        rows_equal = right_keys.take(search_indices - 1).array
+        rows_equal = left_c == rows_equal
+        if rows_equal.any():
+            search_indices = np.where(
+                rows_equal, search_indices - 1, search_indices
+            )
+            # it is possible that the shift in indices
+            # due to the code above may result in zeros
+            rows_equal = search_indices == 0
+            if rows_equal.any():
+                left_c = left_c[~rows_equal]
+                search_indices = search_indices[~rows_equal]
+
+    # if search_indices is empty, exit
+    if search_indices.size == 0:
+        return None, None
+
+    # for each index in `search_indices`,
+    # generate all indices for `right_keys`,
+    # where the values in `right_keys` are less than
+    # or equal to `left_c`, depending on the value of `strict`
+    positions = _ge_create_ranges(search_indices)
+
+    # get the index locations for the unique values in `right_c`
+    right_indices = right_group.indices
+    # map the indices to `right_keys`
+    # and subsequently concatenate to get
+    # the complete matched values from `right_c`
+
+    # return left_c
+    # return right_keys.take(positions)
+    right_positions = right_keys.take(positions)
+    right_c = right_positions.map(right_indices)
+    right_c = np.concatenate(right_c)
+
+    # Index.repeat twice
+    # first to align left_c to right_c
+    # second time, it is to align to the total combination
+    # of indices from right_c
+    left_c = left_c.index.repeat(search_indices)
+    search_indices = right_positions.map(right_group.size())
+    left_c = left_c.repeat(search_indices)
+
+    return left_c, right_c
+
+
+def _create_conditional_join_frame(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_index: pd.Index,
+    right_index: pd.Index,
+    op: str,
+    how: str,
+    order_by_appearance: bool,
+):
+    """
+    Create final dataframe for conditional join.
+    """
+
+    # no matches
+    if left_index is None:
+        if how == "inner":
+            df = df.dtypes.to_dict()
+            right = right.dtypes.to_dict()
+            df = {**df, **right}
+            df = {key: pd.Series([], dtype=value) for key, value in df.items()}
+            return pd.DataFrame(df)
+
+        if how == "left":
+            right = right.dtypes.to_dict()
+            right = {
+                key: float if dtype.kind == "i" else dtype
+                for key, dtype in right.items()
+            }
+            right = {
+                key: pd.Series([], dtype=value) for key, value in right.items()
+            }
+            right = pd.DataFrame(right)
+            return df.join(right, how=how, sort=False)
+
+        if how == "right":
+            df = df.dtypes.to_dict()
+            df = {
+                key: float if dtype.kind == "i" else dtype
+                for key, dtype in df.items()
+            }
+            df = {key: pd.Series([], dtype=value) for key, value in df.items()}
+            df = pd.DataFrame(df)
+            return df.join(right, how=how, sort=False)
+
+    # if data has a lot of duplicates
+    # or a large number of rows,
+    # this can be quite expensive
+    if order_by_appearance is True:
+        if op == "!=":
+            # there could be duplicate rows,
+            # usually from the null indices
+            combo = np.column_stack([left_index, right_index])
+            combo = np.unique(combo, axis=0)  # get unique rows
+            left_index = pd.Int64Index(combo[:, 0])
+            right_index = combo[:, -1]
+        if left_index.size > 1:
+            sorter = np.lexsort((right_index, left_index))
+            right_index = right_index[sorter]
+            # usually the order of left indices remains unchanged
+            # this however is not assured in not_equal
+            if op == "!=":
+                left_index = left_index[sorter]
+
+    if how == "inner":
+        df = df.reindex(left_index)
+        right = right.reindex(right_index)
+        df.index = np.arange(left_index.size)
+        right.index = df.index
+        return pd.concat([df, right], axis="columns", sort=False)
+
+    if how == "left":
+        right = right.reindex(right_index)
+        right.index = left_index
+        return df.join(right, how=how, sort=False).reset_index(drop=True)
+
+    if how == "right":
+        df = df.reindex(left_index)
+        df.index = right_index
+        return df.join(right, how=how, sort=False).reset_index(drop=True)
+
+
+def _conditional_join_compute(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    how: str,
+    order_by_appearance: bool,
+) -> pd.DataFrame:
+    """
+    This is where the actual computation for the conditional join takes place.
+    If there are no matches, None is returned; if however, there is a match,
+    then a pandas DataFrame is returned.
+    """
+    if len(conditions) == 1:
+        left_on, right_on, op = conditions[0]
+
+        left_c = df[left_on]
+        right_c = right[right_on]
+
+        _conditional_join_type_check(left_c, right_c)
+
+        strict = False
+
+        if op in ("<", ">"):
+            strict = True
+
+        if op in ("<=", "<"):
+            result = _less_than_indices(left_c, right_c, strict)
+        elif op in (">=", ">"):
+            result = _greater_than_indices(left_c, right_c, strict)
+        elif op == "==":
+            result = _equal_indices(left_c, right_c)
+        elif op == "!=":
+            result = _not_equal_indices(left_c, right_c)
+
+        left_c, right_c = result
+
+        return _create_conditional_join_frame(
+            df, right, left_c, right_c, op, how, order_by_appearance
+        )
+
+    first, *rest = conditions
+    left_on, right_on, op = first
+
+    left_c = df[left_on]
+    right_c = right[right_on]
+
+    _conditional_join_type_check(left_c, right_c)
+
+    strict = False
+
+    if op in ("<", ">"):
+        strict = True
+
+    if op in ("<=", "<"):
+        result = _less_than_indices(left_c, right_c, strict)
+    elif op in (">=", ">"):
+        result = _greater_than_indices(left_c, right_c, strict)
+    elif op == "==":
+        result = _equal_indices(left_c, right_c)
+    elif op == "!=":
+        result = _not_equal_indices(left_c, right_c)
+
+    left_index, right_index = result
+
+    if left_index is None:
+        return _create_conditional_join_frame(
+            df, right, left_index, right_index, op, how, order_by_appearance
+        )
+
+    operator_mapping = {
+        "<": operator.lt,
+        "<=": operator.le,
+        ">": operator.gt,
+        ">=": operator.ge,
+        "==": operator.eq,
+        "!=": operator.ne,
+    }
+
+    for left_c, right_c, optr in rest:
+        left_c = df.loc[left_index, left_c]
+        right_c = right.loc[right_index, right_c]
+        _conditional_join_type_check(left_c, right_c)
+        optr = operator_mapping[optr]
+        result = optr(left_c.array, right_c.array)
+        if not result.any(axis=None):  # no matches
+            left_index, right_index = None, None
+            break
+        left_index = left_c.index[result]
+        right_index = right_c.index[result]
+
+    return _create_conditional_join_frame(
+        df, right, left_index, right_index, op, how, order_by_appearance
+    )

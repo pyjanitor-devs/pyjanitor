@@ -10,6 +10,7 @@
 -   [INF] Removed the scikit-learn package from the dependencies from environment-dev.yml and base.in files. @nvamsikrishna05
 -   [ENH] Add function to remove constant columsn. @fireddd
 -   [ENH] Added `factorize_columns` method which will deprecate the `label_encode` method in future release. @nvamsikrishna05
+-   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 
 ## [v0.21.0] - 2021-07-16
 

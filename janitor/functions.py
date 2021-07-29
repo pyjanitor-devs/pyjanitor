@@ -6447,8 +6447,8 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    The function uses binary search to get these rows, avoiding
-    a cartesian product, making it less memory intensive.
+    The function uses binary search to get these rows, thereby 
+    avoiding a cartesian join - this makes it less memory intensive.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.

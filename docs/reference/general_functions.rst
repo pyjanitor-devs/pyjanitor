@@ -94,3 +94,4 @@ Other
     pivot_longer
     pivot_wider
     as_categorical
+    conditional_join

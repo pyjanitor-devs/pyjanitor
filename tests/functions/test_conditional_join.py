@@ -516,11 +516,11 @@ def test_single_condition_less_than_equal(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_less_than_strings(df, right):
-    """Test output for a single condition. "<". Strings"""
+def test_single_condition_less_than_date(df, right):
+    """Test output for a single condition. "<". Dates"""
     assume(not df.empty)
     assume(not right.empty)
-    left_on, right_on = ["C", "Strings"]
+    left_on, right_on = ["E", "Dates"]
     actual = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")

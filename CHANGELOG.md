@@ -133,7 +133,7 @@
 ## [v0.20.5][v0.20.5]
 
 - [INF] Replace `pycodestyle` with `flake8` in order to add `pandas-vet` linter @hectormz
-- [ENH] `select_columns()` now raises `NameError` if column label in`search_columns_labels` is missing from `DataFrame` columns. @smu095
+- [ENH] `select_columns()` now raises `NameError` if column label in `search_columns_labels` is missing from `DataFrame` columns. @smu095
 
 ## [v0.20.1][v0.20.1]
 

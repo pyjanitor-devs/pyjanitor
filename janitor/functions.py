@@ -474,8 +474,7 @@ def get_dupes(
 
 
 def As_Categorical(
-    categories: Optional[List] = None,
-    order: Optional[str] = None,
+    categories: Optional[List] = None, order: Optional[str] = None,
 ) -> NamedTuple:
     """
     Helper function for `encode_categorical`. It makes creating the
@@ -3200,9 +3199,7 @@ def currency_column_to_numeric(
 @pf.register_dataframe_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
-    df: pd.DataFrame,
-    *args,
-    invert: bool = False,
+    df: pd.DataFrame, *args, invert: bool = False,
 ) -> pd.DataFrame:
     """
     Method-chainable selection of columns.
@@ -4384,9 +4381,7 @@ def flag_nulls(
 
 
 @pf.register_dataframe_method
-def drop_constant_columns(
-    df: pd.DataFrame,
-) -> pd.DataFrame:
+def drop_constant_columns(df: pd.DataFrame,) -> pd.DataFrame:
     """
     Finds and drops the constant columns from a Pandas data frame
 
@@ -6423,7 +6418,6 @@ def pivot_wider(
     return df
 
 
-
 @pf.register_dataframe_method
 def conditional_join(
     df: pd.DataFrame,
@@ -6710,12 +6704,7 @@ def conditional_join(
         how,
         order_by_appearance,
     ) = _conditional_join_preliminary_checks(
-        df,
-        right,
-        conditions,
-        how,
-        order_by_appearance,
-        suffixes,
+        df, right, conditions, how, order_by_appearance, suffixes,
     )
 
     # the numeric indexes play a crucial part in position tracking

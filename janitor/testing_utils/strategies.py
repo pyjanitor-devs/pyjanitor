@@ -4,7 +4,7 @@ Testing strategies are placed here.
 
 import numpy as np
 from hypothesis import strategies as st
-from hypothesis.extra.pandas import column, data_frames, range_indexes
+from hypothesis.extra.pandas import column, data_frames, range_indexes, series
 
 
 def nulldf_strategy():
@@ -69,3 +69,36 @@ names = [
 
 def names_strategy():
     return st.lists(elements=st.sampled_from(names))
+
+
+def conditional_df():
+    """Dataframe used in tests_conditional_join."""
+    return data_frames(
+        [
+            column(name="A", dtype=int),
+            column(name="B", elements=st.floats(allow_nan=True)),
+            column(name="C", elements=st.text(max_size=20)),
+            column(name="D", dtype=bool),
+            column(name="E", dtype="datetime64[ns]"),
+        ]
+    )
+
+
+def conditional_series():
+    """Series used in tests_conditional_join"""
+    return series(dtype=int)
+
+
+def conditional_right():
+    """Dataframe used in tests_conditional_join."""
+    return data_frames(
+        [
+            column(name="Integers", dtype=int),
+            column(name="Numeric", elements=st.floats(allow_nan=True)),
+            column(name="Floats", elements=st.floats(max_value=20)),
+            column(name="Strings", dtype=str),
+            column(name="Booleans", dtype=np.bool),
+            column(name="Dates", dtype="datetime64[ns]"),
+            column(name="Dates_Right", dtype="datetime64[ns]"),
+        ]
+    )

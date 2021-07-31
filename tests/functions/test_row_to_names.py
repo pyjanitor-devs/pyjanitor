@@ -55,7 +55,7 @@ def test_row_to_names_delete_above_with_resetting_index(dataframe):
     """Test that executes row_to_names while deleting the all rows
     above the given row index while resetting the index"""
     df = dataframe.row_to_names(2, remove_rows_above=True, reset_index=True)
-    expected_index = pd.Index([0, 1, 2, 3, 4, 5, 6])
+    expected_index = pd.RangeIndex(start=0, stop=8, step=1)
     pd.testing.assert_index_equal(df.index, expected_index)
 
 
@@ -63,6 +63,6 @@ def test_row_to_names_delete_above_with_resetting_index(dataframe):
 def test_row_to_names_delete_the_row_with_resetting_index(dataframe):
     """Test that executes row_to_names while deleting the given row
     index while resetting the index"""
-    df = dataframe.row_to_names(2, remove_row=True)
-    expected_index = pd.Index([0, 1, 2, 3, 4, 5, 6, 7])
+    df = dataframe.row_to_names(2, remove_row=True, reset_index=True)
+    expected_index = pd.RangeIndex(start=0, stop=7, step=1)
     pd.testing.assert_index_equal(df.index, expected_index)

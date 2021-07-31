@@ -271,17 +271,17 @@ def test_single_condition_equality_numeric(df, right):
     assume(not right.empty)
     # simulate output as it would be in SQL
     left_on, right_on = ["B", "Integers"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} == {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 

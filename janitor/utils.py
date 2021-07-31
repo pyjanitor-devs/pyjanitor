@@ -2392,7 +2392,6 @@ def _check_operator(op: str):
             should be one of <, >, <=, >= , "==", "!="
             """
         )
-    return None
 
 
 def _conditional_join_preliminary_checks(

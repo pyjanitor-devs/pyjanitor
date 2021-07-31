@@ -2558,7 +2558,6 @@ def _conditional_join_preliminary_checks(
 def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series
 ) -> None:
-
     """
     Raise error if column type is not any of
     numeric, datetime, or string.

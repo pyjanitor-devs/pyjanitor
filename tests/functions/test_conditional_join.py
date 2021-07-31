@@ -271,17 +271,17 @@ def test_single_condition_equality_numeric(df, right):
     assume(not right.empty)
     # simulate output as it would be in SQL
     left_on, right_on = ["B", "Integers"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} == {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -292,17 +292,17 @@ def test_single_condition_equality_datetime(df, right):
     assume(not right.empty)
     # simulate output as it would be in SQL
     left_on, right_on = ["E", "Dates"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} == {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -313,17 +313,17 @@ def test_single_condition_equality_strings(df, right):
     assume(not right.empty)
     # simulate output as it would be in SQL
     left_on, right_on = ["C", "Strings"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} == {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -333,17 +333,17 @@ def test_single_condition_not_equal_numeric(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["B", "Integers"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -353,17 +353,17 @@ def test_single_condition_not_equal_ints_only(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -374,17 +374,17 @@ def test_single_condition_not_equal_floats_only(df, right):
     assume(not right.empty)
     # simulate output as it would be in SQL
     left_on, right_on = ["B", "Numeric"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -395,17 +395,17 @@ def test_single_condition_not_equal_datetime(df, right):
     assume(not right.empty)
     # simulate output as it would be in SQL
     left_on, right_on = ["E", "Dates"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -415,17 +415,17 @@ def test_how_left(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
-    actual = (
+    expected = (
         df.assign(t=1, index=np.arange(len(df)))
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} <= {right_on}")
     )
-    actual = actual.set_index("index")
-    actual.index.name = None
-    actual = df.join(
-        actual.filter(right.columns), how="left", sort=False
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = df.join(
+        expected.filter(right.columns), how="left", sort=False
     ).reset_index(drop=True)
-    expected = df.conditional_join(
+    actual = df.conditional_join(
         right, (left_on, right_on, "<="), how="left", sort_by_appearance=True
     )
     assert_frame_equal(expected, actual)
@@ -437,19 +437,19 @@ def test_how_right(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1, index=np.arange(len(right))), on="t")
         .query(f"{left_on} > {right_on}")
     )
-    actual = actual.set_index("index")
-    actual.index.name = None
-    actual = (
-        actual.filter(df.columns)
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        expected.filter(df.columns)
         .join(right, how="right", sort=False)
         .reset_index(drop=True)
     )
-    expected = df.conditional_join(
+    actual = df.conditional_join(
         right, (left_on, right_on, ">"), how="right", sort_by_appearance=True
     )
     assert_frame_equal(expected, actual)
@@ -461,17 +461,17 @@ def test_single_condition_less_than_floats(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["B", "Numeric"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} < {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -481,17 +481,17 @@ def test_single_condition_less_than_int_float(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["A", "Numeric"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} < {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -501,17 +501,17 @@ def test_single_condition_less_than_equal(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} <= {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "<="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -521,17 +521,17 @@ def test_single_condition_less_than_date(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} < {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -541,17 +541,17 @@ def test_single_condition_greater_than_equal_strings(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["C", "Strings"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} >= {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, ">="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -561,17 +561,17 @@ def test_single_condition_greater_than_datetime(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} > {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, ">"), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -581,17 +581,17 @@ def test_single_condition_greater_than_ints(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} >= {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, ">="), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -601,17 +601,17 @@ def test_single_condition_greater_than_ints_floats(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["A", "Numeric"]
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} > {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
         right, (left_on, right_on, ">"), how="inner", sort_by_appearance=True
     )
-    expected = expected.filter([left_on, right_on])
+    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -621,21 +621,21 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
     assume(not df.empty)
     assume(not right.empty)
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} < {middle} < {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, middle, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
         right,
         (middle, left_on, ">"),
         (middle, right_on, "<"),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([left_on, middle, right_on])
+    actual = actual.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -645,21 +645,21 @@ def test_dual_conditions_ge_and_le_dates(df, right):
     assume(not df.empty)
     assume(not right.empty)
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, middle, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
         right,
         (middle, left_on, ">="),
         (middle, right_on, "<="),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([left_on, middle, right_on])
+    actual = actual.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -669,21 +669,21 @@ def test_dual_conditions_le_and_ge_dates(df, right):
     assume(not df.empty)
     assume(not right.empty)
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, middle, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
         right,
         (middle, right_on, "<="),
         (middle, left_on, ">="),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([left_on, middle, right_on])
+    actual = actual.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -693,21 +693,21 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
     assume(not df.empty)
     assume(not right.empty)
     middle, left_on, right_on = ("B", "Numeric", "Floats")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, middle, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
         right,
         (middle, left_on, ">="),
         (middle, right_on, "<="),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([left_on, middle, right_on])
+    actual = actual.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -717,21 +717,21 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
     assume(not df.empty)
     assume(not right.empty)
     middle, left_on, right_on = ("B", "Numeric", "Floats")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, middle, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
         right,
         (middle, right_on, "<="),
         (middle, left_on, ">="),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([left_on, middle, right_on])
+    actual = actual.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -741,21 +741,21 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
     assume(not df.empty)
     assume(not right.empty)
     middle, left_on, right_on = ("B", "Numeric", "Floats")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{left_on} < {middle} < {right_on}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([left_on, middle, right_on])
-    expected = df.conditional_join(
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
         right,
         (middle, left_on, ">"),
         (middle, right_on, "<"),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([left_on, middle, right_on])
+    actual = actual.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -765,22 +765,22 @@ def test_dual_conditions_eq_and_ne(df, right):
     assume(not df.empty)
     assume(not right.empty)
     eq_A, eq_B, ne_A, ne_B = ("B", "Numeric", "E", "Dates")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{eq_A} == {eq_B} and {ne_A} != {ne_B}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
-    expected = df.conditional_join(
+    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
+    actual = df.conditional_join(
         right,
         (eq_A, eq_B, "=="),
         (ne_A, ne_B, "!="),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
-    assert_frame_equal(expected, actual)
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
+    assert_frame_equal(actual, actual)
 
 
 @given(df=conditional_df(), right=conditional_right())
@@ -789,19 +789,19 @@ def test_dual_conditions_ne_and_eq(df, right):
     assume(not df.empty)
     assume(not right.empty)
     eq_A, eq_B, ne_A, ne_B = ("B", "Numeric", "E", "Dates")
-    actual = (
+    expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(f"{eq_A} != {eq_B} and {ne_A} == {ne_B}")
         .reset_index(drop=True)
     )
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
-    expected = df.conditional_join(
+    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
+    actual = df.conditional_join(
         right,
         (eq_A, eq_B, "!="),
         (ne_A, ne_B, "=="),
         how="inner",
         sort_by_appearance=True,
     )
-    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
     assert_frame_equal(expected, actual)

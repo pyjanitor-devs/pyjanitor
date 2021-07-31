@@ -785,11 +785,7 @@ def _computations_complete(
     # still thinking on how to improve speed of groupby apply
     else:
         df = df.groupby(by).apply(
-            _base_complete,
-            columns,
-            all_strings,
-            any_nulls,
-            dict_present,
+            _base_complete, columns, all_strings, any_nulls, dict_present,
         )
         df = df.drop(columns=by)
 
@@ -837,8 +833,7 @@ def _base_complete(
 
 
 def _create_indexer_for_complete(
-    df_index: pd.Index,
-    columns: List[Union[List, Dict, str]],
+    df_index: pd.Index, columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
     This creates the index that will be used
@@ -1137,10 +1132,7 @@ def _data_checks_pivot_longer(
     check("values_to", values_to, [str])
 
     if (values_to in df.columns) and not any(
-        (
-            ".value" in names_to,
-            isinstance(names_pattern, (list, tuple)),
-        )
+        (".value" in names_to, isinstance(names_pattern, (list, tuple)),)
     ):
         # copied from pandas' melt source code
         # with a minor tweak
@@ -2392,13 +2384,12 @@ def _check_operator(op: str):
             should be one of <, >, <=, >= , "==", "!="
             """
         )
-    return None
 
 
 def _conditional_join_preliminary_checks(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
-    conditions,
+    conditions: tuple,
     how: str = "inner",
     sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
@@ -2413,7 +2404,8 @@ def _conditional_join_preliminary_checks(
     A tuple of
     (`df`, `right`,
      `left_on`, `right_on`,
-     `operator`, `sort_by_appearance`)
+     `operator`, `sort_by_appearance`,
+     `suffixes`)
     is returned.
     """
 
@@ -2433,6 +2425,9 @@ def _conditional_join_preliminary_checks(
         )
 
     check("`right`", right, [pd.DataFrame, pd.Series])
+
+    df = df.copy()
+    right = right.copy()
 
     if isinstance(right, pd.Series):
         if not right.name:
@@ -2459,9 +2454,6 @@ def _conditional_join_preliminary_checks(
             for conditional joins.
             """
         )
-
-    df = df.copy()
-    right = right.copy()
 
     # each condition should be a tuple of length 3:
     for condition in conditions:
@@ -2499,6 +2491,18 @@ def _conditional_join_preliminary_checks(
 
     for suffix in suffixes:
         check("suffix", suffix, [str, type(None)])
+
+    return (df, right, conditions, how, sort_by_appearance, suffixes)
+
+
+def _cond_join_suffixes(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: tuple, suffixes: tuple
+):
+    """
+    If there are overlapping columns in `df` and `right`,
+    modify the columns, using the suffix in suffixes.
+    A tuple of (df, right, conditions) is returned.
+    """
 
     common_columns = df.columns.intersection(right.columns, sort=False)
 
@@ -2546,13 +2550,7 @@ def _conditional_join_preliminary_checks(
 
     conditions = [*zip(left_on, right_on, operators)]
 
-    return (
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-    )
+    return df, right, conditions
 
 
 def _conditional_join_type_check(

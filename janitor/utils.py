@@ -2909,7 +2909,7 @@ def _greater_than_indices(
     left_c: pd.Series, right_c: pd.Series, strict: bool = False
 ):
     """
-    This uses binary search to get indices where left_c is greater than
+    Use binary search to get indices where left_c is greater than
     or equal to right_c. If strict is True, then only indices where `left_c`
     is greater than (but not equal to) `right_c` are returned.
 

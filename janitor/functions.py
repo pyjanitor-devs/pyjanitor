@@ -24,11 +24,15 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_numeric_dtype
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import is_bool_dtype, is_list_like, union_categoricals
+from pandas.api.types import (
+    is_bool_dtype,
+    is_list_like,
+    is_numeric_dtype,
+    union_categoricals,
+)
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 
@@ -48,10 +52,10 @@ from .utils import (
     _replace_original_empty_string_with_none,
     _select_columns,
     _strip_underscores,
+    asCategorical,
     check,
     check_column,
     deprecated_alias,
-    asCategorical,
 )
 
 
@@ -2343,6 +2347,7 @@ def row_to_names(
     row_number: int = None,
     remove_row: bool = False,
     remove_rows_above: bool = False,
+    reset_index: bool = False,
 ) -> pd.DataFrame:
     """Elevates a row to be the column names of a DataFrame.
 
@@ -2361,6 +2366,7 @@ def row_to_names(
                 row_number=0,
                 remove_row=False,
                 remove_rows_above=False,
+                reset_index=False,
             )
         )
 
@@ -2370,6 +2376,8 @@ def row_to_names(
         Defaults to False.
     :param remove_rows_above: Whether the rows above the selected row should
         be removed from the DataFrame. Defaults to False.
+    :param reset_index: Whether the index should be reset on the returning
+        DataFrame. Defaults to False.
     :returns: A pandas DataFrame with set column names.
     """
     # :Setup:
@@ -2407,7 +2415,31 @@ def row_to_names(
     #     6  1  1  1   rabbit  Cambridge
     #     7  2  2  2  leopard   Shanghai
 
-    # :Example: Move first row to column names and remove row:
+    # :Example: Move first row to column names and
+    #  remove row while resetting the index:
+
+    # .. code-block:: python
+
+    #     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe.row_to_names(0, remove_row=True,\
+    #       reset_index=True)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #       1   1   1   rabbit  Cambridge
+    #   0   2   2   2   leopard Shanghai
+    #   1   3   3   3   lion    Basel
+    #   2   1   1   1   rabbit  Cambridge
+    #   3   2   2   2   leopard Shanghai
+    #   4   3   3   3   lion    Basel
+    #   5   1   1   1   rabbit  Cambridge
+    #   6   2   2   2   leopard Shanghai
+    #   7   3   3   3   lion    Basel
+
+    # :Example: Move first row to column names and remove
+    #   row without resetting the index:
 
     # .. code-block:: python
 
@@ -2428,14 +2460,37 @@ def row_to_names(
     #     7  2  2  2  leopard   Shanghai
     #     8  3  3  3     lion      Basel
 
-    # :Example: Move first row to column names, remove row, \
-    # and remove rows above selected row:
+    # :Example: Move first row to column names, remove row
+    #   and remove rows above selected row without resetting
+    #   index:
 
     # .. code-block:: python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
-    #         remove_rows_above=True)
+    #       remove_rows_above=True, reset_index= True)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #       3   3   3   lion    Basel
+    #   0   1   1   1   rabbit  Cambridge
+    #   1   2   2   2   leopard Shanghai
+    #   2   3   3   3   lion    Basel
+    #   3   1   1   1   rabbit  Cambridge
+    #   4   2   2   2   leopard Shanghai
+    #   5   3   3   3   lion    Basel
+
+    # :Example: Move first row to column names, remove row,
+    # and remove rows above selected row without resetting
+    # index:
+
+    # .. code-block:: python
+
+    #     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe.row_to_names(2, remove_row=True, \
+    #       remove_rows_above=True)
 
     # :Output:
 
@@ -2451,6 +2506,13 @@ def row_to_names(
 
     check("row_number", row_number, [int])
 
+    warnings.warn(
+        "The function row_to_names will, in the official 1.0 release, "
+        "change its behaviour to reset the dataframe's index by default. "
+        "You can prepare for this change right now by explicitly setting "
+        "`reset_index=True` when calling on `row_to_names`."
+    )
+
     df.columns = df.iloc[row_number, :]
     df.columns.name = None
 
@@ -2459,6 +2521,9 @@ def row_to_names(
 
     if remove_rows_above:
         df = df.drop(df.index[range(row_number)])
+
+    if reset_index:
+        df.reset_index(drop=["index"], inplace=True)
 
     return df
 

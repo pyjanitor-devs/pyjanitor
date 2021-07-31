@@ -785,11 +785,7 @@ def _computations_complete(
     # still thinking on how to improve speed of groupby apply
     else:
         df = df.groupby(by).apply(
-            _base_complete,
-            columns,
-            all_strings,
-            any_nulls,
-            dict_present,
+            _base_complete, columns, all_strings, any_nulls, dict_present,
         )
         df = df.drop(columns=by)
 
@@ -837,8 +833,7 @@ def _base_complete(
 
 
 def _create_indexer_for_complete(
-    df_index: pd.Index,
-    columns: List[Union[List, Dict, str]],
+    df_index: pd.Index, columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
     This creates the index that will be used
@@ -1137,10 +1132,7 @@ def _data_checks_pivot_longer(
     check("values_to", values_to, [str])
 
     if (values_to in df.columns) and not any(
-        (
-            ".value" in names_to,
-            isinstance(names_pattern, (list, tuple)),
-        )
+        (".value" in names_to, isinstance(names_pattern, (list, tuple)),)
     ):
         # copied from pandas' melt source code
         # with a minor tweak
@@ -3009,8 +3001,8 @@ def _greater_than_indices(
 def _create_conditional_join_frame(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    left_index: pd.Index,
-    right_index: pd.Index,
+    left_index: Union[pd.Index, None],
+    right_index: Union[np.ndarray, None],
     op: str,
     how: str,
     sort_by_appearance: bool,
@@ -3018,7 +3010,6 @@ def _create_conditional_join_frame(
     """
     Create final dataframe for conditional join.
     """
-
     # no matches
     if left_index is None:
         if how == "inner":

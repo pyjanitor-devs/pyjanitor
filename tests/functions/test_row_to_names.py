@@ -20,14 +20,13 @@ def test_row_to_names_delete_this_row(dataframe):
     assert df.iloc[2, 2] == 1
     assert df.iloc[2, 3] == "rabbit"
     assert df.iloc[2, 4] == "Cambridge"
-    assert df.iloc[2].name == 2
 
 
 @pytest.mark.functions
 def test_row_to_names_delete_the_row_without_resetting_index(dataframe):
     """Test that executes row_to_names while deleting the given row
     index while not resetting the index"""
-    df = dataframe.row_to_names(2, remove_row=True, reset_index=False)
+    df = dataframe.row_to_names(2, remove_row=True)
     expected_index = pd.Index([0, 1, 3, 4, 5, 6, 7, 8])
     pd.testing.assert_index_equal(df.index, expected_index)
 
@@ -40,13 +39,30 @@ def test_row_to_names_delete_above(dataframe):
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
-    assert df.iloc[0].name == 0
 
 
 @pytest.mark.functions
 def test_row_to_names_delete_above_without_resetting_index(dataframe):
     """Test that executes row_to_names while deleting the all rows
     above the given row index while not resetting the index"""
-    df = dataframe.row_to_names(2, remove_rows_above=True, reset_index=False)
+    df = dataframe.row_to_names(2, remove_rows_above=True)
     expected_index = pd.Index([2, 3, 4, 5, 6, 7, 8])
+    pd.testing.assert_index_equal(df.index, expected_index)
+
+
+@pytest.mark.functions
+def test_row_to_names_delete_above_with_resetting_index(dataframe):
+    """Test that executes row_to_names while deleting the all rows
+    above the given row index while resetting the index"""
+    df = dataframe.row_to_names(2, remove_rows_above=True, reset_index=True)
+    expected_index = pd.Index([0, 1, 2, 3, 4, 5, 6])
+    pd.testing.assert_index_equal(df.index, expected_index)
+
+
+@pytest.mark.functions
+def test_row_to_names_delete_the_row_with_resetting_index(dataframe):
+    """Test that executes row_to_names while deleting the given row
+    index while resetting the index"""
+    df = dataframe.row_to_names(2, remove_row=True)
+    expected_index = pd.Index([0, 1, 2, 3, 4, 5, 6, 7])
     pd.testing.assert_index_equal(df.index, expected_index)

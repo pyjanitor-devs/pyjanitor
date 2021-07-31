@@ -2293,7 +2293,7 @@ def row_to_names(
     row_number: int = None,
     remove_row: bool = False,
     remove_rows_above: bool = False,
-    reset_index: bool = True,
+    reset_index: bool = False,
 ) -> pd.DataFrame:
     """Elevates a row to be the column names of a DataFrame.
 
@@ -2312,7 +2312,7 @@ def row_to_names(
                 row_number=0,
                 remove_row=False,
                 remove_rows_above=False,
-                reset_index=True,
+                reset_index=False,
             )
         )
 
@@ -2367,7 +2367,8 @@ def row_to_names(
     # .. code-block:: python
 
     #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.row_to_names(0, remove_row=True)
+    #     example_dataframe.row_to_names(0, remove_row=True,\
+    #       reset_index=True)
 
     # :Output:
 
@@ -2389,8 +2390,7 @@ def row_to_names(
     # .. code-block:: python
 
     #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.row_to_names(0, remove_row=True,\
-    #       reset_index=False)
+    #     example_dataframe.row_to_names(0, remove_row=True)
 
     # :Output:
 
@@ -2414,7 +2414,7 @@ def row_to_names(
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
-    #       remove_rows_above=True)
+    #       remove_rows_above=True, reset_index= True)
 
     # :Output:
 
@@ -2436,7 +2436,7 @@ def row_to_names(
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
-    #       remove_rows_above=True, reset_index= False)
+    #       remove_rows_above=True)
 
     # :Output:
 
@@ -2451,6 +2451,13 @@ def row_to_names(
     #     8  3  3  3     lion      Basel
 
     check("row_number", row_number, [int])
+
+    warnings.warn(
+        "The function row_to_names will, in the official 1.0 release, "
+        "change its behaviour to reset the dataframe's index by default. "
+        "You can prepare for this change right now by explicitly setting "
+        "`reset_index=True` when calling on `row_to_names`."
+    )
 
     df.columns = df.iloc[row_number, :]
     df.columns.name = None

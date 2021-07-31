@@ -2651,7 +2651,7 @@ def _equal_indices(left_c: pd.Series, right_c: pd.Series):
 
 def _not_equal_indices(left_c: pd.Series, right_c: pd.Series):
     """
-    This uses binary search to get indices where
+    Use binary search to get indices where
     `left_c` is exactly  not equal to `right_c`.
     It is a combination of strictly less than
     and strictly greater than indices.

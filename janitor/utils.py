@@ -2400,7 +2400,7 @@ def _conditional_join_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     conditions,
     how: str = "inner",
-    order_by_appearance: bool = False,
+    sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> tuple:
     """
@@ -2413,7 +2413,7 @@ def _conditional_join_preliminary_checks(
     A tuple of
     (`df`, `right`,
      `left_on`, `right_on`,
-     `operator`, `order_by_appearance`)
+     `operator`, `sort_by_appearance`)
     is returned.
     """
 
@@ -2487,7 +2487,7 @@ def _conditional_join_preliminary_checks(
     if how not in ("inner", "left", "right"):
         raise ValueError("`how` should be one of inner, left, or right.")
 
-    check("order_by_appearance", order_by_appearance, [bool])
+    check("sort_by_appearance", sort_by_appearance, [bool])
 
     check("suffixes", suffixes, [tuple])
 
@@ -2551,7 +2551,7 @@ def _conditional_join_preliminary_checks(
         right,
         conditions,
         how,
-        order_by_appearance,
+        sort_by_appearance,
     )
 
 
@@ -3013,7 +3013,7 @@ def _create_conditional_join_frame(
     right_index: pd.Index,
     op: str,
     how: str,
-    order_by_appearance: bool,
+    sort_by_appearance: bool,
 ):
     """
     Create final dataframe for conditional join.
@@ -3053,7 +3053,7 @@ def _create_conditional_join_frame(
     # if data has a lot of duplicates
     # or a large number of rows,
     # this can be quite expensive
-    if order_by_appearance is True:
+    if sort_by_appearance is True:
         if op == "!=":
             # there could be duplicate rows,
             # usually from the null indices
@@ -3092,7 +3092,7 @@ def _conditional_join_compute(
     right: pd.DataFrame,
     conditions: list,
     how: str,
-    order_by_appearance: bool,
+    sort_by_appearance: bool,
 ) -> pd.DataFrame:
     """
     This is where the actual computation for the conditional join takes place.
@@ -3124,7 +3124,7 @@ def _conditional_join_compute(
         left_c, right_c = result
 
         return _create_conditional_join_frame(
-            df, right, left_c, right_c, op, how, order_by_appearance
+            df, right, left_c, right_c, op, how, sort_by_appearance
         )
 
     first, *rest = conditions
@@ -3153,7 +3153,7 @@ def _conditional_join_compute(
 
     if left_index is None:
         return _create_conditional_join_frame(
-            df, right, left_index, right_index, op, how, order_by_appearance
+            df, right, left_index, right_index, op, how, sort_by_appearance
         )
 
     operator_mapping = {
@@ -3178,5 +3178,5 @@ def _conditional_join_compute(
         right_index = right_c.index[result]
 
     return _create_conditional_join_frame(
-        df, right, left_index, right_index, op, how, order_by_appearance
+        df, right, left_index, right_index, op, how, sort_by_appearance
     )

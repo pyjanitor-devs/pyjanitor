@@ -6429,7 +6429,7 @@ def conditional_join(
     right: Union[pd.DataFrame, pd.Series],
     *conditions,
     how: str = "inner",
-    order_by_appearance: bool = False,
+    sort_by_appearance: bool = False,
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
@@ -6495,7 +6495,7 @@ def conditional_join(
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
-                order_by_appearance = True
+                sort_by_appearance = True
             )
 
             id_x  value_1  id_y  value_2A  value_2B
@@ -6513,7 +6513,7 @@ def conditional_join(
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='left',
-                order_by_appearance = True
+                sort_by_appearance = True
             )
 
             id_x  value_1  id_y  value_2A  value_2B
@@ -6531,7 +6531,7 @@ def conditional_join(
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='right',
-                order_by_appearance = True
+                sort_by_appearance = True
             )
 
             id_x  value_1  id_y  value_2A  value_2B
@@ -6552,7 +6552,7 @@ def conditional_join(
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
-                order_by_appearance = True
+                sort_by_appearance = True
             )
 
             id_x  value_1  id_y  value_2A  value_2B
@@ -6572,7 +6572,7 @@ def conditional_join(
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
-                order_by_appearance = True,
+                sort_by_appearance = True,
                 suffixes = (None, '_y')
             )
 
@@ -6589,7 +6589,7 @@ def conditional_join(
         df1.conditional_join(
                 right = df2,
                 ('col_a', 'col_a', '=='),
-                order_by_appearance = True
+                sort_by_appearance = True
             )
 
              col_a_x col_b  col_a_y col_c
@@ -6601,7 +6601,7 @@ def conditional_join(
         df1.conditional_join(
                 right = df2,
                 ('col_a', 'col_a', '!='),
-                order_by_appearance = True
+                sort_by_appearance = True
             )
 
              col_a_x col_b  col_a_y col_c
@@ -6615,13 +6615,13 @@ def conditional_join(
 
 
     If you do not care for the order from `right`,
-    you can set `order_by_appearance` to  ``False``
+    you can set `sort_by_appearance` to  ``False``
     (this is the default)::
 
         df1.conditional_join(
                 right = df2,
                 ('col_a', 'col_a', '>'),
-                order_by_appearance = False
+                sort_by_appearance = False
             )
 
              col_a_x col_b  col_a_y col_c
@@ -6654,7 +6654,7 @@ def conditional_join(
                 df = df,
                 right = right,
                 *conditions,
-                order_by_appearance = True/False,
+                sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
                 )
 
@@ -6665,7 +6665,7 @@ def conditional_join(
         df = df.conditional_join(
                 right = right,
                 *conditions,
-                order_by_appearance = True/False,
+                sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
                 )
 
@@ -6680,7 +6680,7 @@ def conditional_join(
     :param how: Indicates the type of join to be performed. Similar to SQL;
         can be one of `inner`, `left`, `right`. Full join is not supported.
         Defaults to `inner`.
-    :param order_by_appearance: Default is `False`. If True,
+    :param sort_by_appearance: Default is `False`. If True,
         values from `right` that meet the join condition will be returned
         in the final dataframe in the same order that they were before the
         join.
@@ -6707,13 +6707,13 @@ def conditional_join(
         right,
         conditions,
         how,
-        order_by_appearance,
+        sort_by_appearance,
     ) = _conditional_join_preliminary_checks(
         df,
         right,
         conditions,
         how,
-        order_by_appearance,
+        sort_by_appearance,
         suffixes,
     )
 
@@ -6722,5 +6722,5 @@ def conditional_join(
     right.index = np.arange(len(right))
 
     return _conditional_join_compute(
-        df, right, conditions, how, order_by_appearance
+        df, right, conditions, how, sort_by_appearance
     )

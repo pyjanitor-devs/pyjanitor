@@ -171,16 +171,16 @@ def test_check_how_value(df, s):
 
 
 @given(df=conditional_df(), s=conditional_series())
-def test_check_order_by_appearance_type(df, s):
+def test_check_sort_by_appearance_type(df, s):
     """
-    Raise TypeError if `order_by_appearance` is not a boolean.
+    Raise TypeError if `sort_by_appearance` is not a boolean.
     """
 
     assume(not df.empty)
     assume(not s.empty)
     with pytest.raises(TypeError):
         s.name = "B"
-        df.conditional_join(s, ("B", "B", "<"), order_by_appearance="True")
+        df.conditional_join(s, ("B", "B", "<"), sort_by_appearance="True")
 
 
 @given(df=conditional_df(), s=conditional_series())
@@ -279,7 +279,7 @@ def test_single_condition_equality_numeric(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -300,7 +300,7 @@ def test_single_condition_equality_datetime(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -321,7 +321,7 @@ def test_single_condition_equality_strings(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -341,7 +341,7 @@ def test_single_condition_not_equal_numeric(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "!="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -361,7 +361,7 @@ def test_single_condition_not_equal_ints_only(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "!="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -382,7 +382,7 @@ def test_single_condition_not_equal_floats_only(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "!="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -403,7 +403,7 @@ def test_single_condition_not_equal_datetime(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "!="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -426,7 +426,7 @@ def test_how_left(df, right):
         actual.filter(right.columns), how="left", sort=False
     ).reset_index(drop=True)
     expected = df.conditional_join(
-        right, (left_on, right_on, "<="), how="left", order_by_appearance=True
+        right, (left_on, right_on, "<="), how="left", sort_by_appearance=True
     )
     assert_frame_equal(expected, actual)
 
@@ -450,7 +450,7 @@ def test_how_right(df, right):
         .reset_index(drop=True)
     )
     expected = df.conditional_join(
-        right, (left_on, right_on, ">"), how="right", order_by_appearance=True
+        right, (left_on, right_on, ">"), how="right", sort_by_appearance=True
     )
     assert_frame_equal(expected, actual)
 
@@ -469,7 +469,7 @@ def test_single_condition_less_than_floats(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "<"), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -489,7 +489,7 @@ def test_single_condition_less_than_int_float(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "<"), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -509,7 +509,7 @@ def test_single_condition_less_than_equal(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "<="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "<="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -529,7 +529,7 @@ def test_single_condition_less_than_date(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, "<"), how="inner", order_by_appearance=True
+        right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -549,7 +549,7 @@ def test_single_condition_greater_than_equal_strings(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, ">="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, ">="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -569,7 +569,7 @@ def test_single_condition_greater_than_datetime(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, ">"), how="inner", order_by_appearance=True
+        right, (left_on, right_on, ">"), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -589,7 +589,7 @@ def test_single_condition_greater_than_ints(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, ">="), how="inner", order_by_appearance=True
+        right, (left_on, right_on, ">="), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -609,7 +609,7 @@ def test_single_condition_greater_than_ints_floats(df, right):
     )
     actual = actual.filter([left_on, right_on])
     expected = df.conditional_join(
-        right, (left_on, right_on, ">"), how="inner", order_by_appearance=True
+        right, (left_on, right_on, ">"), how="inner", sort_by_appearance=True
     )
     expected = expected.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -633,7 +633,7 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
         (middle, left_on, ">"),
         (middle, right_on, "<"),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
@@ -657,7 +657,7 @@ def test_dual_conditions_ge_and_le_dates(df, right):
         (middle, left_on, ">="),
         (middle, right_on, "<="),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
@@ -681,7 +681,7 @@ def test_dual_conditions_le_and_ge_dates(df, right):
         (middle, right_on, "<="),
         (middle, left_on, ">="),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
@@ -705,7 +705,7 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
         (middle, left_on, ">="),
         (middle, right_on, "<="),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
@@ -729,7 +729,7 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
         (middle, right_on, "<="),
         (middle, left_on, ">="),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
@@ -753,7 +753,7 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
         (middle, left_on, ">"),
         (middle, right_on, "<"),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([left_on, middle, right_on])
     assert_frame_equal(expected, actual)
@@ -777,7 +777,7 @@ def test_dual_conditions_eq_and_ne(df, right):
         (eq_A, eq_B, "=="),
         (ne_A, ne_B, "!="),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
     assert_frame_equal(expected, actual)
@@ -801,7 +801,7 @@ def test_dual_conditions_ne_and_eq(df, right):
         (eq_A, eq_B, "!="),
         (ne_A, ne_B, "=="),
         how="inner",
-        order_by_appearance=True,
+        sort_by_appearance=True,
     )
     expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
     assert_frame_equal(expected, actual)

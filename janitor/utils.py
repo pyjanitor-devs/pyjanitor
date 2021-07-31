@@ -2599,7 +2599,7 @@ def _ge_create_ranges(indices):
 
 def _equal_indices(left_c: pd.Series, right_c: pd.Series):
     """
-    This uses binary search to get indices where
+    Use binary search to get indices where
     `left_c` is exactly equal to `right_c`.
 
     Returns a tuple of (left_c, right_c)

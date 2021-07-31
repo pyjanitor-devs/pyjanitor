@@ -2556,7 +2556,6 @@ def _cond_join_suffixes(
 def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series
 ) -> None:
-
     """
     Raise error if column type is not any of
     numeric, datetime, or string.
@@ -2599,7 +2598,7 @@ def _ge_create_ranges(indices):
 
 def _equal_indices(left_c: pd.Series, right_c: pd.Series):
     """
-    This uses binary search to get indices where
+    Use binary search to get indices where
     `left_c` is exactly equal to `right_c`.
 
     Returns a tuple of (left_c, right_c)
@@ -2651,7 +2650,7 @@ def _equal_indices(left_c: pd.Series, right_c: pd.Series):
 
 def _not_equal_indices(left_c: pd.Series, right_c: pd.Series):
     """
-    This uses binary search to get indices where
+    Use binary search to get indices where
     `left_c` is exactly  not equal to `right_c`.
     It is a combination of strictly less than
     and strictly greater than indices.
@@ -2822,7 +2821,7 @@ def _less_than_indices(
     left_c: pd.Series, right_c: pd.Series, strict: bool = False
 ):
     """
-    This uses binary search to get indices where left_c is less than
+    Use binary search to get indices where left_c is less than
     or equal to right_c. If strict is True, then only indices where `left_c`
     is less than (but not equal to) `right_c` are returned.
 
@@ -2909,7 +2908,7 @@ def _greater_than_indices(
     left_c: pd.Series, right_c: pd.Series, strict: bool = False
 ):
     """
-    This uses binary search to get indices where left_c is greater than
+    Use binary search to get indices where left_c is greater than
     or equal to right_c. If strict is True, then only indices where `left_c`
     is greater than (but not equal to) `right_c` are returned.
 

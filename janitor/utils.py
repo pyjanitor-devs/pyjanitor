@@ -2822,7 +2822,7 @@ def _less_than_indices(
     left_c: pd.Series, right_c: pd.Series, strict: bool = False
 ):
     """
-    This uses binary search to get indices where left_c is less than
+    Use binary search to get indices where left_c is less than
     or equal to right_c. If strict is True, then only indices where `left_c`
     is less than (but not equal to) `right_c` are returned.
 

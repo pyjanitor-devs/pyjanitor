@@ -56,7 +56,6 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    asCategorical,
     _conditional_join_preliminary_checks,
     _conditional_join_compute,
     _cond_join_suffixes,

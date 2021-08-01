@@ -2585,7 +2585,7 @@ def _conditional_join_type_check(
     )
 
 
-def _le_create_ranges(indices:np.array, len_right:int) -> np.array:
+def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
     """
     Create ordered indices for each value in
     `right_keys` in `_less_than_indices`.
@@ -2603,7 +2603,7 @@ def _le_create_ranges(indices:np.array, len_right:int) -> np.array:
     return ids.cumsum()
 
 
-def _ge_create_ranges(indices:np.array)->np.array:
+def _ge_create_ranges(indices: np.array) -> np.array:
     """
     Create ordered indices for each value in
     `right_keys` in `_greater_than_indices`.

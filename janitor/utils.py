@@ -2587,7 +2587,16 @@ def _conditional_join_type_check(
 
 # code copied from Stack Overflow
 # https://stackoverflow.com/a/47126435/7175713
-def _le_create_ranges(indices, len_right):
+def _le_create_ranges(indices:np.array, len_right:int) -> np.array:
+    """
+    Create ordered indices for each value in 
+    `right_keys` in `_less_than_indices`.
+    Faster than a list comprehension, as 
+    the array size increases.
+    
+    code copied from Stack Overflow
+    https://stackoverflow.com/a/47126435/7175713
+    """
     cum_length = len_right - indices
     cum_length = cum_length.cumsum()
     ids = np.ones(cum_length[-1], dtype=int)
@@ -2596,7 +2605,16 @@ def _le_create_ranges(indices, len_right):
     return ids.cumsum()
 
 
-def _ge_create_ranges(indices):
+def _ge_create_ranges(indices:np.array)->np.array:
+    """
+    Create ordered indices for each value in 
+    `right_keys` in `_greater_than_indices`.
+    Faster than a list comprehension, as 
+    the array size increases.
+    
+    code copied from Stack Overflow
+    https://stackoverflow.com/a/47126435/7175713
+    """
     cum_length = indices.cumsum()
     ids = np.ones(cum_length[-1], dtype=int)
     ids[0] = 0

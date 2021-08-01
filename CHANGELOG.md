@@ -210,6 +210,7 @@
 - [ENH] add example notebook with use of finance submodule methods
   by @rahosbach
 
+
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,
 which can be found here\_.

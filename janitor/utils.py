@@ -2597,9 +2597,21 @@ def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
     """
     cum_length = len_right - indices
     cum_length = cum_length.cumsum()
+    # generate ones
+    # note that cum_length[-1] is the total
+    # number of inidices to be generated
     ids = np.ones(cum_length[-1], dtype=int)
     ids[0] = indices[0]
+    # at each specific point in id, replace the value
+    # so, we should have say 0, 1, 1, 1, 1, -5, 1, 1, 1, -3, ...
+    # when a cumsum is implemented in the next line,
+    # we get, 0, 1, 2, 3, 4, 0, 1,2, 3, 0, ...
+    # our ranges is obtained, with more efficiency
+    # for larger arrays
     ids[cum_length[:-1]] = indices[1:] - len_right + 1
+    # the cumsum here gives us the same output as
+    # [np.range(start, len_right) for start in search_indices]
+    # but much faster
     return ids.cumsum()
 
 

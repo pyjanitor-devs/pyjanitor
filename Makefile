@@ -32,7 +32,7 @@ docs:
 
 isort:
 	@echo "Sorting imports..."
-	isort -rc . -y -up -tc
+	isort --check-only --use-parentheses --trailing-comma .
 
 check: test docs notebooks isort format lint
 	@echo "checks complete"

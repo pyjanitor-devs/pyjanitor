@@ -19,7 +19,7 @@ def test_make_currency_api_request():
     tests to fail.
 
     For an example of how this test fails, see:
-    https://github.com/ericmjl/pyjanitor/issues/147
+    https://github.com/pyjanitor-devs/pyjanitor/issues/147
     """
     r = requests.get("https://api.exchangeratesapi.io")
     assert r.status_code == 200

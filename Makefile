@@ -32,7 +32,7 @@ docs:
 
 isort:
 	@echo "Sorting imports..."
-	isort --check-only --use-parentheses --trailing-comma .
+	isort --check-only --use-parentheses --trailing-comma --multi-line 3 --line-length 79 .
 
 check: test docs notebooks isort format lint
 	@echo "checks complete"

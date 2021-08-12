@@ -6,29 +6,57 @@ import re
 import unicodedata
 import warnings
 from functools import partial, reduce
-from typing import (Any, Callable, Dict, Hashable, Iterable, List, NamedTuple,
-                    Optional, Pattern, Sequence, Set, Tuple, Union,)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Hashable,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import (is_bool_dtype, is_list_like, is_numeric_dtype,
-                              union_categoricals,)
+from pandas.api.types import (
+    is_bool_dtype,
+    is_list_like,
+    is_numeric_dtype,
+    union_categoricals,
+)
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 
 from .errors import JanitorError
-from .utils import (_clean_accounting_column, _computations_as_categorical,
-                    _computations_complete, _computations_expand_grid,
-                    _computations_pivot_longer, _computations_pivot_wider,
-                    _currency_column_to_numeric, _data_checks_pivot_longer,
-                    _data_checks_pivot_wider, _process_text,
-                    _replace_empty_string_with_none,
-                    _replace_original_empty_string_with_none, _select_columns,
-                    _strip_underscores, asCategorical, check, check_column,
-                    deprecated_alias,)
+from .utils import (
+    _clean_accounting_column,
+    _computations_as_categorical,
+    _computations_complete,
+    _computations_expand_grid,
+    _computations_pivot_longer,
+    _computations_pivot_wider,
+    _currency_column_to_numeric,
+    _data_checks_pivot_longer,
+    _data_checks_pivot_wider,
+    _process_text,
+    _replace_empty_string_with_none,
+    _replace_original_empty_string_with_none,
+    _select_columns,
+    _strip_underscores,
+    asCategorical,
+    check,
+    check_column,
+    deprecated_alias,
+)
 
 
 def unionize_dataframe_categories(

@@ -1,7 +1,8 @@
-from janitor.utils import is_connected
 import socket
+
 import pytest
 
+from janitor.utils import is_connected
 
 """
 Tests the is_connected helper function,

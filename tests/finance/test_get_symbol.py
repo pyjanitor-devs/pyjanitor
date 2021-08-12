@@ -1,5 +1,6 @@
-from janitor.finance import get_symbol
 import pytest
+
+from janitor.finance import get_symbol
 
 """
 tests the convert_symbol helper function.

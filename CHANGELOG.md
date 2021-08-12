@@ -213,7 +213,7 @@
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,
-which can be found [here](https://github.com/pyjanitor-devs/pyjanitor/pulls?q=is%3Apr+is%3Aclosed)
+which can be found [here](https://github.com/pyjanitor-devs/pyjanitor/pulls?q=is%3Apr+is%3Aclosed).
 
 We thank all contributors
 who have helped make `pyjanitor`

@@ -11,6 +11,7 @@
 -   [INF] Removed the scikit-learn package from the dependencies from environment-dev.yml and base.in files. @nvamsikrishna05
 -   [ENH] Add function to remove constant columsn. @fireddd
 -   [ENH] Added `factorize_columns` method which will deprecate the `label_encode` method in future release. @nvamsikrishna05
+-   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 
 ## [v0.21.0] - 2021-07-16
 

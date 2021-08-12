@@ -1,10 +1,8 @@
 import pytest
 from hypothesis import assume, given
 
-from janitor.testing_utils.strategies import (
-    categoricaldf_strategy,
-    names_strategy,
-)
+from janitor.testing_utils.strategies import (categoricaldf_strategy,
+                                              names_strategy,)
 
 
 @pytest.mark.functions

@@ -9,26 +9,13 @@ import sys
 import warnings
 from collections.abc import Callable as dispatch_callable
 from itertools import chain, combinations
-from typing import (
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    Pattern,
-    Tuple,
-    Union,
-)
+from typing import (Callable, Dict, Iterable, List, NamedTuple, Optional,
+                    Pattern, Tuple, Union,)
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import (
-    CategoricalDtype,
-    is_extension_array_dtype,
-    is_list_like,
-    is_scalar,
-)
+from pandas.api.types import (CategoricalDtype, is_extension_array_dtype,
+                              is_list_like, is_scalar,)
 from pandas.core.common import apply_if_callable
 
 from .errors import JanitorError

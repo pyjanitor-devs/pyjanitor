@@ -4,13 +4,8 @@ import pytest
 
 try:
     from pyspark.sql import SparkSession
-    from pyspark.sql.types import (
-        FloatType,
-        IntegerType,
-        StringType,
-        StructField,
-        StructType,
-    )
+    from pyspark.sql.types import (FloatType, IntegerType, StringType,
+                                   StructField, StructType,)
 except ImportError:
     pass
 

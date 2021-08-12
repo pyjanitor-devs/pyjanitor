@@ -7,10 +7,8 @@ from pandas.testing import assert_frame_equal
 
 from janitor import As_Categorical
 from janitor.errors import JanitorError
-from janitor.testing_utils.strategies import (
-    categoricaldf_strategy,
-    df_strategy,
-)
+from janitor.testing_utils.strategies import (categoricaldf_strategy,
+                                              df_strategy,)
 
 
 @pytest.mark.functions

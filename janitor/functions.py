@@ -568,7 +568,7 @@ def encode_categorical(
     parameter::
 
         df = (pd.DataFrame(...)
-                .as_categorical(
+                .encode_categorical(
                     col1 = ([3, 2, 1, 4], "appearance"),
                     col2 = (['a','d','c','b'], "sort")
                     )
@@ -600,7 +600,7 @@ def encode_categorical(
     what the arguments to the function are::
 
         df = (pd.DataFrame(...)
-                .as_categorical(
+                .encode_categorical(
                     col1 = As_Categorical(
                                 categories = [3, 2, 1, 4],
                                 order = "appearance"

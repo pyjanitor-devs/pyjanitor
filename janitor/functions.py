@@ -568,7 +568,7 @@ def encode_categorical(
     parameter::
 
         df = (pd.DataFrame(...)
-                .as_categorical(
+                .encode_categorical(
                     col1 = ([3, 2, 1, 4], "appearance"),
                     col2 = (['a','d','c','b'], "sort")
                     )
@@ -600,7 +600,7 @@ def encode_categorical(
     what the arguments to the function are::
 
         df = (pd.DataFrame(...)
-                .as_categorical(
+                .encode_categorical(
                     col1 = As_Categorical(
                                 categories = [3, 2, 1, 4],
                                 order = "appearance"
@@ -6235,11 +6235,11 @@ def pivot_wider(
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
-    Reshapes data from long to wide form. The number of columns are
-    increased, while decreasing the number of rows.
+    Reshapes data from 'long' to 'wide' form.
 
-    It is the inverse of the `pivot_longer` method, and is a
-    wrapper around `pd.DataFrame.pivot` method.
+    The number of columns are increased, while decreasing
+    the number of rows. It is the inverse of the `pivot_longer`
+    method, and is a wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.
 

@@ -115,7 +115,7 @@ setup(
     description="Tools for cleaning pandas DataFrames",
     author="pyjanitor devs",
     author_email="ericmajinglong@gmail.com",
-    url="https://github.com/ericmjl/pyjanitor",
+    url="https://github.com/pyjanitor-devs/pyjanitor",
     license="MIT",
     # packages=["janitor", "janitor.xarray", "janitor.spark"],
     packages=find_packages(),

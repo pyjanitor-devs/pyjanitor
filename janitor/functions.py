@@ -6583,8 +6583,8 @@ def conditional_join(
         df1.conditional_join(
                 right = df2,
                 ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>'),
-                ('value_1', 'value_2B', '<'),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
                 how='left',
                 sort_by_appearance = True
             )
@@ -6602,8 +6602,8 @@ def conditional_join(
         df1.conditional_join(
                 right = df2,
                 ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>'),
-                ('value_1', 'value_2B', '<'),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
                 how='right',
                 sort_by_appearance = True
             )

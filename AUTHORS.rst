@@ -29,6 +29,9 @@ Leads
     - Started pyspark sub-module.
 - `@anzelpwj <https://github.com/anzelpwj>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aanzelpwj>`_
 - `@samukweku <https://github.com/samukweku>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Asamukweku>`_
+- `@loganthomas <https://github.com/loganthomas>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aloganthomas>`_
+    - Helped others with ``git`` issues at SciPy 2019.
+- `@nvamsikrishna05 <https://github.com/nvamsikrishna05>`_ |  `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Anvamsikrishna05>`_
 
 
 Contributors
@@ -64,8 +67,6 @@ Contributors
 - `@rebeccawperry <https://github.com/rebeccawperry>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Arebeccawperry>`_
 - `@TomMonks <https://github.com/TomMonks>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Atommonks>`_
 - `@benjaminjack <https://github.com/benjaminjack>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Abenjaminjack>`_
-- `@loganthomas <https://github.com/loganthomas>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aloganthomas>`_
-    - Helped others with ``git`` issues at SciPy 2019.
 - `@kulini <https://github.com/kulini>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Akulini>`_
 - `@dwgoltra <https://github.com/dwgoltra>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Adwgoltra>`_
 - `@shandou <https://github.com/shandou>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ashandou>`_
@@ -99,4 +100,4 @@ Contributors
 - `@Sousa8697 <https://github.com/Sousa8697>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ASousa8697>`_
 - `@MollyCroke <https://github.com/MollyCroke>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AMollyCroke>`_
 - `@ericclessantostv <https://github.com/ericlessantostv>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aericclessantostv>`_
-- `@nvamsikrishna05 <https://github.com/nvamsikrishna05>`_ |  `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Anvamsikrishna05>`_
+- `@fireddd <https://github.com/fireddd>`_ |  `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Afireddd>`_

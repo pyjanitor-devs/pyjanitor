@@ -19,5 +19,5 @@ I would like to propose a change, such that now the docs...
 <!-- Please put here, in bullet points, links to the relevant docs page. A few starting template points are available
 to get you started. -->
 
-- [Link to documentation page](http://ericmjl.github.io/pyjanitor)
-- [Link to exact file to be edited](https://github.com/ericmjl/pyjanitor/AUTHORS.rst)
+- [Link to documentation page](https://pyjanitor-devs.github.io/pyjanitor/)
+- [Link to exact file to be edited](https://github.com/pyjanitor-devs/pyjanitor/blob/dev/AUTHORS.rst)

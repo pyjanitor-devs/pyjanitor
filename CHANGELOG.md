@@ -6,11 +6,15 @@
 -   [INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas
 -   [INF] Add GitHub Release pointer to auto-release script. Issue #818. @loganthomas
 -   [INF] Updated black version in github actions code-checks to match pre-commit hooks. @nvamsikrishna05
+-   [ENH] Add reset_index flag to row_to_names function. @fireddd
 -   [ENH] Updated `label_encode` to use pandas factorize instead of scikit-learn LabelEncoder. @nvamsikrishna05
 -   [INF] Removed the scikit-learn package from the dependencies from environment-dev.yml and base.in files. @nvamsikrishna05
 -   [ENH] Add function to remove constant columsn. @fireddd
 -   [ENH] Added `factorize_columns` method which will deprecate the `label_encode` method in future release. @nvamsikrishna05
+-   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
+-   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [ENH] `complete` function now uses variable args (*args) - @samukweku
+
 
 ## [v0.21.0] - 2021-07-16
 
@@ -213,9 +217,7 @@
 
 For changes that happened prior to v0.18.1,
 please consult the closed PRs,
-which can be found here\_.
-
-.. \_here: <https://github.com/ericmjl/pyjanitor/pulls?q=is%3Apr+is%3Aclosed>
+which can be found [here](https://github.com/pyjanitor-devs/pyjanitor/pulls?q=is%3Apr+is%3Aclosed).
 
 We thank all contributors
 who have helped make `pyjanitor`
@@ -225,34 +227,34 @@ the package that it is today.
 
 [v0.21.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.14...v0.21.0
 
-[v0.20.14]: https://github.com/ericmjl/pyjanitor/compare/v0.20.13...v0.20.14
+[v0.20.14]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.13...v0.20.14
 
-[v0.20.13]: https://github.com/ericmjl/pyjanitor/compare/v0.20.12...v0.20.13
+[v0.20.13]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.12...v0.20.13
 
-[v0.20.12]: https://github.com/ericmjl/pyjanitor/compare/v0.20.11...v0.20.12
+[v0.20.12]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.11...v0.20.12
 
-[v0.20.11]: https://github.com/ericmjl/pyjanitor/compare/v0.20.10...v0.20.11
+[v0.20.11]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.10...v0.20.11
 
-[v0.20.10]: https://github.com/ericmjl/pyjanitor/compare/v0.20.9...v0.20.10
+[v0.20.10]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.9...v0.20.10
 
-[v0.20.9]: https://github.com/ericmjl/pyjanitor/compare/v0.20.8...v0.20.9
+[v0.20.9]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.8...v0.20.9
 
-[v0.20.8]: https://github.com/ericmjl/pyjanitor/compare/v0.20.7...v0.20.8
+[v0.20.8]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.7...v0.20.8
 
-[v0.20.7]: https://github.com/ericmjl/pyjanitor/compare/v0.20.5...v0.20.7
+[v0.20.7]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.5...v0.20.7
 
-[v0.20.6]: https://github.com/ericmjl/pyjanitor/compare/v0.20.5...v0.20.7
+[v0.20.6]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.5...v0.20.7
 
-[v0.20.5]: https://github.com/ericmjl/pyjanitor/compare/v0.20.1...v0.20.5
+[v0.20.5]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.1...v0.20.5
 
-[v0.20.1]: https://github.com/ericmjl/pyjanitor/compare/v0.20.0...v0.20.1
+[v0.20.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.0...v0.20.1
 
-[v0.20.0]: https://github.com/ericmjl/pyjanitor/compare/v0.19.0...v0.20.0
+[v0.20.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.19.0...v0.20.0
 
-[v0.19.0]: https://github.com/ericmjl/pyjanitor/compare/v0.18.3...v0.19.0
+[v0.19.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.3...v0.19.0
 
-[v0.18.3]: https://github.com/ericmjl/pyjanitor/compare/v0.18.2...v0.18.3
+[v0.18.3]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.2...v0.18.3
 
-[v0.18.2]: https://github.com/ericmjl/pyjanitor/compare/v0.18.1...v0.18.2
+[v0.18.2]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.1...v0.18.2
 
-[v0.18.1]: https://github.com/ericmjl/pyjanitor/compare/v0.18.0...v0.18.1
+[v0.18.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.0...v0.18.1

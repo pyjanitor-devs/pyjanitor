@@ -2526,7 +2526,7 @@ def row_to_names(
         df = df.drop(df.index[range(row_number)])
 
     if reset_index:
-        df.reset_index(drop=["index"], inplace=True)
+        df = df.reset_index(drop=["index"])
 
     return df
 
@@ -6508,7 +6508,7 @@ def conditional_join(
     is more efficient and should be used instead.
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
-    which can be more efficient for range joins, if the intervals 
+    which can be more efficient for range joins, if the intervals
     do not overlap.
 
     This function returns rows, if any, where values from `df` meet the
@@ -6521,10 +6521,10 @@ def conditional_join(
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
     If the join operator is a non-equi operator, a binary search is used
-    to get the relevant rows; this avoids a cartesian join, and makes the 
+    to get the relevant rows; this avoids a cartesian join, and makes the
     process less memory intensive. If it is an equality operator, it simply
     uses pandas' `join` or `get_indexer_for` method to retrieve the relevant
-    rows. 
+    rows.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -6753,17 +6753,17 @@ def conditional_join(
         while `op` is the operator. The operator can be any of
         `==`, `!=`, `<=`, `<`, `>=`, `>`.
     :param how: Indicates the type of join to be performed.
-        It can be one of `inner`, `left`, `right`. 
+        It can be one of `inner`, `left`, `right`.
         Full join is not supported. Defaults to `inner`.
     :param sort_by_appearance: Default is `False`. If True,
         values from `right` that meet the join condition will be returned
         in the final dataframe in the same order that they were before the
         join.
-    :param suffixes: tuple, default is ``(_x, _y)``. 
+    :param suffixes: tuple, default is ``(_x, _y)``.
         A sequence of length 2, where each element is optionally a string,
-        indicating the suffix to add to the overlapping column names 
-        in `df` and `right`. Pass a value of ``None`` 
-        instead of a string to indicate that the  column name 
+        indicating the suffix to add to the overlapping column names
+        in `df` and `right`. Pass a value of ``None``
+        instead of a string to indicate that the  column name
         from `df` or `right` should be left as-is, with no suffix.
         At least one of the values must not be ``None``.
     :returns: A pandas DataFrame of the two merged Pandas objects.

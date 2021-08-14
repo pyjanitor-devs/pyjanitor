@@ -252,6 +252,7 @@ def test_check_suffixes_exists_right(df):
         right.columns = ["A", "B", "B_y", "C", "E"]
         df.conditional_join(right, ("B", "B", "<"), suffixes=("_x", "_y"))
 
+
 @given(df=conditional_df(), right=conditional_right())
 def test_dtype_strings_non_equi(df, right):
     """
@@ -259,8 +260,11 @@ def test_dtype_strings_non_equi(df, right):
     and the join operator is not the equal operator.
     """
     with pytest.raises(ValueError):
-        df.conditional_join(right, ("C", "Strings", "<"), suffixes=("_x", "_y"))
-        
+        df.conditional_join(
+            right, ("C", "Strings", "<"), suffixes=("_x", "_y")
+        )
+
+
 @given(df=conditional_df(), s=conditional_series())
 def test_dtype_Series(df, s):
     """

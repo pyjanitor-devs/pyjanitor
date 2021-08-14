@@ -2577,7 +2577,7 @@ def _conditional_join_type_check(
     if all((op in non_equi, string_type)):
         raise ValueError(
             """
-            Strings can only be compared 
+            Strings can only be compared
             on the equal(`==`) operator.
             """
         )

@@ -4,18 +4,18 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Processing Anime Data &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Replacing Bad Values" href="bad_values.html" />
@@ -41,21 +41,35 @@
 /* CSS for nbsphinx extension */
 
 /* remove conflicting styling from Sphinx themes */
-div.nbinput.container,
-div.nbinput.container div.prompt,
-div.nbinput.container div.input_area,
-div.nbinput.container div[class*=highlight],
-div.nbinput.container div[class*=highlight] pre,
-div.nboutput.container,
-div.nboutput.container div.prompt,
-div.nboutput.container div.output_area,
-div.nboutput.container div[class*=highlight],
-div.nboutput.container div[class*=highlight] pre {
-    background: none;
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
     border: none;
-    padding: 0 0;
+    padding: 0;
     margin: 0;
     box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
 }
 
 /* avoid gaps between output lines */
@@ -156,7 +170,7 @@ div.nboutput.container div.output_area {
 div.nbinput.container div.input_area {
     border: 1px solid #e0e0e0;
     border-radius: 2px;
-    background: #f5f5f5;
+    /*background: #f5f5f5;*/
 }
 
 /* override MathJax center alignment in output cells */
@@ -222,6 +236,7 @@ div.nboutput.container div.output_area.rendered_html,
 div.nboutput.container div.output_area > div.output_javascript,
 div.nboutput.container div.output_area:not(.rendered_html) > img{
     padding: 5px;
+    margin: 0;
 }
 
 /* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
@@ -269,9 +284,9 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Processing-Anime-Data">
+<section id="Processing-Anime-Data">
 <h1>Processing Anime Data<a class="headerlink" href="#Processing-Anime-Data" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="Background">
+<section id="Background">
 <h2>Background<a class="headerlink" href="#Background" title="Permalink to this headline">¶</a></h2>
 <p>We will use pyjanitor to showcase how to conveniently chain methods together to perform data cleaning in one shot. We We first define and register a series of dataframe methods with pandas_flavor. Then we chain the dataframe methods together with pyjanitor methods to complete the data cleaning process. The below example shows a one-shot script followed by a step-by-step detail of each part of the method chain.</p>
 <p>We have adapted a <a class="reference external" href="https://github.com/rfordatascience/tidytuesday/blob/master/data/2019/2019-04-23/readme.md">TidyTuesday analysis</a> that was originally performed in R. The original text from TidyTuesday will be shown in blockquotes.</p>
@@ -307,8 +322,8 @@ users who share similar tastes and provides a large database on anime and manga.
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="One-Shot">
+</section>
+<section id="One-Shot">
 <h2>One-Shot<a class="headerlink" href="#One-Shot" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -613,8 +628,8 @@ users who share similar tastes and provides a large database on anime and manga.
 <p>5 rows × 28 columns</p>
 </div></div>
 </div>
-</div>
-<div class="section" id="Multi-Step">
+</section>
+<section id="Multi-Step">
 <h2>Multi-Step<a class="headerlink" href="#Multi-Step" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><p>Data Dictionary</p>
@@ -747,7 +762,7 @@ users who share similar tastes and provides a large database on anime and manga.
 </tbody>
 </table>
 </div></blockquote>
-<div class="section" id="Step-0:-Load-data">
+<section id="Step-0:-Load-data">
 <h3>Step 0: Load data<a class="headerlink" href="#Step-0:-Load-data" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -963,15 +978,15 @@ users who share similar tastes and provides a large database on anime and manga.
 </table>
 </div></div>
 </div>
-</div>
-<div class="section" id="Step-1:-Clean-producers-column">
+</section>
+<section id="Step-1:-Clean-producers-column">
 <h3>Step 1: Clean <code class="docutils literal notranslate"><span class="pre">producers</span></code> column<a class="headerlink" href="#Step-1:-Clean-producers-column" title="Permalink to this headline">¶</a></h3>
 <p>The first step tries to clean up the <code class="docutils literal notranslate"><span class="pre">producers</span></code> column by removing some brackets (‘[]’) and trim off some empty spaces</p>
 <blockquote>
-<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">clean_df</span> <span class="o">&lt;-</span> <span class="n">raw_df</span> <span class="o">%&gt;%</span>
- <span class="c1"># Producers</span>
- <span class="n">mutate</span><span class="p">(</span><span class="n">producers</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">producers</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">[&quot;</span><span class="p">),</span>
-<span class="n">producers</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">producers</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">]&quot;</span><span class="p">))</span>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>clean_df &lt;- raw_df %&gt;%
+ # Producers
+ mutate(producers = str_remove(producers, &quot;\\[&quot;),
+producers = str_remove(producers, &quot;\\]&quot;))
 </pre></div>
 </div>
 </div></blockquote>
@@ -1193,25 +1208,25 @@ Name: producers, dtype: object
 Name: producers, dtype: object
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Step-2:-Clean-genre-and-studio-Columns">
+</section>
+<section id="Step-2:-Clean-genre-and-studio-Columns">
 <h3>Step 2: Clean <code class="docutils literal notranslate"><span class="pre">genre</span></code> and <code class="docutils literal notranslate"><span class="pre">studio</span></code> Columns<a class="headerlink" href="#Step-2:-Clean-genre-and-studio-Columns" title="Permalink to this headline">¶</a></h3>
 <p>Let’s do the same process for columns <code class="docutils literal notranslate"><span class="pre">Genre</span></code> and <code class="docutils literal notranslate"><span class="pre">Studio</span></code></p>
 <blockquote>
-<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Genre</span>
-<span class="n">mutate</span><span class="p">(</span><span class="n">genre</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">genre</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">[&quot;</span><span class="p">),</span>
-<span class="n">genre</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">genre</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">]&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
-<span class="n">separate_rows</span><span class="p">(</span><span class="n">genre</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span>
-<span class="n">mutate</span><span class="p">(</span><span class="n">genre</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">genre</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&#39;&quot;</span><span class="p">),</span>
-<span class="n">genre</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">genre</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&#39;&quot;</span><span class="p">),</span>
-<span class="n">genre</span> <span class="o">=</span> <span class="n">str_trim</span><span class="p">(</span><span class="n">genre</span><span class="p">))</span> <span class="o">%&gt;%</span>
- <span class="c1"># Studio</span>
-<span class="n">mutate</span><span class="p">(</span><span class="n">studio</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">studio</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">[&quot;</span><span class="p">),</span>
-<span class="n">studio</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">studio</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">]&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
-<span class="n">separate_rows</span><span class="p">(</span><span class="n">studio</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span>
-<span class="n">mutate</span><span class="p">(</span><span class="n">studio</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">studio</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&#39;&quot;</span><span class="p">),</span>
-<span class="n">studio</span> <span class="o">=</span> <span class="n">str_remove</span><span class="p">(</span><span class="n">studio</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&#39;&quot;</span><span class="p">),</span>
-<span class="n">studio</span> <span class="o">=</span> <span class="n">str_trim</span><span class="p">(</span><span class="n">studio</span><span class="p">))</span> <span class="o">%&gt;%</span>
+<div><div class="highlight-none notranslate"><div class="highlight"><pre><span></span> # Genre
+mutate(genre = str_remove(genre, &quot;\\[&quot;),
+genre = str_remove(genre, &quot;\\]&quot;)) %&gt;%
+separate_rows(genre, sep = &quot;,&quot;) %&gt;%
+mutate(genre = str_remove(genre, &quot;\\&#39;&quot;),
+genre = str_remove(genre, &quot;\\&#39;&quot;),
+genre = str_trim(genre)) %&gt;%
+ # Studio
+mutate(studio = str_remove(studio, &quot;\\[&quot;),
+studio = str_remove(studio, &quot;\\]&quot;)) %&gt;%
+separate_rows(studio, sep = &quot;,&quot;) %&gt;%
+mutate(studio = str_remove(studio, &quot;\\&#39;&quot;),
+studio = str_remove(studio, &quot;\\&#39;&quot;),
+studio = str_trim(studio)) %&gt;%
 </pre></div>
 </div>
 </div></blockquote>
@@ -1303,8 +1318,8 @@ Name: producers, dtype: object
 </table>
 </div></div>
 </div>
-</div>
-<div class="section" id="Step-3:-Clean-aired-column">
+</section>
+<section id="Step-3:-Clean-aired-column">
 <h3>Step 3: Clean <code class="docutils literal notranslate"><span class="pre">aired</span></code> column<a class="headerlink" href="#Step-3:-Clean-aired-column" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">aired</span></code> column has something a little different. In addition to the usual removing some strings and whitespace trimming, we want to separate the values into two separate columns <code class="docutils literal notranslate"><span class="pre">start_date</span></code> and <code class="docutils literal notranslate"><span class="pre">end_date</span></code></p>
 <blockquote>
@@ -1502,8 +1517,8 @@ Name: aired, dtype: object
 </table>
 </div></div>
 </div>
-</div>
-<div class="section" id="Step-4:-Filter-out-unranked-and-unpopular-series">
+</section>
+<section id="Step-4:-Filter-out-unranked-and-unpopular-series">
 <h3>Step 4: Filter out unranked and unpopular series<a class="headerlink" href="#Step-4:-Filter-out-unranked-and-unpopular-series" title="Permalink to this headline">¶</a></h3>
 <p>Finally, let’s drop the unranked or unpopular series with pyjanitor’s <code class="docutils literal notranslate"><span class="pre">filter_on</span></code>.</p>
 <div class="nbinput nblast docutils container">
@@ -1518,8 +1533,8 @@ Name: aired, dtype: object
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="End-Result">
+</section>
+<section id="End-Result">
 <h3>End Result<a class="headerlink" href="#End-Result" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
@@ -1702,9 +1717,9 @@ Name: aired, dtype: object
 <p>5 rows × 28 columns</p>
 </div></div>
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -1784,7 +1799,7 @@ Name: aired, dtype: object
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -1795,10 +1810,10 @@ Name: aired, dtype: object
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

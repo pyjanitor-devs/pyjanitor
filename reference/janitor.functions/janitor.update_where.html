@@ -4,18 +4,16 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>janitor.update_where &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="janitor.to_datetime" href="janitor.to_datetime.html" />
@@ -36,33 +34,48 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="janitor-update-where">
+  <section id="janitor-update-where">
 <h1>janitor.update_where<a class="headerlink" href="#janitor-update-where" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="janitor.update_where">
-<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">update_where</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">conditions</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="n">target_column_name</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">target_val</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#update_where"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.update_where" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="janitor.update_where">
+<span class="sig-prename descclassname"><span class="pre">janitor.</span></span><span class="sig-name descname"><span class="pre">update_where</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conditions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_column_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Hashable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_val</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="reference internal" href="../../_modules/janitor/functions.html#update_where"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#janitor.update_where" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add multiple conditions to update a column in the dataframe.</p>
-<p>This method mutates the original DataFrame.</p>
+<p>This method does not mutate the original DataFrame.</p>
 <p>Example usage:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The dataframe must be assigned to a variable first.</span>
-<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
     <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span>
     <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
 <span class="p">}</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-<span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">df</span>
-    <span class="o">.</span><span class="n">update_where</span><span class="p">(</span>
-        <span class="n">condition</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;a &gt; 2 and b &lt; 8&quot;</span><span class="p">,</span>
-        <span class="n">target_column_name</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">,</span>
-        <span class="n">target_val</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-    <span class="p">)</span>
-<span class="c1"># a b  c</span>
-<span class="c1"># 1 5  0</span>
-<span class="c1"># 2 6  0</span>
-<span class="c1"># 3 7 10</span>
-<span class="c1"># 4 8  0</span>
+
+   <span class="n">a</span>  <span class="n">b</span>  <span class="n">c</span>
+<span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">5</span>  <span class="mi">0</span>
+<span class="mi">1</span>  <span class="mi">2</span>  <span class="mi">6</span>  <span class="mi">0</span>
+<span class="mi">2</span>  <span class="mi">3</span>  <span class="mi">7</span>  <span class="mi">0</span>
+<span class="mi">3</span>  <span class="mi">4</span>  <span class="mi">8</span>  <span class="mi">0</span>
+
+<span class="n">df</span><span class="o">.</span><span class="n">update_where</span><span class="p">(</span><span class="n">conditions</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">a</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">b</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">),</span>
+                <span class="n">target_column_name</span> <span class="o">=</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span>
+                <span class="n">target_val</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+
+   <span class="n">a</span>  <span class="n">b</span>   <span class="n">c</span>
+<span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">5</span>   <span class="mi">0</span>
+<span class="mi">1</span>  <span class="mi">2</span>  <span class="mi">6</span>   <span class="mi">0</span>
+<span class="mi">2</span>  <span class="mi">3</span>  <span class="mi">7</span>  <span class="mi">10</span>
+<span class="mi">3</span>  <span class="mi">4</span>  <span class="mi">8</span>   <span class="mi">0</span>
+</pre></div>
+</div>
+<p><cite>update_where</cite> also supports pandas <em>query</em> style string expressions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">update_where</span><span class="p">(</span><span class="n">conditions</span> <span class="o">=</span> <span class="s2">&quot;a &gt; 2 and b &lt; 8&quot;</span><span class="p">,</span>
+                <span class="n">target_column_name</span> <span class="o">=</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span>
+                <span class="n">target_val</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+
+   <span class="n">a</span>  <span class="n">b</span>   <span class="n">c</span>
+<span class="mi">0</span>  <span class="mi">1</span>  <span class="mi">5</span>   <span class="mi">0</span>
+<span class="mi">1</span>  <span class="mi">2</span>  <span class="mi">6</span>   <span class="mi">0</span>
+<span class="mi">2</span>  <span class="mi">3</span>  <span class="mi">7</span>  <span class="mi">10</span>
+<span class="mi">3</span>  <span class="mi">4</span>  <span class="mi">8</span>   <span class="mi">0</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -78,7 +91,7 @@ not get set in the new column will be null.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>An updated pandas DataFrame.</p>
+<dd class="field-even"><p>A pandas DataFrame.</p>
 </dd>
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><ul class="simple">
@@ -86,12 +99,14 @@ not get set in the new column will be null.</p></li>
 <code class="docutils literal notranslate"><span class="pre">df</span></code>.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.9)"><strong>TypeError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">conditions</span></code> is not a pandas-compatible string
 query.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">conditions</span></code> does not return a boolean array-like
+data structure.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
           </div>
@@ -172,7 +187,7 @@ query.</p></li>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -183,10 +198,10 @@ query.</p></li>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -4,18 +4,18 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Normalization and Standardization &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Using sort_naturally" href="sort_naturally.html" />
@@ -41,21 +41,35 @@
 /* CSS for nbsphinx extension */
 
 /* remove conflicting styling from Sphinx themes */
-div.nbinput.container,
-div.nbinput.container div.prompt,
-div.nbinput.container div.input_area,
-div.nbinput.container div[class*=highlight],
-div.nbinput.container div[class*=highlight] pre,
-div.nboutput.container,
-div.nboutput.container div.prompt,
-div.nboutput.container div.output_area,
-div.nboutput.container div[class*=highlight],
-div.nboutput.container div[class*=highlight] pre {
-    background: none;
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
     border: none;
-    padding: 0 0;
+    padding: 0;
     margin: 0;
     box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
 }
 
 /* avoid gaps between output lines */
@@ -156,7 +170,7 @@ div.nboutput.container div.output_area {
 div.nbinput.container div.input_area {
     border: 1px solid #e0e0e0;
     border-radius: 2px;
-    background: #f5f5f5;
+    /*background: #f5f5f5;*/
 }
 
 /* override MathJax center alignment in output cells */
@@ -222,6 +236,7 @@ div.nboutput.container div.output_area.rendered_html,
 div.nboutput.container div.output_area > div.output_javascript,
 div.nboutput.container div.output_area:not(.rendered_html) > img{
     padding: 5px;
+    margin: 0;
 }
 
 /* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
@@ -269,7 +284,7 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Normalization-and-Standardization">
+<section id="Normalization-and-Standardization">
 <h1>Normalization and Standardization<a class="headerlink" href="#Normalization-and-Standardization" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Normalization_(statistics)">Normalization</a> makes data more meaningful by converting absolute values into comparisons with related values. <a class="reference external" href="https://github.com/jcvall">Chris Vallier</a> has produced this demonstration of normalization using PyJanitor.</p>
 <p>pyjanitor functions demonstrated here:</p>
@@ -290,7 +305,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="section" id="Load-data">
+<section id="Load-data">
 <h2>Load data<a class="headerlink" href="#Load-data" title="Permalink to this headline">¶</a></h2>
 <p>We’ll use a dataset with fuel efficiency in miles per gallon (“mpg”), engine displacement in cubic centimeters (“disp”), and horsepower (“hp”) for a variety of car models. It’s a crazy, but customary, mix of units.</p>
 <div class="nbinput nblast docutils container">
@@ -315,8 +330,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="Examine-raw-data">
+</section>
+<section id="Examine-raw-data">
 <h2>Examine raw data<a class="headerlink" href="#Examine-raw-data" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -444,11 +459,11 @@ div.rendered_html tbody tr:hover {
 </table>
 </div></div>
 </div>
-<div class="section" id="Visualize">
+<section id="Visualize">
 <h3>Visualize<a class="headerlink" href="#Visualize" title="Permalink to this headline">¶</a></h3>
 <p>Each value makes more sense viewed in comparison to the other models. We’ll use simple <a class="reference external" href="https://seaborn.pydata.org/">Seaborn</a> bar plots.</p>
-</div>
-<div class="section" id="mpg-by-model">
+</section>
+<section id="mpg-by-model">
 <h3>mpg by model<a class="headerlink" href="#mpg-by-model" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -473,11 +488,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_10_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_10_1.png" />
+<img alt="../_images/notebooks_normalize_10_1.png" src="../_images/notebooks_normalize_10_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="displacement-by-model">
+</section>
+<section id="displacement-by-model">
 <h3>displacement by model<a class="headerlink" href="#displacement-by-model" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -502,11 +517,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_12_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_12_1.png" />
+<img alt="../_images/notebooks_normalize_12_1.png" src="../_images/notebooks_normalize_12_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="horsepower-by-model">
+</section>
+<section id="horsepower-by-model">
 <h3>horsepower by model<a class="headerlink" href="#horsepower-by-model" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
@@ -531,12 +546,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_14_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_14_1.png" />
+<img alt="../_images/notebooks_normalize_14_1.png" src="../_images/notebooks_normalize_14_1.png" />
 </div>
 </div>
-</div>
-</div>
-<div class="section" id="min-max-normalization">
+</section>
+</section>
+<section id="min-max-normalization">
 <h2><a class="reference external" href="https://en.wikipedia.org/wiki/Feature_scaling#Rescaling_(min-max_normalization)">min-max normalization</a><a class="headerlink" href="#min-max-normalization" title="Permalink to this headline">¶</a></h2>
 <p>First we’ll use pyjanitor’s <a class="reference external" href="../reference/functions.html#janitor.functions.min_max_scale">min_max_scale</a> to rescale the <code class="docutils literal notranslate"><span class="pre">mpg</span></code>, <code class="docutils literal notranslate"><span class="pre">disp_cc</span></code>, and <code class="docutils literal notranslate"><span class="pre">hp</span></code> columns in-place so that each value varies from 0 to 1.</p>
 <div class="nbinput docutils container">
@@ -1075,7 +1090,7 @@ div.rendered_html tbody tr:hover {
 </div></div>
 </div>
 <p>The shapes of the bar graphs remain the same, but the horizontal axes show the new scale.</p>
-<div class="section" id="mpg-(min-max-normalized)">
+<section id="mpg-(min-max-normalized)">
 <h3>mpg (min-max normalized)<a class="headerlink" href="#mpg-(min-max-normalized)" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -1100,11 +1115,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_19_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_19_1.png" />
+<img alt="../_images/notebooks_normalize_19_1.png" src="../_images/notebooks_normalize_19_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="displacement-(min-max-normalized)">
+</section>
+<section id="displacement-(min-max-normalized)">
 <h3>displacement (min-max normalized)<a class="headerlink" href="#displacement-(min-max-normalized)" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
@@ -1129,11 +1144,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_21_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_21_1.png" />
+<img alt="../_images/notebooks_normalize_21_1.png" src="../_images/notebooks_normalize_21_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="horsepower-(min-max-normalized)">
+</section>
+<section id="horsepower-(min-max-normalized)">
 <h3>horsepower (min-max normalized)<a class="headerlink" href="#horsepower-(min-max-normalized)" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
@@ -1158,12 +1173,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_23_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_23_1.png" />
+<img alt="../_images/notebooks_normalize_23_1.png" src="../_images/notebooks_normalize_23_1.png" />
 </div>
 </div>
-</div>
-</div>
-<div class="section" id="Standardization-(z-score)">
+</section>
+</section>
+<section id="Standardization-(z-score)">
 <h2>Standardization (z-score)<a class="headerlink" href="#Standardization-(z-score)" title="Permalink to this headline">¶</a></h2>
 <p>Next we’ll convert to <a class="reference external" href="https://en.wikipedia.org/wiki/Standard_score">standard scores</a>. This expresses each value in terms of its standard deviations from the mean, expressing where each model stands in relation to the others.</p>
 <p>We’ll use pyjanitor’s <a class="reference external" href="../reference/functions.html#janitor.functions.transform_columns">transform_columns</a> to apply the standard score calculation, <code class="docutils literal notranslate"><span class="pre">(x</span> <span class="pre">-</span> <span class="pre">x.mean())</span> <span class="pre">/</span> <span class="pre">x.std()</span></code>, to each value in each of the columns we’re evaluating.</p>
@@ -1702,7 +1717,7 @@ div.rendered_html tbody tr:hover {
 </table>
 </div></div>
 </div>
-<div class="section" id="Standardized-mpg">
+<section id="Standardized-mpg">
 <h3>Standardized mpg<a class="headerlink" href="#Standardized-mpg" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
@@ -1727,11 +1742,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_27_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_27_1.png" />
+<img alt="../_images/notebooks_normalize_27_1.png" src="../_images/notebooks_normalize_27_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Standardized-displacement">
+</section>
+<section id="Standardized-displacement">
 <h3>Standardized displacement<a class="headerlink" href="#Standardized-displacement" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -1756,11 +1771,11 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_29_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_29_1.png" />
+<img alt="../_images/notebooks_normalize_29_1.png" src="../_images/notebooks_normalize_29_1.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Standardized-horsepower">
+</section>
+<section id="Standardized-horsepower">
 <h3>Standardized horsepower<a class="headerlink" href="#Standardized-horsepower" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
@@ -1785,12 +1800,12 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_31_1.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_normalize_31_1.png" />
+<img alt="../_images/notebooks_normalize_31_1.png" src="../_images/notebooks_normalize_31_1.png" />
 </div>
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -1879,7 +1894,7 @@ div.rendered_html tbody tr:hover {
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -1890,10 +1905,10 @@ div.rendered_html tbody tr:hover {
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

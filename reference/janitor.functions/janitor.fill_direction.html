@@ -4,18 +4,16 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>janitor.fill_direction &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="janitor.convert_excel_date" href="janitor.convert_excel_date.html" />
@@ -36,51 +34,65 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="janitor-fill-direction">
+  <section id="janitor-fill-direction">
 <h1>janitor.fill_direction<a class="headerlink" href="#janitor-fill-direction" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="janitor.fill_direction">
-<code class="sig-prename descclassname">janitor.</code><code class="sig-name descname">fill_direction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span><span class="p">:</span> <span class="n">pandas.core.frame.DataFrame</span></em>, <em class="sig-param"><span class="n">directions</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>Hashable<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">limit</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="../../_modules/janitor/functions.html#fill_direction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#janitor.fill_direction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="janitor.fill_direction">
+<span class="sig-prename descclassname"><span class="pre">janitor.</span></span><span class="sig-name descname"><span class="pre">fill_direction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pandas.core.frame.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">directions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">,</span> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="reference internal" href="../../_modules/janitor/functions.html#fill_direction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#janitor.fill_direction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provide a method-chainable function for filling missing values
 in selected columns.</p>
 <p>Missing values are filled using the next or previous entry.
 The columns are paired with the directions in a dictionary.
 It is a wrapper for <code class="docutils literal notranslate"><span class="pre">pd.Series.ffill</span></code> and <code class="docutils literal notranslate"><span class="pre">pd.Series.bfill</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">janitor</span> <span class="k">as</span> <span class="nn">jn</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;ragnar&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="s2">&quot;sammywemmy&quot;</span><span class="p">,</span>
                             <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="s2">&quot;ginger&quot;</span><span class="p">],</span>
                    <span class="s2">&quot;code&quot;</span> <span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">5</span><span class="p">]})</span>
 
-<span class="c1"># Single column :</span>
-<span class="n">df</span><span class="o">.</span><span class="n">fill_direction</span><span class="p">({</span><span class="s2">&quot;text&quot;</span> <span class="p">:</span> <span class="s2">&quot;up&quot;</span><span class="p">})</span>
-<span class="c1"># text       |   code</span>
-<span class="c1"># ragnar     |    NaN</span>
-<span class="c1"># sammywemmy |    2</span>
-<span class="c1"># sammywemmy |    3</span>
-<span class="c1"># ginger     |    NaN</span>
-<span class="c1"># ginger     |    5</span>
+<span class="n">df</span>
 
-<span class="c1"># Multiple columns :</span>
-<span class="n">df</span><span class="o">.</span><span class="n">fill_direction</span><span class="p">({</span><span class="s2">&quot;text&quot;</span> <span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">,</span> <span class="s2">&quot;code&quot;</span> <span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">})</span>
+   <span class="n">text</span>          <span class="n">code</span>
+<span class="mi">0</span> <span class="n">ragnar</span>         <span class="n">NaN</span>
+<span class="mi">1</span> <span class="n">NaN</span>            <span class="mf">2.0</span>
+<span class="mi">2</span> <span class="n">sammywemmy</span>     <span class="mf">3.0</span>
+<span class="mi">3</span> <span class="n">NaN</span>            <span class="n">NaN</span>
+<span class="mi">4</span> <span class="n">ginger</span>         <span class="mf">5.0</span>
+</pre></div>
+</div>
+<p>Fill on a single column:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">fill_direction</span><span class="p">({</span><span class="s2">&quot;text&quot;</span> <span class="p">:</span> <span class="s2">&quot;up&quot;</span><span class="p">})</span>
 
-<span class="c1"># text       |   code</span>
-<span class="c1"># ragnar     |    NaN</span>
-<span class="c1"># ragnar     |    2</span>
-<span class="c1"># sammywemmy |    3</span>
-<span class="c1"># sammywemmy |    3</span>
-<span class="c1"># ginger     |    5</span>
+   <span class="n">text</span>          <span class="n">code</span>
+<span class="mi">0</span> <span class="n">ragnar</span>         <span class="n">NaN</span>
+<span class="mi">1</span> <span class="n">sammywemmy</span>     <span class="mf">2.0</span>
+<span class="mi">2</span> <span class="n">sammywemmy</span>     <span class="mf">3.0</span>
+<span class="mi">3</span> <span class="n">ginger</span>         <span class="n">NaN</span>
+<span class="mi">4</span> <span class="n">ginger</span>         <span class="mf">5.0</span>
+</pre></div>
+</div>
+<p>Fill on multiple columns:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">fill_direction</span><span class="p">({</span><span class="s2">&quot;text&quot;</span> <span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">,</span> <span class="s2">&quot;code&quot;</span> <span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">})</span>
 
-<span class="c1"># Multiple columns in different directions.</span>
-<span class="n">df</span><span class="o">.</span><span class="n">fill_direction</span><span class="p">({</span><span class="s2">&quot;text&quot;</span> <span class="p">:</span> <span class="s2">&quot;up&quot;</span><span class="p">,</span> <span class="s2">&quot;code&quot;</span> <span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">})</span>
+   <span class="n">text</span>          <span class="n">code</span>
+<span class="mi">0</span> <span class="n">ragnar</span>         <span class="n">NaN</span>
+<span class="mi">1</span> <span class="n">ragnar</span>         <span class="mf">2.0</span>
+<span class="mi">2</span> <span class="n">sammywemmy</span>     <span class="mf">3.0</span>
+<span class="mi">3</span> <span class="n">sammywemmy</span>     <span class="mf">3.0</span>
+<span class="mi">4</span> <span class="n">ginger</span>         <span class="mf">5.0</span>
+</pre></div>
+</div>
+<p>Fill multiple columns in different directions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">fill_direction</span><span class="p">({</span><span class="s2">&quot;text&quot;</span> <span class="p">:</span> <span class="s2">&quot;up&quot;</span><span class="p">,</span> <span class="s2">&quot;code&quot;</span> <span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">})</span>
 
-<span class="c1"># text       |   code</span>
-<span class="c1"># ragnar     |    NaN</span>
-<span class="c1"># sammywemmy |    2</span>
-<span class="c1"># sammywemmy |    3</span>
-<span class="c1"># ginger     |    3</span>
-<span class="c1"># ginger     |    5</span>
+   <span class="n">text</span>          <span class="n">code</span>
+<span class="mi">0</span> <span class="n">ragnar</span>         <span class="n">NaN</span>
+<span class="mi">1</span> <span class="n">sammywemmy</span>     <span class="mf">2.0</span>
+<span class="mi">2</span> <span class="n">sammywemmy</span>     <span class="mf">3.0</span>
+<span class="mi">3</span> <span class="n">ginger</span>         <span class="mf">3.0</span>
+<span class="mi">4</span> <span class="n">ginger</span>         <span class="mf">5.0</span>
 </pre></div>
 </div>
 <p>Functional usage syntax:</p>
@@ -90,7 +102,9 @@ It is a wrapper for <code class="docutils literal notranslate"><span class="pre"
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">jn</span><span class="o">.</span><span class="n">fill_direction</span><span class="p">(</span>
     <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">,</span>
-    <span class="n">directions</span> <span class="o">=</span> <span class="p">{</span><span class="n">column_1</span> <span class="p">:</span> <span class="n">direction_1</span><span class="p">,</span> <span class="n">column_2</span> <span class="p">:</span> <span class="n">direction_2</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+    <span class="n">directions</span> <span class="o">=</span> <span class="p">{</span><span class="n">column_1</span> <span class="p">:</span> <span class="n">direction_1</span><span class="p">,</span>
+                  <span class="n">column_2</span> <span class="p">:</span> <span class="n">direction_2</span><span class="p">,</span>
+                  <span class="o">...</span><span class="p">},</span>
     <span class="n">limit</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># limit must be None or greater than 0</span>
     <span class="p">)</span>
 </pre></div>
@@ -102,7 +116,9 @@ It is a wrapper for <code class="docutils literal notranslate"><span class="pre"
 <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
     <span class="o">.</span><span class="n">fill_direction</span><span class="p">(</span>
-    <span class="n">directions</span> <span class="o">=</span> <span class="p">{</span><span class="n">column_1</span> <span class="p">:</span> <span class="n">direction_1</span><span class="p">,</span> <span class="n">column_2</span> <span class="p">:</span> <span class="n">direction_2</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+    <span class="n">directions</span> <span class="o">=</span> <span class="p">{</span><span class="n">column_1</span> <span class="p">:</span> <span class="n">direction_1</span><span class="p">,</span>
+                  <span class="n">column_2</span> <span class="p">:</span> <span class="n">direction_2</span><span class="p">,</span>
+                  <span class="o">...</span><span class="p">},</span>
     <span class="n">limit</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># limit must be None or greater than 0</span>
     <span class="p">)</span>
 <span class="p">)</span>
@@ -113,8 +129,8 @@ It is a wrapper for <code class="docutils literal notranslate"><span class="pre"
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>df</strong> – A pandas dataframe.</p></li>
 <li><p><strong>directions</strong> – Key - value pairs of columns and directions. Directions
-can be either <cite>down`(default), `up</cite>, <cite>updown`(fill up then down) and
-`downup</cite> (fill down then up).</p></li>
+can be either <cite>down</cite> (default), <cite>up</cite>, <cite>updown</cite> (fill up then down) and
+<cite>downup</cite> (fill down then up).</p></li>
 <li><p><strong>limit</strong> – number of consecutive null values to forward/backward fill.
 Value must <cite>None</cite> or greater than 0.</p></li>
 </ul>
@@ -124,16 +140,15 @@ Value must <cite>None</cite> or greater than 0.</p></li>
 </dd>
 <dt class="field-odd">Raises</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if <code class="docutils literal notranslate"><span class="pre">directions</span></code> dictionary is empty.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if column supplied is not in the dataframe.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if direction supplied is not one of <cite>down</cite>,`up`,
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.9)"><strong>ValueError</strong></a> – if direction supplied is not one of <cite>down</cite>, <cite>up</cite>,
 <cite>updown</cite>, or <cite>downup</cite>.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
+</section>
 
 
           </div>
@@ -214,7 +229,7 @@ Value must <cite>None</cite> or greater than 0.</p></li>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -225,10 +240,10 @@ Value must <cite>None</cite> or greater than 0.</p></li>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -4,18 +4,18 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>pyjanitor Usage Walkthrough &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Pivot_Longer : One function to cover transformations from wide to long form." href="Pivoting%20Data%20from%20Wide%20to%20Long.html" />
@@ -36,7 +36,255 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="pyjanitor-Usage-Walkthrough">
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<section id="pyjanitor-Usage-Walkthrough">
 <h1>pyjanitor Usage Walkthrough<a class="headerlink" href="#pyjanitor-Usage-Walkthrough" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> is a Python-based API on top of <code class="docutils literal notranslate"><span class="pre">pandas</span></code> inspired by the <a class="reference external" href="https://github.com/sfirke/janitor">janitor</a> R package. It aims to provide a clean, understandable interface based on method chaining for common and less-common tasks involving data cleaning and <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation.</p>
 <p>The core philosophy and augmentations on <code class="docutils literal notranslate"><span class="pre">pandas</span></code>’ approach to data cleaning and <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation include:</p>
@@ -45,14 +293,14 @@
 <li><p>Implementation of common, useful <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation tasks that saves on repetitive code.</p></li>
 <li><p>Focus on active tense / verb approaches to function naming to provide at-a-glance understanding of a data manipulation pipeline.</p></li>
 </ul>
-<div class="section" id="Why-pyjanitor?">
+<section id="Why-pyjanitor?">
 <h2>Why <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>?<a class="headerlink" href="#Why-pyjanitor?" title="Permalink to this headline">¶</a></h2>
 <p>Originally a simple port of the R package, <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> has evolved from a set of convenient data cleaning routines into an experiment with the method-chaining paradigm.</p>
 <p>Data preprocessing is best expressed as a <a class="reference external" href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic graph (DAG)</a> of actions taken on data. We take a base data file as the starting point and perform actions on it such as removing null/empty rows, replacing them with other values, adding/renaming/removing columns of data, filtering rows, and more.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">pandas</span></code> API has been invaluable for the Python data science ecosystem and implements method chaining for a subset of methods as part of the API. For example, resetting indexes (<code class="docutils literal notranslate"><span class="pre">.reset_index()</span></code>), dropping null values (<code class="docutils literal notranslate"><span class="pre">.dropna()</span></code>), and more are accomplished via the appropriate <code class="docutils literal notranslate"><span class="pre">pd.DataFrame</span></code> method calls.</p>
 <p>Inspired by the R statistical language ecosystem, where consistent and good API design in the <code class="docutils literal notranslate"><span class="pre">dplyr</span></code> package enables end-users, who are not necessarily developers, to concisely express data processing code, <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> has evolved into a language for expressing the data processing DAG for <code class="docutils literal notranslate"><span class="pre">pandas</span></code> users.</p>
-</div>
-<div class="section" id="What-is-method-chaining?">
+</section>
+<section id="What-is-method-chaining?">
 <h2>What is method chaining?<a class="headerlink" href="#What-is-method-chaining?" title="Permalink to this headline">¶</a></h2>
 <p>To accomplish these goals, actions for which we would need to invoke imperative-style statements can be replaced with method chains that allow the user to read off the logical order of actions taken. Note the annotated example below. First, we introduce the textual description of a sample data cleaning pipeline:</p>
 <ul class="simple">
@@ -72,8 +320,8 @@
 <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># reset index to account for the missing row we removed above</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="The-pyjanitor-approach">
+</section>
+<section id="The-pyjanitor-approach">
 <h2>The <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> approach<a class="headerlink" href="#The-pyjanitor-approach" title="Permalink to this headline">¶</a></h2>
 <p>With <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>, we enable method chaining with method names that are <em>verbs</em> which describe the action taken:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
@@ -89,8 +337,8 @@
 </div>
 <p>We believe the <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> chaining-based approach leads to much cleaner code where the intent of a series of <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulations is much more immediately clear.</p>
 <p><code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>’s etymology has a two-fold relationship to “cleanliness”. Firstly, it’s about extending <code class="docutils literal notranslate"><span class="pre">pandas</span></code> with convenient data cleaning routines. Secondly, it’s about providing a cleaner, method-chaining, verb-based API for common <code class="docutils literal notranslate"><span class="pre">pandas</span></code> routines.</p>
-</div>
-<div class="section" id="A-survey-of-pyjanitor-functions">
+</section>
+<section id="A-survey-of-pyjanitor-functions">
 <h2>A survey of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> functions<a class="headerlink" href="#A-survey-of-pyjanitor-functions" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>Cleaning column names (multi-indexes are possible!)</p></li>
@@ -104,13 +352,13 @@
 <li><p>Expand a single column that has delimited, categorical values into dummy-encoded variables</p></li>
 </ul>
 <p>A full list of functionality that <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> implements can be found in the <a class="reference external" href="https://ericmjl.github.io/pyjanitor/">API docs</a>.</p>
-</div>
-<div class="section" id="Some-things-that-are-different">
+</section>
+<section id="Some-things-that-are-different">
 <h2>Some things that are different<a class="headerlink" href="#Some-things-that-are-different" title="Permalink to this headline">¶</a></h2>
 <p>Some <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> methods are <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>-mutating operations, i.e., in place. Given that in a method-chaining paradigm, <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s that would be created at each step of the chain cannot be accessed anyway, duplication of data at each step would lead to unnecessary, potential considerable slowdowns and increased memory usage due to data-copying operations. The severity of such copying scales with <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> size. Take care to understand which functions change the original
 <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> you are chaining on if it is necessary to preserve that data. If it is, you can simply <code class="docutils literal notranslate"><span class="pre">.copy()</span></code> it as the first step in a <code class="docutils literal notranslate"><span class="pre">df.copy().operation1().operation2()...</span></code> chain.</p>
-</div>
-<div class="section" id="How-it-works">
+</section>
+<section id="How-it-works">
 <h2>How it works<a class="headerlink" href="#How-it-works" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> relies on the <a class="reference external" href="https://github.com/Zsailer/pandas_flavor">Pandas Flavor</a> package to register new functions as object methods that can be called directly on <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s. For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -131,61 +379,2290 @@
 </div>
 <p>Importing the <code class="docutils literal notranslate"><span class="pre">janitor</span></code> package immediately registers these functions. The fact that each <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> method <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> registers returns the <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> is what gives it the capability to method chain.</p>
 <p>Note that <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> explicitly does not modify any existing <code class="docutils literal notranslate"><span class="pre">pandas</span></code> methods / functionality.</p>
-</div>
-<div class="section" id="Demo-of-various-DataFrame-manipulation-tasks-using-pyjanitor">
+</section>
+<section id="Demo-of-various-DataFrame-manipulation-tasks-using-pyjanitor">
 <h2>Demo of various <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulation tasks using <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code><a class="headerlink" href="#Demo-of-various-DataFrame-manipulation-tasks-using-pyjanitor" title="Permalink to this headline">¶</a></h2>
 <p>Here, we’ll walk through some useful <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code>-based approaches to cleaning and manipulating <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>s.</p>
-<div class="section" id="Code-preamble:">
+<section id="Code-preamble:">
 <h3>Code preamble:<a class="headerlink" href="#Code-preamble:" title="Permalink to this headline">¶</a></h3>
-<p>import pandas as pd import janitor import pandas_flavor as pf import numpy as np</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
 </div>
-<div class="section" id="Let’s-take-a-look-at-our-dataset:">
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">janitor</span>
+<span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Let’s-take-a-look-at-our-dataset:">
 <h3>Let’s take a look at our dataset:<a class="headerlink" href="#Let’s-take-a-look-at-our-dataset:" title="Permalink to this headline">¶</a></h3>
-<p>df = pd.read_excel(‘dirty_data.xlsx’) df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="s1">&#39;dirty_data.xlsx&#39;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;openpyxl&#39;</span><span class="p">)</span>
+<span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>First Name</th>
+      <th>Last Name</th>
+      <th>Employee Status</th>
+      <th>Subject</th>
+      <th>Hire Date</th>
+      <th>% Allocated</th>
+      <th>Full time?</th>
+      <th>do not edit! ---&gt;</th>
+      <th>Certification</th>
+      <th>Certification.1</th>
+      <th>Certification.2</th>
+      <th>Unnamed: 11</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>39690.0</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>39690.0</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>37118.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Instr. music</td>
+      <td>Vocal music</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>27515.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>Computers</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>41431.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>32994.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>English 6-12</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>27919.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>42221.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>34700.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Political sci.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>40071.0</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Vocal music</td>
+      <td>English</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
 <p>We can see that this dataset is dirty in a number of ways, including the following:</p>
 <ul class="simple">
 <li><p>Column names contain spaces, punctuation marks, and inconsistent casing</p></li>
 <li><p>One row (<code class="docutils literal notranslate"><span class="pre">7</span></code>) with completely missing data</p></li>
 <li><p>One column (<code class="docutils literal notranslate"><span class="pre">do</span> <span class="pre">not</span> <span class="pre">edit!</span> <span class="pre">---&gt;</span></code>) with completely missing data</p></li>
 </ul>
-</div>
-<div class="section" id="Clean-up-our-data-using-a-pyjanitor-method-chaining-pipeline">
+</section>
+<section id="Clean-up-our-data-using-a-pyjanitor-method-chaining-pipeline">
 <h3>Clean up our data using a <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> method-chaining pipeline<a class="headerlink" href="#Clean-up-our-data-using-a-pyjanitor-method-chaining-pipeline" title="Permalink to this headline">¶</a></h3>
 <p>Let’s run through a demo <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> cleaning procedure:</p>
-<p>cleaned_df = ( pd.read_excel(‘dirty_data.xlsx’) .clean_names() .remove_empty() .rename_column(“%<em>allocated”, “percent_allocated”) .rename_column(“full_time</em>”, “full_time”) .coalesce([“certification”, “certification_1”], “certification”) .encode_categorical([“subject”, “employee_status”, “full_time”]) .convert_excel_date(“hire_date”) .reset_index(drop=True) )</p>
-<p>cleaned_df</p>
-<p>The cleaned <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> looks much better and quite a bit more usable for our downstream tasks.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
 </div>
-<div class="section" id="Step-by-step-walkthrough-of-pyjanitor-DataFrame-manipulations">
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cleaned_df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="s1">&#39;dirty_data.xlsx&#39;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;openpyxl&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">clean_names</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">remove_empty</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s2">&quot;%_allocated&quot;</span><span class="p">,</span> <span class="s2">&quot;percent_allocated&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s2">&quot;full_time_&quot;</span><span class="p">,</span> <span class="s2">&quot;full_time&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">coalesce</span><span class="p">([</span><span class="s2">&quot;certification&quot;</span><span class="p">,</span> <span class="s2">&quot;certification_1&quot;</span><span class="p">],</span> <span class="s2">&quot;certification&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">encode_categorical</span><span class="p">([</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;employee_status&quot;</span><span class="p">,</span> <span class="s2">&quot;full_time&quot;</span><span class="p">])</span>
+    <span class="o">.</span><span class="n">convert_excel_date</span><span class="p">(</span><span class="s2">&quot;hire_date&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">cleaned_df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first_name</th>
+      <th>last_name</th>
+      <th>employee_status</th>
+      <th>subject</th>
+      <th>hire_date</th>
+      <th>percent_allocated</th>
+      <th>full_time</th>
+      <th>certification</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>2008-08-30</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>2008-08-30</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>2001-08-15</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>Instr. music</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>1975-05-01</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>2013-06-06</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>1930-03-20</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>1930-03-20</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>1990-05-01</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>English 6-12</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>1976-06-08</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>2015-08-05</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>1995-01-01</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Political sci.</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>2009-09-15</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>Vocal music</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>The cleaned <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> looks much better and quite a bit more usable for our downstream tasks.</p>
+</section>
+<section id="Step-by-step-walkthrough-of-pyjanitor-DataFrame-manipulations">
 <h3>Step-by-step walkthrough of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> manipulations<a class="headerlink" href="#Step-by-step-walkthrough-of-pyjanitor-DataFrame-manipulations" title="Permalink to this headline">¶</a></h3>
 <p>Just for clearer understanding of the above, let’s see how <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> progressively modified the data.</p>
 <p>Loading data in:</p>
-<p>df = pd.read_excel(‘dirty_data.xlsx’) df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="s1">&#39;dirty_data.xlsx&#39;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;openpyxl&#39;</span><span class="p">)</span>
+<span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>First Name</th>
+      <th>Last Name</th>
+      <th>Employee Status</th>
+      <th>Subject</th>
+      <th>Hire Date</th>
+      <th>% Allocated</th>
+      <th>Full time?</th>
+      <th>do not edit! ---&gt;</th>
+      <th>Certification</th>
+      <th>Certification.1</th>
+      <th>Certification.2</th>
+      <th>Unnamed: 11</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>39690.0</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>39690.0</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>37118.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Instr. music</td>
+      <td>Vocal music</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>27515.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>Computers</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>41431.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>32994.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>English 6-12</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>27919.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>42221.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>34700.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Political sci.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>40071.0</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Vocal music</td>
+      <td>English</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
 <p>Clean up names by removing whitespace, punctuation / symbols, capitalization:</p>
-<p>df = df.clean_names() df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">clean_names</span><span class="p">()</span>
+<span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first_name</th>
+      <th>last_name</th>
+      <th>employee_status</th>
+      <th>subject</th>
+      <th>hire_date</th>
+      <th>%_allocated</th>
+      <th>full_time_</th>
+      <th>do_not_edit!_&gt;</th>
+      <th>certification</th>
+      <th>certification_1</th>
+      <th>certification_2</th>
+      <th>unnamed_11</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>39690.0</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>39690.0</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>37118.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Instr. music</td>
+      <td>Vocal music</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>27515.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>Computers</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>41431.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>NaN</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>32994.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>English 6-12</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>27919.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>42221.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Physical ed</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>34700.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Political sci.</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>40071.0</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Vocal music</td>
+      <td>English</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
 <p>Remove entirely empty rows / columns:</p>
-<p>df = df.remove_empty() df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">remove_empty</span><span class="p">()</span>
+<span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first_name</th>
+      <th>last_name</th>
+      <th>employee_status</th>
+      <th>subject</th>
+      <th>hire_date</th>
+      <th>%_allocated</th>
+      <th>full_time_</th>
+      <th>certification</th>
+      <th>certification_1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>39690.0</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>39690.0</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>37118.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>Instr. music</td>
+      <td>Vocal music</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>27515.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+      <td>Computers</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>41431.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>32994.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>English 6-12</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>27919.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>42221.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Physical ed</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>34700.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Political sci.</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>40071.0</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>Vocal music</td>
+      <td>English</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
 <p>Rename particular columns:</p>
-<p>df = ( df.rename_column(“%<em>allocated”, “percent_allocated”) .rename_column(“full_time</em>”, “full_time”) ) df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s2">&quot;%_allocated&quot;</span><span class="p">,</span> <span class="s2">&quot;percent_allocated&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s2">&quot;full_time_&quot;</span><span class="p">,</span> <span class="s2">&quot;full_time&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first_name</th>
+      <th>last_name</th>
+      <th>employee_status</th>
+      <th>subject</th>
+      <th>hire_date</th>
+      <th>percent_allocated</th>
+      <th>full_time</th>
+      <th>certification</th>
+      <th>certification_1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>39690.0</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>39690.0</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+      <td>Theater</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>37118.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>Instr. music</td>
+      <td>Vocal music</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>27515.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+      <td>Computers</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>41431.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+      <td>Physics</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>32994.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>English 6-12</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>27919.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>PENDING</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>42221.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Physical ed</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>34700.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>NaN</td>
+      <td>Political sci.</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>40071.0</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>Vocal music</td>
+      <td>English</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
 <p>Take first non-<code class="docutils literal notranslate"><span class="pre">NaN</span></code> row value in two columns:</p>
-<p>df = df.coalesce([“certification”, “certification_1”], “certification”) df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">coalesce</span><span class="p">([</span><span class="s2">&quot;certification&quot;</span><span class="p">,</span> <span class="s2">&quot;certification_1&quot;</span><span class="p">],</span> <span class="s2">&quot;certification&quot;</span><span class="p">)</span>
+<span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first_name</th>
+      <th>last_name</th>
+      <th>employee_status</th>
+      <th>subject</th>
+      <th>hire_date</th>
+      <th>percent_allocated</th>
+      <th>full_time</th>
+      <th>certification</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>39690.0</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>39690.0</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>37118.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>Instr. music</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>27515.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>41431.0</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>11037.0</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>32994.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>English 6-12</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>27919.0</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>42221.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>34700.0</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Political sci.</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>40071.0</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>Vocal music</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
 <p>Convert string object rows to categorical to save on memory consumption and speed up access:</p>
-<p>df.dtypes</p>
-<p>df.encode_categorical([“subject”, “employee_status”, “full_time”]) df.dtypes</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+first_name            object
+last_name             object
+employee_status       object
+subject               object
+hire_date            float64
+percent_allocated    float64
+full_time             object
+certification         object
+dtype: object
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">encode_categorical</span><span class="p">([</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;employee_status&quot;</span><span class="p">,</span> <span class="s2">&quot;full_time&quot;</span><span class="p">])</span>
+<span class="n">df</span><span class="o">.</span><span class="n">dtypes</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+first_name             object
+last_name              object
+employee_status      category
+subject              category
+hire_date             float64
+percent_allocated     float64
+full_time            category
+certification          object
+dtype: object
+</pre></div></div>
+</div>
 <p>Convert Excel date-formatted column to a more interpretable format:</p>
-<p>df.convert_excel_date(“hire_date”) df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">convert_excel_date</span><span class="p">(</span><span class="s2">&quot;hire_date&quot;</span><span class="p">)</span>
+<span class="n">df</span>
+</pre></div>
 </div>
 </div>
-<div class="section" id="Example-analysis-of-the-data">
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first_name</th>
+      <th>last_name</th>
+      <th>employee_status</th>
+      <th>subject</th>
+      <th>hire_date</th>
+      <th>percent_allocated</th>
+      <th>full_time</th>
+      <th>certification</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>2008-08-30</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>2008-08-30</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>2001-08-15</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>Instr. music</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>1975-05-01</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>2013-06-06</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>1930-03-20</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>1930-03-20</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>1990-05-01</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>English 6-12</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>1976-06-08</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>PENDING</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>2015-08-05</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Physical ed</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>1995-01-01</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Political sci.</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>2009-09-15</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>Vocal music</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+</section>
+<section id="Example-analysis-of-the-data">
 <h2>Example analysis of the data<a class="headerlink" href="#Example-analysis-of-the-data" title="Permalink to this headline">¶</a></h2>
 <p>Let’s perform analysis on the above, cleaned <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>. First we add some additional, randomly-generated data. Note that we <code class="docutils literal notranslate"><span class="pre">.copy()</span></code> the original to preserve it, given that the following would otherwise modify it:</p>
-<p>data_df = ( cleaned_df .copy() .add_columns( lucky_number=np.random.randint(0, 10, len(cleaned_df)), age=np.random.randint(10, 100, len(cleaned_df)), employee_of_month_count=np.random.randint(0, 5, len(cleaned_df)) ) )</p>
-<p>data_df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">data_df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">cleaned_df</span>
+    <span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">add_columns</span><span class="p">(</span>
+        <span class="n">lucky_number</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned_df</span><span class="p">)),</span>
+        <span class="n">age</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned_df</span><span class="p">)),</span>
+        <span class="n">employee_of_month_count</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleaned_df</span><span class="p">))</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">data_df</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>first_name</th>
+      <th>last_name</th>
+      <th>employee_status</th>
+      <th>subject</th>
+      <th>hire_date</th>
+      <th>percent_allocated</th>
+      <th>full_time</th>
+      <th>certification</th>
+      <th>lucky_number</th>
+      <th>age</th>
+      <th>employee_of_month_count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>PE</td>
+      <td>2008-08-30</td>
+      <td>0.75</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+      <td>6</td>
+      <td>74</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Jason</td>
+      <td>Bourne</td>
+      <td>Teacher</td>
+      <td>Drafting</td>
+      <td>2008-08-30</td>
+      <td>0.25</td>
+      <td>Yes</td>
+      <td>Physical ed</td>
+      <td>6</td>
+      <td>90</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Alicia</td>
+      <td>Keys</td>
+      <td>Teacher</td>
+      <td>Music</td>
+      <td>2001-08-15</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>Instr. music</td>
+      <td>2</td>
+      <td>47</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Ada</td>
+      <td>Lovelace</td>
+      <td>Teacher</td>
+      <td>NaN</td>
+      <td>1975-05-01</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+      <td>9</td>
+      <td>76</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Desus</td>
+      <td>Nice</td>
+      <td>Administration</td>
+      <td>Dean</td>
+      <td>2013-06-06</td>
+      <td>1.00</td>
+      <td>Yes</td>
+      <td>PENDING</td>
+      <td>4</td>
+      <td>69</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Physics</td>
+      <td>1930-03-20</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+      <td>7</td>
+      <td>61</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>Chien-Shiung</td>
+      <td>Wu</td>
+      <td>Teacher</td>
+      <td>Chemistry</td>
+      <td>1930-03-20</td>
+      <td>0.50</td>
+      <td>Yes</td>
+      <td>Science 6-12</td>
+      <td>4</td>
+      <td>47</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>James</td>
+      <td>Joyce</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>1990-05-01</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>English 6-12</td>
+      <td>9</td>
+      <td>34</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>Hedy</td>
+      <td>Lamarr</td>
+      <td>Teacher</td>
+      <td>Science</td>
+      <td>1976-06-08</td>
+      <td>0.50</td>
+      <td>No</td>
+      <td>PENDING</td>
+      <td>6</td>
+      <td>23</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>Carlos</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>Basketball</td>
+      <td>2015-08-05</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Physical ed</td>
+      <td>1</td>
+      <td>21</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>Young</td>
+      <td>Boozer</td>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>1995-01-01</td>
+      <td>NaN</td>
+      <td>No</td>
+      <td>Political sci.</td>
+      <td>1</td>
+      <td>83</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>Micheal</td>
+      <td>Larsen</td>
+      <td>Teacher</td>
+      <td>English</td>
+      <td>2009-09-15</td>
+      <td>0.80</td>
+      <td>No</td>
+      <td>Vocal music</td>
+      <td>5</td>
+      <td>81</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
 <p>Calculate mean, median of all numerical columns after grouping by employee status. Use <code class="docutils literal notranslate"><span class="pre">.collapse_levels()</span></code>, a <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> convenience function, to convert the <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> returned by <code class="docutils literal notranslate"><span class="pre">.agg()</span></code> from having multi-level columns (because we supplied a list of aggregation operations) to single-level by concatenating the level names with an underscore:</p>
-<p>stats_df = ( data_df.groupby(‘employee_status’) .agg([‘mean’, ‘median’]) .collapse_levels() .reset_index() )</p>
-<p>stats_df</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">stats_df</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">data_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;employee_status&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">agg</span><span class="p">([</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;median&#39;</span><span class="p">])</span>
+    <span class="o">.</span><span class="n">collapse_levels</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="n">stats_df</span>
+</pre></div>
 </div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>employee_status</th>
+      <th>percent_allocated_mean</th>
+      <th>percent_allocated_median</th>
+      <th>lucky_number_mean</th>
+      <th>lucky_number_median</th>
+      <th>age_mean</th>
+      <th>age_median</th>
+      <th>employee_of_month_count_mean</th>
+      <th>employee_of_month_count_median</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Administration</td>
+      <td>1.000000</td>
+      <td>1.0</td>
+      <td>4</td>
+      <td>4</td>
+      <td>69.000000</td>
+      <td>69</td>
+      <td>2.000000</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Coach</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>1</td>
+      <td>1</td>
+      <td>52.000000</td>
+      <td>52</td>
+      <td>2.000000</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Teacher</td>
+      <td>0.644444</td>
+      <td>0.5</td>
+      <td>6</td>
+      <td>6</td>
+      <td>59.222222</td>
+      <td>61</td>
+      <td>1.333333</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+</section>
 
 
           </div>
@@ -268,7 +2745,7 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -279,10 +2756,10 @@
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -4,18 +4,18 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Processing Board Game Data &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Processing Dirty Data" href="dirty_data.html" />
@@ -41,21 +41,35 @@
 /* CSS for nbsphinx extension */
 
 /* remove conflicting styling from Sphinx themes */
-div.nbinput.container,
-div.nbinput.container div.prompt,
-div.nbinput.container div.input_area,
-div.nbinput.container div[class*=highlight],
-div.nbinput.container div[class*=highlight] pre,
-div.nboutput.container,
-div.nboutput.container div.prompt,
-div.nboutput.container div.output_area,
-div.nboutput.container div[class*=highlight],
-div.nboutput.container div[class*=highlight] pre {
-    background: none;
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
     border: none;
-    padding: 0 0;
+    padding: 0;
     margin: 0;
     box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
 }
 
 /* avoid gaps between output lines */
@@ -156,7 +170,7 @@ div.nboutput.container div.output_area {
 div.nbinput.container div.input_area {
     border: 1px solid #e0e0e0;
     border-radius: 2px;
-    background: #f5f5f5;
+    /*background: #f5f5f5;*/
 }
 
 /* override MathJax center alignment in output cells */
@@ -222,6 +236,7 @@ div.nboutput.container div.output_area.rendered_html,
 div.nboutput.container div.output_area > div.output_javascript,
 div.nboutput.container div.output_area:not(.rendered_html) > img{
     padding: 5px;
+    margin: 0;
 }
 
 /* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
@@ -269,14 +284,14 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Processing-Board-Game-Data">
+<section id="Processing-Board-Game-Data">
 <h1>Processing Board Game Data<a class="headerlink" href="#Processing-Board-Game-Data" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="Background">
+<section id="Background">
 <h2>Background<a class="headerlink" href="#Background" title="Permalink to this headline">¶</a></h2>
 <p>This dataset comes from the <a class="reference external" href="http://boardgamegeek.com/">Board Game Geek database</a>. The site’s database has more than 90,000 games, with crowd-sourced ratings. This particular subset is limited to only games with at least 50 ratings which were published between 1950 and 2016. This still leaves us with 10,532 games! For more information please check out the <a class="reference external" href="https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-03-12">tidytuesday repo</a> which is where this example was
 taken from.</p>
-</div>
-<div class="section" id="Data-Cleaning">
+</section>
+<section id="Data-Cleaning">
 <h2>Data Cleaning<a class="headerlink" href="#Data-Cleaning" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -289,7 +304,7 @@ taken from.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="One-Shot">
+<section id="One-Shot">
 <h3>One-Shot<a class="headerlink" href="#One-Shot" title="Permalink to this headline">¶</a></h3>
 <p>This cell demonstrates the cleaning process using the call chaining approach championed in pyjanitor</p>
 <div class="nbinput nblast docutils container">
@@ -308,12 +323,12 @@ taken from.</p>
 </pre></div>
 </div>
 </div>
-</div>
-</div>
-<div class="section" id="Multi-Step">
+</section>
+</section>
+<section id="Multi-Step">
 <h2>Multi-Step<a class="headerlink" href="#Multi-Step" title="Permalink to this headline">¶</a></h2>
 <p>These cells repeat the process in a step-by-step manner in order to explain it in more detail</p>
-<div class="section" id="Read-in-the-csv">
+<section id="Read-in-the-csv">
 <h3>Read in the csv<a class="headerlink" href="#Read-in-the-csv" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -451,8 +466,8 @@ taken from.</p>
 <p>3 rows × 22 columns</p>
 </div></div>
 </div>
-</div>
-<div class="section" id="Remove-the-whitespace,-punctuation/symbols,-and-capitalization-form-columns">
+</section>
+<section id="Remove-the-whitespace,-punctuation/symbols,-and-capitalization-form-columns">
 <h3>Remove the whitespace, punctuation/symbols, and capitalization form columns<a class="headerlink" href="#Remove-the-whitespace,-punctuation/symbols,-and-capitalization-form-columns" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -588,8 +603,8 @@ taken from.</p>
 <p>3 rows × 22 columns</p>
 </div></div>
 </div>
-</div>
-<div class="section" id="Remove-all-the-empty-rows-and-columns-if-present">
+</section>
+<section id="Remove-all-the-empty-rows-and-columns-if-present">
 <h3>Remove all the empty rows and columns if present<a class="headerlink" href="#Remove-all-the-empty-rows-and-columns-if-present" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -725,8 +740,8 @@ taken from.</p>
 <p>3 rows × 22 columns</p>
 </div></div>
 </div>
-</div>
-<div class="section" id="Check-to-see-whether-“min_playtime”-and-“max_playtime”-columns-are-equal">
+</section>
+<section id="Check-to-see-whether-“min_playtime”-and-“max_playtime”-columns-are-equal">
 <h3>Check to see whether “min_playtime” and “max_playtime” columns are equal<a class="headerlink" href="#Check-to-see-whether-“min_playtime”-and-“max_playtime”-columns-are-equal" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -746,8 +761,8 @@ taken from.</p>
 1565
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Check-to-see-what-percentage-of-the-values-in-the-“compilation”-column-are-not-null">
+</section>
+<section id="Check-to-see-what-percentage-of-the-values-in-the-“compilation”-column-are-not-null">
 <h3>Check to see what percentage of the values in the “compilation” column are not null<a class="headerlink" href="#Check-to-see-what-percentage-of-the-values-in-the-“compilation”-column-are-not-null" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
@@ -767,8 +782,8 @@ taken from.</p>
 0.03892897835169009
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Drop-unnecessary-columns">
+</section>
+<section id="Drop-unnecessary-columns">
 <h3>Drop unnecessary columns<a class="headerlink" href="#Drop-unnecessary-columns" title="Permalink to this headline">¶</a></h3>
 <p>The ‘compilation’ column was demonstrated to have little value, the “image” and “thumbnail” columns link to images and are not a factor in this analysis. The “game_id” column can be replaced by using the index.</p>
 <div class="nbinput docutils container">
@@ -892,9 +907,9 @@ taken from.</p>
 </table>
 </div></div>
 </div>
-</div>
-</div>
-<div class="section" id="Sample-Analysis">
+</section>
+</section>
+<section id="Sample-Analysis">
 <h2>Sample Analysis<a class="headerlink" href="#Sample-Analysis" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
@@ -909,7 +924,7 @@ taken from.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="What-Categories-appear-most-often?">
+<section id="What-Categories-appear-most-often?">
 <h3>What Categories appear most often?<a class="headerlink" href="#What-Categories-appear-most-often?" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
@@ -939,8 +954,8 @@ Party Game                     77
 Name: category, dtype: int64
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="What-is-the-relationship-between-games’-player-numbers,-reccomended-minimum-age,-and-the-game’s-estimated-length?">
+</section>
+<section id="What-is-the-relationship-between-games’-player-numbers,-reccomended-minimum-age,-and-the-game’s-estimated-length?">
 <h3>What is the relationship between games’ player numbers, reccomended minimum age, and the game’s estimated length?<a class="headerlink" href="#What-is-the-relationship-between-games’-player-numbers,-reccomended-minimum-age,-and-the-game’s-estimated-length?" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
@@ -961,16 +976,16 @@ Name: category, dtype: int64
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="notebooks/../_build/doctrees/nbsphinx/notebooks_board_games_24_0.png" src="notebooks/../_build/doctrees/nbsphinx/notebooks_board_games_24_0.png" />
+<img alt="../_images/notebooks_board_games_24_0.png" src="../_images/notebooks_board_games_24_0.png" />
 </div>
 </div>
-</div>
-<div class="section" id="Preliminary-analysis">
+</section>
+<section id="Preliminary-analysis">
 <h3>Preliminary analysis<a class="headerlink" href="#Preliminary-analysis" title="Permalink to this headline">¶</a></h3>
 <p>Without digging into the data too much more it becomes apparent that there are some entries that were improperly entered e.g. having a minimum playtime of 60000 minutes. Otherwise we see some nice bell curves.</p>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -1059,7 +1074,7 @@ Name: category, dtype: int64
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -1070,10 +1085,10 @@ Name: category, dtype: int64
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

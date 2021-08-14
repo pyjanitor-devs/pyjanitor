@@ -6,16 +6,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>janitor.finance &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -40,17 +37,17 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">pandas_flavor</span> <span class="k">as</span> <span class="nn">pf</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 
 <span class="kn">from</span> <span class="nn">janitor</span> <span class="kn">import</span> <span class="n">check</span>
+<span class="kn">from</span> <span class="nn">janitor.errors</span> <span class="kn">import</span> <span class="n">JanitorError</span>
 
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">deprecated_alias</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">deprecated_alias</span><span class="p">,</span> <span class="n">is_connected</span>
 
 <span class="n">currency_set</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;AUD&quot;</span><span class="p">,</span>
@@ -358,6 +355,7 @@
 
 
 <span class="k">def</span> <span class="nf">_check_currency</span><span class="p">(</span><span class="n">currency</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check that currency is in supported set.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">currency</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">currency_set</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;currency </span><span class="si">{</span><span class="n">currency</span><span class="si">}</span><span class="s2"> not in supported currency set, &quot;</span>
@@ -366,6 +364,7 @@
 
 
 <span class="k">def</span> <span class="nf">_check_wb_country</span><span class="p">(</span><span class="n">country</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check that world bank country is in supported set.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">country</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wb_country_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="p">(</span>
         <span class="n">country</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wb_country_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>  <span class="c1"># noqa: PD011</span>
     <span class="p">):</span>
@@ -376,156 +375,194 @@
 
 
 <span class="k">def</span> <span class="nf">_check_wb_years</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check that year is in world bank dataset years.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">year</span> <span class="o">&lt;</span> <span class="mi">1960</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;year value must be 1960 or later&quot;</span><span class="p">)</span>
 
 
-<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_convert_currency</span><span class="p">(</span>
-    <span class="n">from_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">to_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">historical_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Currency conversion for Pandas DataFrame column.</span>
+<span class="c1"># @lru_cache(maxsize=32)</span>
+<span class="c1"># def _convert_currency(</span>
+<span class="c1">#     api_key: str,</span>
+<span class="c1">#     from_currency: str = None,</span>
+<span class="c1">#     to_currency: str = None,</span>
+<span class="c1">#     historical_date: Optional[date] = None,</span>
+<span class="c1"># ) -&gt; float:</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Currency conversion for Pandas DataFrame column.</span>
 
-<span class="sd">    Helper function for `convert_currency` method.</span>
+<span class="c1">#     Helper function for `convert_currency` method.</span>
 
-<span class="sd">    The API used is: https://exchangeratesapi.io/</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="c1">#     The API used is https://exchangeratesapi.io/.</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
 
-    <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://api.exchangeratesapi.io&quot;</span>
+<span class="c1">#     url = &quot;http://api.exchangeratesapi.io&quot;</span>
 
-    <span class="k">if</span> <span class="n">historical_date</span><span class="p">:</span>
-        <span class="n">check</span><span class="p">(</span><span class="s2">&quot;historical_date&quot;</span><span class="p">,</span> <span class="n">historical_date</span><span class="p">,</span> <span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="n">date</span><span class="p">])</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">historical_date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">historical_date</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">1999</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;historical_date:datetime must be later than 1999-01-04!&quot;</span>
-                <span class="p">)</span>
-            <span class="n">string_date</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)[:</span><span class="mi">10</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">historical_date</span> <span class="o">&lt;</span> <span class="n">date</span><span class="p">(</span><span class="mi">1999</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;historical_date:date must be later than 1999-01-04!&quot;</span>
-                <span class="p">)</span>
-            <span class="n">string_date</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="o">+</span> <span class="s2">&quot;/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">string_date</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span> <span class="o">+</span> <span class="s2">&quot;/latest&quot;</span>
+<span class="c1">#     if historical_date:</span>
+<span class="c1">#         check(&quot;historical_date&quot;, historical_date, [datetime, date])</span>
+<span class="c1">#         if isinstance(historical_date, datetime):</span>
+<span class="c1">#             if historical_date &lt; datetime(1999, 1, 4):</span>
+<span class="c1">#                 raise ValueError(</span>
+<span class="c1">#                     &quot;historical_date:datetime must be later than 1999-01-04!&quot;</span>
+<span class="c1">#                 )</span>
+<span class="c1">#             string_date = str(historical_date)[:10]</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             if historical_date &lt; date(1999, 1, 4):</span>
+<span class="c1">#                 raise ValueError(</span>
+<span class="c1">#                     &quot;historical_date:date must be later than 1999-01-04!&quot;</span>
+<span class="c1">#                 )</span>
+<span class="c1">#             string_date = str(historical_date)</span>
+<span class="c1">#         url = url + &quot;/%s&quot; % string_date</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         url = url + &quot;/latest&quot;</span>
 
-    <span class="n">_check_currency</span><span class="p">(</span><span class="n">from_currency</span><span class="p">)</span>
-    <span class="n">_check_currency</span><span class="p">(</span><span class="n">to_currency</span><span class="p">)</span>
+<span class="c1">#     _check_currency(from_currency)</span>
+<span class="c1">#     _check_currency(to_currency)</span>
 
-    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;base&quot;</span><span class="p">:</span> <span class="n">from_currency</span><span class="p">,</span> <span class="s2">&quot;symbols&quot;</span><span class="p">:</span> <span class="n">to_currency</span><span class="p">}</span>
+<span class="c1">#     payload = {</span>
+<span class="c1">#         # &quot;base&quot;: from_currency,</span>
+<span class="c1">#         &quot;symbols&quot;: to_currency,</span>
+<span class="c1">#         &quot;access_key&quot;: api_key,</span>
+<span class="c1">#     }</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+<span class="c1">#     result = requests.get(url, params=payload)</span>
 
-    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">(</span>
-            <span class="s2">&quot;Exchange Rate API failed to receive a 200 &quot;</span>
-            <span class="s2">&quot;response from the server. &quot;</span>
-            <span class="s2">&quot;Please try again later.&quot;</span>
-        <span class="p">)</span>
+<span class="c1">#     if result.status_code != 200:</span>
+<span class="c1">#         raise ConnectionError(</span>
+<span class="c1">#             &quot;Exchange Rate API failed to receive a 200 &quot;</span>
+<span class="c1">#             &quot;response from the server. &quot;</span>
+<span class="c1">#             &quot;Please try again later.&quot;</span>
+<span class="c1">#         )</span>
 
-    <span class="n">currency_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-    <span class="n">rate</span> <span class="o">=</span> <span class="n">currency_dict</span><span class="p">[</span><span class="s2">&quot;rates&quot;</span><span class="p">][</span><span class="n">to_currency</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">rate</span>
+<span class="c1">#     currency_dict = json.loads(result.text)</span>
+<span class="c1">#     rate = currency_dict[&quot;rates&quot;][to_currency]</span>
+<span class="c1">#     return rate</span>
 
 
 <div class="viewcode-block" id="convert_currency"><a class="viewcode-back" href="../../reference/finance.html#janitor.finance.convert_currency">[docs]</a><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="nd">@deprecated_alias</span><span class="p">(</span><span class="n">colname</span><span class="o">=</span><span class="s2">&quot;column_name&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">convert_currency</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">from_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">to_currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">historical_date</span><span class="p">:</span> <span class="n">date</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">make_new_column</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Converts a column from one currency to another, with an option to</span>
-<span class="sd">    convert based on historical exchange values.</span>
+    <span class="sd">&quot;&quot;&quot;Deprecated function.&quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="n">JanitorError</span><span class="p">(</span>
+        <span class="s2">&quot;The `convert_currency` function has been temporarily disabled due to &quot;</span>
+        <span class="s2">&quot;exchangeratesapi.io disallowing free pinging of its API. &quot;</span>
+        <span class="s2">&quot;(Our tests started to fail due to this issue.) &quot;</span>
+        <span class="s2">&quot;There is no easy way around this problem &quot;</span>
+        <span class="s2">&quot;except to find a new API to call on.&quot;</span>
+        <span class="s2">&quot;Please comment on issue #829 &quot;</span>
+        <span class="s2">&quot;(https://github.com/pyjanitor-devs/pyjanitor/issues/829) &quot;</span>
+        <span class="s2">&quot;if you know of an alternative API that we can call on, &quot;</span>
+        <span class="s2">&quot;otherwise the function will be removed in pyjanitor&#39;s 1.0 release.&quot;</span>
+    <span class="p">)</span></div>
 
-<span class="sd">    This method mutates the original DataFrame.</span>
 
-<span class="sd">    :param df: A pandas dataframe.</span>
-<span class="sd">    :param column_name: Name of the new column. Should be a string, in order</span>
-<span class="sd">        for the column name to be compatible with the Feather binary</span>
-<span class="sd">        format (this is a useful thing to have).</span>
-<span class="sd">    :param from_currency: The base currency to convert from.</span>
-<span class="sd">        May be any of: currency_set = {&quot;AUD&quot;, &quot;BGN&quot;, &quot;BRL&quot;, &quot;CAD&quot;, &quot;CHF&quot;,</span>
-<span class="sd">        &quot;CNY&quot;, &quot;CZK&quot;, &quot;DKK&quot;, &quot;EUR&quot;, &quot;GBP&quot;, &quot;HKD&quot;, &quot;HRK&quot;, &quot;HUF&quot;, &quot;IDR&quot;,</span>
-<span class="sd">        &quot;ILS&quot;, &quot;INR&quot;, &quot;ISK&quot;, &quot;JPY&quot;, &quot;KRW&quot;, &quot;MXN&quot;, &quot;MYR&quot;, &quot;NOK&quot;, &quot;NZD&quot;,</span>
-<span class="sd">        &quot;PHP&quot;, &quot;PLN&quot;, &quot;RON&quot;, &quot;RUB&quot;, &quot;SEK&quot;, &quot;SGD&quot;, &quot;THB&quot;, &quot;TRY&quot;, &quot;USD&quot;,</span>
-<span class="sd">        &quot;ZAR&quot;}</span>
-<span class="sd">    :param to_currency: The target currency to convert to.</span>
-<span class="sd">        May be any of: currency_set = {&quot;AUD&quot;, &quot;BGN&quot;, &quot;BRL&quot;, &quot;CAD&quot;, &quot;CHF&quot;,</span>
-<span class="sd">        &quot;CNY&quot;, &quot;CZK&quot;, &quot;DKK&quot;, &quot;EUR&quot;, &quot;GBP&quot;, &quot;HKD&quot;, &quot;HRK&quot;, &quot;HUF&quot;, &quot;IDR&quot;,</span>
-<span class="sd">        &quot;ILS&quot;, &quot;INR&quot;, &quot;ISK&quot;, &quot;JPY&quot;, &quot;KRW&quot;, &quot;MXN&quot;, &quot;MYR&quot;, &quot;NOK&quot;, &quot;NZD&quot;,</span>
-<span class="sd">        &quot;PHP&quot;, &quot;PLN&quot;, &quot;RON&quot;, &quot;RUB&quot;, &quot;SEK&quot;, &quot;SGD&quot;, &quot;THB&quot;, &quot;TRY&quot;, &quot;USD&quot;,</span>
-<span class="sd">        &quot;ZAR&quot;}</span>
-<span class="sd">    :param historical_date: If supplied, get exchange rate on a certain\</span>
-<span class="sd">        date. If not supplied, get the latest exchange rate. The exchange\</span>
-<span class="sd">        rates go back to Jan. 4, 1999.</span>
-<span class="sd">    :param make_new_column: Generates new column for converted currency if</span>
-<span class="sd">        True, otherwise, converts currency in place.</span>
-<span class="sd">    :returns: The dataframe with converted currency column.</span>
+<span class="c1"># @pf.register_dataframe_method</span>
+<span class="c1"># @deprecated_alias(colname=&quot;column_name&quot;)</span>
+<span class="c1"># def convert_currency(</span>
+<span class="c1">#     df: pd.DataFrame,</span>
+<span class="c1">#     api_key: str,</span>
+<span class="c1">#     column_name: str = None,</span>
+<span class="c1">#     from_currency: str = None,</span>
+<span class="c1">#     to_currency: str = None,</span>
+<span class="c1">#     historical_date: date = None,</span>
+<span class="c1">#     make_new_column: bool = False,</span>
+<span class="c1"># ) -&gt; pd.DataFrame:</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Converts a column from one currency to another, with an option to</span>
+<span class="c1">#     convert based on historical exchange values.</span>
 
-<span class="sd">    :Setup:</span>
+<span class="c1">#     On April 10 2021,</span>
+<span class="c1">#     we discovered that there was no more free API available.</span>
+<span class="c1">#     Thus, an API key is required to perform currency conversion.</span>
+<span class="c1">#     API keys should be set as an environment variable,</span>
+<span class="c1">#     for example, ``EXCHANGE_RATE_API_KEY``,</span>
+<span class="c1">#     and then passed into the function</span>
+<span class="c1">#     by calling on ``os.getenv(&quot;EXCHANGE_RATE_APIKEY&quot;)``.</span>
 
-<span class="sd">    .. code-block:: python</span>
+<span class="c1">#     :param df: A pandas dataframe.</span>
+<span class="c1">#     :param api_key: exchangeratesapi.io API key.</span>
+<span class="c1">#     :param column_name: Name of the new column. Should be a string, in order</span>
+<span class="c1">#         for the column name to be compatible with the Feather binary</span>
+<span class="c1">#         format (this is a useful thing to have).</span>
+<span class="c1">#     :param from_currency: The base currency to convert from.</span>
+<span class="c1">#         May be any of: currency_set = {&quot;AUD&quot;, &quot;BGN&quot;, &quot;BRL&quot;, &quot;CAD&quot;, &quot;CHF&quot;,</span>
+<span class="c1">#         &quot;CNY&quot;, &quot;CZK&quot;, &quot;DKK&quot;, &quot;EUR&quot;, &quot;GBP&quot;, &quot;HKD&quot;, &quot;HRK&quot;, &quot;HUF&quot;, &quot;IDR&quot;,</span>
+<span class="c1">#         &quot;ILS&quot;, &quot;INR&quot;, &quot;ISK&quot;, &quot;JPY&quot;, &quot;KRW&quot;, &quot;MXN&quot;, &quot;MYR&quot;, &quot;NOK&quot;, &quot;NZD&quot;,</span>
+<span class="c1">#         &quot;PHP&quot;, &quot;PLN&quot;, &quot;RON&quot;, &quot;RUB&quot;, &quot;SEK&quot;, &quot;SGD&quot;, &quot;THB&quot;, &quot;TRY&quot;, &quot;USD&quot;,</span>
+<span class="c1">#         &quot;ZAR&quot;}</span>
+<span class="c1">#     :param to_currency: The target currency to convert to.</span>
+<span class="c1">#         May be any of: currency_set = {&quot;AUD&quot;, &quot;BGN&quot;, &quot;BRL&quot;, &quot;CAD&quot;, &quot;CHF&quot;,</span>
+<span class="c1">#         &quot;CNY&quot;, &quot;CZK&quot;, &quot;DKK&quot;, &quot;EUR&quot;, &quot;GBP&quot;, &quot;HKD&quot;, &quot;HRK&quot;, &quot;HUF&quot;, &quot;IDR&quot;,</span>
+<span class="c1">#         &quot;ILS&quot;, &quot;INR&quot;, &quot;ISK&quot;, &quot;JPY&quot;, &quot;KRW&quot;, &quot;MXN&quot;, &quot;MYR&quot;, &quot;NOK&quot;, &quot;NZD&quot;,</span>
+<span class="c1">#         &quot;PHP&quot;, &quot;PLN&quot;, &quot;RON&quot;, &quot;RUB&quot;, &quot;SEK&quot;, &quot;SGD&quot;, &quot;THB&quot;, &quot;TRY&quot;, &quot;USD&quot;,</span>
+<span class="c1">#         &quot;ZAR&quot;}</span>
+<span class="c1">#     :param historical_date: If supplied,</span>
+<span class="c1">#         get exchange rate on a certain date.</span>
+<span class="c1">#         If not supplied, get the latest exchange rate.</span>
+<span class="c1">#         The exchange rates go back to Jan. 4, 1999.</span>
+<span class="c1">#     :param make_new_column: Generates new column</span>
+<span class="c1">#         for converted currency if True,</span>
+<span class="c1">#         otherwise, converts currency in place.</span>
+<span class="c1">#     :returns: The dataframe with converted currency column.</span>
 
-<span class="sd">        import pandas as pd</span>
-<span class="sd">        import janitor</span>
-<span class="sd">        from datetime import date</span>
+<span class="c1">#     .. code-block:: python</span>
 
-<span class="sd">        data_dict = {</span>
-<span class="sd">            &quot;a&quot;: [1.23452345, 2.456234, 3.2346125] * 3,</span>
-<span class="sd">            &quot;Bell__Chart&quot;: [1/3, 2/7, 3/2] * 3,</span>
-<span class="sd">            &quot;decorated-elephant&quot;: [1/234, 2/13, 3/167] * 3,</span>
-<span class="sd">            &quot;animals&quot;: [&quot;rabbit&quot;, &quot;leopard&quot;, &quot;lion&quot;] * 3,</span>
-<span class="sd">            &quot;cities&quot;: [&quot;Cambridge&quot;, &quot;Shanghai&quot;, &quot;Basel&quot;] * 3,</span>
-<span class="sd">        }</span>
+<span class="c1">#         import pandas as pd</span>
+<span class="c1">#         import janitor</span>
+<span class="c1">#         from datetime import date</span>
 
-<span class="sd">        example_dataframe = pd.DataFrame(data_dict)</span>
+<span class="c1">#         data_dict = {</span>
+<span class="c1">#             &quot;a&quot;: [1.23452345, 2.456234, 3.2346125] * 3,</span>
+<span class="c1">#             &quot;Bell__Chart&quot;: [1/3, 2/7, 3/2] * 3,</span>
+<span class="c1">#             &quot;decorated-elephant&quot;: [1/234, 2/13, 3/167] * 3,</span>
+<span class="c1">#             &quot;animals&quot;: [&quot;rabbit&quot;, &quot;leopard&quot;, &quot;lion&quot;] * 3,</span>
+<span class="c1">#             &quot;cities&quot;: [&quot;Cambridge&quot;, &quot;Shanghai&quot;, &quot;Basel&quot;] * 3,</span>
+<span class="c1">#         }</span>
 
-<span class="sd">    :Example: Converting a column from one currency to another using rates</span>
+<span class="c1">#         example_dataframe = pd.DataFrame(data_dict)</span>
 
-<span class="sd">    from 01/01/2018:</span>
+<span class="c1">#     Example: Converting a column from one currency to another</span>
+<span class="c1">#     using rates from 01/01/2018.</span>
 
-<span class="sd">    .. code-block:: python</span>
+<span class="c1">#     .. code-block:: python</span>
 
-<span class="sd">        example_dataframe.convert_currency(&#39;a&#39;, from_currency=&#39;USD&#39;,</span>
-<span class="sd">        to_currency=&#39;EUR&#39;, historical_date=date(2018,1,1))</span>
+<span class="c1">#         example_dataframe.convert_currency(&#39;a&#39;, from_currency=&#39;USD&#39;,</span>
+<span class="c1">#         to_currency=&#39;EUR&#39;, historical_date=date(2018,1,1))</span>
 
-<span class="sd">    :Output:</span>
+<span class="c1">#     Output:</span>
 
-<span class="sd">    .. code-block:: python</span>
+<span class="c1">#     .. code-block:: python</span>
 
-<span class="sd">                    a  Bell__Chart  decorated-elephant  animals     cities</span>
-<span class="sd">        0  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
-<span class="sd">        1  2.048056     0.285714            0.153846  leopard   Shanghai</span>
-<span class="sd">        2  2.697084     1.500000            0.017964     lion      Basel</span>
-<span class="sd">        3  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
-<span class="sd">        4  2.048056     0.285714            0.153846  leopard   Shanghai</span>
-<span class="sd">        5  2.697084     1.500000            0.017964     lion      Basel</span>
-<span class="sd">        6  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
-<span class="sd">        7  2.048056     0.285714            0.153846  leopard   Shanghai</span>
-<span class="sd">        8  2.697084     1.500000            0.017964     lion      Basel</span>
+<span class="c1">#                     a  Bell__Chart  decorated-elephant  animals     cities</span>
+<span class="c1">#         0  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
+<span class="c1">#         1  2.048056     0.285714            0.153846  leopard   Shanghai</span>
+<span class="c1">#         2  2.697084     1.500000            0.017964     lion      Basel</span>
+<span class="c1">#         3  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
+<span class="c1">#         4  2.048056     0.285714            0.153846  leopard   Shanghai</span>
+<span class="c1">#         5  2.697084     1.500000            0.017964     lion      Basel</span>
+<span class="c1">#         6  1.029370     0.333333            0.004274   rabbit  Cambridge</span>
+<span class="c1">#         7  2.048056     0.285714            0.153846  leopard   Shanghai</span>
+<span class="c1">#         8  2.697084     1.500000            0.017964     lion      Basel</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="c1">#     rate = _convert_currency(</span>
+<span class="c1">#         api_key, from_currency, to_currency, historical_date</span>
+<span class="c1">#     )</span>
 
-    <span class="n">rate</span> <span class="o">=</span> <span class="n">_convert_currency</span><span class="p">(</span><span class="n">from_currency</span><span class="p">,</span> <span class="n">to_currency</span><span class="p">,</span> <span class="n">historical_date</span><span class="p">)</span>
+<span class="c1">#     if make_new_column:</span>
+<span class="c1">#         # new_column_name = column_name + &quot;_&quot; + to_currency</span>
+<span class="c1">#         column_name = column_name + &quot;_&quot; + to_currency</span>
 
-    <span class="k">if</span> <span class="n">make_new_column</span><span class="p">:</span>
-        <span class="n">new_column_name</span> <span class="o">=</span> <span class="n">column_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">to_currency</span>
-        <span class="n">df</span><span class="p">[</span><span class="n">new_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">rate</span>
+<span class="c1">#     df = df.assign(column_name=df[column_name] * rate)</span>
 
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">rate</span>
-
-    <span class="k">return</span> <span class="n">df</span></div>
+<span class="c1">#     return df</span>
 
 
 <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
@@ -691,6 +728,56 @@
         <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">*</span> <span class="n">inflator</span>
 
     <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="convert_stock"><a class="viewcode-back" href="../../reference/finance.html#janitor.finance.convert_stock">[docs]</a><span class="k">def</span> <span class="nf">convert_stock</span><span class="p">(</span><span class="n">stock_symbol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function takes in a stock symbol as a parameter,</span>
+<span class="sd">    queries an API for the companies full name and returns</span>
+<span class="sd">    it</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        print(convert_stock(&quot;aapl&quot;))</span>
+
+<span class="sd">        console &gt;&gt; Apple Inc.</span>
+
+<span class="sd">    :param stock_symbol: This is our input stock symbol</span>
+<span class="sd">        to be converted</span>
+<span class="sd">    :raises ConnectionError: if stock ticker data cannot be retrieved</span>
+<span class="sd">    :return: We return the full company name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_connected</span><span class="p">(</span><span class="s2">&quot;www.google.com&quot;</span><span class="p">):</span>
+        <span class="n">stock_symbol</span> <span class="o">=</span> <span class="n">stock_symbol</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">get_symbol</span><span class="p">(</span><span class="n">stock_symbol</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">(</span>
+            <span class="s2">&quot;Connection Error: Client Not Connected to Internet&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_symbol"><a class="viewcode-back" href="../../reference/finance.html#janitor.finance.get_symbol">[docs]</a><span class="k">def</span> <span class="nf">get_symbol</span><span class="p">(</span><span class="n">symbol</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a helper function to get a companies full</span>
+<span class="sd">    name based on the stock symbol.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        print(get_symbol(&quot;aapl&quot;))</span>
+<span class="sd">        console &gt;&gt; Apple Inc.</span>
+
+<span class="sd">    :param symbol: This is our stock symbol that we use</span>
+<span class="sd">        to query te api for the companies full name.</span>
+<span class="sd">    :return: This is the company name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s2">&quot;http://d.yimg.com/autoc.&quot;</span>
+        <span class="o">+</span> <span class="s2">&quot;finance.yahoo.com/autoc?query=</span><span class="si">{}</span><span class="s2">&amp;region=1&amp;lang=en&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;ResultSet&quot;</span><span class="p">][</span><span class="s2">&quot;Result&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;symbol&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">symbol</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
 </pre></div>
 
           </div>
@@ -735,7 +822,7 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -746,10 +833,10 @@
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

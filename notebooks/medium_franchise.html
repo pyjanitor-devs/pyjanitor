@@ -4,18 +4,18 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Tidy Up Web-Scraped Media Franchise Data &#8212; pyjanitor  documentation</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Normalization and Standardization" href="normalize.html" />
@@ -41,21 +41,35 @@
 /* CSS for nbsphinx extension */
 
 /* remove conflicting styling from Sphinx themes */
-div.nbinput.container,
-div.nbinput.container div.prompt,
-div.nbinput.container div.input_area,
-div.nbinput.container div[class*=highlight],
-div.nbinput.container div[class*=highlight] pre,
-div.nboutput.container,
-div.nboutput.container div.prompt,
-div.nboutput.container div.output_area,
-div.nboutput.container div[class*=highlight],
-div.nboutput.container div[class*=highlight] pre {
-    background: none;
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
     border: none;
-    padding: 0 0;
+    padding: 0;
     margin: 0;
     box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
 }
 
 /* avoid gaps between output lines */
@@ -156,7 +170,7 @@ div.nboutput.container div.output_area {
 div.nbinput.container div.input_area {
     border: 1px solid #e0e0e0;
     border-radius: 2px;
-    background: #f5f5f5;
+    /*background: #f5f5f5;*/
 }
 
 /* override MathJax center alignment in output cells */
@@ -222,6 +236,7 @@ div.nboutput.container div.output_area.rendered_html,
 div.nboutput.container div.output_area > div.output_javascript,
 div.nboutput.container div.output_area:not(.rendered_html) > img{
     padding: 5px;
+    margin: 0;
 }
 
 /* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
@@ -269,9 +284,9 @@ div.rendered_html tbody tr:hover {
   background: rgba(66, 165, 245, 0.2);
 }
 </style>
-<div class="section" id="Tidy-Up-Web-Scraped-Media-Franchise-Data">
+<section id="Tidy-Up-Web-Scraped-Media-Franchise-Data">
 <h1>Tidy Up Web-Scraped Media Franchise Data<a class="headerlink" href="#Tidy-Up-Web-Scraped-Media-Franchise-Data" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="Background">
+<section id="Background">
 <h2>Background<a class="headerlink" href="#Background" title="Permalink to this headline">¶</a></h2>
 <p>This example combines functionalities of <a class="reference external" href="https://anaconda.org/conda-forge/pyjanitor">pyjanitor</a> and <a class="reference external" href="https://anaconda.org/conda-forge/pandas-flavor">pandas-flavor</a> to showcase an explicit–and thus reproducible–workflow enabled by dataframe <strong>method chaining</strong>.</p>
 <p>The data cleaning workflow largely follows the <a class="reference external" href="https://github.com/rfordatascience/tidytuesday/blob/master/data/2019/2019-07-02/revenue.R">R example</a> from <a class="reference external" href="https://github.com/rfordatascience/tidytuesday">the tidytuesday project</a>. The raw data is scraped from <a class="reference external" href="https://en.wikipedia.org/wiki/List_of_highest-grossing_media_franchises">Wikipedia page</a> titled “<em>List of highest-grossing media franchises</em>”. The workflow is presented both in multi-step (section1) and in one-shot (section 2)
@@ -286,11 +301,11 @@ fashions.</p>
 <li><p>Column value remapping with fuzzy substring matching (with <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> + <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code>)</p></li>
 </ul>
 <p>Data visualization is not included in this example. But if you are looking for inspirations, <a class="reference external" href="https://www.reddit.com/r/dataisbeautiful/comments/c53540/highest_grossing_media_franchises_oc/">here</a> is a good example.</p>
-</div>
+</section>
 <hr class="docutils" />
-<div class="section" id="Structural-convention">
+<section id="Structural-convention">
 <h2>Structural convention<a class="headerlink" href="#Structural-convention" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="1.-Annotation-system-in-code-comments">
+<section id="1.-Annotation-system-in-code-comments">
 <h3>1. Annotation system in code comments<a class="headerlink" href="#1.-Annotation-system-in-code-comments" title="Permalink to this headline">¶</a></h3>
 <p>This example includes both <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas-flavors</span></code> methods. As you step through this example, you will see the following annotation system in code comments that explains various methods’ categories:</p>
 <ul class="simple">
@@ -298,16 +313,16 @@ fashions.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">[pandas-flavor]</span></code> denotes custom <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code> methods</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">[pyjanitor</span> <span class="pre">+</span> <span class="pre">pandas-flavor]</span></code> denotes <code class="docutils literal notranslate"><span class="pre">pandas-flavor</span></code> methods built on top of <code class="docutils literal notranslate"><span class="pre">pyjanitor</span></code> functions</p></li>
 </ul>
-</div>
-<div class="section" id="2.-R-counterpart-snippets-and-python-code-in-tandem">
+</section>
+<section id="2.-R-counterpart-snippets-and-python-code-in-tandem">
 <h3>2. R counterpart snippets and python code in tandem<a class="headerlink" href="#2.-R-counterpart-snippets-and-python-code-in-tandem" title="Permalink to this headline">¶</a></h3>
 <p>The multi-step workflow is presented by alternating the original R snippets (from tidytuesday) and the corresponding python implementations.</p>
-</div>
-</div>
+</section>
+</section>
 <hr class="docutils" />
-<div class="section" id="Python-implementation">
+<section id="Python-implementation">
 <h2>Python implementation<a class="headerlink" href="#Python-implementation" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="Preparation">
+<section id="Preparation">
 <h3>Preparation<a class="headerlink" href="#Preparation" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -333,13 +348,13 @@ fashions.</p>
 </pre></div>
 </div>
 </div>
-</div>
+</section>
 <hr class="docutils" />
-<div class="section" id="Section-1-Multi-Step">
+<section id="Section-1-Multi-Step">
 <h3>Section 1 Multi-Step<a class="headerlink" href="#Section-1-Multi-Step" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="Load-data">
+<section id="Load-data">
 <h4>Load data<a class="headerlink" href="#Load-data" title="Permalink to this headline">¶</a></h4>
-<div class="section" id="Note:-The-table-from-the-url-has-been-saved-as-a-csv-file-for-use-in-this-example-notebook.">
+<section id="Note:-The-table-from-the-url-has-been-saved-as-a-csv-file-for-use-in-this-example-notebook.">
 <h5>Note: The table from the url has been saved as a csv file for use in this example notebook.<a class="headerlink" href="#Note:-The-table-from-the-url-has-been-saved-as-a-csv-file-for-use-in-this-example-notebook." title="Permalink to this headline">¶</a></h5>
 <p>R snippet:</p>
 <div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">url</span> <span class="o">&lt;-</span> <span class="s">&quot;https://en.wikipedia.org/wiki/List_of_highest-grossing_media_franchises&quot;</span>
@@ -427,9 +442,9 @@ fashions.</p>
 </table>
 </div></div>
 </div>
-</div>
-</div>
-<div class="section" id="Rename-columns">
+</section>
+</section>
+<section id="Rename-columns">
 <h4>Rename columns<a class="headerlink" href="#Rename-columns" title="Permalink to this headline">¶</a></h4>
 <p>R snippet:</p>
 <div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_money</span> <span class="o">&lt;-</span> <span class="n">df</span> <span class="o">%&gt;%</span>
@@ -609,8 +624,8 @@ fashions.</p>
 </table>
 </div></div>
 </div>
-</div>
-<div class="section" id="Clean-up-total_revenue-column">
+</section>
+<section id="Clean-up-total_revenue-column">
 <h4>Clean up <code class="docutils literal notranslate"><span class="pre">total_revenue</span></code> column<a class="headerlink" href="#Clean-up-total_revenue-column" title="Permalink to this headline">¶</a></h4>
 <p>R snippet:</p>
 <div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_money</span> <span class="o">&lt;-</span> <span class="n">df</span> <span class="o">%&gt;%</span> <span class="kc">...</span> <span class="o">%&gt;%</span>
@@ -705,8 +720,8 @@ fashions.</p>
 </table>
 </div></div>
 </div>
-</div>
-<div class="section" id="Split-column-revenue_items-into-revenue_category-and-revenue">
+</section>
+<section id="Split-column-revenue_items-into-revenue_category-and-revenue">
 <h4>Split column <code class="docutils literal notranslate"><span class="pre">revenue_items</span></code> into <code class="docutils literal notranslate"><span class="pre">revenue_category</span></code> and <code class="docutils literal notranslate"><span class="pre">revenue</span></code><a class="headerlink" href="#Split-column-revenue_items-into-revenue_category-and-revenue" title="Permalink to this headline">¶</a></h4>
 <p>R snippet:</p>
 <div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_category</span> <span class="o">&lt;-</span> <span class="n">clean_money</span> <span class="o">%&gt;%</span>
@@ -888,8 +903,8 @@ fashions.</p>
 </table>
 </div></div>
 </div>
-</div>
-<div class="section" id="Clean-up-revenue_category-column">
+</section>
+<section id="Clean-up-revenue_category-column">
 <h4>Clean up <code class="docutils literal notranslate"><span class="pre">revenue_category</span></code> column<a class="headerlink" href="#Clean-up-revenue_category-column" title="Permalink to this headline">¶</a></h4>
 <p>R snippet:</p>
 <div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="n">clean_df</span> <span class="o">&lt;-</span> <span class="n">clean_category</span> <span class="o">%&gt;%</span>
@@ -1037,8 +1052,8 @@ fashions.</p>
 </table>
 </div></div>
 </div>
-</div>
-<div class="section" id="Clean-up-revenue-column">
+</section>
+<section id="Clean-up-revenue-column">
 <h4>Clean up <code class="docutils literal notranslate"><span class="pre">revenue</span></code> column<a class="headerlink" href="#Clean-up-revenue-column" title="Permalink to this headline">¶</a></h4>
 <p>R snippet:</p>
 <div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="o">%&gt;%</span>
@@ -1221,10 +1236,10 @@ fashions.</p>
 </table>
 </div></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 <hr class="docutils" />
-<div class="section" id="Section-2-One-Shot">
+<section id="Section-2-One-Shot">
 <h3>Section 2 One-Shot<a class="headerlink" href="#Section-2-One-Shot" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
@@ -1263,9 +1278,9 @@ fashions.</p>
 </pre></div>
 </div>
 </div>
-</div>
+</section>
 <hr class="docutils" />
-<div class="section" id="Final-aggregation-and-join">
+<section id="Final-aggregation-and-join">
 <h3>Final aggregation and join<a class="headerlink" href="#Final-aggregation-and-join" title="Permalink to this headline">¶</a></h3>
 <p>R snippet:</p>
 <div class="highlight-r notranslate"><div class="highlight"><pre><span></span> <span class="n">sum_df</span> <span class="o">&lt;-</span> <span class="n">clean_df</span> <span class="o">%&gt;%</span>
@@ -1422,9 +1437,9 @@ fashions.</p>
 </table>
 </div></div>
 </div>
-</div>
+</section>
 <hr class="docutils" />
-<div class="section" id="Final-Dataframe">
+<section id="Final-Dataframe">
 <h3>Final Dataframe<a class="headerlink" href="#Final-Dataframe" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -1519,9 +1534,9 @@ fashions.</p>
 </pre></div>
 </div>
 </div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>
@@ -1615,7 +1630,7 @@ fashions.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -1626,10 +1641,10 @@ fashions.</p>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, PyJanitor devs.
+      &copy;2021, PyJanitor devs.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

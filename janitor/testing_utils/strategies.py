@@ -97,7 +97,7 @@ def conditional_right():
             column(name="Numeric", elements=st.floats(allow_nan=True)),
             column(name="Floats", elements=st.floats(max_value=20)),
             column(name="Strings", dtype=str),
-            column(name="Booleans", dtype=np.bool),
+            column(name="Booleans", dtype=np.bool_),
             column(name="Dates", dtype="datetime64[ns]"),
             column(name="Dates_Right", dtype="datetime64[ns]"),
         ]

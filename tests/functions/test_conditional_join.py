@@ -252,7 +252,15 @@ def test_check_suffixes_exists_right(df):
         right.columns = ["A", "B", "B_y", "C", "E"]
         df.conditional_join(right, ("B", "B", "<"), suffixes=("_x", "_y"))
 
-
+@given(df=conditional_df(), right=conditional_right())
+def test_dtype_strings_non_equi(df, right):
+    """
+    Raise ValueError if the dtypes are both strings,
+    and the join operator is not the equal operator.
+    """
+    with pytest.raises(ValueError):
+        df.conditional_join(right, ("C", "Strings", "<"), suffixes=("_x", "_y"))
+        
 @given(df=conditional_df(), s=conditional_series())
 def test_dtype_Series(df, s):
     """
@@ -530,26 +538,6 @@ def test_single_condition_less_than_date(df, right):
     expected = expected.filter([left_on, right_on])
     actual = df.conditional_join(
         right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
-    )
-    actual = actual.filter([left_on, right_on])
-    assert_frame_equal(expected, actual)
-
-
-@given(df=conditional_df(), right=conditional_right())
-def test_single_condition_greater_than_equal_strings(df, right):
-    """Test output for a single condition. ">=". Strings"""
-    assume(not df.empty)
-    assume(not right.empty)
-    left_on, right_on = ["C", "Strings"]
-    expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        .query(f"{left_on} >= {right_on}")
-        .reset_index(drop=True)
-    )
-    expected = expected.filter([left_on, right_on])
-    actual = df.conditional_join(
-        right, (left_on, right_on, ">="), how="inner", sort_by_appearance=True
     )
     actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)

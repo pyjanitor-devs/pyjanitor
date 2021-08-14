@@ -6507,7 +6507,9 @@ def conditional_join(
     If the join is solely on equality, `pd.merge` function
     is more efficient and should be used instead.
     If you are interested in nearest joins, or rolling joins,
-    `pd.merge_asof` covers that.
+    `pd.merge_asof` covers that. There is also the IntervalIndex,
+    which can be more efficient for range joins, if the intervals 
+    do not overlap.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -6518,13 +6520,18 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    The function uses binary search to get these rows, thereby
-    avoiding a cartesian join - this makes it less memory intensive.
+    If the join operator is a non-equi operator, a binary search is used
+    to get the relevant rows; this avoids a cartesian join, and makes the 
+    process less memory intensive. If it is an equality operator, it simply
+    uses pandas' `join` or `get_indexer_for` method to retrieve the relevant
+    rows. 
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
 
     Only numeric, date and string columns are supported.
+
+    If joining on strings, only the `==` operator is supported.
 
     Only `inner`, `left`, and `right` joins are supported.
 
@@ -6554,7 +6561,7 @@ def conditional_join(
         6   2         3         6
         7   3         1         3
 
-    Join on equi and non-equi is possible::
+    Join on equi and non-equi operators is possible::
 
         df1.conditional_join(
                 right = df2,
@@ -6584,11 +6591,12 @@ def conditional_join(
 
             id_x  value_1  id_y  value_2A  value_2B
         0     1        2   NaN       NaN       NaN
-        1     1        5   NaN       NaN       NaN
-        2     1        7   NaN       NaN       NaN
-        3     2        1   NaN       NaN       NaN
+        1     1        5   1.0       3.0       5.0
+        2     1        7   1.0       7.0       9.0
+        3     2        1   2.0       0.0       1.0
         4     2        3   2.0       2.0       4.0
-        5     3        4   NaN       NaN       NaN
+        5     2        3   2.0       3.0       6.0
+        6     3        4   NaN       NaN       NaN
 
 
         df1.conditional_join(
@@ -6602,12 +6610,12 @@ def conditional_join(
 
             id_x  value_1  id_y  value_2A  value_2B
         0   NaN      NaN     1         0         1
-        1   NaN      NaN     1         3         5
-        2   NaN      NaN     1         7         9
+        1   1.0      5.0     1         3         5
+        2   1.0      7.0     1         7         9
         3   NaN      NaN     1        12        15
-        4   NaN      NaN     2         0         1
+        4   2.0      1.0     2         0         1
         5   2.0      3.0     2         2         4
-        6   NaN      NaN     2         3         6
+        6   2.0      3.0     2         3         6
         7   NaN      NaN     3         1         3
 
 
@@ -6680,8 +6688,8 @@ def conditional_join(
         6        3     C        2     X
 
 
-    If you do not care for the order from `right`,
-    you can set `sort_by_appearance` to  ``False``
+    If the order from `right` is not important,
+    `sort_by_appearance` can be set to  ``False``
     (this is the default)::
 
         df1.conditional_join(
@@ -6695,6 +6703,7 @@ def conditional_join(
         1        2     B        0     Z
         2        3     C        0     Z
         3        3     C        2     X
+
 
     .. note:: If `df` or `right` has labeled indices,
               it will be lost after the merge,
@@ -6743,18 +6752,19 @@ def conditional_join(
         label from `df`, `right_on` is the column label from `right`,
         while `op` is the operator. The operator can be any of
         `==`, `!=`, `<=`, `<`, `>=`, `>`.
-    :param how: Indicates the type of join to be performed. Similar to SQL;
-        can be one of `inner`, `left`, `right`. Full join is not supported.
-        Defaults to `inner`.
+    :param how: Indicates the type of join to be performed.
+        It can be one of `inner`, `left`, `right`. 
+        Full join is not supported. Defaults to `inner`.
     :param sort_by_appearance: Default is `False`. If True,
         values from `right` that meet the join condition will be returned
         in the final dataframe in the same order that they were before the
         join.
-    :param suffixes: tuple, default is ``(_x, _y)``. A sequence of length 2,
-        where each element is optionally a string indicating the suffix to add
-        to the overlapping column names in `df` and `right`.
-        Pass a value of ``None`` instead of a string to indicate that the
-        column name from `df` or `right` should be left as-is, with no suffix.
+    :param suffixes: tuple, default is ``(_x, _y)``. 
+        A sequence of length 2, where each element is optionally a string,
+        indicating the suffix to add to the overlapping column names 
+        in `df` and `right`. Pass a value of ``None`` 
+        instead of a string to indicate that the  column name 
+        from `df` or `right` should be left as-is, with no suffix.
         At least one of the values must not be ``None``.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     :raises ValueError: if columns from `df` or `right` is a MultiIndex.

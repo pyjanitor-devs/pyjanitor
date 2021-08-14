@@ -71,6 +71,7 @@ Preprocessing
     encode_categorical
     impute
     label_encode
+    factorize_columns
     min_max_scale
     get_features_targets
 
@@ -93,5 +94,4 @@ Other
     complete
     pivot_longer
     pivot_wider
-    as_categorical
     conditional_join

@@ -6523,7 +6523,7 @@ def conditional_join(
     If the join operator is a non-equi operator, a binary search is used
     to get the relevant rows; this avoids a cartesian join, and makes the
     process less memory intensive. If it is an equality operator, it simply
-    uses pandas' `join` or `get_indexer_for` method to retrieve the relevant
+    uses pandas' `merge` or `get_indexer_for` method to retrieve the relevant
     rows.
 
     The join is done only on the columns.

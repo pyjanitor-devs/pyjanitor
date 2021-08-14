@@ -2653,8 +2653,6 @@ def _equal_indices(left_c: pd.Series, right_c: pd.Series, len_conditions: int):
     if len_conditions > 1:
         if not right_c.is_unique:
             right_c = right_c.factorize()[-1]
-        if right_c.empty:
-            return None
         result = pd.Index(left_c).get_indexer_for(right_c)
         exclude_rows = result == -1
         if exclude_rows.all():
@@ -2663,9 +2661,13 @@ def _equal_indices(left_c: pd.Series, right_c: pd.Series, len_conditions: int):
             result = result[~exclude_rows]
         return left_c.index.take(result)
 
-    left_c = pd.DataFrame(left_c.index, index=left_c.array, columns=["l"])
-    right_c = pd.Series(right_c.index, index=right_c.array, name="r")
-    result = left_c.join(right_c, how="inner", sort=False)
+    left_c.index.name = "l"
+    right_c.index.name = "r"
+    left_c.name = "merge"
+    right_c.name = "merge"
+    left_c = left_c.reset_index()
+    right_c = right_c.reset_index()
+    result = left_c.merge(right_c, how="inner", sort=False, on="merge")
     if result.empty:
         return None
     return pd.Index(result["l"]), pd.Index(result["r"])

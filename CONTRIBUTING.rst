@@ -8,7 +8,7 @@ Every little bit helps, and credit will always be given.
 The following sections detail a variety of ways to contribute,
 as well as how to get started.
 
-.. note:: Please take a look at the `types of Contributions  <https://pyjanitor.readthedocs.io/CONTRIBUTION_TYPES.html>`__  that we welcome,
+.. note:: Please take a look at the `types of Contributions  <https://pyjanitor-devs.github.io/pyjanitor/CONTRIBUTION_TYPES.html>`__  that we welcome,
     along with the guidelines.
 
 Get Started!
@@ -81,7 +81,7 @@ make sure you select the correct kernel from the top right corner of JupyterLab!
     You should be able to run `make` now. The command above installs `make` to the `~/Anaconda3/Library/bin` directory.
 
 .. note:: For PyCharm users,
-    here are some `instructions <https://pyjanitor.readthedocs.io/PYCHARM_USERS.html>`__  to get your Conda environment set up.
+    here are some `instructions <https://pyjanitor-devs.github.io/pyjanitor/PYCHARM_USERS.html>`__  to get your Conda environment set up.
 
 4. (Optional) Install the pre-commit hooks.
 

@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - dev
-      - ghactions-docs # TODO: delete this if we are sure it works on the PR.
 
 jobs:
   build-environment:

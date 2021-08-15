@@ -13,8 +13,8 @@
 -   [ENH] Added `factorize_columns` method which will deprecate the `label_encode` method in future release. @nvamsikrishna05
 -   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
+-   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
-
 
 ## [v0.21.0] - 2021-07-16
 

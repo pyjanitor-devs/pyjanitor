@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - ghactions-docs
 
 jobs:
   build-environment:
@@ -74,6 +75,7 @@ jobs:
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
           python -m ipykernel install --user --name pyjanitor-dev
+          pip install -e .
           make docs
 
       - name: Deploy website

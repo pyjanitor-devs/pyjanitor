@@ -14,11 +14,11 @@ from typing import (
     Dict,
     Iterable,
     List,
+    NamedTuple,
     Optional,
     Pattern,
     Tuple,
     Union,
-    NamedTuple,
 )
 
 import numpy as np

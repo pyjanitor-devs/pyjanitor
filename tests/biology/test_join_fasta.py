@@ -2,9 +2,9 @@ import importlib
 import os
 
 import pytest
+from helpers import running_on_ci
 
 import janitor.biology  # noqa: F403, F401
-from helpers import running_on_ci
 
 # Skip all tests if Biopython not installed
 pytestmark = pytest.mark.skipif(

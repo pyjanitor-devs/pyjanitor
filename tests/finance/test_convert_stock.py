@@ -1,5 +1,6 @@
-from janitor.finance import get_symbol
 import pytest
+
+from janitor.finance import get_symbol
 
 
 @pytest.mark.xfail(reason="Flaky because it depends on internet connectivity.")

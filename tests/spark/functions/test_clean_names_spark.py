@@ -1,6 +1,6 @@
 import pytest
-
 from helpers import running_on_ci
+
 from janitor.errors import JanitorError
 
 if running_on_ci():

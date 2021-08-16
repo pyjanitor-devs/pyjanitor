@@ -2715,10 +2715,6 @@ def _not_equal_indices(
     if len_conditions is == 1, else left_c.
     """
 
-    # does not look clean enough 
-    # testament to my knowledge limitations
-
-
     # get nulls, since they are not equal to anything
     # NaNs are not equal to NaNs
     l_nulls = pd.Index([], dtype=int)
@@ -2732,7 +2728,7 @@ def _not_equal_indices(
             left_c_isna = left_c.isna()
             nulls_count = left_c_isna.sum()
             l_nulls = left_c.index[left_c_isna]
-            # each value in right_c must be matched to all the null groups
+            # each value in right_c MUST be matched to all the null groups
             l_nulls = pd.Int64Index(np.tile(l_nulls, right_c.size))
             if nulls_count > 1:
                 nulls_r = right_c.index.repeat(nulls_count)
@@ -2958,7 +2954,7 @@ def _create_conditional_join_empty_frame(
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
         return pd.DataFrame(df)
 
-     if how == JOINTYPES.LEFT.value:
+    if how == JOINTYPES.LEFT.value:
         right = right.dtypes.to_dict()
         right = {
             key: float if dtype.kind == "i" else dtype
@@ -2970,7 +2966,7 @@ def _create_conditional_join_empty_frame(
         right = pd.DataFrame(right)
         return df.join(right, how=how, sort=False)
 
-     if how == JOINTYPES.RIGHT.value:
+    if how == JOINTYPES.RIGHT.value:
         df = df.dtypes.to_dict()
         df = {
             key: float if dtype.kind == "i" else dtype
@@ -2998,19 +2994,19 @@ def _create_conditional_join_frame(
         right_index = right_index[sorter]
         left_index = left_index.take(sorter)
 
-     if how == JOINTYPES.INNER.value:
+    if how == JOINTYPES.INNER.value:
         df = df.reindex(left_index)
         right = right.reindex(right_index)
         df.index = np.arange(left_index.size)
         right.index = df.index
         return pd.concat([df, right], axis="columns", join=how, sort=False)
 
-     if how == JOINTYPES.LEFT.value:
+    if how == JOINTYPES.LEFT.value:
         right = right.reindex(right_index)
         right.index = left_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
-     if how == JOINTYPES.RIGHT.value:
+    if how == JOINTYPES.RIGHT.value:
         df = df.reindex(left_index)
         df.index = right_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
@@ -3026,14 +3022,22 @@ def _generic_func_cond_join(
     """
     strict = False
 
-    
-
-    if op in {JOINOPERATOR.GREATER_THAN.value, JOINOPERATOR.LESS_THAN.value, JOINOPERATOR.NOT_EQUAL.value}:
+    if op in {
+        JOINOPERATOR.GREATER_THAN.value,
+        JOINOPERATOR.LESS_THAN.value,
+        JOINOPERATOR.NOT_EQUAL.value,
+    }:
         strict = True
 
-    if op in {JOINOPERATOR.LESS_THAN.value, JOINOPERATOR.LESS_THAN_OR_EQUAL.value}:
+    if op in {
+        JOINOPERATOR.LESS_THAN.value,
+        JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+    }:
         return _less_than_indices(left_c, right_c, len_conditions, strict)
-    elif op in {JOINOPERATOR.GREATER_THAN.value, JOINOPERATOR.GREATER_THAN_OR_EQUAL.value}:
+    elif op in {
+        JOINOPERATOR.GREATER_THAN.value,
+        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+    }:
         return _greater_than_indices(left_c, right_c, len_conditions, strict)
     elif op == JOINOPERATOR.STRICTLY_EQUAL.value:
         return _equal_indices(left_c, right_c, len_conditions)

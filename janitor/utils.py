@@ -1615,7 +1615,7 @@ def _data_checks_pivot_wider(
 
     if names_from is None:
         raise ValueError(
-            "pivot_wider() missing 1 required argument: 'names_from'"
+            "pivot_wider() is missing 1 required argument: 'names_from'"
         )
 
     if is_list_like(names_from):
@@ -1626,6 +1626,8 @@ def _data_checks_pivot_wider(
         if is_list_like(values_from):
             values_from = [*values_from]
         values_from = _select_columns(values_from, df)
+        if len(values_from) == 1:
+            values_from = values_from[0]
 
     check("names_sort", names_sort, [bool])
 
@@ -1667,14 +1669,14 @@ def _computations_pivot_wider(
     """
     This is the main workhorse of the `pivot_wider` function.
 
-    By default, values from `names_from` are at the front of
-    each output column. If there are multiple `values_from`,
-    this can be changed via the `names_from_position`,
-    by setting it to `last`.
+    It is a wrapper around `pd.pivot`. For a MultiIndex, the
+    order of the levels can be changed with `levels_order`.
+    The output for multiple `names_from` and/or `values_from`
+    can be controlled with `names_glue` and/or `names_sep`.
 
-    A dataframe is returned.
+    A dataframe pivoted from long to wide form is returned.
     """
-
+    # check dtype of `names_from` is string
     names_from_all_strings = df.filter(names_from).agg(is_string_dtype).all()
 
     if names_sort is True:
@@ -1688,70 +1690,12 @@ def _computations_pivot_wider(
         }
         df = df.astype(dtypes)
 
-    new_index = None
-    if values_from is None:
-        if index is None:
-            # existing index label is used as index
-            values_from = df.columns.difference(names_from)
-            if values_from.empty:
-                warnings.warn(
-                    f"""
-                    There are no column labels associated with
-                    `values_from`. An empty dataframe might be
-                    returned.
-                    """,
-                    UserWarning,
-                    stacklevel=2,
-                )
-            values_from = [*values_from]
-            df = df.set_index(names_from, append=True)
-        else:
-            new_index = index + names_from
-            values_from = df.columns.difference(new_index)
-            if values_from.empty:
-                warnings.warn(
-                    f"""
-                    There are no column labels associated with
-                    `values_from`. An empty dataframe might be
-                    returned.
-                    """,
-                    UserWarning,
-                    stacklevel=2,
-                )
-            values_from = [*values_from]
-            df = df.set_index(new_index, append=False)
-    else:
-        if index is None:
-            # existing index label is used as index
-            df = df.set_index(names_from, append=True)
-        else:
-            new_index = index + names_from
-            df = df.set_index(new_index, append=False)
-        df = df.filter(values_from)
 
-    # check if the index is unique:
-    if not df.index.is_unique:
-        raise ValueError(
-            """
-            The dataframe cannot be pivoted
-            to wide form,
-            because the combination of
-            `index` and `names_from`
-            contain duplicates.
-            """
+    df = df.pivot(  # noqa: PD010
+            index=index, columns=names_from, values=values_from
         )
 
-    df = df.unstack(names_from)
-
-    # no point keeping `values_from`
-    # if it's just one name;
-    if (
-        (isinstance(df.columns, pd.MultiIndex))
-        and (df.columns.nlevels > len(names_from))
-        and (len(values_from) == 1)
-    ):
-        df = df.droplevel(0, axis="columns")
-    if levels_order:
+    if levels_order and (isinstance(df.columns, pd.MultiIndex)):
         df = df.reorder_levels(order=levels_order, axis='columns')
         df = df.sort_index(level=0, axis='columns', sort_remaining=False)
 
@@ -1765,12 +1709,11 @@ def _computations_pivot_wider(
         new_columns = [tuple(map(str, ent)) for ent in df]
         df.columns = pd.MultiIndex.from_tuples(new_columns)
 
-    if names_glue:
-        names_sep = None
-        df.columns = df.columns.map(names_glue)  
-
     if names_sep:
         df.columns = df.columns.map(names_sep.join)
+
+    if names_glue:
+        df.columns = df.columns.map(names_glue)  
 
     # if columns are of category type
     # this returns columns to object dtype

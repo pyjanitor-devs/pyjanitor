@@ -15,6 +15,8 @@
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
+-   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
+-   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 
 ## [v0.21.0] - 2021-07-16
 

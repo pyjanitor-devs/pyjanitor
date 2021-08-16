@@ -13,7 +13,7 @@ pyjanitor
 ``pyjanitor`` is a Python implementation of the R package `janitor`_, and
 provides a clean API for cleaning data.
 
-The official is hosted on: https://pyjanitor-devs.github.io/pyjanitor/
+The official documentation is hosted on: https://pyjanitor-devs.github.io/pyjanitor/
 
 .. _janitor: https://github.com/sfirke/janitor
 

@@ -33,6 +33,7 @@ from pandas.api.types import (
     is_datetime64_dtype,
 )
 from pandas.core.common import apply_if_callable
+from enum import Enum
 
 from .errors import JanitorError
 
@@ -2378,18 +2379,42 @@ def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
     return df
 
 
+class JOINOPERATOR(Enum):
+    """
+    List of operators used in conditional_join.
+    """
+
+    GREATER_THAN = ">"
+    LESS_THAN = "<"
+    GREATER_THAN_OR_EQUAL = ">="
+    LESS_THAN_OR_EQUAL = "<="
+    STRICTLY_EQUAL = "=="
+    NOT_EQUAL = "!="
+
+
+class JOINTYPES(Enum):
+    """
+    List of join types for conditional_join.
+    """
+
+    INNER = "inner"
+    LEFT = "left"
+    RIGHT = "right"
+
+
 def _check_operator(op: str):
     """
     Check that operator is one of
     `>`, `>=`, `==`, `!=`, `<`, `<=`.
     Used in `conditional_join`.
     """
-    if op not in ("<", ">", "<=", ">=", "==", "!="):
+    sequence_of_operators = {op.value for op in JOINOPERATOR}
+    if op not in sequence_of_operators:
         raise ValueError(
-            """
-            The conditional join operator
-            should be one of <, >, <=, >= , "==", "!="
-            """
+            f"""
+             The conditional join operator
+             should be one of {", ".join(sequence_of_operators)}
+             """
         )
 
 
@@ -2483,8 +2508,9 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    if how not in ("inner", "left", "right"):
-        raise ValueError("`how` should be one of inner, left, or right.")
+    join_types = {jointype.value for jointype in JOINTYPES}
+    if how not in join_types:
+        raise ValueError(f"`how` should be one of {', '.join(join_types)}.")
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -2573,7 +2599,7 @@ def _conditional_join_type_check(
     date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
     string_type = all(map(is_string_dtype, (left_column, right_column)))
 
-    non_equi = (">", ">=", "<", "<=", "!=")
+    non_equi = {op.value for op in JOINOPERATOR if op.name != "STRICTLY_EQUAL"}
     if all((op in non_equi, string_type)):
         raise ValueError(
             """
@@ -2688,6 +2714,10 @@ def _not_equal_indices(
     Returns a tuple of (left_c, right_c)
     if len_conditions is == 1, else left_c.
     """
+
+    # does not look clean enough 
+    # testament to my knowledge limitations
+
 
     # get nulls, since they are not equal to anything
     # NaNs are not equal to NaNs
@@ -2921,14 +2951,14 @@ def _create_conditional_join_empty_frame(
     if there are no matches.
     """
 
-    if how == "inner":
+    if how == JOINTYPES.INNER.value:
         df = df.dtypes.to_dict()
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
         return pd.DataFrame(df)
 
-    if how == "left":
+     if how == JOINTYPES.LEFT.value:
         right = right.dtypes.to_dict()
         right = {
             key: float if dtype.kind == "i" else dtype
@@ -2940,7 +2970,7 @@ def _create_conditional_join_empty_frame(
         right = pd.DataFrame(right)
         return df.join(right, how=how, sort=False)
 
-    if how == "right":
+     if how == JOINTYPES.RIGHT.value:
         df = df.dtypes.to_dict()
         df = {
             key: float if dtype.kind == "i" else dtype
@@ -2968,19 +2998,19 @@ def _create_conditional_join_frame(
         right_index = right_index[sorter]
         left_index = left_index.take(sorter)
 
-    if how == "inner":
+     if how == JOINTYPES.INNER.value:
         df = df.reindex(left_index)
         right = right.reindex(right_index)
         df.index = np.arange(left_index.size)
         right.index = df.index
         return pd.concat([df, right], axis="columns", join=how, sort=False)
 
-    if how == "left":
+     if how == JOINTYPES.LEFT.value:
         right = right.reindex(right_index)
         right.index = left_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
-    if how == "right":
+     if how == JOINTYPES.RIGHT.value:
         df = df.reindex(left_index)
         df.index = right_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
@@ -2996,16 +3026,18 @@ def _generic_func_cond_join(
     """
     strict = False
 
-    if op in ("<", ">", "!="):
+    
+
+    if op in {JOINOPERATOR.GREATER_THAN.value, JOINOPERATOR.LESS_THAN.value, JOINOPERATOR.NOT_EQUAL.value}:
         strict = True
 
-    if op in ("<=", "<"):
+    if op in {JOINOPERATOR.LESS_THAN.value, JOINOPERATOR.LESS_THAN_OR_EQUAL.value}:
         return _less_than_indices(left_c, right_c, len_conditions, strict)
-    elif op in (">=", ">"):
+    elif op in {JOINOPERATOR.GREATER_THAN.value, JOINOPERATOR.GREATER_THAN_OR_EQUAL.value}:
         return _greater_than_indices(left_c, right_c, len_conditions, strict)
-    elif op == "==":
+    elif op == JOINOPERATOR.STRICTLY_EQUAL.value:
         return _equal_indices(left_c, right_c, len_conditions)
-    elif op == "!=":
+    elif op == JOINOPERATOR.NOT_EQUAL.value:
         return _not_equal_indices(left_c, right_c, len_conditions, strict)
 
 

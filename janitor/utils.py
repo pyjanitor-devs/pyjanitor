@@ -1661,7 +1661,7 @@ def _computations_pivot_wider(
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
     names_sort: Optional[bool] = False,
-    levels_order:Optional[list]=None,
+    levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
     names_glue: Callable = None,
@@ -1690,14 +1690,12 @@ def _computations_pivot_wider(
         }
         df = df.astype(dtypes)
 
-
     df = df.pivot(  # noqa: PD010
-            index=index, columns=names_from, values=values_from
-        )
+        index=index, columns=names_from, values=values_from
+    )
 
     if levels_order and (isinstance(df.columns, pd.MultiIndex)):
-        df = df.reorder_levels(order=levels_order, axis='columns')
-        df = df.sort_index(level=0, axis='columns', sort_remaining=False)
+        df = df.reorder_levels(order=levels_order, axis="columns")
 
     # an empty df is likely because
     # there are no `values_from`
@@ -1706,14 +1704,17 @@ def _computations_pivot_wider(
 
     # ensure all entries in names_from are strings
     if not names_from_all_strings:
-        new_columns = [tuple(map(str, ent)) for ent in df]
-        df.columns = pd.MultiIndex.from_tuples(new_columns)
+        if isinstance(df.columns, pd.MultiIndex):
+            new_columns = [tuple(map(str, ent)) for ent in df]
+            df.columns = pd.MultiIndex.from_tuples(new_columns)
+        else:
+            df.columns = df.columns.astype(str)
 
-    if names_sep:
+    if names_sep is not None and (isinstance(df.columns, pd.MultiIndex)):
         df.columns = df.columns.map(names_sep.join)
 
     if names_glue:
-        df.columns = df.columns.map(names_glue)  
+        df.columns = df.columns.map(names_glue)
 
     # if columns are of category type
     # this returns columns to object dtype

@@ -22,172 +22,6 @@ def df_checks_output():
     )
 
 
-combinations = [
-    (
-        pd.DataFrame(
-            {
-                "geoid": [1, 1, 1, 1, 13, 13, 13, 13],
-                "name": [
-                    "Alabama",
-                    "Alabama",
-                    "Alabama",
-                    "Alabama",
-                    "Georgia",
-                    "Georgia",
-                    "Georgia",
-                    "Georgia",
-                ],
-                "variable": [
-                    "pop_renter",
-                    "pop_renter",
-                    "median_rent",
-                    "median_rent",
-                    "pop_renter",
-                    "pop_renter",
-                    "median_rent",
-                    "median_rent",
-                ],
-                "measure": [
-                    "estimate",
-                    "error",
-                    "estimate",
-                    "error",
-                    "estimate",
-                    "error",
-                    "estimate",
-                    "error",
-                ],
-                "value": [1434765, 16736, 747, 3, 3592422, 33385, 927, 3],
-            }
-        ),
-        pd.DataFrame(
-            {
-                "geoid": [1, 13],
-                "name": ["Alabama", "Georgia"],
-                "pop_renter_estimate": [1434765, 3592422],
-                "pop_renter_error": [16736, 33385],
-                "median_rent_estimate": [747, 927],
-                "median_rent_error": [3, 3],
-            }
-        ),
-        ["geoid", "name"],
-        ["variable", "measure"],
-        "value",
-        None,
-        True,
-        "first",
-    ),
-    (
-        pd.DataFrame(
-            {
-                "family": ["Kelly", "Kelly", "Quin", "Quin"],
-                "name": ["Mark", "Scott", "Tegan", "Sara"],
-                "n": [1, 2, 1, 2],
-            }
-        ),
-        pd.DataFrame(
-            {
-                "family": ["Kelly", "Quin"],
-                1: ["Mark", "Tegan"],
-                2: ["Scott", "Sara"],
-            }
-        ),
-        "family",
-        "n",
-        "name",
-        None,
-        True,
-        "first",
-    ),
-    (
-        pd.DataFrame(
-            {
-                "family": ["Kelly", "Kelly", "Quin", "Quin"],
-                "name": ["Mark", "Scott", "Tegan", "Sara"],
-                "n": [1, 2, 1, 2],
-            }
-        ),
-        pd.DataFrame(
-            {
-                "family": ["Kelly", "Quin"],
-                "name1": ["Mark", "Tegan"],
-                "name2": ["Scott", "Sara"],
-            }
-        ),
-        "family",
-        "n",
-        "name",
-        "name",
-        True,
-        "first",
-    ),
-    (
-        pd.DataFrame(
-            {
-                "geoid": [1, 1, 13, 13],
-                "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
-                "variable": [
-                    "pop_renter",
-                    "median_rent",
-                    "pop_renter",
-                    "median_rent",
-                ],
-                "estimate": [1434765, 747, 3592422, 927],
-                "error": [16736, 3, 33385, 3],
-            }
-        ),
-        pd.DataFrame(
-            {
-                "geoid": [1, 13],
-                "name": ["Alabama", "Georgia"],
-                "pop_renter_estimate": [1434765, 3592422],
-                "median_rent_estimate": [747, 927],
-                "pop_renter_error": [16736, 33385],
-                "median_rent_error": [3, 3],
-            }
-        ),
-        ["geoid", "name"],
-        "variable",
-        ["estimate", "error"],
-        None,
-        False,
-        "first",
-    ),
-    (
-        pd.DataFrame(
-            {
-                "geoid": [1, 1, 13, 13],
-                "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
-                "variable": [
-                    "pop_renter",
-                    "median_rent",
-                    "pop_renter",
-                    "median_rent",
-                ],
-                "estimate": [1434765, 747, 3592422, 927],
-                "error": [16736, 3, 33385, 3],
-            }
-        ),
-        pd.DataFrame(
-            {
-                "geoid": {0: 1, 1: 13},
-                "name": {0: "Alabama", 1: "Georgia"},
-                "estimate_pop_renter": {0: 1434765, 1: 3592422},
-                "estimate_median_rent": {0: 747, 1: 927},
-                "error_pop_renter": {0: 16736, 1: 33385},
-                "error_median_rent": {0: 3, 1: 3},
-            }
-        ),
-        ["geoid", "name"],
-        "variable",
-        ["estimate", "error"],
-        None,
-        False,
-        "last",
-    ),
-]
-
-
 @pytest.mark.xfail(reason="list-like is converted to list.")
 def test_type_index(df_checks_output):
     """Raise TypeError if wrong type is provided for the `index`."""
@@ -262,6 +96,7 @@ def test_flatten_levels_wrong_type(df_checks_output):
         )
 
 
+@pytest.mark.xfail(reason="parameter is deprecated.")
 def test_names_from_position_wrong_type(df_checks_output):
     """
     Raise TypeError if the wrong type
@@ -275,6 +110,7 @@ def test_names_from_position_wrong_type(df_checks_output):
         )
 
 
+@pytest.mark.xfail(reason="parameter is deprecated.")
 def test_names_from_position_wrong_value(df_checks_output):
     """
     Raise ValueError if `names_from_position`
@@ -288,6 +124,7 @@ def test_names_from_position_wrong_value(df_checks_output):
         )
 
 
+@pytest.mark.xfail(reason="parameter is deprecated.")
 def test_name_prefix_wrong_type(df_checks_output):
     """Raise TypeError if the wrong type is provided for `names_prefix`."""
     with pytest.raises(TypeError):
@@ -304,6 +141,23 @@ def test_name_sep_wrong_type(df_checks_output):
         )
 
 
+def test_name_glue_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `names_glue`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], names_glue=1
+        )
+
+
+def test_levels_order_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `levels_order`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], levels_order=1
+        )
+
+
+@pytest.mark.xfail(reason="parameter is deprecated.")
 def test_fill_value_wrong_type(df_checks_output):
     """Raise TypeError if the wrong type is provided for `fill_value`."""
     with pytest.raises(TypeError):
@@ -312,6 +166,7 @@ def test_fill_value_wrong_type(df_checks_output):
         )
 
 
+@pytest.mark.xfail(reason="parameter is deprecated.")
 def test_aggfunc_wrong_type(df_checks_output):
     """Raise TypeError if the wrong type is provided for `aggfunc`."""
     with pytest.raises(TypeError):
@@ -362,7 +217,7 @@ def test_pivot_long_wide_long():
 
     result = result.pivot_longer(
         index=["a", "b"],
-        names_to=("name", ".value"),
+        names_to=(".value", "name"),
         names_sep="_",
     )
     assert_frame_equal(result, df_in)
@@ -393,38 +248,6 @@ def test_pivot_wide_long_wide():
     assert_frame_equal(result, df)
 
 
-@pytest.mark.parametrize(
-    """
-    df_in,df_out,index,names_from,
-    values_from, names_prefix,
-    names_sort,names_from_position
-    """,
-    combinations,
-)
-def test_pivot_wider_various(
-    df_in,
-    df_out,
-    index,
-    names_from,
-    values_from,
-    names_prefix,
-    names_sort,
-    names_from_position,
-):
-    """
-    Test `pivot_wider` function with various combinations.
-    """
-    result = df_in.pivot_wider(
-        index=index,
-        names_from=names_from,
-        values_from=values_from,
-        names_prefix=names_prefix,
-        names_sort=names_sort,
-        names_from_position=names_from_position,
-    )
-    assert_frame_equal(result, df_out)
-
-
 def test_flatten_levels_false():
     """Test output if `flatten_levels` is False."""
 
@@ -442,8 +265,6 @@ def test_flatten_levels_false():
         names_from="bar",
         values_from=["baz", "zoo"],
         flatten_levels=False,
-        names_sort=True,
-        names_from_position="last",
     )
 
     expected_output = df_collapse.pivot(  # noqa: PD010
@@ -453,39 +274,8 @@ def test_flatten_levels_false():
     assert_frame_equal(
         result,
         expected_output,
-        check_dtype=False,
+        # check_dtype=False,
     )
-
-
-def test_fill_values():
-    """Test output if `fill_value` is provided."""
-
-    df_fill_value = pd.DataFrame(
-        {
-            "lev1": [1, 1, 1, 2, 2, 2],
-            "lev2": [1, 1, 2, 1, 1, 2],
-            "lev3": [1, 2, 1, 2, 1, 2],
-            "lev4": [1, 2, 3, 4, 5, 6],
-            "values": [0, 1, 2, 3, 4, 5],
-        }
-    )
-
-    result = df_fill_value.pivot_wider(
-        index=["lev1", "lev2"],
-        names_from=["lev3"],
-        values_from="values",
-        flatten_levels=False,
-        fill_value=0,
-    )
-
-    expected_output = pd.DataFrame(
-        {1: [0, 2.0, 4, 0], 2: [1, 0, 3.0, 5]},
-        index=pd.MultiIndex.from_tuples(
-            [(1, 1), (1, 2), (2, 1), (2, 2)], names=["lev1", "lev2"]
-        ),
-        columns=pd.Int64Index([1, 2], dtype="int64", name="lev3"),
-    )
-    assert_frame_equal(result, expected_output)
 
 
 def test_no_index():
@@ -505,7 +295,7 @@ def test_no_index():
         }
     )
 
-    result = df_in.pivot_wider(names_from="gender", names_prefix="contVar_")
+    result = df_in.pivot_wider(names_from="gender")
 
     assert_frame_equal(result, expected_output)
 
@@ -522,14 +312,12 @@ def test_no_index_names_sort_True():
 
     expected_output = pd.DataFrame(
         {
-            "contVar_Female": [24523.0, 23421.0, np.nan],
             "contVar_Male": [22379.0, 23831.0, 29234.0],
+            "contVar_Female": [24523.0, 23421.0, np.nan],
         }
     )
 
-    result = df_in.pivot_wider(
-        names_from="gender", names_sort=True, names_prefix="contVar_"
-    )
+    result = df_in.pivot_wider(names_from="gender", names_sort=True)
 
     assert_frame_equal(result, expected_output)
 
@@ -558,3 +346,95 @@ def test_index_names_sort_True():
     assert_frame_equal(result, expected_output)
 
 
+def test_names_glue():
+    """Test output with `names_glue`"""
+    df_in = pd.DataFrame(
+        {
+            "family": ["Kelly", "Kelly", "Quin", "Quin"],
+            "name": ["Mark", "Scott", "Tegan", "Sara"],
+            "n": [1, 2, 1, 2],
+        }
+    )
+    df_out = pd.DataFrame(
+        {
+            "family": ["Kelly", "Quin"],
+            "name1": ["Mark", "Tegan"],
+            "name2": ["Scott", "Sara"],
+        }
+    )
+
+    result = df_in.pivot_wider(
+        index="family",
+        names_from="n",
+        values_from="name",
+        names_glue=lambda col: f"name{col}",
+    )
+    assert_frame_equal(result, df_out)
+
+
+def test_change_level_order():
+    """Test output with `levels_order`"""
+    df_in = pd.DataFrame(
+        {
+            "geoid": [1, 1, 13, 13],
+            "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
+            "variable": [
+                "pop_renter",
+                "median_rent",
+                "pop_renter",
+                "median_rent",
+            ],
+            "estimate": [1434765, 747, 3592422, 927],
+            "error": [16736, 3, 33385, 3],
+        }
+    )
+    df_out = pd.DataFrame(
+        {
+            "geoid": [1, 13],
+            "name": ["Alabama", "Georgia"],
+            "pop_renter_estimate": [1434765, 3592422],
+            "median_rent_estimate": [747, 927],
+            "pop_renter_error": [16736, 33385],
+            "median_rent_error": [3, 3],
+        }
+    )
+
+    result = df_in.pivot_wider(
+        index=["geoid", "name"],
+        names_from="variable",
+        values_from=["estimate", "error"],
+        levels_order=["variable", None],
+        names_sort=True,
+    )
+    assert_frame_equal(result, df_out)
+
+
+def test_int_columns():
+    """Test output when names_from is not a string dtype."""
+    df_in = pd.DataFrame(
+        [
+            {"name": 1, "n": 10, "pct": 0.1},
+            {"name": 2, "n": 20, "pct": 0.2},
+            {"name": 3, "n": 30, "pct": 0.3},
+        ]
+    )
+
+    df_out = pd.DataFrame(
+        [
+            {
+                "num": 0,
+                "n_1": 10.0,
+                "n_2": 20.0,
+                "n_3": 30.0,
+                "pct_1": 0.1,
+                "pct_2": 0.2,
+                "pct_3": 0.3,
+            }
+        ]
+    )
+
+    result = df_in.assign(num=0).pivot_wider(
+        index="num", names_from="name", values_from=["n", "pct"], names_sep="_"
+    )
+
+    assert_frame_equal(result, df_out)

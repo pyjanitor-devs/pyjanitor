@@ -6461,8 +6461,7 @@ def pivot_wider(
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
         If ``values_from`` is not specified,
-        all remaining columns will be used. If `flatten_levels` is ``False``,
-        a MultiIndex dataframe is created.
+        all remaining columns will be used.
     :param names_sort: Default is `True`. Sorts columns by order of
         appearance.
     :param levels_order: Applicable if there are multiple `names_from`

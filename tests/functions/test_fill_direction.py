@@ -138,11 +138,21 @@ def test_wrong_column_name(df):
     with pytest.raises(ValueError):
         df.fill_direction(**{"PetType": "down"})
 
+def test_wrong_column_type(df):
+    """Raise Value Error if wrong type is provided for column_name."""
+    with pytest.raises(TypeError):
+        df.fill_direction(**{1 : 'down'})
+
 
 def test_wrong_direction(df):
     """Raise Value Error if wrong direction is provided."""
     with pytest.raises(ValueError):
         df.fill_direction(**{"pet_type": "upanddawn"})
+
+def test_wrong_direction_type(df):
+    """Raise Type Error if wrong type is provided for direction."""
+    with pytest.raises(TypeError):
+        df.fill_direction(**{"pet_type": 1})
 
 
 @pytest.mark.xfail(reason="limit is deprecated")

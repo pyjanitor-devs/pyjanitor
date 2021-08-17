@@ -14,6 +14,7 @@
 -   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
+-   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 
 ## [v0.21.0] - 2021-07-16
 

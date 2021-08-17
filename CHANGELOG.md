@@ -14,6 +14,8 @@
 -   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
+-   [ENH] Deprecate `new_column_names` and `merge_frame` from `process_text`. Only
+existing columns are supported. @samukweku
 
 ## [v0.21.0] - 2021-07-16
 

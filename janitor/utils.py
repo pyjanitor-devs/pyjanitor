@@ -1084,7 +1084,7 @@ def _data_checks_pivot_longer(
                 """
             )
 
-        if (".value" in names_to) and (names_to.count(".value") > 1):
+        if names_to.count(".value") > 1:
             raise ValueError("There can be only one `.value` in `names_to`.")
 
     # names_sep creates more than one column
@@ -1210,35 +1210,62 @@ def _sort_by_appearance_for_melt(
     This function sorts the resulting dataframe by appearance,
     via the `sort_by_appearance` parameter in `computations_pivot_longer`.
 
-    An example for `sort_by_appearance`:
-
-    Say data looks like this :
-        id, a1, a2, a3, A1, A2, A3
-         1, a, b, c, A, B, C
-
-    when unpivoted into long form, it will look like this :
-              id instance    a     A
-        0     1     1        a     A
-        1     1     2        b     B
-        2     1     3        c     C
-
-    where the column `a` comes before `A`, as it was in the source data,
-    and in column `a`, `a > b > c`, also as it was in the source data.
-
     A dataframe that is sorted by appearance is returned.
     """
 
     index_sorter = None
+
+    # explanation here to help future me :)
 
     # if the height of the new dataframe
     # is the same as the height of the original dataframe,
     # then there is no need to sort by appearance
     length_check = any((len_index == 1, len_index == len(df)))
 
+    # pd.melt flips the columns into vertical positions
+    # it `tiles` the index during the flipping 
+    # example:
+
+    #          first last  height  weight
+    # person A  John  Doe     5.5     130
+    #        B  Mary   Bo     6.0     150
+
+    # melting the dataframe above yields: 
+    # df.melt(['first', 'last'])
+    
+    #   first last variable  value
+    # 0  John  Doe   height    5.5
+    # 1  Mary   Bo   height    6.0
+    # 2  John  Doe   weight  130.0
+    # 3  Mary   Bo   weight  150.0
+
+    # sort_by_appearance `untiles` the index
+    # and keeps all `John` before all `Mary`
+    # since `John` appears first in the original dataframe:
+
+    #   first last variable  value
+    # 0  John  Doe   height    5.5
+    # 1  John  Doe   weight  130.0
+    # 2  Mary   Bo   height    6.0
+    # 3  Mary   Bo   weight  150.0
+
+    # to get to this second form, which is sorted by appearance,
+    # get the lengths of the dataframe
+    # before and after it is melted
+    # for the example above, the length before melting is 2
+    # and after - 4.
+    # reshaping allows us to track the original positions
+    # in the previous dataframe ->
+    # np.reshape([0,1,2,3], (-1, 2))
+        # array([[0, 1],
+        #        [2, 3]])
+    # ravel, with the Fortran order (`F`) ensures the John's are aligned
+    # before the Mary's -> [0, 2, 1, 3]
+    # the raveled array is then passed to `take`
     if not length_check:
-        index_sorter = np.reshape(np.arange(len(df)), (-1, len_index)).ravel(
-            order="F"
-        )
+        index_sorter = np.arange(len(df))
+        index_sorter = np.reshape(index_sorter, (-1, len_index))
+        index_sorter = index_sorter.ravel(order="F")
         df = df.take(index_sorter)
 
         if ignore_index:
@@ -1268,6 +1295,11 @@ def _pivot_longer_extractions(
     A dataframe is returned.
     """
 
+    # keep index and select columns if supplied
+    # appending the index makes it easy to work on the columns
+    # and split into separate parts before melting
+    # plus it is more efficient to split the columns
+    # than to flip and then split
     if any((names_sep, names_pattern)):
         if index:
             df = df.set_index(index, append=True)
@@ -1288,7 +1320,7 @@ def _pivot_longer_extractions(
             )
         mapping.names = names_to
 
-    elif isinstance(names_pattern, str):
+    elif isinstance(names_pattern, (Pattern,str)):
         mapping = df.columns.str.extract(names_pattern, expand=True)
 
         if mapping.isna().all(axis=None):

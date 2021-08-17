@@ -193,7 +193,7 @@ def test_charac():
 
     df = df.clean_names(strip_underscores=True, case_type="lower")
 
-    assert "current_accountbalance_in_%_of_gdp" in df.columns.array
+    assert "current_accountbalance_in_%_of_gdp" in df.columns
 
 
 @pytest.mark.functions
@@ -205,4 +205,4 @@ def test_space():
 
     df = df.clean_names(strip_underscores=True, case_type="lower")
 
-    assert ("in %" in df.columns.array) is False
+    assert ("in %" in df.columns) is False

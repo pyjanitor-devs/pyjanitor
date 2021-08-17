@@ -1107,7 +1107,7 @@ def coalesce(
     if target_column_name is None:
         target_column_name = column_names[0]
     # bfill/ffill combo is faster than combine_first
-    outcome = df.filter(column_names).bfill(1).ffill(1).iloc[:, 0]
+    outcome = df.filter(column_names).bfill(axis=1).ffill(axis=1).iloc[:, 0]
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
     return df.assign(**{target_column_name: outcome})

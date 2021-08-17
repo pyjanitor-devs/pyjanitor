@@ -324,7 +324,6 @@ def clean_names(
         df = df.rename(columns=_strip_accents)
 
     df = df.rename(columns=lambda x: re.sub("_+", "_", x))  # noqa: PD005
-
     df = _strip_underscores(df, strip_underscores)
 
     df = df.rename(columns=lambda x: x[:truncate_limit])
@@ -337,7 +336,6 @@ def clean_names(
 
 def _change_case(col: str, case_type: str) -> str:
     """Change case of a column name."""
-
     case_types = ["preserve", "upper", "lower", "snake"]
     if case_type.lower() not in case_types:
         raise JanitorError(f"case_type must be one of: {case_types}")
@@ -355,7 +353,6 @@ def _change_case(col: str, case_type: str) -> str:
 
 def _remove_special(col_name: Hashable) -> str:
     """Remove special characters from column name."""
-
     return "".join(
         item for item in str(col_name) if item.isalnum() or "_" in item
     )
@@ -380,7 +377,6 @@ FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
 
 def _normalize_1(col_name: Hashable) -> str:
     """Perform normalization of column name."""
-
     result = str(col_name)
     for search, replace in FIXES:
         result = re.sub(search, replace, result)  # noqa: PD005

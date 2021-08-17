@@ -2518,7 +2518,7 @@ def row_to_names(
         df = df.drop(df.index[range(row_number)])
 
     if reset_index:
-        df.reset_index(drop=["index"], inplace=True)
+        df = df.reset_index(drop=["index"])
 
     return df
 

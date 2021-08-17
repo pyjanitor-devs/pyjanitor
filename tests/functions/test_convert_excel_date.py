@@ -29,4 +29,4 @@ def test_convert_excel_date_with_string_data():
     ).clean_names()
 
     with pytest.raises(ValueError):
-        df.convert_excel_date("hire_date_str")
+        df.convert_excel_date("certification")

@@ -5349,7 +5349,7 @@ class FILLTYPE(Enum):
 def _chain_func(column: pd.Series, *funcs):
     """
     Apply series of functions consecutively
-    to a function.
+    to a Series.
     https://blog.finxter.com/how-to-chain-multiple-function-calls-in-python/
     """
     new_value = column.copy()

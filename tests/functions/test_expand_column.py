@@ -25,3 +25,16 @@ def test_expand_and_concat():
         column_name="col1", sep=", ", concat=True
     )
     assert df.shape[1] == 8
+
+
+@pytest.mark.functions
+def test_sep_default_parameter():
+    df = pd.DataFrame(
+        {
+            "col1": ["A|B", "B|C|D", "E|F", "A|E|F"],
+            "col2": [1, 2, 3, 4],
+        }
+    )
+    result = df.expand_column("col1")
+
+    assert result.shape[1] == 8

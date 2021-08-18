@@ -1223,16 +1223,16 @@ def _sort_by_appearance_for_melt(
     length_check = any((len_index == 1, len_index == len(df)))
 
     # pd.melt flips the columns into vertical positions
-    # it `tiles` the index during the flipping 
+    # it `tiles` the index during the flipping
     # example:
 
     #          first last  height  weight
     # person A  John  Doe     5.5     130
     #        B  Mary   Bo     6.0     150
 
-    # melting the dataframe above yields: 
+    # melting the dataframe above yields:
     # df.melt(['first', 'last'])
-    
+
     #   first last variable  value
     # 0  John  Doe   height    5.5
     # 1  Mary   Bo   height    6.0
@@ -1257,8 +1257,8 @@ def _sort_by_appearance_for_melt(
     # reshaping allows us to track the original positions
     # in the previous dataframe ->
     # np.reshape([0,1,2,3], (-1, 2))
-        # array([[0, 1],
-        #        [2, 3]])
+    # array([[0, 1],
+    #        [2, 3]])
     # ravel, with the Fortran order (`F`) ensures the John's are aligned
     # before the Mary's -> [0, 2, 1, 3]
     # the raveled array is then passed to `take`
@@ -1272,6 +1272,338 @@ def _sort_by_appearance_for_melt(
             df.index = np.arange(len(df))
 
     return df
+
+
+def _computations_pivot_longer_no_names_sep_pattern(
+    df: pd.DataFrame,
+    index: Optional[Union[List, Tuple]] = None,
+    column_names: Optional[Union[List, Tuple]] = None,
+    names_to: Optional[List] = None,
+    values_to: Optional[str] = "value",
+    column_level: Optional[Union[int, str]] = None,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
+) -> pd.DataFrame:
+    """
+
+    This pivots the data into longer form, for scenarios where
+    there is no `names_sep` or `names_pattern`.
+
+
+    If `ignore_index` is `False`, then the index of the source dataframe is
+    returned, and repeated as necessary.
+
+    If the user wants the data in order of appearance, in which case, the
+    unpivoted data appears in stacked form, then `sort_by_appearance`
+    covers that.
+
+    An unpivoted dataframe is returned.
+    """
+
+    if (
+        (index is None)
+        and column_names
+        and (len(df.columns) > len(column_names))
+    ):
+        index = [
+            column_name
+            for column_name in df
+            if column_name not in column_names
+        ]
+
+    len_index = len(df)
+
+    df = pd.melt(
+        df,
+        id_vars=index,
+        value_vars=column_names,
+        var_name=names_to,
+        value_name=values_to,
+        col_level=column_level,
+        ignore_index=ignore_index,
+    )
+
+    if sort_by_appearance:
+        df = _sort_by_appearance_for_melt(
+            df=df, ignore_index=ignore_index, len_index=len_index
+        )
+
+    return df
+
+
+def _computations_pivot_longer_names_sep(
+    df: pd.DataFrame,
+    index: Optional[Union[List, Tuple]] = None,
+    column_names: Optional[Union[List, Tuple]] = None,
+    names_to: Optional[Union[List, Tuple]] = None,
+    values_to: Optional[str] = "value",
+    names_sep: Optional[Union[str, Pattern]] = None,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
+) -> pd.DataFrame:
+    """
+    This pivots the data into longer form, for scenarios where
+    `names_sep` is present:
+
+
+    1. The first step is to extract the relevant values from the columns,
+       using `str.split(expand=True)`. After the extraction,
+       `pd.melt` is executed.
+
+    2. 'The labels in `names_to` become the new column names, if `.value`
+        is not in `names_to`.
+
+    3.  If, however, `names_to` contains `.value`, then the `.value` column
+        is unstacked to become new column name(s), while the other values,
+        if any, go under different column names. `values_to` is overriden.
+
+    4.  If `ignore_index` is `False`, then the index of the source dataframe is
+        returned, and repeated as necessary.
+
+    5.  If the user wants the data in order of appearance, in which case, the
+        unpivoted data appears in stacked form, then `sort_by_appearance`
+        covers that.
+
+    An unpivoted dataframe is returned.
+    """
+
+    len_index = len(df)
+
+    if index:
+        df = df.set_index(index, append=True)
+
+    if column_names:
+        df = df.loc[:, column_names]
+
+    mapping = df.columns.str.split(names_sep, expand=True)
+
+
+
+    if len(mapping.names) != len(names_to):
+        raise ValueError(
+            """
+            The length of ``names_to`` does not match
+            the number of columns extracted.
+            """
+        )
+
+    mapping.names = names_to
+
+    if ".value" not in names_to:
+        df.columns = mapping
+        df = pd.melt(
+            df,
+            id_vars=None,
+            value_vars=None,
+            var_name=None,
+            value_name=values_to,
+            ignore_index=False,
+        )
+
+    # what of `.value`?
+    else:
+        # creating categoricals here is to ensure the order of the labels
+        # is preserved. This also helps when recombining the columns after 
+        # melting
+        mapping_names = mapping.names
+        mapping = [mapping.get_level_values(name) for name in mapping_names]
+        dtypes = [
+            CategoricalDtype(categories=entry.unique(), ordered=True)
+            for entry in mapping
+        ]
+        mapping = [
+            entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
+        ]
+
+        mapping = pd.MultiIndex.from_arrays(mapping)
+
+        df.columns = mapping
+        
+        if mapping.is_unique:
+            # look for scenarios where not all combinations are represented
+            complete_combinations = pd.MultiIndex.from_product(mapping.levels)
+            # check if all combinations are present in the current columns
+            if not complete_combinations.difference(mapping).empty:
+                # what if columns is not unique? what happens?
+                # reindexing wont work...so?
+                # looks very unlikely though
+                df = df.reindex(columns = complete_combinations)
+
+        else:
+            mapping = mapping.to_frame(index=False)
+            return mapping.groupby([*mapping.columns]).cumcount()
+
+        df = df.sort_index(axis=1, level='.value')
+        mapping_names = df.columns.get_level_values(".value").categories
+        df = [
+            df.xs(key=name, level=".value", axis='columns').melt(
+                ignore_index=False,  value_name=name
+            )
+            for name in mapping_names
+        ]
+
+
+        first, *rest = df
+
+        # `first` has all the required columns;
+        # as such, there is no need to keep these columns in
+        # the other dataframes in `rest`;
+        # plus, we avoid duplicate columns during concatenation
+        # the only column we need is the last column,
+        # from each dataframe in `rest`
+        # uniformity in the data is already assured
+        # with the categorical dtype creation,
+        # followed by the sorting on the columns earlier.
+        rest = [frame.iloc[:, -1] for frame in rest]
+        df = pd.concat([first, *rest], axis='columns')
+
+
+    if index:  # return to column
+        df = df.reset_index(level=index)
+
+    if sort_by_appearance:
+        df = _sort_by_appearance_for_melt(
+            df=df, ignore_index=ignore_index, len_index=len_index
+        )
+
+    elif ignore_index:
+        df.index = np.arange(len(df))
+
+    return df
+
+
+def _computations_pivot_longer_names_pattern_str(
+    df: pd.DataFrame,
+    index: Optional[Union[List, Tuple]] = None,
+    column_names: Optional[Union[List, Tuple]] = None,
+    names_to: Optional[Union[List, Tuple]] = None,
+    values_to: Optional[str] = "value",
+    names_pattern: Optional[Union[list, str, Pattern]] = None,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
+) -> pd.DataFrame:
+    """
+    This pivots the data into longer form, for scenarios where
+    `names_sep` is present:
+
+    1. If `names_sep` or `names_pattern` is not provided, then regular data
+       unpivoting is covered with pandas melt.
+
+    2. If `names_pattern` is a string/regex,  `pd.Series.str.extract()`
+       is applied. If `names_pattern` is a list/tuple of
+       regular expressions, then `str.contains` along with `numpy` select is
+       used for the extraction.
+
+        After the extraction, `pd.melt` is executed.
+
+    3. 'The labels in `names_to` become the new column names, if `.value`
+        is not in `names_to`, or if `names_pattern` is not a list/tuple of
+        regexes.
+
+    4.  If, however, `names_to` contains `.value`, or `names_pattern` is a
+        list/tuple of regexes, then the `.value` column is unstacked to
+        become new column name(s), while the other values, if any, go under
+        different column names. `values_to` is overriden.
+
+    5.  If `ignore_index` is `False`, then the index of the source dataframe is
+        returned, and repeated as necessary.
+
+    6.  If the user wants the data in order of appearance, in which case, the
+        unpivoted data appears in stacked form, then `sort_by_appearance`
+        covers that.
+
+    An unpivoted dataframe is returned.
+    """
+
+    len_index = len(df)
+
+    if index:
+        df = df.set_index(index, append=True)
+
+    if column_names:
+        df = df.loc[:, column_names]
+
+
+    mapping = df.columns.str.extract(names_pattern, expand=True)
+
+
+
+    if mapping.isna().all(axis=None):
+        raise ValueError(
+            """
+            No labels in the columns
+            matched the regular expression
+            in ``names_pattern``.
+            Kindly provide a regular expression
+            that matches all labels in the columns.
+            """
+        )
+
+    if mapping.isna().any(axis=None):
+        no_match = df.columns[mapping.isna().any(axis='columns')]
+        raise ValueError(
+            f"""
+            Labels {*no_match,}
+            did not match the regular expression
+            in ``names_pattern``.
+            Kindly provide a regular expression
+            that matches all labels in the columns.
+            """
+        )
+
+    if len(names_to) != len(mapping.columns):
+        raise ValueError(
+            """
+            The length of ``names_to`` does not match
+            the number of columns extracted.
+            """
+        )
+
+    len_mapping = len(mapping.columns) == 1
+
+    if len_mapping:
+        mapping = mapping.squeeze()
+
+    if ".value" not in names_to:
+        if len_mapping:
+            mapping.name = names_to[0]
+        else:
+            mapping = pd.MultiIndex.from_frame(mapping, names=names_to)
+        
+        df.columns = mapping
+        df = pd.melt(
+            df,
+            id_vars=None,
+            value_vars=None,
+            var_name=None,
+            value_name=values_to,
+            ignore_index=False,
+        )
+
+    else:
+        return mapping
+    # # what of `.value`?
+    # else:
+    #     # creating categoricals here is to ensure the order of the labels
+    #     # is preserved. This also helps when recombining the columns after 
+    #     # melting
+    #     mapping_names = mapping.names
+    #     mapping = [mapping.get_level_values(name) for name in mapping_names]
+    #     dtypes = [
+    #         CategoricalDtype(categories=entry.unique(), ordered=True)
+    #         for entry in mapping
+    #     ]
+    #     mapping = [
+    #         entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
+    #     ]
+
+    #     mapping = pd.MultiIndex.from_arrays(mapping)
+
+    return df
+
+
+
+
 
 
 def _pivot_longer_extractions(
@@ -1320,7 +1652,7 @@ def _pivot_longer_extractions(
             )
         mapping.names = names_to
 
-    elif isinstance(names_pattern, (Pattern,str)):
+    elif isinstance(names_pattern, (Pattern, str)):
         mapping = df.columns.str.extract(names_pattern, expand=True)
 
         if mapping.isna().all(axis=None):
@@ -1510,39 +1842,6 @@ def _computations_pivot_longer(
 
     An unpivoted dataframe is returned.
     """
-
-    if (
-        (index is None)
-        and column_names
-        and (len(df.columns) > len(column_names))
-    ):
-        index = [
-            column_name
-            for column_name in df
-            if column_name not in column_names
-        ]
-
-    len_index = len(df)
-
-    # scenario 1
-    if all((names_pattern is None, names_sep is None)):
-
-        df = pd.melt(
-            df,
-            id_vars=index,
-            value_vars=column_names,
-            var_name=names_to,
-            value_name=values_to,
-            col_level=column_level,
-            ignore_index=ignore_index,
-        )
-
-        if sort_by_appearance:
-            df = _sort_by_appearance_for_melt(
-                df=df, ignore_index=ignore_index, len_index=len_index
-            )
-
-        return df
 
     df, single_index_mapping = _pivot_longer_extractions(
         df=df,

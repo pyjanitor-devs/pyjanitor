@@ -1294,7 +1294,10 @@ def _fill_empty(df, column_names, value=None):  # noqa: F811
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
+    df: pd.DataFrame,
+    column_name: Hashable,
+    sep: str = "|",
+    concat: bool = True,
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 

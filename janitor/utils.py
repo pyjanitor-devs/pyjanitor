@@ -1402,6 +1402,12 @@ def _computations_pivot_longer_names_sep(
 
     # what of `.value`?
     else:
+        # mapping_is_unique = True
+        # cumcount = None
+        # if not mapping.is_unique:
+        #     mapping_is_unique = mapping.to_frame(index=False)
+        #     cumcount = mapping_is_unique.groupby([*mapping_is_unique.columns]).cumcount()
+        #     mapping_is_unique = False
         # creating categoricals here is to ensure the order of the labels
         # is preserved. This also helps when recombining the columns after 
         # melting
@@ -1415,23 +1421,27 @@ def _computations_pivot_longer_names_sep(
             entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
         ]
 
+        # if not mapping_is_unique:
+        #     mapping.append(cumcount)
+
         mapping = pd.MultiIndex.from_arrays(mapping)
 
-        df.columns = mapping
-        
-        if mapping.is_unique:
-            # look for scenarios where not all combinations are represented
-            complete_combinations = pd.MultiIndex.from_product(mapping.levels)
-            # check if all combinations are present in the current columns
-            if not complete_combinations.difference(mapping).empty:
-                # what if columns is not unique? what happens?
-                # reindexing wont work...so?
-                # looks very unlikely though
-                df = df.reindex(columns = complete_combinations)
 
+        
+        # look for scenarios where not all combinations are represented
+        complete_combinations = pd.MultiIndex.from_product(mapping.levels)
+        missing = complete_combinations.difference(mapping)
+        # check if all combinations are present in the current columns
+        if not missing.empty and mapping.is_unique:
+            # what if columns is not unique? what happens?
+            # reindexing wont work...so?
+            # looks very unlikely though
+            df.columns = mapping
+            df = df.reindex(columns = complete_combinations)
         else:
-            mapping = mapping.to_frame(index=False)
-            return mapping.groupby([*mapping.columns]).cumcount()
+            # do I do an assign here, or a concat(might fail with duplicate index?)
+            return missing
+
 
         df = df.sort_index(axis=1, level='.value')
         mapping_names = df.columns.get_level_values(".value").categories

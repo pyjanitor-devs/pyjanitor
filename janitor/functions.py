@@ -5352,7 +5352,7 @@ def _chain_func(column: pd.Series, *funcs):
     to a function.
     https://blog.finxter.com/how-to-chain-multiple-function-calls-in-python/
     """
-    new_value = column
+    new_value = column.copy()
     for func in funcs:
         new_value = func(new_value)
     return new_value

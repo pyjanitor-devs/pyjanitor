@@ -29,6 +29,7 @@ def test_expand_and_concat():
 
 @pytest.mark.functions
 def test_sep_default_parameter():
+    """Test that the default parameter is a pipe character `|`."""
     df = pd.DataFrame(
         {
             "col1": ["A|B", "B|C|D", "E|F", "A|E|F"],

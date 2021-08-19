@@ -1324,7 +1324,8 @@ def expand_column(
 
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.
-    :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
+    :param sep: The delimiter, same to
+        :py:meth:`~pandas.Series.str.get_dummies`'s `sep`, default as `|`.
     :param concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).

@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+
 -   [DOC] Fix references and broken links in AUTHORS.rst. @loganthomas
 -   [DOC] Updated Broken links in the README and contributing docs. @nvamsikrishna05
 -   [INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas
@@ -14,11 +15,9 @@
 -   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
-<<<<<<< HEAD
 -   [ENH] `complete` function now uses variable args (*args) - @samukweku
-=======
+-   [EHN] Set `expand_column`'s `sep` default is `"|"`, same to `pandas.Series.str.get_dummies`. Issue #876. @Zeroto521
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
->>>>>>> 37af6a69d9590c2f4115ecff3d108eb0ed051436
 
 ## [v0.21.0] - 2021-07-16
 

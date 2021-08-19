@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+
 -   [DOC] Fix references and broken links in AUTHORS.rst. @loganthomas
 -   [DOC] Updated Broken links in the README and contributing docs. @nvamsikrishna05
 -   [INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas
@@ -9,12 +10,13 @@
 -   [ENH] Add reset_index flag to row_to_names function. @fireddd
 -   [ENH] Updated `label_encode` to use pandas factorize instead of scikit-learn LabelEncoder. @nvamsikrishna05
 -   [INF] Removed the scikit-learn package from the dependencies from environment-dev.yml and base.in files. @nvamsikrishna05
--   [ENH] Add function to remove constant columsn. @fireddd
+-   [ENH] Add function to remove constant columns. @fireddd
 -   [ENH] Added `factorize_columns` method which will deprecate the `label_encode` method in future release. @nvamsikrishna05
 -   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
 -   [EHN] Set `expand_column`'s `sep` default is `"|"`, same to `pandas.Series.str.get_dummies`. Issue #876. @Zeroto521
+-   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 
 ## [v0.21.0] - 2021-07-16
 

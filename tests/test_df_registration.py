@@ -124,3 +124,8 @@ def test_change_type_registration(dataframe):
 def test_filter_date_registration(dataframe):
     """Test if DataFrame has filter_date method"""
     assert dataframe.__getattr__("filter_date")
+
+
+def test_drop_constant_columns_registration(dataframe):
+    """Test if DataFrame has drop_constant_columns method"""
+    assert dataframe.__getattr__("drop_constant_columns")

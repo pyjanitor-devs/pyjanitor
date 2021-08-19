@@ -1362,7 +1362,7 @@ def _computations_pivot_longer(
     if names_sep:
         df = _extract_names_sep(df, dot_value_in_names_to, names_to, names_sep)
 
-    # df = df.sort_index(axis = 1)
+    df = df.sort_index(axis = 1)
 
     return df
 
@@ -1410,7 +1410,7 @@ def _extract_names_sep(
     others = mapping.droplevel('.value')
     dot_value = [name for name in names_to if name != '.value']
     dot_value = mapping.droplevel(dot_value)
-    dtypes = dict(zip(names_to, mapping.levels))
+    dtypes = {name : mapping.get_level_values(name).factorize()[-1] for name in names_to}
     dtypes = {name : CategoricalDtype(categories=value, ordered=True) for name, value in dtypes.items()}
     if mapping_is_unique:
         mapping = [mapping.get_level_values(name).astype(dtypes[name]) for name in names_to]
@@ -1435,7 +1435,7 @@ def _extract_names_sep(
         mapping = [*mapping, uniques]
         mapping = pd.MultiIndex.from_arrays(mapping)
         df = df.reindex(columns = mapping)
-        return df.columns.get_level_values(0)
+        df = df.droplevel(level = -1, axis = 'columns')
 
     
 

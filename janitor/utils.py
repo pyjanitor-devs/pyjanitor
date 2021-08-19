@@ -1407,10 +1407,10 @@ def _extract_names_sep(
         return df
 
     mapping_is_unique = mapping.is_unique
-    others = mapping.droplevel('.value')
-    dot_value = [name for name in names_to if name != '.value']
-    dot_value = mapping.droplevel(dot_value)
-    dtypes = {name : mapping.get_level_values(name).factorize()[-1] for name in names_to}
+    # others = mapping.droplevel('.value')
+    # dot_value = [name for name in names_to if name != '.value']
+    # dot_value = mapping.droplevel(dot_value)
+    dtypes = {name : mapping.get_level_values(name).unique() for name in names_to}
     dtypes = {name : CategoricalDtype(categories=value, ordered=True) for name, value in dtypes.items()}
     if mapping_is_unique:
         mapping = [mapping.get_level_values(name).astype(dtypes[name]) for name in names_to]

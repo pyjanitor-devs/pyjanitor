@@ -2277,7 +2277,6 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     return filtered_columns
 
 
-
 class JOINOPERATOR(Enum):
     """
     List of operators used in conditional_join.

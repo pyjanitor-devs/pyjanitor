@@ -5054,10 +5054,10 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({"text" : ["Ragnar",
-                                    "sammywemmy",
-                                    "ginger"],
-                           "code" : [1, 2, 3]})
+                 text  code
+        0      Ragnar     1
+        1  sammywemmy     2
+        2      ginger     3
 
         df.process_text(column_name = "text",
                         string_function = "lower")

@@ -1274,7 +1274,7 @@ def _sort_by_appearance_for_melt(
     return df
 
 
-def _computations_pivot_longer(
+def _pivot_longer_final(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple]] = None,
     column_names: Optional[Union[List, Tuple]] = None,
@@ -1290,33 +1290,6 @@ def _computations_pivot_longer(
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
-    """
-    This is the main workhorse of the `pivot_longer` function.
-    Below is a summary of how the function accomplishes its tasks:
-    1. If `names_sep` or `names_pattern` is not provided, then regular data
-       unpivoting is covered with pandas melt.
-    2. If `names_sep` or `names_pattern` is not None, the first step is to
-       extract the relevant values from the columns, using either
-       `str.split(expand=True)`, if `names_sep` is provided, or `str.extract()`
-       if `names_pattern` is provided. If `names_pattern` is a list/tuple of
-       regular expressions, then `str.contains` along with `numpy` select is
-       used for the extraction.
-        After the extraction, `pd.melt` is executed.
-    3. 'The labels in `names_to` become the new column names, if `.value`
-        is not in `names_to`, or if `names_pattern` is not a list/tuple of
-        regexes.
-    4.  If, however, `names_to` contains `.value`, or `names_pattern` is a
-        list/tuple of regexes, then the `.value` column is unstacked(in a
-        manner of speaking, `pd.DataFrame.unstack` is not actually used) to
-        become new column name(s), while the other values, if any, go under
-        different column names. `values_to` is overriden.
-    5.  If `ignore_index` is `False`, then the index of the source dataframe is
-        returned, and repeated as necessary.
-    6.  If the user wants the data in order of appearance, in which case, the
-        unpivoted data appears in stacked form, then `sort_by_appearance`
-        covers that.
-    An unpivoted dataframe is returned.
-    """
 
     if (
         (index is None)
@@ -1357,40 +1330,62 @@ def _computations_pivot_longer(
     if column_names:
         df = df.loc[:, column_names]
 
-    dot_value_in_names_to = '.value' in names_to
+    dot_value_in_names_to = ".value" in names_to
 
     if names_sep:
-        df = _extract_names_sep(df, dot_value_in_names_to, names_to, names_sep)
+        df, mapping_is_unique = _extract_names_sep(df, dot_value_in_names_to, names_to, names_sep)
+        df = _final_frame_names_sep(df, mapping_is_unique, dot_value_in_names_to, values_to, sort_by_appearance, ignore_index)
 
-    df = df.sort_index(axis = 1)
 
     return df
 
 
+def _final_frame_names_sep(
+    df: pd.DataFrame,
+    mapping_is_unique,
+    dot_value_in_names_to:bool=False,
+    values_to: str = "value",
+    sort_by_appearance: bool = False,
+    ignore_index: bool = False,
+    
+) -> pd.DataFrame:
+
+    if not dot_value_in_names_to:
+        df = pd.melt(
+            df,
+            value_name=values_to,
+            ignore_index=False,
+        )
+
+    else:
+        mapping = df.columns
+        others = mapping.droplevel(".value").unique()
+        dot_value = mapping.get_level_values('.value').categories
+        if isinstance(others, pd.MultiIndex):
+            levels = others.names
+        else:
+            levels = others.name
+
+
+        df = df.sort_index(axis="columns")
+
+       
+        
 
 
 
-
-
-
-
-
-
+    return df
 
 
 def _extract_names_sep(
     df: pd.DataFrame,
-        dot_value_in_names_to:bool,
-    names_to: Optional[Union[List, Tuple]] = None,
-    names_sep: Optional[Union[str, Pattern]] = None,
+    dot_value_in_names_to: bool,
+    names_to: list,
+    names_sep: Union[str, Pattern],
 ) -> pd.DataFrame:
-
-
-
 
     mapping = df.columns.str.split(names_sep, expand=True)
     len_mapping_names = len(mapping.names)
-
 
     if len_mapping_names != len(names_to):
         raise ValueError(
@@ -1407,13 +1402,19 @@ def _extract_names_sep(
         return df
 
     mapping_is_unique = mapping.is_unique
-    # others = mapping.droplevel('.value')
-    # dot_value = [name for name in names_to if name != '.value']
-    # dot_value = mapping.droplevel(dot_value)
-    dtypes = {name : mapping.get_level_values(name).unique() for name in names_to}
-    dtypes = {name : CategoricalDtype(categories=value, ordered=True) for name, value in dtypes.items()}
+
+    dtypes = {
+        name: mapping.get_level_values(name).unique() for name in names_to
+    }
+    dtypes = {
+        name: CategoricalDtype(categories=value, ordered=True)
+        for name, value in dtypes.items()
+    }
     if mapping_is_unique:
-        mapping = [mapping.get_level_values(name).astype(dtypes[name]) for name in names_to]
+        mapping = [
+            mapping.get_level_values(name).astype(dtypes[name])
+            for name in names_to
+        ]
         mapping = pd.MultiIndex.from_arrays(mapping)
         combinations = pd.MultiIndex.from_product(mapping.levels)
         df.columns = mapping
@@ -1421,107 +1422,31 @@ def _extract_names_sep(
         uniques = mapping.factorize()[0]
         uniques = pd.Series(uniques).groupby(uniques).cumcount()
         combinations = pd.MultiIndex.from_product(mapping.levels)
-        df_columns = [mapping.get_level_values(name).astype(dtypes[name]) for name in names_to]
+        df_columns = [
+            mapping.get_level_values(name).astype(dtypes[name])
+            for name in names_to
+        ]
         df_columns = [*df_columns, uniques]
         df_columns = pd.MultiIndex.from_arrays(df_columns)
         df.columns = df_columns
     missing = combinations.difference(mapping)
     if (not missing.empty) and mapping_is_unique:
-        df = df.reindex(columns = combinations)
+        df = df.reindex(columns=combinations)
     elif (not missing.empty) and (not mapping_is_unique):
         mapping = mapping.append(missing)
-        uniques = np.concatenate([uniques.array, np.zeros(missing.size, dtype=int)])
-        mapping = [mapping.get_level_values(name).astype(dtypes[name]) for name in names_to]
+        uniques = np.concatenate(
+            [uniques.array, np.zeros(missing.size, dtype=int)]
+        )
+        mapping = [
+            mapping.get_level_values(name).astype(dtypes[name])
+            for name in names_to
+        ]
         mapping = [*mapping, uniques]
         mapping = pd.MultiIndex.from_arrays(mapping)
-        df = df.reindex(columns = mapping)
-        df = df.droplevel(level = -1, axis = 'columns')
+        df = df.reindex(columns=mapping)
+        df = df.droplevel(level=-1, axis="columns")
 
-    
-
-        
-
-    return df
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return df, mapping_is_unique
 
 
 def _data_checks_pivot_wider(

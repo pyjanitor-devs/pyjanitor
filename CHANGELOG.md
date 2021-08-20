@@ -15,6 +15,7 @@
 -   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
+-   [ENH] `complete` function now uses variable args (*args) - @samukweku
 -   [EHN] Set `expand_column`'s `sep` default is `"|"`, same to `pandas.Series.str.get_dummies`. Issue #876. @Zeroto521
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku

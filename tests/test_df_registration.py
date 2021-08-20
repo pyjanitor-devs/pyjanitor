@@ -154,3 +154,6 @@ def test_process_text_registration(dataframe):
 def test_fill_direction_registration(dataframe):
     """Test if DataFrame has fill_direction method"""
     assert dataframe.__getattr__("fill_direction")
+def test_drop_constant_columns_registration(dataframe):
+    """Test if DataFrame has drop_constant_columns method"""
+    assert dataframe.__getattr__("drop_constant_columns")

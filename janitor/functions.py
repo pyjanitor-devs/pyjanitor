@@ -37,6 +37,8 @@ from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
 
 from .errors import JanitorError
+from enum import Enum
+from operator import methodcaller
 from .utils import (
     _clean_accounting_column,
     _computations_as_categorical,
@@ -1293,7 +1295,10 @@ def _fill_empty(df, column_names, value=None):  # noqa: F811
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
+    df: pd.DataFrame,
+    column_name: Hashable,
+    sep: str = "|",
+    concat: bool = True,
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -1320,7 +1325,8 @@ def expand_column(
 
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.
-    :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
+    :param sep: The delimiter, same to
+        :py:meth:`~pandas.Series.str.get_dummies`'s `sep`, default as `|`.
     :param concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).
@@ -5209,72 +5215,63 @@ def process_text(
 
 
 @pf.register_dataframe_method
-def fill_direction(
-    df: pd.DataFrame,
-    directions: Dict[Hashable, str] = None,
-    limit: Optional[int] = None,
-) -> pd.DataFrame:
+def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
     Provide a method-chainable function for filling missing values
     in selected columns.
 
-    Missing values are filled using the next or previous entry.
-    The columns are paired with the directions in a dictionary.
-    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``.
+    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``,
+    and pairs the column name with one of `up`, `down`, `updown`,
+    and `downup`.
 
     .. code-block:: python
 
         import pandas as pd
-        import numpy as np
         import janitor as jn
-
-        df = pd.DataFrame({"text": ["ragnar", np.nan, "sammywemmy",
-                                    np.nan, "ginger"],
-                           "code" : [np.nan, 2, 3, np.nan, 5]})
 
         df
 
-           text          code
-        0 ragnar         NaN
-        1 NaN            2.0
-        2 sammywemmy     3.0
-        3 NaN            NaN
-        4 ginger         5.0
+                 text  code
+        0      ragnar   NaN
+        1         NaN   2.0
+        2  sammywemmy   3.0
+        3         NaN   NaN
+        4      ginger   5.0
 
 
 
     Fill on a single column::
 
-        df.fill_direction({"text" : "up"})
+        df.fill_direction(code = 'up')
 
-           text          code
-        0 ragnar         NaN
-        1 sammywemmy     2.0
-        2 sammywemmy     3.0
-        3 ginger         NaN
-        4 ginger         5.0
+                 text  code
+        0      ragnar   2.0
+        1         NaN   2.0
+        2  sammywemmy   3.0
+        3         NaN   5.0
+        4      ginger   5.0
 
     Fill on multiple columns::
 
-        df.fill_direction({"text" : "down", "code" : "down"})
+        df.fill_direction(text = 'down', code = 'down')
 
-           text          code
-        0 ragnar         NaN
-        1 ragnar         2.0
-        2 sammywemmy     3.0
-        3 sammywemmy     3.0
-        4 ginger         5.0
+                 text  code
+        0      ragnar   NaN
+        1      ragnar   2.0
+        2  sammywemmy   3.0
+        3  sammywemmy   3.0
+        4      ginger   5.0
 
     Fill multiple columns in different directions::
 
-        df.fill_direction({"text" : "up", "code" : "down"})
+        df.fill_direction(text = 'up', code = 'down')
 
-           text          code
-        0 ragnar         NaN
-        1 sammywemmy     2.0
-        2 sammywemmy     3.0
-        3 ginger         3.0
-        4 ginger         5.0
+                 text  code
+        0      ragnar   NaN
+        1  sammywemmy   2.0
+        2  sammywemmy   3.0
+        3      ginger   3.0
+        4      ginger   5.0
 
     Functional usage syntax:
 
@@ -5285,12 +5282,10 @@ def fill_direction(
 
         df = pd.DataFrame(...)
         df = jn.fill_direction(
-            df = df,
-            directions = {column_1 : direction_1,
-                          column_2 : direction_2,
-                          ...},
-            limit = None # limit must be None or greater than 0
-            )
+                    df = df,
+                    column_1 = direction_1,
+                    column_2 = direction_2,
+                )
 
     Method-chaining usage syntax:
 
@@ -5299,22 +5294,17 @@ def fill_direction(
         import pandas as pd
         import janitor as jn
 
-        df = (
-            pd.DataFrame(...)
-            .fill_direction(
-            directions = {column_1 : direction_1,
-                          column_2 : direction_2,
-                          ...},
-            limit = None # limit must be None or greater than 0
-            )
-        )
+        df = pd.DataFrame(...)
+               .fill_direction(
+                    column_1 = direction_1,
+                    column_2 = direction_2,
+                )
+
 
     :param df: A pandas dataframe.
-    :param directions: Key - value pairs of columns and directions. Directions
-        can be either `down` (default), `up`, `updown` (fill up then down) and
+    :param kwargs: Key - value pairs of columns and directions. Directions
+        can be either `down`, `up`, `updown` (fill up then down) and
         `downup` (fill down then up).
-    :param limit: number of consecutive null values to forward/backward fill.
-        Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
     :raises ValueError: if column supplied is not in the dataframe.
     :raises ValueError: if direction supplied is not one of `down`, `up`,
@@ -5322,45 +5312,57 @@ def fill_direction(
 
     .. # noqa: DAR402
     """
-    df = df.copy()
-    if not directions:
+
+    if not kwargs:
         return df
 
-    check("directions", directions, [dict])
-
-    if limit is not None:
-        check("limit", limit, [int])
-        # pandas raises error if limit is not greater than zero
-        # so no need for a check on pyjanitor's end
-
-    check_column(df, directions)
-
-    for _, direction in directions.items():
-        if direction not in {"up", "down", "updown", "downup"}:
+    fill_types = {fill.name for fill in FILLTYPE}
+    for column_name, fill_type in kwargs.items():
+        check("column_name", column_name, [str])
+        check("fill_details", fill_type, [str])
+        if fill_type.upper() not in fill_types:
             raise ValueError(
                 """
-                The direction should be a string and should be one of
-                `up`, `down`, `updown`, or `downup`.
+                fill_type should be one of
+                up, down, updown, or downup.
                 """
             )
 
-    # TODO: option to specify limit per column; current implementation
-    # is one `limit` for all the columns. Might need refactoring, or an
-    # API change.
-    for column, direction in directions.items():
-        if direction == "up":
-            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
-        elif direction == "down":
-            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
-        elif direction == "updown":
-            df.loc[:, column] = (
-                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
-            )
-        else:  # downup
-            df.loc[:, column] = (
-                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
-            )
-    return df
+    check_column(df, kwargs)
+
+    new_values = {}
+    for column_name, fill_type in kwargs.items():
+        direction = FILLTYPE[f"{fill_type.upper()}"].value
+        if len(direction) == 1:
+            direction = methodcaller(direction[0])
+            output = direction(df[column_name])
+        else:
+            direction = [methodcaller(entry) for entry in direction]
+            output = _chain_func(df[column_name], *direction)
+        new_values[column_name] = output
+
+    return df.assign(**new_values)
+
+
+class FILLTYPE(Enum):
+    """List of fill types for fill_direction."""
+
+    UP = ("bfill",)
+    DOWN = ("ffill",)
+    UPDOWN = "bfill", "ffill"
+    DOWNUP = "ffill", "bfill"
+
+
+def _chain_func(column: pd.Series, *funcs):
+    """
+    Apply series of functions consecutively
+    to a Series.
+    https://blog.finxter.com/how-to-chain-multiple-function-calls-in-python/
+    """
+    new_value = column.copy()
+    for func in funcs:
+        new_value = func(new_value)
+    return new_value
 
 
 @pf.register_dataframe_method

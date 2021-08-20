@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+
 -   [DOC] Fix references and broken links in AUTHORS.rst. @loganthomas
 -   [DOC] Updated Broken links in the README and contributing docs. @nvamsikrishna05
 -   [INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas
@@ -16,6 +17,8 @@
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
+-   [EHN] Set `expand_column`'s `sep` default is `"|"`, same to `pandas.Series.str.get_dummies`. Issue #876. @Zeroto521
+-   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 
 ## [v0.21.0] - 2021-07-16

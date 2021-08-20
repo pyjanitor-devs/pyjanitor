@@ -59,6 +59,7 @@ Filtering
     filter_date
     filter_column_isin
     select_columns
+    drop_constant_columns
     dropnotnull
     get_dupes
 

@@ -59,6 +59,7 @@ Filtering
     filter_date
     filter_column_isin
     select_columns
+    drop_constant_columns
     dropnotnull
     get_dupes
 
@@ -71,6 +72,7 @@ Preprocessing
     encode_categorical
     impute
     label_encode
+    factorize_columns
     min_max_scale
     get_features_targets
 
@@ -93,3 +95,4 @@ Other
     complete
     pivot_longer
     pivot_wider
+    conditional_join

@@ -39,6 +39,7 @@ dependencies:
 - pyspark
 - pytest
 - pytest-cov
+- pytest-xdist
 - python-language-server
 - rdkit
 - recommonmark

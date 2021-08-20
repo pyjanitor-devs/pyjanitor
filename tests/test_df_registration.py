@@ -126,6 +126,36 @@ def test_filter_date_registration(dataframe):
     assert dataframe.__getattr__("filter_date")
 
 
+def test_conditional_join_registration(dataframe):
+    """Test if DataFrame has conditional_join method"""
+    assert dataframe.__getattr__("conditional_join")
+
+
+def test_pivot_longer_registration(dataframe):
+    """Test if DataFrame has pivot_longer method"""
+    assert dataframe.__getattr__("pivot_longer")
+
+
+def test_pivot_wider_registration(dataframe):
+    """Test if DataFrame has pivot_wider method"""
+    assert dataframe.__getattr__("pivot_wider")
+
+
+def test_expand_grid_registration(dataframe):
+    """Test if DataFrame has expand_grid method"""
+    assert dataframe.__getattr__("expand_grid")
+
+
+def test_process_text_registration(dataframe):
+    """Test if DataFrame has process_text method"""
+    assert dataframe.__getattr__("process_text")
+
+
+def test_fill_direction_registration(dataframe):
+    """Test if DataFrame has fill_direction method"""
+    assert dataframe.__getattr__("fill_direction")
+
+
 def test_drop_constant_columns_registration(dataframe):
     """Test if DataFrame has drop_constant_columns method"""
     assert dataframe.__getattr__("drop_constant_columns")

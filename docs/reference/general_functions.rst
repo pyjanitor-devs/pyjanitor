@@ -95,3 +95,4 @@ Other
     complete
     pivot_longer
     pivot_wider
+    conditional_join

@@ -1333,8 +1333,8 @@ def _pivot_longer_final(
     dot_value_in_names_to = ".value" in names_to
 
     if names_sep:
-        df, mapping_is_unique = _extract_names_sep(df, dot_value_in_names_to, names_to, names_sep)
-        df = _final_frame_names_sep(df, mapping_is_unique, dot_value_in_names_to, values_to, sort_by_appearance, ignore_index)
+        df = _extract_names_sep(df, dot_value_in_names_to, names_to, names_sep)
+        df = _final_frame_names_sep(df, dot_value_in_names_to, values_to, sort_by_appearance, ignore_index)
 
 
     return df
@@ -1342,7 +1342,6 @@ def _pivot_longer_final(
 
 def _final_frame_names_sep(
     df: pd.DataFrame,
-    mapping_is_unique,
     dot_value_in_names_to:bool=False,
     values_to: str = "value",
     sort_by_appearance: bool = False,
@@ -1365,7 +1364,6 @@ def _final_frame_names_sep(
             levels = others.names
         else:
             levels = others.name
-
 
         df = df.sort_index(axis="columns")
 
@@ -1446,7 +1444,7 @@ def _extract_names_sep(
         df = df.reindex(columns=mapping)
         df = df.droplevel(level=-1, axis="columns")
 
-    return df, mapping_is_unique
+    return df
 
 
 def _data_checks_pivot_wider(

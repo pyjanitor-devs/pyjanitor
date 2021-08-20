@@ -695,8 +695,6 @@ def _data_checks_complete(
             """
         )
 
-    check("columns", columns, [list])
-
     columns = [
         list(grouping) if isinstance(grouping, tuple) else grouping
         for grouping in columns
@@ -807,6 +805,8 @@ def _base_complete(
     unique_index = df_index.is_unique
     columns_to_stack = None
 
+    # stack...unstack implemented here if conditions are met
+    # usually faster than reindex
     if all_strings and (not any_nulls) and (len(columns) > 1) and unique_index:
         if df_empty:
             df["dummy"] = 1
@@ -826,7 +826,7 @@ def _base_complete(
             indexer = df_index.union(indexer, sort=None)
         df = df.reindex(indexer)
 
-    else:
+    else:  # reindex not possible on duplicate indices
         df = df.join(pd.DataFrame([], index=indexer), how="outer")
 
     return df

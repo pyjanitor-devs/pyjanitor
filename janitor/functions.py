@@ -1109,7 +1109,7 @@ def coalesce(
     if target_column_name is None:
         target_column_name = column_names[0]
     # bfill/ffill combo is faster than combine_first
-    outcome = df.filter(column_names).bfill(1).ffill(1).iloc[:, 0]
+    outcome = df.filter(column_names).bfill(axis=1).ffill(axis=1).iloc[:, 0]
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
     return df.assign(**{target_column_name: outcome})
@@ -5316,7 +5316,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     fill_types = {fill.name for fill in FILLTYPE}
     for column_name, fill_type in kwargs.items():
         check("column_name", column_name, [str])
-        check("fill_details", fill_type, [str])
+        check("fill_type", fill_type, [str])
         if fill_type.upper() not in fill_types:
             raise ValueError(
                 """
@@ -5486,7 +5486,7 @@ def groupby_topk(
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]] = None,
+    *columns,
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -5513,11 +5513,10 @@ def complete(
         1	2	    2	        b	2	5
         2	1	    2	        b	3	6
 
-    To find all the unique combinations of `group`, `item_id`, and `item_name`,
-    including combinations not present in the data, each variable should be
-    passed in a list to the `columns` parameter::
+    Find all the unique combinations of `group`, `item_id`, and `item_name`,
+    including combinations not present in the data::
 
-        df.complete(columns = ['group', 'item_id', 'item_name'])
+        df.complete('group', 'item_id', 'item_name')
 
               group	item_id	    item_name	value1	value2
         0	1	    1	        a	1.0	4.0
@@ -5530,10 +5529,10 @@ def complete(
         7	2	    2	        b	2.0	5.0
 
     To expose just the missing values based only on the existing data,
-    `item_id` and `item_name` can be wrapped in a tuple, while `group`
-    is passed in as a separate variable::
+    `item_id` and `item_name` column names can be wrapped in a list/tuple,
+    while `group` is passed in as a separate variable::
 
-        df.complete(columns = ["group", ("item_id", "item_name")])
+        df.complete("group", ("item_id", "item_name"))
             group	item_id	    item_name	value1	   value2
         0	1	    1	        a	  1.0	    4.0
         1	1	    2	        b	  3.0	    6.0
@@ -5556,7 +5555,7 @@ def complete(
     Note that Year 2000 and Agarum pairing is missing. Let's make it
     explicit::
 
-        df.complete(columns = ['Year', 'Taxon'])
+        df.complete('Year', 'Taxon')
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5568,7 +5567,7 @@ def complete(
 
     The null value can be replaced with the Pandas `fillna` argument::
 
-        df.complete(columns = ['Year', 'Taxon']).fillna(0)
+        df.complete('Year', 'Taxon').fillna(0)
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5584,7 +5583,7 @@ def complete(
 
         new_year_values = lambda year: range(year.min(), year.max() + 1)
 
-        df.complete(columns = [{"Year": new_year_values}, "Taxon"])
+        df.complete({"Year": new_year_values}, "Taxon")
 
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
@@ -5615,7 +5614,7 @@ def complete(
     Let's get all the missing years per state::
 
         df.complete(
-            columns = [{'year': new_year_values}],
+            {'year': new_year_values},
             by='state'
         )
 
@@ -5650,11 +5649,9 @@ def complete(
 
         df = jn.complete(
             df = df,
-            columns= [
-                column_label,
-                (column1, column2, ...),
-                {column1: new_values, ...}
-            ],
+            column_label,
+            (column1, column2, ...),
+            {column1: new_values, ...},
             by = label/list_of_labels
         )
 
@@ -5664,26 +5661,24 @@ def complete(
 
         df = (
             pd.DataFrame(...)
-            .complete(columns=[
+            .complete(
                 column_label,
                 (column1, column2, ...),
                 {column1: new_values, ...},
-            ],
-            by = label/list_of_labels
-        )
+                by = label/list_of_labels
+            )
 
     :param df: A pandas dataframe.
-    :param columns: This is a list containing the columns to be
+    :param *columns: This is a sequence containing the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
     :param by: label or list of labels to group by.
         The explicit missing values are returned per group.
     :returns: A pandas dataframe with modified column(s).
-    :raises TypeError: if `columns` is not a list.
-    :raises ValueError: if entry in `columns` is not a
+    :raises ValueError: if entry in `*columns` is not a
         str/dict/list/tuple.
-    :raises ValueError: if entry in `columns` is a dict/list/tuple
+    :raises ValueError: if entry in `*columns` is a dict/list/tuple
         and is empty.
 
     .. # noqa: DAR402

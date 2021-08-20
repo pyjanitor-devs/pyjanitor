@@ -3079,6 +3079,8 @@ def _conditional_join_compute(
             df, right, left_c, right_c, how, sort_by_appearance
         )
 
+
+    # TODO: improve the efficiency for multiple conditions
     df_index = df.index
     # iteratively reduce the number of rows
     # from df, until we have the certain index labels

@@ -2,13 +2,15 @@
 
 import fnmatch
 import functools
+from collections import defaultdict
+from hashlib import new
 import os
 import re
 import socket
 import sys
 import warnings
 from collections.abc import Callable as dispatch_callable
-from itertools import chain, combinations
+from itertools import chain
 from typing import (
     Callable,
     Dict,
@@ -1052,6 +1054,8 @@ def _data_checks_pivot_longer(
         check("column_level", column_level, [int, str])
         df.columns = df.columns.get_level_values(column_level)
 
+    df_columns = df.columns
+
     if index is not None:
         if is_list_like(index) and (not isinstance(index, tuple)):
             index = list(index)
@@ -1072,24 +1076,43 @@ def _data_checks_pivot_longer(
 
     check("names_to", names_to, [list])
 
-    if not all((isinstance(word, str) for word in names_to)):
-        raise TypeError("All entries in `names_to` argument must be strings.")
+    unique_names_to = set()
+    for word in names_to:
+        if not isinstance(word, str):
+            raise TypeError(
+               f"""
+                All entries in the `names_to` 
+                argument must be strings.
+                {word} is of type {type(word).__name__}
+                """
+            )
 
-    if len(names_to) > 1:
-        if all((names_pattern, names_sep)):
+
+        if word in unique_names_to:
             raise ValueError(
+                f"""
+                Duplicate words are not allowed 
+                in `names_to`. 
+                {word} is already present in
+                `names_to`.
+                """)
+        unique_names_to.add(word)
+    unique_names_to = None
+
+        
+
+    if names_sep and names_pattern:
+        raise ValueError(
                 """
                 Only one of `names_pattern` or `names_sep`
                 should be provided.
                 """
             )
 
-        if names_to.count(".value") > 1:
-            raise ValueError("There can be only one `.value` in `names_to`.")
 
     # names_sep creates more than one column
     # whereas regex with names_pattern can be limited to one column
-    if (len(names_to) == 1) and (names_sep is not None):
+    if (len(names_to) == 1) and names_sep:
         raise ValueError(
             """
             For a single `names_to` value,
@@ -1097,18 +1120,18 @@ def _data_checks_pivot_longer(
             """
         )
     if names_pattern is not None:
-        check("names_pattern", names_pattern, [str, Pattern, List, Tuple])
+        check("names_pattern", names_pattern, [str, Pattern, list, tuple])
 
         if isinstance(names_pattern, (list, tuple)):
-            if not all(
-                isinstance(word, (str, Pattern)) for word in names_pattern
-            ):
-                raise TypeError(
-                    """
-                    All entries in the ``names_pattern`` argument
-                    must be regular expressions.
-                    """
-                )
+            for word in names_pattern:
+                if not isinstance(word, (str, Pattern)):
+                    raise TypeError(
+                        f"""
+                        All entries in the ``names_pattern`` argument
+                        must be regular expressions.
+                        {word} is of type {type(word).__name__}
+                        """
+                    )
 
             if len(names_pattern) != len(names_to):
                 raise ValueError(
@@ -1132,12 +1155,8 @@ def _data_checks_pivot_longer(
 
     check("values_to", values_to, [str])
 
-    if (values_to in df.columns) and not any(
-        (
-            ".value" in names_to,
-            isinstance(names_pattern, (list, tuple)),
-        )
-    ):
+    dot_value = (".value" in names_to) or (isinstance(names_pattern, (list, tuple)))
+    if (values_to in df_columns) and (not dot_value):
         # copied from pandas' melt source code
         # with a minor tweak
         raise ValueError(
@@ -1148,8 +1167,18 @@ def _data_checks_pivot_longer(
             """
         )
 
+    # avoid duplicate columns in the final output
+    if (values_to in names_to) and (not dot_value):
+        raise ValueError(
+            """
+            `values_to` is present in `names_to`; 
+            this is not allowed. Kindly use a unique 
+            name.
+            """
+        )
+
     if any((names_sep, names_pattern)) and (
-        isinstance(df.columns, pd.MultiIndex)
+        isinstance(df_columns, pd.MultiIndex)
     ):
         raise ValueError(
             """
@@ -1163,7 +1192,7 @@ def _data_checks_pivot_longer(
         # adapted from pandas' melt source code
         if (
             (index is not None)
-            and isinstance(df.columns, pd.MultiIndex)
+            and isinstance(df_columns, pd.MultiIndex)
             and (not isinstance(index, list))
         ):
             raise ValueError(
@@ -1175,7 +1204,7 @@ def _data_checks_pivot_longer(
 
         if (
             (column_names is not None)
-            and isinstance(df.columns, pd.MultiIndex)
+            and isinstance(df_columns, pd.MultiIndex)
             and (not isinstance(column_names, list))
         ):
             raise ValueError(
@@ -1268,6 +1297,7 @@ def _sort_by_appearance_for_melt(
         index_sorter = index_sorter.ravel(order="F")
         df = df.take(index_sorter)
 
+        # relevance?
         if ignore_index:
             df.index = np.arange(len(df))
 
@@ -1276,9 +1306,9 @@ def _sort_by_appearance_for_melt(
 
 def _pivot_longer_final(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple]] = None,
-    column_names: Optional[Union[List, Tuple]] = None,
-    names_to: Optional[Union[List, Tuple, str]] = None,
+    index: Optional[list] = None,
+    column_names: Optional[list] = None,
+    names_to: list = None,
     values_to: Optional[str] = "value",
     column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
@@ -1332,21 +1362,75 @@ def _pivot_longer_final(
 
     dot_value_in_names_to = ".value" in names_to
 
+    df_index_names = df.index.names
+
+    df_columns = df.columns
+
+    # checks to avoid duplicate columns
+
+    if not dot_value_in_names_to:
+        # idea from pd.wide_to_long
+        for word in names_to:
+            if word in df_index_names:
+                raise ValueError(
+                    f"""
+                    {word} in `names_to` already exists 
+                    in values assigned to the dataframe's index. 
+                    Kindly use a unique name.
+                    """
+                )
+
+    for word in names_to:
+        if (word != '.value') and (word in df_index_names):
+            raise ValueError(
+                f"""
+                {word} in `names_to` already exists 
+                in values assigned to the dataframe's index. 
+                Kindly use a unique name.
+                """
+            )
+        if (word != '.value') and (word in df_columns):
+            raise ValueError(
+                f"""
+                {word} in `names_to` already exists 
+                in the dataframe's columns. 
+                Kindly use a unique name.
+                """
+            )
+
+
+    # extraction phase begins here
     if names_sep:
         df = _extract_names_sep(df, dot_value_in_names_to, names_to, names_sep)
-        df = _final_frame_names_sep(df, dot_value_in_names_to, values_to, sort_by_appearance, ignore_index)
 
+    elif isinstance(names_pattern, (str, Pattern)):
+        df = _extract_names_pattern_str(df, dot_value_in_names_to, names_to, names_pattern)
+
+    else:
+        df = _names_pattern_sequence(df, index, names_to, names_pattern, sort_by_appearance, ignore_index)
+        return df
+
+    df = _create_frame_pivot_longer(
+        df,
+        index,
+        names_to,
+        dot_value_in_names_to,
+        values_to,
+        sort_by_appearance,
+        ignore_index,
+    )
 
     return df
 
 
-def _final_frame_names_sep(
+def _create_frame_pivot_longer(
     df: pd.DataFrame,
-    dot_value_in_names_to:bool=False,
+    index,
+    names_to,
+    dot_value_in_names_to: bool = False,
     values_to: str = "value",
     sort_by_appearance: bool = False,
     ignore_index: bool = False,
-    
 ) -> pd.DataFrame:
 
     if not dot_value_in_names_to:
@@ -1358,21 +1442,60 @@ def _final_frame_names_sep(
 
     else:
         mapping = df.columns
-        others = mapping.droplevel(".value").unique()
-        dot_value = mapping.get_level_values('.value').categories
-        if isinstance(others, pd.MultiIndex):
-            levels = others.names
-        else:
-            levels = others.name
+        mapping_is_unique = mapping.is_unique
+        if mapping.nlevels > 1:
 
-        df = df.sort_index(axis="columns")
+            others = mapping.droplevel('.value').unique()
+            if isinstance(others, pd.MultiIndex):
+                levels = others.names
+            else:
+                levels = others.name
+                        
+            # this ensures proper order of the columns
+            # which is necessary to ensure that 
+            # the recombination for the final dataframe
+            # produces the correct output
+            df = df.sort_index(axis="columns")
 
-       
+            # for duplicate columns the extraction is based on `.value`
+            # and recombined via a join
+            if mapping_is_unique is False:
+                dot_value = mapping.get_level_values(".value").categories
+                df = [df.xs(key=key, axis='columns', level='.value').melt(ignore_index=False, value_name = key) for key in dot_value]
+                df = [frame.set_index(levels, append=True) for frame in df]
+                df = df[0].join(df[1:], how='outer')
+
+
+            # for unique columns, the extraction is based on
+            # the other levels that are not `.value`
+            # and recombined via pd.concat
+            else:
+                df = [df.xs(key = key, axis = 'columns', level = levels) for key in others]
+                df = pd.concat(df, axis = 'index', join = 'outer', copy = False, keys = others)
+
+        else: # single columns
+            if df.columns.size > 1:
+                mapping = mapping.categories
+                container = defaultdict(list)
+                for name, value in df.items():
+                    container[name].append(value)
+                if len(mapping) == 1:
+                    df = container[mapping.item()]
+                    df = pd.concat(df, sort = False)
+                    df = df.to_frame()
+                else:
+                    # return container
+                    df = [pd.concat(value, copy = False, keys=np.arange(len(value))) for _, value in container.items()]
+                    first, *rest = df
+                    first = first.to_frame()
+                    df = first.join(rest, how = 'outer', sort = False)
+                    df = df.droplevel(level=0, axis = 'index')
         
 
-
-
     return df
+
+
+
 
 
 def _extract_names_sep(
@@ -1382,56 +1505,243 @@ def _extract_names_sep(
     names_sep: Union[str, Pattern],
 ) -> pd.DataFrame:
 
-    mapping = df.columns.str.split(names_sep, expand=True)
-    len_mapping_names = len(mapping.names)
+    mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
+    len_mapping_columns = len(mapping.columns)
+    len_names_to = len(names_to)
 
-    if len_mapping_names != len(names_to):
+    if len_names_to != len_mapping_columns:
         raise ValueError(
-            """
+            f"""
             The length of ``names_to`` does not match
-            the number of columns extracted.
+            the number of levels extracted.
+            The length of ``names_to`` is {len_names_to}
+            while the number of levels extracted is 
+            {len_mapping_columns}.
             """
         )
 
-    mapping.names = names_to
+    mapping.columns = names_to
 
-    if not dot_value_in_names_to:
+    df = _create_columns_pivot_longer(df, dot_value_in_names_to, names_to, mapping)
+
+    return df
+
+
+
+
+def _names_pattern_sequence(
+    df: pd.DataFrame,
+    index,
+    names_to: list,
+    names_pattern: Union[list, tuple],
+    sort_by_appearance:bool,
+    ignore_index:bool
+) -> pd.DataFrame:
+
+
+    df_columns = df.columns
+    mapping = [
+            df_columns.str.contains(regex, na=False, regex=True) for regex in names_pattern
+        ]
+
+    matches = [arr.any() for arr in mapping]
+    if np.any(matches).item() is False:
+        raise ValueError(
+            """
+            No labels in the columns
+            matched the regexes
+            in ``names_pattern``.
+            Kindly provide regexes
+            that matches all labels 
+            in the columns.
+            """
+        )
+    for position, boolean in enumerate(matches):
+        if boolean.item() is False:
+            raise ValueError(
+                f"""
+                No match was returned for 
+                regex `{names_pattern[position]}`
+                """
+            )
+
+    mapping = np.select(mapping, names_to, None)
+    valid_selection = set(mapping).intersection(names_to)
+    valid_selection = [*valid_selection]
+    mapping = pd.MultiIndex.from_arrays([mapping, df_columns])
+    mapping.names = ['.value', None]
+    df.columns = mapping
+    df = df.droplevel(level=-1, axis = 'columns')
+    df = df.loc[:, valid_selection]
+
+    len_mapping = len(valid_selection)
+
+    len_df_columns = len(df.columns)
+
+    len_index = len(df)
+
+    if len_df_columns > 1:
+        container = defaultdict(list)
+        for name, series in df.items():
+            container[name].append(series)
+        if len_mapping == 1:
+            container = container[valid_selection[0]]
+            df = pd.concat(container, axis = 'index', join = 'outer', sort = False, copy = False)
+            df = df.to_frame()
+        else:   
+            # concat works fine here and efficient too, 
+            # since we are combining Series  
+            # a Series is returned for each concatenation     
+            df = [pd.concat(value, copy = False, keys=np.arange(len(value))) for _, value in container.items()]
+            first, *rest = df
+            first = first.to_frame()
+            df = first.join(rest, how = 'outer', sort = False)
+            df = df.droplevel(level=0, axis = 'index')
+
+    if df.columns.names:
+         df = df.rename_axis(columns = None)
+
+
+    if sort_by_appearance:
+        df = _sort_by_appearance_for_melt(
+            df=df, ignore_index=False, len_index=len_index
+        )
+
+    if index:
+        df = df.reset_index(index)
+
+    if ignore_index:
+        df.index = range(len(df))
+
+
+    return df
+
+
+
+
+
+
+
+
+
+
+
+
+def _extract_names_pattern_str(
+    df: pd.DataFrame,
+    dot_value_in_names_to: bool,
+    names_to: list,
+    names_pattern: Union[str, Pattern],
+) -> pd.DataFrame:
+
+    mapping = df.columns.str.extract(names_pattern, expand=True)
+
+    if mapping.isna().all(axis=None):
+        raise ValueError(
+            """
+            No labels in the columns
+            matched the regular expression
+            in ``names_pattern``.
+            Kindly provide a regular expression
+            that matches all labels in the columns.
+            """
+        )
+
+    if mapping.isna().any(axis=None):
+        raise ValueError(
+            """
+            Not all labels in the columns
+            matched the regular expression
+            in ``names_pattern``.
+            Kindly provide a regular expression
+            that matches all labels in the columns.
+            """
+        )
+    len_mapping_columns = len(mapping.columns)
+    len_names_to = len(names_to)
+
+    if len_names_to != len_mapping_columns:
+        raise ValueError(
+            f"""
+            The length of ``names_to`` does not match
+            the number of levels extracted.
+            The length of ``names_to`` is {len_names_to}
+            while the number of levels extracted is 
+            {len_mapping_columns}.
+            """
+        )
+
+
+    mapping.columns = names_to
+
+    len_mapping = len(mapping)
+
+    
+
+    if len(names_to) == 1:
+        mapping = mapping.squeeze()
+        if len_mapping == 1:
+            df.columns = [mapping]
+            return df
+        
+        dtypes = mapping.unique()
+        # using Categoricals ensures order
+        dtypes = CategoricalDtype(categories=dtypes, ordered=True)
+        mapping = mapping.astype(dtypes)
         df.columns = mapping
         return df
 
-    mapping_is_unique = mapping.is_unique
+    df = _create_columns_pivot_longer(df, dot_value_in_names_to, names_to, mapping)
 
-    dtypes = {
-        name: mapping.get_level_values(name).unique() for name in names_to
-    }
-    dtypes = {
-        name: CategoricalDtype(categories=value, ordered=True)
-        for name, value in dtypes.items()
-    }
-    if mapping_is_unique:
-        mapping = [
-            mapping.get_level_values(name).astype(dtypes[name])
-            for name in names_to
-        ]
-        mapping = pd.MultiIndex.from_arrays(mapping)
-        combinations = pd.MultiIndex.from_product(mapping.levels)
+
+
+    return df
+
+
+
+def _create_columns_pivot_longer(    df: pd.DataFrame,
+    dot_value_in_names_to: bool,
+    names_to: list,
+    mapping:pd.Index,
+) -> pd.DataFrame:
+
+
+    # here, we create categorical dtypes
+    # and map them to the columns
+    # if the extracts are not unique, a cumulative count is created
+    # to ensure uniqueness
+    # also, a combination of all levels is generated
+    # to ensure that all possible combinations are present 
+    # in the final columns
+    # using Categoricals ensure order
+    # and also comes in handy when reconstituting the dataframe in final form
+    # prevent mismatch/erroneous recombination
+    mapping_has_duplicates = mapping.duplicated().any(axis=None).item()
+    dtypes = {name : value.unique() for name, value in mapping.items()}
+    dtypes = {name : CategoricalDtype(categories=value, ordered=True) for name, value in dtypes.items()}
+    mapping = mapping.astype(dtypes)
+    if mapping_has_duplicates is False: 
+        mapping = pd.MultiIndex.from_frame(mapping)
         df.columns = mapping
-    else:
-        uniques = mapping.factorize()[0]
-        uniques = pd.Series(uniques).groupby(uniques).cumcount()
         combinations = pd.MultiIndex.from_product(mapping.levels)
-        df_columns = [
-            mapping.get_level_values(name).astype(dtypes[name])
-            for name in names_to
-        ]
-        df_columns = [*df_columns, uniques]
+    else: # duplicates exist, so make it unique with cumulative count
+        uniques = mapping.groupby(names_to).cumcount()
+        combinations = [series.cat.categories for _, series in mapping.items()]
+        combinations = pd.MultiIndex.from_product(combinations)
+        df_columns = [series for _, series in mapping.items()]
+        df_columns.append(uniques)
         df_columns = pd.MultiIndex.from_arrays(df_columns)
         df.columns = df_columns
+        mapping = pd.MultiIndex.from_frame(mapping)
+    # verify if the existing combinations is incomplete
     missing = combinations.difference(mapping)
-    if (not missing.empty) and mapping_is_unique:
+
+    if (missing.empty is False) and (mapping_has_duplicates is False):
         df = df.reindex(columns=combinations)
-    elif (not missing.empty) and (not mapping_is_unique):
+    elif (missing.empty is False) and mapping_has_duplicates:
+        # combine mapping and missing to ensure complete combinations
         mapping = mapping.append(missing)
+        # ensure the cumulative count matches the length of mapping
         uniques = np.concatenate(
             [uniques.array, np.zeros(missing.size, dtype=int)]
         )
@@ -1442,9 +1752,26 @@ def _extract_names_sep(
         mapping = [*mapping, uniques]
         mapping = pd.MultiIndex.from_arrays(mapping)
         df = df.reindex(columns=mapping)
+        # uniques has served its purpose
         df = df.droplevel(level=-1, axis="columns")
+    missing = None
+    combinations = None
+    mapping = None
+    uniques = None
+    df_columns = None
+    missing = None
 
     return df
+
+
+
+
+
+
+
+
+
+
 
 
 def _data_checks_pivot_wider(

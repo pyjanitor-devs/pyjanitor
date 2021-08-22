@@ -101,3 +101,4 @@ Contributors
 - `@MollyCroke <https://github.com/MollyCroke>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AMollyCroke>`_
 - `@ericclessantostv <https://github.com/ericlessantostv>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aericclessantostv>`_
 - `@fireddd <https://github.com/fireddd>`_ |  `contributions <https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Afireddd>`_
+- `@Zeroto521 <https://github.com/Zeroto521>`_ | `contributions <https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Zeroto521>`_

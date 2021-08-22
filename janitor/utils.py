@@ -483,7 +483,6 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     others = None
 
-
     mgrid_values = [slice(len(value)) for _, value in grid.items()]
     mgrid_values = np.mgrid[mgrid_values]
     mgrid_values = map(np.ravel, mgrid_values)
@@ -493,7 +492,6 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
         _expand_grid(value, key, mgrid_values)
         for key, value, mgrid_values in grid
     )
-
 
     grid = pd.concat(grid, axis="columns", sort=False)
 

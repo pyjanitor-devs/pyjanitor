@@ -15,6 +15,7 @@
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
+-   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. @samukweku Issue  #882
 
 ## [v0.21.0] - 2021-07-16
 
@@ -25,7 +26,7 @@
     which is faster than `combine_first` @samukweku
 -   [ENH] Use `eval` for string conditions in `update_where`. @samukweku
 -   [ENH] Add clearer error messages for `pivot_longer`. h/t to @tdhock
-    for the observation. -@samukweku
+    for the observation. -@samukweku Issue #836
 -   [ENH] `select_columns` now uses variable arguments (\*args),
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions

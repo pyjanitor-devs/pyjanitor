@@ -58,6 +58,9 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
+    _conditional_join_preliminary_checks,
+    _conditional_join_compute,
+    _cond_join_suffixes,
 )
 
 
@@ -1298,7 +1301,10 @@ def _fill_empty(df, column_names, value=None):  # noqa: F811
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
+    df: pd.DataFrame,
+    column_name: Hashable,
+    sep: str = "|",
+    concat: bool = True,
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -1325,7 +1331,8 @@ def expand_column(
 
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.
-    :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
+    :param sep: The delimiter, same to
+        :py:meth:`~pandas.Series.str.get_dummies`'s `sep`, default as `|`.
     :param concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).
@@ -5318,7 +5325,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     fill_types = {fill.name for fill in FILLTYPE}
     for column_name, fill_type in kwargs.items():
         check("column_name", column_name, [str])
-        check("fill_details", fill_type, [str])
+        check("fill_type", fill_type, [str])
         if fill_type.upper() not in fill_types:
             raise ValueError(
                 """
@@ -5488,7 +5495,7 @@ def groupby_topk(
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]] = None,
+    *columns,
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -5515,11 +5522,10 @@ def complete(
         1	2	    2	        b	2	5
         2	1	    2	        b	3	6
 
-    To find all the unique combinations of `group`, `item_id`, and `item_name`,
-    including combinations not present in the data, each variable should be
-    passed in a list to the `columns` parameter::
+    Find all the unique combinations of `group`, `item_id`, and `item_name`,
+    including combinations not present in the data::
 
-        df.complete(columns = ['group', 'item_id', 'item_name'])
+        df.complete('group', 'item_id', 'item_name')
 
               group	item_id	    item_name	value1	value2
         0	1	    1	        a	1.0	4.0
@@ -5532,10 +5538,10 @@ def complete(
         7	2	    2	        b	2.0	5.0
 
     To expose just the missing values based only on the existing data,
-    `item_id` and `item_name` can be wrapped in a tuple, while `group`
-    is passed in as a separate variable::
+    `item_id` and `item_name` column names can be wrapped in a list/tuple,
+    while `group` is passed in as a separate variable::
 
-        df.complete(columns = ["group", ("item_id", "item_name")])
+        df.complete("group", ("item_id", "item_name"))
             group	item_id	    item_name	value1	   value2
         0	1	    1	        a	  1.0	    4.0
         1	1	    2	        b	  3.0	    6.0
@@ -5558,7 +5564,7 @@ def complete(
     Note that Year 2000 and Agarum pairing is missing. Let's make it
     explicit::
 
-        df.complete(columns = ['Year', 'Taxon'])
+        df.complete('Year', 'Taxon')
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5570,7 +5576,7 @@ def complete(
 
     The null value can be replaced with the Pandas `fillna` argument::
 
-        df.complete(columns = ['Year', 'Taxon']).fillna(0)
+        df.complete('Year', 'Taxon').fillna(0)
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5586,7 +5592,7 @@ def complete(
 
         new_year_values = lambda year: range(year.min(), year.max() + 1)
 
-        df.complete(columns = [{"Year": new_year_values}, "Taxon"])
+        df.complete({"Year": new_year_values}, "Taxon")
 
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
@@ -5617,7 +5623,7 @@ def complete(
     Let's get all the missing years per state::
 
         df.complete(
-            columns = [{'year': new_year_values}],
+            {'year': new_year_values},
             by='state'
         )
 
@@ -5652,11 +5658,9 @@ def complete(
 
         df = jn.complete(
             df = df,
-            columns= [
-                column_label,
-                (column1, column2, ...),
-                {column1: new_values, ...}
-            ],
+            column_label,
+            (column1, column2, ...),
+            {column1: new_values, ...},
             by = label/list_of_labels
         )
 
@@ -5666,26 +5670,24 @@ def complete(
 
         df = (
             pd.DataFrame(...)
-            .complete(columns=[
+            .complete(
                 column_label,
                 (column1, column2, ...),
                 {column1: new_values, ...},
-            ],
-            by = label/list_of_labels
-        )
+                by = label/list_of_labels
+            )
 
     :param df: A pandas dataframe.
-    :param columns: This is a list containing the columns to be
+    :param *columns: This is a sequence containing the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
     :param by: label or list of labels to group by.
         The explicit missing values are returned per group.
     :returns: A pandas dataframe with modified column(s).
-    :raises TypeError: if `columns` is not a list.
-    :raises ValueError: if entry in `columns` is not a
+    :raises ValueError: if entry in `*columns` is not a
         str/dict/list/tuple.
-    :raises ValueError: if entry in `columns` is a dict/list/tuple
+    :raises ValueError: if entry in `*columns` is a dict/list/tuple
         and is empty.
 
     .. # noqa: DAR402
@@ -6483,3 +6485,321 @@ def pivot_wider(
     )
 
     return df
+
+
+@pf.register_dataframe_method
+def conditional_join(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    *conditions,
+    how: str = "inner",
+    sort_by_appearance: bool = False,
+    suffixes=("_x", "_y"),
+) -> pd.DataFrame:
+    """
+
+    This is a convenience function that operates similarly to ``pd.merge``,
+    but allows joins on inequality operators, or a combination of equi
+    and non-equi joins.
+
+    If the join is solely on equality, `pd.merge` function
+    is more efficient and should be used instead.
+    If you are interested in nearest joins, or rolling joins,
+    `pd.merge_asof` covers that. There is also the IntervalIndex,
+    which can be more efficient for range joins, if the intervals
+    do not overlap.
+
+    This function returns rows, if any, where values from `df` meet the
+    condition(s) for values from `right`. The conditions are passed in
+    as a variable argument of tuples, where the tuple is of
+    the form ``(left_on, right_on, op)``; `left_on` is the column
+    label from `df`, `right_on` is the column label from `right`,
+    while `op` is the operator.
+
+    The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
+
+    If the join operator is a non-equi operator, a binary search is used
+    to get the relevant rows; this avoids a cartesian join, and makes the
+    process less memory intensive. If it is an equality operator, it simply
+    uses pandas' `merge` or `get_indexer_for` method to retrieve the relevant
+    rows.
+
+    The join is done only on the columns.
+    MultiIndex columns are not supported.
+
+    Only numeric, date and string columns are supported.
+
+    If joining on strings, only the `==` operator is supported.
+
+    Only `inner`, `left`, and `right` joins are supported.
+
+
+    Example :
+
+    df1::
+
+            id  value_1
+        0   1        2
+        1   1        5
+        2   1        7
+        3   2        1
+        4   2        3
+        5   3        4
+
+
+    df2::
+
+            id  value_2A  value_2B
+        0   1         0         1
+        1   1         3         5
+        2   1         7         9
+        3   1        12        15
+        4   2         0         1
+        5   2         2         4
+        6   2         3         6
+        7   3         1         3
+
+    Join on equi and non-equi operators is possible::
+
+        df1.conditional_join(
+                right = df2,
+                ('id', 'id', '=='),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0     1        5     1         3         5
+        1     1        7     1         7         9
+        2     2        1     2         0         1
+        3     2        3     2         2         4
+        4     2        3     2         3         6
+
+    The default join is `inner`. left and right joins are supported as well::
+
+        df1.conditional_join(
+                right = df2,
+                ('id', 'id', '=='),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
+                how='left',
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0     1        2   NaN       NaN       NaN
+        1     1        5   1.0       3.0       5.0
+        2     1        7   1.0       7.0       9.0
+        3     2        1   2.0       0.0       1.0
+        4     2        3   2.0       2.0       4.0
+        5     2        3   2.0       3.0       6.0
+        6     3        4   NaN       NaN       NaN
+
+
+        df1.conditional_join(
+                right = df2,
+                ('id', 'id', '=='),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
+                how='right',
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0   NaN      NaN     1         0         1
+        1   1.0      5.0     1         3         5
+        2   1.0      7.0     1         7         9
+        3   NaN      NaN     1        12        15
+        4   2.0      1.0     2         0         1
+        5   2.0      3.0     2         2         4
+        6   2.0      3.0     2         3         6
+        7   NaN      NaN     3         1         3
+
+
+    Join on just the non-equi joins is also possible::
+
+        df1.conditional_join(
+                right = df2,
+                ('value_1', 'value_2A', '>'),
+                ('value_1', 'value_2B', '<'),
+                how='inner',
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0     1        2     3         1         3
+        1     1        5     2         3         6
+        2     2        3     2         2         4
+        3     3        4     1         3         5
+        4     3        4     2         3         6
+
+    The default for the `suffixes` parameter is ``(_x, _y)``,
+    One of the suffixes can be set as ``None``;
+    this avoids a suffix on the columns from the
+    relevant dataframe::
+
+        df1.conditional_join(
+                right = df2,
+                ('value_1', 'value_2A', '>'),
+                ('value_1', 'value_2B', '<'),
+                how='inner',
+                sort_by_appearance = True,
+                suffixes = (None, '_y')
+            )
+
+            id  value_1  id_y  value_2A  value_2B
+        0   1        2     3         1         3
+        1   1        5     2         3         6
+        2   2        3     2         2         4
+        3   3        4     1         3         5
+        4   3        4     2         3         6
+
+    Join on just equality is also possible, but should be avoided -
+    Pandas merge/join is more efficient::
+
+        df1.conditional_join(
+                right = df2,
+                ('col_a', 'col_a', '=='),
+                sort_by_appearance = True
+            )
+
+             col_a_x col_b  col_a_y col_c
+        0        2     B        2     X
+        1        3     C        3     Y
+
+    Join on not equal -> ``!=`` ::
+
+        df1.conditional_join(
+                right = df2,
+                ('col_a', 'col_a', '!='),
+                sort_by_appearance = True
+            )
+
+             col_a_x col_b  col_a_y col_c
+        0        1     A        0     Z
+        1        1     A        2     X
+        2        1     A        3     Y
+        3        2     B        0     Z
+        4        2     B        3     Y
+        5        3     C        0     Z
+        6        3     C        2     X
+
+
+    If the order from `right` is not important,
+    `sort_by_appearance` can be set to  ``False``
+    (this is the default)::
+
+        df1.conditional_join(
+                right = df2,
+                ('col_a', 'col_a', '>'),
+                sort_by_appearance = False
+            )
+
+             col_a_x col_b  col_a_y col_c
+        0        1     A        0     Z
+        1        2     B        0     Z
+        2        3     C        0     Z
+        3        3     C        2     X
+
+
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
+              you can convert them to columns
+              before running the conditional join.
+
+    .. note:: All the columns from `df` and `right`
+              are returned in the final output.
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.conditional_join(
+                df = df,
+                right = right,
+                *conditions,
+                sort_by_appearance = True/False,
+                suffixes = ("_x", "_y"),
+                )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = df.conditional_join(
+                right = right,
+                *conditions,
+                sort_by_appearance = True/False,
+                suffixes = ("_x", "_y"),
+                )
+
+
+    :param df: A Pandas dataframe.
+    :param right: Named Series or DataFrame to join to.
+    :param conditions: Variable argument of tuple(s) of the form
+        ``(left_on, right_on, op)``, where `left_on` is the column
+        label from `df`, `right_on` is the column label from `right`,
+        while `op` is the operator. The operator can be any of
+        `==`, `!=`, `<=`, `<`, `>=`, `>`.
+    :param how: Indicates the type of join to be performed.
+        It can be one of `inner`, `left`, `right`.
+        Full join is not supported. Defaults to `inner`.
+    :param sort_by_appearance: Default is `False`. If True,
+        values from `right` that meet the join condition will be returned
+        in the final dataframe in the same order that they were before the
+        join.
+    :param suffixes: tuple, default is ``(_x, _y)``.
+        A sequence of length 2, where each element is optionally a string,
+        indicating the suffix to add to the overlapping column names
+        in `df` and `right`. Pass a value of ``None``
+        instead of a string to indicate that the  column name
+        from `df` or `right` should be left as-is, with no suffix.
+        At least one of the values must not be ``None``.
+    :returns: A pandas DataFrame of the two merged Pandas objects.
+    :raises ValueError: if columns from `df` or `right` is a MultiIndex.
+    :raises ValueError: if `right` is an unnamed Series.
+    :raises ValueError: if condition in *conditions is not a tuple.
+    :raises ValueError: if condition is not length 3.
+    :raises ValueError: if `left_on` and `right_on` in condition are not
+        both numeric, or string, or datetime.
+
+
+    .. # noqa: DAR402
+    """
+
+    (
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+        suffixes,
+    ) = _conditional_join_preliminary_checks(
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+        suffixes,
+    )
+
+    df, right, conditions = _cond_join_suffixes(
+        df, right, conditions, suffixes
+    )
+
+    # the numeric indexes play a crucial part in position tracking
+    df.index = np.arange(len(df))
+    right.index = np.arange(len(right))
+
+    return _conditional_join_compute(
+        df, right, conditions, how, sort_by_appearance
+    )

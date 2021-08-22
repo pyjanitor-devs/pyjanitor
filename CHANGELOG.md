@@ -20,7 +20,7 @@
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [INF] Speed up pytest via `-n` (pytest-xdist) option. Issue #881. @Zeroto521
--   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. @samukweku Issue  #882
+-   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
 
 ## [v0.21.0] - 2021-07-16
 
@@ -31,7 +31,7 @@
     which is faster than `combine_first` @samukweku
 -   [ENH] Use `eval` for string conditions in `update_where`. @samukweku
 -   [ENH] Add clearer error messages for `pivot_longer`. h/t to @tdhock
-    for the observation. -@samukweku Issue #836
+    for the observation. Issue #836 @samukweku
 -   [ENH] `select_columns` now uses variable arguments (\*args),
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions

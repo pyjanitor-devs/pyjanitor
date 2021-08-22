@@ -1857,9 +1857,7 @@ names_single_value = [
         ),
         pd.DataFrame(
             {"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]},
-            index=pd.MultiIndex.from_tuples(
-                [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2)],
-            ),
+            index=[0, 0, 1, 1, 2, 2],
         ),
         None,
         "(.).",

@@ -3,7 +3,6 @@
 import fnmatch
 import functools
 from collections import defaultdict
-from hashlib import new
 import os
 import re
 import socket
@@ -668,10 +667,7 @@ def _sub_expand_grid(  # noqa: F811
         value = value.to_series(index=np.arange(len(value)))
         if value.name:
             value.name = f"{key}_{value.name}"
-        else:
-            value.name = key
 
-    return value
 
 
 def _data_checks_complete(
@@ -1329,203 +1325,6 @@ def _sort_by_appearance_for_melt(
     return df
 
 
-def _computations_pivot_longer(
-    df: pd.DataFrame,
-    index: list = None,
-    column_names: list = None,
-    names_to: list = None,
-    values_to: str = "value",
-    column_level: Union[int, str] = None,
-    names_sep: Union[str, Pattern] = None,
-    names_pattern: Union[list, tuple, str, Pattern] = None,
-    sort_by_appearance: bool = False,
-    ignore_index: bool = True,
-) -> pd.DataFrame:
-
-    if (
-        (index is None)
-        and column_names
-        and (len(df.columns) > len(column_names))
-    ):
-        index = [
-            column_name
-            for column_name in df
-            if column_name not in column_names
-        ]
-
-    # scenario 1
-    if all((names_pattern is None, names_sep is None)):
-        if names_to:
-            for word in names_to:
-                if word in index:
-                    raise ValueError(
-                        f"""
-                        {word} in `names_to` already exists
-                        in column labels assigned
-                        to the dataframe's index parameter.
-                        Kindly use a unique name.
-                        """
-                    )
-
-        len_index = len(df)
-
-        df = pd.melt(
-            df,
-            id_vars=index,
-            value_vars=column_names,
-            var_name=names_to,
-            value_name=values_to,
-            col_level=column_level,
-            ignore_index=ignore_index,
-        )
-
-        if sort_by_appearance:
-            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-        if ignore_index:
-            df.index = np.arange(len(df))
-
-        return df
-
-    if index:
-        df = df.set_index(index, append=True)
-
-    if column_names:
-        df = df.loc[:, column_names]
-
-    df_index_names = df.index.names
-
-    # checks to avoid duplicate columns
-    # idea is that if there is no `.value`
-    # then the word should not exist in the index
-    # if, however there is `.value`
-    # then the word should not be found in
-    # neither the index or column names
-
-    # idea from pd.wide_to_long
-    for word in names_to:
-        if (".value" not in names_to) and (word in df_index_names):
-            raise ValueError(
-                f"""
-                `{word}` in names_to already exists
-                in column labels assigned
-                to the dataframe's index.
-                Kindly use a unique name.
-                """
-            )
-
-        if (
-            (".value" in names_to)
-            and (word != ".value")
-            and (word in df_index_names)
-        ):
-            raise ValueError(
-                f"""
-                `{word}` in names_to already exists
-                in column labels assigned
-                to the dataframe's index.
-                Kindly use a unique name.
-                """
-            )
-
-    if names_sep:
-        df = _pivot_longer_names_sep(
-            df,
-            index,
-            names_to,
-            names_sep,
-            values_to,
-            sort_by_appearance,
-            ignore_index,
-        )
-        return df
-
-    if isinstance(names_pattern, (str, Pattern)):
-        df = _pivot_longer_names_pattern_str(
-            df,
-            index,
-            names_to,
-            names_pattern,
-            values_to,
-            sort_by_appearance,
-            ignore_index,
-        )
-        return df
-
-    df = _pivot_longer_names_pattern_sequence(
-        df, index, names_to, names_pattern, sort_by_appearance, ignore_index
-    )
-
-    return df
-
-
-def _pivot_longer_frame_MultiIndex(
-    df: pd.DataFrame,
-    index,
-    sort_by_appearance: bool,
-    ignore_index: bool,
-    values_to: str,
-) -> pd.DataFrame:
-
-    len_index = len(df)
-    mapping = df.columns
-    if ".value" not in mapping.names:
-        df = df.melt(ignore_index=False, value_name=values_to)
-
-        if sort_by_appearance:
-            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-        if index:
-            df = df.reset_index(index)
-
-        if ignore_index:
-            df.index = range(len(df))
-
-        return df
-
-    others = mapping.droplevel(".value").unique()
-    if isinstance(others, pd.MultiIndex):
-        levels = others.names
-    else:
-        levels = others.name
-    # here, we get the dataframes containing the `.value` labels
-    # as columns
-    # and then concatenate vertically, using the other variables
-    # in `names_to`, which in this is case, is captured in `others`
-    # as keys. This forms a MultiIndex; reset_index puts it back
-    # as columns into the dataframe.
-    df = [df.xs(key=key, axis="columns", level=levels) for key in others]
-    df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
-    if isinstance(levels, str):
-        levels = [levels]
-    # gets rid of None, for scenarios where we
-    # generated cumcount to make the columns unique
-    levels = [level for level in levels if level]
-    # need to order the dataframe's index
-    # so that when resetting,
-    # the index appears before the other columns
-    # this is relevant only if `index` is True
-    # using numbers here, in case there are multiple Nones
-    # in the index names
-    if index:
-        new_order = np.roll(np.arange(len(df.index.names)), len(index))
-        df = df.reorder_levels(new_order, axis="index")
-        df = df.reset_index(level=index + levels)
-    else:
-        df = df.reset_index(levels)
-
-    if df.columns.names:
-        df = df.rename_axis(columns=None)
-
-    if sort_by_appearance:
-        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-    if ignore_index:
-        df.index = range(len(df))
-
-    return df
-
-
 def _pivot_longer_names_sep(
     df: pd.DataFrame,
     index,
@@ -1678,9 +1477,9 @@ def _pivot_longer_names_pattern_sequence(
     if np.any(matches).item() is False:
         raise ValueError(
             """
-            No labels in the columns
+            No label in the columns
             matched the regexes
-            in ``names_pattern``.
+            in names_pattern``.
             Kindly provide regexes
             that matches all labels
             in the columns.
@@ -1696,8 +1495,8 @@ def _pivot_longer_names_pattern_sequence(
             )
 
     mapping = np.select(mapping, names_to, None)
-    # guard .. if not all labels in the columns
-    # are matched to the regexes
+    # guard .. for scenarios where not all labels
+    # in the columns are matched to the regex(es)
     any_nulls = pd.notna(mapping)
     mapping = pd.MultiIndex.from_arrays([mapping, df_columns])
     mapping.names = [".value", None]
@@ -1709,6 +1508,207 @@ def _pivot_longer_names_pattern_sequence(
     return _pivot_longer_frame_single_Index(
         df, index, sort_by_appearance, ignore_index, values_to=None
     )
+
+
+def _computations_pivot_longer(
+    df: pd.DataFrame,
+    index: list = None,
+    column_names: list = None,
+    names_to: list = None,
+    values_to: str = "value",
+    column_level: Union[int, str] = None,
+    names_sep: Union[str, Pattern] = None,
+    names_pattern: Union[list, tuple, str, Pattern] = None,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
+) -> pd.DataFrame:
+
+    if (
+        (index is None)
+        and column_names
+        and (len(df.columns) > len(column_names))
+    ):
+        index = [
+            column_name
+            for column_name in df
+            if column_name not in column_names
+        ]
+
+    # scenario 1
+    if all((names_pattern is None, names_sep is None)):
+        if names_to:
+            for word in names_to:
+                if word in index:
+                    raise ValueError(
+                        f"""
+                        {word} in `names_to` already exists
+                        in column labels assigned
+                        to the dataframe's index parameter.
+                        Kindly use a unique name.
+                        """
+                    )
+
+        len_index = len(df)
+
+        df = pd.melt(
+            df,
+            id_vars=index,
+            value_vars=column_names,
+            var_name=names_to,
+            value_name=values_to,
+            col_level=column_level,
+            ignore_index=ignore_index,
+        )
+
+        if sort_by_appearance:
+            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+        if ignore_index:
+            df.index = np.arange(len(df))
+
+        return df
+
+    if index:
+        df = df.set_index(index, append=True)
+
+    if column_names:
+        df = df.loc[:, column_names]
+
+    df_index_names = df.index.names
+
+    # checks to avoid duplicate columns
+    # idea is that if there is no `.value`
+    # then the word should not exist in the index
+    # if, however there is `.value`
+    # then the word should not be found in
+    # neither the index or column names
+
+    # idea from pd.wide_to_long
+    for word in names_to:
+        if (".value" not in names_to) and (word in df_index_names):
+            raise ValueError(
+                f"""
+                `{word}` in names_to already exists
+                in column labels assigned
+                to the dataframe's index.
+                Kindly use a unique name.
+                """
+            )
+
+        if (
+            (".value" in names_to)
+            and (word != ".value")
+            and (word in df_index_names)
+        ):
+            raise ValueError(
+                f"""
+                `{word}` in names_to already exists
+                in column labels assigned
+                to the dataframe's index.
+                Kindly use a unique name.
+                """
+            )
+
+    if names_sep:
+        return _pivot_longer_names_sep(
+            df,
+            index,
+            names_to,
+            names_sep,
+            values_to,
+            sort_by_appearance,
+            ignore_index,
+        )
+        return df
+
+    if isinstance(names_pattern, (str, Pattern)):
+        return _pivot_longer_names_pattern_str(
+            df,
+            index,
+            names_to,
+            names_pattern,
+            values_to,
+            sort_by_appearance,
+            ignore_index,
+        )
+
+    return _pivot_longer_names_pattern_sequence(
+        df, index, names_to, names_pattern, sort_by_appearance, ignore_index
+    )
+
+
+
+def _pivot_longer_frame_MultiIndex(
+    df: pd.DataFrame,
+    index,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+    values_to: str,
+) -> pd.DataFrame:
+
+    len_index = len(df)
+    mapping = df.columns
+    if ".value" not in mapping.names:
+        df = df.melt(ignore_index=False, value_name=values_to)
+
+        if sort_by_appearance:
+            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+        if index:
+            df = df.reset_index(index)
+
+        if ignore_index:
+            df.index = range(len(df))
+
+        return df
+
+    others = mapping.droplevel(".value").unique()
+    if isinstance(others, pd.MultiIndex):
+        levels = others.names
+    else:
+        levels = others.name
+    # here, we get the dataframes containing the `.value` labels
+    # as columns
+    # and then concatenate vertically, using the other variables
+    # in `names_to`, which in this is case, is captured in `others`
+    # as keys. This forms a MultiIndex; reset_index puts it back
+    # as columns into the dataframe.
+    df = [df.xs(key=key, axis="columns", level=levels) for key in others]
+    df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
+    if isinstance(levels, str):
+        levels = [levels]
+    # represents the cumcount,
+    # used in making the columns unique (if they werent originally)
+    null_in_levels = None in levels
+    # gets rid of None, for scenarios where we
+    # generated cumcount to make the columns unique
+    levels = [level for level in levels if level]
+    # need to order the dataframe's index
+    # so that when resetting,
+    # the index appears before the other columns
+    # this is relevant only if `index` is True
+    # using numbers here, in case there are multiple Nones
+    # in the index names
+    if index:
+        new_order = np.roll(np.arange(len(df.index.names)), len(index)+1)
+        df = df.reorder_levels(new_order, axis="index")
+        df = df.reset_index(level=index + levels)
+    else:
+        df = df.reset_index(levels)
+    
+    if null_in_levels:
+        df = df.droplevel(level = -1, axis = 'index')
+
+    if df.columns.names:
+        df = df.rename_axis(columns=None)
+
+    if sort_by_appearance:
+        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+    if ignore_index:
+        df.index = range(len(df))
+
+    return df
 
 
 def _pivot_longer_frame_single_Index(
@@ -1755,8 +1755,21 @@ def _pivot_longer_frame_single_Index(
             # concat works fine here and efficient too,
             # since we are combining Series
             # a Series is returned for each concatenation
-            # the outer keys are left in the final dataframe
-            # useful if the user wishes to understand the pairings
+            # the outer keys serve as a pairing mechanism
+            # for recombining the dataframe
+            # so if we have a dataframe like below:
+            #        id  x1  x2  y1  y2
+            #    0   1   4   5   7  10
+            #    1   2   5   6   8  11
+            #    2   3   6   7   9  12
+            # then x1 will pair with y1, and x2 will pair with y2
+            # if the dataframe column positions were alternated, like below:
+            #        id  x2  x1  y1  y2
+            #    0   1   5   4   7  10
+            #    1   2   6   5   8  11
+            #    2   3   7   6   9  12
+            # then x2 will pair with y1 and x1 will pair with y2
+            # it is simply a first come first serve approach
             df = [
                 pd.concat(value, copy=False, keys=np.arange(len(value)))
                 for _, value in container.items()
@@ -1764,6 +1777,8 @@ def _pivot_longer_frame_single_Index(
             first, *rest = df
             first = first.to_frame()
             df = first.join(rest, how="outer", sort=False)
+            # drop outermost keys (used in the concatenation)
+            df = df.droplevel(level = 0 ,axis = 'index')
 
     if df.columns.names:
         df = df.rename_axis(columns=None)

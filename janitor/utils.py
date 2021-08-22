@@ -1112,7 +1112,6 @@ def _data_checks_pivot_longer(
                 """
         )
 
-
     if names_pattern is not None:
         check("names_pattern", names_pattern, [str, Pattern, list, tuple])
         if names_to is None:
@@ -1363,6 +1362,7 @@ def _computations_pivot_longer(
                         Kindly use a unique name.
                         """
                     )
+
         len_index = len(df)
 
         df = pd.melt(
@@ -1389,11 +1389,7 @@ def _computations_pivot_longer(
     if column_names:
         df = df.loc[:, column_names]
 
-    dot_value_in_names_to = ".value" in names_to
-
     df_index_names = df.index.names
-
-    df_columns = df.columns
 
     # checks to avoid duplicate columns
     # idea is that if there is no `.value`
@@ -1402,34 +1398,28 @@ def _computations_pivot_longer(
     # then the word should not be found in
     # neither the index or column names
 
-    if not dot_value_in_names_to:
-        # idea from pd.wide_to_long
-        for word in names_to:
-            if word in df_index_names:
-                raise ValueError(
-                    f"""
-                    {word} in `names_to` already exists
-                    in column labels assigned
-                    to the dataframe's index.
-                    Kindly use a unique name.
-                    """
-                )
-
+    # idea from pd.wide_to_long
     for word in names_to:
-        if (word != ".value") and (word in df_index_names):
+        if (".value" not in names_to) and (word in df_index_names):
             raise ValueError(
                 f"""
-                {word} in `names_to` already exists
+                `{word}` in names_to already exists
                 in column labels assigned
                 to the dataframe's index.
                 Kindly use a unique name.
                 """
             )
-        if (word != ".value") and (word in df_columns):
+
+        if (
+            (".value" in names_to)
+            and (word != ".value")
+            and (word in df_index_names)
+        ):
             raise ValueError(
                 f"""
-                {word} in `names_to` already exists
-                in the dataframe's columns.
+                `{word}` in names_to already exists
+                in column labels assigned
+                to the dataframe's index.
                 Kindly use a unique name.
                 """
             )
@@ -1489,7 +1479,6 @@ def _pivot_longer_frame_MultiIndex(
 
         return df
 
-
     others = mapping.droplevel(".value").unique()
     if isinstance(others, pd.MultiIndex):
         levels = others.names
@@ -1505,7 +1494,7 @@ def _pivot_longer_frame_MultiIndex(
     df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
     if isinstance(levels, str):
         levels = [levels]
-    # gets rid of None, for scenarios where we 
+    # gets rid of None, for scenarios where we
     # generated cumcount to make the columns unique
     levels = [level for level in levels if level]
     # need to order the dataframe's index
@@ -1520,7 +1509,6 @@ def _pivot_longer_frame_MultiIndex(
         df = df.reset_index(level=index + levels)
     else:
         df = df.reset_index(levels)
-
 
     if df.columns.names:
         df = df.rename_axis(columns=None)
@@ -1561,9 +1549,21 @@ def _pivot_longer_names_sep(
 
     mapping.columns = names_to
 
+    if ".value" in names_to:
+        exclude = mapping[".value"].array
+        for word in names_to:
+            if (word != ".value") and (word in exclude):
+                raise ValueError(
+                    f"""
+                    `{word}` in names_to already exists
+                    in the new dataframe's columns.
+                    Kindly use a unique name.
+                    """
+                )
+
     mapping_is_unique = not mapping.duplicated().any(axis=None).item()
 
-    if mapping_is_unique or ('.value' not in names_to):
+    if mapping_is_unique or (".value" not in names_to):
         mapping = pd.MultiIndex.from_frame(mapping)
         df.columns = mapping
     else:
@@ -1617,11 +1617,25 @@ def _pivot_longer_names_pattern_str(
     if len(names_to) == 1:
         mapping = mapping.squeeze()
         df.columns = mapping
-        return _pivot_longer_frame_single_Index(df, index, sort_by_appearance, ignore_index, values_to)
+        return _pivot_longer_frame_single_Index(
+            df, index, sort_by_appearance, ignore_index, values_to
+        )
+
+    if ".value" in names_to:
+        exclude = mapping[".value"].array
+        for word in names_to:
+            if (word != ".value") and (word in exclude):
+                raise ValueError(
+                    f"""
+                    `{word}` in names_to already exists
+                    in the new dataframe's columns.
+                    Kindly use a unique name.
+                    """
+                )
 
     mapping_is_unique = not mapping.duplicated().any(axis=None).item()
 
-    if mapping_is_unique or ('.value' not in names_to):
+    if mapping_is_unique or (".value" not in names_to):
         mapping = pd.MultiIndex.from_frame(mapping)
         df.columns = mapping
     else:
@@ -1673,7 +1687,7 @@ def _pivot_longer_names_pattern_sequence(
             )
 
     mapping = np.select(mapping, names_to, None)
-    # guard .. if not all labels in the columns 
+    # guard .. if not all labels in the columns
     # are matched to the regexes
     any_nulls = pd.notna(mapping)
     mapping = pd.MultiIndex.from_arrays([mapping, df_columns])
@@ -1682,9 +1696,10 @@ def _pivot_longer_names_pattern_sequence(
     if any_nulls.any():
         df = df.loc[:, any_nulls]
     df = df.droplevel(level=-1, axis="columns")
- 
-    return _pivot_longer_frame_single_Index(df, index, sort_by_appearance, ignore_index, values_to=None)
 
+    return _pivot_longer_frame_single_Index(
+        df, index, sort_by_appearance, ignore_index, values_to=None
+    )
 
 
 def _pivot_longer_frame_single_Index(
@@ -1695,7 +1710,7 @@ def _pivot_longer_frame_single_Index(
     values_to: str = None,
 ) -> pd.DataFrame:
 
-    if df.columns.name != '.value':
+    if df.columns.name != ".value":
         len_index = len(df)
         df = df.melt(ignore_index=False, value_name=values_to)
 
@@ -1710,12 +1725,10 @@ def _pivot_longer_frame_single_Index(
 
         return df
 
-
     mapping = df.columns
-    len_mapping = df.columns.size
+    len_df_columns = mapping.size
     mapping = mapping.unique()
-
-    len_df_columns = len(df.columns)
+    len_mapping = mapping.size
 
     len_index = len(df)
 
@@ -1723,7 +1736,7 @@ def _pivot_longer_frame_single_Index(
         container = defaultdict(list)
         for name, series in df.items():
             container[name].append(series)
-        if len_mapping == 1:
+        if len_mapping == 1:  # single unique column
             container = container[mapping[0]]
             df = pd.concat(
                 container, axis="index", join="outer", sort=False, copy=False
@@ -1733,7 +1746,7 @@ def _pivot_longer_frame_single_Index(
             # concat works fine here and efficient too,
             # since we are combining Series
             # a Series is returned for each concatenation
-            # the keys are left in the final dataframe
+            # the outer keys are left in the final dataframe
             # useful if the user wishes to understand the pairings
             df = [
                 pd.concat(value, copy=False, keys=np.arange(len(value)))
@@ -1756,32 +1769,6 @@ def _pivot_longer_frame_single_Index(
         df.index = range(len(df))
 
     return df
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def _data_checks_pivot_wider(

@@ -1,5 +1,3 @@
-from itertools import product
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -112,7 +110,7 @@ def test_type_column_names(df_checks):
 def test_type_names_to(df_checks):
     """Raise TypeError if wrong type is provided for `names_to`."""
     with pytest.raises(TypeError):
-        df_checks.pivot_longer(names_to=2007)
+        df_checks.pivot_longer(names_to={2007})
 
 
 def test_subtype_names_to(df_checks):
@@ -1955,7 +1953,10 @@ single_column_names_pattern = [
 
 
 @pytest.mark.parametrize(
-    "df_in,df_out,index, column_names,names_to,names_pattern,sort_by_appearance",
+    """
+    df_in,df_out,index,column_names,names_to,
+    names_pattern,sort_by_appearance
+    """,
     single_column_names_pattern,
 )
 def test_single_column_names_pattern(

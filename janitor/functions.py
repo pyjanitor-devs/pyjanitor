@@ -6107,8 +6107,7 @@ def pivot_longer(
         also be a list/tuple of strings that will serve as new column
         names, if `name_sep` or `names_pattern` is provided.
         If `.value` is in `names_to`, new column names will be extracted
-        from part of the existing column names and `values_to` will be
-        replaced.
+        from part of the existing column names and overrides`values_to`.
     :param names_sep: Determines how the column name is broken up, if
         `names_to` contains multiple values. It takes the same
         specification as pandas' `str.split` method, and can be a string

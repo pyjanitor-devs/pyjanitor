@@ -669,7 +669,6 @@ def _sub_expand_grid(  # noqa: F811
             value.name = f"{key}_{value.name}"
 
 
-
 def _data_checks_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
@@ -1054,8 +1053,6 @@ def _data_checks_pivot_longer(
         check("column_level", column_level, [int, str])
         df.columns = df.columns.get_level_values(column_level)
 
-    df_columns = df.columns
-
     if index is not None:
         if is_list_like(index) and (not isinstance(index, tuple)):
             index = list(index)
@@ -1068,13 +1065,12 @@ def _data_checks_pivot_longer(
             column_names = list(column_names)
         column_names = _select_columns(column_names, df)
 
+    len_names_to = 0
     if names_to is not None:
         if isinstance(names_to, str):
             names_to = [names_to]
-
-        else:
+        elif isinstance(names_to, tuple):
             names_to = list(names_to)
-
         check("names_to", names_to, [list])
 
         unique_names_to = set()
@@ -1082,7 +1078,7 @@ def _data_checks_pivot_longer(
             if not isinstance(word, str):
                 raise TypeError(
                     f"""
-                    All entries in the `names_to`
+                    All entries in the names_to
                     argument must be strings.
                     {word} is of type {type(word).__name__}
                     """
@@ -1091,23 +1087,19 @@ def _data_checks_pivot_longer(
             if word in unique_names_to:
                 raise ValueError(
                     f"""
-                    Duplicate words are not allowed
-                    in `names_to`.
-                    {word} is already present in
-                    `names_to`.
+                    {word} already exists in names_to.
+                    Duplicates are not allowed.
                     """
                 )
-            unique_names_to.add(word)
+            unique_names_to.add(word)  # noqa: PD005
         unique_names_to = None
 
         len_names_to = len(names_to)
-    else:
-        len_names_to = 0
 
     if names_sep and names_pattern:
         raise ValueError(
             """
-                Only one of `names_pattern` or `names_sep`
+                Only one of names_pattern or names_sep
                 should be provided.
                 """
         )
@@ -1117,7 +1109,7 @@ def _data_checks_pivot_longer(
         if names_to is None:
             raise ValueError(
                 """
-                Kindly provide values for `names_to`.
+                Kindly provide values for names_to.
                 """
             )
         if isinstance(names_pattern, (str, Pattern)):
@@ -1126,9 +1118,9 @@ def _data_checks_pivot_longer(
             if len_names_to != num_regex_grps:
                 raise ValueError(
                     f"""
-                    Length of ``names_to`` does not match
+                    The length of names_to does not match
                     the number of groups in names_pattern.
-                    The length of ``names_to`` is {len_names_to}
+                    The length of names_to is {len_names_to}
                     while the number of groups in the regex
                     is {num_regex_grps}
                     """
@@ -1139,18 +1131,18 @@ def _data_checks_pivot_longer(
                 if not isinstance(word, (str, Pattern)):
                     raise TypeError(
                         f"""
-                        All entries in the ``names_pattern`` argument
+                        All entries in the names_pattern argument
                         must be regular expressions.
-                        {word} is of type {type(word).__name__}
+                        `{word}` is of type {type(word).__name__}
                         """
                     )
 
             if len(names_pattern) != len_names_to:
                 raise ValueError(
                     f"""
-                    Length of ``names_to`` does not match
-                    the number of regexes in `names_pattern`.
-                    The length of ``names_to`` is {len_names_to}
+                    The length of names_to does not match
+                    the number of regexes in names_pattern.
+                    The length of names_to is {len_names_to}
                     while the number of regexes
                     is {len(names_pattern)}
                     """
@@ -1159,9 +1151,8 @@ def _data_checks_pivot_longer(
             if names_to and (".value" in names_to):
                 raise ValueError(
                     """
-                    ``.value`` is not accepted
-                    if ``names_pattern``
-                    is a list/tuple.
+                    `.value` is not accepted in names_to
+                    if names_pattern is a list/tuple.
                     """
                 )
 
@@ -1170,16 +1161,15 @@ def _data_checks_pivot_longer(
         if names_to is None:
             raise ValueError(
                 """
-                Kindly provide values for `names_to`.
+                Kindly provide values for names_to.
                 """
             )
 
     check("values_to", values_to, [str])
+    df_columns = df.columns
 
-    dot_value = (
-        (names_to is not None)
-        and (".value" in names_to)
-        or (isinstance(names_pattern, (list, tuple)))
+    dot_value = (names_to is not None) and (
+        (".value" in names_to) or (isinstance(names_pattern, (list, tuple)))
     )
     if (values_to in df_columns) and (not dot_value):
         # copied from pandas' melt source code
@@ -1187,8 +1177,8 @@ def _data_checks_pivot_longer(
         raise ValueError(
             """
             This dataframe has a column name that matches the
-            'values_to' argument.
-            Kindly set the 'values_to' parameter to a unique name.
+            values_to argument.
+            Kindly set the values_to parameter to a unique name.
             """
         )
 
@@ -1196,7 +1186,7 @@ def _data_checks_pivot_longer(
     if (names_to is not None) and (not dot_value) and (values_to in names_to):
         raise ValueError(
             """
-            `values_to` is present in `names_to`;
+            `values_to` is present in names_to;
             this is not allowed. Kindly use a unique
             name.
             """
@@ -1208,7 +1198,7 @@ def _data_checks_pivot_longer(
         raise ValueError(
             """
             Unpivoting a MultiIndex column dataframe
-            when `names_sep` or `names_pattern` is supplied
+            when names_sep or names_pattern is supplied
             is not supported.
             """
         )
@@ -1334,6 +1324,10 @@ def _pivot_longer_names_sep(
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
+    """
+    This takes care of pivoting scenarios where
+    names_sep is provided.
+    """
 
     mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
     len_mapping_columns = len(mapping.columns)
@@ -1364,11 +1358,17 @@ def _pivot_longer_names_sep(
                     """
                 )
 
+    # having unique columns ensure the data can be recombined
+    # successfully via pd.concat; if the columns are not unique,
+    # a counter is created with cumcount to ensure uniqueness.
+    # This is dropped later on, and is not part of the final
+    # dataframe.
+    # This is relevant only for scenarios where `.value` is
+    # in names_to.
     mapping_is_unique = not mapping.duplicated().any(axis=None).item()
 
     if mapping_is_unique or (".value" not in names_to):
         mapping = pd.MultiIndex.from_frame(mapping)
-        df.columns = mapping
     else:
         cumcount = mapping.groupby(names_to).cumcount()
         mapping = [series for _, series in mapping.items()]
@@ -1390,6 +1390,10 @@ def _pivot_longer_names_pattern_str(
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
+    """
+    This takes care of pivoting scenarios where
+    names_pattern is provided, and is a string.
+    """
 
     mapping = df.columns.str.extract(names_pattern, expand=True)
 
@@ -1445,7 +1449,6 @@ def _pivot_longer_names_pattern_str(
 
     if mapping_is_unique or (".value" not in names_to):
         mapping = pd.MultiIndex.from_frame(mapping)
-        df.columns = mapping
     else:
         cumcount = mapping.groupby(names_to).cumcount()
         mapping = [series for _, series in mapping.items()]
@@ -1466,6 +1469,10 @@ def _pivot_longer_names_pattern_sequence(
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
+    """
+    This takes care of pivoting scenarios where
+    names_pattern is provided, and is a list/tuple.
+    """
 
     df_columns = df.columns
     mapping = [
@@ -1479,9 +1486,9 @@ def _pivot_longer_names_pattern_sequence(
             """
             No label in the columns
             matched the regexes
-            in names_pattern``.
+            in names_pattern.
             Kindly provide regexes
-            that matches all labels
+            that match all labels
             in the columns.
             """
         )
@@ -1497,6 +1504,8 @@ def _pivot_longer_names_pattern_sequence(
     mapping = np.select(mapping, names_to, None)
     # guard .. for scenarios where not all labels
     # in the columns are matched to the regex(es)
+    # the any_nulls takes care of that,
+    # via boolean indexing
     any_nulls = pd.notna(mapping)
     mapping = pd.MultiIndex.from_arrays([mapping, df_columns])
     mapping.names = [".value", None]
@@ -1522,11 +1531,14 @@ def _computations_pivot_longer(
     sort_by_appearance: bool = False,
     ignore_index: bool = True,
 ) -> pd.DataFrame:
+    """
+    This is where the final dataframe in long form is created.
+    """
 
     if (
         (index is None)
         and column_names
-        and (len(df.columns) > len(column_names))
+        and (df.columns.size > len(column_names))
     ):
         index = [
             column_name
@@ -1541,7 +1553,7 @@ def _computations_pivot_longer(
                 if word in index:
                     raise ValueError(
                         f"""
-                        {word} in `names_to` already exists
+                        `{word}` in names_to already exists
                         in column labels assigned
                         to the dataframe's index parameter.
                         Kindly use a unique name.
@@ -1568,6 +1580,7 @@ def _computations_pivot_longer(
 
         return df
 
+    # names_sep or names_pattern
     if index:
         df = df.set_index(index, append=True)
 
@@ -1619,7 +1632,6 @@ def _computations_pivot_longer(
             sort_by_appearance,
             ignore_index,
         )
-        return df
 
     if isinstance(names_pattern, (str, Pattern)):
         return _pivot_longer_names_pattern_str(
@@ -1637,7 +1649,6 @@ def _computations_pivot_longer(
     )
 
 
-
 def _pivot_longer_frame_MultiIndex(
     df: pd.DataFrame,
     index,
@@ -1645,6 +1656,12 @@ def _pivot_longer_frame_MultiIndex(
     ignore_index: bool,
     values_to: str,
 ) -> pd.DataFrame:
+    """
+    This creates the final dataframe,
+    where names_sep/names_pattern is provided,
+    and the extraction/split of the columns
+    result in a MultiIndex.
+    """
 
     len_index = len(df)
     mapping = df.columns
@@ -1662,6 +1679,9 @@ def _pivot_longer_frame_MultiIndex(
 
         return df
 
+    # labels that are not `.value`
+    # required when recombining list of individual dataframes
+    # as they become the keys in the concatenation
     others = mapping.droplevel(".value").unique()
     if isinstance(others, pd.MultiIndex):
         levels = others.names
@@ -1690,14 +1710,14 @@ def _pivot_longer_frame_MultiIndex(
     # using numbers here, in case there are multiple Nones
     # in the index names
     if index:
-        new_order = np.roll(np.arange(len(df.index.names)), len(index)+1)
+        new_order = np.roll(np.arange(len(df.index.names)), len(index) + 1)
         df = df.reorder_levels(new_order, axis="index")
         df = df.reset_index(level=index + levels)
     else:
         df = df.reset_index(levels)
-    
+
     if null_in_levels:
-        df = df.droplevel(level = -1, axis = 'index')
+        df = df.droplevel(level=-1, axis="index")
 
     if df.columns.names:
         df = df.rename_axis(columns=None)
@@ -1778,7 +1798,7 @@ def _pivot_longer_frame_single_Index(
             first = first.to_frame()
             df = first.join(rest, how="outer", sort=False)
             # drop outermost keys (used in the concatenation)
-            df = df.droplevel(level = 0 ,axis = 'index')
+            df = df.droplevel(level=0, axis="index")
 
     if df.columns.names:
         df = df.rename_axis(columns=None)

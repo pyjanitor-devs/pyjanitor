@@ -1543,9 +1543,9 @@ def _pivot_longer_names_sep(
     if len_names_to != len_mapping_columns:
         raise ValueError(
             f"""
-            The length of ``names_to`` does not match
+            The length of names_to does not match
             the number of levels extracted.
-            The length of ``names_to`` is {len_names_to}
+            The length of names_to is {len_names_to}
             while the number of levels extracted is
             {len_mapping_columns}.
             """
@@ -1594,25 +1594,30 @@ def _pivot_longer_names_pattern_str(
 
     mapping = df.columns.str.extract(names_pattern, expand=True)
 
-    if mapping.isna().all(axis=None):
+    nulls_found = mapping.isna()
+
+    if nulls_found.all(axis=None):
         raise ValueError(
             """
             No labels in the columns
             matched the regular expression
-            in ``names_pattern``.
+            in names_pattern.
             Kindly provide a regular expression
             that matches all labels in the columns.
             """
         )
 
-    if mapping.isna().any(axis=None):
+    if nulls_found.any(axis=None):
         raise ValueError(
-            """
+            f"""
             Not all labels in the columns
             matched the regular expression
-            in ``names_pattern``.
+            in names_pattern.Column Labels
+            {*df.columns[nulls_found.any(axis='columns')],}
+            could not be matched with the regex.
             Kindly provide a regular expression
-            that matches all labels in the columns.
+            (with the correct groups) that matches all labels
+            in the columns.
             """
         )
 

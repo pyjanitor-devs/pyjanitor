@@ -10,6 +10,7 @@ def df():
         {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]}
     )
 
+
 @pytest.mark.xfail(reason="column_names is a variable args")
 def test_wrong_type_column_names(df):
     """Raise Error if wrong type is provided for `column_names`."""
@@ -59,7 +60,5 @@ def test_coalesce_without_delete():
         {"s1": [np.nan, np.nan, 6, 9, 9], "s2": [np.nan, 8, 7, 9, 9]}
     )
     expected = df.assign(s3=df.s1.combine_first(df.s2).fillna(0))
-    result = df.coalesce(
-        "s1", "s2", target_column_name="s3", default_value=0
-    )
+    result = df.coalesce("s1", "s2", target_column_name="s3", default_value=0)
     assert_frame_equal(result, expected)

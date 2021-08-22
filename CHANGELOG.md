@@ -20,7 +20,7 @@
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [ENH] Deprecate `new_column_names` and `merge_frame` from `process_text`. Only existing columns are supported. @samukweku
-
+-   [INF] Speed up pytest via `-n` (pytest-xdist) option. Issue #881. @Zeroto521
 
 ## [v0.21.0] - 2021-07-16
 

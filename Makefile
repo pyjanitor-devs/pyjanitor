@@ -20,7 +20,7 @@ format:
 
 test:
 	@echo "Running test suite..."
-	pytest
+	pytest -v -n auto --color=yes
 
 lint:
 	@echo "Checking code formatting..."

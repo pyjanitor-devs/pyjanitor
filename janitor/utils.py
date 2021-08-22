@@ -1663,7 +1663,10 @@ def _pivot_longer_frame_MultiIndex(
     This creates the final dataframe,
     where names_sep/names_pattern is provided,
     and the extraction/split of the columns
-    result in a MultiIndex.
+    result in a MultiIndex. This applies only
+    to names_sep or names_pattern as a string,
+    where more than one group is present in the
+    regex.
     """
 
     len_index = len(df)
@@ -1741,6 +1744,15 @@ def _pivot_longer_frame_single_Index(
     ignore_index: bool,
     values_to: str = None,
 ) -> pd.DataFrame:
+    """
+    This creates the final dataframe,
+    where names_pattern is provided,
+    and the extraction/split of the columns
+    result in a single Index.
+    This covers scenarios where names_pattern
+    is a list/tuple, or where a single group
+    is present in the regex string.
+    """
 
     if df.columns.name != ".value":
         len_index = len(df)

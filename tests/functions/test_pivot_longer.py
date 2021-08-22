@@ -180,7 +180,7 @@ def test_presence_columns(df, column):
     with pytest.raises(KeyError):
         df.pivot_longer(column_names=column)
 
-
+@pytest.mark.xfail(reason="redundant check removed.")
 @pytest.mark.parametrize("df,names_to, names_sep", names_sep_not_required)
 def test_name_sep_names_to_len(df, names_to, names_sep):
     """
@@ -219,7 +219,7 @@ def test_names_pattern_wrong_subtype():
             names_to=["variable", "value"], names_pattern=[1, "rar"]
         )
 
-
+@pytest.mark.xfail(reason="`names_to` accepts sequences of strings.")
 def test_names_pattern_names_to_wrong_type():
     """
     Raise TypeError if `names_pattern` is a list/tuple
@@ -1160,7 +1160,6 @@ paired_columns_pattern = [
                 "a": ["a", "b", "c"],
                 "A": ["A", "B", "C"],
             },
-            index=[0, 0, 0],
         ),
         "id",
         (".value", "instance"),
@@ -1824,7 +1823,13 @@ names_single_value = [
         ),
         pd.DataFrame(
             {"x": [4, 5, 5, 6, 6, 7], "y": [7, 10, 8, 11, 9, 12]},
-            index=[0, 0, 1, 1, 2, 2],
+             index=pd.MultiIndex.from_tuples([(0, 0),
+            (1, 0),
+            (0, 1),
+            (1, 1),
+            (0, 2),
+            (1, 2)],
+           ),
         ),
         None,
         "(.).",
@@ -1923,6 +1928,7 @@ single_column_names_pattern = [
     "df_in,df_out,index, column_names,names_to,names_pattern",
     single_column_names_pattern,
 )
+
 def test_single_column_names_pattern(
     df_in, df_out, index, column_names, names_to, names_pattern
 ):
@@ -1978,7 +1984,6 @@ def test_group_present():
 
 # copied from :
 # https://github.com/pandas-dev/pandas/blob/master/pandas/tests/reshape/test_melt.py
-# interesting edge case
 def test_float_suffix_irregular():
     """
     Test output for floating suffixes for stubnames;

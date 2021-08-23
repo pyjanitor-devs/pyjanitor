@@ -6404,6 +6404,11 @@ def pivot_wider(
     .. note:: A ValueError is raised if the combination
         of the `index` and `names_from` is not unique.
 
+    .. note:: By default, values from `values_from` are always
+        at the top level if the columns are not flattened.
+        If flattened, the values from `values_from` are usually
+        at the start of each label in the columns.
+
     Functional usage syntax:
 
     .. code-block:: python
@@ -6460,8 +6465,10 @@ def pivot_wider(
         the new dataframe's values.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If ``values_from`` is not specified,
-        all remaining columns will be used.
+        If ``values_from`` is not specified,  all remaining columns
+        will be used. Note that values from `values_from` are usually at
+        the top level, the dataframe's columns is not flattened, or the
+        start of each label in the columns, if flattened.
     :param names_sort: Default is `True`. Sorts columns by order of
         appearance.
     :param levels_order: Applicable if there are multiple `names_from`
@@ -6476,7 +6483,8 @@ def pivot_wider(
         Applicable only if ``flatten_levels`` is ``True``.
     :param names_glue: A callable to control the output
         of the flattened columns. Applicable only if
-        ``flatten_levels`` is ``True``.
+        ``flatten_levels`` is ``True``. Function should be
+        acceptable to pandas' `map` function.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
     :raises ValueError: if `names_from` is None.

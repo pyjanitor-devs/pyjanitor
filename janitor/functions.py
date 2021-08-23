@@ -6556,7 +6556,7 @@ def conditional_join(
     Join on equi and non-equi operators is possible::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6573,7 +6573,7 @@ def conditional_join(
     The default join is `inner`. left and right joins are supported as well::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6592,7 +6592,7 @@ def conditional_join(
 
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6614,7 +6614,7 @@ def conditional_join(
     Join on just the non-equi joins is also possible::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
@@ -6634,7 +6634,7 @@ def conditional_join(
     relevant dataframe::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
@@ -6653,7 +6653,7 @@ def conditional_join(
     Pandas merge/join is more efficient::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '=='),
                 sort_by_appearance = True
             )
@@ -6665,7 +6665,7 @@ def conditional_join(
     Join on not equal -> ``!=`` ::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '!='),
                 sort_by_appearance = True
             )
@@ -6685,7 +6685,7 @@ def conditional_join(
     (this is the default)::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '>'),
                 sort_by_appearance = False
             )
@@ -6718,8 +6718,8 @@ def conditional_join(
         right = pd.DataFrame(...)
 
         df = jn.conditional_join(
-                df = df,
-                right = right,
+                df,
+                right,
                 *conditions,
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
@@ -6730,7 +6730,7 @@ def conditional_join(
     .. code-block:: python
 
         df = df.conditional_join(
-                right = right,
+                right,
                 *conditions,
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),

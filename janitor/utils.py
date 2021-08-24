@@ -8,7 +8,7 @@ import socket
 import sys
 import warnings
 from collections.abc import Callable as dispatch_callable
-from itertools import chain, combinations
+from itertools import chain, combinations, tee
 from typing import (
     Callable,
     Dict,
@@ -3079,53 +3079,50 @@ def _conditional_join_compute(
             df, right, left_c, right_c, how, sort_by_appearance
         )
 
-    # TODO: improve the efficiency for multiple conditions
-    df_index = df.index
-    # iteratively reduce the number of rows
-    # from df, until we have the certain index labels
-    # that will be in the final dataframe
-    # usually much smaller, which should help
-    # reduce overall processing time
-    for condition in conditions:
-        left_on, right_on, op = condition
-        left_c = df.loc[df_index, left_on]
-        right_c = right[right_on]
-
-        _conditional_join_type_check(left_c, right_c, op)
-
-        df_index = _generic_func_cond_join(left_c, right_c, op, len_conditions)
-
-        if df_index is None:
-            return _create_conditional_join_empty_frame(df, right, how)
-
-    df = df.loc[df_index]
-
-    conditions = [
-        (df[left_on], right[right_on], op)
-        for left_on, right_on, op in conditions
-    ]
-    first, *rest = conditions
-    left_c, right_c, op = first
-
-    result = _generic_func_cond_join(left_c, right_c, op, 1)
-
-    if result is None:
-        return _create_conditional_join_empty_frame(df, right, how)
-
-    df_index, right_index = result
-
-    # use booleans to get the index labels
-    # for df and right, to create the final dataframe
-    for left_c, right_c, op in rest:
-        left_c = left_c[df_index].array
-        right_c = right_c[right_index].array
-        # using pd.eval might be faster for larger arrays
-        # if the user has numexpr installed
-        keep_rows = pd.eval(f"left_c {op} right_c")
-        if keep_rows.sum() == 0:
-            return _create_conditional_join_empty_frame(df, right, how)
-        df_index = df_index[keep_rows]
-        right_index = right_index[keep_rows]
-    return _create_conditional_join_frame(
-        df, right, df_index, right_index, how, sort_by_appearance
+    less_than_operators = (
+        JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+        JOINOPERATOR.LESS_THAN.value,
     )
+    greater_than_operators = (
+        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+        JOINOPERATOR.GREATER_THAN.value,
+    )
+
+    # check for possible interval join combinations
+    interval_joins = []
+    paired_conditions = pairwise(conditions)
+    for left_tuple, right_tuple in paired_conditions:
+        left_l, _, left_op = left_tuple
+        right_l, _, right_op = right_tuple
+        if (
+            (left_l == right_l)
+            & (left_op in greater_than_operators)
+            & (right_op in less_than_operators)
+        ):
+            interval_joins.append((left_tuple, right_tuple))
+
+    multiple_conditions = []
+    paired_conditions = []
+    if interval_joins:
+        combo = chain.from_iterable(interval_joins)
+        combo = [*combo]
+        for condition in conditions:
+            if condition not in combo:
+                multiple_conditions.append(condition)
+        for left_tuple, right_tuple in interval_joins:
+            left_l, left_r, left_op = left_tuple
+            _, right_r, right_op = right_tuple
+            zipped = (left_l, (left_r, right_r), (left_op, right_op))
+            paired_conditions.append(zipped)
+        multiple_conditions.extend(paired_conditions)
+    else:
+        multiple_conditions = conditions
+    return multiple_conditions
+
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    # https://docs.python.org/3/library/itertools.html#itertools-recipes
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)

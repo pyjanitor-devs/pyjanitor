@@ -3089,6 +3089,9 @@ def _conditional_join_compute(
     )
 
     # check for possible interval join combinations
+    # converts [('a', 'b', '>'), ('a', 'c', '<)] to 
+    # [('a', ('b', 'c'), ('>', '<'))]
+    # this simulates the between operation -> 'b < a < c'
     interval_joins = []
     paired_conditions = pairwise(conditions)
     for left_tuple, right_tuple in paired_conditions:

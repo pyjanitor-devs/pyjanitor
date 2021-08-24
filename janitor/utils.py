@@ -2595,28 +2595,31 @@ def _conditional_join_type_check(
     Strings are not supported on non-equi operators.
     """
 
-    numeric_type = all(map(is_numeric_dtype, (left_column, right_column)))
-    date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
-    string_type = all(map(is_string_dtype, (left_column, right_column)))
-
-    non_equi = {op.value for op in JOINOPERATOR if op.name != "STRICTLY_EQUAL"}
-    if all((op in non_equi, string_type)):
-        raise ValueError(
-            """
-            Strings can only be compared
-            on the equal(`==`) operator.
-            """
-        )
-    numeric_date_string = numeric_type, date_type, string_type
-    if any(numeric_date_string):
+    error_msg = """
+          conditional_join only supports
+          numeric, date, or string dtypes.
+          The columns must also be of the same type.
+          """
+    error_msg_string = """
+                       Strings can only be compared
+                       on the equal(`==`) operator.
+                       """
+    if is_string_dtype(left_column):
+        if not is_string_dtype(right_column):
+            raise ValueError(error_msg)
+        if op.name != JOINOPERATOR.STRICTLY_EQUAL.value:
+            raise ValueError(error_msg_string)
+        return None
+    if is_numeric_dtype(left_column):
+        if not is_numeric_dtype(right_column):
+            raise ValueError(error_msg)
+        return None
+    if is_datetime64_dtype(left_column):
+        if not is_datetime64_dtype(right_column):
+            raise ValueError(error_msg)
         return None
 
-    raise ValueError(
-        """
-        conditional_join only supports
-        numeric, date, or string dtypes.
-        """
-    )
+
 
 
 def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
@@ -3078,6 +3081,29 @@ def _conditional_join_compute(
         return _create_conditional_join_frame(
             df, right, left_c, right_c, how, sort_by_appearance
         )
+
+
+    df_index = df.index
+    # iteratively reduce the number of rows
+    # from df, until we have the certain index labels
+    # that will be in the final dataframe
+    # usually much smaller, which should help
+    # reduce overall processing time
+    for condition in conditions:
+        left_on, right_on, op = condition
+        left_c = df.loc[df_index, left_on]
+        right_c = right[right_on]
+
+        return _conditional_join_type_check(left_c, right_c, op)
+
+    #     df_index = _generic_func_cond_join(left_c, right_c, op, len_conditions)
+
+    #     if df_index is None:
+    #         return _create_conditional_join_empty_frame(df, right, how)
+
+    # df = df.loc[df_index]
+
+    # return df
 
     less_than_operators = (
         JOINOPERATOR.LESS_THAN_OR_EQUAL.value,

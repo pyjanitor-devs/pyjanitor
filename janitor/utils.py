@@ -2620,8 +2620,6 @@ def _conditional_join_type_check(
         return None
 
 
-
-
 def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
     """
     Create ordered indices for each value in
@@ -2942,6 +2940,77 @@ def _greater_than_indices(
     return left_c, right_c
 
 
+def _interval_indices(
+    left_c: pd.Series,
+    lower_boundary: pd.Series,
+    upper_boundary: pd.Series,
+    left_operator: str,
+    right_operator: str,
+):
+    """
+    Use Intervals to get indices where left_c is between
+    lower_boundary and upper_boundary.
+
+    Returns a tuple of (left_c, right_c),
+    which are the indices of the left and right dataframes
+    respectively (the dataframes in the conditional join).
+    """
+
+    # quick break, avoiding the hassle
+    if left_c.max() < lower_boundary.min():
+        return None
+    actual_intervals = lower_boundary > upper_boundary
+
+    if actual_intervals.all():
+        return None
+
+    if actual_intervals.any():
+        lower_boundary = lower_boundary[~actual_intervals]
+        upper_boundary = upper_boundary[~actual_intervals]
+
+    closed_mapping = {
+        (
+            JOINOPERATOR.GREATER_THAN.value,
+            JOINOPERATOR.LESS_THAN.value,
+        ): "neither",
+        (
+            JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+            JOINOPERATOR.LESS_THAN.value,
+        ): "right",
+        (
+            JOINOPERATOR.GREATER_THAN.value,
+            JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+        ): "left",
+        (
+            JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+            JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+        ): "both",
+    }
+
+    closed = closed_mapping[(left_operator, right_operator)]
+
+    interval = pd.IntervalIndex.from_arrays(lower_boundary, upper_boundary, closed = closed)
+
+    positions = interval.get_indexer_for(left_c)
+
+    return positions
+
+    exclude_rows = positions == -1
+
+    if exclude_rows.all():
+        return None
+
+    if exclude_rows.any():
+        positions = positions[~exclude_rows]
+
+    # return [interval.contains(val) for val in left_c]
+
+    left_repeat = np.row_stack([interval.contains(val) for val in left_c]).sum(1)
+    #return left_repeat
+    left_c = left_c.index.repeat(left_repeat)
+    return left_c, positions
+
+
 def _create_conditional_join_empty_frame(
     df: pd.DataFrame, right: pd.DataFrame, how: str
 ):
@@ -3082,7 +3151,6 @@ def _conditional_join_compute(
             df, right, left_c, right_c, how, sort_by_appearance
         )
 
-
     df_index = df.index
     # iteratively reduce the number of rows
     # from df, until we have the certain index labels
@@ -3094,16 +3162,7 @@ def _conditional_join_compute(
         left_c = df.loc[df_index, left_on]
         right_c = right[right_on]
 
-        return _conditional_join_type_check(left_c, right_c, op)
-
-    #     df_index = _generic_func_cond_join(left_c, right_c, op, len_conditions)
-
-    #     if df_index is None:
-    #         return _create_conditional_join_empty_frame(df, right, how)
-
-    # df = df.loc[df_index]
-
-    # return df
+        _conditional_join_type_check(left_c, right_c, op)
 
     less_than_operators = (
         JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
@@ -3115,7 +3174,7 @@ def _conditional_join_compute(
     )
 
     # check for possible interval join combinations
-    # converts [('a', 'b', '>'), ('a', 'c', '<)] to 
+    # converts [('a', 'b', '>'), ('a', 'c', '<)] to
     # [('a', ('b', 'c'), ('>', '<'))]
     # this simulates the between operation -> 'b < a < c'
     interval_joins = []
@@ -3141,7 +3200,7 @@ def _conditional_join_compute(
         for left_tuple, right_tuple in interval_joins:
             left_l, left_r, left_op = left_tuple
             _, right_r, right_op = right_tuple
-            zipped = (left_l, (left_r, right_r), (left_op, right_op))
+            zipped = (left_l, left_r, right_r, left_op, right_op)
             paired_conditions.append(zipped)
         multiple_conditions.extend(paired_conditions)
     else:

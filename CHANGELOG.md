@@ -20,6 +20,7 @@
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [INF] Speed up pytest via `-n` (pytest-xdist) option. Issue #881. @Zeroto521
+-   [INF] Simplify a bit linting, use pre-commit as the standard. @Zeroto521
 
 ## [v0.21.0] - 2021-07-16
 

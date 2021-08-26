@@ -13,11 +13,6 @@ repos:
   hooks:
   - id: black
     args: [--config, pyproject.toml]
-- repo: https://github.com/kynan/nbstripout
-  rev: 0.5.0
-  hooks:
-  - id: nbstripout
-    files: ".ipynb"
 - repo: https://github.com/econchick/interrogate
   rev: 1.4.0
   hooks:

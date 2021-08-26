@@ -3326,7 +3326,7 @@ def select_columns(
        0   0
        1   1
 
-    Select via shell-like glob strings (*) is possible::
+    - Select via shell-like glob strings (*) is possible::
 
         df.select_columns("*type*")
 

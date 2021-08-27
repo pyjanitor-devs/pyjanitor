@@ -6,9 +6,12 @@ import os
 import re
 import socket
 import sys
+from turtle import left
 import warnings
+import operator
 from collections.abc import Callable as dispatch_callable
 from itertools import chain, combinations, tee
+from collections import deque, namedtuple
 from typing import (
     Callable,
     Dict,
@@ -2650,6 +2653,36 @@ def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
     return ids.cumsum()
 
 
+def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
+    """
+    Create ordered indices for each value in
+    `right_keys` in `_less_than_indices`.
+    Faster than a list comprehension, as
+    the array size increases.
+
+    code copied from Stack Overflow
+    https://stackoverflow.com/a/47126435/7175713
+    """
+    cum_length = right - indices
+    cum_length = cum_length.cumsum()
+    # generate ones
+    # note that cum_length[-1] is the total
+    # number of inidices to be generated
+    ids = np.ones(cum_length[-1], dtype=int)
+    ids[0] = indices[0]
+    # at each specific point in id, replace the value
+    # so, we should have say 0, 1, 1, 1, 1, -5, 1, 1, 1, -3, ...
+    # when a cumsum is implemented in the next line,
+    # we get, 0, 1, 2, 3, 4, 0, 1,2, 3, 0, ...
+    # our ranges is obtained, with more efficiency
+    # for larger arrays
+    ids[cum_length[:-1]] = indices[1:] - right[:-1] + 1
+    # the cumsum here gives us the same output as
+    # [np.range(start, len_right) for start in search_indices]
+    # but much faster
+    return ids.cumsum()
+
+
 def _ge_create_ranges(indices: np.array) -> np.array:
     """
     Create ordered indices for each value in
@@ -2667,45 +2700,46 @@ def _ge_create_ranges(indices: np.array) -> np.array:
     return ids.cumsum()
 
 
-def _equal_indices(left_c: pd.Series, right_c: pd.Series, len_conditions: int):
+def _equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     """
-    Use pandas' join method to get the index labels.
-    If len_condition is > 1, then get_indexer is used
-    to get relevant index labels for left_c.
+    Use binary search to get indices where
+    `left_c` is exactly  equal to `right_c`.
 
     Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
     """
 
-    if len_conditions > 1:
-        if not right_c.is_unique:
-            right_c = right_c.factorize()[-1]
-        result = pd.Index(left_c).get_indexer_for(right_c)
-        exclude_rows = result == -1
-        if exclude_rows.all():
-            return None
-        if exclude_rows.any():
-            result = result[~exclude_rows]
-        return left_c.index.take(result)
+    if right_c.hasnans:
+        right_c = right_c.dropna()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
 
-    left_c.index.name = "l"
-    right_c.index.name = "r"
-    left_c.name = "merge"
-    right_c.name = "merge"
-    left_c = left_c.reset_index()
-    right_c = right_c.reset_index()
-    result = left_c.merge(right_c, how="inner", sort=False, on="merge")
-    if result.empty:
+    search_indices = right_c.searchsorted(left_c, side="left")
+    len_right = right_c.size
+    rows_equal = search_indices == len_right
+    if rows_equal.any():
+        left_c = left_c[~rows_equal]
+        search_indices = search_indices[~rows_equal]
+    if search_indices.size == 0:
         return None
-    return pd.Index(result["l"]), pd.Index(result["r"])
+    positions = _le_create_ranges(search_indices, len_right)
+    search_indices = len_right - search_indices
+    left_c = left_c.repeat(search_indices)
+    right_c = right_c.take(positions)
+    rows_equal = left_c.array == right_c.array
+    if rows_equal.sum() == 0: # absolutely no matches
+        return None
+    if rows_equal.all():
+        return left_c.index, right_c.index
+    # keep only the indices that match
+    left_c = left_c.index[rows_equal]
+    right_c = right_c.index[rows_equal]
+    return left_c, right_c
 
 
 def _not_equal_indices(
     left_c: pd.Series,
     right_c: pd.Series,
-    len_conditions: int,
-    strict: bool = True,
-):
+)-> tuple:
     """
     Use binary search to get indices where
     `left_c` is exactly  not equal to `right_c`.
@@ -2713,132 +2747,91 @@ def _not_equal_indices(
     and strictly greater than indices.
 
     Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
     """
-
-    # get nulls, since they are not equal to anything
-    # NaNs are not equal to NaNs
-    l_nulls = pd.Index([], dtype=int)
-    r_nulls = pd.Index([], dtype=int)
-    nulls_l = pd.Index([], dtype=int)
-    nulls_r = pd.Index([], dtype=int)
-    left_hasnans = left_c.hasnans
-    right_hasnans = right_c.hasnans
-    if len_conditions == 1:
-        if left_hasnans:
-            left_c_isna = left_c.isna()
-            nulls_count = left_c_isna.sum()
-            l_nulls = left_c.index[left_c_isna]
-            # each value in right_c MUST be matched to all the null groups
-            l_nulls = pd.Int64Index(np.tile(l_nulls, right_c.size))
-            if nulls_count > 1:
-                nulls_r = right_c.index.repeat(nulls_count)
-            else:
-                nulls_r = right_c.index
-
-        if right_hasnans:
-            if left_hasnans:  # avoids duplication of NaN matching NaN
-                left_c = left_c.dropna()
-            right_c_isna = right_c.isna()
-            nulls_count = right_c_isna.sum()
-            r_nulls = right_c.index[right_c_isna]
-            # each value in left_c must be matched to all the null groups
-            r_nulls = pd.Int64Index(np.tile(r_nulls, left_c.size))
-            if nulls_count > 1:
-                nulls_l = left_c.index.repeat(nulls_count)
-            else:
-                nulls_l = left_c.index
-
-        l_nulls = l_nulls.append(nulls_l)
-        r_nulls = nulls_r.append(r_nulls)
-    else:
-        if right_c.hasnans:
-            # every row in left_c
-            # will not be equal to NaN
-            return left_c.index
-        if left_c.hasnans:
-            l_nulls = left_c.index[left_c.isna()]
-
-    # sort and drop nulls here
-    # to avoid sorting twice, in less_than_indices
-    # and greater_than _indices functions
+    # capture null positions, since NaN != NaN 
+    dummy = pd.Int64Index([])
+    left_nulls = dummy
+    right_nulls = dummy
+    # if left_c has nulls, I want to capture the positions
+    # and hook it up with the index positions for nulls 
+    # in right_c, it it exists
+    base_left = left_c.copy()
+    if right_c.hasnans:
+        nulls = right_c.isna()
+        right_nulls = right_c.index[nulls]
+        right_c = right_c[~nulls]
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
-    if right_hasnans:
-        right_c = right_c.dropna()
+    if left_c.hasnans:
+        nulls = left_c.isna()
+        left_nulls = left_c.index[nulls]
+        left_c = left_c[~nulls]
 
-    # get less than index labels
-    result = _less_than_indices(left_c, right_c, len_conditions, strict, True)
-    if len_conditions == 1:
-        if result is None:
-            lt_left = pd.Index([], dtype=int)
-            lt_right = pd.Index([], dtype=int)
-        else:
-            lt_left, lt_right = result
-    else:
-        if result is None:
-            lt_left = pd.Index([], dtype=int)
-        else:
-            lt_left = result
+    outcome = _less_than_indices(left_c, right_c, True)
 
-    # greater than index labels
-    result = _greater_than_indices(
-        left_c, right_c, len_conditions, strict, True
-    )
-    if len_conditions == 1:
-        if result is None:
-            gt_left = pd.Index([], dtype=int)
-            gt_right = pd.Index([], dtype=int)
-        else:
-            gt_left, gt_right = result
+    if outcome is None:
+        lt_left = dummy
+        lt_right = dummy
     else:
-        if result is None:
-            gt_left = pd.Index([], dtype=int)
-        else:
-            gt_left = result
-    if len_conditions > 1:
-        left_c = lt_left.append([gt_left, l_nulls]).unique()
-        return left_c
+        lt_left, lt_right = outcome
+
+    outcome = _greater_than_indices(left_c, right_c, True)
+
+    if outcome is None:
+        gt_left = dummy
+        gt_right = dummy
     else:
-        left_c = lt_left.append([gt_left, l_nulls])
-        right_c = lt_right.append([gt_right, r_nulls])
+        gt_left, gt_right = outcome
+
+    nulls_left = dummy
+    nulls_right = dummy
+    if left_nulls.empty is False:
+        # repeat right index, tile left_nulls to ensure match
+        nulls_right = right_c.index.repeat(left_nulls.size)
+        left_nulls = np.tile(left_nulls, right_c.size)
+        left_nulls = pd.Index(left_nulls)
+    if right_nulls.empty is False:
+        # repeat left index, tile right nulls
+        # base_left is used here, to capture index for nulls, 
+        # if present
+        nulls_left = base_left.index.repeat(right_nulls.size)
+        right_nulls = np.tile(right_nulls, base_left.size)
+        right_nulls = pd.Index(right_nulls)
+
+    left_c = lt_left.append([gt_left, left_nulls, nulls_left])
+    right_c = lt_right.append([gt_right, nulls_right, right_nulls])
 
     return left_c, right_c
-
 
 def _less_than_indices(
     left_c: pd.Series,
     right_c: pd.Series,
-    len_conditions: int,
     strict: bool,
-    not_equal: bool = False,
-):
+) -> tuple:
     """
-    Use binary search to get indices where left_c is less than
-    or equal to right_c. If strict is True,
-    then only indices where `left_c`
-    is less than (but not equal to) `right_c` are returned.
+    Use binary search to get indices where left_c 
+    is less than or equal to right_c. 
+    If strict is True,then only indices 
+    where `left_c` is less than 
+    (but not equal to) `right_c` are returned.
 
     Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
     """
 
     # no point going through all the hassle
     if left_c.min() > right_c.max():
         return None
 
-    if not_equal is False:
-        if right_c.hasnans:
-            right_c = right_c.dropna()
-        if not right_c.is_monotonic_increasing:
-            right_c = right_c.sort_values()
+    if right_c.hasnans:
+        right_c = right_c.dropna()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
-    # is equal to the length of `right_keys`
-    # that means the respective position in `left_c`
-    # has no values from `right_c` that are less than
-    # or equal, and should therefore be discarded
+    # is equal to len_right, it means that
+    # left_c[position] is not less than any value
+    # in right_c
     len_right = right_c.size
     rows_equal = search_indices == len_right
     if rows_equal.any():
@@ -2847,8 +2840,6 @@ def _less_than_indices(
     if search_indices.size == 0:
         return None
 
-    if len_conditions > 1:
-        return left_c.index
     # for each index in `search_indices`,
     # generate all indices for `right_keys`,
     # where the values in `right_keys` are greater than
@@ -2876,38 +2867,34 @@ def _less_than_indices(
 def _greater_than_indices(
     left_c: pd.Series,
     right_c: pd.Series,
-    len_conditions: int,
     strict: bool,
-    not_equal: bool = False,
-):
+)-> tuple:
     """
-    Use binary search to get indices where left_c is greater than
-    or equal to right_c. If strict is True,
-    then only indices where `left_c`
-    is greater than (but not equal to) `right_c` are returned.
+    Use binary search to get indices where left_c 
+    is greater than or equal to right_c. 
+    If strict is True,then only indices 
+    where `left_c` is greater than 
+    (but not equal to) `right_c` are returned.
 
     Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
     """
 
     # quick break, avoiding the hassle
     if left_c.max() < right_c.min():
         return None
 
-    if not_equal is False:
-        if right_c.hasnans:
-            right_c = right_c.dropna()
-        if not right_c.is_monotonic_increasing:
-            right_c = right_c.sort_values()
+    if right_c.hasnans:
+        right_c = right_c.dropna()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
     if left_c.hasnans:
         left_c = left_c.dropna()
 
     search_indices = right_c.searchsorted(left_c, side="right")
     # if any of the positions in `search_indices`
     # is equal to 0
-    # that means the respective position in `left_c`
-    # has no values from `right_c` that are greater than
-    # or equal, and should therefore be discarded
+    # left_c[position] is not greater than any value
+    # in right_c
     rows_equal = search_indices == 0
     if rows_equal.any():
         left_c = left_c[~rows_equal]
@@ -2915,8 +2902,6 @@ def _greater_than_indices(
     if search_indices.size == 0:
         return None
 
-    if len_conditions > 1:
-        return left_c.index
     # for each index in `search_indices`,
     # generate all indices for `right_keys`,
     # where the values in `right_keys` are less than
@@ -2940,75 +2925,156 @@ def _greater_than_indices(
     return left_c, right_c
 
 
-def _interval_indices(
-    left_c: pd.Series,
-    lower_boundary: pd.Series,
-    upper_boundary: pd.Series,
-    left_operator: str,
-    right_operator: str,
-):
+def _interval_indices(interval_condition: namedtuple)->tuple:
     """
-    Use Intervals to get indices where left_c is between
-    lower_boundary and upper_boundary.
+    Use binary search to get indices where
+    left_l is >/>= lower_boundary and
+    right_r is </<= upper_boundary.
 
     Returns a tuple of (left_c, right_c),
     which are the indices of the left and right dataframes
     respectively (the dataframes in the conditional join).
     """
+    left_l = interval_condition.left_l
+    left_r = interval_condition.left_r
+    left_op = interval_condition.left_op
+    right_l = interval_condition.right_l
+    right_r = interval_condition.right_r
+    right_op = interval_condition.right_op
 
     # quick break, avoiding the hassle
-    if left_c.max() < lower_boundary.min():
+    if left_l.max() < left_r.min():
         return None
-    actual_intervals = lower_boundary > upper_boundary
-
-    if actual_intervals.all():
+    if right_l.min() > right_r.max():
         return None
 
-    if actual_intervals.any():
-        lower_boundary = lower_boundary[~actual_intervals]
-        upper_boundary = upper_boundary[~actual_intervals]
+    # get rid of nulls
+    nulls = []
+    if left_r.hasnans:
+        nulls.append(left_r.isna())
+    if right_r.hasnans:
+        nulls.append(right_r.isna())
+    if nulls:
+        if len(nulls) == 1:
+            nulls = nulls[0]
+        else:
+            nulls = np.logical_or(*nulls)
+        if nulls.any():
+            left_r = left_r[~nulls]
+            right_r = right_r[~nulls]
 
-    closed_mapping = {
-        (
-            JOINOPERATOR.GREATER_THAN.value,
-            JOINOPERATOR.LESS_THAN.value,
-        ): "neither",
-        (
-            JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
-            JOINOPERATOR.LESS_THAN.value,
-        ): "right",
-        (
-            JOINOPERATOR.GREATER_THAN.value,
-            JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
-        ): "left",
-        (
-            JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
-            JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
-        ): "both",
-    }
+    # sort both left_r and right_r together
+    # to ensure the right data is obtained when
+    # selecting the ranges
+    index = left_r.index
+    mapper = None
+    if index.size > 1:
+        multi = pd.MultiIndex.from_arrays([left_r, right_r])
+        sorter = multi.argsort()
+        multi = multi[sorter]
+        index = index[sorter]
+        new_index = range(index.size)
+        # use this to restore original index for `*_r` ... later
+        mapper = dict(zip(new_index, index))
+        left_r = pd.Series(multi.get_level_values(0), index=new_index)
+        right_r = pd.Series(multi.get_level_values(1), index=new_index)
 
-    closed = closed_mapping[(left_operator, right_operator)]
+    if not left_r.is_monotonic_increasing:
+        left_r = left_r.sort_values()
 
-    interval = pd.IntervalIndex.from_arrays(lower_boundary, upper_boundary, closed = closed)
+    # left_l greater than or equal left_r
+    # similar to _greater_than_indices
+    search_indices = left_r.searchsorted(left_l, side="right")
+    # get rid of values from left_l
+    # that are not greater than or equal to left_r
+    rows_equal = search_indices == 0
+    if rows_equal.any():
+        left_l = left_l[~rows_equal]
+        search_indices = search_indices[~rows_equal]
+    if search_indices.size == 0:
+        return None
+    lower_boundary = left_r.index.take(search_indices - 1)
 
-    positions = interval.get_indexer_for(left_c)
+    if not right_r.is_monotonic_increasing:
+        right_r = right_r.sort_values()
 
-    return positions
+    right_l = right_l[left_l.index]
 
-    exclude_rows = positions == -1
+    # left_l less than or equal left_r
+    # similar to _less_than_indices
+    search_indices = right_r.searchsorted(right_l, side="left")
+    # get rid of values from right_l
+    # that are not less than or equal to right_r
+    len_right = right_r.size
+    rows_equal = search_indices == len_right
+    if rows_equal.any():
+        right_l = right_l[~rows_equal]
+        search_indices = search_indices[~rows_equal]
+        lower_boundary = lower_boundary[~rows_equal]
+    if search_indices.size == 0:
+        return None
+    upper_boundary = right_r.index.take(search_indices)
+    left_c = right_l.index
 
-    if exclude_rows.all():
+    # return pd.MultiIndex.from_arrays([left_c, lower_boundary, upper_boundary])
+
+    # lower_boundary should be greater than upper_boundary
+    # left_l > left_r should return the highest point for left
+    # while right_l < right_r should return the lowest point
+    keep_rows = (lower_boundary - upper_boundary) >= 0
+
+    if keep_rows.sum() == 0:
         return None
 
-    if exclude_rows.any():
-        positions = positions[~exclude_rows]
+    if keep_rows.sum() < keep_rows.size:
+        left_c = left_c[keep_rows]
+        lower_boundary = lower_boundary[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+    lower_boundary = lower_boundary + 1
 
-    # return [interval.contains(val) for val in left_c]
+    # return left_c, lower_boundary, upper_boundary
 
-    left_repeat = np.row_stack([interval.contains(val) for val in left_c]).sum(1)
-    #return left_repeat
-    left_c = left_c.index.repeat(left_repeat)
-    return left_c, positions
+    right_c = _interval_ranges(
+        upper_boundary.to_numpy(), lower_boundary.to_numpy()
+    )
+    repeat_index = lower_boundary - upper_boundary
+    left_c = left_c.repeat(repeat_index)
+
+    # for scenarios that are strictly less than or greater than
+    strict = []
+
+    if any(
+        (
+            left_op == JOINOPERATOR.GREATER_THAN.value,
+            right_op == JOINOPERATOR.LESS_THAN.value,
+        )
+    ):
+        map_operators = {
+            JOINOPERATOR.GREATER_THAN.value: operator.gt,
+            JOINOPERATOR.LESS_THAN.value: operator.lt,
+        }
+
+        if left_op == JOINOPERATOR.GREATER_THAN.value:
+            left = left_l[left_c].array
+            right = left_r[right_c].array
+            keep_rows = map_operators[left_op](left, right)
+            strict.append(keep_rows)
+        if right_op == JOINOPERATOR.LESS_THAN.value:
+            left = right_l[left_c].array
+            right = right_r[right_c].array
+            keep_rows = map_operators[left_op](left, right)
+            strict.append(keep_rows)
+    if strict:
+        if len(strict) == 1:
+            strict = strict[0]
+        else:
+            strict = np.logical_and(*strict)
+        if strict.any():
+            left_c = left_c[keep_rows]
+            right_c = right_c[keep_rows]
+    if mapper: # restore the original index
+        right_c = pd.Index(right_c).map(mapper)
+    return left_c, right_c
 
 
 def _create_conditional_join_empty_frame(
@@ -3151,15 +3217,10 @@ def _conditional_join_compute(
             df, right, left_c, right_c, how, sort_by_appearance
         )
 
-    df_index = df.index
-    # iteratively reduce the number of rows
-    # from df, until we have the certain index labels
-    # that will be in the final dataframe
-    # usually much smaller, which should help
-    # reduce overall processing time
+
     for condition in conditions:
         left_on, right_on, op = condition
-        left_c = df.loc[df_index, left_on]
+        left_c = df[left_on]
         right_c = right[right_on]
 
         _conditional_join_type_check(left_c, right_c, op)
@@ -3175,36 +3236,59 @@ def _conditional_join_compute(
 
     # check for possible interval join combinations
     # converts [('a', 'b', '>'), ('a', 'c', '<)] to
-    # [('a', ('b', 'c'), ('>', '<'))]
-    # this simulates the between operation -> 'b < a < c'
+    # [(('a', 'b', '>'), ('a', 'c', '<))]
+    # aggregating them together makes it easier to
+    # generate interval indices
     interval_joins = []
     paired_conditions = pairwise(conditions)
     for left_tuple, right_tuple in paired_conditions:
-        left_l, _, left_op = left_tuple
-        right_l, _, right_op = right_tuple
-        if (
-            (left_l == right_l)
-            & (left_op in greater_than_operators)
-            & (right_op in less_than_operators)
+        left_op = left_tuple[-1]
+        right_op = right_tuple[-1]
+        if (left_op in greater_than_operators) & (
+            right_op in less_than_operators
         ):
             interval_joins.append((left_tuple, right_tuple))
+    multiple_conditions = deque()
+    equal_conditions = []
+    interval_conditions = []
 
-    multiple_conditions = []
-    paired_conditions = []
     if interval_joins:
-        combo = chain.from_iterable(interval_joins)
-        combo = [*combo]
+        combo = [*chain.from_iterable(interval_joins)]
         for condition in conditions:
             if condition not in combo:
-                multiple_conditions.append(condition)
+                left_on, right_on, op = condition
+                tuple_series = df[left_on], right[right_on], op
+                if op == JOINOPERATOR.STRICTLY_EQUAL.value:
+                    equal_conditions.append(tuple_series)
+                else:
+                    multiple_conditions.append(tuple_series)
         for left_tuple, right_tuple in interval_joins:
             left_l, left_r, left_op = left_tuple
-            _, right_r, right_op = right_tuple
-            zipped = (left_l, left_r, right_r, left_op, right_op)
-            paired_conditions.append(zipped)
-        multiple_conditions.extend(paired_conditions)
+            right_l, right_r, right_op = right_tuple
+            interval_condition = IntervalCondition(
+                left_l=df[left_l],
+                left_r=right[left_r],
+                left_op=left_op,
+                right_l=df[right_l],
+                right_r=right[right_r],
+                right_op=right_op,
+            )
+            interval_conditions.append(interval_condition)
     else:
-        multiple_conditions = conditions
+        for condition in conditions:
+            left_on, right_on, op = condition
+            tuple_series = df[left_on], right[right_on], op
+            multiple_conditions.append(tuple_series)
+    # idea here is that equal and interval conditions should significantly
+    # reduce the search space ahead of other conditions; as such,
+    # it is beneficial to have them at the start of the `pruning` process
+    if interval_conditions:
+        # extendleft reverses the iterable when extending for a deque
+        # as such, reversing the iterable before using extendleft
+        # keeps its form
+        multiple_conditions.extendleft(interval_conditions[::-1])
+    if equal_conditions:
+        multiple_conditions.extendleft(equal_conditions[::-1])
     return multiple_conditions
 
 
@@ -3214,3 +3298,12 @@ def pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
+
+
+class IntervalCondition(NamedTuple):
+    left_l: pd.Series
+    left_r: pd.Series
+    left_op: str
+    right_l: pd.Series
+    right_r: pd.Series
+    right_op: str

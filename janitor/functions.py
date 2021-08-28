@@ -932,7 +932,9 @@ def rename_columns(
     """  # noqa: E501
 
     if new_column_names is None and function is None:
-        raise ValueError("One of new_column_name or function must be provided")
+        raise ValueError(
+            "One of new_column_names or function must be provided"
+        )
 
     if new_column_names is not None:
         check_column(df, list(new_column_names.keys()))

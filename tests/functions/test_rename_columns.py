@@ -23,3 +23,13 @@ def test_rename_columns_absent_column(dataframe):
         df.clean_names().rename_columns({"a": "index", "bb": "chart"})
 
     assert set(df.columns) == set(dataframe.columns)
+
+
+@pytest.mark.functions
+def test_rename_columns_function(dataframe):
+    df = dataframe.clean_names().rename_columns(function=str.upper)
+    assert set(df.columns) == set(
+        ["A", "BELL_CHART", "DECORATED_ELEPHANT", "ANIMALS@#$%^", "CITIES"]
+    )
+
+    assert "a" not in set(df.columns)

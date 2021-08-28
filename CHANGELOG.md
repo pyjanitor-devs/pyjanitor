@@ -21,7 +21,7 @@
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [INF] Speed up pytest via `-n` (pytest-xdist) option. Issue #881. @Zeroto521
 -   [DOC] Add list mark to keep `select_columns`'s example same style. @Zeroto521
--   [ENH] Updated rename_columns to take optional function argument for mapping. @nvamsikrishna05
+-   [ENH] Updated `rename_columns` to take optional function argument for mapping. @nvamsikrishna05
 
 ## [v0.21.0] - 2021-07-16
 

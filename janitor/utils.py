@@ -34,6 +34,7 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_string_dtype,
     is_datetime64_dtype,
+    is_named_tuple
 )
 from pandas.core.common import apply_if_callable
 from enum import Enum
@@ -2713,27 +2714,26 @@ def _equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
 
-    search_indices = right_c.searchsorted(left_c, side="left")
-    len_right = right_c.size
-    rows_equal = search_indices == len_right
-    if rows_equal.any():
-        left_c = left_c[~rows_equal]
-        search_indices = search_indices[~rows_equal]
-    if search_indices.size == 0:
+    lower_boundary = right_c.searchsorted(left_c, side="left")
+    upper_boundary = right_c.searchsorted(left_c, side="right")
+    keep_rows = lower_boundary < upper_boundary
+    if keep_rows.sum() == 0:
         return None
-    positions = _le_create_ranges(search_indices, len_right)
-    search_indices = len_right - search_indices
-    left_c = left_c.repeat(search_indices)
+    if keep_rows.sum() < keep_rows.size:
+        left_c = left_c[keep_rows]
+        lower_boundary = lower_boundary[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+    positions = _interval_ranges(lower_boundary, upper_boundary)
+    left_repeat = upper_boundary - lower_boundary
+    left_c = left_c.repeat(left_repeat)
     right_c = right_c.take(positions)
     rows_equal = left_c.array == right_c.array
-    if rows_equal.sum() == 0: # absolutely no matches
-        return None
     if rows_equal.all():
         return left_c.index, right_c.index
-    # keep only the indices that match
     left_c = left_c.index[rows_equal]
     right_c = right_c.index[rows_equal]
     return left_c, right_c
+
 
 
 def _not_equal_indices(
@@ -2941,6 +2941,7 @@ def _interval_indices(interval_condition: namedtuple)->tuple:
     right_l = interval_condition.right_l
     right_r = interval_condition.right_r
     right_op = interval_condition.right_op
+
 
     # quick break, avoiding the hassle
     if left_l.max() < left_r.min():
@@ -3151,7 +3152,7 @@ def _create_conditional_join_frame(
 
 
 def _generic_func_cond_join(
-    left_c: pd.Series, right_c: pd.Series, op: str, len_conditions: int
+    left_c: pd.Series, right_c: pd.Series, op: str
 ):
     """
     Generic function to call any of the individual functions
@@ -3171,16 +3172,16 @@ def _generic_func_cond_join(
         JOINOPERATOR.LESS_THAN.value,
         JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
     }:
-        return _less_than_indices(left_c, right_c, len_conditions, strict)
+        return _less_than_indices(left_c, right_c, strict)
     elif op in {
         JOINOPERATOR.GREATER_THAN.value,
         JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
     }:
-        return _greater_than_indices(left_c, right_c, len_conditions, strict)
+        return _greater_than_indices(left_c, right_c, strict)
     elif op == JOINOPERATOR.STRICTLY_EQUAL.value:
-        return _equal_indices(left_c, right_c, len_conditions)
+        return _equal_indices(left_c, right_c)
     elif op == JOINOPERATOR.NOT_EQUAL.value:
-        return _not_equal_indices(left_c, right_c, len_conditions, strict)
+        return _not_equal_indices(left_c, right_c)
 
 
 def _conditional_join_compute(
@@ -3196,9 +3197,8 @@ def _conditional_join_compute(
     then a pandas DataFrame is returned.
     """
 
-    len_conditions = len(conditions)
 
-    if len_conditions == 1:
+    if len(conditions) == 1:
         left_on, right_on, op = conditions[0]
 
         left_c = df[left_on]
@@ -3206,7 +3206,7 @@ def _conditional_join_compute(
 
         _conditional_join_type_check(left_c, right_c, op)
 
-        result = _generic_func_cond_join(left_c, right_c, op, len_conditions)
+        result = _generic_func_cond_join(left_c, right_c, op)
 
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
@@ -3256,29 +3256,26 @@ def _conditional_join_compute(
         combo = [*chain.from_iterable(interval_joins)]
         for condition in conditions:
             if condition not in combo:
-                left_on, right_on, op = condition
-                tuple_series = df[left_on], right[right_on], op
+                op = condition[-1]
                 if op == JOINOPERATOR.STRICTLY_EQUAL.value:
-                    equal_conditions.append(tuple_series)
+                    equal_conditions.append(condition)
                 else:
-                    multiple_conditions.append(tuple_series)
+                    multiple_conditions.append(condition)
         for left_tuple, right_tuple in interval_joins:
             left_l, left_r, left_op = left_tuple
             right_l, right_r, right_op = right_tuple
             interval_condition = IntervalCondition(
-                left_l=df[left_l],
-                left_r=right[left_r],
+                left_l=left_l,
+                left_r=left_r,
                 left_op=left_op,
-                right_l=df[right_l],
-                right_r=right[right_r],
+                right_l=right_l,
+                right_r=right_r,
                 right_op=right_op,
             )
             interval_conditions.append(interval_condition)
+
     else:
-        for condition in conditions:
-            left_on, right_on, op = condition
-            tuple_series = df[left_on], right[right_on], op
-            multiple_conditions.append(tuple_series)
+        multiple_conditions = conditions
     # idea here is that equal and interval conditions should significantly
     # reduce the search space ahead of other conditions; as such,
     # it is beneficial to have them at the start of the `pruning` process
@@ -3289,7 +3286,45 @@ def _conditional_join_compute(
         multiple_conditions.extendleft(interval_conditions[::-1])
     if equal_conditions:
         multiple_conditions.extendleft(equal_conditions[::-1])
-    return multiple_conditions
+
+    all_indices = None
+    len_conditions = len(multiple_conditions)
+    for condition in multiple_conditions:
+        if is_named_tuple(condition):
+            interval_condition = IntervalCondition(
+                left_l=df[left_l],
+                left_r=right[left_r],
+                left_op=left_op,
+                right_l=df[right_l],
+                right_r=right[right_r],
+                right_op=right_op,
+            )
+            result = _interval_indices(interval_condition)
+        else:
+            left_on, right_on, op = condition
+            left_c = df[left_on]
+            right_c = right[right_on]
+            result = _generic_func_cond_join(left_c, right_c, op)
+
+        if result is None:
+            return _create_conditional_join_empty_frame(df, right, how)
+
+        if len_conditions == 1:
+            left_c, right_c = result
+
+        else:   
+            result = pd.MultiIndex.from_arrays(result)
+            if all_indices is None:
+                all_indices = result
+            else:
+                all_indices = all_indices.intersection(result)
+
+            left_c = all_indices.get_level_values(0)
+            right_c = all_indices.get_level_values(1)
+
+    return _create_conditional_join_frame(
+        df, right, left_c, right_c, how, sort_by_appearance
+    )
 
 
 def pairwise(iterable):

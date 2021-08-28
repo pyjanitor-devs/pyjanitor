@@ -4,6 +4,10 @@ from hypothesis import given  # noqa: F401
 
 @pytest.mark.functions
 def test_rename_columns(dataframe):
+    """
+    Tests If rename_columns renames multiple columns based on the
+    dictionary mappings.
+    """
     df = dataframe.clean_names().rename_columns(
         {"a": "index", "bell_chart": "chart"}
     )
@@ -27,6 +31,9 @@ def test_rename_columns_absent_column(dataframe):
 
 @pytest.mark.functions
 def test_rename_columns_function(dataframe):
+    """
+    rename_columns should apply the given function for each column name
+    """
     df = dataframe.clean_names().rename_columns(function=str.upper)
     assert set(df.columns) == set(
         ["A", "BELL_CHART", "DECORATED_ELEPHANT", "ANIMALS@#$%^", "CITIES"]
@@ -37,8 +44,12 @@ def test_rename_columns_function(dataframe):
 
 @pytest.mark.functions
 def test_rename_columns_no_args(dataframe):
+    """
+    rename_columns should throw error when both column_name and function are
+    not provided.
+    """
     df = dataframe.copy()
     with pytest.raises(ValueError):
-        df.clean_names().rename_columns()
+        df.rename_columns()
 
     assert set(df.columns) == set(dataframe.columns)

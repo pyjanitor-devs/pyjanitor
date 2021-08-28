@@ -922,7 +922,9 @@ def rename_columns(
     at a time. If you need to rename single column,
     then use the `rename_column` method.
 
-    One of the new_column_names or function are a required parameter
+    One of the new_column_names or function are a required parameter.
+    If both are provided then new_column_names takes priority and function
+    is never executed.
 
     :param df: The pandas DataFrame object.
     :param new_column_names: A dictionary of old and new column names.
@@ -937,7 +939,7 @@ def rename_columns(
         )
 
     if new_column_names is not None:
-        check_column(df, list(new_column_names.keys()))
+        check_column(df, new_column_names)
         return df.rename(columns=new_column_names)
 
     return df.rename(mapper=function, axis="columns")

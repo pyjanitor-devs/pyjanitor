@@ -33,3 +33,12 @@ def test_rename_columns_function(dataframe):
     )
 
     assert "a" not in set(df.columns)
+
+
+@pytest.mark.functions
+def test_rename_columns_no_args(dataframe):
+    df = dataframe.copy()
+    with pytest.raises(ValueError):
+        df.clean_names().rename_columns()
+
+    assert set(df.columns) == set(dataframe.columns)

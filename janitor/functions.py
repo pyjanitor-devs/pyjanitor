@@ -920,7 +920,7 @@ def rename_columns(
 
     This is just syntactic sugar/a convenience function for renaming multiple columns
     at a time. If you need to rename single column,
-    then use the :py:meth:`pandas.DataFrame.rename` method.
+    then use the `rename_column` method.
 
     One of the new_column_names or function are a required parameter
 

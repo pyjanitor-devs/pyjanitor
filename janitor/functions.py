@@ -894,14 +894,21 @@ def rename_column(
 
 
 @pf.register_dataframe_method
-def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
-    """Rename columns in place.
+def rename_columns(
+    df: pd.DataFrame,
+    new_column_names: Union[Dict, None] = None,
+    function: Callable = None,
+) -> pd.DataFrame:
+    """Rename columns.
 
     Functional usage syntax:
 
     .. code-block:: python
 
         df = rename_columns(df, {"old_column_name": "new_column_name"})
+        df = rename_columns(df, function = str.upper)
+        df = rename_columns(df,
+                function = lambda x : x.lower() if x.startswith("double") else x)
 
     Method chaining syntax:
 
@@ -911,17 +918,31 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
         import janitor
         df = pd.DataFrame(...).rename_columns({"old_column_name": "new_column_name"})
 
-    This is just syntactic sugar/a convenience function for renaming one column
-    at a time. If you are convinced that there are multiple columns in need of
-    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+    This is just syntactic sugar/a convenience function for renaming multiple columns
+    at a time. If you need to rename single column,
+    then use the `rename_column` method.
+
+    One of the new_column_names or function are a required parameter.
+    If both are provided then new_column_names takes priority and function
+    is never executed.
 
     :param df: The pandas DataFrame object.
     :param new_column_names: A dictionary of old and new column names.
+    :param function: A function which should be applied to all the columns
     :returns: A pandas DataFrame with renamed columns.
+    :raises ValueError: if both new_column_names and function are None
     """  # noqa: E501
-    check_column(df, list(new_column_names.keys()))
 
-    return df.rename(columns=new_column_names)
+    if new_column_names is None and function is None:
+        raise ValueError(
+            "One of new_column_names or function must be provided"
+        )
+
+    if new_column_names is not None:
+        check_column(df, new_column_names)
+        return df.rename(columns=new_column_names)
+
+    return df.rename(mapper=function, axis="columns")
 
 
 @pf.register_dataframe_method
@@ -3332,7 +3353,7 @@ def select_columns(
        0   0
        1   1
 
-    Select via shell-like glob strings (*) is possible::
+    - Select via shell-like glob strings (*) is possible::
 
         df.select_columns("*type*")
 

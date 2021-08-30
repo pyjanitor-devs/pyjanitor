@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
 
 ## [v0.21.1] - 2021-08-29
 
@@ -34,7 +35,7 @@
     which is faster than `combine_first` @samukweku
 -   [ENH] Use `eval` for string conditions in `update_where`. @samukweku
 -   [ENH] Add clearer error messages for `pivot_longer`. h/t to @tdhock
-    for the observation. -@samukweku
+    for the observation. Issue #836 @samukweku
 -   [ENH] `select_columns` now uses variable arguments (\*args),
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions

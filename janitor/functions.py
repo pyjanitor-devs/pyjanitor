@@ -1008,7 +1008,7 @@ def reorder_columns(
 @deprecated_alias(columns="column_names", new_column_name="target_column_name")
 def coalesce(
     df: pd.DataFrame,
-    column_names: Iterable[Hashable],
+    *column_names,
     target_column_name: Optional[str] = None,
     default_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
@@ -1035,7 +1035,7 @@ def coalesce(
         1  2.0  10.0  10
         2  NaN   NaN   7
 
-        df.coalesce(column_names = ['A', 'B', 'C'],
+        df.coalesce('A', 'B', 'C',
                     target_column_name = 'D')
 
             A     B   C    D
@@ -1046,7 +1046,7 @@ def coalesce(
     If no target column is provided, then the first column is updated,
     with the null values removed::
 
-        df.coalesce(column_names = ['A', 'B', 'C'])
+        df.coalesce('A', 'B', 'C')
 
             A     B   C
         0  1.0   NaN   5
@@ -1065,7 +1065,7 @@ def coalesce(
         3  9.0  9.0
         4  9.0  9.0
 
-        df.coalesce(column_names = ['s1', 's2'],
+        df.coalesce('s1', 's2',
                     target_column_name = 's3',
                     default_value = 0)
 
@@ -1081,7 +1081,7 @@ def coalesce(
 
     .. code-block:: python
 
-        df = coalesce(df, columns=['col1', 'col2'], 'col3')
+        df = coalesce(df, 'col1', 'col2', target_column_name ='col3')
 
     Method chaining syntax:
 
@@ -1089,7 +1089,7 @@ def coalesce(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).coalesce(['col1', 'col2'])
+        df = pd.DataFrame(...).coalesce('col1', 'col2')
 
     The first example will create a new column called 'col3' with values from
     'col2' inserted where values from 'col1' are NaN.
@@ -1112,12 +1112,6 @@ def coalesce(
     :raises ValueError: if length of `column_names` is less than 2.
     """
 
-    check("column_names", column_names, [list])
-    if target_column_name:
-        check("target_column_name", target_column_name, [str])
-    if default_value:
-        check("default_value", default_value, [int, float, str])
-
     if not column_names:
         return df
 
@@ -1128,12 +1122,24 @@ def coalesce(
             should be a minimum of 2.
             """
         )
-    check_column(df, column_names)
+
+    column_names = [*column_names]
+
+    column_names = _select_columns(column_names, df)
+    if target_column_name:
+        check("target_column_name", target_column_name, [str])
+    if default_value:
+        check("default_value", default_value, [int, float, str])
 
     if target_column_name is None:
         target_column_name = column_names[0]
     # bfill/ffill combo is faster than combine_first
-    outcome = df.filter(column_names).bfill(axis=1).ffill(axis=1).iloc[:, 0]
+    outcome = (
+        df.filter(column_names)
+        .bfill(axis="columns")
+        .ffill(axis="columns")
+        .iloc[:, 0]
+    )
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
     return df.assign(**{target_column_name: outcome})

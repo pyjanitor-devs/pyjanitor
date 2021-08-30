@@ -2622,35 +2622,6 @@ def _conditional_join_type_check(
         return None
 
 
-def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
-    """
-    Create ordered indices for each value in
-    `right_keys` in `_less_than_indices`.
-    Faster than a list comprehension, as
-    the array size increases.
-
-    code copied from Stack Overflow
-    https://stackoverflow.com/a/47126435/7175713
-    """
-    cum_length = len_right - indices
-    cum_length = cum_length.cumsum()
-    # generate ones
-    # note that cum_length[-1] is the total
-    # number of inidices to be generated
-    ids = np.ones(cum_length[-1], dtype=int)
-    ids[0] = indices[0]
-    # at each specific point in id, replace the value
-    # so, we should have say 0, 1, 1, 1, 1, -5, 1, 1, 1, -3, ...
-    # when a cumsum is implemented in the next line,
-    # we get, 0, 1, 2, 3, 4, 0, 1,2, 3, 0, ...
-    # our ranges is obtained, with more efficiency
-    # for larger arrays
-    ids[cum_length[:-1]] = indices[1:] - len_right + 1
-    # the cumsum here gives us the same output as
-    # [np.range(start, len_right) for start in search_indices]
-    # but much faster
-    return ids.cumsum()
-
 
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     """
@@ -2682,25 +2653,10 @@ def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     return ids.cumsum()
 
 
-def _ge_create_ranges(indices: np.array) -> np.array:
-    """
-    Create ordered indices for each value in
-    `right_keys` in `_greater_than_indices`.
-    Faster than a list comprehension, as
-    the array size increases.
-
-    code copied from Stack Overflow
-    https://stackoverflow.com/a/47126435/7175713
-    """
-    cum_length = indices.cumsum()
-    ids = np.ones(cum_length[-1], dtype=int)
-    ids[0] = 0
-    ids[cum_length[:-1]] = -1 * indices[:-1] + 1
-    return ids.cumsum()
 
 
 def _equal_indices(
-    left_c: pd.Series, right_c: pd.Series, len_conditions: int
+    left_c: pd.Series, right_c: pd.Series, len_conditions:int
 ) -> tuple:
     """
     Use binary search to get indices where
@@ -2708,7 +2664,9 @@ def _equal_indices(
 
     Returns a tuple of (left_c, right_c)
     """
-
+    # fix this ... TODO
+    right_c = pd.Index(right_c)
+    return right_c.intersection(left_c)
     if right_c.hasnans:
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
@@ -2723,8 +2681,8 @@ def _equal_indices(
         left_c = left_c[keep_rows]
         lower_boundary = lower_boundary[keep_rows]
         upper_boundary = upper_boundary[keep_rows]
-    if len_conditions > 1:
-        return left_c.index, lower_boundary, upper_boundary
+    if len_conditions > 1 :
+        return left_c, lower_boundary, upper_boundary
     positions = _interval_ranges(lower_boundary, upper_boundary)
     left_repeat = upper_boundary - lower_boundary
     left_c = left_c.repeat(left_repeat)
@@ -2740,6 +2698,7 @@ def _equal_indices(
 def _not_equal_indices(
     left_c: pd.Series,
     right_c: pd.Series,
+    len_conditions:int
 ) -> tuple:
     """
     Use binary search to get indices where
@@ -2749,6 +2708,30 @@ def _not_equal_indices(
 
     Returns a tuple of (left_c, right_c)
     """
+
+    if len_conditions > 1:
+        less_than = _less_than_indices(left_c, right_c, True, 2)
+        if less_than is None:
+            less_than = np.array([], dtype=int)
+        else:
+            less_than = np.column_stack(less_than)
+        greater_than = _greater_than_indices(left_c, right_c, True, 2)
+        if greater_than is None:
+            greater_than = np.array([], dtype=int)
+        else:
+            greater_than =  np.column_stack(greater_than)
+        if (less_than.size == 0) and (greater_than.size == 0) :
+            return None
+        if (less_than.size > 0) and (greater_than.size > 0) :
+            not_equal = np.row_stack([less_than, greater_than])
+            not_equal = pd.DataFrame(not_equal, columns = ['left_c', 'lower_boundary', 'upper_boundary'])
+            not_equal = not_equal.groupby('left_c').agg(lower_boundary = ('lower_boundary', 'min'), upper_boundary = ('upper_boundary', 'max'))
+            return not_equal.index, not_equal['lower_boundary'].array, not_equal['upper_boundary'].array
+        if (less_than.size == 0) and (greater_than.size > 0) :
+            return pd.Index(greater_than[:, 0]), greater_than[:, 1], greater_than[:, -1]
+        if (less_than.size > 0) and (greater_than.size == 0) :
+            return pd.Index(less_than[:, 0]), less_than[:, 1], less_than[:, -1]
+
     # capture null positions, since NaN != NaN
     dummy = pd.Int64Index([])
     left_nulls = dummy
@@ -2768,7 +2751,7 @@ def _not_equal_indices(
         left_nulls = left_c.index[nulls]
         left_c = left_c[~nulls]
 
-    outcome = _less_than_indices(left_c, right_c, True)
+    outcome = _less_than_indices(left_c, right_c, True, 1)
 
     if outcome is None:
         lt_left = dummy
@@ -2776,7 +2759,7 @@ def _not_equal_indices(
     else:
         lt_left, lt_right = outcome
 
-    outcome = _greater_than_indices(left_c, right_c, True)
+    outcome = _greater_than_indices(left_c, right_c, True, 1)
 
     if outcome is None:
         gt_left = dummy
@@ -2829,9 +2812,10 @@ def _less_than_indices(
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
-    # is equal to len_right, it means that
-    # left_c[position] is not less than any value
-    # in right_c
+    # is equal to the length of `right_keys`
+    # that means the respective position in `left_c`
+    # has no values from `right_c` that are less than
+    # or equal, and should therefore be discarded
     len_right = right_c.size
     rows_equal = search_indices == len_right
     if rows_equal.any():
@@ -2839,34 +2823,45 @@ def _less_than_indices(
         search_indices = search_indices[~rows_equal]
     if search_indices.size == 0:
         return None
-    if len_conditions > 1:
-        return (
-            left_c.index,
-            search_indices,
-            np.repeat(len_right, search_indices.size),
-        )
 
-    # for each index in `search_indices`,
-    # generate all indices for `right_keys`,
-    # where the values in `right_keys` are greater than
-    # or equal to `left_c`
-    positions = _le_create_ranges(search_indices, len_right)
-    search_indices = len_right - search_indices
-    if strict:
-        right_c = right_c.take(positions)
-        left_c = left_c.repeat(search_indices)
-        rows_equal = left_c.array == right_c.array
-        if rows_equal.all():
-            return None
+    # the idea here is that if there are any equal values
+    # shift upwards to the immediate next position 
+    # that is not equal
+    if strict: 
+        rows_equal = right_c.take(search_indices).array
+        rows_equal = left_c.array == rows_equal
+        # replace positions where rows are equal
+        # with positions from searchsorted('right')
+        # positions from searchsorted('right') will never
+        # be equal and will be the furthermost in terms of position
+        # example : right_c -> [2, 2,2,3], and we need 
+        # positions where values are not equal for 2;
+        # the furthermost will be 3, and searchsorted('right')
+        # will return position 3.
         if rows_equal.any():
-            left_c = left_c.index[~rows_equal]
-            right_c = right_c.index[~rows_equal]
-            return left_c, right_c
-        return left_c.index, right_c.index
+            replacements = right_c.searchsorted(left_c, side="right")
+            # now we can safely replace values with strictly less than positions
+            search_indices = np.where(rows_equal, replacements, search_indices)
+        # check again if any of the values have become equal to length of righ_c
+        # and get rid of them
+        rows_equal = search_indices == len_right
+        if rows_equal.any():
+            left_c = left_c[~rows_equal]
+            search_indices = search_indices[~rows_equal]
+
+    if search_indices.size == 0:
+        return None
+
+    indices = np.repeat(len_right, search_indices.size)
+
+    if len_conditions > 1:
+        return left_c.index,  search_indices, indices
+
+    positions = _interval_ranges(search_indices, indices)
+    search_indices = indices - search_indices
 
     right_c = right_c.index.take(positions)
     left_c = left_c.index.repeat(search_indices)
-
     return left_c, right_c
 
 
@@ -2905,39 +2900,73 @@ def _greater_than_indices(
         search_indices = search_indices[~rows_equal]
     if search_indices.size == 0:
         return None
-    if len_conditions > 1:
-        return left_c.index, np.repeat(0, search_indices.size), search_indices
 
-    # for each index in `search_indices`,
-    # generate all indices for `right_keys`,
-    # where the values in `right_keys` are less than
-    # or equal to `left_c`
-    positions = _ge_create_ranges(search_indices)
+    # the idea here is that if there are any equal values
+    # shift downwards to the immediate next position 
+    # that is not equal
     if strict:
-        right_c = right_c.take(positions)
-        left_c = left_c.repeat(search_indices)
-        rows_equal = left_c.array == right_c.array
-        if rows_equal.all():
-            return None
+        rows_equal = right_c.take(search_indices - 1).array
+        rows_equal = left_c.array == rows_equal
+        # replace positions where rows are equal with
+        # searchsorted('left'); 
+        # however there can be scenarios where positions
+        # from searchsorted('left') would still be equal;
+        # in that case, we shift down by 1
         if rows_equal.any():
-            left_c = left_c.index[~rows_equal]
-            right_c = right_c.index[~rows_equal]
-            return left_c, right_c
-        return left_c.index, right_c.index
+            replacements = right_c.searchsorted(left_c, side="left")
+            # `left` might result in values equal to len right_c
+            replacements = np.where(replacements == right_c.size, replacements - 1, replacements)
+            replacements_equal = right_c.take(replacements).array
+            replacements_equal = left_c.array == replacements_equal
+            # if there are any matches for the lowest points, step down by 1
+            if replacements_equal.any():
+                replacements = np.where(replacements_equal, replacements - 1, replacements)
+            # now we can safely replace values with strictly greater than positions
+            search_indices = np.where(rows_equal, replacements, search_indices)
+        # takes care of positions that turn to 0
+        search_indices = np.where(search_indices == 0, search_indices + 1, search_indices)
+        # return right_c.take(search_indices), right_c
+        # any value less than 1 should be discarded
+        rows_equal = search_indices < 1
+        if rows_equal.any():
+            left_c = left_c[~rows_equal]
+            search_indices = search_indices[~rows_equal]
+
+    if search_indices.size == 0:
+        return None
+
+    indices = np.repeat(0, search_indices.size)
+
+    if len_conditions > 1:
+        return left_c.index, indices, search_indices
+    positions = _interval_ranges(indices, search_indices)
 
     right_c = right_c.index.take(positions)
     left_c = left_c.index.repeat(search_indices)
-
     return left_c, right_c
 
 
-def _pair_non_equi_conditions(
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+def _pairs_conditional_join(
     df: pd.DataFrame, right: pd.DataFrame, conditions: list
 ) -> tuple:
     """
-    Use binary search to get indices where
-    `left_c` is exactly  equal to `right_c`.
-    Specific to non_equi conditions
+    Use binary search to get indices for paired conditions.
 
     Returns a tuple of (left_c, right_c)
     """
@@ -2982,23 +3011,27 @@ def _pair_non_equi_conditions(
         right_c = right[right_on]
         if not right_c.is_monotonic_increasing:
             right_c = right_c.sort_values()
-
         if op in less_than_operators:
             result = _less_than_indices(left_c, right_c, False, 2)
             if result is None:
                 return None
             left_c, lower_boundary, upper_boundary = result
             lower_boundary = right_c.index.take(lower_boundary)
-            df_index = left_c
 
         elif op in greater_than_operators:
             result = _greater_than_indices(left_c, right_c, False, 2)
-
             if result is None:
                 return None
             left_c, lower_boundary, upper_boundary = result
             upper_boundary = right_c.index.take(upper_boundary - 1) + 1
-            df_index = left_c
+        elif op == JOINOPERATOR.NOT_EQUAL.value:
+            result = _not_equal_indices(left_c, right_c, 2)
+            if result is None:
+                return None
+            left_c, lower_boundary, upper_boundary = result
+            upper_boundary = right_c.index.take(upper_boundary - 1) + 1
+
+        df_index = left_c
 
         temp = np.column_stack([left_c, lower_boundary, upper_boundary])
         indices.append(temp)
@@ -3027,30 +3060,31 @@ def _pair_non_equi_conditions(
     if exclude_rows.all():
         return None
 
-    lower_boundary = lower_boundary[~exclude_rows]
-    upper_boundary = upper_boundary[~exclude_rows]
-    left_c = left_c[~exclude_rows]
+    exclude_sum = exclude_rows.sum()
 
-    # return mapper, lower_boundary, upper_boundary
+
+    if (exclude_sum > 0) and (exclude_sum < exclude_rows.size):
+        lower_boundary = lower_boundary[~exclude_rows]
+        upper_boundary = upper_boundary[~exclude_rows]
+        left_c = left_c[~exclude_rows]
+
     left_repeat = upper_boundary - lower_boundary
     right_c = _interval_ranges(lower_boundary, upper_boundary)
     left_c = left_c.repeat(left_repeat)
+    df = df.loc[left_c]
+    right = right.loc[right_c]
+    return pd.concat([df.reset_index(drop=True), right.reset_index(drop=True)], axis = 1)
+
+    # map back to original index (old_index)
     # idea from SO
     # https://stackoverflow.com/a/55950051/7175713
     mapping = np.zeros(new_index.max() + 1, dtype = old_index.dtype)
-    # create new array, indexing the zeros with the new_index
-    # and assigning values from old_index
+    # index and assign
     mapping[new_index] = old_index
     # reorder mapping
-    mapping = mapping[right_c]
-    
-    # return pd.concat([df.reset_index(drop=True), right.reset_index(drop=True)], axis = 1)
+    mapping = mapping[right_c] 
 
-
-    return left_c, right_c
-
-
-
+    return left_c, mapping
 
 
 
@@ -3168,7 +3202,7 @@ def _create_conditional_join_frame(
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
 
-def _generic_func_cond_join(left_c: pd.Series, right_c: pd.Series, op: str):
+def _generic_func_cond_join(left_c: pd.Series, right_c: pd.Series, op: str, len_conditions:int):
     """
     Generic function to call any of the individual functions
     (_less_than_indices, _greater_than_indices, _equal_indices,
@@ -3187,16 +3221,16 @@ def _generic_func_cond_join(left_c: pd.Series, right_c: pd.Series, op: str):
         JOINOPERATOR.LESS_THAN.value,
         JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
     }:
-        return _less_than_indices(left_c, right_c, strict)
+        return _less_than_indices(left_c, right_c, strict, len_conditions)
     elif op in {
         JOINOPERATOR.GREATER_THAN.value,
         JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
     }:
-        return _greater_than_indices(left_c, right_c, strict)
+        return _greater_than_indices(left_c, right_c, strict, len_conditions)
     elif op == JOINOPERATOR.STRICTLY_EQUAL.value:
-        return _equal_indices(left_c, right_c)
+        return _equal_indices(left_c, right_c, len_conditions)
     elif op == JOINOPERATOR.NOT_EQUAL.value:
-        return _not_equal_indices(left_c, right_c)
+        return _not_equal_indices(left_c, right_c, len_conditions)
 
 
 def _conditional_join_compute(
@@ -3220,7 +3254,7 @@ def _conditional_join_compute(
 
         _conditional_join_type_check(left_c, right_c, op)
 
-        result = _generic_func_cond_join(left_c, right_c, op)
+        result = _generic_func_cond_join(left_c, right_c, op, 1)
 
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
@@ -3231,6 +3265,8 @@ def _conditional_join_compute(
             df, right, left_c, right_c, how, sort_by_appearance
         )
 
+
+    df_index = None
     for condition in conditions:
         left_on, right_on, op = condition
         left_c = df[left_on]
@@ -3238,8 +3274,20 @@ def _conditional_join_compute(
 
         _conditional_join_type_check(left_c, right_c, op)
 
-    _, right_columns, _ = zip(*conditions)
+
+        # iteratively reduce the number of rows from df
+        # to the absolute minimum required
+        # less number of rows to search for 
+
+
+    return df_index
+
+    *_, ops = zip(*conditions)
 
 
 
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]

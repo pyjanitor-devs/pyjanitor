@@ -21,6 +21,7 @@ from typing import (
     Pattern,
     Tuple,
     Union,
+    final,
 )
 
 import numpy as np
@@ -2923,7 +2924,177 @@ def _greater_than_indices(
 
 
 
+def _pairs_conditional_join(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: list
+) -> tuple:
+    """
+    Use binary search to get indices for paired conditions.
 
+    Returns a tuple of (left_c, right_c)
+    """
+
+    # the idea is to get a possible range of values
+    # that might meet the conditions
+    # once our possible range is obtained, we can then
+    # go in and pull the exact index labels that satisfy
+    # the pair of conditions, using booleans.
+    left_columns, right_columns, _ = zip(*conditions)
+
+    right_columns = pd.unique(right_columns)
+    right_columns = [*right_columns]
+    left_columns = pd.unique(left_columns)
+
+    df = df.loc[:, left_columns]
+    right = right.loc[:, right_columns]
+
+    if right.isna().any(axis=None):
+        right = right.dropna()
+    if right.empty:
+        return None
+    if df.isna().any(axis=None):
+        df = df.dropna()
+    if df.empty:
+        return None
+
+    right = right.sort_values(right_columns)
+
+    old_index = right.index
+    new_index = np.arange(old_index.size)
+    right.index = new_index
+    indices = []
+
+
+
+    less_than_operators = (
+        JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+        JOINOPERATOR.LESS_THAN.value,
+    )
+    greater_than_operators = (
+        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+        JOINOPERATOR.GREATER_THAN.value,
+    )
+
+
+
+    strict = False
+    df_index = df.index
+    for condition in conditions:
+        left_on, right_on, op = condition
+        if op in {
+            JOINOPERATOR.GREATER_THAN.value,
+            JOINOPERATOR.LESS_THAN.value,
+            JOINOPERATOR.NOT_EQUAL.value,
+        }:
+            strict = True
+        left_c = df.loc[df_index, left_on]
+        right_c = right[right_on]
+        if not right_c.is_monotonic_increasing:
+            right_c = right_c.sort_values()
+        if op == JOINOPERATOR.STRICTLY_EQUAL.value:
+            result = _equal_indices(left_c, right_c, 2)
+            if result is None:
+                return None
+            left_c, lower_boundary, upper_boundary = result
+            lower_boundary = right_c.index.take(lower_boundary)
+            upper_boundary = right_c.index.take(upper_boundary-1)+1
+        elif op in less_than_operators:
+            result = _less_than_indices(left_c, right_c, strict, 2)
+            if result is None:
+                return None
+            left_c, lower_boundary, upper_boundary = result
+            lower_boundary = right_c.index.take(lower_boundary)
+
+        elif op in greater_than_operators:
+            result = _greater_than_indices(left_c, right_c, strict, 2)
+            if result is None:
+                return None
+            left_c, lower_boundary, upper_boundary = result
+            upper_boundary = right_c.index.take(upper_boundary - 1) + 1
+        # elif op == JOINOPERATOR.NOT_EQUAL.value: # not yet implemented
+        #     result = _not_equal_indices(left_c, right_c, 2)
+        #     if result is None:
+        #         return None
+        #     left_c, lower_boundary, upper_boundary = result
+        #     upper_boundary = right_c.index.take(upper_boundary - 1) + 1
+
+        df_index = left_c
+
+        temp = np.column_stack([left_c, lower_boundary, upper_boundary])
+        indices.append(temp)
+
+    left_arr, right_arr = indices
+    # prune
+    booleans = np.isin(left_arr[:, 0], right_arr[:, 0])
+
+    if booleans.sum() < booleans.size:
+        left_arr = left_arr[booleans]
+
+    # think of it as comparing two ranges
+    # (0, 9), (0, 10)
+    # intersection will be (0, 9)
+    # maximum of the first pairing (0,0) -> 0
+    # minimum of the second pairing (9, 10) -> 0
+    lower_boundary = np.maximum(left_arr[:, 1], right_arr[: , 1])
+    upper_boundary = np.minimum(left_arr[:, -1], right_arr[: , -1])
+
+
+    # to generate a range, 
+    # lower_boundary must not be greater than upper_boundary
+    exclude_rows = lower_boundary > upper_boundary
+
+    if exclude_rows.all():
+        return None
+
+    exclude_sum = exclude_rows.sum()
+
+
+    if (exclude_sum > 0) and (exclude_sum < exclude_rows.size):
+        lower_boundary = lower_boundary[~exclude_rows]
+        upper_boundary = upper_boundary[~exclude_rows]
+        left_c = left_c[~exclude_rows]
+
+    # if lower_boundary == upper_boundary, we do not want 
+    # to lose that index during build, so we add 1
+    upper_boundary = np.where(lower_boundary == upper_boundary, upper_boundary + 1, upper_boundary)
+
+    left_repeat = upper_boundary - lower_boundary
+    right_c = _interval_ranges(lower_boundary, upper_boundary)
+    left_c = left_c.repeat(left_repeat)
+
+    operator_map = {JOINOPERATOR.STRICTLY_EQUAL.value : operator.eq,
+                    JOINOPERATOR.LESS_THAN.value: operator.lt,
+                    JOINOPERATOR.LESS_THAN_OR_EQUAL.value : operator.le,
+                    JOINOPERATOR.GREATER_THAN.value : operator.gt,
+                    JOINOPERATOR.GREATER_THAN_OR_EQUAL.value: operator.ge,
+                    JOINOPERATOR.NOT_EQUAL.value: operator.ne}
+
+    # we have our possible values, within a range,
+    # now, we have to keep the exact values
+    final_boolean = None
+    for condition in conditions:
+        left_on, right_on, op = condition
+        left_val = df.loc[left_c, left_on].array
+        right_val = right.loc[right_c, right_on].array
+        boolean = operator_map[op](left_val, right_val)
+        if final_boolean is None:
+            final_boolean = boolean
+        else:
+            final_boolean = np.logical_and(final_boolean, boolean)
+
+    left_c = left_c[final_boolean]
+    right_c = right_c[final_boolean]
+
+
+    # map back to original index (old_index)
+    # idea from SO
+    # https://stackoverflow.com/a/55950051/7175713
+    mapping = np.zeros(new_index.max() + 1, dtype = old_index.dtype)
+    # index and assign
+    mapping[new_index] = old_index
+    # reorder mapping
+    mapping = mapping[right_c] 
+
+    return left_c, mapping
 
 
 
@@ -3099,7 +3270,8 @@ def _conditional_join_compute(
     then a pandas DataFrame is returned.
     """
 
-    if len(conditions) == 1:
+    len_conditions = len(conditions)
+    if len_conditions == 1:
         left_on, right_on, op = conditions[0]
 
         left_c = df[left_on]
@@ -3119,23 +3291,48 @@ def _conditional_join_compute(
         )
 
 
-    df_index = None
+    # TODO: improve the efficiency for multiple conditions
+    df_index = df.index
+    # iteratively reduce the number of rows
+    # from df, until we have the certain index labels
+    # that will be in the final dataframe
+    # usually much smaller, which should help
+    # reduce overall processing time
     for condition in conditions:
         left_on, right_on, op = condition
-        left_c = df[left_on]
+        left_c = df.loc[df_index, left_on]
         right_c = right[right_on]
 
         _conditional_join_type_check(left_c, right_c, op)
 
+        result= _generic_func_cond_join(left_c, right_c, op, len_conditions)
 
-        # iteratively reduce the number of rows from df
-        # to the absolute minimum required
-        # less number of rows to search for 
+        if result is None:
+            return _create_conditional_join_empty_frame(df, right, how)
+
+        df_index, *_ = result
+
+    chunked = chunks(conditions, 2)
+
+    right_index = right.index
+    for condition in chunked:
+        if len(condition) == 2:
+            df = df.loc[df_index]
+            right = right.loc[df_index]
+            result = _pairs_conditional_join(df, right, condition)
+        else:
+            left_on, right_on, op = conditions[0]
+            left_c = df.loc[df_index, left_on]
+            right_c = right.loc[right_index, right_on]
+            result = _generic_func_cond_join(left_c, right_c, op, 1)
+        if result is None:
+            return _create_conditional_join_empty_frame(df, right, how)
+        df_index, right_index = result
 
 
-    return df_index
-
-    *_, ops = zip(*conditions)
+    return _create_conditional_join_frame(
+            df, right, df_index, right_index, how, sort_by_appearance
+        )
 
 
 

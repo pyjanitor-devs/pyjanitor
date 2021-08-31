@@ -6,6 +6,7 @@ import os
 import re
 import socket
 import sys
+from turtle import up
 import warnings
 import operator
 from collections.abc import Callable as dispatch_callable
@@ -2664,9 +2665,7 @@ def _equal_indices(
 
     Returns a tuple of (left_c, right_c)
     """
-    # fix this ... TODO
-    right_c = pd.Index(right_c)
-    return right_c.intersection(left_c)
+
     if right_c.hasnans:
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
@@ -2682,7 +2681,7 @@ def _equal_indices(
         lower_boundary = lower_boundary[keep_rows]
         upper_boundary = upper_boundary[keep_rows]
     if len_conditions > 1 :
-        return left_c, lower_boundary, upper_boundary
+        return left_c.index, lower_boundary, upper_boundary
     positions = _interval_ranges(lower_boundary, upper_boundary)
     left_repeat = upper_boundary - lower_boundary
     left_c = left_c.repeat(left_repeat)
@@ -2708,29 +2707,6 @@ def _not_equal_indices(
 
     Returns a tuple of (left_c, right_c)
     """
-
-    if len_conditions > 1:
-        less_than = _less_than_indices(left_c, right_c, True, 2)
-        if less_than is None:
-            less_than = np.array([], dtype=int)
-        else:
-            less_than = np.column_stack(less_than)
-        greater_than = _greater_than_indices(left_c, right_c, True, 2)
-        if greater_than is None:
-            greater_than = np.array([], dtype=int)
-        else:
-            greater_than =  np.column_stack(greater_than)
-        if (less_than.size == 0) and (greater_than.size == 0) :
-            return None
-        if (less_than.size > 0) and (greater_than.size > 0) :
-            not_equal = np.row_stack([less_than, greater_than])
-            not_equal = pd.DataFrame(not_equal, columns = ['left_c', 'lower_boundary', 'upper_boundary'])
-            not_equal = not_equal.groupby('left_c').agg(lower_boundary = ('lower_boundary', 'min'), upper_boundary = ('upper_boundary', 'max'))
-            return not_equal.index, not_equal['lower_boundary'].array, not_equal['upper_boundary'].array
-        if (less_than.size == 0) and (greater_than.size > 0) :
-            return pd.Index(greater_than[:, 0]), greater_than[:, 1], greater_than[:, -1]
-        if (less_than.size > 0) and (greater_than.size == 0) :
-            return pd.Index(less_than[:, 0]), less_than[:, 1], less_than[:, -1]
 
     # capture null positions, since NaN != NaN
     dummy = pd.Int64Index([])
@@ -2939,8 +2915,8 @@ def _greater_than_indices(
 
     if len_conditions > 1:
         return left_c.index, indices, search_indices
-    positions = _interval_ranges(indices, search_indices)
 
+    positions = _interval_ranges(indices, search_indices)
     right_c = right_c.index.take(positions)
     left_c = left_c.index.repeat(search_indices)
     return left_c, right_c
@@ -2959,132 +2935,9 @@ def _greater_than_indices(
 
 
 
-    
 
 
-def _pairs_conditional_join(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: list
-) -> tuple:
-    """
-    Use binary search to get indices for paired conditions.
 
-    Returns a tuple of (left_c, right_c)
-    """
-    left_columns, right_columns, _ = zip(*conditions)
-
-    right_columns = pd.unique(right_columns)
-    right_columns = [*right_columns]
-    left_columns = pd.unique(left_columns)
-
-    df = df.loc[:, left_columns]
-    right = right.loc[:, right_columns]
-
-    if right.isna().any(axis=None):
-        right = right.dropna()
-    if right.empty:
-        return None
-    if df.isna().any(axis=None):
-        df = df.dropna()
-    if df.empty:
-        return None
-
-    right = right.sort_values(right_columns)
-
-    old_index = right.index
-    new_index = np.arange(old_index.size)
-    right.index = new_index
-    indices = []
-
-
-    less_than_operators = (
-        JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
-        JOINOPERATOR.LESS_THAN.value,
-    )
-    greater_than_operators = (
-        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
-        JOINOPERATOR.GREATER_THAN.value,
-    )
-    df_index = df.index
-    for condition in conditions:
-        left_on, right_on, op = condition
-        left_c = df.loc[df_index, left_on]
-        right_c = right[right_on]
-        if not right_c.is_monotonic_increasing:
-            right_c = right_c.sort_values()
-        if op in less_than_operators:
-            result = _less_than_indices(left_c, right_c, False, 2)
-            if result is None:
-                return None
-            left_c, lower_boundary, upper_boundary = result
-            lower_boundary = right_c.index.take(lower_boundary)
-
-        elif op in greater_than_operators:
-            result = _greater_than_indices(left_c, right_c, False, 2)
-            if result is None:
-                return None
-            left_c, lower_boundary, upper_boundary = result
-            upper_boundary = right_c.index.take(upper_boundary - 1) + 1
-        elif op == JOINOPERATOR.NOT_EQUAL.value:
-            result = _not_equal_indices(left_c, right_c, 2)
-            if result is None:
-                return None
-            left_c, lower_boundary, upper_boundary = result
-            upper_boundary = right_c.index.take(upper_boundary - 1) + 1
-
-        df_index = left_c
-
-        temp = np.column_stack([left_c, lower_boundary, upper_boundary])
-        indices.append(temp)
-
-    left_arr, right_arr = indices
-
-    # prune
-    booleans = np.isin(left_arr[:, 0], right_arr[:, 0])
-
-    if booleans.sum() < booleans.size:
-        left_arr = left_arr[booleans]
-
-    # think of it as comparing two ranges
-    # (0, 9), (0, 10)
-    # intersection will be (0, 9)
-    # maximum of the first pairing (0,0) -> 0
-    # minimum of the second pairing (9, 10) -> 0
-    lower_boundary = np.maximum(left_arr[:, 1], right_arr[: , 1])
-    upper_boundary = np.minimum(left_arr[:, -1], right_arr[: , -1])
-
-
-    # to generate a range, 
-    # lower_boundary must be less than upper_boundary
-    exclude_rows = lower_boundary >= upper_boundary
-
-    if exclude_rows.all():
-        return None
-
-    exclude_sum = exclude_rows.sum()
-
-
-    if (exclude_sum > 0) and (exclude_sum < exclude_rows.size):
-        lower_boundary = lower_boundary[~exclude_rows]
-        upper_boundary = upper_boundary[~exclude_rows]
-        left_c = left_c[~exclude_rows]
-
-    left_repeat = upper_boundary - lower_boundary
-    right_c = _interval_ranges(lower_boundary, upper_boundary)
-    left_c = left_c.repeat(left_repeat)
-    df = df.loc[left_c]
-    right = right.loc[right_c]
-    return pd.concat([df.reset_index(drop=True), right.reset_index(drop=True)], axis = 1)
-
-    # map back to original index (old_index)
-    # idea from SO
-    # https://stackoverflow.com/a/55950051/7175713
-    mapping = np.zeros(new_index.max() + 1, dtype = old_index.dtype)
-    # index and assign
-    mapping[new_index] = old_index
-    # reorder mapping
-    mapping = mapping[right_c] 
-
-    return left_c, mapping
 
 
 

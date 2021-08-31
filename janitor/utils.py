@@ -2976,16 +2976,10 @@ def _pairs_conditional_join(
 
 
 
-    strict = False
     df_index = df.index
     for condition in conditions:
         left_on, right_on, op = condition
-        if op in {
-            JOINOPERATOR.GREATER_THAN.value,
-            JOINOPERATOR.LESS_THAN.value,
-            JOINOPERATOR.NOT_EQUAL.value,
-        }:
-            strict = True
+
         left_c = df.loc[df_index, left_on]
         right_c = right[right_on]
         if not right_c.is_monotonic_increasing:
@@ -2998,14 +2992,14 @@ def _pairs_conditional_join(
             lower_boundary = right_c.index.take(lower_boundary)
             upper_boundary = right_c.index.take(upper_boundary-1)+1
         elif op in less_than_operators:
-            result = _less_than_indices(left_c, right_c, strict, 2)
+            result = _less_than_indices(left_c, right_c, False, 2)
             if result is None:
                 return None
             left_c, lower_boundary, upper_boundary = result
             lower_boundary = right_c.index.take(lower_boundary)
 
         elif op in greater_than_operators:
-            result = _greater_than_indices(left_c, right_c, strict, 2)
+            result = _greater_than_indices(left_c, right_c, False, 2)
             if result is None:
                 return None
             left_c, lower_boundary, upper_boundary = result
@@ -3026,14 +3020,17 @@ def _pairs_conditional_join(
     # prune
     booleans = np.isin(left_arr[:, 0], right_arr[:, 0])
 
+
     if booleans.sum() < booleans.size:
         left_arr = left_arr[booleans]
+
 
     # think of it as comparing two ranges
     # (0, 9), (0, 10)
     # intersection will be (0, 9)
     # maximum of the first pairing (0,0) -> 0
     # minimum of the second pairing (9, 10) -> 0
+    # print(lower_boundary, upper_boundary)
     lower_boundary = np.maximum(left_arr[:, 1], right_arr[: , 1])
     upper_boundary = np.minimum(left_arr[:, -1], right_arr[: , -1])
 
@@ -3045,10 +3042,10 @@ def _pairs_conditional_join(
     if exclude_rows.all():
         return None
 
-    exclude_sum = exclude_rows.sum()
+    # exclude_sum = exclude_rows.sum()
 
 
-    if (exclude_sum > 0) and (exclude_sum < exclude_rows.size):
+    if exclude_rows.any():#(exclude_sum > 0) and (exclude_sum < exclude_rows.size):
         lower_boundary = lower_boundary[~exclude_rows]
         upper_boundary = upper_boundary[~exclude_rows]
         left_c = left_c[~exclude_rows]
@@ -3084,6 +3081,9 @@ def _pairs_conditional_join(
     left_c = left_c[final_boolean]
     right_c = right_c[final_boolean]
 
+    # df = df.loc[left_c]
+    # right = right.loc[right_c]
+    # return pd.concat([df.reset_index(drop=True), right.reset_index(drop=True)], axis = 1)
 
     # map back to original index (old_index)
     # idea from SO
@@ -3271,6 +3271,7 @@ def _conditional_join_compute(
     """
 
     len_conditions = len(conditions)
+
     if len_conditions == 1:
         left_on, right_on, op = conditions[0]
 
@@ -3312,22 +3313,49 @@ def _conditional_join_compute(
 
         df_index, *_ = result
 
-    chunked = chunks(conditions, 2)
+    chunked = [*chunks(conditions, 2)]
 
-    right_index = right.index
-    for condition in chunked:
-        if len(condition) == 2:
-            df = df.loc[df_index]
-            right = right.loc[df_index]
-            result = _pairs_conditional_join(df, right, condition)
-        else:
-            left_on, right_on, op = conditions[0]
-            left_c = df.loc[df_index, left_on]
-            right_c = right.loc[right_index, right_on]
-            result = _generic_func_cond_join(left_c, right_c, op, 1)
+    paired_conditions = [condition for condition in chunked if len(condition) == 2]
+    single_cond = [condition for condition in chunked if len(condition)== 1]
+    if single_cond:
+        single_cond = single_cond[0][0]
+
+
+    indices = None
+    for condition in paired_conditions:
+        df = df.loc[df_index]
+        result = _pairs_conditional_join(df, right, condition)
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
-        df_index, right_index = result
+        if indices is None:
+            indices = pd.MultiIndex.from_arrays(result)
+        else:
+            indices = indices.intersection(pd.MultiIndex.from_arrays(result))
+        if indices.empty:
+            return _create_conditional_join_empty_frame(df, right, how) 
+    if not indices.empty:
+        df_index = indices.get_level_values(0)
+        right_index = indices.get_level_values(1)
+
+    if single_cond:
+        operator_map = {JOINOPERATOR.STRICTLY_EQUAL.value : operator.eq,
+                        JOINOPERATOR.LESS_THAN.value: operator.lt,
+                        JOINOPERATOR.LESS_THAN_OR_EQUAL.value : operator.le,
+                        JOINOPERATOR.GREATER_THAN.value : operator.gt,
+                        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value: operator.ge,
+                        JOINOPERATOR.NOT_EQUAL.value: operator.ne}
+        left_on, right_on, op = single_cond
+        left_c = df.loc[df_index, left_on]
+        right_c = right.loc[right_index, right_on]
+        op = operator_map[op]
+        result = op(left_c.array, right_c.array)
+
+        if not result.any():
+            return _create_conditional_join_empty_frame(df, right, how)
+        if not result.all():
+            df_index = left_c.index[result]
+            right_index = right_c.index[result]
+
 
 
     return _create_conditional_join_frame(

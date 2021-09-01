@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.21.2] - 2021-09-01
+
 -   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
 -   [INF] Add SciPy as explicit dependency in `base.in`. Issue #895 @ericmjl
 
@@ -235,7 +237,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.1...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.2...HEAD
+
+[v0.21.2]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.1...v0.21.2
 
 [v0.21.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.0...v0.21.1
 

@@ -1,7 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+
 -   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
+-   [INF] Add SciPy as explicit dependency in `base.in`. Issue #895 @ericmjl
 
 ## [v0.21.1] - 2021-08-29
 

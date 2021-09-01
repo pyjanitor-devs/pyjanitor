@@ -1,3 +1,4 @@
+-r base.in
 -r biology.in
 -r chemistry.in
 -r dev.in

@@ -111,11 +111,11 @@ def generate_long_description() -> str:
 
 setup(
     name="pyjanitor",
-    version="0.20.13",
+    version="0.21.2",
     description="Tools for cleaning pandas DataFrames",
     author="pyjanitor devs",
     author_email="ericmajinglong@gmail.com",
-    url="https://github.com/ericmjl/pyjanitor",
+    url="https://github.com/pyjanitor-devs/pyjanitor",
     license="MIT",
     # packages=["janitor", "janitor.xarray", "janitor.spark"],
     packages=find_packages(),

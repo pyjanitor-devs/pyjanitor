@@ -20,7 +20,7 @@ format:
 
 test:
 	@echo "Running test suite..."
-	pytest --cov-report html
+	pytest -v -n auto --color=yes
 
 lint:
 	@echo "Checking code formatting..."
@@ -32,7 +32,7 @@ docs:
 
 isort:
 	@echo "Sorting imports..."
-	isort -rc . -y -up -tc
+	isort --check-only --use-parentheses --trailing-comma --multi-line 3 --line-length 79 .
 
 check: test docs notebooks isort format lint
 	@echo "checks complete"

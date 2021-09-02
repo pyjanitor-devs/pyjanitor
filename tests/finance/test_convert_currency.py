@@ -8,7 +8,7 @@ from janitor.finance import convert_currency  # noqa: F401
 
 
 @pytest.mark.finance
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="changes made to web API prevent this from running")
 def test_make_currency_api_request():
     """
     Test for currency API request.
@@ -19,12 +19,13 @@ def test_make_currency_api_request():
     tests to fail.
 
     For an example of how this test fails, see:
-    https://github.com/ericmjl/pyjanitor/issues/147
+    https://github.com/pyjanitor-devs/pyjanitor/issues/147
     """
     r = requests.get("https://api.exchangeratesapi.io")
     assert r.status_code == 200
 
 
+@pytest.mark.xfail(reason="changes made to web API prevent this from running")
 @pytest.mark.finance
 def test_make_new_currency_col(dataframe):
     """Test converting to same currency equals original currency column."""
@@ -33,6 +34,7 @@ def test_make_new_currency_col(dataframe):
 
 
 @pytest.mark.finance
+@pytest.mark.xfail(reason="changes made to web API prevent this from running")
 def test_historical_datetime(dataframe):
     """Test conversion raises exception for datetime outside API range."""
     with pytest.raises(ValueError):
@@ -46,6 +48,7 @@ def test_historical_datetime(dataframe):
 
 
 @pytest.mark.finance
+@pytest.mark.xfail(reason="changes made to web API prevent this from running")
 def test_historical_date(dataframe):
     """Test conversion raises exception for date outside API range."""
     with pytest.raises(ValueError):
@@ -59,6 +62,7 @@ def test_historical_date(dataframe):
 
 
 @pytest.mark.finance
+@pytest.mark.xfail(reason="changes made to web API prevent this from running")
 def test_currency_check(dataframe):
     """Test conversion raises exception for invalid currency."""
     with pytest.raises(ValueError):

@@ -1,5 +1,5 @@
-import pytest
 import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
 
 
@@ -13,7 +13,7 @@ from pandas.testing import assert_frame_equal
 )
 def test_select_columns(dataframe, invert, expected):
     columns = ["a", "Bell__Chart", "cities"]
-    df = dataframe.select_columns(search_column_names=columns, invert=invert)
+    df = dataframe.select_columns(columns, invert=invert)
 
     assert_frame_equal(df, dataframe[expected])
 
@@ -28,7 +28,7 @@ def test_select_columns(dataframe, invert, expected):
 )
 def test_select_columns_glob_inputs(dataframe, invert, expected):
     columns = ["Bell__Chart", "a*"]
-    df = dataframe.select_columns(search_column_names=columns, invert=invert)
+    df = dataframe.select_columns(columns, invert=invert)
 
     assert_frame_equal(df, dataframe[expected])
 
@@ -46,7 +46,7 @@ def test_select_columns_glob_inputs(dataframe, invert, expected):
 def test_select_columns_missing_columns(dataframe, columns):
     """Check that passing non-existent column names or search strings raises KeyError"""  # noqa: E501
     with pytest.raises(KeyError):
-        dataframe.select_columns(search_column_names=columns)
+        dataframe.select_columns(columns)
 
 
 @pytest.mark.functions
@@ -76,7 +76,7 @@ def test_select_columns_missing_columns(dataframe, columns):
 def test_select_columns_input(dataframe, columns):
     """Check that passing an iterable that is not a list raises TypeError."""
     with pytest.raises(TypeError):
-        dataframe.select_columns(search_column_names=columns)
+        dataframe.select_columns(columns)
 
 
 @pytest.mark.functions
@@ -90,7 +90,7 @@ def test_select_columns_input(dataframe, columns):
 def test_select_unique_columns(dataframe, invert, expected):
     """Test that only unique columns are returned."""
     columns = ["Bell__*", slice("a", "decorated-elephant")]
-    df = dataframe.select_columns(search_column_names=columns, invert=invert)
+    df = dataframe.select_columns(columns, invert=invert)
 
     assert_frame_equal(df, dataframe[expected])
 
@@ -109,11 +109,12 @@ def test_select_callable_columns(dataframe, invert, expected):
     def columns(x):
         return "-" in x.name or "_" in x.name
 
-    df = dataframe.select_columns(search_column_names=columns, invert=invert)
+    df = dataframe.select_columns(columns, invert=invert)
 
     assert_frame_equal(df, dataframe[expected])
 
 
+@pytest.mark.xfail(reason="Allow tuples which are acceptable in MultiIndex.")
 def test_MultiIndex():
     """
     Raise ValueError if columns is a MultiIndex.

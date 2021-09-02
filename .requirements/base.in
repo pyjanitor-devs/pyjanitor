@@ -4,5 +4,5 @@
 natsort
 # seaborn
 pandas_flavor
-sklearn
 multipledispatch
+scipy

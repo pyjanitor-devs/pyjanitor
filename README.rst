@@ -13,6 +13,8 @@ pyjanitor
 ``pyjanitor`` is a Python implementation of the R package `janitor`_, and
 provides a clean API for cleaning data.
 
+The official documentation is hosted on: https://pyjanitor-devs.github.io/pyjanitor/
+
 .. _janitor: https://github.com/sfirke/janitor
 
 Why janitor?
@@ -277,7 +279,7 @@ Contributing
 ------------
 
 Follow `contribution docs
-<https://ericmjl.github.io/pyjanitor/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
+<https://pyjanitor-devs.github.io/pyjanitor/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
 
 Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -314,7 +316,7 @@ Secondly, we ask that you contribute a test case,
 to ensure that it works as intended.
 Follow the `contribution`_ docs for further details.
 
-.. _contribution: https://ericmjl.github.io/pyjanitor/contributing.html#unit-test-guidelines
+.. _contribution: https://pyjanitor-devs.github.io/pyjanitor/CONTRIBUTION_TYPES.html#unit-test-guidelines
 
 Feature requests
 ~~~~~~~~~~~~~~~~

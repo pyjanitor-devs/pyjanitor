@@ -8,7 +8,7 @@ Every little bit helps, and credit will always be given.
 The following sections detail a variety of ways to contribute,
 as well as how to get started.
 
-.. note:: Please take a look at the `types of Contributions  <CONTRIBUTION_TYPES.html>`__  that we welcome,
+.. note:: Please take a look at the `types of Contributions  <https://pyjanitor-devs.github.io/pyjanitor/CONTRIBUTION_TYPES.html>`__  that we welcome,
     along with the guidelines.
 
 Get Started!
@@ -56,7 +56,7 @@ so please read the in-line documentation in the Dockerfile carefully.
 Manual Setup
 ~~~~~~~~~~~~
 
-1. Fork the ``pyjanitor`` repo on GitHub: https://github.com/ericmjl/pyjanitor.
+1. Fork the ``pyjanitor`` repo on GitHub: https://github.com/pyjanitor-devs/pyjanitor.
 2. Clone your fork locally::
 
     $ git clone git@github.com:your_name_here/pyjanitor.git
@@ -81,7 +81,7 @@ make sure you select the correct kernel from the top right corner of JupyterLab!
     You should be able to run `make` now. The command above installs `make` to the `~/Anaconda3/Library/bin` directory.
 
 .. note:: For PyCharm users,
-    here are some `instructions <PYCHARM_USERS.html>`__  to get your Conda environment set up.
+    here are some `instructions <https://pyjanitor-devs.github.io/pyjanitor/PYCHARM_USERS.html>`__  to get your Conda environment set up.
 
 4. (Optional) Install the pre-commit hooks.
 
@@ -123,7 +123,7 @@ go to the rst file that corresponds to the html file you would like to edit.
 Make the changes directly in the rst file with the correct markup.
 Save the file and rebuild the html pages using the same commands as above to see what your changes look like in html.
 
-6. Submit an issue to the ``pyjanitor`` GitHub issue tracker describing your planned changes: https://github.com/ericmjl/pyjanitor/issues
+6. Submit an issue to the ``pyjanitor`` GitHub issue tracker describing your planned changes: https://github.com/pyjanitor-devs/pyjanitor/issues
 
 This helps us keep track of who is working on what.
 

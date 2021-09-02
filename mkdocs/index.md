@@ -282,17 +282,16 @@ and returns a modified dataframe:
         # Put data processing function here.
         return df
 
-We use `pandas_flavor`_ to register the function natively on a `pandas.DataFrame`.
+We use [`pandas_flavor`](https://github.com/Zsailer/pandas_flavor) to register the function natively on a `pandas.DataFrame`.
 
-.. _pandas_flavor: https://github.com/Zsailer/pandas_flavor
 
 ### Add a test case
 
 Secondly, we ask that you contribute a test case,
 to ensure that it works as intended.
-Follow the `contribution`_ docs for further details.
+Follow the [contribution] docs for further details.
 
-.. _contribution: https://ericmjl.github.io/pyjanitor/contributing.html#unit-test-guidelines
+[contribution]: https://pyjanitor-devs.github.io/pyjanitor/contributing.html#unit-test-guidelines
 
 ### Feature requests
 
@@ -315,7 +314,7 @@ Please temper expectations accordingly.
 but will never fix or replace them.
 
 Undesirable `pandas` behaviour should be reported upstream
-in the `pandas` `issue tracker <https://github.com/pandas-dev/pandas/issues>`_.
+in the `pandas` [issue tracker](https://github.com/pandas-dev/pandas/issues).
 We explicitly do not fix the `pandas` API.
 If at some point the `pandas` devs
 decide to take something from `pyjanitor`
@@ -327,8 +326,6 @@ as part of the official deprecation record.
 
 ## Credits
 
-Test data for chemistry submodule can be found at `Predictive Toxicology`__ .
+Test data for chemistry submodule can be found at [Predictive Toxicology][predtox].
 
-.. _predtox: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt
-
-__ predtox_
+[_predtox]: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt

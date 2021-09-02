@@ -24,6 +24,7 @@ nav:
       - Functions: api/functions.md
       - Utils: api/utils.md
   - Changelog: CHANGELOG.md
+  - Authors: AUTHORS.md
 
 plugins:
   - search
@@ -33,9 +34,10 @@ plugins:
         python:
           rendering:
             show_source: true
+          # https://github.com/mkdocstrings/mkdocstrings/issues/278#issuecomment-831411193
           selection:
             docstring_style: restructured-text
-      custom_templates: templates
+      # custom_templates: templates
       watch:
         - janitor/
 # - mknotebooks:

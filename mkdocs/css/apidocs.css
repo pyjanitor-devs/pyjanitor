@@ -1,0 +1,5 @@
+.doc-property { border-radius: 15px; padding: 0 5px; }
+.doc-property-special { background-color: blue; color: white; }
+.doc-property-private { background-color: red; color: white; }
+.doc-property-property { background-color: green; color: white; }
+.doc-property-read-only { background-color: yellow; color: black; }

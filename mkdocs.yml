@@ -20,9 +20,18 @@ theme:
 nav:
   - Home: index.md
   - Development Guide: devguide.md
-  - API Docs:
+  - API Reference:
       - Functions: api/functions.md
+      - Biology: api/biology.md
+      - Chemistry: api/chemistry.md
+      - Engineering: api/engineering.md
+      # - Finance: api/finance.md
+      - Machine Learning: api/ml.md
+      - Math: api/math.md
+      - PySpark: api/pyspark.md
+      - Timeseries: api/timeseries.md
       - Utils: api/utils.md
+      - XArray: api/xarray.md
   - Changelog: CHANGELOG.md
   - Authors: AUTHORS.md
 

@@ -1,5 +1,5 @@
-site_name: pyjanitor
-site_url: https://ericmjl.github.io/pyjanitor
+site_name: pyjanitor documentation
+site_url: https://pyjanitor-devs.github.io/pyjanitor
 
 docs_dir: mkdocs/
 
@@ -21,21 +21,31 @@ nav:
   - Home: index.md
   - Development Guide: devguide.md
   - API Docs:
-    - Functions: api/functions.md
-    - Utils: api/utils.md
+      - Functions: api/functions.md
+      - Utils: api/utils.md
   - Changelog: CHANGELOG.md
 
 plugins:
   - search
-  - mkdocstrings
-  # - mknotebooks:
-  #     execute: true
-  #     write_markdown: true
-  #     allow_errors: true
-  #     timeout: 1200
-  #     binder: true
-  #     binder_service_name: "gh"
-  #     binder_branch: "master"
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+          selection:
+            docstring_style: restructured-text
+      custom_templates: templates
+      watch:
+        - janitor/
+# - mknotebooks:
+#     execute: true
+#     write_markdown: true
+#     allow_errors: true
+#     timeout: 1200
+#     binder: true
+#     binder_service_name: "gh"
+#     binder_branch: "master"
 
 # Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
 markdown_extensions:

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [v0.21.2] - 2021-09-01
+
+-   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
+-   [INF] Add SciPy as explicit dependency in `base.in`. Issue #895 @ericmjl
+
+## [v0.21.1] - 2021-08-29
+
 -   [DOC] Fix references and broken links in AUTHORS.rst. @loganthomas
 -   [DOC] Updated Broken links in the README and contributing docs. @nvamsikrishna05
 -   [INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas
@@ -15,11 +22,13 @@
 -   [DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
--   [ENH] `complete` function now uses variable args (*args) - @samukweku
+-   [ENH] `complete` function now uses variable args (\*args) - @samukweku
 -   [EHN] Set `expand_column`'s `sep` default is `"|"`, same to `pandas.Series.str.get_dummies`. Issue #876. @Zeroto521
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [INF] Speed up pytest via `-n` (pytest-xdist) option. Issue #881. @Zeroto521
+-   [DOC] Add list mark to keep `select_columns`'s example same style. @Zeroto521
+-   [ENH] Updated `rename_columns` to take optional function argument for mapping. @nvamsikrishna05
 
 ## [v0.21.0] - 2021-07-16
 
@@ -30,7 +39,7 @@
     which is faster than `combine_first` @samukweku
 -   [ENH] Use `eval` for string conditions in `update_where`. @samukweku
 -   [ENH] Add clearer error messages for `pivot_longer`. h/t to @tdhock
-    for the observation. -@samukweku
+    for the observation. Issue #836 @samukweku
 -   [ENH] `select_columns` now uses variable arguments (\*args),
     to provide a simpler selection without the need for lists. - @samukweku
 -   [ENH] `encode_categoricals` refactored to use generic functions
@@ -228,7 +237,12 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.2...HEAD
+
+[v0.21.2]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.1...v0.21.2
+
+[v0.21.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.0...v0.21.1
+
 [v0.21.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.14...v0.21.0
 
 [v0.20.14]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.13...v0.20.14

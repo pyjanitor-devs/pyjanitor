@@ -2,11 +2,8 @@
 
 ## [Unreleased]
 
-## [v0.21.2] - 2021-09-01
-
--   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
--   [INF] Add SciPy as explicit dependency in `base.in`. Issue #895 @ericmjl
 -   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
+
 
 ## [v0.21.1] - 2021-08-29
 
@@ -30,7 +27,6 @@
 -   [INF] Speed up pytest via `-n` (pytest-xdist) option. Issue #881. @Zeroto521
 -   [DOC] Add list mark to keep `select_columns`'s example same style. @Zeroto521
 -   [ENH] Updated `rename_columns` to take optional function argument for mapping. @nvamsikrishna05
-
 
 ## [v0.21.0] - 2021-07-16
 

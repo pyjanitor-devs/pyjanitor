@@ -16,8 +16,8 @@ def read_csvs(
     Read multiple CSV files and return a dictionary of DataFrames, or
     one concatenated DataFrame.
 
-    :param files_path: The filepath pattern matching the CSVs files.
-        Accepts regular expressions, with or without csv extension.
+    :param files_path: The filepath pattern matching the CSV files.
+        Accepts regular expressions, with or without `.csv` extension.
         Also accepts iterable of file paths.
     :param separate_df: If `False` (default), returns a single Dataframe
         with the concatenation of the csv files.
@@ -25,11 +25,11 @@ def read_csvs(
         for each CSV file.
     :param kwargs: Keyword arguments to pass into the
         original pandas `read_csv`.
-    :returns: DataFrame of concatenated DataFrames of DataFrame dict.
-    :raises JanitorError: if `None` provided for `files_path``.
-    :raises JanitorError: if length of `files_path` is `0``.
-    :raises ValueError: if no `CSV` files exist in `files_path``.
-    :raises ValueError: if columns in input `CSV` files do not match.
+    :returns: DataFrame of concatenated DataFrames or dictionary of DataFrames.
+    :raises JanitorError: if `None` provided for `files_path`.
+    :raises JanitorError: if length of `files_path` is `0`.
+    :raises ValueError: if no CSV files exist in `files_path`.
+    :raises ValueError: if columns in input CSV files do not match.
     """
     # Sanitize input
     if files_path is None:

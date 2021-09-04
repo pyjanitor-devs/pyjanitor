@@ -41,18 +41,26 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
 
 @pf.register_series_method
 def exp(s: pd.Series) -> pd.Series:
-    """Take the exponential transform of the series."""
+    """
+    Take the exponential transform of the series.
+
+    :param s: Input Series.
+    :return: Transformed Series.
+    """
     return np.exp(s)
 
 
 @pf.register_series_method
 def sigmoid(s: pd.Series) -> pd.Series:
     """
-    Take the sigmoid transform of the series where
-    sigmoid(x) = 1 / (1 + exp(-x))
+    Take the sigmoid transform of the series where:
 
-    .. # noqa: DAR101
-    .. # noqa: DAR201
+    ```python
+    sigmoid(x) = 1 / (1 + exp(-x))
+    ```
+
+    :param s: Input Series.
+    :return: Transformed Series.
     """
     return expit(s)
 
@@ -92,7 +100,12 @@ are outside of (0, 1)"
 
 @pf.register_series_method
 def normal_cdf(s: pd.Series) -> pd.Series:
-    """Transforms the Series via the CDF of the Normal distribution."""
+    """
+    Transforms the Series via the CDF of the Normal distribution.
+
+    :param s: Input Series.
+    :return: Transformed Series.
+    """
     return pd.Series(norm.cdf(s), index=s.index)
 
 

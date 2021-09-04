@@ -18,14 +18,12 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
 
     :param s: Input Series
     :param error: Determines behavior when taking the log of nonpositive
-        entries. If "warn" then a RuntimeWarning is thrown. If "raise",
-        then a RuntimeError is thrown. Otherwise, nothing is thrown and
-        log of nonpositive values is np.nan; defaults to "warn"
+        entries. If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`,
+        then a `RuntimeError` is thrown. Otherwise, nothing is thrown and
+        log of nonpositive values is `np.nan`; defaults to `'warn'`.
     :raises RuntimeError: Raised when there are nonpositive values in the
-        Series and error="raise"
+        Series and `error='raise'`.
     :return: Transformed Series
-
-    .. # noqa: DAR103 error
     """
     s = s.copy()
     nonpositive = s <= 0

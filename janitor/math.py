@@ -41,7 +41,7 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
 
 @pf.register_series_method
 def exp(s: pd.Series) -> pd.Series:
-    """Take the exponential transform of the series"""
+    """Take the exponential transform of the series."""
     return np.exp(s)
 
 

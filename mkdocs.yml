@@ -79,7 +79,10 @@ extra_javascript:
 extra_css:
   - css/nb_mods.css
   - css/apidocs.css
-  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css
+  # This sets the theme for syntax highlighting.
+  # Theme names are available here: https://highlightjs.org/static/demo/
+  # Not sure how the theme names map onto CSS filenames though.
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/nord.min.css
 
 repo_name: "ericmjl/pyjanitor"
 repo_url: "https://github.com/ericmjl/pyjanitor"

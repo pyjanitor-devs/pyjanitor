@@ -79,9 +79,9 @@ make sure you select the correct kernel from the top right corner of JupyterLab!
     you may need to install `make` before you can run the install.
     You can get it from `conda-forge`::
 
-    ```bash
+    ``bash
     conda install -c defaults -c conda-forge make
-    ```
+    ``
 
     You should be able to run `make` now.
     The command above installs `make` to the `~/Anaconda3/Library/bin` directory.
@@ -126,9 +126,9 @@ open the `index.html` file.
     If you get any errors about importing modules when running `make docs`,
     first activate the development environment:
 
-    ```bash
+    ``bash
     source activate pyjanitor-dev || conda activate pyjanitor-dev
-    ```
+    ``
 
 Sphinx uses `rst files (restructured text) <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ as its markdown language.
 To edit documentation,

@@ -1,6 +1,5 @@
 """ General purpose data cleaning functions. """
 
-import collections
 import datetime as dt
 import inspect
 import re
@@ -17,6 +16,7 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -27,17 +27,23 @@ import pandas as pd
 import pandas_flavor as pf
 from multipledispatch import dispatch
 from natsort import index_natsorted
-from pandas.api.types import union_categoricals, is_list_like
+from pandas.api.types import (
+    is_bool_dtype,
+    is_list_like,
+    is_numeric_dtype,
+    union_categoricals,
+)
 from pandas.errors import OutOfBoundsDatetime
 from scipy.stats import mode
-from sklearn.preprocessing import LabelEncoder
 
 from .errors import JanitorError
+from enum import Enum
+from operator import methodcaller
 from .utils import (
-    _computations_expand_grid,
     _clean_accounting_column,
     _computations_as_categorical,
     _computations_complete,
+    _computations_expand_grid,
     _computations_pivot_longer,
     _computations_pivot_wider,
     _currency_column_to_numeric,
@@ -48,9 +54,13 @@ from .utils import (
     _replace_original_empty_string_with_none,
     _select_columns,
     _strip_underscores,
+    asCategorical,
     check,
     check_column,
     deprecated_alias,
+    _conditional_join_preliminary_checks,
+    _conditional_join_compute,
+    _cond_join_suffixes,
 )
 
 
@@ -69,8 +79,8 @@ def unionize_dataframe_categories(
 
     If, for a given categorical column, all input dataframes do not have at
     least one instance of all the possible categories,
-    Pandas will change the output dtype of that column from ``category`` to
-    ``object``, losing out on dramatic speed gains you get from the former
+    Pandas will change the output dtype of that column from `category` to
+    `object``, losing out on dramatic speed gains you get from the former
     format.
 
     Usage example for concatenation of categorical column-containing
@@ -82,7 +92,7 @@ def unionize_dataframe_categories(
 
         concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
 
-    which in your case has resulted in ``category`` -> ``object`` conversion,
+    which in your case has resulted in `category` -> `object` conversion,
     use:
 
     .. code-block:: python
@@ -186,10 +196,10 @@ def move(
     :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
     :returns: The dataframe with the Series moved.
-    :raises ValueError: if ``axis`` is not ``0`` or ``1``.
-    :raises ValueError: if ``position`` is not ``before`` or ``after``.
-    :raises ValueError: if  ``source`` row or column is not in dataframe.
-    :raises ValueError: if ``target`` row or column is not in dataframe.
+    :raises ValueError: if `axis` is not `0` or `1``.
+    :raises ValueError: if `position` is not `before` or `after``.
+    :raises ValueError: if  `source` row or column is not in dataframe.
+    :raises ValueError: if `target` row or column is not in dataframe.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
@@ -255,7 +265,7 @@ def clean_names(
     then replaces all spaces with underscores.
 
     By default, column names are converted to string types.
-    This can be switched off by passing in ``enforce_string=False``.
+    This can be switched off by passing in `enforce_string=False``.
 
     This method does not mutate the original DataFrame.
 
@@ -363,12 +373,11 @@ def _camel2snake(col_name: str) -> str:
     Implementation taken from: https://gist.github.com/jaytaylor/3660565
     by @jtaylor
     """
-
     subbed = _underscorer1.sub(r"\1_\2", col_name)  # noqa: PD005
     return _underscorer2.sub(r"\1_\2", subbed).lower()  # noqa: PD005
 
 
-FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", "")]
+FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
 
 
 def _normalize_1(col_name: Hashable) -> str:
@@ -468,26 +477,20 @@ def get_dupes(
 
 
 def As_Categorical(
-    categories: Optional[
-        Union[List, Set, Tuple, pd.Series, np.ndarray]
-    ] = None,
+    categories: Optional[List] = None,
     order: Optional[str] = None,
 ) -> NamedTuple:
     """
     Helper function for `encode_categorical`. It makes creating the
     `categories` and `order` more explicit. Inspired by pd.NamedAgg.
-
     :param categories: list-like object to create new categorical column.
     :param order: string object that can be either "sort" or "appearance".
         If "sort", the `categories` argument will be sorted with np.sort;
         if "apperance", the `categories` argument will be used as is.
     :returns: A namedtuple of (`categories`, `order`).
     """
-    AsCategorical = collections.namedtuple(
-        "AsCategorical", ["categories", "order"], defaults=(None, None)
-    )
 
-    return AsCategorical._make((categories, order))
+    return asCategorical(categories=categories, order=order)
 
 
 @pf.register_dataframe_method
@@ -562,11 +565,11 @@ def encode_categorical(
         [2020-01-01, 2020-01-02, 2020-01-03, 2020-01-04, 2020-01-05]
 
 
-    Explicit categories can be provided, and ordered via the ``kwargs``
+    Explicit categories can be provided, and ordered via the `kwargs``
     parameter::
 
         df = (pd.DataFrame(...)
-                .as_categorical(
+                .encode_categorical(
                     col1 = ([3, 2, 1, 4], "appearance"),
                     col2 = (['a','d','c','b'], "sort")
                     )
@@ -592,13 +595,13 @@ def encode_categorical(
 
     When the `order` parameter is "appearance", the categories argument is used as-is;
     if the `order` is "sort", the categories argument is sorted in ascending order;
-    if `order` is ``None``, then the categories argument is applied unordered.
+    if `order` is `None``, then the categories argument is applied unordered.
 
-    The ``janitor.As_Categorical`` function can also be used to make clearer
+    The `janitor.As_Categorical` function can also be used to make clearer
     what the arguments to the function are::
 
         df = (pd.DataFrame(...)
-                .as_categorical(
+                .encode_categorical(
                     col1 = As_Categorical(
                                 categories = [3, 2, 1, 4],
                                 order = "appearance"
@@ -637,11 +640,11 @@ def encode_categorical(
         Categories (3, int64): [4 < 5 < 6]
 
 
-    .. note:: if ``categories`` is None in the ``kwargs`` tuple, then the
+    .. note:: if `categories` is None in the `kwargs` tuple, then the
         values for `categories` are inferred from the column; if `order`
         is None, then the values for categories are applied unordered.
 
-    .. note:: ``column_names`` and ``kwargs`` parameters cannot be used at
+    .. note:: `column_names` and `kwargs` parameters cannot be used at
         the same time.
 
     Functional usage syntax:
@@ -651,14 +654,14 @@ def encode_categorical(
         import pandas as pd
         import janitor as jn
 
-    - With ``column_names``::
+    - With `column_names``::
 
         categorical_cols = ['col1', 'col2', 'col4']
         df = jn.encode_categorical(
                     df,
                     columns = categorical_cols)  # one way
 
-    - With ``kwargs``::
+    - With `kwargs``::
 
         df = jn.encode_categorical(
                     df,
@@ -671,21 +674,21 @@ def encode_categorical(
 
     Method chaining syntax:
 
-    - With ``column_names``::
+    - With `column_names``::
 
         categorical_cols = ['col1', 'col2', 'col4']
         df = (pd.DataFrame(...)
                 .encode_categorical(columns=categorical_cols)
             )
 
-    - With ``kwargs``::
+    - With `kwargs``::
 
         df = (
             pd.DataFrame(...)
             .encode_categorical(
                 col1 = (categories, order),
                 col2 = jn.As_Categorical(
-                            categories = [values],
+                            categories = [values]/None,
                             order="sort"/"appearance"/None
                             )
         )
@@ -700,11 +703,11 @@ def encode_categorical(
         are. This is useful in creating categorical columns that are ordered, or
         if the user needs to explicitly specify the categories.
     :returns: A pandas DataFrame.
-    :raises JanitorError: if a column specified within ``column_names``
+    :raises JanitorError: if a column specified within `column_names``
         is not found in the DataFrame.
-    :raises JanitorError: if ``column_names`` is not hashable
+    :raises JanitorError: if `column_names` is not hashable
         nor iterable.
-    :raises ValueError: if both ``column_names`` and ``kwargs`` are provided.
+    :raises ValueError: if both `column_names` and `kwargs` are provided.
     """  # noqa: E501
 
     df = df.copy()
@@ -779,24 +782,77 @@ def label_encode(
         or tuple) of column names.
     :returns: A pandas DataFrame.
     """
-    df = _label_encode(df, column_names)
+    warnings.warn(
+        "label_encode will be deprecated in a 1.x release. \
+        Please use factorize_columns instead"
+    )
+    df = _factorize(df, column_names, "_enc")
     return df
 
 
-@dispatch(pd.DataFrame, (list, tuple))
-def _label_encode(df, column_names):
-    le = LabelEncoder()
+@pf.register_dataframe_method
+def factorize_columns(
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable],
+    suffix: str = "_enc",
+    **kwargs,
+) -> pd.DataFrame:
+    """Converts labels into numerical data
+
+    This method will create a new column with the string "_enc" appended
+    after the original column's name.
+    This can be overriden with the suffix parameter
+
+    Internally this method uses pandas factorize method.
+    It takes in optional suffix and keyword arguments also.
+    An empty string as suffix will override the existing column
+
+    This method mutates the original DataFrame
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        df = factorize_columns(df, column_names="my_categorical_column",
+                                        suffix="_enc")  # one way
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+        categorical_cols = ['col1', 'col2', 'col4']
+        df = pd.DataFrame(...).factorize_columns(
+                                column_names=categorical_cols,
+                                suffix="_enc")
+
+    :param df: The pandas DataFrame object.
+    :param column_names: A column name or an iterable (list
+        or tuple) of column names.
+    :param suffix: Suffix to be used for the new column. Default value is _enc.
+        An empty string suffix means, it will override the existing column
+    :param **kwargs: Keyword arguments. It takes any of the keyword arguments,
+        which the pandas factorize method takes like sort,na_sentinel,size_hint
+
+    :returns: A pandas DataFrame.
+    """
+    df = _factorize(df, column_names, suffix, **kwargs)
+    return df
+
+
+@dispatch(pd.DataFrame, (list, tuple), str)
+def _factorize(df, column_names, suffix, **kwargs):
     check_column(df, column_names=column_names, present=True)
     for col in column_names:
-        df[f"{col}_enc"] = le.fit_transform(df[col])
+        df[f"{col}{suffix}"] = pd.factorize(df[col], **kwargs)[0]
     return df
 
 
-@dispatch(pd.DataFrame, str)  # noqa: F811
-def _label_encode(df, column_names):  # noqa: F811
-    le = LabelEncoder()
-    check_column(df, column_names=column_names, present=True)
-    df[f"{column_names}_enc"] = le.fit_transform(df[column_names])
+@dispatch(pd.DataFrame, str, str)
+def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
+    check_column(df, column_names=column_name, present=True)
+    df[f"{column_name}{suffix}"] = pd.factorize(df[column_name], **kwargs)[0]
     return df
 
 
@@ -838,14 +894,21 @@ def rename_column(
 
 
 @pf.register_dataframe_method
-def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
-    """Rename columns in place.
+def rename_columns(
+    df: pd.DataFrame,
+    new_column_names: Union[Dict, None] = None,
+    function: Callable = None,
+) -> pd.DataFrame:
+    """Rename columns.
 
     Functional usage syntax:
 
     .. code-block:: python
 
         df = rename_columns(df, {"old_column_name": "new_column_name"})
+        df = rename_columns(df, function = str.upper)
+        df = rename_columns(df,
+                function = lambda x : x.lower() if x.startswith("double") else x)
 
     Method chaining syntax:
 
@@ -855,17 +918,31 @@ def rename_columns(df: pd.DataFrame, new_column_names: Dict) -> pd.DataFrame:
         import janitor
         df = pd.DataFrame(...).rename_columns({"old_column_name": "new_column_name"})
 
-    This is just syntactic sugar/a convenience function for renaming one column
-    at a time. If you are convinced that there are multiple columns in need of
-    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+    This is just syntactic sugar/a convenience function for renaming multiple columns
+    at a time. If you need to rename single column,
+    then use the `rename_column` method.
+
+    One of the new_column_names or function are a required parameter.
+    If both are provided then new_column_names takes priority and function
+    is never executed.
 
     :param df: The pandas DataFrame object.
     :param new_column_names: A dictionary of old and new column names.
+    :param function: A function which should be applied to all the columns
     :returns: A pandas DataFrame with renamed columns.
+    :raises ValueError: if both new_column_names and function are None
     """  # noqa: E501
-    check_column(df, list(new_column_names.keys()))
 
-    return df.rename(columns=new_column_names)
+    if new_column_names is None and function is None:
+        raise ValueError(
+            "One of new_column_names or function must be provided"
+        )
+
+    if new_column_names is not None:
+        check_column(df, new_column_names)
+        return df.rename(columns=new_column_names)
+
+    return df.rename(mapper=function, axis="columns")
 
 
 @pf.register_dataframe_method
@@ -905,14 +982,14 @@ def reorder_columns(
     :param column_order: A list of column names or Pandas `Index`
         specifying their order in the returned `DataFrame`.
     :returns: A pandas DataFrame with reordered columns.
-    :raises IndexError: if a column within ``column_order`` is not found
+    :raises IndexError: if a column within `column_order` is not found
         within the DataFrame.
     """
     check("column_order", column_order, [list, tuple, pd.Index])
 
     if any(col not in df.columns for col in column_order):
         raise IndexError(
-            "A column in ``column_order`` was not found in the DataFrame."
+            "A column in `column_order` was not found in the DataFrame."
         )
 
     # if column_order is a Pandas index, needs conversion to list:
@@ -928,22 +1005,83 @@ def reorder_columns(
 
 
 @pf.register_dataframe_method
-@deprecated_alias(columns="column_names")
+@deprecated_alias(columns="column_names", new_column_name="target_column_name")
 def coalesce(
     df: pd.DataFrame,
-    column_names: Iterable[Hashable],
-    new_column_name: Optional[str] = None,
-    delete_columns: bool = True,
+    *column_names,
+    target_column_name: Optional[str] = None,
+    default_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
-    """Coalesce two or more columns of data in order of column names provided.
+    """
+    Coalesce two or more columns of data in order of column names provided.
+
+    This finds the first non-missing value at each position.
 
     This method does not mutate the original DataFrame.
+
+    Example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame({"A": [1, 2, np.nan],
+                           "B": [np.nan, 10, np.nan],
+                           "C": [5, 10, 7]})
+
+             A     B   C
+        0  1.0   NaN   5
+        1  2.0  10.0  10
+        2  NaN   NaN   7
+
+        df.coalesce('A', 'B', 'C',
+                    target_column_name = 'D')
+
+            A     B   C    D
+        0  1.0   NaN   5  1.0
+        1  2.0  10.0  10  2.0
+        2  NaN   NaN   7  7.0
+
+    If no target column is provided, then the first column is updated,
+    with the null values removed::
+
+        df.coalesce('A', 'B', 'C')
+
+            A     B   C
+        0  1.0   NaN   5
+        1  2.0  10.0  10
+        2  7.0   NaN   7
+
+    If nulls remain, you can fill it with the `default_value`::
+
+        df = pd.DataFrame({'s1':[np.nan,np.nan,6,9,9],
+                           's2':[np.nan,8,7,9,9]})
+
+            s1   s2
+        0  NaN  NaN
+        1  NaN  8.0
+        2  6.0  7.0
+        3  9.0  9.0
+        4  9.0  9.0
+
+        df.coalesce('s1', 's2',
+                    target_column_name = 's3',
+                    default_value = 0)
+
+            s1   s2   s3
+        0  NaN  NaN  0.0
+        1  NaN  8.0  8.0
+        2  6.0  7.0  6.0
+        3  9.0  9.0  9.0
+        4  9.0  9.0  9.0
+
 
     Functional usage syntax:
 
     .. code-block:: python
 
-        df = coalesce(df, columns=['col1', 'col2'], 'col3')
+        df = coalesce(df, 'col1', 'col2', target_column_name ='col3')
 
     Method chaining syntax:
 
@@ -951,34 +1089,60 @@ def coalesce(
 
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).coalesce(['col1', 'col2'])
+        df = pd.DataFrame(...).coalesce('col1', 'col2')
 
     The first example will create a new column called 'col3' with values from
-    'col2' inserted where values from 'col1' are NaN, then delete the original
-    columns. The second example will keep the name 'col1' in the new column.
+    'col2' inserted where values from 'col1' are NaN.
+    The second example will update the values of 'col1',
+    since it is the first column in `column_names`.
 
     This is more syntactic diabetes! For R users, this should look familiar to
     `dplyr`'s `coalesce` function; for Python users, the interface
     should be more intuitive than the :py:meth:`pandas.Series.combine_first`
-    method (which we're just using internally anyways).
+    method.
 
     :param df: A pandas DataFrame.
     :param column_names: A list of column names.
-    :param new_column_name: The new column name after combining.
-    :param delete_columns: Whether to delete the columns being coalesced
+    :param target_column_name: The new column name after combining.
+        If `None`, then the first column in `column_names` is updated,
+        with the Null values replaced.
+    :param default_value: A scalar to replace any remaining nulls
+        after coalescing.
     :returns: A pandas DataFrame with coalesced columns.
+    :raises ValueError: if length of `column_names` is less than 2.
     """
-    series = [df[c] for c in column_names]
 
-    def _coalesce(series1, series2):
-        return series1.combine_first(series2)
+    if not column_names:
+        return df
 
-    if delete_columns:
-        df = df.drop(columns=column_names)
-    if not new_column_name:
-        new_column_name = column_names[0]
-    df[new_column_name] = reduce(_coalesce, series)  # noqa: F821
-    return df
+    if len(column_names) < 2:
+        raise ValueError(
+            """
+            The number of columns to coalesce
+            should be a minimum of 2.
+            """
+        )
+
+    column_names = [*column_names]
+
+    column_names = _select_columns(column_names, df)
+    if target_column_name:
+        check("target_column_name", target_column_name, [str])
+    if default_value:
+        check("default_value", default_value, [int, float, str])
+
+    if target_column_name is None:
+        target_column_name = column_names[0]
+    # bfill/ffill combo is faster than combine_first
+    outcome = (
+        df.filter(column_names)
+        .bfill(axis="columns")
+        .ffill(axis="columns")
+        .iloc[:, 0]
+    )
+    if outcome.hasnans and (default_value is not None):
+        outcome = outcome.fillna(default_value)
+    return df.assign(**{target_column_name: outcome})
 
 
 @pf.register_dataframe_method
@@ -1011,7 +1175,15 @@ def convert_excel_date(
     :param df: A pandas DataFrame.
     :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
+    :raises ValueError: if There are non numeric values in the column.
     """  # noqa: E501
+
+    if not is_numeric_dtype(df[column_name]):
+        raise ValueError(
+            "There are non-numeric values in the column. \
+    All values must be numeric"
+        )
+
     df[column_name] = pd.TimedeltaIndex(
         df[column_name], unit="d"
     ) + dt.datetime(
@@ -1150,7 +1322,10 @@ def _fill_empty(df, column_names, value=None):  # noqa: F811
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def expand_column(
-    df: pd.DataFrame, column_name: Hashable, sep: str, concat: bool = True
+    df: pd.DataFrame,
+    column_name: Hashable,
+    sep: str = "|",
+    concat: bool = True,
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -1177,7 +1352,8 @@ def expand_column(
 
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.
-    :param sep: The delimiter. Example delimiters include `|`, `, `, `,` etc.
+    :param sep: The delimiter, same to
+        :py:meth:`~pandas.Series.str.get_dummies`'s `sep`, default as `|`.
     :param concat: Whether to return the expanded column concatenated to
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).
@@ -1228,7 +1404,7 @@ def concatenate_columns(
     :param sep: The separator between each column's data.
     :returns: A pandas DataFrame with concatenated columns.
     :raises JanitorError: if at least two columns are not provided
-        within ``column_names``.
+        within `column_names``.
     """
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")
@@ -1256,27 +1432,27 @@ def deconcatenate_column(
     """De-concatenates a single column into multiple columns.
 
     The column to de-concatenate can be either a collection (list, tuple, ...)
-    which can be separated out with ``pd.Series.tolist()``,
-    or a string to slice based on ``sep``.
+    which can be separated out with `pd.Series.tolist()``,
+    or a string to slice based on `sep``.
 
     To determine this behaviour automatically,
     the first element in the column specified is inspected.
 
-    If it is a string, then ``sep`` must be specified.
+    If it is a string, then `sep` must be specified.
     Else, the function assumes that it is an iterable type
-    (e.g. ``list`` or ``tuple``),
+    (e.g. `list` or `tuple``),
     and will attempt to deconcatenate by splitting the list.
 
     Given a column with string values, this is the inverse of the
-    ``concatenate_columns`` function.
+    `concatenate_columns` function.
 
     Used to quickly split columns out of a single column.
 
-    The keyword argument ``preserve_position``
-    takes ``True`` or ``False`` boolean
-    that controls whether the ``new_column_names``
+    The keyword argument `preserve_position``
+    takes `True` or `False` boolean
+    that controls whether the `new_column_names``
     will take the original position
-    of the to-be-deconcatenated ``column_name``:
+    of the to-be-deconcatenated `column_name``:
 
     - When `preserve_position=False` (default), `df.columns` change from
       `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
@@ -1288,14 +1464,14 @@ def deconcatenate_column(
       `column_name` at its original position, and `column_name` itself
       is dropped.
 
-    The keyword argument ``autoname`` accepts a base string
+    The keyword argument `autoname` accepts a base string
     and then automatically creates numbered column names
     based off the base string.
-    For example, if ``col`` is passed in
-    as the argument to ``autoname``,
+    For example, if `col` is passed in
+    as the argument to `autoname``,
     and 4 columns are created,
     then the resulting columns will be named
-    ``col1, col2, col3, col4``.
+    `col1, col2, col3, col4``.
     Numbering is always 1-indexed, not 0-indexed,
     in order to make the column names human-friendly.
 
@@ -1325,18 +1501,18 @@ def deconcatenate_column(
     :param sep: The separator delimiting the column's data.
     :param new_column_names: A list of new column names post-splitting.
     :param autoname: A base name for automatically naming the new columns.
-        Takes precedence over ``new_column_names`` if both are provided.
+        Takes precedence over `new_column_names` if both are provided.
     :param preserve_position: Boolean for whether or not to preserve original
         position of the column upon de-concatenation, default to False
     :returns: A pandas DataFrame with a deconcatenated column.
-    :raises ValueError: if ``column_name`` is not present in the
+    :raises ValueError: if `column_name` is not present in the
         DataFrame.
-    :raises ValueError: if ``sep`` is not provided and the column values
-        are of type ``str``.
-    :raises ValueError: if either ``new_column_names`` or ``autoname``
+    :raises ValueError: if `sep` is not provided and the column values
+        are of type `str``.
+    :raises ValueError: if either `new_column_names` or `autoname``
         is not supplied.
     :raises JanitorError: if incorrect number of names is provided
-        within ``new_column_names``.
+        within `new_column_names``.
     """
 
     if column_name not in df.columns:
@@ -1381,9 +1557,7 @@ def deconcatenate_column(
         for i, col_new in enumerate(new_column_names):
             cols.insert(index_original + i, col_new)
 
-        df_new = df_new.select_columns(search_column_names=cols).drop(
-            columns=column_name
-        )
+        df_new = df_new.select_columns(cols).drop(columns=column_name)
 
     return df_new
 
@@ -1772,7 +1946,7 @@ def filter_column_isin(
     :param complement: Whether to return the complement of the selection or
         not.
     :returns: A filtered pandas DataFrame.
-    :raises ValueError: if ``iterable`` does not have a length of ``1``
+    :raises ValueError: if `iterable` does not have a length of `1``
         or greater.
     """
     if len(iterable) == 0:
@@ -1825,7 +1999,7 @@ def change_type(
     Exceptions that are raised can be ignored. For example, if one has a mixed
     dtype column that has non-integer strings and integers, and you want to
     coerce everything to integers, you can optionally ignore the non-integer
-    strings and replace them with ``NaN`` or keep the original value
+    strings and replace them with `NaN` or keep the original value
 
     Intended to be the method-chaining alternative to:
 
@@ -1841,10 +2015,10 @@ def change_type(
     :param column_name: A column in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
-    :param ignore_exception: one of ``{False, "fillna", "keep_values"}``.
+    :param ignore_exception: one of `{False, "fillna", "keep_values"}``.
     :returns: A pandas DataFrame with changed column types.
     :raises ValueError: if unknown option provided for
-        ``ignore_exception``.
+        `ignore_exception``.
     """
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)
@@ -1905,11 +2079,11 @@ def add_column(
         (R-style) to the end of the DataFrame.
     :returns: A pandas DataFrame with an added column.
     :raises ValueError: if attempting to add a column that already exists.
-    :raises ValueError: if ``value`` has more elements that number of
+    :raises ValueError: if `value` has more elements that number of
         rows in the DataFrame.
     :raises ValueError: if attempting to add an iterable of values with
         a length not equal to the number of DataFrame rows.
-    :raises ValueError: if ``value`` has length of ``0``.
+    :raises ValueError: if `value` has length of `0``.
     """
     # TODO: Convert examples to notebook.
     # :Setup:
@@ -2205,6 +2379,7 @@ def row_to_names(
     row_number: int = None,
     remove_row: bool = False,
     remove_rows_above: bool = False,
+    reset_index: bool = False,
 ) -> pd.DataFrame:
     """Elevates a row to be the column names of a DataFrame.
 
@@ -2223,6 +2398,7 @@ def row_to_names(
                 row_number=0,
                 remove_row=False,
                 remove_rows_above=False,
+                reset_index=False,
             )
         )
 
@@ -2232,6 +2408,8 @@ def row_to_names(
         Defaults to False.
     :param remove_rows_above: Whether the rows above the selected row should
         be removed from the DataFrame. Defaults to False.
+    :param reset_index: Whether the index should be reset on the returning
+        DataFrame. Defaults to False.
     :returns: A pandas DataFrame with set column names.
     """
     # :Setup:
@@ -2269,7 +2447,31 @@ def row_to_names(
     #     6  1  1  1   rabbit  Cambridge
     #     7  2  2  2  leopard   Shanghai
 
-    # :Example: Move first row to column names and remove row:
+    # :Example: Move first row to column names and
+    #  remove row while resetting the index:
+
+    # .. code-block:: python
+
+    #     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe.row_to_names(0, remove_row=True,\
+    #       reset_index=True)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #       1   1   1   rabbit  Cambridge
+    #   0   2   2   2   leopard Shanghai
+    #   1   3   3   3   lion    Basel
+    #   2   1   1   1   rabbit  Cambridge
+    #   3   2   2   2   leopard Shanghai
+    #   4   3   3   3   lion    Basel
+    #   5   1   1   1   rabbit  Cambridge
+    #   6   2   2   2   leopard Shanghai
+    #   7   3   3   3   lion    Basel
+
+    # :Example: Move first row to column names and remove
+    #   row without resetting the index:
 
     # .. code-block:: python
 
@@ -2290,14 +2492,37 @@ def row_to_names(
     #     7  2  2  2  leopard   Shanghai
     #     8  3  3  3     lion      Basel
 
-    # :Example: Move first row to column names, remove row, \
-    # and remove rows above selected row:
+    # :Example: Move first row to column names, remove row
+    #   and remove rows above selected row without resetting
+    #   index:
 
     # .. code-block:: python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
-    #         remove_rows_above=True)
+    #       remove_rows_above=True, reset_index= True)
+
+    # :Output:
+
+    # .. code-block:: python
+
+    #       3   3   3   lion    Basel
+    #   0   1   1   1   rabbit  Cambridge
+    #   1   2   2   2   leopard Shanghai
+    #   2   3   3   3   lion    Basel
+    #   3   1   1   1   rabbit  Cambridge
+    #   4   2   2   2   leopard Shanghai
+    #   5   3   3   3   lion    Basel
+
+    # :Example: Move first row to column names, remove row,
+    # and remove rows above selected row without resetting
+    # index:
+
+    # .. code-block:: python
+
+    #     example_dataframe = pd.DataFrame(data_dict)
+    #     example_dataframe.row_to_names(2, remove_row=True, \
+    #       remove_rows_above=True)
 
     # :Output:
 
@@ -2313,6 +2538,13 @@ def row_to_names(
 
     check("row_number", row_number, [int])
 
+    warnings.warn(
+        "The function row_to_names will, in the official 1.0 release, "
+        "change its behaviour to reset the dataframe's index by default. "
+        "You can prepare for this change right now by explicitly setting "
+        "`reset_index=True` when calling on `row_to_names`."
+    )
+
     df.columns = df.iloc[row_number, :]
     df.columns.name = None
 
@@ -2321,6 +2553,9 @@ def row_to_names(
 
     if remove_rows_above:
         df = df.drop(df.index[range(row_number)])
+
+    if reset_index:
+        df = df.reset_index(drop=["index"])
 
     return df
 
@@ -2460,13 +2695,13 @@ def transform_column(
 
     Functions can be applied one of two ways:
 
-    - Element-wise (default; ``elementwise=True``)
-    - Column-wise  (alternative; ``elementwise=False``)
+    - Element-wise (default; `elementwise=True``)
+    - Column-wise  (alternative; `elementwise=False``)
 
     If the function is applied "elementwise",
     then the first argument of the function signature
     should be the individual element of each function.
-    This is the default behaviour of ``transform_column``,
+    This is the default behaviour of `transform_column``,
     because it is easy to understand.
     For example:
 
@@ -2627,7 +2862,7 @@ def transform_columns(
     :param new_column_names: (optional) An explicit mapping of old column names
         to new column names.
     :returns: A pandas DataFrame with transformed columns.
-    :raises ValueError: if both ``suffix`` and ``new_column_names`` are
+    :raises ValueError: if both `suffix` and `new_column_names` are
         specified
     """
     dest_column_names = dict(zip(column_names, column_names))
@@ -2733,8 +2968,8 @@ def min_max_scale(
         it has been scaled.
     :param column_name: (optional) The column on which to perform scaling.
     :returns: A pandas DataFrame with scaled data.
-    :raises ValueError: if ``old_max`` is not greater than ``old_min``.
-    :raises ValueError: if ``new_max`` is not greater than ``new_min``.
+    :raises ValueError: if `old_max` is not greater than `old_min``.
+    :raises ValueError: if `new_max` is not greater than `new_min``.
     """
     if (
         (old_min is not None)
@@ -2800,7 +3035,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
                 .collapse_levels(sep='_')
         )
 
-    Before applying ``.collapse_levels``, the ``.agg`` operation returns a
+    Before applying `.collapse_levels``, the `.agg` operation returns a
     multi-level column `DataFrame` whose columns are (level 1, level 2):
 
     .. code-block:: python
@@ -2808,7 +3043,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
         [('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
         ('type', 'mean'), ('type', 'median')]
 
-    ``.collapse_levels`` then flattens the column names to:
+    `.collapse_levels` then flattens the column names to:
 
     .. code-block:: python
 
@@ -3061,7 +3296,7 @@ def currency_column_to_numeric(
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
     df: pd.DataFrame,
-    search_column_names: Union[str, callable, Pattern, slice, list],
+    *args,
     invert: bool = False,
 ) -> pd.DataFrame:
     """
@@ -3118,7 +3353,7 @@ def select_columns(
        0   0
        1   1
 
-    Select via shell-like glob strings (*) is possible::
+    - Select via shell-like glob strings (*) is possible::
 
         df.select_columns("*type*")
 
@@ -3135,7 +3370,7 @@ def select_columns(
         1    NaN     5    R   NaN
 
     - Select by callable (the callable is applied to every column
-      and should return a single ``True`` or ``False`` per column)::
+      and should return a single `True` or `False` per column)::
 
         df.select_columns(pd.api.types.is_datetime64_dtype)
 
@@ -3173,15 +3408,16 @@ def select_columns(
         0    4.0     8     E     T     a 2018-01-01
         1    NaN     5   NaN     U     b 2018-01-01
 
-    - Select via a list (you can combine any of the previous options)::
+    - Select a combination of the above
+      (you can combine any of the previous options)::
 
-        df.select_columns(["id", "code*", slice("code", "code2")])
+        df.select_columns("id", "code*", slice("code", "code2"))
 
            id  code  code1 code2 code3
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
 
-    - You can also pass a list of booleans::
+    - You can also pass a sequence of booleans::
 
         df.select_columns([True, False, True, True, True,
                            False, False, False, True, False])
@@ -3190,10 +3426,10 @@ def select_columns(
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
 
-    - Setting ``invert`` to ``True``
+    - Setting `invert` to `True``
       returns the complement of the columns provided::
 
-        df.select_columns(["id", "code*", slice("code", "code2")],
+        df.select_columns("id", "code*", slice("code", "code2"),
                           invert = True)
 
            Name type type1 type2      type3
@@ -3207,7 +3443,7 @@ def select_columns(
 
        df = pd.DataFrame(...)
 
-       df = jn.select_columns(['a', 'b', 'col_*'],
+       df = jn.select_columns('a', 'b', 'col_*',
                               invert=True)
 
     Method-chaining example:
@@ -3215,17 +3451,19 @@ def select_columns(
     .. code-block:: python
 
         df = (pd.DataFrame(...)
-              .select_columns(['a', 'b', 'col_*'],
+              .select_columns('a', 'b', 'col_*',
               invert=True))
 
+
     :param df: A pandas DataFrame.
-    :param search_column_names: Valid inputs include:
+    :param args: Valid inputs include:
 
         - an exact column name to look for
         - a shell-style glob string (e.g., `*_thing_*`)
         - a regular expression
         - a callable which is applicable to each Series in the dataframe
-        - a list of all the aforementioned options.
+        - variable arguments of all the aforementioned.
+        - a sequence of booleans.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.
@@ -3237,18 +3475,17 @@ def select_columns(
     .. # noqa: DAR402
     """
 
-    if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError(
-            """
-            MultiIndex columns
-            not supported for `select_columns`.
-            """
-        )
-
     # applicable for any
-    # list-like object (ndarray, Series, pd.Index, tuple, ...)
-    if is_list_like(search_column_names):
-        search_column_names = list(search_column_names)
+    # list-like object (ndarray, Series, pd.Index, ...)
+    # excluding tuples, which are returned as is
+    search_column_names = []
+    for arg in args:
+        if is_list_like(arg) and (not isinstance(arg, tuple)):
+            search_column_names.extend([*arg])
+        else:
+            search_column_names.append(arg)
+    if len(search_column_names) == 1:
+        search_column_names = search_column_names[0]
 
     full_column_list = _select_columns(search_column_names, df)
 
@@ -3270,7 +3507,7 @@ def impute(
 
     This method mutates the original DataFrame.
 
-    Underneath the hood, this function calls the ``.fillna()`` method available
+    Underneath the hood, this function calls the `.fillna()` method available
     to every pandas.Series object.
 
     Method-chaining example:
@@ -3293,31 +3530,31 @@ def impute(
             .impute(column_name='score', statistic_column_name='median')
         )
 
-    Either one of ``value`` or ``statistic_column_name`` should be provided.
+    Either one of `value` or `statistic_column_name` should be provided.
 
-    If ``value`` is provided, then all null values in the selected column will
+    If `value` is provided, then all null values in the selected column will
         take on the value provided.
 
-    If ``statistic_column_name`` is provided, then all null values in the
+    If `statistic_column_name` is provided, then all null values in the
     selected column will take on the summary statistic value of other non-null
     values.
 
     Currently supported statistics include:
 
-    - ``mean`` (also aliased by ``average``)
-    - ``median``
-    - ``mode``
-    - ``minimum`` (also aliased by ``min``)
-    - ``maximum`` (also aliased by ``max``)
+    - `mean` (also aliased by `average``)
+    - `median``
+    - `mode``
+    - `minimum` (also aliased by `min``)
+    - `maximum` (also aliased by `max``)
 
     :param df: A pandas DataFrame
     :param column_name: The name of the column on which to impute values.
     :param value: (optional) The value to impute.
     :param statistic_column_name: (optional) The column statistic to impute.
     :returns: An imputed pandas DataFrame.
-    :raises ValueError: if both ``value`` and ``statistic`` are provided.
-    :raises KeyError: if ``statistic`` is not one of ``mean``, ``average``
-        ``median``, ``mode``, ``minimum``, ``min``, ``maximum``, or ``max``.
+    :raises ValueError: if both `value` and `statistic` are provided.
+    :raises KeyError: if `statistic` is not one of `mean``, `average``
+        `median``, `mode``, `minimum``, `min``, `maximum``, or `max``.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if value is not None and statistic_column_name is not None:
@@ -3360,7 +3597,7 @@ def impute(
 
 @pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
-    """Add an arbitrary function to run in the ``pyjanitor`` method chain.
+    """Add an arbitrary function to run in the `pyjanitor` method chain.
 
     This method does not mutate the original DataFrame.
 
@@ -3378,7 +3615,7 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 @pf.register_dataframe_method
 def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     """Add an arbitrary function with no return value to run in the
-    ``pyjanitor`` method chain. This returns the input dataframe instead,
+    `pyjanitor` method chain. This returns the input dataframe instead,
     not the output of `func`.
 
     This method does not mutate the original DataFrame.
@@ -3405,8 +3642,8 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     :param func: A function you would like to run in the method chain.
         It should take one DataFrame object as a parameter and have no return.
         If there is a return, it will be ignored.
-    :param args: Optional arguments for ``func``.
-    :param kwargs: Optional keyword arguments for ``func``.
+    :param args: Optional arguments for `func``.
+    :param kwargs: Optional keyword arguments for `func``.
     :returns: The input pandas DataFrame.
     """  # noqa: E501
     func(df.copy(), *args, **kwargs)
@@ -3491,19 +3728,19 @@ def find_replace(
         )
 
     To perform a find and replace on the entire dataframe,
-    pandas' ``df.replace()`` function provides the appropriate functionality.
+    pandas' `df.replace()` function provides the appropriate functionality.
     You can find more detail on the replace_ docs.
 
     This function only works with column names that have no spaces
     or punctuation in them.
-    For example, a column name ``item_name`` would work with ``find_replace``,
+    For example, a column name `item_name` would work with `find_replace``,
     because it is a contiguous string that can be parsed correctly,
-    but ``item name`` would not be parsed correctly by the Python interpreter.
+    but `item name` would not be parsed correctly by the Python interpreter.
 
     If you have column names that might not be compatible,
-    we recommend calling on ``clean_names()`` as the first method call.
+    we recommend calling on `clean_names()` as the first method call.
     If, for whatever reason, that is not possible,
-    then ``_find_replace()`` is available as a function
+    then `_find_replace()` is available as a function
     that you can do a pandas pipe_ call on.
 
     .. _replace: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
@@ -3525,9 +3762,9 @@ def find_replace(
 def _find_replace(
     df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
 ) -> pd.DataFrame:
-    """Utility function for ``find_replace``.
+    """Utility function for `find_replace``.
 
-    The code in here was the original implementation of ``find_replace``,
+    The code in here was the original implementation of `find_replace``,
     but we decided to change out the front-facing API to accept
     kwargs + dictionaries for readability,
     and instead dispatch underneath to this function.
@@ -3544,8 +3781,8 @@ def _find_replace(
         Default to "exact". Can only be "exact" or "regex".
     :returns: A pandas DataFrame.
     :raises ValueError: is trying to use null replacement. Kindly use
-        ``.fillna()`` instead.
-    :raises ValueError: if ``match`` is not one of 'exact' or 'regex'.
+        `.fillna()` instead.
+    :raises ValueError: if `match` is not one of 'exact' or 'regex'.
     """
     if any(map(pd.isna, mapper.keys())):
         raise ValueError(
@@ -3575,31 +3812,47 @@ def update_where(
     """
     Add multiple conditions to update a column in the dataframe.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Example usage:
 
     .. code-block:: python
 
-        # The dataframe must be assigned to a variable first.
         data = {
             "a": [1, 2, 3, 4],
             "b": [5, 6, 7, 8],
             "c": [0, 0, 0, 0]
         }
         df = pd.DataFrame(data)
-        df = (
-            df
-            .update_where(
-                condition=("a > 2 and b < 8",
-                target_column_name='c',
-                target_val=10)
-            )
-        # a b  c
-        # 1 5  0
-        # 2 6  0
-        # 3 7 10
-        # 4 8  0
+
+           a  b  c
+        0  1  5  0
+        1  2  6  0
+        2  3  7  0
+        3  4  8  0
+
+        df.update_where(conditions = (df.a > 2) & (df.b < 8),
+                        target_column_name = 'c',
+                        target_val = 10)
+
+           a  b   c
+        0  1  5   0
+        1  2  6   0
+        2  3  7  10
+        3  4  8   0
+
+    `update_where` also supports pandas *query* style string expressions::
+
+        df.update_where(conditions = "a > 2 and b < 8",
+                        target_column_name = 'c',
+                        target_val = 10)
+
+           a  b   c
+        0  1  5   0
+        1  2  6   0
+        2  3  7  10
+        3  4  8   0
+
 
     :param df: The pandas DataFrame object.
     :param conditions: Conditions used to update a target column
@@ -3608,21 +3861,32 @@ def update_where(
         in dataframe, a new column will be created; note that entries that do
         not get set in the new column will be null.
     :param target_val: Value to be updated
-    :returns: An updated pandas DataFrame.
-    :raises IndexError: if ``conditions`` does not have the same length as
-        ``df``.
-    :raises TypeError: if ``conditions`` is not a pandas-compatible string
+    :returns: A pandas DataFrame.
+    :raises IndexError: if `conditions` does not have the same length as
+        `df``.
+    :raises TypeError: if `conditions` is not a pandas-compatible string
         query.
+    :raises ValueError: if `conditions` does not return a boolean array-like
+        data structure.
 
     .. # noqa: DAR402
     """
 
+    df = df.copy()
+
     # use query mode if a string expression is passed
     if isinstance(conditions, str):
-        conditions_index = df.query(conditions).index
-    else:
-        conditions_index = df.loc[conditions].index
-    df.loc[conditions_index, target_column_name] = target_val
+        conditions = df.eval(conditions)
+
+    if not is_bool_dtype(conditions):
+        raise ValueError(
+            """
+            Kindly ensure that `conditions` passed
+            evaluates to a Boolean dtype.
+            """
+        )
+
+    df.loc[conditions, target_column_name] = target_val
 
     return df
 
@@ -3661,6 +3925,85 @@ def to_datetime(
 
 
 @pf.register_dataframe_method
+def truncate_datetime_dataframe(
+    df: pd.DataFrame, datepart: str
+) -> pd.DataFrame:
+    for i in df.columns:
+        for j in df.index:
+            try:
+                df[i][j] = truncate_datetime(datepart, df[i][j])
+            except KeyError:
+                pass
+            except TypeError:
+                pass
+            except AttributeError:
+                pass
+
+    return df
+
+
+@pf.register_dataframe_method
+def truncate_datetime(datepart: str, timestamp: dt.datetime):
+    """
+    Truncate times down to a user-specified precision of
+    year, month, day, hour, minute, or second.
+
+    Call on datetime object to truncate it.
+    Calling on existing df will not alter the contents
+    of said df.
+
+    Note: Truncating down to a Month or Day will yields 0s,
+    as there is no 0 month or 0 day in most datetime systems.
+
+    :param datepart: Truncation precision, YEAR, MONTH, DAY,
+        HOUR, MINUTE, SECOND. (String is automagically
+        capitalized)
+    :param timestamp: expecting a datetime from python datetime class (dt)
+    :raises KeyError: if inappropriate precision is passed
+
+    :returns: a truncated datetime object to
+        the precision specified by datepart.
+    """
+    recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND]
+    datepart = datepart.upper()
+    ENUM = {
+        "YEAR": 0,
+        "MONTH": 1,
+        "DAY": 2,
+        "HOUR": 3,
+        "MINUTE:": 4,
+        "SECOND": 5,
+        0: timestamp.year,
+        1: timestamp.month,
+        2: timestamp.day,
+        3: timestamp.hour,
+        4: timestamp.minute,
+        5: timestamp.second,
+    }
+    try:
+        ENUM[datepart]
+    # Capture the error but replace it with explicit instructions.
+    except KeyError:
+        msg = (
+            "Invalid truncation. Please enter any one of 'year', "
+            "'month', 'day', 'hour', 'minute' or 'second'."
+        )
+        raise KeyError(msg)
+
+    for i in range(ENUM.get(datepart) + 1):
+        recurrence[i] = ENUM.get(i)
+
+    return dt.datetime(
+        recurrence[0],
+        recurrence[1],
+        recurrence[2],
+        recurrence[3],
+        recurrence[4],
+        recurrence[5],
+    )
+
+
+@pf.register_dataframe_method
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
     df: pd.DataFrame,
@@ -3668,8 +4011,10 @@ def groupby_agg(
     new_column_name: str,
     agg_column_name: str,
     agg: Union[Callable, str],
+    dropna: bool = True,
 ) -> pd.DataFrame:
-    """Shortcut for assigning a groupby-transform to a new column.
+    """
+    Shortcut for assigning a groupby-transform to a new column.
 
     This method does not mutate the original DataFrame.
 
@@ -3688,9 +4033,75 @@ def groupby_agg(
         df = pd.DataFrame(...).groupby_agg(by='group',
                                            agg='mean',
                                            agg_column_name="col1"
-                                           new_column_name='col1_mean_by_group')
+                                           new_column_name='col1_mean_by_group',
+                                           dropna = True/False)
 
-    Example Link : https://pyjanitor.readthedocs.io/notebooks/groupby_agg.html
+    Examples::
+
+        import pandas as pd
+        import janitor as jn
+
+            group  var1
+        0      1     1
+        1      1     1
+        2      1     1
+        3      1     1
+        4      1     2
+        5      2     1
+        6      2     2
+        7      2     2
+        8      2     2
+        9      2     3
+
+    Let's get the count per `group` and `var1`::
+
+        df.groupby_agg(
+            by = ['group', 'var1'],
+            agg = 'size',
+            agg_column_name = 'var1',
+            new_column_name = 'count'
+        )
+
+            group  var1  size
+        0      1     1     4
+        1      1     1     4
+        2      1     1     4
+        3      1     1     4
+        4      1     2     1
+        5      2     1     1
+        6      2     2     3
+        7      2     2     3
+        8      2     2     3
+        9      2     3     1
+
+    If the data has null values,
+    you can include the null values by passing `False` to `dropna`;
+    this feature was introduced in Pandas 1.1::
+
+            name   type  num  nulls
+        0  black  chair    4    1.0
+        1  black  chair    5    1.0
+        2  black   sofa   12    NaN
+        3    red   sofa    4    NaN
+        4    red  plate    3    3.0
+
+    Let's get the count, including the null values,
+    grouping on `nulls` column::
+
+        df.groupby_agg(
+            by="nulls",
+            new_column_name="num_count",
+            agg_column_name="num",
+            agg="size",
+            dropna=False,
+        )
+
+            name   type  num  nulls  num_count
+        0  black  chair    4    1.0          2
+        1  black  chair    5    1.0          2
+        2  black   sofa   12    NaN          2
+        3    red   sofa    4    NaN          2
+        4    red  plate    3    3.0          1
 
     :param df: A pandas DataFrame.
     :param by: Column(s) to groupby on, either a `str` or
@@ -3698,31 +4109,15 @@ def groupby_agg(
     :param new_column_name: Name of the aggregation output column.
     :param agg_column_name: Name of the column to aggregate over.
     :param agg: How to aggregate.
+    :param dropna: Whether or not to include null values,
+        if present in the `by` column(s). Default is True.
     :returns: A pandas DataFrame.
     """
     df = df.copy()
-    # convert to list
-    # needed when creating a mapping through the iteration
-    if isinstance(by, str):
-        by = [by]
-    # this is a temporary measure, till the minimum Pandas version is 1.1,
-    # which supports null values in the group by
-    # If any of the grouping columns has null values, we temporarily
-    # replace the values with some outrageous value, that should not exist
-    # in the column. Also, the hasnans property is significantly faster than
-    # .isnull().any()
-    if any(df[col].hasnans for col in by):
 
-        mapping = {
-            column: ".*^%s1ho1go1logoban?*&-|/\\gos1he()#_" for column in by
-        }
-
-        df[new_column_name] = (
-            df.fillna(mapping).groupby(by)[agg_column_name].transform(agg)
-        )
-
-    else:
-        df[new_column_name] = df.groupby(by)[agg_column_name].transform(agg)
+    df[new_column_name] = df.groupby(by, dropna=dropna)[
+        agg_column_name
+    ].transform(agg)
     return df
 
 
@@ -3937,7 +4332,7 @@ def shuffle(
 
     This method does not mutate the original DataFrame.
 
-    Super-sugary syntax! Underneath the hood, we use ``df.sample(frac=1)``,
+    Super-sugary syntax! Underneath the hood, we use `df.sample(frac=1)``,
     with the option to set the random state.
 
     Example usage:
@@ -4053,9 +4448,9 @@ def flag_nulls(
         only want to look at one column, you can simply give its name. If set
         to None (default), all DataFrame columns are used.
     :returns: Input dataframe with the null flag column.
-    :raises ValueError: if ``column_name`` is already present in the
+    :raises ValueError: if `column_name` is already present in the
         DataFrame.
-    :raises ValueError: if a column within ``columns`` is no present in
+    :raises ValueError: if a column within `columns` is no present in
         the DataFrame.
 
     .. # noqa: DAR402
@@ -4081,6 +4476,90 @@ def flag_nulls(
     df = df.copy()
     df[column_name] = null_array.astype(int)
     return df
+
+
+@pf.register_dataframe_method
+def drop_constant_columns(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Finds and drops the constant columns from a Pandas data frame
+
+    This method does not mutate the original DataFrame.
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        data_dict = {
+        "a": [1, 1, 1] * 3,
+        "Bell__Chart": [1, 2, 3] * 3,
+        "decorated-elephant": [1, 1, 1] * 3,
+        "animals": ["rabbit", "leopard", "lion"] * 3,
+        "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+        }
+
+        df = pd.DataFrame(data_dict)
+
+        df = jn.functions.drop_constant_columns(df)
+
+    Method chaining usage example:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor
+
+        df = pd.DataFrame(...)
+
+        df = df.drop_constant_columns()
+
+    :param df: Input Pandas dataframe
+    :returns: The Pandas data frame with the constant columns dropped.
+    """
+
+    # :Example 1: Drop columns with a single value:
+
+    # .. code-block:: python
+
+    #         import pandas as pd
+    #         import janitor as jn
+
+    #         data_dict = {
+    #         "a": [1, 1, 1] * 3,
+    #         "Bell": [1, 2, 3] * 3,
+    #         "decorated-elephant": [1, 1, 1] * 3,
+    #         "animals": ["rabbit", "leopard", "lion"] * 3,
+    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3
+    #         }
+
+    # .. code-block:: python
+
+    #     df.drop_constant_columns()
+
+    # .. code-block:: python
+
+    #     Bell  animals cities
+    #   0   1   rabbit  Cambridge
+    #   1   2   leopard Shanghai
+    #   2   3   lion    Basel
+    #   3   1   rabbit  Cambridge
+    #   4   2   leopard Shanghai
+    #   5   3   lion    Basel
+    #   6   1   rabbit  Cambridge
+    #   7   2   leopard Shanghai
+    #   8   3   lion    Basel
+
+    # Find the constant columns
+    constant_columns = []
+    for col in df.columns:
+        if len(df[col].unique()) == 1:
+            constant_columns.append(col)
+
+    # Drop constant columns from df and return it
+    return df.drop(labels=constant_columns, axis=1)
 
 
 @pf.register_dataframe_method
@@ -4278,11 +4757,11 @@ def jitter(
 
     :returns: A pandas DataFrame with a new column containing Gaussian-
         jittered values from another column.
-    :raises TypeError: if ``column_name`` is not numeric.
-    :raises ValueError: if ``scale`` is not a numerical value
-        greater than ``0``.
-    :raises ValueError: if ``clip`` is not an iterable of length ``2``.
-    :raises ValueError: if ``clip[0]`` is not less than ``clip[1]``.
+    :raises TypeError: if `column_name` is not numeric.
+    :raises ValueError: if `scale` is not a numerical value
+        greater than `0``.
+    :raises ValueError: if `clip` is not an iterable of length `2``.
+    :raises ValueError: if `clip[0]` is not less than `clip[1]``.
     """
 
     # Check types
@@ -4318,7 +4797,7 @@ def sort_naturally(
     """Sort a DataFrame by a column using "natural" sorting.
 
     Natural sorting is distinct from
-    the default lexiographical sorting provided by ``pandas``.
+    the default lexiographical sorting provided by `pandas``.
     For example, given the following list of items:
 
         ["A1", "A11", "A3", "A2", "A10"]
@@ -4344,9 +4823,9 @@ def sort_naturally(
 
     .. _natsort: https://natsort.readthedocs.io/en/master/index.html
 
-    All keyword arguments to ``natsort`` should be provided
+    All keyword arguments to `natsort` should be provided
     after the column name to sort by is provided.
-    They are passed through to the ``natsorted`` function.
+    They are passed through to the `natsorted` function.
 
     Functional usage syntax:
 
@@ -4378,11 +4857,73 @@ def sort_naturally(
     :param df: A pandas DataFrame.
     :param column_name: The column on which natural sorting should take place.
     :param natsorted_kwargs: Keyword arguments to be passed
-        to natsort's ``natsorted`` function.
+        to natsort's `natsorted` function.
     :returns: A sorted pandas DataFrame.
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]
+
+
+def sort_column_value_order(
+    df: pd.DataFrame, column: str, column_value_order: dict, columns=None
+) -> pd.DataFrame:
+    """
+    This function adds precedence to certain values in a specified column, then
+    sorts based on that column and any other specified columns.
+
+    Example:
+                    SalesMonth	Company2	Company3
+        Company1
+        150.0	    Jan	        180.0	    400.0
+        200.0	    Feb	        250.0	    500.0
+        200.0	    Feb	        250.0	    500.0
+        300.0	    Mar	        NaN	        600.0
+        400.0	    April	    500.0	    675.0
+
+        Given the current DataFrame, we want to order the sales month in desc
+        order. To achieve this we would assign the later months with smaller
+        values with the latest month, such as April with the precedence of 0.
+
+        df = sort_column_value_order(
+        df,
+        'SalesMonth',
+        {'April':1,'Mar':2,'Feb':3,'Jan':4}
+        )
+
+        The returned DataFrame will look as follows.
+
+                    SalesMonth	Company2	Company3
+        Company1
+        400.0	    April	    500.0	    675.0
+        300.0	    Mar	        NaN	        600.0
+        200.0	    Feb	        250.0	    500.0
+        200.0	    Feb	        250.0	    500.0
+        150.0	    Jan	        180.0	    400.0
+
+    :param df: This is our DataFrame that we are manipulating
+    :param column: This is a column name as a string we are using to specify
+        which column to sort by
+    :param column_value_order: This is a dictionary of values that will
+        represent precedence of the values in the specified column
+    :param columns: This is a list of additional columns that we can sort by
+    :raises ValueError: raises error if chosen Column Name is not in
+        Dataframe, or if column_value_order dictionary is empty.
+    :return: This function returns a Pandas DataFrame
+    """
+    if len(column_value_order) > 0:
+        if column in df.columns:
+            df["cond_order"] = df[column].replace(column_value_order)
+            if columns is None:
+                new_df = df.sort_values("cond_order")
+                del new_df["cond_order"]
+            else:
+                new_df = df.sort_values(columns + ["cond_order"])
+                del new_df["cond_order"]
+            return new_df
+        else:
+            raise ValueError("Column Name not in DataFrame")
+    else:
+        raise ValueError("column_value_order dictionary cannot be empty")
 
 
 @pf.register_dataframe_method
@@ -4390,26 +4931,22 @@ def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
     others: Optional[Dict] = None,
-    **kwargs,
 ) -> pd.DataFrame:
     """
     Creates a dataframe from a cartesian combination of all inputs.
 
-    This works with a dictionary of name value pairs,
-    or keyword arguments (`kwargs`);
-    it is also not restricted to dataframes;
+    This works with a dictionary of name value pairs.
+
+    It is also not restricted to dataframes;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
-    MultiIndex objects are not supported though.
 
     If method-chaining to a dataframe,
     a key to represent the column name in the output must be provided.
 
-    Note that if a MultiIndex dataframe or series is passed, the index/columns
-    will be discarded, and a single indexed dataframe will be returned.
 
-    Existing data types are preserved in this function.
-    This includes Pandas' extension array dtypes.
+    Data types are preserved in this function,
+    including Pandas' extension array dtypes.
 
     The output will always be a dataframe.
 
@@ -4446,6 +4983,8 @@ def expand_grid(
         #  3 |   1
         #  3 |   2
 
+    .. note:: If a MultiIndex DataFrame or Series is passed, the index/columns
+        will be discarded, and a single indexed dataframe will be returned.
 
     Functional usage syntax:
 
@@ -4482,7 +5021,6 @@ def expand_grid(
         to be combined with the dataframe.
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
-    :param kwargs: Keyword arguments are accepted.
     :returns: A pandas dataframe of all combinations of name value pairs.
     :raises TypeError: if `others` is not a dictionary
     :raises KeyError: if there is a dataframe and no key is provided.
@@ -4493,8 +5031,6 @@ def expand_grid(
     """
 
     check("others", others, [dict])
-
-    others = {**others, **kwargs}
 
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
@@ -4533,12 +5069,12 @@ def process_text(
     Apply a Pandas string method to an existing column and return a dataframe.
 
     This function aims to make string cleaning easy, while chaining,
-    by simply passing the string method name to the ``process_text`` function.
+    by simply passing the string method name to the `process_text` function.
     This modifies an existing column and can also be used to create a new
     column.
 
-    .. note:: In versions < 0.20.11, this function did not support creation of
-        new columns.
+    .. note:: In versions < 0.20.11, this function did not support the
+        creation of new columns.
 
     A list of all the string methods in Pandas can be accessed `here
     <https://pandas.pydata.org/docs/user_guide/text.html#method-summary>`__.
@@ -4647,8 +5183,8 @@ def process_text(
     :param string_function: Pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
     :returns: A pandas dataframe with modified column(s).
-    :raises KeyError: if ``string_function`` is not a Pandas string method.
-    :raises TypeError: if wrong ``arg`` or ``kwarg`` is supplied.
+    :raises KeyError: if `string_function` is not a Pandas string method.
+    :raises TypeError: if wrong `arg` or `kwarg` is supplied.
     :raises ValueError: if `column_name` not found in dataframe.
     :raises ValueError: if `new_column_names` is not None and is found in
         dataframe.
@@ -4689,7 +5225,7 @@ def process_text(
         # duplicated indices in the original dataframe
         df = df.set_index(np.arange(len(df)), append=True)  # extra_index_line
 
-    result = getattr(df.loc[:, column_name].str, string_function)(**kwargs)
+    result = getattr(df[column_name].str, string_function)(**kwargs)
 
     # TODO: Support for str.cat with `join` parameter
     # need a robust way to handle the results
@@ -4706,72 +5242,63 @@ def process_text(
 
 
 @pf.register_dataframe_method
-def fill_direction(
-    df: pd.DataFrame,
-    directions: Dict[Hashable, str] = None,
-    limit: Optional[int] = None,
-) -> pd.DataFrame:
+def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
     Provide a method-chainable function for filling missing values
     in selected columns.
 
-    Missing values are filled using the next or previous entry.
-    The columns are paired with the directions in a dictionary.
-    It is a wrapper for ``pd.Series.ffill`` and ``pd.Series.bfill``.
+    It is a wrapper for `pd.Series.ffill` and `pd.Series.bfill``,
+    and pairs the column name with one of `up`, `down`, `updown`,
+    and `downup`.
 
     .. code-block:: python
 
         import pandas as pd
-        import numpy as np
         import janitor as jn
-
-        df = pd.DataFrame({"text": ["ragnar", np.nan, "sammywemmy",
-                                    np.nan, "ginger"],
-                           "code" : [np.nan, 2, 3, np.nan, 5]})
 
         df
 
-           text          code
-        0 ragnar         NaN
-        1 NaN            2.0
-        2 sammywemmy     3.0
-        3 NaN            NaN
-        4 ginger         5.0
+                 text  code
+        0      ragnar   NaN
+        1         NaN   2.0
+        2  sammywemmy   3.0
+        3         NaN   NaN
+        4      ginger   5.0
 
 
 
     Fill on a single column::
 
-        df.fill_direction({"text" : "up"})
+        df.fill_direction(code = 'up')
 
-           text          code
-        0 ragnar         NaN
-        1 sammywemmy     2.0
-        2 sammywemmy     3.0
-        3 ginger         NaN
-        4 ginger         5.0
+                 text  code
+        0      ragnar   2.0
+        1         NaN   2.0
+        2  sammywemmy   3.0
+        3         NaN   5.0
+        4      ginger   5.0
 
     Fill on multiple columns::
 
-        df.fill_direction({"text" : "down", "code" : "down"})
+        df.fill_direction(text = 'down', code = 'down')
 
-           text          code
-        0 ragnar         NaN
-        1 ragnar         2.0
-        2 sammywemmy     3.0
-        3 sammywemmy     3.0
-        4 ginger         5.0
+                 text  code
+        0      ragnar   NaN
+        1      ragnar   2.0
+        2  sammywemmy   3.0
+        3  sammywemmy   3.0
+        4      ginger   5.0
 
     Fill multiple columns in different directions::
 
-        df.fill_direction({"text" : "up", "code" : "down"})
+        df.fill_direction(text = 'up', code = 'down')
 
-           text          code
-        0 ragnar         NaN
-        1 sammywemmy     2.0
-        2 sammywemmy     3.0
-        3 ginger         3.0
-        4 ginger         5.0
+                 text  code
+        0      ragnar   NaN
+        1  sammywemmy   2.0
+        2  sammywemmy   3.0
+        3      ginger   3.0
+        4      ginger   5.0
 
     Functional usage syntax:
 
@@ -4782,12 +5309,10 @@ def fill_direction(
 
         df = pd.DataFrame(...)
         df = jn.fill_direction(
-            df = df,
-            directions = {column_1 : direction_1,
-                          column_2 : direction_2,
-                          ...},
-            limit = None # limit must be None or greater than 0
-            )
+                    df = df,
+                    column_1 = direction_1,
+                    column_2 = direction_2,
+                )
 
     Method-chaining usage syntax:
 
@@ -4796,22 +5321,17 @@ def fill_direction(
         import pandas as pd
         import janitor as jn
 
-        df = (
-            pd.DataFrame(...)
-            .fill_direction(
-            directions = {column_1 : direction_1,
-                          column_2 : direction_2,
-                          ...},
-            limit = None # limit must be None or greater than 0
-            )
-        )
+        df = pd.DataFrame(...)
+               .fill_direction(
+                    column_1 = direction_1,
+                    column_2 = direction_2,
+                )
+
 
     :param df: A pandas dataframe.
-    :param directions: Key - value pairs of columns and directions. Directions
-        can be either `down` (default), `up`, `updown` (fill up then down) and
+    :param kwargs: Key - value pairs of columns and directions. Directions
+        can be either `down`, `up`, `updown` (fill up then down) and
         `downup` (fill down then up).
-    :param limit: number of consecutive null values to forward/backward fill.
-        Value must `None` or greater than 0.
     :returns: A pandas dataframe with modified column(s).
     :raises ValueError: if column supplied is not in the dataframe.
     :raises ValueError: if direction supplied is not one of `down`, `up`,
@@ -4819,45 +5339,57 @@ def fill_direction(
 
     .. # noqa: DAR402
     """
-    df = df.copy()
-    if not directions:
+
+    if not kwargs:
         return df
 
-    check("directions", directions, [dict])
-
-    if limit is not None:
-        check("limit", limit, [int])
-        # pandas raises error if limit is not greater than zero
-        # so no need for a check on pyjanitor's end
-
-    check_column(df, directions)
-
-    for _, direction in directions.items():
-        if direction not in {"up", "down", "updown", "downup"}:
+    fill_types = {fill.name for fill in FILLTYPE}
+    for column_name, fill_type in kwargs.items():
+        check("column_name", column_name, [str])
+        check("fill_type", fill_type, [str])
+        if fill_type.upper() not in fill_types:
             raise ValueError(
                 """
-                The direction should be a string and should be one of
-                `up`, `down`, `updown`, or `downup`.
+                fill_type should be one of
+                up, down, updown, or downup.
                 """
             )
 
-    # TODO: option to specify limit per column; current implementation
-    # is one `limit` for all the columns. Might need refactoring, or an
-    # API change.
-    for column, direction in directions.items():
-        if direction == "up":
-            df.loc[:, column] = df.loc[:, column].bfill(limit=limit)
-        elif direction == "down":
-            df.loc[:, column] = df.loc[:, column].ffill(limit=limit)
-        elif direction == "updown":
-            df.loc[:, column] = (
-                df.loc[:, column].bfill(limit=limit).ffill(limit=limit)
-            )
-        else:  # downup
-            df.loc[:, column] = (
-                df.loc[:, column].ffill(limit=limit).bfill(limit=limit)
-            )
-    return df
+    check_column(df, kwargs)
+
+    new_values = {}
+    for column_name, fill_type in kwargs.items():
+        direction = FILLTYPE[f"{fill_type.upper()}"].value
+        if len(direction) == 1:
+            direction = methodcaller(direction[0])
+            output = direction(df[column_name])
+        else:
+            direction = [methodcaller(entry) for entry in direction]
+            output = _chain_func(df[column_name], *direction)
+        new_values[column_name] = output
+
+    return df.assign(**new_values)
+
+
+class FILLTYPE(Enum):
+    """List of fill types for fill_direction."""
+
+    UP = ("bfill",)
+    DOWN = ("ffill",)
+    UPDOWN = "bfill", "ffill"
+    DOWNUP = "ffill", "bfill"
+
+
+def _chain_func(column: pd.Series, *funcs):
+    """
+    Apply series of functions consecutively
+    to a Series.
+    https://blog.finxter.com/how-to-chain-multiple-function-calls-in-python/
+    """
+    new_value = column.copy()
+    for func in funcs:
+        new_value = func(new_value)
+    return new_value
 
 
 @pf.register_dataframe_method
@@ -4984,14 +5516,15 @@ def groupby_topk(
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]] = None,
-    fill_value: Optional[Dict] = None,
+    *columns,
+    by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
     This function turns implicit missing values into explicit missing values.
 
     It is modeled after tidyr's `complete` function, and is a wrapper around
-    `pd.DataFrame.merge` and `pd.DataFrame.fillna`.
+    `expand_grid`, `pd.DataFrame.reindex`, `pd.DataFrame.join`
+    and `pd.DataFrame.fillna`.
 
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible.
@@ -5010,11 +5543,10 @@ def complete(
         1	2	    2	        b	2	5
         2	1	    2	        b	3	6
 
-    To find all the unique combinations of `group`, `item_id`, and `item_name`,
-    including combinations not present in the data, each variable should be
-    passed in a list to the `columns` parameter::
+    Find all the unique combinations of `group`, `item_id`, and `item_name`,
+    including combinations not present in the data::
 
-        df.complete(columns = ['group', 'item_id', 'item_name'])
+        df.complete('group', 'item_id', 'item_name')
 
               group	item_id	    item_name	value1	value2
         0	1	    1	        a	1.0	4.0
@@ -5027,10 +5559,10 @@ def complete(
         7	2	    2	        b	2.0	5.0
 
     To expose just the missing values based only on the existing data,
-    `item_id` and `item_name` can be wrapped in a tuple, while `group`
-    is passed in as a separate variable::
+    `item_id` and `item_name` column names can be wrapped in a list/tuple,
+    while `group` is passed in as a separate variable::
 
-        df.complete(columns = ["group", ("item_id", "item_name")])
+        df.complete("group", ("item_id", "item_name"))
             group	item_id	    item_name	value1	   value2
         0	1	    1	        a	  1.0	    4.0
         1	1	    2	        b	  3.0	    6.0
@@ -5053,7 +5585,7 @@ def complete(
     Note that Year 2000 and Agarum pairing is missing. Let's make it
     explicit::
 
-        df.complete(columns = ['Year', 'Taxon'])
+        df.complete('Year', 'Taxon')
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5063,10 +5595,9 @@ def complete(
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
 
-    The null value can be replaced with the fill_value argument::
+    The null value can be replaced with the Pandas `fillna` argument::
 
-        df.complete(columns = ['Year', 'Taxon'],
-                    fill_value = {"Abundance" : 0})
+        df.complete('Year', 'Taxon').fillna(0)
 
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
@@ -5080,24 +5611,60 @@ def complete(
     1999 to 2004? Easy - simply pass a dictionary pairing the column name
     with the new values::
 
-        df.complete(columns = [{"Year": lambda x : range(x.Year.min(),
-                                                         x.Year.max() + 1)},
-                                "Taxon"],
-                    fill_value={"Abundance" : 0})
+        new_year_values = lambda year: range(year.min(), year.max() + 1)
 
-            Year      Taxon     Abundance
-        0   1999     Agarum         1.0
-        1   1999    Saccharina      4.0
-        2   2000     Agarum         0.0
-        3   2000    Saccharina      5.0
-        4   2001     Agarum         0.0
-        5   2001    Saccharina      0.0
-        6   2002     Agarum         0.0
-        7   2002    Saccharina      0.0
-        8   2003     Agarum         0.0
-        9   2003     Saccharina     0.0
-        10  2004     Agarum         8.0
-        11  2004    Saccharina      2.0
+        df.complete({"Year": new_year_values}, "Taxon")
+
+            Year       Taxon  Abundance
+        0   1999      Agarum        1.0
+        1   1999  Saccharina        4.0
+        2   2000      Agarum        NaN
+        3   2000  Saccharina        5.0
+        4   2001      Agarum        NaN
+        5   2001  Saccharina        NaN
+        6   2002      Agarum        NaN
+        7   2002  Saccharina        NaN
+        8   2003      Agarum        NaN
+        9   2003  Saccharina        NaN
+        10  2004      Agarum        8.0
+        11  2004  Saccharina        2.0
+
+    It is also possible to expose missing values within a groupby,
+    by using the `by` parameter::
+
+          state  year  value
+        0    CA  2010      1
+        1    CA  2013      3
+        2    HI  2010      1
+        3    HI  2012      2
+        4    HI  2016      3
+        5    NY  2009      2
+        6    NY  2013      5
+
+    Let's get all the missing years per state::
+
+        df.complete(
+            {'year': new_year_values},
+            by='state'
+        )
+
+            state  year  value
+        0     CA  2010    1.0
+        1     CA  2011    NaN
+        2     CA  2012    NaN
+        3     CA  2013    3.0
+        4     HI  2010    1.0
+        5     HI  2011    NaN
+        6     HI  2012    2.0
+        7     HI  2013    NaN
+        8     HI  2014    NaN
+        9     HI  2015    NaN
+        10    HI  2016    3.0
+        11    NY  2009    2.0
+        12    NY  2010    NaN
+        13    NY  2011    NaN
+        14    NY  2012    NaN
+        15    NY  2013    5.0
 
     .. note:: MultiIndex columns are not supported.
 
@@ -5112,12 +5679,10 @@ def complete(
 
         df = jn.complete(
             df = df,
-            columns= [
-                column_label,
-                (column1, column2, ...),
-                {column1: new_values, ...}
-            ],
-            fill_value = None
+            column_label,
+            (column1, column2, ...),
+            {column1: new_values, ...},
+            by = label/list_of_labels
         )
 
     Method chaining syntax:
@@ -5126,35 +5691,35 @@ def complete(
 
         df = (
             pd.DataFrame(...)
-            .complete(columns=[
+            .complete(
                 column_label,
                 (column1, column2, ...),
                 {column1: new_values, ...},
-            ],
-            fill_value=None,
-        )
+                by = label/list_of_labels
+            )
 
     :param df: A pandas dataframe.
-    :param columns: This is a list containing the columns to be
+    :param *columns: This is a sequence containing the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
-    :param fill_value: Dictionary pairing the columns with the null
-        replacement value.
+    :param by: label or list of labels to group by.
+        The explicit missing values are returned per group.
     :returns: A pandas dataframe with modified column(s).
-    :raises TypeError: if `columns` is not a list.
-    :raises TypeError: if `fill_value` is not a dictionary.
-    :raises ValueError: if entry in `columns` is not a
+    :raises ValueError: if entry in `*columns` is not a
         str/dict/list/tuple.
-    :raises ValueError: if entry in `columns` is a dict/list/tuple
+    :raises ValueError: if entry in `*columns` is a dict/list/tuple
         and is empty.
 
     .. # noqa: DAR402
     """
 
+    if not columns:
+        return df
+
     df = df.copy()
 
-    df = _computations_complete(df, columns, fill_value)
+    df = _computations_complete(df, columns, by)
 
     return df
 
@@ -5163,12 +5728,12 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     """
     This function converts a string into a compiled regular expression;
     it can be used to select columns in the index or columns_names
-    arguments of ``pivot_longer`` function.
+    arguments of `pivot_longer` function.
 
     :param regex_pattern: string to be converted to compiled regular
         expression.
     :returns: A compile regular expression from provided
-        ``regex_pattern``.
+        `regex_pattern``.
     """
     check("regular expression", regex_pattern, [str, Pattern])
 
@@ -5246,8 +5811,8 @@ def pivot_longer(
 
     Note how the data is stacked in order of first appearance. If, however,
     you do not care for order of appearance, and want to wring out some
-    more performance, you can set `sort_by_appearance` to ``False`` (the
-    default is ``False``).
+    more performance, you can set `sort_by_appearance` to `False` (the
+    default is `False``).
 
     .. code-block:: python
 
@@ -5268,7 +5833,7 @@ def pivot_longer(
         4	Petunia	   b	90
         5	Gregory	   b	50
 
-    You can set `ignore_index` to ``False``, if you wish to reuse the index
+    You can set `ignore_index` to `False``, if you wish to reuse the index
     from the source dataframe (the index will be repeated as many times as
     necessary):
 
@@ -5384,7 +5949,7 @@ def pivot_longer(
     For this, we use the `.value` variable, which signals to `pivot_longer`
     to treat the part of the column names corresponding to `.value` as new
     column names. The `.value` variable is similar to `stubnames` in pandas'
-    ``wide_to_long`` function, but with more flexibility.
+    `wide_to_long` function, but with more flexibility.
 
     .. code-block:: python
 
@@ -5404,14 +5969,14 @@ def pivot_longer(
 
     Let's break down the `.value` idea. When `.value` is used, `pivot_longer`
     creates a pairing. In the example above, we get a pairing
-    ``{"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}``. All
+    `{"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}``. All
     the values associated with `.value` become new column names, while those
     not associated with `.value`(`treat1` and `treat2`) become values in a
     new column `group`. `values_to` is overridden during this process.
 
     .. note:: The values not associated with ".value" (in the example above,
         this is the `group` column) are returned as object dtypes. You can
-        change it to your preferred dtype using pandas' ``astype`` method.
+        change it to your preferred dtype using pandas' `astype` method.
 
     Example 4: You can also unpivot from wide to long using regular expressions
 
@@ -5434,17 +5999,17 @@ def pivot_longer(
 
     The same idea of `.value` works here as well. Based on the capturing groups
     in the regex in `names_pattern`, we have two pairings -->
-    ``{".value":["n", "pct"], "name":[1,2,3]}``. Just like in the previous
+    `{".value":["n", "pct"], "name":[1,2,3]}``. Just like in the previous
     example, the values associated with `.value` become new column names,
     while those not associated with `.value` become values in the new column
-    ``name``.
+    `name``.
 
     Note that there are no limits to the pairing; however, you can only have
-    one `.value` in ``names_to``.
+    one `.value` in `names_to``.
 
     Example 5: You can also pass a list/tuple of regular expressions that match
-    specific patterns to ``names_pattern``, along with a list/tuple of new
-    names to ``names_to``; this can come in handy if `.value` falls short:
+    specific patterns to `names_pattern``, along with a list/tuple of new
+    names to `names_to``; this can come in handy if `.value` falls short:
 
     .. code-block:: python
 
@@ -5474,10 +6039,12 @@ def pivot_longer(
     `Team`. It then looks for columns that start with `Score` and collate all
     the values associated with these columns to a single column named `Score`.
 
-    You can also take advantage of `janitor.patterns` function, which allows
-    selection of columns via a regular expression; this can come in handy if
-    you have a lot of column names to pass to the `index` or `column_names`
-    paramenters, and you do not wish to manually type them all.
+    You can also take advantage of `janitor.patterns` function,
+    or the `select_columns` syntax,
+    which allows selection of columns via a regular expression;
+    this can come in handy if you have a lot of column names
+    to pass to the `index` or `column_names`  parameters,
+    and you do not wish to manually type them all.
 
     .. code-block:: python
 
@@ -5578,15 +6145,15 @@ def pivot_longer(
         It can be a regular expression containing matching groups (it takes
         the same specification as pandas' `str.extract` method), or a
         list/tuple of regular expressions. If it is a single regex, the
-        number of groups must match the length of ``names_to`` ( if the
-        length of ``names_to`` is 3, then the number of groups must be 3.
-        If ``names_to`` is a string, then there should be only one group
-        in ``names_pattern``). For a list/tuple of regular expressions,
-        ``names_to`` must also be a list/tuple and the lengths of both
+        number of groups must match the length of `names_to` ( if the
+        length of `names_to` is 3, then the number of groups must be 3.
+        If `names_to` is a string, then there should be only one group
+        in `names_pattern``). For a list/tuple of regular expressions,
+        `names_to` must also be a list/tuple and the lengths of both
         arguments must match(if the length of `names_to` is 4, then the
         length of `names_pattern` must also be 4). The entries in both
         arguments must also match positionally, i.e  if
-        ``names_to = ("name1", "name2", "name3")``, then ``names_pattern``
+        `names_to = ("name1", "name2", "name3")``, then `names_pattern``
         should be ("regex1", "regex2", "regex3"), with "name1" pairing
         "regex1", "name2" pairing "regex2", and "name3" pairing "regex3".
         `names_pattern` does not work with MultiIndex columns.
@@ -5600,7 +6167,7 @@ def pivot_longer(
         the final look of the dataframe. If `True`, the unpivoted dataframe
         will be stacked in order of first appearance. See examples for more
         details. `pivot_longer` is usually more performant if
-        `sort_by_appearance` is ``False``.
+        `sort_by_appearance` is `False``.
     :param ignore_index: Default `True`. If True, original index is ignored.
         If False, the original index is retained and the Index labels will be
         repeated as necessary.
@@ -5678,10 +6245,10 @@ def pivot_longer(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Optional[Union[List, str]] = None,
-    values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
+    index: Optional[Union[Sequence[str], str]] = None,
+    names_from: Optional[Union[Sequence[str], str]] = None,
+    values_from: Optional[Union[Sequence[str], str]] = None,
+    names_sort: Optional[bool] = True,
     flatten_levels: Optional[bool] = True,
     names_from_position: Optional[str] = "first",
     names_prefix: Optional[str] = None,
@@ -5690,11 +6257,11 @@ def pivot_wider(
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
-    Reshapes data from long to wide form. The number of columns are
-    increased, while decreasing the number of rows.
+    Reshapes data from 'long' to 'wide' form.
 
-    It is the inverse of the `pivot_longer` method, and is a
-    wrapper around `pd.DataFrame.unstack` method.
+    The number of columns are increased, while decreasing
+    the number of rows. It is the inverse of the `pivot_longer`
+    method, and is a wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.
 
@@ -5752,7 +6319,7 @@ def pivot_wider(
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
 
-    Aggregations are also possible with the ``aggfunc`` parameter::
+    Aggregations are also possible with the `aggfunc` parameter::
 
         df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
                            {'id': 'b', 'name': 'Eve', 'value': 6},
@@ -5788,9 +6355,9 @@ def pivot_wider(
 
 
     .. note:: You may choose not to collapse the levels by passing `False`
-        to the ``flatten_levels`` argument.
+        to the `flatten_levels` argument.
 
-    .. note:: An error is raised if the index is not unique and
+    .. note:: A ValueError is raised if the index is not unique and
         `aggfunc` is None.
 
     Functional usage syntax:
@@ -5847,33 +6414,32 @@ def pivot_wider(
         list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        A label or labels must be provided for ``names_from``.
+        A label or labels must be provided for `names_from``.
     :param values_from: Name(s) of column(s) that will be used for populating
         the new dataframe's values. Should be either a single column name,
         or a list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If ``values_from`` is not specified,
-        all remaining columns will be used. If `flatten_levels` is ``False``,
+        If `values_from` is not specified,
+        all remaining columns will be used. If `flatten_levels` is `False``,
         a MultiIndex dataframe is created.
-    :param names_sort: Default is `False`. Sorts columns by order of
-        appearance. Applicable only if ``flatten_levels`` is `True`.
+    :param names_sort: Default is `True`. Sorts columns by order of
+        appearance.
         Set as `True` to get the columns sorted lexicographicially,
         or if the columns are of category type.
     :param flatten_levels: Default is `True`. If `False`, the dataframe stays
         as a MultiIndex.
-    :param names_from_position: By default, the values in ``names_from`` stay
-        at the front of the new column names, even when ``values_from`` or
-        ``aggfunc`` is a list. This can be changed to "last"; this places the
-        values in ``names_from`` at the tail of the column names. Applicable
-        only when ``flatten_levels`` is ``True``. Default is "first".
+    :param names_from_position: By default, the values in `names_from` stay
+        at the front of the new column names. This can be changed to "last";
+        this places the values in `names_from``
+        at the tail of the column names.
     :param names_prefix: String to be added to the front of each output column.
-        Can be handy if the values in ``names_from`` are numeric data types.
-        Applicable only if ``flatten_levels`` is True.
-    :param names_sep: If ``names_from`` or ``values_from`` contain multiple
+        Can be handy if the values in `names_from` are numeric data types.
+        Applicable only if `flatten_levels` is True.
+    :param names_sep: If `names_from` or `values_from` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is ``_``. Applicable only if
-        ``flatten_levels`` is ``True``.
+        to use as a column name. Default is `_``.
+        Applicable only if `flatten_levels` is `True``.
     :param aggfunc: An aggregate function. It can be a function, a string,
         list of functions, or a dictionary, pairing column name with aggregate
         function.
@@ -5891,7 +6457,7 @@ def pivot_wider(
     :raises ValueError: if values in `index` or `names_from` or `values_from`
         do not exist in the dataframe.
     :raises ValueError: if the combination of `index` and `names_from` is not
-        unique and ``aggfunc`` is ``None``.
+        unique and `aggfunc` is `None``.
 
 
     .. # noqa: DAR402
@@ -5940,3 +6506,321 @@ def pivot_wider(
     )
 
     return df
+
+
+@pf.register_dataframe_method
+def conditional_join(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    *conditions,
+    how: str = "inner",
+    sort_by_appearance: bool = False,
+    suffixes=("_x", "_y"),
+) -> pd.DataFrame:
+    """
+
+    This is a convenience function that operates similarly to `pd.merge``,
+    but allows joins on inequality operators, or a combination of equi
+    and non-equi joins.
+
+    If the join is solely on equality, `pd.merge` function
+    is more efficient and should be used instead.
+    If you are interested in nearest joins, or rolling joins,
+    `pd.merge_asof` covers that. There is also the IntervalIndex,
+    which can be more efficient for range joins, if the intervals
+    do not overlap.
+
+    This function returns rows, if any, where values from `df` meet the
+    condition(s) for values from `right`. The conditions are passed in
+    as a variable argument of tuples, where the tuple is of
+    the form `(left_on, right_on, op)``; `left_on` is the column
+    label from `df`, `right_on` is the column label from `right`,
+    while `op` is the operator.
+
+    The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
+
+    If the join operator is a non-equi operator, a binary search is used
+    to get the relevant rows; this avoids a cartesian join, and makes the
+    process less memory intensive. If it is an equality operator, it simply
+    uses pandas' `merge` or `get_indexer_for` method to retrieve the relevant
+    rows.
+
+    The join is done only on the columns.
+    MultiIndex columns are not supported.
+
+    Only numeric, date and string columns are supported.
+
+    If joining on strings, only the `==` operator is supported.
+
+    Only `inner`, `left`, and `right` joins are supported.
+
+
+    Example :
+
+    df1::
+
+            id  value_1
+        0   1        2
+        1   1        5
+        2   1        7
+        3   2        1
+        4   2        3
+        5   3        4
+
+
+    df2::
+
+            id  value_2A  value_2B
+        0   1         0         1
+        1   1         3         5
+        2   1         7         9
+        3   1        12        15
+        4   2         0         1
+        5   2         2         4
+        6   2         3         6
+        7   3         1         3
+
+    Join on equi and non-equi operators is possible::
+
+        df1.conditional_join(
+                right = df2,
+                ('id', 'id', '=='),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0     1        5     1         3         5
+        1     1        7     1         7         9
+        2     2        1     2         0         1
+        3     2        3     2         2         4
+        4     2        3     2         3         6
+
+    The default join is `inner`. left and right joins are supported as well::
+
+        df1.conditional_join(
+                right = df2,
+                ('id', 'id', '=='),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
+                how='left',
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0     1        2   NaN       NaN       NaN
+        1     1        5   1.0       3.0       5.0
+        2     1        7   1.0       7.0       9.0
+        3     2        1   2.0       0.0       1.0
+        4     2        3   2.0       2.0       4.0
+        5     2        3   2.0       3.0       6.0
+        6     3        4   NaN       NaN       NaN
+
+
+        df1.conditional_join(
+                right = df2,
+                ('id', 'id', '=='),
+                ('value_1', 'value_2A', '>='),
+                ('value_1', 'value_2B', '<='),
+                how='right',
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0   NaN      NaN     1         0         1
+        1   1.0      5.0     1         3         5
+        2   1.0      7.0     1         7         9
+        3   NaN      NaN     1        12        15
+        4   2.0      1.0     2         0         1
+        5   2.0      3.0     2         2         4
+        6   2.0      3.0     2         3         6
+        7   NaN      NaN     3         1         3
+
+
+    Join on just the non-equi joins is also possible::
+
+        df1.conditional_join(
+                right = df2,
+                ('value_1', 'value_2A', '>'),
+                ('value_1', 'value_2B', '<'),
+                how='inner',
+                sort_by_appearance = True
+            )
+
+            id_x  value_1  id_y  value_2A  value_2B
+        0     1        2     3         1         3
+        1     1        5     2         3         6
+        2     2        3     2         2         4
+        3     3        4     1         3         5
+        4     3        4     2         3         6
+
+    The default for the `suffixes` parameter is `(_x, _y)``,
+    One of the suffixes can be set as `None``;
+    this avoids a suffix on the columns from the
+    relevant dataframe::
+
+        df1.conditional_join(
+                right = df2,
+                ('value_1', 'value_2A', '>'),
+                ('value_1', 'value_2B', '<'),
+                how='inner',
+                sort_by_appearance = True,
+                suffixes = (None, '_y')
+            )
+
+            id  value_1  id_y  value_2A  value_2B
+        0   1        2     3         1         3
+        1   1        5     2         3         6
+        2   2        3     2         2         4
+        3   3        4     1         3         5
+        4   3        4     2         3         6
+
+    Join on just equality is also possible, but should be avoided -
+    Pandas merge/join is more efficient::
+
+        df1.conditional_join(
+                right = df2,
+                ('col_a', 'col_a', '=='),
+                sort_by_appearance = True
+            )
+
+             col_a_x col_b  col_a_y col_c
+        0        2     B        2     X
+        1        3     C        3     Y
+
+    Join on not equal -> `!=` ::
+
+        df1.conditional_join(
+                right = df2,
+                ('col_a', 'col_a', '!='),
+                sort_by_appearance = True
+            )
+
+             col_a_x col_b  col_a_y col_c
+        0        1     A        0     Z
+        1        1     A        2     X
+        2        1     A        3     Y
+        3        2     B        0     Z
+        4        2     B        3     Y
+        5        3     C        0     Z
+        6        3     C        2     X
+
+
+    If the order from `right` is not important,
+    `sort_by_appearance` can be set to  `False``
+    (this is the default)::
+
+        df1.conditional_join(
+                right = df2,
+                ('col_a', 'col_a', '>'),
+                sort_by_appearance = False
+            )
+
+             col_a_x col_b  col_a_y col_c
+        0        1     A        0     Z
+        1        2     B        0     Z
+        2        3     C        0     Z
+        3        3     C        2     X
+
+
+    .. note:: If `df` or `right` has labeled indices,
+              it will be lost after the merge,
+              and replaced with an integer index.
+              If you wish to preserve the labeled indices,
+              you can convert them to columns
+              before running the conditional join.
+
+    .. note:: All the columns from `df` and `right`
+              are returned in the final output.
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.conditional_join(
+                df = df,
+                right = right,
+                *conditions,
+                sort_by_appearance = True/False,
+                suffixes = ("_x", "_y"),
+                )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = df.conditional_join(
+                right = right,
+                *conditions,
+                sort_by_appearance = True/False,
+                suffixes = ("_x", "_y"),
+                )
+
+
+    :param df: A Pandas dataframe.
+    :param right: Named Series or DataFrame to join to.
+    :param conditions: Variable argument of tuple(s) of the form
+        `(left_on, right_on, op)``, where `left_on` is the column
+        label from `df`, `right_on` is the column label from `right`,
+        while `op` is the operator. The operator can be any of
+        `==`, `!=`, `<=`, `<`, `>=`, `>`.
+    :param how: Indicates the type of join to be performed.
+        It can be one of `inner`, `left`, `right`.
+        Full join is not supported. Defaults to `inner`.
+    :param sort_by_appearance: Default is `False`. If True,
+        values from `right` that meet the join condition will be returned
+        in the final dataframe in the same order that they were before the
+        join.
+    :param suffixes: tuple, default is `(_x, _y)``.
+        A sequence of length 2, where each element is optionally a string,
+        indicating the suffix to add to the overlapping column names
+        in `df` and `right`. Pass a value of `None``
+        instead of a string to indicate that the  column name
+        from `df` or `right` should be left as-is, with no suffix.
+        At least one of the values must not be `None``.
+    :returns: A pandas DataFrame of the two merged Pandas objects.
+    :raises ValueError: if columns from `df` or `right` is a MultiIndex.
+    :raises ValueError: if `right` is an unnamed Series.
+    :raises ValueError: if condition in *conditions is not a tuple.
+    :raises ValueError: if condition is not length 3.
+    :raises ValueError: if `left_on` and `right_on` in condition are not
+        both numeric, or string, or datetime.
+
+
+    .. # noqa: DAR402
+    """
+
+    (
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+        suffixes,
+    ) = _conditional_join_preliminary_checks(
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+        suffixes,
+    )
+
+    df, right, conditions = _cond_join_suffixes(
+        df, right, conditions, suffixes
+    )
+
+    # the numeric indexes play a crucial part in position tracking
+    df.index = np.arange(len(df))
+    right.index = np.arange(len(right))
+
+    return _conditional_join_compute(
+        df, right, conditions, how, sort_by_appearance
+    )

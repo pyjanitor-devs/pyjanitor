@@ -43,39 +43,15 @@ Please ensure that you have done the following:
 3. [ ] Add a line to `CHANGELOG.md` under the latest version header (i.e. the one that is "on deck") describing the contribution.
     - Do use some discretion here; if there are multiple PRs that are related, keep them in a single line.
 
-## Quick Check
+# Automatic checks
 
-To do a very quick check that everything is correct, follow these steps below:
+There will be automatic checks run on the PR. These include:
 
-- [ ] Run the command `make check` from pyjanitor's top-level directory. This will automatically run:
-    - black formatting
-    - flake8 checking
-    - running the test suite
-    - docs build
-
-Once done, please check off the check-box above.
-
-If `make check` does not work for you, you can execute the commands listed in the Makefile individually.
-
-## Code Changes
-
-<!-- If you have not made code changes, please feel free to delete this section. -->
-
-If you are adding code changes, please ensure the following:
-
-- [ ] Ensure that you have added tests.
-- [ ] Run all tests (`$ pytest .`) locally on your machine.
-    - [ ] Check to ensure that test coverage covers the lines of code that you have added.
-    - [ ] Ensure that all tests pass.
-
-## Documentation Changes
-
-<!-- If you have not made documentation changes, please feel free to delete this section. -->
-
-If you are adding documentation changes, please ensure the following:
-
-- [ ] Build the docs locally.
-- [ ] View the docs to check that it renders correctly.
+- Building a preview of the docs on Netlify
+- Automatically linting the code
+- Making sure the code is documented
+- Making sure that all tests are passed
+- Making sure that code coverage doesn't go down.
 
 # Relevant Reviewers
 

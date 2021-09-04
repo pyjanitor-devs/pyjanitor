@@ -13,8 +13,6 @@ from .utils import deprecated_alias, import_message
 try:
     from rdkit import Chem, DataStructs
     from rdkit.Chem.rdMolDescriptors import (
-        GetHashedMorganFingerprint,
-        GetMorganFingerprintAsBitVect,
         CalcChi0n,
         CalcChi0v,
         CalcChi1n,
@@ -54,7 +52,9 @@ try:
         CalcNumSpiroAtoms,
         CalcNumUnspecifiedAtomStereoCenters,
         CalcTPSA,
+        GetHashedMorganFingerprint,
         GetMACCSKeysFingerprint,
+        GetMorganFingerprintAsBitVect,
     )
 except ImportError:
     import_message(
@@ -134,8 +134,8 @@ def smiles2mol(
         constructed.
     :param progressbar: Whether to show a progressbar or not.
     :returns: A pandas DataFrame with new RDKIT Mol objects column.
-    :raises ValueError: if ``progressbar`` is not one of
-        ``"notebook"``, ``"terminal"``, or ``None``.
+    :raises ValueError: if `progressbar` is not one of
+        `"notebook"``, `"terminal"``, or `None``.
     """
     valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:
@@ -249,8 +249,8 @@ def morgan_fingerprint(
     :param nbits: The length of the fingerprints. Defaults to 2048.
     :param kind: Whether to return counts or bits. Defaults to counts.
     :returns: A new pandas DataFrame of Morgan fingerprints.
-    :raises ValueError: if ``kind`` is not one of
-        ``"counts"`` or ``"bits"``.
+    :raises ValueError: if `kind` is not one of
+        `"counts"` or `"bits"``.
     """
     acceptable_kinds = ["counts", "bits"]
     if kind not in acceptable_kinds:

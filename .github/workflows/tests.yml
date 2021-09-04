@@ -71,16 +71,14 @@ jobs:
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
           python -m pip install -e .
-          pytest
+          make test
 
-      - name: Inspect coverage
-        run: |
-          cat coverage.xml
-
+      # https://github.com/codecov/codecov-action
       - name: Upload code coverage
-        run: |
-          source /tmp/pyjanitor-dev_env/bin/activate
-          bash <(curl -s https://codecov.io/bash)
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)
 
   jupyter-notebook:
     name: Execute all Jupyter notebooks
@@ -125,14 +123,13 @@ jobs:
       - name: Unpack environment and activate it
         run: bash scripts/ci/unpack_environment.sh
 
-
       - name: Build docs
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
           python -m pip install -e .
-          cd docs && make html
+          mkdocs build
 
       - name: Netlify PR preview
         uses: netlify/actions/cli@master
         with:
-          args: deploy --site ${{ secrets.NETLIFY_SITE_ID }} --auth ${{ secrets.NETLIFY_AUTH_TOKEN }} --dir=docs/_build/html/
+          args: deploy --site ${{ secrets.NETLIFY_SITE_ID }} --auth ${{ secrets.NETLIFY_AUTH_TOKEN }} --dir=site/

@@ -10,8 +10,10 @@ pyjanitor
 
 .. pypi-doc
 
-``pyjanitor`` is a Python implementation of the R package `janitor`_, and
+``pyjanitor` is a Python implementation of the R package `janitor`_, and
 provides a clean API for cleaning data.
+
+The official documentation is hosted on: https://pyjanitor-devs.github.io/pyjanitor/
 
 .. _janitor: https://github.com/sfirke/janitor
 
@@ -19,7 +21,7 @@ Why janitor?
 ------------
 
 Originally a port of the R package,
-``pyjanitor`` has evolved from a set of convenient data cleaning routines
+``pyjanitor` has evolved from a set of convenient data cleaning routines
 into an experiment with the `method chaining`__ paradigm.
 
 .. _chaining: https://towardsdatascience.com/the-unreasonable-effectiveness-of-method-chaining-in-pandas-15c2109e3c69
@@ -42,13 +44,13 @@ The `pandas` API has been invaluable for the Python data science ecosystem,
 and implements method chaining of a subset of methods as part of the API.
 For example, resetting indexes (``.reset_index()``),
 dropping null values (``.dropna()``), and more,
-are accomplished via the appropriate ``pd.DataFrame`` method calls.
+are accomplished via the appropriate `pd.DataFrame` method calls.
 
 Inspired by the ease-of-use
-and expressiveness of the ``dplyr`` package
+and expressiveness of the `dplyr` package
 of the R statistical language ecosystem,
-we have evolved ``pyjanitor`` into a language
-for expressing the data processing DAG for ``pandas`` users.
+we have evolved `pyjanitor` into a language
+for expressing the data processing DAG for `pandas` users.
 
 .. pypi-doc
 
@@ -59,7 +61,7 @@ that allow one to read off the logical order of actions taken.
 Let us see the annotated example below.
 First off, here is the textual description of a data cleaning pathway:
 
-1. Create a ``DataFrame``.
+1. Create a `DataFrame``.
 2. Delete one column.
 3. Drop rows with empty values in two particular columns.
 4. Rename another two columns.
@@ -84,7 +86,7 @@ and begin with some sample data for this example :
     }
 
 
-In ``pandas`` code, most users might type something like this:
+In `pandas` code, most users might type something like this:
 
 .. code-block:: python
 
@@ -139,7 +141,7 @@ Slightly more advanced users might take advantage of the functional API:
 
 
 
-With ``pyjanitor``, we enable method chaining with method names
+With `pyjanitor``, we enable method chaining with method names
 that are *verbs*, which describe the action taken.
 
 .. code-block:: python
@@ -172,26 +174,26 @@ for common pandas routines.
 Installation
 ------------
 
-``pyjanitor`` is currently installable from PyPI:
+``pyjanitor` is currently installable from PyPI:
 
 .. code-block:: bash
 
     pip install pyjanitor
 
 
-``pyjanitor`` also can be installed by the conda package manager:
+``pyjanitor` also can be installed by the conda package manager:
 
 .. code-block:: bash
 
     conda install pyjanitor -c conda-forge
 
-``pyjanitor`` can be installed by the pipenv environment manager too. This requires enabling prerelease dependencies:
+``pyjanitor` can be installed by the pipenv environment manager too. This requires enabling prerelease dependencies:
 
 .. code-block:: bash
 
     pipenv install --pre pyjanitor
 
-``pyjanitor`` requires Python 3.6+.
+``pyjanitor` requires Python 3.6+.
 
 .. pypi-doc
 
@@ -240,7 +242,7 @@ Continuing with the company_sales dataframe previously used:
     }
 
 As such, there are three ways to use the API.
-The first, and most strongly recommended one, is to use ``pyjanitor``'s functions
+The first, and most strongly recommended one, is to use `pyjanitor``'s functions
 as if they were native to pandas.
 
 .. code-block:: python
@@ -277,7 +279,7 @@ Contributing
 ------------
 
 Follow `contribution docs
-<https://ericmjl.github.io/pyjanitor/contributing.html>`_ for a full description of the process of contributing to ``pyjanitor``.
+<https://pyjanitor-devs.github.io/pyjanitor/contributing.html>`_ for a full description of the process of contributing to `pyjanitor``.
 
 Adding new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -303,7 +305,7 @@ and returns a modified dataframe:
         # Put data processing function here.
         return df
 
-We use `pandas_flavor`_ to register the function natively on a ``pandas.DataFrame``.
+We use `pandas_flavor`_ to register the function natively on a `pandas.DataFrame``.
 
 .. _pandas_flavor: https://github.com/Zsailer/pandas_flavor
 
@@ -314,7 +316,7 @@ Secondly, we ask that you contribute a test case,
 to ensure that it works as intended.
 Follow the `contribution`_ docs for further details.
 
-.. _contribution: https://ericmjl.github.io/pyjanitor/contributing.html#unit-test-guidelines
+.. _contribution: https://pyjanitor-devs.github.io/pyjanitor/CONTRIBUTION_TYPES.html#unit-test-guidelines
 
 Feature requests
 ~~~~~~~~~~~~~~~~
@@ -334,17 +336,17 @@ Please temper expectations accordingly.
 API Policy
 ~~~~~~~~~~
 
-``pyjanitor`` only extends or aliases the ``pandas`` API
+``pyjanitor` only extends or aliases the `pandas` API
 (and other dataframe APIs),
 but will never fix or replace them.
 
-Undesirable ``pandas`` behaviour should be reported upstream
-in the ``pandas`` `issue tracker <https://github.com/pandas-dev/pandas/issues>`_.
-We explicitly do not fix the ``pandas`` API.
-If at some point the ``pandas`` devs
-decide to take something from ``pyjanitor``
-and internalize it as part of the official ``pandas`` API,
-then we will deprecate it from ``pyjanitor``,
+Undesirable `pandas` behaviour should be reported upstream
+in the `pandas` `issue tracker <https://github.com/pandas-dev/pandas/issues>`_.
+We explicitly do not fix the `pandas` API.
+If at some point the `pandas` devs
+decide to take something from `pyjanitor``
+and internalize it as part of the official `pandas` API,
+then we will deprecate it from `pyjanitor``,
 while acknowledging the original contributors' contribution
 as part of the official deprecation record.
 

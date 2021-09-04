@@ -88,8 +88,8 @@ def df_multi():
     )
 
 
-index_labels = [pd.Index(["region"]), {"2007", "region"}]
-column_labels = [{"region": 2007}, {"2007", "2009"}]
+index_labels = [2007, 20.09]
+column_labels = [2007, 20.99]
 names_to_labels = [1, {12, "newnames"}]
 
 index_does_not_exist = ["Region", ["207", "region"]]
@@ -136,7 +136,6 @@ names_pattern_type_check = [
 ]
 
 
-@pytest.mark.xfail(reason="list-like converted to lists.")
 @pytest.mark.parametrize("df,index", index_type_checks)
 def test_type_index(df, index):
     """Raise TypeError if wrong type is provided for the `index`."""
@@ -144,7 +143,6 @@ def test_type_index(df, index):
         df.pivot_longer(index=index)
 
 
-@pytest.mark.xfail(reason="list-like converted to list.")
 @pytest.mark.parametrize("df,column", column_type_checks)
 def test_type_column_names(df, column):
     """Raise TypeError if wrong type is provided for `column_names`."""
@@ -176,11 +174,6 @@ def test_presence_index(df, index):
         df.pivot_longer(index=index)
 
 
-@pytest.mark.xfail(
-    reason="""
-           First test will fail on TypeError instead since
-           `_select_columns` does not support integers"""
-)
 @pytest.mark.parametrize("df,column", column_presence_checks)
 def test_presence_columns(df, column):
     """Raise KeyError if labels in `column_names` do not exist."""
@@ -191,8 +184,10 @@ def test_presence_columns(df, column):
 @pytest.mark.parametrize("df,names_to, names_sep", names_sep_not_required)
 def test_name_sep_names_to_len(df, names_to, names_sep):
     """
-    Raise ValueError if the `names_to` is a string, or `names_to` is a
-    list/tuple, its length is one, and `names_sep` is provided.
+    Raise ValueError if `names_to` is a string,
+    or `names_to` is a list/tuple,
+    its length is one,
+    and `names_sep` is provided.
     """
     with pytest.raises(ValueError):
         df.pivot_longer(names_to=names_to, names_sep=names_sep)
@@ -304,19 +299,25 @@ def test_both_names_sep_and_pattern():
 def test_names_pattern_column_MultiIndex(df_multi):
     """Raise ValueError if `names_pattern` and MultiIndex column"""
     with pytest.raises(ValueError):
-        df_multi.pivot_longer(
-            index="name", column_level=0, names_pattern=r"(.+)(.)"
-        )
+        df_multi.pivot_longer(index="name", names_pattern=r"(.+)(.)")
 
 
 def test_index_tuple_MultiIndex(df_multi):
-    """Raise ValueError if `index` is a tuple and MultiIndex column"""
+    """
+    Raise ValueError if `index` is a tuple,
+    instead of a list of tuples,
+    and the dataframe's column is a MultiIndex.
+    """
     with pytest.raises(ValueError):
         df_multi.pivot_longer(index=("name", "a"))
 
 
 def test_column_names_tuple_MultiIndex(df_multi):
-    """Raise ValueError if `column_names` is a tuple and MultiIndex column"""
+    """
+    Raise ValueError if `column_names` is a tuple,
+    instead of a list of tuples,
+    and the dataframe's column is a MultiIndex.
+    """
     with pytest.raises(ValueError):
         df_multi.pivot_longer(column_names=("names", "aa"))
 
@@ -364,7 +365,7 @@ def test_pivot_no_args_passed():
 def test_pivot_index_only_and_sort_by_appearance(df_checks_output):
     """
     Test output if only `index` is passed and
-    `sort_by_apperance is ``True``.
+    `sort_by_apperance is `True``.
     """
     result = df_checks.pivot_longer(
         index="region",
@@ -378,7 +379,9 @@ def test_pivot_index_only_and_sort_by_appearance(df_checks_output):
 def test_pivot_index_only():
     """Test output if only `index` is passed."""
     result = df_checks.pivot_longer(
-        index="region", names_to="year", values_to="num_nests",
+        index="region",
+        names_to="year",
+        values_to="num_nests",
     )
 
     df_out = pd.DataFrame(
@@ -474,8 +477,8 @@ def test_pivot_column_only(df_checks_output):
 
 def test_pivot_index_patterns_only_sort_by_appearance(df_checks_output):
     """
-    Test output if the `patterns` function is passed to `index`, and
-    `sort_by_appearance` is ``True``.
+    Test output if the `patterns` function is passed to `index`,
+    and `sort_by_appearance` is `True``.
     """
     result = df_checks.pivot_longer(
         index=patterns(r"[^\d+]"),
@@ -514,8 +517,9 @@ def test_pivot_columns_patterns_only(df_checks_output):
 
 def test_length_mismatch():
     """
-    Raise error if `names_to` is a list/tuple and its length
-    does not match the number of extracted columns.
+    Raise error if `names_to` is a list/tuple,
+    and its length  does not match
+    the number of extracted columns.
     """
     data = pd.DataFrame(
         {
@@ -534,7 +538,7 @@ def test_length_mismatch():
         data.pivot_longer(names_to=["event", "year"], names_sep="-")
 
 
-def test_empty_mapping(test_df):
+def test_empty_mapping_all(test_df):
     """Raise error if `names_pattern` is a regex and returns no matches."""
     with pytest.raises(ValueError):
         test_df.pivot_longer(
@@ -542,10 +546,22 @@ def test_empty_mapping(test_df):
         )
 
 
+def test_empty_mapping_any(test_df):
+    """
+    Raise error if `names_pattern` is a regex
+    and returns incomplete matches.
+    """
+    with pytest.raises(ValueError):
+        test_df.pivot_longer(
+            names_to=[".value", "value"], names_pattern=r"(.+)_(loc)"
+        )
+
+
 def test_len_mapping_gt_len_names_to(test_df):
     """
-    Raise error if `names_pattern` is a regex and returns number of
-    matches more than length of `names_to`.
+    Raise error if `names_pattern` is a regex,
+    and the number of  matches returned
+    is more than length of `names_to`.
     """
     with pytest.raises(ValueError):
         test_df.pivot_longer(
@@ -573,7 +589,7 @@ def names_pattern_list_df():
     )
 
 
-def test_names_pattern_list_empty(names_pattern_list_df):
+def test_names_pattern_list_empty_all(names_pattern_list_df):
     """
     Raise ValueError if `names_pattern` is a list,
     and nothing is returned.
@@ -583,6 +599,19 @@ def test_names_pattern_list_empty(names_pattern_list_df):
             index="ID",
             names_to=("DateRangeStart", "DateRangeEnd", "Value"),
             names_pattern=("^Start", "^End", "Value$"),
+        )
+
+
+def test_names_pattern_list_empty_any(names_pattern_list_df):
+    """
+    Raise ValueError if `names_pattern` is a list,
+    and not all matches are returned.
+    """
+    with pytest.raises(ValueError):
+        names_pattern_list_df.pivot_longer(
+            index="ID",
+            names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+            names_pattern=("Start", "End", "Value$"),
         )
 
 
@@ -711,8 +740,8 @@ def test_multiple_values_pattern(
     df_in, df_out, index, names_to, names_pattern, sort_by_appearance
 ):
     """
-    Test function to extract multiple columns, using the `names_to` and
-    names_pattern arguments.
+    Test function to extract multiple columns,
+    using the `names_to` and `names_pattern` arguments.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1026,8 +1055,8 @@ def test_multiple_values_sep(
     df_in, df_out, index, names_to, names_sep, sort_by_appearance
 ):
     """
-    Test function to extract multiple columns, using the `names_to` and
-    names_sep arguments.
+    Test function to extract multiple columns,
+    using the `names_to` and `names_sep` arguments.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1130,7 +1159,8 @@ paired_columns_pattern = [
                 "instance": ["1", "2", "3"],
                 "a": ["a", "b", "c"],
                 "A": ["A", "B", "C"],
-            }
+            },
+            index=[0, 0, 0],
         ),
         "id",
         (".value", "instance"),
@@ -1223,11 +1253,16 @@ paired_columns_pattern = [
     paired_columns_pattern,
 )
 def test_extract_column_names_pattern(
-    df_in, df_out, index, names_to, names_pattern, sort_by_appearance,
+    df_in,
+    df_out,
+    index,
+    names_to,
+    names_pattern,
+    sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to`
-    argument and names_pattern is used.
+    argument and `names_pattern` is used.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1567,11 +1602,16 @@ paired_columns_sep = [
     paired_columns_sep,
 )
 def test_extract_column_names_sep(
-    df_in, df_out, index, names_to, names_sep, sort_by_appearance,
+    df_in,
+    df_out,
+    index,
+    names_to,
+    names_sep,
+    sort_by_appearance,
 ):
     """
     Test output if `.value` is in the `names_to` argument
-    and names_sep is used.
+    and `names_sep` is used.
     """
     result = df_in.pivot_longer(
         index=index,
@@ -1702,7 +1742,8 @@ def test_paired_columns_no_index_pattern(
 ):
     """
     Test function where `.value` is in the `names_to` argument,
-    names_pattern is used and no index is supplied.
+    names_pattern is used,
+    and no `index` is supplied.
     """
     result = df_in.pivot_longer(
         names_to=names_to,
@@ -1801,7 +1842,12 @@ names_single_value = [
     names_single_value,
 )
 def test_single_value(
-    df_in, df_out, index, names_pattern, ignore_index, sort_by_appearance,
+    df_in,
+    df_out,
+    index,
+    names_pattern,
+    ignore_index,
+    sort_by_appearance,
 ):
     """Test function where names_to is a string and == `.value`."""
     result = df_in.pivot_longer(
@@ -1884,7 +1930,7 @@ def test_single_column_names_pattern(
     Test output if `names_to` is a string and
     `names_pattern` returns a single column.
     Also tests when both `index` and `column_names`
-    is supplied, and only a subset of the dataframe
+    are supplied, and only a subset of the dataframe
     is transformed.
     """
     result = df_in.pivot_longer(
@@ -1897,6 +1943,9 @@ def test_single_column_names_pattern(
     assert_frame_equal(result, df_out)
 
 
+# not relevant anymore;
+# leaving it though
+# the more tests, the merrier
 def test_group_present():
     """Test output if 'group' is in `names_to`."""
     df_in = pd.DataFrame(
@@ -1919,7 +1968,9 @@ def test_group_present():
     )
 
     result = df_in.pivot_longer(
-        index="id", names_to=[".value", "group"], names_pattern="(.)(.)",
+        index="id",
+        names_to=[".value", "group"],
+        names_pattern="(.)(.)",
     )
 
     assert_frame_equal(result, df_out)
@@ -1946,11 +1997,12 @@ def test_float_suffix_irregular():
     expected = pd.DataFrame(
         {
             "A": ["X1", "X1", "X1", "X1", "X2", "X2", "X2", "X2"],
-            "colname": ["1", "1.1", "1.2", "2.1", "1", "1.1", "1.2", "2.1"],
-            "treatment": [np.nan, 1.0, np.nan, 3.0, np.nan, 2.0, np.nan, 4.0],
-            "result": [0.0, np.nan, 5.0, np.nan, 9.0, np.nan, 6.0, np.nan],
+            "colname": ["1.1", "2.1", "1.2", "1", "1.1", "2.1", "1.2", "1"],
+            "treatment": [1.0, 3.0, np.nan, np.nan, 2.0, 4.0, np.nan, np.nan],
+            "result": [np.nan, np.nan, 5.0, 0.0, np.nan, np.nan, 6.0, 9.0],
         }
     )
+
     result = df.pivot_longer(
         index="A",
         names_to=(".value", "colname"),
@@ -1958,3 +2010,231 @@ def test_float_suffix_irregular():
         sort_by_appearance=True,
     )
     assert_frame_equal(result, expected)
+
+
+multiple_column_names = [
+    (
+        pd.DataFrame(
+            {
+                "Sony | TV | Model | value": {
+                    0: "A222",
+                    1: "A234",
+                    2: "A4345",
+                },
+                "Sony | TV | Quantity | value": {0: 5, 1: 5, 2: 4},
+                "Sony | TV | Max-quant | value": {0: 10, 1: 9, 2: 9},
+                "Panasonic | TV | Model | value": {
+                    0: "T232",
+                    1: "S3424",
+                    2: "X3421",
+                },
+                "Panasonic | TV | Quantity | value": {0: 1, 1: 5, 2: 1},
+                "Panasonic | TV | Max-quant | value": {0: 10, 1: 12, 2: 11},
+                "Sanyo | Radio | Model | value": {
+                    0: "S111",
+                    1: "S1s1",
+                    2: "S1s2",
+                },
+                "Sanyo | Radio | Quantity | value": {0: 4, 1: 2, 2: 4},
+                "Sanyo | Radio | Max-quant | value": {0: 9, 1: 9, 2: 10},
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A222",
+                    " Quantity ": 5,
+                    " Max-quant ": 10,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A234",
+                    " Quantity ": 5,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A4345",
+                    " Quantity ": 4,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "T232",
+                    " Quantity ": 1,
+                    " Max-quant ": 10,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "S3424",
+                    " Quantity ": 5,
+                    " Max-quant ": 12,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "X3421",
+                    " Quantity ": 1,
+                    " Max-quant ": 11,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S111",
+                    " Quantity ": 4,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s1",
+                    " Quantity ": 2,
+                    " Max-quant ": 9,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s2",
+                    " Quantity ": 4,
+                    " Max-quant ": 10,
+                },
+            ]
+        ),
+    ),
+    (
+        pd.DataFrame(
+            {
+                "Sony | TV | Model | value": {
+                    0: "A222",
+                    1: "A234",
+                    2: "A4345",
+                },
+                "Sony | TV | Quantity | value": {0: 5, 1: 5, 2: 4},
+                "Sony | TV | Max-quant | value": {0: 10, 1: 9, 2: 9},
+                "Panasonic | TV | Model | value": {
+                    0: "T232",
+                    1: "S3424",
+                    2: "X3421",
+                },
+                "Panasonic | TV | Quantity | value": {0: 1, 1: 5, 2: 1},
+                "Panasonic | TV | Max-quant | value": {0: 10, 1: 12, 2: 11},
+                "Sanyo | Radio | Model | value": {
+                    0: "S111",
+                    1: "S1s1",
+                    2: "S1s2",
+                },
+                "Sanyo | Radio | Quantity | value": {0: 4, 1: 2, 2: 4},
+                "Sanyo | radio | Max-quant | value": {0: 9, 1: 9, 2: 10},
+            }
+        ),
+        pd.DataFrame(
+            [
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A222",
+                    " Quantity ": 5.0,
+                    " Max-quant ": 10.0,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A234",
+                    " Quantity ": 5.0,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Sony ",
+                    "Device": " TV ",
+                    " Model ": "A4345",
+                    " Quantity ": 4.0,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "T232",
+                    " Quantity ": 1.0,
+                    " Max-quant ": 10.0,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "S3424",
+                    " Quantity ": 5.0,
+                    " Max-quant ": 12.0,
+                },
+                {
+                    "Manufacturer": "Panasonic ",
+                    "Device": " TV ",
+                    " Model ": "X3421",
+                    " Quantity ": 1.0,
+                    " Max-quant ": 11.0,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S111",
+                    " Quantity ": 4.0,
+                    " Max-quant ": np.nan,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s1",
+                    " Quantity ": 2.0,
+                    " Max-quant ": np.nan,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " Radio ",
+                    " Model ": "S1s2",
+                    " Quantity ": 4.0,
+                    " Max-quant ": np.nan,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " radio ",
+                    " Model ": np.nan,
+                    " Quantity ": np.nan,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " radio ",
+                    " Model ": np.nan,
+                    " Quantity ": np.nan,
+                    " Max-quant ": 9.0,
+                },
+                {
+                    "Manufacturer": "Sanyo ",
+                    "Device": " radio ",
+                    " Model ": np.nan,
+                    " Quantity ": np.nan,
+                    " Max-quant ": 10.0,
+                },
+            ]
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize("df_in, df_out", multiple_column_names)
+def test_multiple_column_names(df_in, df_out):
+    """
+    Test output for scenario where the pairing
+    in the column name is more than 2.
+    """
+
+    result = df_in.pivot_longer(
+        names_to=("Manufacturer", "Device", ".value"),
+        names_pattern=r"(.+)\|(.+)\|(.+)\|.*",
+    )
+
+    assert_frame_equal(result, df_out)

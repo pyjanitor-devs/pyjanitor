@@ -20,10 +20,13 @@
 	"extensions": [
 		"ms-python.python",
 		"ms-python.vscode-pylance",
-		"ms-vsliveshare.vsliveshare-pack"
+		"ms-vsliveshare.vsliveshare-pack",
+		"arcticicestudio.nord-visual-studio-code"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [
+		8000
+	],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "python setup.py develop"
 	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.

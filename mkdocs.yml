@@ -60,8 +60,11 @@ plugins:
 
 # Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
 markdown_extensions:
-  - codehilite
+  # - codehilite
   - admonition
+  - pymdownx.highlight:
+      use_pygments: false
+  - pymdownx.inlinehilite
   # - pymdownx.tabbed
   # - pymdownx.arithmatex
   # - pymdownx.details
@@ -70,10 +73,13 @@ markdown_extensions:
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js
+  - js/config.js
 
 extra_css:
   - css/nb_mods.css
   - css/apidocs.css
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css
 
 repo_name: "ericmjl/pyjanitor"
 repo_url: "https://github.com/ericmjl/pyjanitor"

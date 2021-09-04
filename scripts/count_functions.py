@@ -1,4 +1,5 @@
-"""A script to count the number of functions inside each source file in pyjanitor.
+"""
+A script to count the number of functions inside each source file.
 
 Can be used for many purposes.
 
@@ -12,6 +13,7 @@ from pathlib import Path
 
 
 def count_number_of_functions(filepath):
+    """Count number of functions inside a .py file."""
     # Taken from: https://stackoverflow.com/a/37514895/1274908
     with open(filepath, "r+") as f:
         tree = ast.parse(f.read())
@@ -27,6 +29,7 @@ def janitor_submodules():
 
 
 def main():
+    """Main executable function."""
     for filepath in janitor_submodules():
         num_funcs = count_number_of_functions(filepath)
         print(filepath, num_funcs)

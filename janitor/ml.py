@@ -47,6 +47,7 @@ def get_features_targets(
     target_cols = ['output1', 'output2']
     X, y = df.get_features_targets(target_column_names=target_cols)
     ```
+
     :param df: The pandas DataFrame object.
     :param target_column_names: Either a column name or an
         iterable (list or tuple) of column names that are the target(s) to be

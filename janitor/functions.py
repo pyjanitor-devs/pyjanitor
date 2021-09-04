@@ -6500,8 +6500,8 @@ def conditional_join(
     is more efficient and should be used instead.
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
-    which can be more efficient for range joins, if the intervals
-    do not overlap.
+    which can be more efficient for range joins, especially if
+    the intervals do not overlap.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -6512,11 +6512,8 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    If the join operator is a non-equi operator, a binary search is used
-    to get the relevant rows; this avoids a cartesian join, and makes the
-    process less memory intensive. If it is an equality operator, it simply
-    uses pandas' `merge` or `get_indexer_for` method to retrieve the relevant
-    rows.
+    A binary search is used to get the relevant rows; this avoids
+    a cartesian join, and makes the process less memory intensive.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -6707,6 +6704,11 @@ def conditional_join(
     .. note:: All the columns from `df` and `right`
               are returned in the final output.
 
+    .. note:: For multiple condtions, If there are nulls
+              in the join columns, they will not be
+              preserved for `!=` operator. Nulls are only
+              preserved for `!=` operator for single condition.
+
     Functional usage syntax:
 
     .. code-block:: python
@@ -6760,12 +6762,7 @@ def conditional_join(
         At least one of the values must not be ``None``.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     :raises ValueError: if columns from `df` or `right` is a MultiIndex.
-    :raises ValueError: if `right` is an unnamed Series.
     :raises ValueError: if condition in *conditions is not a tuple.
-    :raises ValueError: if condition is not length 3.
-    :raises ValueError: if `left_on` and `right_on` in condition are not
-        both numeric, or string, or datetime.
-
 
     .. # noqa: DAR402
     """

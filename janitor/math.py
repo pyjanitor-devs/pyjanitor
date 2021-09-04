@@ -60,18 +60,19 @@ def sigmoid(s: pd.Series) -> pd.Series:
 @pf.register_series_method
 def logit(s: pd.Series, error: str = "warn") -> pd.Series:
     """
-    Take logit transform of the Series
-    where logit(p) = log(p/(1-p))
+    Take logit transform of the Series where:
 
-    :param s: Input Series
-    :param error: Determines behavior when s / (1-s) is outside of (0, 1). If
-        "warn" then a RuntimeWarning is thrown. If "raise", then a RuntimeError
-        is thrown. Otherwise, nothing is thrown and np.nan is returned
-        for the problematic entries, defaults to "warn"
-    :return: Transformed Series
-    :raises RuntimeError: if `error` is set to `raise``.
+    ```python
+    logit(p) = log(p/(1-p))
+    ```
 
-    .. # noqa: DAR103 error
+    :param s: Input Series.
+    :param error: Determines behavior when `s / (1-s)` is outside of `(0, 1)`.
+        If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`, then a
+        `RuntimeError` is thrown. Otherwise, nothing is thrown and `np.nan`
+        is returned for the problematic entries; defaults to `'warn'`.
+    :return: Transformed Series.
+    :raises RuntimeError: if `error` is set to `'raise'`.
     """
     s = s.copy()
     odds_ratio = s / (1 - s)

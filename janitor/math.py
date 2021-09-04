@@ -146,18 +146,20 @@ def z_score(
     keys: Tuple[str, str] = ("mean", "std"),
 ) -> pd.Series:
     """
-    Transforms the Series into z-scores
+    Transforms the Series into z-scores where:
 
-    :param s: Input Series
-    :param moments_dict: If not None, then the mean and standard
+    ```python
+    z = (s - s.mean()) / s.std()
+    ```
+
+    :param s: Input Series.
+    :param moments_dict: If not `None`, then the mean and standard
         deviation used to compute the z-score transformation is
-        saved as entries in moments_dict with keys determined by
-        the keys argument, defaults to None
-    :param keys: Determines the keys saved in moments_dict
-        if moments are saved, defaults to ("mean", "std")
-    :return: Transformed Series
-
-    .. # noqa: DAR103 moments_dict
+        saved as entries in `moments_dict` with keys determined by
+        the `keys` argument; defaults to `None`.
+    :param keys: Determines the keys saved in `moments_dict`
+        if moments are saved; defaults to (`'mean'`, `'std'`).
+    :return: Transformed Series.
     """
     mean = s.mean()
     std = s.std()

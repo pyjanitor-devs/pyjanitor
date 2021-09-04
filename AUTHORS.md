@@ -1,6 +1,6 @@
 # Contributors
 
-Once you have added your contribution to ``pyjanitor``,
+Once you have added your contribution to `pyjanitor``,
 please add your name using this markdown template:
 
 ```
@@ -29,7 +29,7 @@ Leads
 - [@anzelpwj](https://github.com/anzelpwj) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aanzelpwj)
 - [@samukweku](https://github.com/samukweku) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Asamukweku)
 - [@loganthomas](https://github.com/loganthomas) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aloganthomas)
-    - Helped others with ``git`` issues at SciPy 2019.
+    - Helped others with `git` issues at SciPy 2019.
 - [@nvamsikrishna05](https://github.com/nvamsikrishna05) |  [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Anvamsikrishna05)
 
 
@@ -43,7 +43,7 @@ Contributors
 - [@CWen001](https://github.com/CWen001) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3ACWen001)
 - [@bhallaY](https://github.com/bhallaY) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3AbhallaY)
 - [@jekwatt](https://github.com/jekwatt) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ajekwatt)
-    - Helped other sprinters with ``git`` issues at SciPy 2019.
+    - Helped other sprinters with `git` issues at SciPy 2019.
 - [@kurtispinkney](https://github.com/kurtispinkney) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Akurtispinkney)
 - [@lphk92](https://github.com/lphk92) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Alphk92)
 - [@jonnybazookatone](https://github.com/jonnybazookatone) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ajonnybazookatone)

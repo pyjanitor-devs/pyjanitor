@@ -448,9 +448,9 @@ def convert_currency(
 #     we discovered that there was no more free API available.
 #     Thus, an API key is required to perform currency conversion.
 #     API keys should be set as an environment variable,
-#     for example, ``EXCHANGE_RATE_API_KEY``,
+#     for example, `EXCHANGE_RATE_API_KEY``,
 #     and then passed into the function
-#     by calling on ``os.getenv("EXCHANGE_RATE_APIKEY")``.
+#     by calling on `os.getenv("EXCHANGE_RATE_APIKEY")``.
 
 #     :param df: A pandas dataframe.
 #     :param api_key: exchangeratesapi.io API key.

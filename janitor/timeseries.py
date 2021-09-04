@@ -97,7 +97,7 @@ def _get_missing_timestamps(
     that contains the expected timestamps.
     Here, we assume that the expected timestamps
     are going to be of a larger size
-    than the timestamps available in the input dataframe ``df``.
+    than the timestamps available in the input dataframe `df``.
 
     If there are any missing timestamps in the input dataframe,
     this function will return those missing timestamps
@@ -394,14 +394,14 @@ def flag_jumps(
              the defaults for each criteria is used.
         Defaults to False.
     :returns: Dataframe that has flag jump columns.
-    :raises JanitorError: if ``strict=True`` and at least one of
-        ``scale``, ``direction``, or ``threshold`` inputs is not a
+    :raises JanitorError: if `strict=True` and at least one of
+        `scale``, `direction``, or `threshold` inputs is not a
         dictionary.
-    :raises JanitorError: if ``scale`` is not one of
-        ``["absolute", "percentage"]``.
-    :raises JanitorError: if ``direction`` is not one of
-        ``["increasing", "decreasing", "any"]``.
-    :raises JanitorError: if ``threshold`` is less than 0.0.
+    :raises JanitorError: if `scale` is not one of
+        `["absolute", "percentage"]``.
+    :raises JanitorError: if `direction` is not one of
+        `["increasing", "decreasing", "any"]``.
+    :raises JanitorError: if `threshold` is less than 0.0.
     """
     df = df.copy()
 

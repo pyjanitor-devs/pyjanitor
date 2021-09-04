@@ -87,7 +87,7 @@ def generate_long_description() -> str:
     so there must be an even number of comments in README.
 
     :returns: Extracted description from README.
-    :raises Exception: if odd number of ``.. pypi-doc`` comments
+    :raises Exception: if odd number of `.. pypi-doc` comments
         in README.
     """
     # Read the contents of README file

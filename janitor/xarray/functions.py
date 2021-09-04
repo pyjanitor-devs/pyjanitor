@@ -23,19 +23,19 @@ def clone_using(
     new_name: str = None,
 ) -> xr.DataArray:
     """
-    Given a NumPy array, return an XArray ``DataArray`` which contains the same
+    Given a NumPy array, return an XArray `DataArray` which contains the same
     dimension names and (optionally) coordinates and other properties as the
-    supplied ``DataArray``.
+    supplied `DataArray``.
 
-    This is similar to ``xr.DataArray.copy()`` with more specificity for
+    This is similar to `xr.DataArray.copy()` with more specificity for
     the type of cloning you would like to perform - the different properties
-    that you desire to mirror in the new ``DataArray``.
+    that you desire to mirror in the new `DataArray``.
 
-    If the coordinates from the source ``DataArray`` are not desired, the shape
+    If the coordinates from the source `DataArray` are not desired, the shape
     of the source and new NumPy arrays don't need to match.
     The number of dimensions do, however.
 
-    Usage example - making a new ``DataArray`` from a previous one, keeping the
+    Usage example - making a new `DataArray` from a previous one, keeping the
     dimension names but dropping the coordinates (the input NumPy array is of a
     different size):
 
@@ -51,24 +51,24 @@ def clone_using(
         new_da = da.clone_using(np.ones((4, 6)), new_name='new_and_improved',
                                 use_coords=False)
 
-    :param da: The ``DataArray`` supplied by the method itself.
-    :param np_arr: The NumPy array which will be wrapped in a new ``DataArray``
-        given the properties copied over from the source ``DataArray``.
-    :param use_coords: If ``True``, use the coordinates of the source
-        ``DataArray`` for the coordinates of the newly-generated array. Shapes
-        must match in this case. If ``False``, only the number of dimensions
+    :param da: The `DataArray` supplied by the method itself.
+    :param np_arr: The NumPy array which will be wrapped in a new `DataArray``
+        given the properties copied over from the source `DataArray``.
+    :param use_coords: If `True``, use the coordinates of the source
+        `DataArray` for the coordinates of the newly-generated array. Shapes
+        must match in this case. If `False``, only the number of dimensions
         must match.
-    :param use_attrs: If ``True``, copy over the ``attrs`` from the source
-        ``DataArray``.
-        The data inside ``attrs`` itself is not copied, only the mapping.
+    :param use_attrs: If `True``, copy over the `attrs` from the source
+        `DataArray``.
+        The data inside `attrs` itself is not copied, only the mapping.
         Otherwise, use the supplied attrs.
-    :param new_name: If set, use as the new name of the returned ``DataArray``.
-        Otherwise, use the name of ``da``.
-    :return: A ``DataArray`` styled like the input ``DataArray`` containing the
+    :param new_name: If set, use as the new name of the returned `DataArray``.
+        Otherwise, use the name of `da``.
+    :return: A `DataArray` styled like the input `DataArray` containing the
         NumPy array data.
-    :raises ValueError: if number of dimensions in ``NumPy`` array and
-        ``DataArray`` do not match.
-    :raises ValueError: if shape of ``NumPy`` array and ``DataArray``
+    :raises ValueError: if number of dimensions in `NumPy` array and
+        `DataArray` do not match.
+    :raises ValueError: if shape of `NumPy` array and `DataArray``
         do not match.
     """
 
@@ -107,8 +107,8 @@ def convert_datetime_to_number(
     Convert the coordinates of a datetime axis to a human-readable float
     representation.
 
-    Usage example to convert a ``DataArray``'s time dimension coordinates from
-    a ``datetime`` to minutes:
+    Usage example to convert a `DataArray``'s time dimension coordinates from
+    a `datetime` to minutes:
 
     .. code-block:: python
 

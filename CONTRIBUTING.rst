@@ -14,7 +14,7 @@ as well as how to get started.
 Get Started!
 ------------
 
-Ready to contribute? Here's how to setup ``pyjanitor`` for local development.
+Ready to contribute? Here's how to setup `pyjanitor` for local development.
 
 Development Containers with VSCode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,7 +34,7 @@ To get started:
 4. In Visual Studio Code,
     click on the quick actions Status Bar item in the lower left corner.
 5. Then select "Remote Containers: Clone Repository In Container Volume".
-6. Enter in the URL of your fork of ``pyjanitor``.
+6. Enter in the URL of your fork of `pyjanitor``.
 
 VSCode will pull down the prebuilt Docker container,
 git clone the repository for you inside an isolated Docker volume,
@@ -56,7 +56,7 @@ so please read the in-line documentation in the Dockerfile carefully.
 Manual Setup
 ~~~~~~~~~~~~
 
-1. Fork the ``pyjanitor`` repo on GitHub: https://github.com/pyjanitor-devs/pyjanitor.
+1. Fork the `pyjanitor` repo on GitHub: https://github.com/pyjanitor-devs/pyjanitor.
 2. Clone your fork locally::
 
     $ git clone git@github.com:your_name_here/pyjanitor.git
@@ -73,8 +73,8 @@ To run correctly inside the environment,
 make sure you select the correct kernel from the top right corner of JupyterLab!
 
 .. note:: If you are on Windows,
-    you may need to install ``make`` before you can run the install.
-    You can get it from ``conda-forge``::
+    you may need to install `make` before you can run the install.
+    You can get it from `conda-forge``::
 
     $ conda install -c defaults -c conda-forge make
 
@@ -86,7 +86,7 @@ make sure you select the correct kernel from the top right corner of JupyterLab!
 4. (Optional) Install the pre-commit hooks.
 
 As of 29 October 2019,
-``pre-commit`` hooks are available to run code formatting checks automagically before git commits happen.
+``pre-commit` hooks are available to run code formatting checks automagically before git commits happen.
 If you did not have these installed before,
 run the following commands::
 
@@ -96,18 +96,18 @@ run the following commands::
     $ pre-commit install-hooks
 
 5. You should also be able to build the docs locally.
-    To do this, from the main ``pyjanitor`` directory::
+    To do this, from the main `pyjanitor` directory::
 
     $ make docs
 
 The command above allows you to view the documentation locally in your browser.
 `Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you,
-and you can find the html files by navigating to ``pyjanitor/docs/_build``,
+and you can find the html files by navigating to `pyjanitor/docs/_build``,
 and then you can find the correct html file.
 To see the main pyjanitor page,
-open the ``index.html`` file.
+open the `index.html` file.
 
-.. note:: If you get any errors related to Importing modules when running ``make docs``,
+.. note:: If you get any errors related to Importing modules when running `make docs``,
     first activate the development environment::
 
     $ source activate pyjanitor-dev
@@ -123,15 +123,15 @@ go to the rst file that corresponds to the html file you would like to edit.
 Make the changes directly in the rst file with the correct markup.
 Save the file and rebuild the html pages using the same commands as above to see what your changes look like in html.
 
-6. Submit an issue to the ``pyjanitor`` GitHub issue tracker describing your planned changes: https://github.com/pyjanitor-devs/pyjanitor/issues
+6. Submit an issue to the `pyjanitor` GitHub issue tracker describing your planned changes: https://github.com/pyjanitor-devs/pyjanitor/issues
 
 This helps us keep track of who is working on what.
 
 7. Create a branch for local development:
 
-New features added to ``pyjanitor`` should be done in a new branch you have based off the latest version of the ``dev`` branch.
+New features added to `pyjanitor` should be done in a new branch you have based off the latest version of the `dev` branch.
 
-Releases are made off the ``dev`` branch.
+Releases are made off the `dev` branch.
 
 To create a new branch::
 
@@ -146,19 +146,19 @@ Now you can make your changes locally.
 
 If any of the checks fail, you can apply the checks individually (to save time):
 
-* Automated code formatting: ``make style``
-* Code styling problems check: ``make lint``
-* Code unit testing: ``make test``
+* Automated code formatting: `make style``
+* Code styling problems check: `make lint``
+* Code unit testing: `make test``
 
 Styling problems must be resolved before the pull request can be accepted.
 
-``make test`` runs all ``pyjanitor``'s unit tests to probe whether changes to the source code have potentially introduced bugs.
+``make test` runs all `pyjanitor``'s unit tests to probe whether changes to the source code have potentially introduced bugs.
 These tests must also pass before the pull request is accepted.
 
 All these commands are available when you create the development environment.
 
 When you run the test locally,
-the tests in ``chemistry.py``, ``biology.py``, ``spark.py`` are automatically skipped if you don't have the optional dependencies (e.g. ``rdkit``) installed.
+the tests in `chemistry.py``, `biology.py``, `spark.py` are automatically skipped if you don't have the optional dependencies (e.g. `rdkit``) installed.
 
 9. Commit your changes and push your branch to GitHub::
 
@@ -168,7 +168,7 @@ the tests in ``chemistry.py``, ``biology.py``, ``spark.py`` are automatically sk
 
 10. Submit a pull request through the GitHub website.
     When you are picking out which branch to merge into,
-    be sure to select ``dev`` (not ``master``).
+    be sure to select `dev` (not `master``).
 
 11. Let the continuous integration (CI) system on Azure Pipelines check your code.
 

@@ -34,7 +34,7 @@ def test_morgan_fingerprint_bits(chemdf):
 
 @pytest.mark.chemistry
 def test_morgan_fingerprint_kind_error(chemdf):
-    """Test ``morgan_fingerprint`` raises exception for invalid ``kind``."""
+    """Test `morgan_fingerprint` raises exception for invalid `kind``."""
     with pytest.raises(ValueError):
         chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
             "mol", kind="invalid-kind"

@@ -25,10 +25,10 @@ def get_features_targets(
 
     The behaviour is as such:
 
-    - ``target_column_names`` is mandatory.
-    - If ``feature_column_names`` is present, then we will respect the column
+    - `target_column_names` is mandatory.
+    - If `feature_column_names` is present, then we will respect the column
         names inside there.
-    - If ``feature_column_names`` is not passed in, then we will assume that
+    - If `feature_column_names` is not passed in, then we will assume that
     the rest of the columns are feature columns, and return them.
 
     Functional usage example:

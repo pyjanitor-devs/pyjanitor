@@ -211,7 +211,7 @@ def test_type_names_from(df_checks_output):
 
 
 def test_names_from_None(df_checks_output):
-    """Raise ValueError if no value is provided for ``names_from``."""
+    """Raise ValueError if no value is provided for `names_from``."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geoid", names_from=None)
 
@@ -668,7 +668,7 @@ def test_aggfunc_list(df_aggfunc):
 
 
 def test_aggfunc_multiple_names_from(df_aggfunc_multiple_names_from):
-    """Test output when ``names_from`` is more than one."""
+    """Test output when `names_from` is more than one."""
     expected = pd.DataFrame(
         {
             "A": ["bar", "bar", "foo", "foo"],
@@ -690,7 +690,7 @@ def test_aggfunc_multiple_names_from(df_aggfunc_multiple_names_from):
 
 
 def test_df_multiple_aggfuncs():
-    """Test output when ``aggfunc`` is more than one."""
+    """Test output when `aggfunc` is more than one."""
 
     df_frame = pd.DataFrame(
         [

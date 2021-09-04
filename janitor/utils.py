@@ -74,7 +74,7 @@ def _clean_accounting_column(x: str) -> float:
     Perform the logic for the `cleaning_style == "accounting"` attribute.
 
     This is a private function, not intended to be used outside of
-    ``currency_column_to_numeric``.
+    `currency_column_to_numeric``.
 
     It is intended to be used in a pandas `apply` method.
 
@@ -94,7 +94,7 @@ def _currency_column_to_numeric(x, cast_non_numeric=None) -> str:
     Perform logic for changing cell values.
 
     This is a private function intended to be used only in
-    ``currency_column_to_numeric``.
+    `currency_column_to_numeric``.
 
     It is intended to be used in a pandas `apply` method, after being passed
     through `partial`.
@@ -318,7 +318,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     """
     Used to update deprecated argument names with new names. Throws a
     TypeError if both arguments are provided, and warns if old alias is used.
-    Nothing is returned as the passed ``kwargs`` are modified directly.
+    Nothing is returned as the passed `kwargs` are modified directly.
 
     Implementation is inspired from `StackOverflow`_.
 
@@ -355,7 +355,7 @@ def check_column(
     This will check whether columns "a" and "b" are present in df's columns.
 
     One can also guarantee that "a" and "b" are not present
-    by switching to ``present = False``.
+    by switching to `present = False``.
 
     :param df: The name of the variable.
     :param column_names: A list of column names we want to check to see if
@@ -1109,7 +1109,7 @@ def _data_checks_pivot_longer(
             ):
                 raise TypeError(
                     """
-                    All entries in the ``names_pattern`` argument
+                    All entries in the `names_pattern` argument
                     must be regular expressions.
                     """
                 )
@@ -1117,7 +1117,7 @@ def _data_checks_pivot_longer(
             if len(names_pattern) != len(names_to):
                 raise ValueError(
                     """
-                    Length of ``names_to`` does not match
+                    Length of `names_to` does not match
                     number of patterns.
                     """
                 )
@@ -1125,8 +1125,8 @@ def _data_checks_pivot_longer(
             if ".value" in names_to:
                 raise ValueError(
                     """
-                    ``.value`` is not accepted
-                    if ``names_pattern``
+                    `.value` is not accepted
+                    if `names_pattern``
                     is a list/tuple.
                     """
                 )
@@ -1286,7 +1286,7 @@ def _pivot_longer_extractions(
         if len(mapping.names) != len(names_to):
             raise ValueError(
                 """
-                The length of ``names_to`` does not match
+                The length of `names_to` does not match
                 the number of columns extracted.
                 """
             )
@@ -1300,7 +1300,7 @@ def _pivot_longer_extractions(
                 """
                 No labels in the columns
                 matched the regular expression
-                in ``names_pattern``.
+                in `names_pattern``.
                 Kindly provide a regular expression
                 that matches all labels in the columns.
                 """
@@ -1311,7 +1311,7 @@ def _pivot_longer_extractions(
                 """
                 Not all labels in the columns
                 matched the regular expression
-                in ``names_pattern``.
+                in `names_pattern``.
                 Kindly provide a regular expression
                 that matches all labels in the columns.
                 """
@@ -1320,7 +1320,7 @@ def _pivot_longer_extractions(
         if len(names_to) != len(mapping.columns):
             raise ValueError(
                 """
-                The length of ``names_to`` does not match
+                The length of `names_to` does not match
                 the number of columns extracted.
                 """
             )
@@ -1340,7 +1340,7 @@ def _pivot_longer_extractions(
                 """
                 Not all labels in the columns
                 matched the regular expression
-                in ``names_pattern``.
+                in `names_pattern``.
                 Kindly provide a regular expression
                 that matches all labels in the columns.
                 """
@@ -1352,7 +1352,7 @@ def _pivot_longer_extractions(
         if np.any(mapping.isna()):
             raise ValueError(
                 """
-                The regular expressions in ``names_pattern``
+                The regular expressions in `names_pattern``
                 did not return all matches.
                 Kindly provide a regular expression that
                 captures all patterns.
@@ -1827,9 +1827,9 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
     :param kwargs: A pairing of column name
         to a tuple of (`categories`, `order`).
     :returns: A tuple (pandas DataFrame, dictionary).
-    :raises TypeError: if ``kwargs`` is not a tuple.
-    :raises ValueError: if ``categories`` is not a 1-D array.
-    :raises ValueError: if ``order`` is not one of
+    :raises TypeError: if `kwargs` is not a tuple.
+    :raises ValueError: if `categories` is not a 1-D array.
+    :raises ValueError: if `order` is not one of
         `sort`, `appearance`, or `None`.
     """
 
@@ -1910,7 +1910,7 @@ def is_connected(url: str) -> bool:
 
     :param url: We take a test url to check if we are
         able to create a valid connection.
-    :raises OSError: if connection to ``URL`` cannot be
+    :raises OSError: if connection to `URL` cannot be
         established
     :return: We return a boolean that signifies our
         connection to the internet
@@ -2192,7 +2192,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 # hack to get it to recognize typing.Pattern
 # functools.singledispatch does not natively
 # recognize types from the typing module
-# ``type(re.compile(r"\d+"))`` returns re.Pattern
+# `type(re.compile(r"\d+"))` returns re.Pattern
 # which is a type and functools.singledispatch
 # accepts it without drama;
 # however, the same type from typing.Pattern
@@ -2280,7 +2280,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 @functools.singledispatch
 def _process_text(result: str, df, column_name, new_column_names, merge_frame):
     """
-    Base function for `process_text` when `result` is of ``str`` type.
+    Base function for `process_text` when `result` is of `str` type.
     """
     if new_column_names:
         return df.assign(**{new_column_names: result})
@@ -2293,7 +2293,7 @@ def _sub_process_text(
     result: pd.Series, df, column_name, new_column_names, merge_frame
 ):
     """
-    Base function for `process_text` when `result` is of ``pd.Series`` type.
+    Base function for `process_text` when `result` is of `pd.Series` type.
     """
     if new_column_names:
         return df.assign(**{new_column_names: result})
@@ -2306,7 +2306,7 @@ def _sub_process_text(  # noqa: F811
     result: pd.DataFrame, df, column_name, new_column_names, merge_frame
 ):  # noqa: F811
     """
-    Base function for `process_text` when `result` is of ``pd.DataFrame`` type.
+    Base function for `process_text` when `result` is of `pd.DataFrame` type.
     """
     result = _process_text_result_is_frame(new_column_names, result)
     if not merge_frame:

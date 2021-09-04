@@ -71,7 +71,7 @@ def logit(s: pd.Series, error: str = "warn") -> pd.Series:
         is thrown. Otherwise, nothing is thrown and np.nan is returned
         for the problematic entries, defaults to "warn"
     :return: Transformed Series
-    :raises RuntimeError: if ``error`` is set to ``raise``.
+    :raises RuntimeError: if `error` is set to `raise``.
 
     .. # noqa: DAR103 error
     """
@@ -177,7 +177,7 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
         plt.scatter(x, y)
 
     Null values must be dropped from the series,
-    otherwise a ``ValueError`` is raised.
+    otherwise a `ValueError` is raised.
 
     Also, if the dtype of the series is not numeric,
     a TypeError is raised.
@@ -185,7 +185,7 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
     :param s: A pandas series. dtype should be numeric.
     :returns: (x, y).
         x: sorted array of values.
-        y: cumulative fraction of data points with value ``x`` or lower.
+        y: cumulative fraction of data points with value `x` or lower.
     :raises TypeError: if series is not numeric.
     :raises ValueError: if series contains nulls.
     """

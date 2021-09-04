@@ -13,7 +13,7 @@ class CachedAccessor:
     Parameters
     ----------
     name : str
-        The namespace this will be accessed under, e.g. ``df.foo``
+        The namespace this will be accessed under, e.g. `df.foo``
     accessor : cls
         The class with the extension methods.
 

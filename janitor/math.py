@@ -99,18 +99,16 @@ def normal_cdf(s: pd.Series) -> pd.Series:
 @pf.register_series_method
 def probit(s: pd.Series, error: str = "warn") -> pd.Series:
     """
-    Transforms the Series via the inverse CDF of the Normal distribution
+    Transforms the Series via the inverse CDF of the Normal distribution.
 
-    :param s: Input Series
-    :param error: Determines behavior when s is outside of (0, 1). If
-        "warn" then a RuntimeWarning is thrown. If "raise", then a RuntimeError
-        is thrown. Otherwise, nothing is thrown and np.nan is returned
-        for the problematic entries, defaults to "warn"
+    :param s: Input Series.
+    :param error: Determines behavior when `s` is outside of `(0, 1)`.
+        If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`, then
+        a `RuntimeError` is thrown. Otherwise, nothing is thrown and `np.nan`
+        is returned for the problematic entries; defaults to `'warn'`.
     :raises RuntimeError: Raised when there are problematic values
-        in the Series and error="raise"
+        in the Series and `error='raise'`.
     :return: Transformed Series
-
-    .. # noqa: DAR103 error
     """
     s = s.copy()
     outside_support = (s <= 0) | (s >= 1)

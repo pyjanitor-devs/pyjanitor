@@ -1,3 +1,3 @@
-# PySpark
+# Timeseries
 
 ::: janitor.timeseries

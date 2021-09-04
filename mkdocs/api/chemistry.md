@@ -1,3 +1,3 @@
-# Biology
+# Chemistry
 
 ::: janitor.chemistry

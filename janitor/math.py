@@ -92,7 +92,7 @@ are outside of (0, 1)"
 
 @pf.register_series_method
 def normal_cdf(s: pd.Series) -> pd.Series:
-    """Transforms the Series via the CDF of the Normal distribution"""
+    """Transforms the Series via the CDF of the Normal distribution."""
     return pd.Series(norm.cdf(s), index=s.index)
 
 

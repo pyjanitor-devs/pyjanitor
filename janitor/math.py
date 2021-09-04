@@ -14,16 +14,16 @@ from scipy.stats import norm
 @pf.register_series_method
 def log(s: pd.Series, error: str = "warn") -> pd.Series:
     """
-    Take natural logarithm of the Series
+    Take natural logarithm of the Series.
 
-    :param s: Input Series
+    :param s: Input Series.
     :param error: Determines behavior when taking the log of nonpositive
         entries. If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`,
         then a `RuntimeError` is thrown. Otherwise, nothing is thrown and
         log of nonpositive values is `np.nan`; defaults to `'warn'`.
     :raises RuntimeError: Raised when there are nonpositive values in the
         Series and `error='raise'`.
-    :return: Transformed Series
+    :return: Transformed Series.
     """
     s = s.copy()
     nonpositive = s <= 0
@@ -164,26 +164,26 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
 
     Intended to be used with the following pattern:
 
-    .. code-block:: python
+    ```python
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
+    # Obtain ECDF values to be plotted
+    x, y = df["column_name"].ecdf()
 
-        # Obtain ECDF values to be plotted
-        x, y = df["column_name"].ecdf()
-
-        # Plot ECDF values
-        plt.scatter(x, y)
+    # Plot ECDF values
+    plt.scatter(x, y)
+    ```
 
     Null values must be dropped from the series,
     otherwise a `ValueError` is raised.
 
-    Also, if the dtype of the series is not numeric,
-    a TypeError is raised.
+    Also, if the `dtype` of the series is not numeric,
+    a `TypeError` is raised.
 
-    :param s: A pandas series. dtype should be numeric.
-    :returns: (x, y).
-        x: sorted array of values.
-        y: cumulative fraction of data points with value `x` or lower.
+    :param s: A pandas series. `dtype` should be numeric.
+    :returns: `(x, y)`.
+        `x`: sorted array of values.
+        `y`: cumulative fraction of data points with value `x` or lower.
     :raises TypeError: if series is not numeric.
     :raises ValueError: if series contains nulls.
     """

@@ -2406,6 +2406,24 @@ class JOINTYPES(Enum):
     RIGHT = "right"
 
 
+less_than_join_types = {
+        JOINOPERATOR.LESS_THAN.value,
+        JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+    }
+greater_than_join_types = {
+        JOINOPERATOR.GREATER_THAN.value,
+        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+    }
+
+
+operator_map = {JOINOPERATOR.STRICTLY_EQUAL.value : operator.eq,
+                JOINOPERATOR.LESS_THAN.value: operator.lt,
+                JOINOPERATOR.LESS_THAN_OR_EQUAL.value : operator.le,
+                JOINOPERATOR.GREATER_THAN.value : operator.gt,
+                JOINOPERATOR.GREATER_THAN_OR_EQUAL.value: operator.ge,
+                JOINOPERATOR.NOT_EQUAL.value: operator.ne}
+
+
 def _check_operator(op: str):
     """
     Check that operator is one of
@@ -2686,7 +2704,7 @@ def _equal_indices(
     positions = _interval_ranges(lower_boundary, upper_boundary)
     left_repeat = upper_boundary - lower_boundary
     left_c = left_c.repeat(left_repeat)
-    right_c = right_c.index[positions]
+    right_c = right_c.take(positions)
     rows_equal = left_c.array == right_c.array
     if rows_equal.all():
         return left_c.index, right_c.index
@@ -2709,10 +2727,35 @@ def _not_equal_indices(
     Returns a tuple of (left_c, right_c)
     """
 
-    # capture null positions, since NaN != NaN
     dummy = pd.Int64Index([])
     left_nulls = dummy
     right_nulls = dummy
+    if len_conditions > 1:
+        outcome = _less_than_indices(left_c, right_c, True, 2)
+
+        if outcome is None:
+            lt_left = dummy
+            lt_lower = dummy
+            lt_upper = dummy
+        else:
+            lt_left, lt_lower, lt_upper = outcome
+
+        outcome = _greater_than_indices(left_c, right_c, True, 2)
+
+        if outcome is None:
+            gt_left = dummy
+            gt_lower = dummy
+            gt_upper = dummy
+        else:
+            gt_left, gt_lower, gt_upper = outcome
+
+        left_c = lt_left.append(gt_left)
+        lower_boundary = np.concatenate([lt_lower, gt_lower])
+        upper_boundary = np.concatenate([lt_upper, gt_upper])
+
+        return left_c, lower_boundary, upper_boundary
+
+    # capture null positions, since NaN != NaN
     # if left_c has nulls, I want to capture the positions
     # and hook it up with the index positions for nulls
     # in right_c, it it exists
@@ -2786,8 +2829,7 @@ def _less_than_indices(
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
-    if not left_c.is_monotonic_increasing:
-        left_c = left_c.sort_values()
+
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
@@ -2839,7 +2881,7 @@ def _less_than_indices(
     positions = _interval_ranges(search_indices, indices)
     search_indices = indices - search_indices
 
-    right_c = right_c.index[positions]
+    right_c = right_c.index.take(positions)
     left_c = left_c.index.repeat(search_indices)
     return left_c, right_c
 
@@ -2913,13 +2955,12 @@ def _greater_than_indices(
         return left_c.index, indices, search_indices
 
     positions = _interval_ranges(indices, search_indices)
-    right_c = right_c.index[positions]
+    right_c = right_c.index.take(positions)
     left_c = left_c.index.repeat(search_indices)
     return left_c, right_c
 
 
-
-def _pairs_conditional_join(
+def _multiple_conditional_join(
     df: pd.DataFrame, right: pd.DataFrame, conditions: list
 ) -> tuple:
     """
@@ -2927,7 +2968,28 @@ def _pairs_conditional_join(
 
     Returns a tuple of (left_c, right_c)
     """
+    left_columns, right_columns, _ = zip(*conditions)
+    right_columns = pd.unique(right_columns)
+    right_columns = [*right_columns]
+    left_columns = pd.unique(left_columns)
+    left_columns = [*left_columns]
 
+    df = df.loc[:, left_columns]
+    right = right.loc[:, right_columns]
+
+
+    if right.isna().any(axis=None):
+        right = right.dropna()
+    if right.empty:
+        return None
+    if df.isna().any(axis=None):
+        df = df.dropna()
+    if df.empty:
+        return None
+
+
+
+    # find condition with least number of search points
     base_index = df.index
     base_condition = conditions[0]
     difference = None
@@ -2938,6 +3000,7 @@ def _pairs_conditional_join(
         result = _generic_func_cond_join(left_c, right_c, op, 2)
         if result is None:
             return None
+        
         indexer, low, high = result
         if base_index.size > indexer.size:
             base_index = indexer
@@ -2947,32 +3010,108 @@ def _pairs_conditional_join(
             if difference is None:
                 difference = low, high
             else:
-                diff_base = np.subtract(difference[-1], difference[0]).sum()
+                low_, high_ = difference
+                diff_base = np.subtract(high_, low_).sum()
                 diff_current = np.subtract(high, low).sum()
                 if diff_base > diff_current:
                     base_condition = condition
                     difference = low, high
 
+    first_sort_column = base_condition[1]
+    if right_columns.index(first_sort_column) != 0:
+        right_columns = [label for label in right_columns 
+                            if label != first_sort_column]
+        right_columns = [first_sort_column] + right_columns
 
-    return base_index, base_condition, difference
+    df_duplicated = df.duplicated(keep = False)
 
+    # more than 10% duplicated, 
 
+    df = df.loc[base_index]
+    # check if df is duplicated
+    df_mapping = None
+    if df_duplicated.any(axis = None):
+        df_grouped = df.groupby(left_columns)
+        df_mapping = df_grouped.groups
+        df_unique = pd.DataFrame(df_mapping.keys(), columns = left_columns)
+    else:
+        df_unique = df.copy()
+    right_mapping = None
+    if right.duplicated().any(axis = None):
+        right_grouped = right.groupby(right_columns)
+        right_mapping = right_grouped.groups
+        right_unique = pd.DataFrame(right_mapping.keys(), columns = right_columns)
+    else:
+        right_unique = right.copy()
 
+    conditions = [condition for condition in conditions
+                        if condition != base_condition]
 
+    left_on, right_on, op = base_condition
+    left_c = df_unique[left_on]
+    right_c = right_unique[right_on]
+    result = _generic_func_cond_join(left_c, right_c, op, 1)
+    if result is None:
+        return None
+    left_index, right_index = result
+    for condition in conditions:
+        left_on, right_on, op = condition
+        left_c = df_unique.loc[left_index, left_on].array
+        right_c = right_unique.loc[right_index, right_on].array
+        op = operator_map[op]
+        boolean_array = op(left_c, right_c)
+        if not boolean_array.any():
+            return None
+        if boolean_array.all():
+            continue
+        left_index = left_index[boolean_array]
+        right_index = right_index[boolean_array]
 
+    index_left = None
+    index_right = None
+    if df_mapping:
+        mapper = (series for _, series in df_unique.items())
+        mapper = [*zip(*mapper)]
+        if df.columns.size == 1:
+                mapper = [ent[0] for ent in mapper]
+        mapper = dict(zip(mapper, df_unique.index))
+        df_mapping = {mapper[ent]:value for ent, value in df_mapping.items()}
+        left_index_map = left_index.map(df_mapping)
+        index_left = np.concatenate(left_index_map)
+        repeater = []
+        for key in left_index:
+            value = df_mapping[key]
+            repeater.append(value.size)
+        index_right = right_index.repeat(repeater)
 
+    if right_mapping:
+        mapper = (series for _, series in right_unique.items())
+        mapper = zip(*mapper)
+        mapper = dict(zip(mapper, right_unique.index))
+        right_mapping = {mapper[ent]:value for ent, value in right_mapping.items()}
+        if index_right is not None:
+            index_right = index_right.map(right_mapping)
+        else:
+            index_right = right_index.map(right_mapping)
+        index_right = np.concatenate(index_right)
+        repeater = []
+        for key in right_index:
+            value = right_mapping[key]
+            repeater.append(value.size)
+        
+        if index_left is None:
+            index_left = left_index.repeat(repeater)
+        else:
+            index_left = zip(left_index_map, repeater)
+            index_left = [np.repeat(ent, rep) for ent, rep in index_left]
+            index_left = np.concatenate(index_left)
 
-
-
-
-
-
-
-
-
-
-
-
+    if df_mapping or right_mapping :
+        left_index = index_left
+        right_index = index_right
+        
+        
+    return left_index, right_index
 
 
 
@@ -3101,15 +3240,9 @@ def _generic_func_cond_join(left_c: pd.Series, right_c: pd.Series, op: str, len_
     }:
         strict = True
 
-    if op in {
-        JOINOPERATOR.LESS_THAN.value,
-        JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
-    }:
+    if op in less_than_join_types:
         return _less_than_indices(left_c, right_c, strict, len_conditions)
-    elif op in {
-        JOINOPERATOR.GREATER_THAN.value,
-        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
-    }:
+    elif op in greater_than_join_types:
         return _greater_than_indices(left_c, right_c, strict, len_conditions)
     elif op == JOINOPERATOR.STRICTLY_EQUAL.value:
         return _equal_indices(left_c, right_c, len_conditions)
@@ -3152,31 +3285,20 @@ def _conditional_join_compute(
         )
 
 
-    # TODO: improve the efficiency for multiple conditions
-    df_index = df.index
-    # iteratively reduce the number of rows
-    # from df, until we have the certain index labels
-    # that will be in the final dataframe
-    # usually much smaller, which should help
-    # reduce overall processing time
     for condition in conditions:
         left_on, right_on, op = condition
-        left_c = df.loc[df_index, left_on]
+        left_c = df[left_on]
         right_c = right[right_on]
 
         _conditional_join_type_check(left_c, right_c, op)
 
-        result= _generic_func_cond_join(left_c, right_c, op, len_conditions)
-
-        if result is None:
-            return _create_conditional_join_empty_frame(df, right, how)
-
-        df_index, *_ = result
-
-    return _pairs_conditional_join(df, right, conditions)
 
 
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+    result = _multiple_conditional_join(df, right, conditions)
+    # return result
+    if result is None:
+        return _create_conditional_join_empty_frame(df, right, how)
+    left_c, right_c = result
+    return _create_conditional_join_frame(df, right, left_c, right_c, how, sort_by_appearance)
+
+

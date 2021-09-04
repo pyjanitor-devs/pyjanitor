@@ -13,16 +13,19 @@ def read_csvs(
     files_path: Union[str, Iterable[str]], separate_df: bool = False, **kwargs
 ) -> Union[pd.DataFrame, dict]:
     """
+    Read multiple CSV files and return a dictionary of DataFrames, or
+    one concatenated DataFrame.
+
     :param files_path: The filepath pattern matching the CSVs files.
         Accepts regular expressions, with or without csv extension.
         Also accepts iterable of file paths.
-    :param separate_df: If False (default) returns a single Dataframe
+    :param separate_df: If `False` (default), returns a single Dataframe
         with the concatenation of the csv files.
-        If True, returns a dictionary of separate dataframes
+        If `True`, returns a dictionary of separate DataFrames
         for each CSV file.
     :param kwargs: Keyword arguments to pass into the
         original pandas `read_csv`.
-    :returns: dataframe of concatenated dataframes of dataframe dict.
+    :returns: DataFrame of concatenated DataFrames of DataFrame dict.
     :raises JanitorError: if `None` provided for `files_path``.
     :raises JanitorError: if length of `files_path` is `0``.
     :raises ValueError: if no `CSV` files exist in `files_path``.

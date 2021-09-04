@@ -123,8 +123,8 @@ def smiles2mol(
 
     A progressbar can be optionally used.
 
-    - Pass in "notebook" to show a `tqdm` notebook progressbar. (`ipywidgets` must
-      be enabled with your Jupyter installation.)
+    - Pass in "notebook" to show a `tqdm` notebook progressbar.
+      (`ipywidgets` must be enabled with your Jupyter installation.)
     - Pass in "terminal" to show a `tqdm` progressbar. Better suited for use
       with scripts.
     - "none" is the default value - progress bar will be not be shown.

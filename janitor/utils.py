@@ -148,15 +148,17 @@ def _strip_underscores(
 
     Underscores can be stripped from the beginning, end or both.
 
-    .. code-block:: python
+    Example usage:
 
-        df = _strip_underscores(df, strip_underscores='left')
+    ```
+    df = _strip_underscores(df, strip_underscores='left')
+    ```
 
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
-        column names. Default None keeps outer underscores. Values can be
-        either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
-        and True.
+        column names. Default `None` keeps outer underscores. Values can be
+        either `'left'`, `'right'` or `'both'` or the respective shorthand
+        `'l'`, `'r'` and `True`.
     :returns: A pandas DataFrame with underscores removed.
     """
     df = df.rename(

@@ -1,9 +1,9 @@
 # Changelog
 
 ## [Unreleased]
-
+-   [INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521
+-   [ENH] Fix bug in `pivot_longer` for wrong output when `names_pattern` is a sequence with a single value. Issue #885 @samukweku
 -   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
-
 
 ## [v0.21.1] - 2021-08-29
 

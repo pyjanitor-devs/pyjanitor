@@ -2,9 +2,9 @@
 
 ## [Unreleased]
 -   [INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521
-
-
 -   [ENH] Fix bug in `pivot_longer` for wrong output when `names_pattern` is a sequence with a single value. Issue #885 @samukweku
+-   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed.
+
 
 ## [v0.21.1] - 2021-08-29
 

@@ -385,20 +385,21 @@ def check_column(
 
 def skipna(f: Callable) -> Callable:
     """
-    Decorator for escaping np.nan and None in a function
+    Decorator for escaping `np.nan` and `None` in a function.
 
-    Should be used like this::
+    Example usage:
 
-        df[column].apply(skipna(transform))
+    ```python
+    df[column].apply(skipna(transform))
 
-    or::
+    # Also can be used as shown below
+    @skipna
+    def transform(x):
+        pass
+    ```
 
-        @skipna
-        def transform(x):
-            pass
-
-    :param f: the function to be wrapped
-    :returns: _wrapped, the wrapped function
+    :param f: the function to be wrapped.
+    :returns: the wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):

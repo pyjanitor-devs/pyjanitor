@@ -630,9 +630,8 @@ def inflate_currency(
     the currency's country.
 
     The provided country can be any economy name or code from the World Bank
-    Here is the [list of economies][econ]
-
-    [econ]: https://databank.worldbank.org/data/download/site-content/CLASS.xls.
+    [list of economies]
+    (https://databank.worldbank.org/data/download/site-content/CLASS.xls).
 
     **Note**: This method mutates the original DataFrame.
 

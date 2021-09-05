@@ -58,7 +58,6 @@ def join_fasta(
     Method chaining usage example:
 
     ```python
-
     import pandas as pd
     import janitor.biology
 

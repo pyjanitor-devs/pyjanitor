@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+-   [INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521
+
 
 ## [v0.21.2] - 2021-09-01
 

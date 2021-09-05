@@ -5682,7 +5682,7 @@ def pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
-    names_to: Optional[Union[List, Tuple, str]] = "variable",
+    names_to: Optional[Union[List, Tuple, str]] = None,
     values_to: Optional[str] = "value",
     column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
@@ -6071,8 +6071,7 @@ def pivot_longer(
         also be a list/tuple of strings that will serve as new column
         names, if `name_sep` or `names_pattern` is provided.
         If `.value` is in `names_to`, new column names will be extracted
-        from part of the existing column names and `values_to` will be
-        replaced.
+        from part of the existing column names and overrides`values_to`.
     :param names_sep: Determines how the column name is broken up, if
         `names_to` contains multiple values. It takes the same
         specification as pandas' `str.split` method, and can be a string
@@ -6112,24 +6111,8 @@ def pivot_longer(
         format.
     :raises TypeError: if `index` or `column_names` is not a string, or a
         list/tuple of column names, or a `janitor.patterns` function.
-    :raises TypeError: if `names_to` or `column_names` is not a string, or a
-        list/tuple of strings.
-    :raises TypeError: if `names_sep` is not a string or regular expression.
-    :raises TypeError: if `names_pattern` is not a regular expression, or a
-        list/tuple of regular expressions.
-    :raises TypeError: if `values_to` is not a string.
-    :raises TypeError: if `sort_by_appearance` is not a boolean.
-    :raises TypeError: if `ignore_index` is not a boolean.
-    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
-        and `names_sep` is provided.
-    :raises ValueError: if `names_to` is a string, and the number of extracted
-        columns is greater than 1.
-    :raises ValueError: if `names_to` is a list/tuple, and its length does not
-        match the number of extracted columns.
     :raises ValueError: if the dataframe contains MultiIndex columns, and
         `index` or `column_names` is not a list of tuples.
-    :raises ValueError: if the dataframe contains MultiIndex columns, and
-        either `names_sep` or `names_pattern` is provided.
 
     .. # noqa: DAR402
     """

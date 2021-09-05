@@ -19,51 +19,49 @@ def fill_missing_timestamps(
     last_time_stamp: pd.Timestamp = None,
 ) -> pd.DataFrame:
     """
-    Fill dataframe with missing timestamps based on a defined frequency.
+    Fills a DataFrame with missing timestamps based on a defined frequency.
 
-    If timestamps are missing,
-    this function will reindex the dataframe.
-    If timestamps are not missing,
-    then the function will return the dataframe unmodified.
+    If timestamps are missing, this function will re-index the DataFrame.
+    If timestamps are not missing, then the function will return the DataFrame
+    unmodified.
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = janitor.timeseries.fill_missing_timestamps(
-            df=df,
-            frequency="1H",
-        )
+    df = janitor.timeseries.fill_missing_timestamps(
+        df=df,
+        frequency="1H",
+    )
+    ```
 
     Method chaining example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = (
+        pd.DataFrame(...)
+        .fill_missing_timestamps(frequency="1H")
+    )
+    ```
 
-        df = (
-            pd.DataFrame(...)
-            .fill_missing_timestamps(frequency="1H")
-        )
-
-    :param df: Dataframe which needs to be tested for missing timestamps
-    :param frequency: frequency i.e. sampling frequency of the data.
+    :param df: DataFrame which needs to be tested for missing timestamps
+    :param frequency: sampling frequency of the data.
         Acceptable frequency strings are available
-        `here <https://pandas.pydata.org/pandas-docs/stable/>`_
+        [here](https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases).
         Check offset aliases under time series in user guide
-    :param first_time_stamp: timestamp expected to start from
-        Defaults to None.
-        If no input is provided assumes the minimum value in time_series
-    :param last_time_stamp: timestamp expected to end with.
-        Defaults to None.
-        If no input is provided, assumes the maximum value in time_series
-    :returns: dataframe that has a complete set of contiguous datetimes.
+    :param first_time_stamp: timestamp expected to start from;
+        defaults to `None`. If no input is provided, assumes the
+        minimum value in `time_series`.
+    :param last_time_stamp: timestamp expected to end with; defaults to `None`.
+        If no input is provided, assumes the maximum value in `time_series`.
+    :returns: DataFrame that has a complete set of contiguous datetimes.
     """
     # Check all the inputs are the correct data type
     check("frequency", frequency, [str])

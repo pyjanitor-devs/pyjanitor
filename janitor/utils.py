@@ -283,21 +283,22 @@ def deprecated_alias(**aliases) -> Callable:
 
 
 def refactored_function(message: str) -> Callable:
-    """Used as a decorator when refactoring functions
+    """
+    Used as a decorator when refactoring functions.
 
-    Implementation is inspired from `Hacker Noon`_.
+    Implementation is inspired from [`Hacker Noon`][hacker_link].
 
-    .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
+    [hacker_link]: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
 
     Functional usage example:
 
-    .. code-block:: python
-
-        @refactored_function(
-            message="simple_sum() has been refactored. Use hard_sum() instead."
-        )
-        def simple_sum(alpha, beta):
-            return alpha + beta
+    ```python
+    @refactored_function(
+        message="simple_sum() has been refactored. Use hard_sum() instead."
+    )
+    def simple_sum(alpha, beta):
+        return alpha + beta
+    ```
 
     :param message: Message to use in warning user about refactoring.
     :return: Your original function wrapped with the kwarg redirection

@@ -235,21 +235,21 @@ def import_message(
 
 def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
     """
-    Raises error if a function operating on a `DataFrame` is not idempotent,
-    that is, `func(func(df)) = func(df)` is not true for all `df`.
+    Raises an error if a function operating on a DataFrame is not idempotent.
+    That is, `func(func(df)) = func(df)` is not `True` for all `df`.
 
-    :param func: A python method.
+    :param func: A Python method.
     :param df: A pandas `DataFrame`.
     :param args: Positional arguments supplied to the method.
     :param kwargs: Keyword arguments supplied to the method.
     :raises ValueError: If `func` is found to not be idempotent for the given
-        `DataFrame` `df`.
+        DataFrame (`df`).
     """
     if not func(df, *args, **kwargs) == func(
         func(df, *args, **kwargs), *args, **kwargs
     ):
         raise ValueError(
-            "Supplied function is not idempotent for the given " "DataFrame."
+            "Supplied function is not idempotent for the given DataFrame."
         )
 
 

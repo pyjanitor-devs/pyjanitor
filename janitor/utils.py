@@ -43,13 +43,15 @@ def check(varname: str, value, expected_types: list):
     One-liner syntactic sugar for checking types.
     It can also check callables.
 
-    Should be used like this::
+    Example usage:
 
-        check('x', x, [int, float])
+    ```python
+    check('x', x, [int, float])
+    ```
 
     :param varname: The name of the variable (for diagnostic error message).
-    :param value: The value of the varname.
-    :param expected_types: The types we expect the item to be.
+    :param value: The value of the `varname`.
+    :param expected_types: The type(s) the item is expected to be.
     :raises TypeError: if data is not the expected type.
     """
     is_expected_type: bool = False

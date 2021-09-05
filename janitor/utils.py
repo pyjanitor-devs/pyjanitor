@@ -392,7 +392,7 @@ def skipna(f: Callable) -> Callable:
     ```python
     df[column].apply(skipna(transform))
 
-    # Also can be used as shown below
+    # Can also be used as shown below
     @skipna
     def transform(x):
         pass
@@ -416,23 +416,23 @@ def skiperror(
     """
     Decorator for escaping any error in a function.
 
-    Should be used like this::
+    Example usage:
 
-        df[column].apply(
-            skiperror(transform, return_val=3, return_x=False))
+    ```python
+    df[column].apply(
+        skiperror(transform, return_val=3, return_x=False))
 
-    or::
-
-        @skiperror(return_val=3, return_x=False)
-        def transform(x):
-            pass
-
-    :param f: the function to be wrapped
+    # Can also be used as shown below
+    @skiperror(return_val=3, return_x=False)
+    def transform(x):
+        pass
+    ```
+    :param f: the function to be wrapped.
     :param return_x: whether or not the original value that caused error
-        should be returned
+        should be returned.
     :param return_val: the value to be returned when an error hits.
-        Ignored if return_x is True
-    :returns: _wrapped, the wrapped function
+        Ignored if `return_x` is `True`.
+    :returns: the wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):

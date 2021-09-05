@@ -6514,6 +6514,9 @@ def conditional_join(
 
     A binary search is used to get the relevant rows; this avoids
     a cartesian join, and makes the process less memory intensive.
+    For multiple conditions, after the first binary search for
+    the first condition, subsequent conditions are executed via
+    boolean indexing to get the final matching rows.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.

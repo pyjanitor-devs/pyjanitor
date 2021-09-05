@@ -3092,6 +3092,8 @@ def _multiple_conditional_join(
         mapper = (series for _, series in right_unique.items())
         mapper = zip(*mapper)
         if right.columns.size == 1:
+            # takes care of tuples with just one entry
+            # if not taken care of, it returns a KeyError
             mapper = [ent[0] for ent in mapper]
         mapper = dict(zip(mapper, right_unique.index))
         right_mapping = {
@@ -3103,6 +3105,7 @@ def _multiple_conditional_join(
             index_right = right_index.map(right_mapping)
         index_right = np.concatenate(index_right)
         repeater = []
+        # takes care of duplicates in right_index as well
         for key in right_index:
             value = right_mapping[key]
             repeater.append(value.size)
@@ -3110,6 +3113,8 @@ def _multiple_conditional_join(
         if index_left is None:
             index_left = left_index.repeat(repeater)
         else:
+            # allows us to keep the alignment between
+            # left and right
             index_left = zip(left_index_map, repeater)
             index_left = [np.repeat(ent, rep) for ent, rep in index_left]
             index_left = np.concatenate(index_left)

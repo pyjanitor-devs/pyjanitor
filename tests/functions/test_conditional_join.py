@@ -56,6 +56,17 @@ def test_right_MultiIndex(df):
 
 
 @given(df=conditional_df(), s=conditional_series())
+def test_check_conditions_exist(df, s):
+    """Raise ValueError if no condition is provided."""
+
+    assume(not df.empty)
+    assume(not s.empty)
+    with pytest.raises(ValueError):
+        s.name = "B"
+        df.conditional_join(s)
+
+
+@given(df=conditional_df(), s=conditional_series())
 def test_check_condition_type(df, s):
     """Raise TypeError if any condition in conditions is not a tuple."""
 

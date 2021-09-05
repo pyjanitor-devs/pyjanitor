@@ -2428,7 +2428,7 @@ def _conditional_join_preliminary_checks(
     suffixes=("_x", "_y"),
 ) -> tuple:
     """
-    Preliminary checks are conducted here.
+    Preliminary checks for conditional_join are conducted here.
     This function checks for conditions such as
     MultiIndexed dataframe columns,
     improper `suffixes` configuration,
@@ -2488,14 +2488,21 @@ def _conditional_join_preliminary_checks(
             """
         )
 
+    if not conditions:
+        raise ValueError(
+            """
+            Kindly provide at least one join condition.
+            """
+        )
     # each condition should be a tuple of length 3:
     for condition in conditions:
         check("condition", condition, [tuple])
-        if len(condition) != 3:
+        len_condition = len(condition)
+        if len_condition != 3:
             raise ValueError(
                 f"""
                 condition should have only three elements.
-                Your condition however is of length {len(condition)}
+                Your condition however is of length {len_condition}
                 """
             )
 
@@ -2552,7 +2559,7 @@ def _cond_join_suffixes(
                     raise ValueError(
                         f"""
                         {new_label} is present in `df` columns.
-                        Kindly provide unique suffixes to create
+                        Kindly provide a unique suffix to create
                         columns that are not present in `df`.
                         """
                     )
@@ -2570,7 +2577,7 @@ def _cond_join_suffixes(
                     raise ValueError(
                         f"""
                         {new_label} is present in `right` columns.
-                        Kindly provide unique suffixes to create
+                        Kindly provide a unique suffix to create
                         columns that are not present in `right`.
                         """
                     )
@@ -2623,7 +2630,7 @@ def _conditional_join_type_check(
 
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     """
-    Create ordered indices for each value in
+    Create `range` indices for each value in
     `right_keys` in `_less_than_indices`.
     Faster than a list comprehension, as
     the array size increases.
@@ -2668,9 +2675,8 @@ def _equal_indices(
 
     lower_boundary = right_c.searchsorted(left_c, side="left")
     upper_boundary = right_c.searchsorted(left_c, side="right")
-    # this means there is a match/ are matches
     keep_rows = lower_boundary < upper_boundary
-    if keep_rows.sum() == 0:
+    if keep_rows.sum() == 0:  # no match
         return None
     # keep only matching rows
     if keep_rows.sum() < keep_rows.size:
@@ -2703,6 +2709,7 @@ def _not_equal_indices(
     left_nulls = dummy
     right_nulls = dummy
 
+    # nulls are not preserved here
     if len_conditions > 1:
         outcome = _less_than_indices(left_c, right_c, True, 2)
 
@@ -2722,9 +2729,12 @@ def _not_equal_indices(
         else:
             gt_left, gt_lower, gt_upper = outcome
 
-        left_c = lt_left.append([gt_left, left_nulls])
+        left_c = lt_left.append(gt_left)
         lower_boundary = np.concatenate([lt_lower, gt_lower])
         upper_boundary = np.concatenate([lt_upper, gt_upper])
+
+        if left_c.empty:
+            return None
 
         return left_c, lower_boundary, upper_boundary
 
@@ -3263,7 +3273,6 @@ def _conditional_join_compute(
         _conditional_join_type_check(left_c, right_c, op)
 
     result = _multiple_conditional_join(df, right, conditions)
-    # return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
     left_c, right_c = result

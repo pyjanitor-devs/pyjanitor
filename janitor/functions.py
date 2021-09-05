@@ -4983,9 +4983,7 @@ def groupby_topk(
 
 @pf.register_dataframe_method
 def complete(
-    df: pd.DataFrame,
-    *columns,
-    by: Optional[Union[list, str]] = None,
+    df: pd.DataFrame, *columns, by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
     This function turns implicit missing values into explicit missing values.

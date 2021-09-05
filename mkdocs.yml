@@ -26,6 +26,7 @@ nav:
       - Chemistry: api/chemistry.md
       - Engineering: api/engineering.md
       # - Finance: api/finance.md
+      - Input/Output (io): api/io.md
       - Machine Learning: api/ml.md
       - Math: api/math.md
       - PySpark: api/pyspark.md
@@ -60,8 +61,11 @@ plugins:
 
 # Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
 markdown_extensions:
-  - codehilite
+  # - codehilite
   - admonition
+  - pymdownx.highlight:
+      use_pygments: false
+  - pymdownx.inlinehilite
   # - pymdownx.tabbed
   # - pymdownx.arithmatex
   # - pymdownx.details
@@ -70,10 +74,16 @@ markdown_extensions:
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js
+  - js/config.js
 
 extra_css:
   - css/nb_mods.css
   - css/apidocs.css
+  # This sets the theme for syntax highlighting.
+  # Theme names are available here: https://highlightjs.org/static/demo/
+  # Not sure how the theme names map onto CSS filenames though.
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/nord.min.css
 
 repo_name: "ericmjl/pyjanitor"
 repo_url: "https://github.com/ericmjl/pyjanitor"

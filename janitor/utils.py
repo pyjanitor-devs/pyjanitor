@@ -318,12 +318,11 @@ def refactored_function(message: str) -> Callable:
 def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     """
     Used to update deprecated argument names with new names. Throws a
-    TypeError if both arguments are provided, and warns if old alias is used.
-    Nothing is returned as the passed `kwargs` are modified directly.
+    `TypeError` if both arguments are provided, and warns if old alias
+    is used. Nothing is returned as the passed `kwargs` are modified
+    directly. Implementation is inspired from [`StackOverflow`][stack_link].
 
-    Implementation is inspired from `StackOverflow`_.
-
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
+    [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     :param func_name: name of decorated function.
     :param kwargs: Arguments supplied to the method.

@@ -26,6 +26,7 @@ nav:
       - Chemistry: api/chemistry.md
       - Engineering: api/engineering.md
       # - Finance: api/finance.md
+      - Input/Output (io): api/io.md
       - Machine Learning: api/ml.md
       - Math: api/math.md
       - PySpark: api/pyspark.md

@@ -88,18 +88,17 @@ def _get_missing_timestamps(
     last_time_stamp: pd.Timestamp = None,
 ) -> pd.DataFrame:
     """
-    Return the timestamps that are missing in a dataframe.
+    Return the timestamps that are missing in a DataFrame.
 
-    This function takes in a dataframe,
-    and checks its index against a dataframe
-    that contains the expected timestamps.
-    Here, we assume that the expected timestamps
-    are going to be of a larger size
-    than the timestamps available in the input dataframe `df``.
+    This function takes in a DataFrame, and checks its index
+    against a DataFrame that contains the expected timestamps.
+    Here, we assume that the expected timestamps are going to be
+    of a larger size than the timestamps available in the input
+    DataFrame `df`.
 
-    If there are any missing timestamps in the input dataframe,
-    this function will return those missing timestamps
-    from the expected dataframe.
+    If there are any missing timestamps in the input DataFrame,
+    this function will return those missing timestamps from the
+    expected DataFrame.
     """
     expected_df = df.fill_missing_timestamps(
         frequency, first_time_stamp, last_time_stamp

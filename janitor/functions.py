@@ -5005,51 +5005,64 @@ def complete(
         import pandas as pd
         import janitor as jn
 
-            group	item_id	  item_name value1	value2
-        0	1	     1	          a	      1	     4
-        1	2	     2	          b	      2	     5
-        2	1	     2	          b	      3	     6
+            group	item_id	    item_name	value1	value2
+        0	1	    1	        a	1	4
+        1	2	    2	        b	2	5
+        2	1	    2	        b	3	6
     ```
 
-    Find all the unique combinations of ``group``, ``item_id``, 
-    and ``item_name``, including combinations not present in the data
+    Find all the unique combinations of ``group`, `item_id``,
+    and ``item_name``, including combinations not present
+    in the data:
 
     ```python
         df.complete('group', 'item_id', 'item_name')
-          group	item_id	    item_name	value1	value2
-        0	1	    1	        a	    1.0	    4.0
-        1	1	    1	        b	    NaN	    NaN
-        2	1	    2	        a	    NaN 	NaN
-        3	1	    2	        b	    3.0	    6.0
-        4	2	    1	        a	    NaN	    NaN
-        5	2	    1	        b	    NaN	    NaN
-        6	2	    2	        a	    NaN	    NaN
-        7	2	    2	        b	    2.0	    5.0
+
+              group	item_id	    item_name	value1	value2
+        0	1	    1	        a	1.0	4.0
+        1	1	    1	        b	NaN	NaN
+        2	1	    2	        a	NaN	NaN
+        3	1	    2	        b	3.0	6.0
+        4	2	    1	        a	NaN	NaN
+        5	2	    1	        b	NaN	NaN
+        6	2	    2	        a	NaN	NaN
+        7	2	    2	        b	2.0	5.0
     ```
 
     To expose just the missing values based only on the existing data,
     ``item_id`` and ``item_name`` column names can be wrapped
-    in a list/tuple, while ``group`` is passed in as a separate variable
+    in a list/tuple, while ``group`` is passed in as a separate variable:
 
     ```python
         df.complete("group", ("item_id", "item_name"))
+
             group	item_id	    item_name	value1	   value2
         0	1	    1	        a	  1.0	    4.0
         1	1	    2	        b	  3.0	    6.0
         2	2	    1	        a	  NaN 	    NaN
         3	2	    2	        b	  2.0	    5.0
+    ```
+
     Let's look at another example:
-    `Source Data <http://imachordata.com/2016/02/05/you-complete-me/>`_
-    .. code-block:: python
+
+    [Source Data](http://imachordata.com/2016/02/05/you-complete-me/)
+
+    ```python
+
             Year      Taxon         Abundance
         0   1999    Saccharina         4
         1   2000    Saccharina         5
         2   2004    Saccharina         2
         3   1999     Agarum            1
         4   2004     Agarum            8
+    ```
+
     Note that Year 2000 and Agarum pairing is missing. Let's make it
-    explicit::
+    explicit:
+
+    ```python
         df.complete('Year', 'Taxon')
+
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
         1  1999     Saccharina     4.0
@@ -5057,8 +5070,13 @@ def complete(
         3  2000     Saccharina     5.0
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
-    The null value can be replaced with the Pandas `fillna` argument::
+    ```
+
+    The null value can be replaced with the Pandas ``fillna`` argument:
+
+    ```python
         df.complete('Year', 'Taxon').fillna(0)
+
            Year      Taxon     Abundance
         0  1999     Agarum         1.0
         1  1999     Saccharina     4.0
@@ -5066,11 +5084,17 @@ def complete(
         3  2000     Saccharina     5.0
         4  2004     Agarum         8.0
         5  2004     Saccharina     2.0
+    ```
+
     What if we wanted the explicit missing values for all the years from
     1999 to 2004? Easy - simply pass a dictionary pairing the column name
-    with the new values::
+    with the new values:
+
+    ```python
         new_year_values = lambda year: range(year.min(), year.max() + 1)
+
         df.complete({"Year": new_year_values}, "Taxon")
+
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
         1   1999  Saccharina        4.0
@@ -5084,8 +5108,12 @@ def complete(
         9   2003  Saccharina        NaN
         10  2004      Agarum        8.0
         11  2004  Saccharina        2.0
+    ```
+
     It is also possible to expose missing values within a groupby,
-    by using the `by` parameter::
+    by using the ``by`` parameter:
+
+    ```python
           state  year  value
         0    CA  2010      1
         1    CA  2013      3
@@ -5094,11 +5122,16 @@ def complete(
         4    HI  2016      3
         5    NY  2009      2
         6    NY  2013      5
-    Let's get all the missing years per state::
+    ```
+
+    Let's get all the missing years per state:
+
+    ```python
         df.complete(
             {'year': new_year_values},
             by='state'
         )
+
             state  year  value
         0     CA  2010    1.0
         1     CA  2011    NaN
@@ -5116,12 +5149,20 @@ def complete(
         13    NY  2011    NaN
         14    NY  2012    NaN
         15    NY  2013    5.0
-    .. note:: MultiIndex columns are not supported.
+    ```
+
+    !!! note
+    MultiIndex columns are not supported.
+
     Functional usage syntax:
-    .. code-block:: python
+
+    ```python
+
         import pandas as pd
         import janitor as jn
+
         df = pd.DataFrame(...)
+
         df = jn.complete(
             df = df,
             column_label,
@@ -5129,8 +5170,12 @@ def complete(
             {column1: new_values, ...},
             by = label/list_of_labels
         )
+    ```
+
     Method chaining syntax:
-    .. code-block:: python
+
+    ```python
+
         df = (
             pd.DataFrame(...)
             .complete(
@@ -5139,7 +5184,9 @@ def complete(
                 {column1: new_values, ...},
                 by = label/list_of_labels
             )
-    :param df: A pandas dataframe.
+    ```
+
+    :param df: A pandas DataFrame.
     :param *columns: This is a sequence containing the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
@@ -5147,11 +5194,10 @@ def complete(
     :param by: label or list of labels to group by.
         The explicit missing values are returned per group.
     :returns: A pandas dataframe with modified column(s).
-    :raises ValueError: if entry in `*columns` is not a
+    :raises ValueError: if entry in ``*columns`` is not a
         str/dict/list/tuple.
-    :raises ValueError: if entry in `*columns` is a dict/list/tuple
-        and is empty.
-    .. # noqa: DAR402
+    :raises ValueError: if entry in ``*columns``
+        is a dict/list/tuple and is empty.
     """
 
     if not columns:

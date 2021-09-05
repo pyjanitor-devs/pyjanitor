@@ -199,11 +199,11 @@ def import_message(
     optional module / package that is not currently installed. Includes
     installation instructions. Used in `chemistry.py` and `biology.py`.
 
-    :param submodule: pyjanitor submodule that needs an external dependency.
+    :param submodule: `pyjanitor` submodule that needs an external dependency.
     :param package: External package this submodule relies on.
-    :param conda_channel: Conda channel package can be installed from,
+    :param conda_channel: `conda` channel package can be installed from,
         if at all.
-    :param pip_install: Whether package can be installed via pip.
+    :param pip_install: Whether package can be installed via `pip`.
     """
     is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
     installable = True

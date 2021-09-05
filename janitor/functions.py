@@ -88,17 +88,17 @@ def unionize_dataframe_categories(
 
     Instead of:
 
-    .. code-block:: python
-
-        concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
+    ```python
+    concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
+    ```
 
     which in your case has resulted in `category` -> `object` conversion,
     use:
 
-    .. code-block:: python
-
-        unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
-        concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+    ```python
+    unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
+    concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+    ```
 
     :param dataframes: The dataframes you wish to unionize the categorical
         objects for.
@@ -174,18 +174,20 @@ def move(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = move(df, source=3, target=15, position='after', axis=0)
+    ```python
+    df = move(df, source=3, target=15, position='after', axis=0)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).move(source=3, target=15, position='after',
-        axis=0)
+    ```python
+    import pandas as pd
+    import janitor
+    df = (
+        pd.DataFrame(...)
+        .move(source=3, target=15, position='after', axis=0)
+    )
+    ```
 
     :param df: The pandas Dataframe object.
     :param source: column or row to move
@@ -271,24 +273,21 @@ def clean_names(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = clean_names(df)
+    ```python
+    df = clean_names(df)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor
+    df = pd.DataFrame(...).clean_names()
 
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).clean_names()
+    Examples of transformation:
 
-    :Example of transformation:
-
-    .. code-block:: python
-
-        Columns before: First Name, Last Name, Employee Status, Subject
-        Columns after: first_name, last_name, employee_status, subject
+    - Columns before: First Name, Last Name, Employee Status, Subject
+    - Columns after: first_name, last_name, employee_status, subject
 
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
@@ -390,7 +389,10 @@ def _normalize_1(col_name: Hashable) -> str:
 
 def _strip_accents(col_name: str) -> str:
     """Remove accents from a DataFrame column name.
-    .. _StackOverflow: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-strin
+
+    Inspired from [StackOverflow][so].
+
+    [so]: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-strin
     """  # noqa: E501
 
     return "".join(
@@ -409,26 +411,25 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     This method mutates the original DataFrame.
 
-    Implementation is inspired from `StackOverflow`_.
+    Implementation is inspired from [StackOverflow][so].
 
-    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
+    [so]: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = remove_empty(df)
+    ```python
+    df = remove_empty(df)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).remove_empty()
+    ```python
+    import pandas as pd
+    import janitor
+    df = pd.DataFrame(...).remove_empty()
+    ```
 
     :param df: The pandas DataFrame object.
-
     :returns: A pandas DataFrame.
     """  # noqa: E501
     nanrows = df.index[df.isna().all(axis=1)]
@@ -452,18 +453,18 @@ def get_dupes(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = pd.DataFrame(...)
-        df = get_dupes(df)
+    ```python
+    df = pd.DataFrame(...)
+    df = get_dupes(df)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).get_dupes()
+    ```python
+    import pandas as pd
+    import janitor
+    df = pd.DataFrame(...).get_dupes()
+    ```
 
     :param df: The pandas DataFrame object.
     :param column_names: (optional) A column name or an iterable
@@ -481,8 +482,10 @@ def As_Categorical(
     order: Optional[str] = None,
 ) -> NamedTuple:
     """
-    Helper function for `encode_categorical`. It makes creating the
-    `categories` and `order` more explicit. Inspired by pd.NamedAgg.
+    Helper function for `encode_categorical`.
+    It makes creating the `categories` and `order` more explicit.
+    Inspired by `pd.NamedAgg`.
+
     :param categories: list-like object to create new categorical column.
     :param order: string object that can be either "sort" or "appearance".
         If "sort", the `categories` argument will be sorted with np.sort;
@@ -500,59 +503,63 @@ def encode_categorical(
     column_names: Union[str, Iterable[str], Hashable] = None,
     **kwargs,
 ) -> pd.DataFrame:
-    """Encode the specified columns with Pandas'
-    `category dtype <http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html>`_.
+    """Encode the specified columns with Pandas' [category dtype][cat].
 
-    Categories and order can be explicitly specified via the `kwargs` option, which is a
-    pairing of column name and a tuple of (categories, order).
+    [cat]: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html
 
-    The `janitor.As_Categorical` function is provided to make it clearer what the arguments
-    to the function are.
+    Categories and order can be explicitly specified via the `kwargs` option,
+    which is a pairing of column name and a tuple of (categories, order).
 
+    The `janitor.As_Categorical` function is provided
+    to make it clearer what the arguments to the function are.
     It is syntactic sugar around `pd.Categorical`.
 
     This method does not mutate the original DataFrame.
 
-    .. note:: In versions < 0.20.11, this method mutates the original DataFrame.
+    Note: In versions < 0.20.11, this method mutates the original DataFrame.
 
-    **Examples:**
+    TODO: The big chunk of examples below
+    should be moved into a Jupyter notebook.
+    This will keep the docstring consistent and to-the-point.
 
+    Examples:
 
-    .. code-block:: python
+    ```python
+        col1	col2	col3
+    0	2.0	a	2020-01-01
+    1	1.0	b	2020-01-02
+    2	3.0	c	2020-01-03
+    3	1.0	d	2020-01-04
+    4	NaN	a	2020-01-05
 
-               col1	col2	col3
-        0	2.0	a	2020-01-01
-        1	1.0	b	2020-01-02
-        2	3.0	c	2020-01-03
-        3	1.0	d	2020-01-04
-        4	NaN	a	2020-01-05
+    df.dtypes
 
-        df.dtypes
-
-        col1           float64
-        col2            object
-        col3    datetime64[ns]
-        dtype: object
+    col1           float64
+    col2            object
+    col3    datetime64[ns]
+    dtype: object
+    ```
 
     Specific columns can be converted to category type:
 
-    .. code-block:: python
+    ```python
+    df = (
+        pd.DataFrame(...)
+        .encode_categorical(
+            column_names=['col1', 'col2', 'col3']
+        )
+    )
 
-        df = (pd.DataFrame(...)
-                .encode_categorical(
-                    column_names=['col1', 'col2', 'col3']
-                    )
-            )
+    df.dtypes
 
-        df.dtypes
-
-        col1    category
-        col2    category
-        col3    category
-        dtype: object
+    col1    category
+    col2    category
+    col3    category
+    dtype: object
+    ```
 
     Note that for the code above, the categories were inferred from
-    the columns, and is unordered::
+    the columns, and is unordered:
 
         df['col3']
         0   2020-01-01
@@ -566,7 +573,7 @@ def encode_categorical(
 
 
     Explicit categories can be provided, and ordered via the `kwargs``
-    parameter::
+    parameter:
 
         df = (pd.DataFrame(...)
                 .encode_categorical(
@@ -593,9 +600,12 @@ def encode_categorical(
         Name: col2, dtype: category
         Categories (4, object): [a < b < c < d]
 
-    When the `order` parameter is "appearance", the categories argument is used as-is;
-    if the `order` is "sort", the categories argument is sorted in ascending order;
-    if `order` is `None``, then the categories argument is applied unordered.
+    When the `order` parameter is "appearance",
+    the categories argument is used as-is;
+    if the `order` is "sort",
+    the categories argument is sorted in ascending order;
+    if `order` is `None``,
+    then the categories argument is applied unordered.
 
     The `janitor.As_Categorical` function can also be used to make clearer
     what the arguments to the function are::
@@ -616,8 +626,7 @@ def encode_categorical(
     A User Warning will be generated if some or all of the unique values
     in the column are not present in the provided `categories` argument.
 
-    .. code-block:: python
-
+    ```python
         df = (pd.DataFrame(...)
                 .encode_categorical(
                     col1 = As_Categorical(
@@ -638,7 +647,7 @@ def encode_categorical(
         4    NaN
         Name: col1, dtype: category
         Categories (3, int64): [4 < 5 < 6]
-
+    ```
 
     .. note:: if `categories` is None in the `kwargs` tuple, then the
         values for `categories` are inferred from the column; if `order`
@@ -649,7 +658,7 @@ def encode_categorical(
 
     Functional usage syntax:
 
-    .. code-block:: python
+    ```python
 
         import pandas as pd
         import janitor as jn
@@ -692,7 +701,6 @@ def encode_categorical(
                             order="sort"/"appearance"/None
                             )
         )
-
 
     :param df: The pandas DataFrame object.
     :param column_names: A column name or an iterable (list or
@@ -764,18 +772,18 @@ def label_encode(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = label_encode(df, column_names="my_categorical_column")  # one way
+    ```python
+    df = label_encode(df, column_names="my_categorical_column")  # one way
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        categorical_cols = ['col1', 'col2', 'col4']
-        df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
+    ```python
+    import pandas as pd
+    import janitor
+    categorical_cols = ['col1', 'col2', 'col4']
+    df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
+    ```
 
     :param df: The pandas DataFrame object.
     :param column_names: A column name or an iterable (list
@@ -811,21 +819,28 @@ def factorize_columns(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = factorize_columns(df, column_names="my_categorical_column",
-                                        suffix="_enc")  # one way
+    ```python
+    df = factorize_columns(
+        df,
+        column_names="my_categorical_column",
+        suffix="_enc"
+    )  # one way
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        categorical_cols = ['col1', 'col2', 'col4']
-        df = pd.DataFrame(...).factorize_columns(
-                                column_names=categorical_cols,
-                                suffix="_enc")
+    ```python
+    import pandas as pd
+    import janitor
+    categorical_cols = ['col1', 'col2', 'col4']
+    df = (
+        pd.DataFrame(...)
+        .factorize_columns(
+            column_names=categorical_cols,
+            suffix="_enc"
+        )
+    )
+    ```
 
     :param df: The pandas DataFrame object.
     :param column_names: A column name or an iterable (list
@@ -867,21 +882,25 @@ def rename_column(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = rename_column(df, "old_column_name", "new_column_name")
+    ```python
+    df = rename_column(df, "old_column_name", "new_column_name")
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor
+    df = (
+        pd.DataFrame(...)
+        .rename_column("old_column_name", "new_column_name")
+    )
+    ```
 
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).rename_column("old_column_name", "new_column_name")
-
-    This is just syntactic sugar/a convenience function for renaming one column
-    at a time. If you are convinced that there are multiple columns in need of
-    changing, then use the :py:meth:`pandas.DataFrame.rename` method.
+    This is just syntactic sugar/a convenience function
+    for renaming one column at a time.
+    If you are convinced that there are multiple columns in need of changing,
+    then use the `pandas.DataFrame.rename` method.
 
     :param df: The pandas DataFrame object.
     :param old_column_name: The old column name.
@@ -903,24 +922,26 @@ def rename_columns(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = rename_columns(df, {"old_column_name": "new_column_name"})
-        df = rename_columns(df, function = str.upper)
-        df = rename_columns(df,
-                function = lambda x : x.lower() if x.startswith("double") else x)
+    ```python
+    df = rename_columns(df, {"old_column_name": "new_column_name"})
+    df = rename_columns(df, function = str.upper)
+    df = rename_columns(
+        df,
+        function = lambda x : x.lower() if x.startswith("double") else x
+    )
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor
+    df = pd.DataFrame(...).rename_columns({"old_column_name": "new_column_name"})
+    ```
 
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).rename_columns({"old_column_name": "new_column_name"})
-
-    This is just syntactic sugar/a convenience function for renaming multiple columns
-    at a time. If you need to rename single column,
-    then use the `rename_column` method.
+    This is just syntactic sugar/a convenience function
+    for renaming multiple columns at a time.
+    If you need to rename single column, then use the `rename_column` method.
 
     One of the new_column_names or function are a required parameter.
     If both are provided then new_column_names takes priority and function
@@ -961,17 +982,17 @@ def reorder_columns(
 
     Given `DataFrame` with column names `col1`, `col2`, `col3`:
 
-    .. code-block:: python
-
-        df = reorder_columns(df, ['col2', 'col3'])
+    ```python
+    df = reorder_columns(df, ['col2', 'col3'])
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).reorder_columns(['col2', 'col3'])
+    ```python
+    import pandas as pd
+    import janitor
+    df = pd.DataFrame(...).reorder_columns(['col2', 'col3'])
+    ```
 
     The column order of `df` is now `col2`, `col3`, `col1`.
 
@@ -1019,9 +1040,9 @@ def coalesce(
 
     This method does not mutate the original DataFrame.
 
-    Example:
+    TODO: Turn the example in this docstring into a Jupyter notebook.
 
-    .. code-block:: python
+    Example:
 
         import pandas as pd
         import janitor as jn
@@ -1079,13 +1100,9 @@ def coalesce(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         df = coalesce(df, 'col1', 'col2', target_column_name ='col3')
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         import pandas as pd
         import janitor
@@ -1154,19 +1171,15 @@ def convert_excel_date(
 
     This method mutates the original DataFrame.
 
-    Implementation is also from `Stack Overflow`.
+    Implementation is also from [Stack Overflow][so].
 
-    .. _Stack Overflow: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
+    [so]: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
 
     Functional usage syntax:
-
-    .. code-block:: python
 
         df = convert_excel_date(df, column_name='date')
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         import pandas as pd
         import janitor
@@ -1199,21 +1212,17 @@ def convert_matlab_date(
 ) -> pd.DataFrame:
     """Convert Matlab's serial date number into Python datetime format.
 
-    Implementation is also from `StackOverflow`_.
+    Implementation is also from [Stack Overflow][so].
 
-    .. _StackOverflow: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python
+    [so]: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python
 
     This method mutates the original DataFrame.
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         df = convert_matlab_date(df, column_name='date')
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         import pandas as pd
         import janitor
@@ -1244,13 +1253,9 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         df = convert_unix_date(df, column_name='date')
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         import pandas as pd
         import janitor
@@ -1281,13 +1286,9 @@ def fill_empty(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         df = fill_empty(df, column_names=['col1', 'col2'], value=0)
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         import pandas as pd
         import janitor
@@ -1335,20 +1336,23 @@ def expand_column(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
-        df = expand_column(df,
-                           column_name='col_name',
-                           sep=', ')  # note space in sep
+        df = expand_column(
+            df,
+            column_name='col_name',
+            sep=', '  # note space in sep
+        )
 
     Method chaining syntax:
 
-    .. code-block:: python
-
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).expand_column(column_name='col_name',
-                                             sep=', ')
+        df = (
+            pd.DataFrame(...)
+            .expand_column(
+                column_name='col_name',
+                sep=', '
+            )
+        )
 
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.
@@ -1382,16 +1386,12 @@ def concatenate_columns(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         df = concatenate_columns(df,
                                  column_names=['col1', 'col2'],
                                  new_column_name='id',
                                  sep='-')
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         df = (pd.DataFrame(...).
               concatenate_columns(column_names=['col1', 'col2'],
@@ -1479,16 +1479,12 @@ def deconcatenate_column(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         df = deconcatenate_column(
                 df, column_name='id', new_column_names=['col1', 'col2'],
                 sep='-', preserve_position=True
         )
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         df = (pd.DataFrame(...).
                 deconcatenate_column(
@@ -1583,15 +1579,11 @@ def filter_string(
 
     This function allows us to method chain filtering operations:
 
-    .. code-block:: python
-
         df = (pd.DataFrame(...)
               .filter_string('column', search_string='pattern', complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
-
-    .. code-block:: python
 
         df = pd.DataFrame(...)
         df = df[df['column'].str.contains('pattern')]]
@@ -1601,16 +1593,12 @@ def filter_string(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         df = filter_string(df,
                            column_name='column',
                            search_string='pattern',
                            complement=False)
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         df = (pd.DataFrame(...)
               .filter_string(column_name='column',
@@ -1647,15 +1635,11 @@ def filter_on(
     or not, which is defined as their score (in the "score" column) being less
     than 50.
 
-    .. code-block:: python
-
         df = (pd.DataFrame(...)
               .filter_on('score < 50', complement=False)
               ...)  # chain on more data preprocessing.
 
     This stands in contrast to the in-place syntax that is usually used:
-
-    .. code-block:: python
 
         df = pd.DataFrame(...)
         df = df[df['score'] < 3]
@@ -1665,7 +1649,7 @@ def filter_on(
 
     Functional usage syntax:
 
-    .. code-block:: python
+    ```python
 
         df = filter_on(df,
                        'score < 50',
@@ -1673,7 +1657,7 @@ def filter_on(
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
 
         df = (pd.DataFrame(...)
               .filter_on('score < 50', complement=False))
@@ -1742,7 +1726,7 @@ def filter_date(
 
     # TODO: need to convert this to notebook.
     #     :Setup:
-    # .. code-block:: python
+    # ```python
 
     #     import pandas as pd
     #     import janitor
@@ -1763,7 +1747,7 @@ def filter_date(
 
     # :Example 1: Filter dataframe between two dates
 
-    # .. code-block:: python
+    # ```python
 
     #     start_date = "01/29/19"
     #     end_date = "01/30/19"
@@ -1774,7 +1758,7 @@ def filter_date(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        AMOUNT       DATE
     #     1       2 2019-01-29
@@ -1782,7 +1766,7 @@ def filter_date(
 
     # :Example 2: Using a different date format for filtering
 
-    # .. code-block:: python
+    # ```python
 
     #     end_date = "01$$$30$$$19"
     #     format = "%m$$$%d$$$%y"
@@ -1793,7 +1777,7 @@ def filter_date(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        AMOUNT       DATE
     #     0       1 2019-01-28
@@ -1802,7 +1786,7 @@ def filter_date(
 
     # :Example 3: Filtering by year
 
-    # .. code-block:: python
+    # ```python
 
     #     years = [2019]
 
@@ -1810,7 +1794,7 @@ def filter_date(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        AMOUNT       DATE
     #     0       1 2019-01-28
@@ -1826,7 +1810,7 @@ def filter_date(
 
     # :Example 4: Filtering by year and month
 
-    # .. code-block:: python
+    # ```python
 
     #     years = [2020]
     #     months = [3]
@@ -1835,7 +1819,7 @@ def filter_date(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #         AMOUNT       DATE
     #     22      23 2020-03-08
@@ -1846,7 +1830,7 @@ def filter_date(
 
     # :Example 5: Filtering by year and day
 
-    # .. code-block:: python
+    # ```python
 
     #     years = [2020]
     #     days = range(10,12)
@@ -1855,7 +1839,7 @@ def filter_date(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #         AMOUNT       DATE
     #     13      14 2020-02-10
@@ -1921,8 +1905,6 @@ def filter_column_isin(
     The below example syntax will filter the DataFrame such that we only get
     rows for which the "names" are exactly "James" and "John".
 
-    .. code-block:: python
-
         df = (
             pd.DataFrame(...)
             .clean_names()
@@ -1931,8 +1913,6 @@ def filter_column_isin(
         )
 
     This is the method chaining alternative to:
-
-    .. code-block:: python
 
         df = df[df['names'].isin(['James', 'John'])]
 
@@ -1973,8 +1953,6 @@ def remove_columns(
 
     Method chaining syntax:
 
-    .. code-block:: python
-
         df = pd.DataFrame(...).remove_columns(column_names=['col1', 'col2'])
 
     :param df: A pandas DataFrame
@@ -2007,7 +1985,7 @@ def change_type(
 
     Method chaining syntax:
 
-    .. code-block:: python
+
 
         df = pd.DataFrame(...).change_type('col1', str)
 
@@ -2056,14 +2034,14 @@ def add_column(
 
     Method chaining syntax adding a column with only a single value:
 
-    .. code-block:: python
+
 
         # This will add a column with only one value.
         df = pd.DataFrame(...).add_column(column_name="new_column", 2)
 
     Method chaining syntax adding a column with more than one value:
 
-    .. code-block:: python
+
 
         # This will add a column with an iterable of values.
         vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
@@ -2088,7 +2066,7 @@ def add_column(
     # TODO: Convert examples to notebook.
     # :Setup:
 
-    # .. code-block:: python
+    # ```python
 
     #     import pandas as pd
     #     import janitor
@@ -2103,13 +2081,13 @@ def add_column(
 
     # :Example 1: Create a new column with a single value:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.add_column("city_pop", 100000)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
     #     0  1            1                   1   rabbit  Cambridge    100000
@@ -2126,13 +2104,13 @@ def add_column(
     # column
     # size:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.add_column("city_pop", range(3), fill_remaining=True)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
     #     0  1            1                   1   rabbit  Cambridge         0
@@ -2147,13 +2125,13 @@ def add_column(
 
     # :Example 3: Add new column based on mutation of other columns:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
     #     0  1            1                   1   rabbit  Cambridge        -1
@@ -2234,7 +2212,7 @@ def add_columns(
 
     Usage example:
 
-    .. code-block:: python
+
 
         x = 3
         y = np.arange(0, 10)
@@ -2283,7 +2261,7 @@ def limit_column_characters(
     """
     # :Example Setup:
 
-    # .. code-block:: python
+    # ```python
 
     #     import pandas as pd
     #     import janitor
@@ -2297,14 +2275,14 @@ def limit_column_characters(
 
     # :Example: Standard truncation:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.limit_column_characters(7)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #            really_  another another_1 this_is
     #     0        0        0         l       l
@@ -2320,12 +2298,12 @@ def limit_column_characters(
 
     # :Example: Standard truncation with different separator character:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
     #     example_dataframe2.limit_column_characters(7, ".")
 
-    # .. code-block:: python
+    # ```python
 
     #            really_  another another.1 this_is
     #     0        0        0         l       l
@@ -2390,7 +2368,7 @@ def row_to_names(
 
     Method chaining usage:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -2414,7 +2392,7 @@ def row_to_names(
     """
     # :Setup:
 
-    # .. code-block:: python
+    # ```python
 
     #     import pandas as pd
     #     import janitor
@@ -2428,14 +2406,14 @@ def row_to_names(
 
     # :Example: Move first row to column names:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(0)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        1  1  1   rabbit  Cambridge
     #     0  1  1  1   rabbit  Cambridge
@@ -2450,7 +2428,7 @@ def row_to_names(
     # :Example: Move first row to column names and
     #  remove row while resetting the index:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(0, remove_row=True,\
@@ -2458,7 +2436,7 @@ def row_to_names(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #       1   1   1   rabbit  Cambridge
     #   0   2   2   2   leopard Shanghai
@@ -2473,14 +2451,14 @@ def row_to_names(
     # :Example: Move first row to column names and remove
     #   row without resetting the index:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(0, remove_row=True)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        1  1  1   rabbit  Cambridge
     #     1  2  2  2  leopard   Shanghai
@@ -2496,7 +2474,7 @@ def row_to_names(
     #   and remove rows above selected row without resetting
     #   index:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
@@ -2504,7 +2482,7 @@ def row_to_names(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #       3   3   3   lion    Basel
     #   0   1   1   1   rabbit  Cambridge
@@ -2518,7 +2496,7 @@ def row_to_names(
     # and remove rows above selected row without resetting
     # index:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe = pd.DataFrame(data_dict)
     #     example_dataframe.row_to_names(2, remove_row=True, \
@@ -2526,7 +2504,7 @@ def row_to_names(
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #        3  3  3     lion      Basel
     #     3  1  1  1   rabbit  Cambridge
@@ -2578,7 +2556,7 @@ def round_to_fraction(
 
     Method-chaining usage:
 
-    .. code-block:: python
+
 
         # Round to two decimal places
         df = pd.DataFrame(...).round_to_fraction('a', 2)
@@ -2593,7 +2571,7 @@ def round_to_fraction(
     # NOTE: THESE EXAMPLES SHOULD BE MOVED TO NOTEBOOKS.
     #     :Example Setup:
 
-    # .. code-block:: python
+    # ```python
 
     #     import pandas as pd
     #     import janitor
@@ -2607,11 +2585,11 @@ def round_to_fraction(
 
     # :Example: Rounding the first column to the nearest half:
 
-    # .. code-block:: python
+    # ```python
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #          a  Bell__Chart  decorated-elephant  animals     cities
     #     0  1.0     0.333333            0.004274   rabbit  Cambridge
@@ -2626,14 +2604,14 @@ def round_to_fraction(
 
     # :Example: Rounding the first column to nearest third:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
     #     example_dataframe2.round_to_fraction('a', 3)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #               a  Bell__Chart  decorated-elephant  animals     cities
     #     0  1.333333     0.333333            0.004274   rabbit  Cambridge
@@ -2649,14 +2627,14 @@ def round_to_fraction(
     # :Example 3: Rounding the first column to the nearest third and rounding \
     # each value to the 10,000th place:
 
-    # .. code-block:: python
+    # ```python
 
     #     example_dataframe2 = pd.DataFrame(data_dict)
     #     example_dataframe2.round_to_fraction('a', 3, 4)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #             a  Bell__Chart  decorated-elephant  animals     cities
     #     0  1.3333     0.333333            0.004274   rabbit  Cambridge
@@ -2705,7 +2683,7 @@ def transform_column(
     because it is easy to understand.
     For example:
 
-    .. code-block:: python
+
 
         def elemwise_func(x):
             modified_x = ... # do stuff here
@@ -2720,7 +2698,7 @@ def transform_column(
     is to gain access to `pandas` native string methods,
     which are super fast!
 
-    .. code-block:: python
+
 
         def columnwise_func(s: pd.Series) -> pd.Series:
             return s.str[0:5]
@@ -2737,14 +2715,14 @@ def transform_column(
 
     Originally one would write code like this:
 
-    .. code-block:: python
+
 
         # YOU NO LONGER NEED TO WRITE THIS!
         df[column_name] = df[column_name].apply(np.log10)
 
     With the method chaining syntax, we can do the following instead:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -2753,7 +2731,7 @@ def transform_column(
 
     With the functional syntax:
 
-    .. code-block:: python
+
 
         df = pd.DataFrame(...)
         df = transform_column(df, column_name, np.log10)
@@ -2813,7 +2791,7 @@ def transform_columns(
     A few examples below. Firstly, to just log10 transform a list of columns
     without creating new columns to hold the transformed values:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -2823,7 +2801,7 @@ def transform_columns(
     Secondly, to add a '_log' suffix when creating a new column, which we think
     is going to be the most common use case:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -2836,7 +2814,7 @@ def transform_columns(
 
     Finally, to provide new names explicitly:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -2919,13 +2897,13 @@ def min_max_scale(
 
     Method chaining syntax:
 
-    .. code-block:: python
+
 
         df = pd.DataFrame(...).min_max_scale(column_name="a")
 
     Setting custom minimum and maximum:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -2939,7 +2917,7 @@ def min_max_scale(
     Setting a min and max that is not based on the data, while applying to
     entire dataframe:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -3022,7 +3000,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 
     Method chaining syntax given two value columns `['max_speed', 'type']`:
 
-    .. code-block:: python
+
 
         data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
                 "max_speed": [389, 389, 24, 80, 21],
@@ -3038,14 +3016,14 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     Before applying `.collapse_levels``, the `.agg` operation returns a
     multi-level column `DataFrame` whose columns are (level 1, level 2):
 
-    .. code-block:: python
+
 
         [('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
         ('type', 'mean'), ('type', 'median')]
 
     `.collapse_levels` then flattens the column names to:
 
-    .. code-block:: python
+
 
         ['class', 'max_speed_mean', 'max_speed_median',
         'type_mean', 'type_median']
@@ -3108,7 +3086,7 @@ def currency_column_to_numeric(
     # TODO: Convert this to a notebook.
     # :Example Setup:
 
-    # .. code-block:: python
+    # ```python
 
     #     import pandas as pd
     #     import janitor
@@ -3124,13 +3102,13 @@ def currency_column_to_numeric(
 
     # :Example 1: Coerce numeric values in column to float:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.currency_column_to_numeric("a")
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
@@ -3147,14 +3125,14 @@ def currency_column_to_numeric(
     # string\
     # value with a specific value:
 
-    # .. code-block:: python
+    # ```python
 
     #     cast_non_numeric = {"REPAY": 22}
     #     df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
@@ -3170,13 +3148,13 @@ def currency_column_to_numeric(
     # :Example 3: Coerce numeric values in column to float, and replace all\
     #     string value with a specific value:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.currency_column_to_numeric("a", fill_all_non_numeric=35)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
@@ -3194,14 +3172,14 @@ def currency_column_to_numeric(
     # with\
     #     a specific value:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric,
     #     fill_all_non_numeric=35)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
@@ -3217,13 +3195,13 @@ def currency_column_to_numeric(
     # :Example 5: Coerce numeric values in column to float, and remove string\
     #     values:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.currency_column_to_numeric("a", remove_non_numeric=True)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
@@ -3236,14 +3214,14 @@ def currency_column_to_numeric(
     # :Example 6: Coerce numeric values in column to float, replace a string\
     #     value with a specific value, and remove remaining string values:
 
-    # .. code-block:: python
+    # ```python
 
     #     df.currency_column_to_numeric("a", cast_non_numeric=cast_non_numeric,
     #     remove_non_numeric=True)
 
     # :Output:
 
-    # .. code-block:: python
+    # ```python
 
     #           a  Bell__Chart  decorated-elephant animals@#$%^     cities
     #     0  -1.0     1.234523                   1       rabbit  Cambridge
@@ -3448,7 +3426,7 @@ def select_columns(
 
     Method-chaining example:
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .select_columns('a', 'b', 'col_*',
@@ -3512,7 +3490,7 @@ def impute(
 
     Method-chaining example:
 
-    .. code-block:: python
+
 
         import numpy as np
         import pandas as pd
@@ -3622,7 +3600,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
 
     Example usage:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -3659,7 +3637,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
     Example usage:
 
-    .. code-block:: python
+
 
         df = pd.DataFrame(...).dropnotnull('column3')
 
@@ -3683,7 +3661,7 @@ def find_replace(
 
     For instance, given a dataframe containing orders at a coffee shop:
 
-    .. code-block:: python
+
 
         df = pd.DataFrame({
             'customer': ['Mary', 'Tom', 'Lila'],
@@ -3695,7 +3673,7 @@ def find_replace(
 
     Example 1 for exact matching
 
-    .. code-block:: python
+
 
         # Functional usage
         df = find_replace(
@@ -3712,7 +3690,7 @@ def find_replace(
 
     Example 2: Regular-expression-based matching
 
-    .. code-block:: python
+
 
         # Functional usage
         df = find_replace(
@@ -3816,7 +3794,7 @@ def update_where(
 
     Example usage:
 
-    .. code-block:: python
+
 
         data = {
             "a": [1, 2, 3, 4],
@@ -3902,13 +3880,13 @@ def to_datetime(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         df = to_datetime(df, 'col1', format='%Y%m%d')
 
     Method chaining syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4020,13 +3998,13 @@ def groupby_agg(
 
     Without this function, we would have to write a verbose line:
 
-    .. code-block:: python
+
 
         df = df.assign(...=df.groupby(...)[...].transform(...))
 
     Now, this function can be method-chained:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4195,7 +4173,7 @@ def bin_numeric(
     Makes use of pandas cut() function to bin data of one column, generating a
     new column with the results.
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4249,7 +4227,7 @@ def drop_duplicate_columns(
 
     Method chaining syntax:
 
-    .. code-block:: python
+
 
         df = pd.DataFrame({
             "a": range(10),
@@ -4298,7 +4276,7 @@ def take_first(
 
     This method does not mutate the original DataFrame.
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4337,7 +4315,7 @@ def shuffle(
 
     Example usage:
 
-    .. code-block:: python
+
 
         df = pd.DataFrame(...).shuffle()
 
@@ -4368,7 +4346,7 @@ def join_apply(
     The example below shows us how to sum the result of two columns into a new
     column.
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame({'a':[1, 2, 3], 'b': [2, 3, 4]})
@@ -4378,7 +4356,7 @@ def join_apply(
     This following example shows us how to use conditionals in the same
     function.
 
-    .. code-block:: python
+
 
         def take_a_if_even(x):
             if x['a'] % 2:
@@ -4411,7 +4389,7 @@ def flag_nulls(
     row. If the columns parameter is not set, looks across the entire
     DataFrame, otherwise will look only in the columns you set.
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4488,7 +4466,7 @@ def drop_constant_columns(
     This method does not mutate the original DataFrame.
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4507,7 +4485,7 @@ def drop_constant_columns(
 
     Method chaining usage example:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4522,7 +4500,7 @@ def drop_constant_columns(
 
     # :Example 1: Drop columns with a single value:
 
-    # .. code-block:: python
+    # ```python
 
     #         import pandas as pd
     #         import janitor as jn
@@ -4535,11 +4513,11 @@ def drop_constant_columns(
     #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3
     #         }
 
-    # .. code-block:: python
+    # ```python
 
     #     df.drop_constant_columns()
 
-    # .. code-block:: python
+    # ```python
 
     #     Bell  animals cities
     #   0   1   rabbit  Cambridge
@@ -4573,7 +4551,7 @@ def count_cumulative_unique(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4589,7 +4567,7 @@ def count_cumulative_unique(
 
     Method chaining usage example:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4653,7 +4631,7 @@ def toset(series: pd.Series) -> Set:
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4663,7 +4641,7 @@ def toset(series: pd.Series) -> Set:
 
     Method chaining usage example:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4691,7 +4669,7 @@ def jitter(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4709,7 +4687,7 @@ def jitter(
 
     Method chaining usage example:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4829,7 +4807,7 @@ def sort_naturally(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4843,7 +4821,7 @@ def sort_naturally(
 
     Method chaining usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor
@@ -4952,7 +4930,7 @@ def expand_grid(
 
     Example:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4988,7 +4966,7 @@ def expand_grid(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -4998,7 +4976,7 @@ def expand_grid(
 
     Method-chaining usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5007,7 +4985,7 @@ def expand_grid(
 
     Usage independent of a dataframe
 
-    .. code-block:: python
+
 
         import pandas as pd
         from janitor import expand_grid
@@ -5081,7 +5059,7 @@ def process_text(
 
     Example:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5132,7 +5110,7 @@ def process_text(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5149,7 +5127,7 @@ def process_text(
 
     Method-chaining usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5251,7 +5229,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     and pairs the column name with one of `up`, `down`, `updown`,
     and `downup`.
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5302,7 +5280,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5316,7 +5294,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     Method-chaining usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5413,7 +5391,7 @@ def groupby_topk(
     .. _here: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html
 
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5444,7 +5422,7 @@ def groupby_topk(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5459,7 +5437,7 @@ def groupby_topk(
 
     Method-chaining usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5533,7 +5511,7 @@ def complete(
 
     `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5573,7 +5551,7 @@ def complete(
 
     `Source Data <http://imachordata.com/2016/02/05/you-complete-me/>`_
 
-    .. code-block:: python
+
 
             Year      Taxon         Abundance
         0   1999    Saccharina         4
@@ -5670,7 +5648,7 @@ def complete(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -5687,7 +5665,7 @@ def complete(
 
     Method chaining syntax:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -5778,7 +5756,7 @@ def pivot_longer(
     Example 1: The following DataFrame contains heartrate data for patients
     treated with two different drugs, 'a' and 'b'.
 
-    .. code-block:: python
+
 
               name   a   b
         0   Wilbur  67  56
@@ -5790,7 +5768,7 @@ def pivot_longer(
     (heartrate). We would like to unpivot these 'a' and 'b' columns into a
     'drug' column and a 'heartrate' column.
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .pivot_longer(
@@ -5814,7 +5792,7 @@ def pivot_longer(
     more performance, you can set `sort_by_appearance` to `False` (the
     default is `False``).
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .pivot_longer(
@@ -5837,7 +5815,7 @@ def pivot_longer(
     from the source dataframe (the index will be repeated as many times as
     necessary):
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .pivot_longer(
@@ -5860,7 +5838,7 @@ def pivot_longer(
     MultiIndex dataframes are unpivoted in the same form that you would
     expect from pandas' `melt`:
 
-    .. code-block:: python
+
 
             A  B  C
             D  E  F
@@ -5885,7 +5863,7 @@ def pivot_longer(
 
     You can also unpivot on a specific level:
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .pivot_longer(
@@ -5904,7 +5882,7 @@ def pivot_longer(
     Example 2: The dataframe below has year and month variables embedded within
     the column names.
 
-    .. code-block:: python
+
 
               col1	    2019-12	 2020-01	 2020-02
         0	a	   -1.085631	-1.506295	-2.426679
@@ -5915,7 +5893,7 @@ def pivot_longer(
     new columns for the year and month. You simply pass in the new column names
     to `names_to`, and pass the hyphen '-' to the `names_sep` argument.
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .pivot_longer(
@@ -5940,7 +5918,7 @@ def pivot_longer(
     Example 3: The dataframe below has names embedded in it
     (‘measure1’, ‘measure2’) that we would love to reuse as column names.
 
-    .. code-block:: python
+
 
             treat1-measure1     treat1-measure2 treat2-measure1 treat2-measure2
         0                1              4                   2               5
@@ -5951,7 +5929,7 @@ def pivot_longer(
     column names. The `.value` variable is similar to `stubnames` in pandas'
     `wide_to_long` function, but with more flexibility.
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .pivot_longer(
@@ -5980,7 +5958,7 @@ def pivot_longer(
 
     Example 4: You can also unpivot from wide to long using regular expressions
 
-    .. code-block:: python
+
 
             n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   10   20   30   0.1    0.2    0.3
@@ -6011,13 +5989,13 @@ def pivot_longer(
     specific patterns to `names_pattern``, along with a list/tuple of new
     names to `names_to``; this can come in handy if `.value` falls short:
 
-    .. code-block:: python
+
 
           GameID   Date	        Visitor	     Score_V	   Home	        Score_H
         0  1     9/10/2020   Houston Texans     20    Kansas City Chiefs   34
         1  2     9/13/2020   Seattle Seahawks   38    Atlanta Falcons      25
 
-    .. code-block:: python
+
 
         df = (pd.DataFrame(...)
               .pivot_longer(
@@ -6046,7 +6024,7 @@ def pivot_longer(
     to pass to the `index` or `column_names`  parameters,
     and you do not wish to manually type them all.
 
-    .. code-block:: python
+
 
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
@@ -6078,7 +6056,7 @@ def pivot_longer(
 
     Functional usage syntax:
 
-    .. code-block:: python
+
 
         import pandas as pd
         import janitor as jn
@@ -6099,7 +6077,7 @@ def pivot_longer(
 
     Method chaining syntax:
 
-    .. code-block:: python
+
 
         df = (
             pd.DataFrame(...)
@@ -6267,8 +6245,6 @@ def pivot_wider(
 
     Reshaping to wide form :
 
-    .. code-block:: python
-
              name variable  value
         0   Alice      wk1      5
         1   Alice      wk2      9
@@ -6297,8 +6273,6 @@ def pivot_wider(
         2    Carla     6    13    39    40
 
     Pivoting on multiple columns is possible :
-
-    .. code-block:: python
 
             name    n  pct
         0     1  10.0  0.1
@@ -6362,8 +6336,6 @@ def pivot_wider(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         import pandas as pd
         import janitor as jn
 
@@ -6384,8 +6356,6 @@ def pivot_wider(
         )
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         df = (
             pd.DataFrame(...)
@@ -6736,8 +6706,6 @@ def conditional_join(
 
     Functional usage syntax:
 
-    .. code-block:: python
-
         import pandas as pd
         import janitor as jn
 
@@ -6753,8 +6721,6 @@ def conditional_join(
                 )
 
     Method chaining syntax:
-
-    .. code-block:: python
 
         df = df.conditional_join(
                 right = right,

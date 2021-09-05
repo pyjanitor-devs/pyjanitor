@@ -346,23 +346,27 @@ def check_column(
     df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
 ):
     """
-    One-liner syntactic sugar for checking the presence or absence of columns.
+    One-liner syntactic sugar for checking the presence or absence
+    of columns.
 
-    Should be used like this::
+    Example usage:
 
-        check(df, ['a', 'b'], present=True)
+    ```python
+    check(df, ['a', 'b'], present=True)
+    ```
 
-    This will check whether columns "a" and "b" are present in df's columns.
+    This will check whether columns `'a'` and `'b'` are present in
+    `df`'s columns.
 
-    One can also guarantee that "a" and "b" are not present
-    by switching to `present = False``.
+    One can also guarantee that `'a'` and `'b'` are not present
+    by switching to `present=False`.
 
     :param df: The name of the variable.
     :param column_names: A list of column names we want to check to see if
-        present (or absent) in df.
-    :param present: If True (default), checks to see if all of column_names
-        are in df.columns. If False, checks that none of column_names are
-        in df.columns.
+        present (or absent) in `df`.
+    :param present: If `True` (default), checks to see if all of `column_names`
+        are in `df.columns`. If `False`, checks that none of `column_names` are
+        in `df.columns`.
     :raises ValueError: if data is not the expected type.
     """
     if isinstance(column_names, str) or not isinstance(column_names, Iterable):

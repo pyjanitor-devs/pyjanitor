@@ -114,51 +114,46 @@ def sort_timestamps_monotonically(
     df: pd.DataFrame, direction: str = "increasing", strict: bool = False
 ) -> pd.DataFrame:
     """
-    Sort dataframe such that index is monotonic.
+    Sort DataFrame such that index is monotonic.
 
-    If timestamps are monotonic,
-    this function will return the dataframe unmodified.
-    If timestamps are not monotonic,
-    then the function will sort the dataframe.
+    If timestamps are monotonic, this function will return
+    the DataFrame unmodified. If timestamps are not monotonic,
+    then the function will sort the DataFrame.
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = janitor.timeseries.sort_timestamps_monotonically(
-            direction="increasing"
-        )
+    df = janitor.timeseries.sort_timestamps_monotonically(
+        direction="increasing"
+    )
+    ```
 
     Method chaining example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = (
+        pd.DataFrame(...)
+        .sort_timestamps_monotonically(direction="increasing")
+    )
+    ```
 
-        df = (
-            pd.DataFrame(...)
-            .sort_timestamps_monotonically(direction="increasing")
-        )
-
-    :param df: Dataframe which needs to be tested for monotonicity
+    :param df: DataFrame which needs to be tested for monotonicity.
     :param direction: type of monotonicity desired.
-        Acceptable arguments are:
-            1. increasing
-            2. decreasing
+        Acceptable arguments are `'increasing'` or `'decreasing'`.
     :param strict: flag to enable/disable strict monotonicity.
-        If set to True,
-        will remove duplicates in the index,
+        If set to `True`, will remove duplicates in the index
         by retaining first occurrence of value in index.
-        If set to False,
-        will not test for duplicates in the index.
-        Defaults to False.
-    :returns: Dataframe that has monotonically increasing
+        If set to `False`, will not test for duplicates in the index;
+        defaults to `False`.
+    :returns: DataFrame that has monotonically increasing
         (or decreasing) timestamps.
     """
     # Check all the inputs are the correct data type

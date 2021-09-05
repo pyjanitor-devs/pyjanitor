@@ -92,7 +92,7 @@ def generate_long_description() -> str:
     """
     # Read the contents of README file
     this_directory = Path(__file__).parent
-    with open(this_directory / "README.rst", encoding="utf-8") as f:
+    with open(this_directory / "mkdocs" / "index.md", encoding="utf-8") as f:
         readme = f.read()
 
     # Find pypi-doc comments in README

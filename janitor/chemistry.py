@@ -13,8 +13,6 @@ from .utils import deprecated_alias, import_message
 try:
     from rdkit import Chem, DataStructs
     from rdkit.Chem.rdMolDescriptors import (
-        GetHashedMorganFingerprint,
-        GetMorganFingerprintAsBitVect,
         CalcChi0n,
         CalcChi0v,
         CalcChi1n,
@@ -54,7 +52,9 @@ try:
         CalcNumSpiroAtoms,
         CalcNumUnspecifiedAtomStereoCenters,
         CalcTPSA,
+        GetHashedMorganFingerprint,
         GetMACCSKeysFingerprint,
+        GetMorganFingerprintAsBitVect,
     )
 except ImportError:
     import_message(
@@ -94,36 +94,38 @@ def smiles2mol(
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.chemistry
 
-        import pandas as pd
-        import janitor.chemistry
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = janitor.chemistry.smiles2mol(
-            df=df,
-            smiles_column_name='smiles',
-            mols_column_name='mols'
-        )
+    df = janitor.chemistry.smiles2mol(
+        df=df,
+        smiles_column_name='smiles',
+        mols_column_name='mols'
+    )
+    ```
 
     Method chaining usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.chemistry
 
-        import pandas as pd
-        import janitor.chemistry
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = df.smiles2mol(smiles_column_name='smiles',
-                           mols_column_name='mols')
+    df = df.smiles2mol(
+        smiles_column_name='smiles',
+        mols_column_name='mols'
+    )
+    ```
 
     A progressbar can be optionally used.
 
-    - Pass in "notebook" to show a tqdm notebook progressbar. (ipywidgets must
-      be enabled with your Jupyter installation.)
-    - Pass in "terminal" to show a tqdm progressbar. Better suited for use
+    - Pass in "notebook" to show a `tqdm` notebook progressbar.
+      (`ipywidgets` must be enabled with your Jupyter installation.)
+    - Pass in "terminal" to show a `tqdm` progressbar. Better suited for use
       with scripts.
     - "none" is the default value - progress bar will be not be shown.
 
@@ -134,8 +136,8 @@ def smiles2mol(
         constructed.
     :param progressbar: Whether to show a progressbar or not.
     :returns: A pandas DataFrame with new RDKIT Mol objects column.
-    :raises ValueError: if ``progressbar`` is not one of
-        ``"notebook"``, ``"terminal"``, or ``None``.
+    :raises ValueError: if `progressbar` is not one of
+        `"notebook"``, `"terminal"``, or `None``.
     """
     valid_progress = ["notebook", "terminal", None]
     if progressbar not in valid_progress:
@@ -180,67 +182,70 @@ def morgan_fingerprint(
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.chemistry
 
-        import pandas as pd
-        import janitor.chemistry
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
+    # For "counts" kind
+    morgans = janitor.chemistry.morgan_fingerprint(
+        df=df.smiles2mol('smiles', 'mols'),
+        mols_column_name='mols',
+        radius=3,      # Defaults to 3
+        nbits=2048,    # Defaults to 2048
+        kind='counts'  # Defaults to "counts"
+    )
 
-        # For "counts" kind
-        morgans = janitor.chemistry.morgan_fingerprint(
-            df=df.smiles2mol('smiles', 'mols'),
+    # For "bits" kind
+    morgans = janitor.chemistry.morgan_fingerprint(
+        df=df.smiles2mol('smiles', 'mols'),
+        mols_column_name='mols',
+        radius=3,      # Defaults to 3
+        nbits=2048,    # Defaults to 2048
+        kind='bits'    # Defaults to "counts"
+    )
+    ```
+
+    Method chaining usage example:
+
+    ```python
+    import pandas as pd
+    import janitor.chemistry
+
+    df = pd.DataFrame(...)
+
+    # For "counts" kind
+    morgans = (
+        df.smiles2mol('smiles', 'mols')
+        .morgan_fingerprint(
             mols_column_name='mols',
             radius=3,      # Defaults to 3
             nbits=2048,    # Defaults to 2048
             kind='counts'  # Defaults to "counts"
         )
+    )
 
-        # For "bits" kind
-        morgans = janitor.chemistry.morgan_fingerprint(
-            df=df.smiles2mol('smiles', 'mols'),
+    # For "bits" kind
+    morgans = (
+        df
+        .smiles2mol('smiles', 'mols')
+        .morgan_fingerprint(
             mols_column_name='mols',
-            radius=3,      # Defaults to 3
-            nbits=2048,    # Defaults to 2048
-            kind='bits'    # Defaults to "counts"
+            radius=3,    # Defaults to 3
+            nbits=2048,  # Defaults to 2048
+            kind='bits'  # Defaults to "counts"
         )
-
-    Method chaining usage example:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor.chemistry
-
-        df = pd.DataFrame(...)
-
-        # For "counts" kind
-        morgans = (
-            df.smiles2mol('smiles', 'mols')
-              .morgan_fingerprint(mols_column_name='mols',
-                                  radius=3,      # Defaults to 3
-                                  nbits=2048,    # Defaults to 2048
-                                  kind='counts'  # Defaults to "counts"
-              )
-        )
-
-        # For "bits" kind
-        morgans = (
-            df.smiles2mol('smiles', 'mols')
-              .morgan_fingerprint(mols_column_name='mols',
-                                  radius=3,    # Defaults to 3
-                                  nbits=2048,  # Defaults to 2048
-                                  kind='bits'  # Defaults to "counts"
-              )
-        )
+    )
+    ```
 
     If you wish to join the morgan fingerprints back into the original
     dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    .. code-block:: python
-
-        joined = df.join(morgans)
+    ```python
+    joined = df.join(morgans)
+    ```
 
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT
@@ -249,8 +254,8 @@ def morgan_fingerprint(
     :param nbits: The length of the fingerprints. Defaults to 2048.
     :param kind: Whether to return counts or bits. Defaults to counts.
     :returns: A new pandas DataFrame of Morgan fingerprints.
-    :raises ValueError: if ``kind`` is not one of
-        ``"counts"`` or ``"bits"``.
+    :raises ValueError: if `kind` is not one of
+        `"counts"` or `"bits"``.
     """
     acceptable_kinds = ["counts", "bits"]
     if kind not in acceptable_kinds:
@@ -294,52 +299,57 @@ def molecular_descriptors(
 
     The molecular descriptors are from the rdkit.Chem.rdMolDescriptors:
 
-        Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,
-        Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,
-        Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles,
-        NumAliphaticHeterocycles, NumAliphaticRings, NumAmideBonds,
-        NumAromaticCarbocycles, NumAromaticHeterocycles, NumAromaticRings,
-        NumAtomStereoCenters, NumBridgeheadAtoms, NumHBA, NumHBD,
-        NumHeteroatoms, NumHeterocycles, NumLipinskiHBA, NumLipinskiHBD,
-        NumRings, NumSaturatedCarbocycles, NumSaturatedHeterocycles,
-        NumSaturatedRings, NumSpiroAtoms, NumUnspecifiedAtomStereoCenters,
-        TPSA.
+    ```
+    Chi0n, Chi0v, Chi1n, Chi1v, Chi2n, Chi2v, Chi3n, Chi3v,
+    Chi4n, Chi4v, ExactMolWt, FractionCSP3, HallKierAlpha, Kappa1,
+    Kappa2, Kappa3, LabuteASA, NumAliphaticCarbocycles,
+    NumAliphaticHeterocycles, NumAliphaticRings, NumAmideBonds,
+    NumAromaticCarbocycles, NumAromaticHeterocycles, NumAromaticRings,
+    NumAtomStereoCenters, NumBridgeheadAtoms, NumHBA, NumHBD,
+    NumHeteroatoms, NumHeterocycles, NumLipinskiHBA, NumLipinskiHBD,
+    NumRings, NumSaturatedCarbocycles, NumSaturatedHeterocycles,
+    NumSaturatedRings, NumSpiroAtoms, NumUnspecifiedAtomStereoCenters,
+    TPSA.
+    ```
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.chemistry
 
-        import pandas as pd
-        import janitor.chemistry
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        mol_desc = janitor.chemistry.molecular_descriptors(
+    mol_desc = (
+        janitor.chemistry.molecular_descriptors(
             df=df.smiles2mol('smiles', 'mols'),
             mols_column_name='mols'
         )
+    )
+    ```
 
     Method chaining usage example:
 
-    .. code-block:: python
+    ```python
 
-        import pandas as pd
-        import janitor.chemistry
+    import pandas as pd
+    import janitor.chemistry
 
-        df = pd.DataFrame(...)
+    df = pd.DataFrame(...)
 
-        mol_desc = (
-            df.smiles2mol('smiles', 'mols')
-              .molecular_descriptors(mols_column_name='mols')
-        )
+    mol_desc = (
+        df.smiles2mol('smiles', 'mols')
+        .molecular_descriptors(mols_column_name='mols')
+    )
+    ```
 
     If you wish to join the molecular descriptors back into the original
     dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    .. code-block:: python
-
-        joined = df.join(mol_desc)
+    ```python
+    joined = df.join(mol_desc)
+    ```
 
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT mol
@@ -410,40 +420,39 @@ def maccs_keys_fingerprint(
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.chemistry
 
-        import pandas as pd
-        import janitor.chemistry
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        maccs = janitor.chemistry.maccs_keys_fingerprint(
-            df=df.smiles2mol('smiles', 'mols'),
-            mols_column_name='mols'
-        )
+    maccs = janitor.chemistry.maccs_keys_fingerprint(
+        df=df.smiles2mol('smiles', 'mols'),
+        mols_column_name='mols'
+    )
+    ```
 
     Method chaining usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.chemistry
 
-        import pandas as pd
-        import janitor.chemistry
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        maccs = (
-            df.smiles2mol('smiles', 'mols')
-              .maccs_keys_fingerprint(mols_column_name='mols')
-        )
+    maccs = (
+        df.smiles2mol('smiles', 'mols')
+            .maccs_keys_fingerprint(mols_column_name='mols')
+    )
+    ```
 
     If you wish to join the maccs keys fingerprints back into the
     original dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    .. code-block:: python
-
-        joined = df.join(maccs_keys_fingerprint)
-
+    ```python
+    joined = df.join(maccs_keys_fingerprint)
+    ```
 
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT mol

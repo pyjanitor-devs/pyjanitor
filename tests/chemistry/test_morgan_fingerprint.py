@@ -1,9 +1,9 @@
 import importlib
 
 import pytest
+from helpers import running_on_ci
 
 import janitor.chemistry  # noqa: disable=unused-import
-from helpers import running_on_ci
 
 # Skip all tests if rdkit not installed
 pytestmark = pytest.mark.skipif(
@@ -34,7 +34,7 @@ def test_morgan_fingerprint_bits(chemdf):
 
 @pytest.mark.chemistry
 def test_morgan_fingerprint_kind_error(chemdf):
-    """Test ``morgan_fingerprint`` raises exception for invalid ``kind``."""
+    """Test `morgan_fingerprint` raises exception for invalid `kind``."""
     with pytest.raises(ValueError):
         chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
             "mol", kind="invalid-kind"

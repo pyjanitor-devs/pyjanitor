@@ -87,7 +87,7 @@ def test_string_function_is_None(process_test_df):
 
 
 def test_str_split(process_test_df):
-    """Test wrapper for Pandas ``str.split()`` method."""
+    """Test wrapper for Pandas `str.split()` method."""
 
     expected = process_test_df.assign(
         text=process_test_df["text"].str.split("_")
@@ -123,10 +123,12 @@ def no_nulls_df():
 
 
 def test_str_cat(no_nulls_df):
-    """Test outcome for Pandas ``.str.cat()`` method."""
+    """Test outcome for Pandas `.str.cat()` method."""
 
     result = no_nulls_df.process_text(
-        column_name="text", string_function="cat", others=["A", "B", "C", "D"],
+        column_name="text",
+        string_function="cat",
+        others=["A", "B", "C", "D"],
     )
 
     expected = no_nulls_df.assign(
@@ -138,12 +140,13 @@ def test_str_cat(no_nulls_df):
 
 def test_str_cat_result_is_a_string(no_nulls_df):
     """
-    Test wrapper for Pandas ``.str.cat()`` method
+    Test wrapper for Pandas `.str.cat()` method
     when the outcome is a string.
     """
 
     result = no_nulls_df.process_text(
-        column_name="text", string_function="cat",
+        column_name="text",
+        string_function="cat",
     )
 
     expected = no_nulls_df.assign(text=no_nulls_df["text"].str.cat())
@@ -153,7 +156,7 @@ def test_str_cat_result_is_a_string(no_nulls_df):
 
 def test_str_cat_result_is_a_string_and_new_column_names(no_nulls_df):
     """
-    Test wrapper for Pandas ``.str.cat()`` method when the outcome is a string,
+    Test wrapper for Pandas `.str.cat()` method when the outcome is a string,
     and `new_column_names` is not None.
     """
 
@@ -167,7 +170,7 @@ def test_str_cat_result_is_a_string_and_new_column_names(no_nulls_df):
 
 
 def test_str_get():
-    """Test outcome for Pandas ``.str.get()`` method."""
+    """Test outcome for Pandas `.str.get()` method."""
 
     df = pd.DataFrame(
         {"text": ["aA", "bB", "cC", "dD"], "numbers": range(1, 5)}
@@ -181,7 +184,7 @@ def test_str_get():
 
 
 def test_str_lower():
-    """Test string conversion to lowercase using ``.str.lower()``."""
+    """Test string conversion to lowercase using `.str.lower()``."""
 
     df = pd.DataFrame(
         {

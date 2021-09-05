@@ -16,7 +16,7 @@ exclude = '''
 '''
 include = '\.pyi?$'
 line-length = 79
-target-version = ['py36', 'py37']
+target-version = ['py36', 'py37', 'py38']
 
 [tool.interrogate]
 exclude = ["setup.py", "docs", "nbconvert_config.py"]
@@ -28,3 +28,21 @@ ignore-private = false
 ignore-semiprivate = false
 quiet = false
 verbose = 2
+
+# https://docs.pytest.org/en/6.2.x/mark.html#registering-marks
+[tool.pytest.ini_options]
+addopts = "--cov=janitor/ --cov-report=html --cov-report=xml --cov-report=term-missing  --durations=0"
+
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "biology",
+    "chemistry",
+    "engineering",
+    "finance",
+    "functions: main janitor functions suite",
+    "ml: Machine learning-specific data cleaning functions.",
+    "spark_functions",
+    "timeseries",
+    "utils",
+    "xarray",
+]

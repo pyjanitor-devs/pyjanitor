@@ -14,21 +14,16 @@ from scipy.stats import norm
 @pf.register_series_method
 def log(s: pd.Series, error: str = "warn") -> pd.Series:
     """
-    Take natural logarithm of the Series
+    Take natural logarithm of the Series.
 
-    :param s: Input Series
-    :type s: pd.Series
+    :param s: Input Series.
     :param error: Determines behavior when taking the log of nonpositive
-        entries. If "warn" then a RuntimeWarning is thrown. If "raise",
-        then a RuntimeError is thrown. Otherwise, nothing is thrown and
-        log of nonpositive values is np.nan; defaults to "warn"
-    :type error: str, optional
+        entries. If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`,
+        then a `RuntimeError` is thrown. Otherwise, nothing is thrown and
+        log of nonpositive values is `np.nan`; defaults to `'warn'`.
     :raises RuntimeError: Raised when there are nonpositive values in the
-        Series and error="raise"
-    :return: Transformed Series
-    :rtype: pd.Series
-
-    .. # noqa: DAR103 error
+        Series and `error='raise'`.
+    :return: Transformed Series.
     """
     s = s.copy()
     nonpositive = s <= 0
@@ -46,18 +41,26 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
 
 @pf.register_series_method
 def exp(s: pd.Series) -> pd.Series:
-    """Take the exponential transform of the series"""
+    """
+    Take the exponential transform of the series.
+
+    :param s: Input Series.
+    :return: Transformed Series.
+    """
     return np.exp(s)
 
 
 @pf.register_series_method
 def sigmoid(s: pd.Series) -> pd.Series:
     """
-    Take the sigmoid transform of the series where
-    sigmoid(x) = 1 / (1 + exp(-x))
+    Take the sigmoid transform of the series where:
 
-    .. # noqa: DAR101
-    .. # noqa: DAR201
+    ```python
+    sigmoid(x) = 1 / (1 + exp(-x))
+    ```
+
+    :param s: Input Series.
+    :return: Transformed Series.
     """
     return expit(s)
 
@@ -65,21 +68,19 @@ def sigmoid(s: pd.Series) -> pd.Series:
 @pf.register_series_method
 def logit(s: pd.Series, error: str = "warn") -> pd.Series:
     """
-    Take logit transform of the Series
-    where logit(p) = log(p/(1-p))
+    Take logit transform of the Series where:
 
-    :param s: Input Series
-    :type s: pd.Series
-    :param error: Determines behavior when s / (1-s) is outside of (0, 1). If
-        "warn" then a RuntimeWarning is thrown. If "raise", then a RuntimeError
-        is thrown. Otherwise, nothing is thrown and np.nan is returned
-        for the problematic entries, defaults to "warn"
-    :type error: str, optional
-    :return: Transformed Series
-    :rtype: pd.Series
-    :raises RuntimeError: if ``error`` is set to ``raise``.
+    ```python
+    logit(p) = log(p/(1-p))
+    ```
 
-    .. # noqa: DAR103 error
+    :param s: Input Series.
+    :param error: Determines behavior when `s / (1-s)` is outside of `(0, 1)`.
+        If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`, then a
+        `RuntimeError` is thrown. Otherwise, nothing is thrown and `np.nan`
+        is returned for the problematic entries; defaults to `'warn'`.
+    :return: Transformed Series.
+    :raises RuntimeError: if `error` is set to `'raise'`.
     """
     s = s.copy()
     odds_ratio = s / (1 - s)
@@ -99,28 +100,28 @@ are outside of (0, 1)"
 
 @pf.register_series_method
 def normal_cdf(s: pd.Series) -> pd.Series:
-    """Transforms the Series via the CDF of the Normal distribution"""
+    """
+    Transforms the Series via the CDF of the Normal distribution.
+
+    :param s: Input Series.
+    :return: Transformed Series.
+    """
     return pd.Series(norm.cdf(s), index=s.index)
 
 
 @pf.register_series_method
 def probit(s: pd.Series, error: str = "warn") -> pd.Series:
     """
-    Transforms the Series via the inverse CDF of the Normal distribution
+    Transforms the Series via the inverse CDF of the Normal distribution.
 
-    :param s: Input Series
-    :type s: pd.Series
-    :param error: Determines behavior when s is outside of (0, 1). If
-        "warn" then a RuntimeWarning is thrown. If "raise", then a RuntimeError
-        is thrown. Otherwise, nothing is thrown and np.nan is returned
-        for the problematic entries, defaults to "warn"
-    :type error: str, optional
+    :param s: Input Series.
+    :param error: Determines behavior when `s` is outside of `(0, 1)`.
+        If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`, then
+        a `RuntimeError` is thrown. Otherwise, nothing is thrown and `np.nan`
+        is returned for the problematic entries; defaults to `'warn'`.
     :raises RuntimeError: Raised when there are problematic values
-        in the Series and error="raise"
+        in the Series and `error='raise'`.
     :return: Transformed Series
-    :rtype: pd.Series
-
-    .. # noqa: DAR103 error
     """
     s = s.copy()
     outside_support = (s <= 0) | (s >= 1)
@@ -145,22 +146,20 @@ def z_score(
     keys: Tuple[str, str] = ("mean", "std"),
 ) -> pd.Series:
     """
-    Transforms the Series into z-scores
+    Transforms the Series into z-scores where:
 
-    :param s: Input Series
-    :type s: pd.Series
-    :param moments_dict: If not None, then the mean and standard
+    ```python
+    z = (s - s.mean()) / s.std()
+    ```
+
+    :param s: Input Series.
+    :param moments_dict: If not `None`, then the mean and standard
         deviation used to compute the z-score transformation is
-        saved as entries in moments_dict with keys determined by
-        the keys argument, defaults to None
-    :type moments_dict: dict, optional
-    :param keys: Determines the keys saved in moments_dict
-        if moments are saved, defaults to ("mean", "std")
-    :type keys: Tuple[str], optional
-    :return: Transformed Series
-    :rtype: pd.Series
-
-    .. # noqa: DAR103 moments_dict
+        saved as entries in `moments_dict` with keys determined by
+        the `keys` argument; defaults to `None`.
+    :param keys: Determines the keys saved in `moments_dict`
+        if moments are saved; defaults to (`'mean'`, `'std'`).
+    :return: Transformed Series.
     """
     mean = s.mean()
     std = s.std()
@@ -179,26 +178,26 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
 
     Intended to be used with the following pattern:
 
-    .. code-block:: python
+    ```python
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
+    # Obtain ECDF values to be plotted
+    x, y = df["column_name"].ecdf()
 
-        # Obtain ECDF values to be plotted
-        x, y = df["column_name"].ecdf()
-
-        # Plot ECDF values
-        plt.scatter(x, y)
+    # Plot ECDF values
+    plt.scatter(x, y)
+    ```
 
     Null values must be dropped from the series,
-    otherwise a ``ValueError`` is raised.
+    otherwise a `ValueError` is raised.
 
-    Also, if the dtype of the series is not numeric,
-    a TypeError is raised.
+    Also, if the `dtype` of the series is not numeric,
+    a `TypeError` is raised.
 
-    :param s: A pandas series. dtype should be numeric.
-    :returns: (x, y).
-        x: sorted array of values.
-        y: cumulative fraction of data points with value ``x`` or lower.
+    :param s: A pandas series. `dtype` should be numeric.
+    :returns: `(x, y)`.
+        `x`: sorted array of values.
+        `y`: cumulative fraction of data points with value `x` or lower.
     :raises TypeError: if series is not numeric.
     :raises ValueError: if series contains nulls.
     """

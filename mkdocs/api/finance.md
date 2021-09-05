@@ -1,0 +1,3 @@
+# Finance
+
+::: janitor.finance

@@ -26,7 +26,7 @@ data_dict = {
 ```
 
 ## Example 1
- ```python
+ ``python
 def remove_first_two_letters_from_col_names(df):
     col_names = df.columns
     col_names = [name[2:] for name in col_names]

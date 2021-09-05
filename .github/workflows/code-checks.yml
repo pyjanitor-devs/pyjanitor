@@ -3,70 +3,9 @@ name: Code style checks
 on: [push, pull_request]
 
 jobs:
-  black:
-    name: Check black compliance.
+  linting:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-
-      - name: Install black
-        run: python -m pip install black==21.7b0
-
-      - name: Run black
-        run: black --config pyproject.toml --check .
-
-  interrogate:
-    name: Check interrogate compliance.
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-
-      - name: Install interrogate
-        run: python -m pip install interrogate
-
-      - name: Run interrogate
-        run: interrogate .
-
-  darglint:
-    name: Check darglint compliance.
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-
-      - name: Install darglint
-        run: python -m pip install darglint
-
-      - name: Run darglint
-        run: darglint janitor -v 2
-
-  flake8:
-    name: Check flake8 compliance.
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-
-      - name: Install flake8
-        run: python -m pip install flake8
-
-      - name: Run flake8
-        run: flake8 . --exclude ./nbconvert_config.py
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: pre-commit/action@v2.0.0

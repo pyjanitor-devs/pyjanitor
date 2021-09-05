@@ -256,22 +256,20 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
 def deprecated_alias(**aliases) -> Callable:
     """
     Used as a decorator when deprecating old function argument names, while
-    keeping backwards compatibility.
+    keeping backwards compatibility. Implementation is inspired from [`StackOverflow`][stack_link].
 
-    Implementation is inspired from `StackOverflow`_.
-
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
+    [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     Functional usage example:
 
-    .. code-block:: python
-
-        @deprecated_alias(a='alpha', b='beta')
-        def simple_sum(alpha, beta):
-            return alpha + beta
+    ```python
+    @deprecated_alias(a='alpha', b='beta')
+    def simple_sum(alpha, beta):
+        return alpha + beta
+    ```
 
     :param aliases: Dictionary of aliases for a function's arguments.
-    :return: Your original function wrapped with the kwarg redirection
+    :return: Your original function wrapped with the `kwarg` redirection
         function.
     """  # noqa: E501
 

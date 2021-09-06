@@ -5758,7 +5758,7 @@ def pivot_longer(
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
     """
-    Unpivots a DataFrame from 'wide' to 'long' format.
+    Unpivots a DataFrame from *wide* to *long* format.
 
     This method does not mutate the original DataFrame.
 
@@ -5772,38 +5772,33 @@ def pivot_longer(
     one or more columns are considered measured variables, and all other
     columns are considered as identifier variables.
 
-    All measured variables are “unpivoted” (and typically duplicated) along the
+    All measured variables are *unpivoted* (and typically duplicated) along the
     row axis.
-
-    See the `Example notebooks <https://pyjanitor.readthedocs.io/notebooks/>`_
-    for a more in depth exploration of `pivot_longer`.
 
 
     Example 1: The following DataFrame contains heartrate data for patients
-    treated with two different drugs, 'a' and 'b'.
+    treated with two different drugs, `a` and `b`.
 
-
-
+    ```python
               name   a   b
         0   Wilbur  67  56
         1  Petunia  80  90
         2  Gregory  64  50
+    ```
 
-    The column names 'a' and 'b' are actually the names of a measured variable
+    The column names `a` and `b` are actually the names of a measured variable
     (i.e. the name of a drug), but the values are a different measured variable
-    (heartrate). We would like to unpivot these 'a' and 'b' columns into a
-    'drug' column and a 'heartrate' column.
+    (heartrate). We would like to unpivot these `a` and `b` columns into a
+    `drug` column and a `heartrate` column.
 
-
-
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                  column_names = ['a', 'b'],
-                  names_to = 'drug',
-                  values_to = 'heartrate',
-                  sort_by_appearance = True
-                  )
-            )
+    ```python
+        df.pivot_longer(
+            column_names = ['a', 'b'],
+            names_to = 'drug',
+            values_to = 'heartrate',
+            sort_by_appearance = True
+        )
+            
 
               name drug  heartrate
         0   Wilbur    a         67
@@ -5812,22 +5807,21 @@ def pivot_longer(
         3  Petunia    b         90
         4  Gregory    a         64
         5  Gregory    b         50
+    ```
 
     Note how the data is stacked in order of first appearance. If, however,
     you do not care for order of appearance, and want to wring out some
     more performance, you can set `sort_by_appearance` to `False` (the
-    default is `False``).
+    default is `False`).
 
-
-
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                  column_names = ['a', 'b'],
-                  names_to = 'drug',
-                  values_to = 'heartrate',
-                  sort_by_appearance = False
-                  )
-            )
+    ```python
+        df.pivot_longer(
+            column_names = ['a', 'b'],
+            names_to = 'drug',
+            values_to = 'heartrate',
+            sort_by_appearance = False
+        )
+            
 
                 name     drug  heartrate
         0	Wilbur	   a	67
@@ -5836,22 +5830,22 @@ def pivot_longer(
         3	Wilbur	   b	56
         4	Petunia	   b	90
         5	Gregory	   b	50
+    ```
 
-    You can set `ignore_index` to `False``, if you wish to reuse the index
+    You can set `ignore_index` to `False`, if you wish to reuse the index
     from the source dataframe (the index will be repeated as many times as
     necessary):
 
 
-
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                  column_names = ['a', 'b'],
-                  names_to = 'drug',
-                  values_to = 'heartrate',
-                  sort_by_appearance = False,
-                  ignore_index = False
-                  )
-            )
+    ```python
+        df.pivot_longer(
+            column_names = ['a', 'b'],
+            names_to = 'drug',
+            values_to = 'heartrate',
+            sort_by_appearance = False,
+            ignore_index = False
+        )
+            
 
                 name     drug  heartrate
         0	Wilbur	   a	67
@@ -5860,24 +5854,23 @@ def pivot_longer(
         0	Wilbur	   b	56
         1	Petunia	   b	90
         2	Gregory	   b	50
+    ```
 
     MultiIndex dataframes are unpivoted in the same form that you would
     expect from pandas' `melt`:
 
-
-
+    ```python
             A  B  C
             D  E  F
         0   a  1  2
         1   b  3  4
         2   c  5  6
 
-        df = (pd.DataFrame(...)
-               .pivot_longer(
-                   index = [("A", "D")],
-                   names_to = ["first", "second"]
-                   )
-            )
+        df.pivot_longer(
+            index = [("A", "D")],
+            names_to = ["first", "second"]
+        )
+            
 
              (A, D)  first   second   value
         0	a	B	E	1
@@ -5886,49 +5879,48 @@ def pivot_longer(
         3	a	C	F	2
         4	b	C	F	4
         5	c	C	F	6
+    ```
 
     You can also unpivot on a specific level:
 
 
-
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                  index = "A",
-                  names_to = "first",
-                  column_level = 0
-                  )
-            )
+    ```python
+        df.pivot_longer(
+            index = "A",
+            names_to = "first",
+            column_level = 0
+        )
+            
 
            A      first  value
         0  a        B      1
         1  b        B      3
         2  c        B      5
-
+    ```
 
     Example 2: The dataframe below has year and month variables embedded within
     the column names.
 
 
-
+    ```python
               col1	    2019-12	 2020-01	 2020-02
         0	a	   -1.085631	-1.506295	-2.426679
         1	b	    0.997345	-0.578600	-0.428913
         2	c	    0.282978	 1.651437	 1.265936
+    ```
 
-    Pivot_longer can conveniently reshape the dataframe into long format, with
+    `pivot_longer` can conveniently reshape the dataframe into long format, with
     new columns for the year and month. You simply pass in the new column names
-    to `names_to`, and pass the hyphen '-' to the `names_sep` argument.
+    to `names_to`, and pass the hyphen `-` to the `names_sep` argument.
 
 
-
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                  index = 'col1',
-                  names_to = ('year', 'month'),
-                  names_sep = '-',
-                  sort_by_appearance = True
-                  )
-            )
+    ```python
+        df.pivot_longer(
+            index = 'col1',
+            names_to = ('year', 'month'),
+            names_sep = '-',
+            sort_by_appearance = True
+        )
 
            col1 year   month      value
         0    a  2019     12     -1.085631
@@ -5940,15 +5932,17 @@ def pivot_longer(
         6    c  2019     12      0.282978
         7    c  2020     01      1.651437
         8    c  2020     02      1.265936
+    ```
 
     Example 3: The dataframe below has names embedded in it
-    (‘measure1’, ‘measure2’) that we would love to reuse as column names.
+    `(measure1, measure2)` that we would love to reuse as column names.
 
 
-
+    ```python
             treat1-measure1     treat1-measure2 treat2-measure1 treat2-measure2
         0                1              4                   2               5
         1                2              5                   3               4
+    ```
 
     For this, we use the `.value` variable, which signals to `pivot_longer`
     to treat the part of the column names corresponding to `.value` as new
@@ -5956,78 +5950,78 @@ def pivot_longer(
     `wide_to_long` function, but with more flexibility.
 
 
-
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                  names_to = ("group", '.value'),
-                  names_sep = '-',
-                  sort_by_appearance = True
-                  )
-            )
+    ```python
+        df.pivot_longer(
+            names_to = ("group", '.value'),
+            names_sep = '-',
+            sort_by_appearance = True
+        )
+            
 
             group  measure1  measure2
         0  treat1         1         4
         1  treat2         2         5
         2  treat1         2         5
         3  treat2         3         4
+    ```
 
     Let's break down the `.value` idea. When `.value` is used, `pivot_longer`
     creates a pairing. In the example above, we get a pairing
-    `{"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}``. All
+    `{"group":["treat1", "treat2"], ".value":["measure1", "measure2"]}`. All
     the values associated with `.value` become new column names, while those
     not associated with `.value`(`treat1` and `treat2`) become values in a
     new column `group`. `values_to` is overridden during this process.
 
-    .. note:: The values not associated with ".value" (in the example above,
+    !!! note
+        The values not associated with `.value` (in the example above,
         this is the `group` column) are returned as object dtypes. You can
         change it to your preferred dtype using pandas' `astype` method.
 
     Example 4: You can also unpivot from wide to long using regular expressions
 
 
-
+    ```python
             n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   10   20   30   0.1    0.2    0.3
 
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                  names_to = (".value", "name"),
-                  names_pattern = "(.*)_(.)"
-                  )
-            )
+        df.pivot_longer(
+            names_to = (".value", "name"),
+            names_pattern = "(.*)_(.)"
+         )
+            
 
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
+    ```
 
     The same idea of `.value` works here as well. Based on the capturing groups
     in the regex in `names_pattern`, we have two pairings -->
-    `{".value":["n", "pct"], "name":[1,2,3]}``. Just like in the previous
+    `{".value":["n", "pct"], "name":[1,2,3]}`. Just like in the previous
     example, the values associated with `.value` become new column names,
     while those not associated with `.value` become values in the new column
-    `name``.
+    `name`.
 
-    Note that there are no limits to the pairing; however, you can only have
-    one `.value` in `names_to``.
+    !!!note
+        There are no limits to the pairing; however, you can only have
+        one `.value` in `names_to`.
 
     Example 5: You can also pass a list/tuple of regular expressions that match
-    specific patterns to `names_pattern``, along with a list/tuple of new
-    names to `names_to``; this can come in handy if `.value` falls short:
+    specific patterns to `names_pattern`, along with a list/tuple of new
+    names to `names_to`; this can come in handy if `.value` falls short:
 
-
-
+    ```python
           GameID   Date	        Visitor	     Score_V	   Home	        Score_H
         0  1     9/10/2020   Houston Texans     20    Kansas City Chiefs   34
         1  2     9/13/2020   Seattle Seahawks   38    Atlanta Falcons      25
 
 
 
-        df = (pd.DataFrame(...)
-              .pivot_longer(
-                    ['GameID','Date'],
-                    names_to=("Team","Score"),
-                    names_pattern=("^Visitor|Home", "^Score"))
+        df.pivot_longer(
+            index = ['GameID','Date'],
+            names_to = ("Team","Score"),
+            names_pattern = ("^Visitor|Home", "^Score")
             )
 
                GameID       Date              Team       Score
@@ -6035,6 +6029,7 @@ def pivot_longer(
         1       2       9/13/2020    Seattle Seahawks     38
         2       1       9/10/2020  Kansas City Chiefs     34
         3       2       9/13/2020     Atlanta Falcons     25
+    ```
 
     Note that in the code above, the number of entries in both `names_to` and
     `names_pattern` must match. Essentially, what the code does is look for
@@ -6044,22 +6039,19 @@ def pivot_longer(
     the values associated with these columns to a single column named `Score`.
 
     You can also take advantage of `janitor.patterns` function,
-    or the `select_columns` syntax,
-    which allows selection of columns via a regular expression;
-    this can come in handy if you have a lot of column names
-    to pass to the `index` or `column_names`  parameters,
+    or the `select_columns` syntax, which allows selection of columns via a 
+    regular expression; this can come in handy if you have a lot of 
+    column names to pass to the `index` or `column_names`  parameters,
     and you do not wish to manually type them all.
 
-
-
+    ```python
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
 
-        df = (pd.DataFrame(...)
-              .pivot_longer(index = janitor.patterns("^(?!wk)"))
-              )
+        df.pivot_longer(index = janitor.patterns("^(?!wk)"))
+              
 
              name   variable  value
         0   Alice      wk1      5
@@ -6074,16 +6066,17 @@ def pivot_longer(
         9   Alice      wk4     22
         10    Bob      wk4     33
         11  Carla      wk4     40
+    ```
 
-    .. note:: Unpivoting a dataframe with MultiIndex columns, when
+    !!!note
+        Unpivoting a dataframe with MultiIndex columns, when
         either `names_sep` or `names_pattern` is provided is not
         supported.
 
 
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -6096,15 +6089,15 @@ def pivot_longer(
             names_sep = string/regular expression,
             names_pattern = string/regular expression,
             values_to= new_column_name,
-            column_level=None/int/str,
+            column_level = None/int/str,
             sort_by_appearance = True/False,
             ignore_index = True/False,
         )
+    ```
 
     Method chaining syntax:
 
-
-
+    ```python
         df = (
             pd.DataFrame(...)
             .pivot_longer(
@@ -6113,12 +6106,13 @@ def pivot_longer(
                 names_to = new_column_name,
                 names_sep = string/regular expression,
                 names_pattern = string/regular expression,
-                values_to= new_column_name,
-                column_level=None/int/str,
+                values_to = new_column_name,
+                column_level = None/int/str,
                 sort_by_appearance = True/False,
                 ignore_index = True/False,
             )
         )
+    ```
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
@@ -6197,8 +6191,6 @@ def pivot_longer(
         `index` or `column_names` is not a list of tuples.
     :raises ValueError: if the dataframe contains MultiIndex columns, and
         either `names_sep` or `names_pattern` is provided.
-
-    .. # noqa: DAR402
     """
 
     # this code builds on the wonderful work of @benjaminjack’s PR

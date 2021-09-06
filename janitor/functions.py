@@ -6227,26 +6227,28 @@ def pivot_longer(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Optional[Union[List, str]] = None,
-    values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
-    levels_order: Optional[list] = None,
+    index: Optional[Union[Sequence[str], str]] = None,
+    names_from: Optional[Union[Sequence[str], str]] = None,
+    values_from: Optional[Union[Sequence[str], str]] = None,
+    names_sort: Optional[bool] = True,
     flatten_levels: Optional[bool] = True,
-    names_sep="_",
-    names_glue: Callable = None,
+    names_from_position: Optional[str] = "first",
+    names_prefix: Optional[str] = None,
+    names_sep: Optional[str] = "_",
+    aggfunc: Optional[Union[str, list, dict, Callable]] = None,
+    fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
     Reshapes data from 'long' to 'wide' form.
+
     The number of columns are increased, while decreasing
     the number of rows. It is the inverse of the `pivot_longer`
     method, and is a wrapper around `pd.DataFrame.pivot` method.
+
     This method does not mutate the original DataFrame.
-    .. note:: Column selection in `index`, `names_from`
-        and `values_from` is possible using the
-        `janitor.select_columns` syntax.
+
     Reshaping to wide form :
-    .. code-block:: python
+
              name variable  value
         0   Alice      wk1      5
         1   Alice      wk2      9
@@ -6260,141 +6262,105 @@ def pivot_wider(
         9   Carla      wk2     13
         10  Carla      wk3     39
         11  Carla      wk4     40
-        df.pivot_wider(
+
+        df = (
+            pd.DataFrame(...)
+            .pivot_wider(
                 index = "name",
                 names_from = "variable",
                 values_from = "value"
             )
+
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
+
     Pivoting on multiple columns is possible :
-    .. code-block:: python
+
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
-        (df.assign(num = 0)
-           .pivot_wider(
-              index = "num",
-              names_from = "name",
-              values_from = ["n", "pct"],
-              names_sep = "_"
-              )
-        )
+
+        df = (
+            pd.DataFrame(...)
+            .assign(num = 0)
+            .pivot_wider(
+                index = "num",
+                names_from = "name",
+                values_from = ["n", "pct"],
+                names_sep = "_"
+             )
+         )
+
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
-    You may choose not to flatten the columns,
-    by setting `flatten_levels` to False::
-        df
-           dependent_variable  step   a   b
-        0                 5.5     1  20  30
-        1                 5.5     2  25  37
-        2                 6.1     1  22  19
-        3                 6.1     2  18  29
+
+    Aggregations are also possible with the `aggfunc` parameter::
+
+        df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
+                           {'id': 'b', 'name': 'Eve', 'value': 6},
+                           {'id': 'c', 'name': 'Adam', 'value': 4},
+                           {'id': 'a', 'name': 'Eve', 'value': 3},
+                           {'id': 'd', 'name': 'Seth', 'value': 2},
+                           {'id': 'b', 'name': 'Adam', 'value': 4},
+                           {'id': 'a', 'name': 'Adam', 'value': 2}])
+
+        id  name    value
+        a   Adam    5
+        b   Eve     6
+        c   Adam    4
+        a   Eve     3
+        d   Seth    2
+        b   Adam    4
+        a   Adam    2
+
         df.pivot_wider(
-            index = "dep*",
-            names_from  = 'step',
-            flatten_levels = False
-            )
-                             a       b
-        step                 1   2   1   2
-        dependent_variable
-        5.5                 20  25  30  37
-        6.1                 22  18  19  29
-    The order of the levels can be changed with the `levels_order`
-    parameter, which internally uses `pd.DataFrame.reorder_levels`::
-        df.pivot_wider(
-            index = "dep*",
-            names_from  = 'step',
-            flatten_levels = False,
-            levels_order = ['step', None]
-            )
-        step                 1   2   1   2
-                             a   a   b   b
-        dependent_variable
-        5.5                 20  25  30  37
-        6.1                 22  18  19  29
-        df.pivot_wider(
-            index = ['a', 'b'],
-            names_from = 'name',
+            index = "id",
+            names_from = "name",
+            aggfunc = np.sum,
+            values_from = "value",
             flatten_levels = True,
+            fill_value = 0
             )
-           dependent_variable  a_1  a_2  b_1  b_2
-        0                 5.5   20   25   30   37
-        1                 6.1   22   18   19   29
-        df.pivot_wider(
-            index = ['a', 'b'],
-            names_from = 'name',
-            flatten_levels= True,
-            levels_order = ['step', None]
-            )
-           dependent_variable  1_a  2_a  1_b  2_b
-        0                 5.5   20   25   30   37
-        1                 6.1   22   18   19   29
-    `names_sep` and `names_glue` come in handy in situations where `names_from`
-    and/or `values_from` contain multiple variables; it is used primarily when
-    the columns are flattened. The default value for `names_sep` is `_`::
-        # default value of names_sep is '_'
-        df.pivot_wider(index = "dep*", names_from = "step")
-           dependent_variable  a_1  a_2  b_1  b_2
-        0                 5.5   20   25   30   37
-        1                 6.1   22   18   19   29
-        df.pivot_wider(
-            index = "dep*",
-            names_from = "step",
-            names_sep = "")
-           dependent_variable  a1  a2  b1  b2
-        0                 5.5  20  25  30  37
-        1                 6.1  22  18  19  29
-    With `names_glue` you can `glue` the individual levels (if MultiIndex)
-    into one (similar to `names_sep`), or you can modify the final columns,
-    as long as it can be passed to `pd.Index.map`::
-        # replicate `names_sep`
-        df.pivot_wider(
-            index = "dep*",
-            names_from = "step",
-            names_sep = None,
-            names_glue = "_".join
-            )
-           dependent_variable  a_1  a_2  b_1  b_2
-        0                 5.5   20   25   30   37
-        1                 6.1   22   18   19   29
-        # going beyond names_sep
-        df.pivot_wider(
-            index = "dep*",
-            names_from = "step",
-            names_sep = None,
-            names_glue = lambda col: f"{col[0]}_step{col[1]}"
-            )
-           dependent_variable  a_step1  a_step2  b_step1  b_step2
-        0                 5.5       20       25       30       37
-        1                 6.1       22       18       19       29
-    .. note:: A ValueError is raised if the combination
-        of the `index` and `names_from` is not unique.
-    .. note:: By default, values from `values_from` are always
-        at the top level if the columns are not flattened.
-        If flattened, the values from `values_from` are usually
-        at the start of each label in the columns.
+
+            id  Adam  Eve  Seth
+        0   a     7    3     0
+        1   b     4    6     0
+        2   c     4    0     0
+        3   d     0    0     2
+
+
+    .. note:: You may choose not to collapse the levels by passing `False`
+        to the `flatten_levels` argument.
+
+    .. note:: A ValueError is raised if the index is not unique and
+        `aggfunc` is None.
+
     Functional usage syntax:
-    .. code-block:: python
+
         import pandas as pd
         import janitor as jn
+
         df = pd.DataFrame(...)
+
         df = jn.pivot_wider(
             df = df,
             index = [column1, column2, ...],
             names_from = [column3, column4, ...],
             value_from = [column5, column6, ...],
             names_sort = True/False,
-            levels_order = None/list,
+            names_prefix = string,
+            names_sep = string,
             flatten_levels = True/False,
-            names_sep='_',
-            names_glue= Callable
+            names_from_position = "first"/"last",
+            aggfunc,
+            fill_value = fill_value
         )
+
     Method chaining syntax:
-    .. code-block:: python
+
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -6402,52 +6368,72 @@ def pivot_wider(
                 names_from = [column3, column4, ...],
                 value_from = [column5, column6, ...],
                 names_sort = True/False,
-                levels_order = None/list,
+                names_prefix = string,
+                names_sep = string,
                 flatten_levels = True/False,
-                names_sep='_',
-                names_glue= Callable
+                names_from_position = "first"/"last",
+                aggfunc,
+                fill_value = fill_value
                 )
         )
+
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If `index` is not provided, the dataframe's index is used.
+        If `index` is not provided, the current dataframe's index is used.
     :param names_from: Name(s) of column(s) to use to make the new
         dataframe's columns. Should be either a single column name, or a
         list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        A label or labels must be provided for ``names_from``.
+        A label or labels must be provided for `names_from``.
     :param values_from: Name(s) of column(s) that will be used for populating
-        the new dataframe's values.
+        the new dataframe's values. Should be either a single column name,
+        or a list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If ``values_from`` is not specified,  all remaining columns
-        will be used. Note that values from `values_from` are usually at
-        the top level, the dataframe's columns is not flattened, or the
-        start of each label in the columns, if flattened.
+        If `values_from` is not specified,
+        all remaining columns will be used. If `flatten_levels` is `False``,
+        a MultiIndex dataframe is created.
     :param names_sort: Default is `True`. Sorts columns by order of
         appearance.
-    :param levels_order: Applicable if there are multiple `names_from`
-        and/or `values_from`. Reorders the levels. Accepts a list of strings.
-        If there are multiple `values_from`, pass a None to represent that
-        level.
+        Set as `True` to get the columns sorted lexicographicially,
+        or if the columns are of category type.
     :param flatten_levels: Default is `True`. If `False`, the dataframe stays
         as a MultiIndex.
-    :param names_sep: If ``names_from`` or ``values_from`` contain multiple
+    :param names_from_position: By default, the values in `names_from` stay
+        at the front of the new column names. This can be changed to "last";
+        this places the values in `names_from``
+        at the tail of the column names.
+    :param names_prefix: String to be added to the front of each output column.
+        Can be handy if the values in `names_from` are numeric data types.
+        Applicable only if `flatten_levels` is True.
+    :param names_sep: If `names_from` or `values_from` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is ``_``.
-        Applicable only if ``flatten_levels`` is ``True``.
-    :param names_glue: A callable to control the output
-        of the flattened columns. Applicable only if
-        ``flatten_levels`` is ``True``. Function should be
-        acceptable to pandas' `map` function.
+        to use as a column name. Default is `_``.
+        Applicable only if `flatten_levels` is `True``.
+    :param aggfunc: An aggregate function. It can be a function, a string,
+        list of functions, or a dictionary, pairing column name with aggregate
+        function.
+    :param fill_value: Scalar value to replace missing values with
+        (after pivoting).
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
+    :raises TypeError: if `index` or `names_from` is not a string, or a list of
+        strings.
     :raises ValueError: if `names_from` is None.
+    :raises TypeError: if `names_sep` is not a string.
+    :raises TypeError: if `values_from` is not a string or a list of strings.
+    :raises TypeError: if `names_sort` is not a boolean.
     :raises TypeError: if `flatten_levels` is not a boolean.
+    :raises ValueError: if values in `index` or `names_from` or `values_from`
+        do not exist in the dataframe.
+    :raises ValueError: if the combination of `index` and `names_from` is not
+        unique and `aggfunc` is `None``.
+
+
     .. # noqa: DAR402
     """
 
@@ -6459,20 +6445,24 @@ def pivot_wider(
         names_from,
         values_from,
         names_sort,
-        levels_order,
         flatten_levels,
+        names_from_position,
+        names_prefix,
         names_sep,
-        names_glue,
+        aggfunc,
+        fill_value,
     ) = _data_checks_pivot_wider(
         df,
         index,
         names_from,
         values_from,
         names_sort,
-        levels_order,
         flatten_levels,
+        names_from_position,
+        names_prefix,
         names_sep,
-        names_glue,
+        aggfunc,
+        fill_value,
     )
 
     df = _computations_pivot_wider(
@@ -6481,14 +6471,15 @@ def pivot_wider(
         names_from,
         values_from,
         names_sort,
-        levels_order,
         flatten_levels,
+        names_from_position,
+        names_prefix,
         names_sep,
-        names_glue,
+        aggfunc,
+        fill_value,
     )
 
     return df
-
 
 
 @pf.register_dataframe_method

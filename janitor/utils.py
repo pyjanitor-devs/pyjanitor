@@ -283,21 +283,22 @@ def deprecated_alias(**aliases) -> Callable:
 
 
 def refactored_function(message: str) -> Callable:
-    """Used as a decorator when refactoring functions
+    """
+    Used as a decorator when refactoring functions.
 
-    Implementation is inspired from `Hacker Noon`_.
+    Implementation is inspired from [`Hacker Noon`][hacker_link].
 
-    .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
+    [hacker_link]: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
 
     Functional usage example:
 
-    .. code-block:: python
-
-        @refactored_function(
-            message="simple_sum() has been refactored. Use hard_sum() instead."
-        )
-        def simple_sum(alpha, beta):
-            return alpha + beta
+    ```python
+    @refactored_function(
+        message="simple_sum() has been refactored. Use hard_sum() instead."
+    )
+    def simple_sum(alpha, beta):
+        return alpha + beta
+    ```
 
     :param message: Message to use in warning user about refactoring.
     :return: Your original function wrapped with the kwarg redirection
@@ -317,12 +318,11 @@ def refactored_function(message: str) -> Callable:
 def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     """
     Used to update deprecated argument names with new names. Throws a
-    TypeError if both arguments are provided, and warns if old alias is used.
-    Nothing is returned as the passed `kwargs` are modified directly.
+    `TypeError` if both arguments are provided, and warns if old alias
+    is used. Nothing is returned as the passed `kwargs` are modified
+    directly. Implementation is inspired from [`StackOverflow`][stack_link].
 
-    Implementation is inspired from `StackOverflow`_.
-
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
+    [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     :param func_name: name of decorated function.
     :param kwargs: Arguments supplied to the method.
@@ -346,23 +346,27 @@ def check_column(
     df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
 ):
     """
-    One-liner syntactic sugar for checking the presence or absence of columns.
+    One-liner syntactic sugar for checking the presence or absence
+    of columns.
 
-    Should be used like this::
+    Example usage:
 
-        check(df, ['a', 'b'], present=True)
+    ```python
+    check(df, ['a', 'b'], present=True)
+    ```
 
-    This will check whether columns "a" and "b" are present in df's columns.
+    This will check whether columns `'a'` and `'b'` are present in
+    `df`'s columns.
 
-    One can also guarantee that "a" and "b" are not present
-    by switching to `present = False``.
+    One can also guarantee that `'a'` and `'b'` are not present
+    by switching to `present=False`.
 
     :param df: The name of the variable.
     :param column_names: A list of column names we want to check to see if
-        present (or absent) in df.
-    :param present: If True (default), checks to see if all of column_names
-        are in df.columns. If False, checks that none of column_names are
-        in df.columns.
+        present (or absent) in `df`.
+    :param present: If `True` (default), checks to see if all of `column_names`
+        are in `df.columns`. If `False`, checks that none of `column_names` are
+        in `df.columns`.
     :raises ValueError: if data is not the expected type.
     """
     if isinstance(column_names, str) or not isinstance(column_names, Iterable):
@@ -381,20 +385,21 @@ def check_column(
 
 def skipna(f: Callable) -> Callable:
     """
-    Decorator for escaping np.nan and None in a function
+    Decorator for escaping `np.nan` and `None` in a function.
 
-    Should be used like this::
+    Example usage:
 
-        df[column].apply(skipna(transform))
+    ```python
+    df[column].apply(skipna(transform))
 
-    or::
+    # Can also be used as shown below
+    @skipna
+    def transform(x):
+        pass
+    ```
 
-        @skipna
-        def transform(x):
-            pass
-
-    :param f: the function to be wrapped
-    :returns: _wrapped, the wrapped function
+    :param f: the function to be wrapped.
+    :returns: the wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):
@@ -411,23 +416,23 @@ def skiperror(
     """
     Decorator for escaping any error in a function.
 
-    Should be used like this::
+    Example usage:
 
-        df[column].apply(
-            skiperror(transform, return_val=3, return_x=False))
+    ```python
+    df[column].apply(
+        skiperror(transform, return_val=3, return_x=False))
 
-    or::
-
-        @skiperror(return_val=3, return_x=False)
-        def transform(x):
-            pass
-
-    :param f: the function to be wrapped
+    # Can also be used as shown below
+    @skiperror(return_val=3, return_x=False)
+    def transform(x):
+        pass
+    ```
+    :param f: the function to be wrapped.
     :param return_x: whether or not the original value that caused error
-        should be returned
+        should be returned.
     :param return_val: the value to be returned when an error hits.
-        Ignored if return_x is True
-    :returns: _wrapped, the wrapped function
+        Ignored if `return_x` is `True`.
+    :returns: the wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):

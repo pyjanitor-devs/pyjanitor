@@ -5394,7 +5394,7 @@ def groupby_topk(
     Additional parameters to the sorting (such as ascending=True)
     can be passed using `sort_values_kwargs`.
 
-    List of all sort_values() parameters can be found 
+    List of all sort_values() parameters can be found
     [here](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html).
 
 
@@ -5417,7 +5417,7 @@ def groupby_topk(
         df.groupby_topk('result', 'age', 3)
 
                     age  ID result
-        result                  
+        result
         fail    4   21   5   fail
                 1   22   2   fail
         pass    0   20   1   pass
@@ -5431,7 +5431,7 @@ def groupby_topk(
         df.groupby_topk('result', 'age', 2, {'ascending':False})
 
                     age  ID result
-        result                  
+        result
         fail    1   22   2   fail
                 4   21   5   fail
         pass    2   24   3   pass
@@ -5815,7 +5815,7 @@ def pivot_longer(
             values_to = 'heartrate',
             sort_by_appearance = True
         )
-            
+
 
               name drug  heartrate
         0   Wilbur    a         67
@@ -5838,7 +5838,7 @@ def pivot_longer(
             values_to = 'heartrate',
             sort_by_appearance = False
         )
-            
+
 
                 name     drug  heartrate
         0	Wilbur	   a	67
@@ -5862,7 +5862,7 @@ def pivot_longer(
             sort_by_appearance = False,
             ignore_index = False
         )
-            
+
 
                 name     drug  heartrate
         0	Wilbur	   a	67
@@ -5887,7 +5887,7 @@ def pivot_longer(
             index = [("A", "D")],
             names_to = ["first", "second"]
         )
-            
+
 
              (A, D)  first   second   value
         0	a	B	E	1
@@ -5907,7 +5907,7 @@ def pivot_longer(
             names_to = "first",
             column_level = 0
         )
-            
+
 
            A      first  value
         0  a        B      1
@@ -5926,9 +5926,10 @@ def pivot_longer(
         2	c	    0.282978	 1.651437	 1.265936
     ```
 
-    `pivot_longer` can conveniently reshape the DataFrame into long format, with
-    new columns for the year and month. You simply pass in the new column names
-    to `names_to`, and pass the hyphen `-` to the `names_sep` argument.
+    `pivot_longer` can conveniently reshape the DataFrame into long format,
+    with new columns for the year and month. You simply pass in the new
+    column names to `names_to`, and pass the hyphen `-` to the `names_sep`
+    argument.
 
 
     ```python
@@ -5973,7 +5974,7 @@ def pivot_longer(
             names_sep = '-',
             sort_by_appearance = True
         )
-            
+
 
             group  measure1  measure2
         0  treat1         1         4
@@ -6005,7 +6006,7 @@ def pivot_longer(
             names_to = (".value", "name"),
             names_pattern = "(.*)_(.)"
          )
-            
+
 
             name    n  pct
         0     1  10.0  0.1
@@ -6056,8 +6057,8 @@ def pivot_longer(
     the values associated with these columns to a single column named `Score`.
 
     You can also take advantage of `janitor.patterns` function,
-    or the `select_columns` syntax, which allows selection of columns via a 
-    regular expression; this can come in handy if you have a lot of 
+    or the `select_columns` syntax, which allows selection of columns via a
+    regular expression; this can come in handy if you have a lot of
     column names to pass to the `index` or `column_names`  parameters,
     and you do not wish to manually type them all.
 
@@ -6068,7 +6069,7 @@ def pivot_longer(
         2    Carla     6    13    39    40
 
         df.pivot_longer(index = janitor.patterns("^(?!wk)"))
-              
+
 
              name   variable  value
         0   Alice      wk1      5

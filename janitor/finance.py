@@ -711,14 +711,13 @@ def convert_stock(stock_symbol: str) -> str:
     janitor.finance.convert_stock("aapl")
     ```
 
-    :param stock_symbol: This is our input stock symbol
-        to be converted
-    :raises ConnectionError: if stock ticker data cannot be retrieved
+    :param stock_symbol: Stock ticker Symbol
+    :raises ConnectionError: Internet connection is not available
     :returns: Full company name
     """
     if is_connected("www.google.com"):
         stock_symbol = stock_symbol.upper()
-        return get_symbol(stock_symbol)
+        return get_symbol(stock_symbol.upper())
     else:
         raise ConnectionError(
             "Connection Error: Client Not Connected to Internet"
@@ -735,7 +734,7 @@ def get_symbol(symbol: str):
     ```python
     import janitor.finance
 
-    print(janitor.finance.get_symbol("aapl"))
+    janitor.finance.get_symbol("aapl")
     ```
 
     :param symbol: This is our stock symbol that we use

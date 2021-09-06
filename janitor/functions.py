@@ -420,26 +420,29 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
 
     This method mutates the original DataFrame.
 
-    Implementation is inspired from `StackOverflow`_.
+    Implementation is inspired from [StackOverflow][reference].
 
-    .. _StackOverflow: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
+    [reference]: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
 
     Functional usage syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    from janitor.functions import remove_empty
 
-        df = remove_empty(df)
+    df = remove_empty(df)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor
 
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).remove_empty()
+    df = pd.DataFrame(...).remove_empty()
+    ```
 
     :param df: The pandas DataFrame object.
-
     :returns: A pandas DataFrame.
     """  # noqa: E501
     nanrows = df.index[df.isna().all(axis=1)]
@@ -463,18 +466,22 @@ def get_dupes(
 
     Functional usage syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    from janitor.functions import get_dupes
 
-        df = pd.DataFrame(...)
-        df = get_dupes(df)
+    df = pd.DataFrame(...)
+    df = get_dupes(df)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor
 
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).get_dupes()
+    df = pd.DataFrame(...).get_dupes()
+    ```
 
     :param df: The pandas DataFrame object.
     :param column_names: (optional) A column name or an iterable
@@ -775,18 +782,23 @@ def label_encode(
 
     Functional usage syntax:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    from janitor.functions import label_encode
 
-        df = label_encode(df, column_names="my_categorical_column")  # one way
+    df = label_encode(df, column_names="my_categorical_column")  # one way
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
 
-        import pandas as pd
-        import janitor
-        categorical_cols = ['col1', 'col2', 'col4']
-        df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
+    import pandas as pd
+    import janitor
+
+    categorical_cols = ['col1', 'col2', 'col4']
+    df = pd.DataFrame(...).label_encode(column_names=categorical_cols)
+    ```
 
     :param df: The pandas DataFrame object.
     :param column_names: A column name or an iterable (list

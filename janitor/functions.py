@@ -64,27 +64,27 @@ from .utils import (
 )
 
 
-def unionize_dataframe_categories(
-    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
+def unionize_DataFrame_categories(
+    *DataFrames, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
 ) -> List[pd.DataFrame]:
     """
-    Given a group of dataframes which contain some categorical columns, for
+    Given a group of DataFrames which contain some categorical columns, for
     each categorical column present, find all the possible categories across
-    all the dataframes which have that column.
-    Update each dataframes' corresponding column with a new categorical object
+    all the DataFrames which have that column.
+    Update each DataFrames' corresponding column with a new categorical object
     that contains the original data
-    but has labels for all the possible categories from all dataframes.
-    This is useful when concatenating a list of dataframes which all have the
-    same categorical columns into one dataframe.
+    but has labels for all the possible categories from all DataFrames.
+    This is useful when concatenating a list of DataFrames which all have the
+    same categorical columns into one DataFrame.
 
-    If, for a given categorical column, all input dataframes do not have at
+    If, for a given categorical column, all input DataFrames do not have at
     least one instance of all the possible categories,
     Pandas will change the output dtype of that column from `category` to
     `object``, losing out on dramatic speed gains you get from the former
     format.
 
     Usage example for concatenation of categorical column-containing
-    dataframes:
+    DataFrames:
 
     Instead of:
 
@@ -96,27 +96,27 @@ def unionize_dataframe_categories(
     use:
 
     ```python
-    unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
-    concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+    unionized_DataFrames = unionize_DataFrame_categories(df1, df2, df2)
+    concatenated_df = pd.concat(unionized_DataFrames, ignore_index=True)
     ```
 
-    :param dataframes: The dataframes you wish to unionize the categorical
+    :param DataFrames: The DataFrames you wish to unionize the categorical
         objects for.
     :param column_names: If supplied, only unionize this subset of columns.
-    :returns: A list of the category-unioned dataframes in the same order they
+    :returns: A list of the category-unioned DataFrames in the same order they
         were provided.
     :raises TypeError: if any inputs are not pandas DataFrames.
     """
 
-    if any(not isinstance(df, pd.DataFrame) for df in dataframes):
-        raise TypeError("Inputs must all be dataframes.")
+    if any(not isinstance(df, pd.DataFrame) for df in DataFrames):
+        raise TypeError("Inputs must all be DataFrames.")
 
     if column_names is None:
-        # Find all columns across all dataframes that are categorical
+        # Find all columns across all DataFrames that are categorical
 
         column_names = set()
 
-        for df in dataframes:
+        for df in DataFrames:
             column_names = column_names.union(
                 [
                     column_name
@@ -131,7 +131,7 @@ def unionize_dataframe_categories(
 
     category_unions = {
         column_name: union_categoricals(
-            [df[column_name] for df in dataframes if column_name in df.columns]
+            [df[column_name] for df in DataFrames if column_name in df.columns]
         )
         for column_name in column_names
     }
@@ -141,7 +141,7 @@ def unionize_dataframe_categories(
 
     refactored_dfs = []
 
-    for df in dataframes:
+    for df in DataFrames:
         df = df.copy(deep=False)
 
         for column_name, categorical in category_unions.items():
@@ -155,7 +155,7 @@ def unionize_dataframe_categories(
     return refactored_dfs
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def move(
     df: pd.DataFrame,
     source: Union[int, str],
@@ -165,12 +165,12 @@ def move(
 ) -> pd.DataFrame:
     """
     Move column or row to a position adjacent to another column or row in
-    dataframe. Must have unique column names or indices.
+    DataFrame. Must have unique column names or indices.
 
-    This operation does not reset the index of the dataframe. User must
+    This operation does not reset the index of the DataFrame. User must
     explicitly do so.
 
-    Does not apply to multilevel dataframes.
+    Does not apply to multilevel DataFrames.
 
     Functional usage syntax:
 
@@ -197,11 +197,11 @@ def move(
         defaults to 'before'.
     :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
-    :returns: The dataframe with the Series moved.
+    :returns: The DataFrame with the Series moved.
     :raises ValueError: if `axis` is not `0` or `1``.
     :raises ValueError: if `position` is not `before` or `after``.
-    :raises ValueError: if  `source` row or column is not in dataframe.
-    :raises ValueError: if `target` row or column is not in dataframe.
+    :raises ValueError: if  `source` row or column is not in DataFrame.
+    :raises ValueError: if `target` row or column is not in DataFrame.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
@@ -215,10 +215,10 @@ def move(
         names = list(df.index)
 
         if source not in names:
-            raise ValueError(f"Source row '{source}' not in dataframe.")
+            raise ValueError(f"Source row '{source}' not in DataFrame.")
 
         if target not in names:
-            raise ValueError(f"Target row '{target}' not in dataframe.")
+            raise ValueError(f"Target row '{target}' not in DataFrame.")
 
         names.remove(source)
         pos = names.index(target)
@@ -232,10 +232,10 @@ def move(
         names = list(df.columns)
 
         if source not in names:
-            raise ValueError(f"Source column '{source}' not in dataframe.")
+            raise ValueError(f"Source column '{source}' not in DataFrame.")
 
         if target not in names:
-            raise ValueError(f"Target column '{target}' not in dataframe.")
+            raise ValueError(f"Target column '{target}' not in DataFrame.")
 
         names.remove(source)
         pos = names.index(target)
@@ -249,7 +249,7 @@ def move(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def clean_names(
     df: pd.DataFrame,
     strip_underscores: Optional[Union[str, bool]] = None,
@@ -402,7 +402,7 @@ def _strip_accents(col_name: str) -> str:
     )
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
     """Drop all rows and columns that are completely null.
 
@@ -441,7 +441,7 @@ def remove_empty(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
     df: pd.DataFrame,
@@ -496,7 +496,7 @@ def As_Categorical(
     return asCategorical(categories=categories, order=order)
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names")
 def encode_categorical(
     df: pd.DataFrame,
@@ -754,7 +754,7 @@ def encode_categorical(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names")
 def label_encode(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
@@ -798,7 +798,7 @@ def label_encode(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def factorize_columns(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable],
@@ -871,7 +871,7 @@ def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
     df: pd.DataFrame, old_column_name: str, new_column_name: str
@@ -912,7 +912,7 @@ def rename_column(
     return df.rename(columns={old_column_name: new_column_name})
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def rename_columns(
     df: pd.DataFrame,
     new_column_names: Union[Dict, None] = None,
@@ -966,7 +966,7 @@ def rename_columns(
     return df.rename(mapper=function, axis="columns")
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def reorder_columns(
     df: pd.DataFrame, column_order: Union[Iterable[str], pd.Index, Hashable]
 ) -> pd.DataFrame:
@@ -1025,7 +1025,7 @@ def reorder_columns(
     )
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names", new_column_name="target_column_name")
 def coalesce(
     df: pd.DataFrame,
@@ -1162,7 +1162,7 @@ def coalesce(
     return df.assign(**{target_column_name: outcome})
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def convert_excel_date(
     df: pd.DataFrame, column_name: Hashable
@@ -1205,7 +1205,7 @@ def convert_excel_date(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def convert_matlab_date(
     df: pd.DataFrame, column_name: Hashable
@@ -1241,7 +1241,7 @@ def convert_matlab_date(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """Convert unix epoch time into Python datetime format.
@@ -1273,7 +1273,7 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names")
 def fill_empty(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
@@ -1320,7 +1320,7 @@ def _fill_empty(df, column_names, value=None):  # noqa: F811
     return df.fillna(value=fill_mapping)
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def expand_column(
     df: pd.DataFrame,
@@ -1359,7 +1359,7 @@ def expand_column(
     :param sep: The delimiter, same to
         :py:meth:`~pandas.Series.str.get_dummies`'s `sep`, default as `|`.
     :param concat: Whether to return the expanded column concatenated to
-        the original dataframe (`concat=True`), or to return it standalone
+        the original DataFrame (`concat=True`), or to return it standalone
         (`concat=False`).
     :returns: A pandas DataFrame with an expanded column.
     """
@@ -1370,7 +1370,7 @@ def expand_column(
     return expanded_df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names")
 def concatenate_columns(
     df: pd.DataFrame,
@@ -1419,7 +1419,7 @@ def concatenate_columns(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def deconcatenate_column(
     df: pd.DataFrame,
@@ -1457,7 +1457,7 @@ def deconcatenate_column(
     - When `preserve_position=False` (default), `df.columns` change from
       `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
       In other words, the deconcatenated new columns are appended to the right
-      of the original dataframe and the original `column_name` is NOT dropped.
+      of the original DataFrame and the original `column_name` is NOT dropped.
     - When `preserve_position=True`, `df.column` change from
       `[..., column_name, ...]` to `[..., new_column_names, ...]`.
       In other words, the deconcatenated new column will REPLACE the original
@@ -1558,7 +1558,7 @@ def deconcatenate_column(
     return df_new
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def filter_string(
     df: pd.DataFrame,
@@ -1618,17 +1618,17 @@ def filter_string(
     return df[criteria]
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def filter_on(
     df: pd.DataFrame, criteria: str, complement: bool = False
 ) -> pd.DataFrame:
-    """Return a dataframe filtered on a particular criteria.
+    """Return a DataFrame filtered on a particular criteria.
 
     This method does not mutate the original DataFrame.
 
     This is super-sugary syntax that wraps the pandas `.query()` API, enabling
     users to use strings to quickly specify filters for filtering their
-    dataframe. The intent is that `filter_on` as a verb better matches the
+    DataFrame. The intent is that `filter_on` as a verb better matches the
     intent of a pandas user than the verb `query`.
 
     Let's say we wanted to filter students based on whether they failed an exam
@@ -1675,7 +1675,7 @@ def filter_on(
     return df.query(criteria)
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name", start="start_date", end="end_date")
 def filter_date(
     df: pd.DataFrame,
@@ -1702,7 +1702,7 @@ def filter_date(
 
     **Note:** This method will cast your column to a Timestamp!
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: The column which to apply the fraction transformation.
     :param start_date: The beginning date to use to filter the DataFrame.
     :param end_date: The end date to use to filter the DataFrame.
@@ -1742,17 +1742,17 @@ def filter_date(
     #         [22, "02/12/20"], [23, "03/08/20"], [24, "03/09/20"],
     #         [25, "03/10/20"], [26, "03/11/20"], [27, "03/12/20"]]
 
-    #     example_dataframe = pd.DataFrame(date_list,
+    #     example_DataFrame = pd.DataFrame(date_list,
     #                                      columns = ['AMOUNT', 'DATE'])
 
-    # :Example 1: Filter dataframe between two dates
+    # :Example 1: Filter DataFrame between two dates
 
     # ```python
 
     #     start_date = "01/29/19"
     #     end_date = "01/30/19"
 
-    #     example_dataframe.filter_date(
+    #     example_DataFrame.filter_date(
     #         'DATE', start_date=start_date, end_date=end_date
     #     )
 
@@ -1771,7 +1771,7 @@ def filter_date(
     #     end_date = "01$$$30$$$19"
     #     format = "%m$$$%d$$$%y"
 
-    #     example_dataframe.filter_date(
+    #     example_DataFrame.filter_date(
     #         'DATE', end_date=end_date, format=format
     #     )
 
@@ -1790,7 +1790,7 @@ def filter_date(
 
     #     years = [2019]
 
-    #     example_dataframe.filter_date('DATE', years=years)
+    #     example_DataFrame.filter_date('DATE', years=years)
 
     # :Output:
 
@@ -1815,7 +1815,7 @@ def filter_date(
     #     years = [2020]
     #     months = [3]
 
-    #     example_dataframe.filter_date('DATE', years=years, months=months)
+    #     example_DataFrame.filter_date('DATE', years=years, months=months)
 
     # :Output:
 
@@ -1835,7 +1835,7 @@ def filter_date(
     #     years = [2020]
     #     days = range(10,12)
 
-    #     example_dataframe.filter_date('DATE', years=years, days=days)
+    #     example_DataFrame.filter_date('DATE', years=years, days=days)
 
     # :Output:
 
@@ -1888,7 +1888,7 @@ def filter_date(
     return df.loc[_date_filter_conditions(_filter_list), :]
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def filter_column_isin(
     df: pd.DataFrame,
@@ -1896,7 +1896,7 @@ def filter_column_isin(
     iterable: Iterable,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """Filter a dataframe for values in a column that exist in another iterable.
+    """Filter a DataFrame for values in a column that exist in another iterable.
 
     This method does not mutate the original DataFrame.
 
@@ -1940,7 +1940,7 @@ def filter_column_isin(
     return df[criteria]
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names")
 def remove_columns(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
@@ -1962,7 +1962,7 @@ def remove_columns(
     return df.drop(columns=column_names)
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def change_type(
     df: pd.DataFrame,
@@ -1989,8 +1989,8 @@ def change_type(
 
         df = pd.DataFrame(...).change_type('col1', str)
 
-    :param df: A pandas dataframe.
-    :param column_name: A column in the dataframe.
+    :param df: A pandas DataFrame.
+    :param column_name: A column in the DataFrame.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
     :param ignore_exception: one of `{False, "fillna", "keep_values"}``.
@@ -2016,7 +2016,7 @@ def change_type(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(col_name="column_name")
 def add_column(
     df: pd.DataFrame,
@@ -2024,7 +2024,7 @@ def add_column(
     value: Union[List[Any], Tuple[Any], Any],
     fill_remaining: bool = False,
 ) -> pd.DataFrame:
-    """Add a column to the dataframe.
+    """Add a column to the DataFrame.
 
     This method does not mutate the original DataFrame.
 
@@ -2044,7 +2044,7 @@ def add_column(
 
 
         # This will add a column with an iterable of values.
-        vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
+        vals = [1, 2, 5, ..., 3, 4]  # of same length as the DataFrame.
         df = pd.DataFrame(...).add_column(column_name="new_column", vals)
 
     :param df: A pandas DataFrame.
@@ -2194,11 +2194,11 @@ def add_column(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def add_columns(
     df: pd.DataFrame, fill_remaining: bool = False, **kwargs
 ) -> pd.DataFrame:
-    """Add multiple columns to the dataframe.
+    """Add multiple columns to the DataFrame.
 
     This method does not mutate the original DataFrame.
 
@@ -2218,7 +2218,7 @@ def add_columns(
         y = np.arange(0, 10)
         df = pd.DataFrame(...).add_columns(x=x, y=y)
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param fill_remaining: If value is a tuple or list that is smaller than
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame. (Passed to `add_column`)
@@ -2234,7 +2234,7 @@ def add_columns(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def limit_column_characters(
     df: pd.DataFrame, column_length: int, col_separator: str = "_"
 ) -> pd.DataFrame:
@@ -2246,7 +2246,7 @@ def limit_column_characters(
     a given separator character with the index of duplicate columns, except
     for the first distinct column name.
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_length: Character length for which to truncate all columns.
         The column separator value and number for duplicate column name does
         not contribute. Therefore, if all columns are truncated to 10
@@ -2277,8 +2277,8 @@ def limit_column_characters(
 
     # ```python
 
-    #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.limit_column_characters(7)
+    #     example_DataFrame = pd.DataFrame(data_dict)
+    #     example_DataFrame.limit_column_characters(7)
 
     # :Output:
 
@@ -2300,8 +2300,8 @@ def limit_column_characters(
 
     # ```python
 
-    #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.limit_column_characters(7, ".")
+    #     example_DataFrame2 = pd.DataFrame(data_dict)
+    #     example_DataFrame2.limit_column_characters(7, ".")
 
     # ```python
 
@@ -2351,7 +2351,7 @@ def limit_column_characters(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def row_to_names(
     df: pd.DataFrame,
     row_number: int = None,
@@ -2408,8 +2408,8 @@ def row_to_names(
 
     # ```python
 
-    #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.row_to_names(0)
+    #     example_DataFrame = pd.DataFrame(data_dict)
+    #     example_DataFrame.row_to_names(0)
 
     # :Output:
 
@@ -2430,8 +2430,8 @@ def row_to_names(
 
     # ```python
 
-    #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.row_to_names(0, remove_row=True,\
+    #     example_DataFrame = pd.DataFrame(data_dict)
+    #     example_DataFrame.row_to_names(0, remove_row=True,\
     #       reset_index=True)
 
     # :Output:
@@ -2453,8 +2453,8 @@ def row_to_names(
 
     # ```python
 
-    #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.row_to_names(0, remove_row=True)
+    #     example_DataFrame = pd.DataFrame(data_dict)
+    #     example_DataFrame.row_to_names(0, remove_row=True)
 
     # :Output:
 
@@ -2476,8 +2476,8 @@ def row_to_names(
 
     # ```python
 
-    #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.row_to_names(2, remove_row=True, \
+    #     example_DataFrame = pd.DataFrame(data_dict)
+    #     example_DataFrame.row_to_names(2, remove_row=True, \
     #       remove_rows_above=True, reset_index= True)
 
     # :Output:
@@ -2498,8 +2498,8 @@ def row_to_names(
 
     # ```python
 
-    #     example_dataframe = pd.DataFrame(data_dict)
-    #     example_dataframe.row_to_names(2, remove_row=True, \
+    #     example_DataFrame = pd.DataFrame(data_dict)
+    #     example_DataFrame.row_to_names(2, remove_row=True, \
     #       remove_rows_above=True)
 
     # :Output:
@@ -2518,7 +2518,7 @@ def row_to_names(
 
     warnings.warn(
         "The function row_to_names will, in the official 1.0 release, "
-        "change its behaviour to reset the dataframe's index by default. "
+        "change its behaviour to reset the DataFrame's index by default. "
         "You can prepare for this change right now by explicitly setting "
         "`reset_index=True` when calling on `row_to_names`."
     )
@@ -2538,7 +2538,7 @@ def row_to_names(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(col_name="column_name")
 def round_to_fraction(
     df: pd.DataFrame,
@@ -2561,7 +2561,7 @@ def round_to_fraction(
         # Round to two decimal places
         df = pd.DataFrame(...).round_to_fraction('a', 2)
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of column to round to fraction.
     :param denominator: The denominator of the fraction for rounding
     :param digits: The number of digits for rounding after rounding to the
@@ -2606,8 +2606,8 @@ def round_to_fraction(
 
     # ```python
 
-    #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.round_to_fraction('a', 3)
+    #     example_DataFrame2 = pd.DataFrame(data_dict)
+    #     example_DataFrame2.round_to_fraction('a', 3)
 
     # :Output:
 
@@ -2629,8 +2629,8 @@ def round_to_fraction(
 
     # ```python
 
-    #     example_dataframe2 = pd.DataFrame(data_dict)
-    #     example_dataframe2.round_to_fraction('a', 3, 4)
+    #     example_DataFrame2 = pd.DataFrame(data_dict)
+    #     example_DataFrame2.round_to_fraction('a', 3, 4)
 
     # :Output:
 
@@ -2660,7 +2660,7 @@ def round_to_fraction(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
 def transform_column(
     df: pd.DataFrame,
@@ -2764,7 +2764,7 @@ def transform_column(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(columns="column_names", new_names="new_column_names")
 def transform_columns(
     df: pd.DataFrame,
@@ -2870,7 +2870,7 @@ def transform_columns(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(col_name="column_name")
 def min_max_scale(
     df: pd.DataFrame,
@@ -2893,7 +2893,7 @@ def min_max_scale(
     transformed data being bounded between `new_min` and `new_max`.
 
     If a particular column name is specified, then only that column of data
-    are scaled. Otherwise, the entire dataframe is scaled.
+    are scaled. Otherwise, the entire DataFrame is scaled.
 
     Method chaining syntax:
 
@@ -2915,7 +2915,7 @@ def min_max_scale(
         )
 
     Setting a min and max that is not based on the data, while applying to
-    entire dataframe:
+    entire DataFrame:
 
 
 
@@ -2980,9 +2980,9 @@ def min_max_scale(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
-    """Flatten multi-level column dataframe to a single level.
+    """Flatten multi-level column DataFrame to a single level.
 
     This method mutates the original DataFrame.
 
@@ -3046,7 +3046,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(col_name="column_name", type="cleaning_style")
 def currency_column_to_numeric(
     df: pd.DataFrame,
@@ -3270,7 +3270,7 @@ def currency_column_to_numeric(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
     df: pd.DataFrame,
@@ -3439,7 +3439,7 @@ def select_columns(
         - an exact column name to look for
         - a shell-style glob string (e.g., `*_thing_*`)
         - a regular expression
-        - a callable which is applicable to each Series in the dataframe
+        - a callable which is applicable to each Series in the DataFrame
         - variable arguments of all the aforementioned.
         - a sequence of booleans.
     :param invert: Whether or not to invert the selection.
@@ -3472,7 +3472,7 @@ def select_columns(
     return df.loc[:, full_column_list]
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 @deprecated_alias(statistic="statistic_column_name")
 def impute(
@@ -3573,13 +3573,13 @@ def impute(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """Add an arbitrary function to run in the `pyjanitor` method chain.
 
     This method does not mutate the original DataFrame.
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param func: A function you would like to run in the method chain.
         It should take one parameter and return one parameter, each being the
         DataFrame object. After that, do whatever you want in the middle.
@@ -3590,10 +3590,10 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     """Add an arbitrary function with no return value to run in the
-    `pyjanitor` method chain. This returns the input dataframe instead,
+    `pyjanitor` method chain. This returns the input DataFrame instead,
     not the output of `func`.
 
     This method does not mutate the original DataFrame.
@@ -3616,7 +3616,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
             .group_add(...)
         )
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param func: A function you would like to run in the method chain.
         It should take one DataFrame object as a parameter and have no return.
         If there is a return, it will be ignored.
@@ -3628,7 +3628,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """Drop rows that do not have null values in the given column.
@@ -3648,7 +3648,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     return df[pd.isna(df[column_name])]
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def find_replace(
     df: pd.DataFrame, match: str = "exact", **mappings
 ) -> pd.DataFrame:
@@ -3659,7 +3659,7 @@ def find_replace(
     (hence allowing substring matching in the latter case).
     For strings, the matching is always case sensitive.
 
-    For instance, given a dataframe containing orders at a coffee shop:
+    For instance, given a DataFrame containing orders at a coffee shop:
 
 
 
@@ -3705,7 +3705,7 @@ def find_replace(
             order={'coffee$': 'latte'},
         )
 
-    To perform a find and replace on the entire dataframe,
+    To perform a find and replace on the entire DataFrame,
     pandas' `df.replace()` function provides the appropriate functionality.
     You can find more detail on the replace_ docs.
 
@@ -3779,7 +3779,7 @@ def _find_replace(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(target_col="target_column_name")
 def update_where(
     df: pd.DataFrame,
@@ -3788,7 +3788,7 @@ def update_where(
     target_val: Any,
 ) -> pd.DataFrame:
     """
-    Add multiple conditions to update a column in the dataframe.
+    Add multiple conditions to update a column in the DataFrame.
 
     This method does not mutate the original DataFrame.
 
@@ -3836,7 +3836,7 @@ def update_where(
     :param conditions: Conditions used to update a target column
         and target value.
     :param target_column_name: Column to be updated. If column does not exist
-        in dataframe, a new column will be created; note that entries that do
+        in DataFrame, a new column will be created; note that entries that do
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: A pandas DataFrame.
@@ -3869,7 +3869,7 @@ def update_where(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def to_datetime(
     df: pd.DataFrame, column_name: Hashable, **kwargs
@@ -3902,8 +3902,8 @@ def to_datetime(
     return df
 
 
-@pf.register_dataframe_method
-def truncate_datetime_dataframe(
+@pf.register_DataFrame_method
+def truncate_datetime_DataFrame(
     df: pd.DataFrame, datepart: str
 ) -> pd.DataFrame:
     for i in df.columns:
@@ -3920,7 +3920,7 @@ def truncate_datetime_dataframe(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def truncate_datetime(datepart: str, timestamp: dt.datetime):
     """
     Truncate times down to a user-specified precision of
@@ -3981,7 +3981,7 @@ def truncate_datetime(datepart: str, timestamp: dt.datetime):
     )
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 def groupby_agg(
     df: pd.DataFrame,
@@ -4099,7 +4099,7 @@ def groupby_agg(
     return df
 
 
-@pf.register_dataframe_accessor("data_description")
+@pf.register_DataFrame_accessor("data_description")
 class DataDescription:
     """High-level description of data present in this DataFrame.
 
@@ -4157,7 +4157,7 @@ class DataDescription:
             self._desc = desc
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(from_column="from_column_name", to_column="to_column_name")
 def bin_numeric(
     df: pd.DataFrame,
@@ -4211,7 +4211,7 @@ def bin_numeric(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def drop_duplicate_columns(
     df: pd.DataFrame, column_name: Hashable, nth_index: int = 0
 ) -> pd.DataFrame:
@@ -4265,7 +4265,7 @@ def drop_duplicate_columns(
     return df.iloc[:, filtered_cols]
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def take_first(
     df: pd.DataFrame,
     subset: Union[Hashable, Iterable[Hashable]],
@@ -4302,7 +4302,7 @@ def take_first(
     return result
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def shuffle(
     df: pd.DataFrame, random_state=None, reset_index=True
 ) -> pd.DataFrame:
@@ -4330,11 +4330,11 @@ def shuffle(
     return result
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def join_apply(
     df: pd.DataFrame, func: Callable, new_column_name: str
 ) -> pd.DataFrame:
-    """Join the result of applying a function across dataframe rows.
+    """Join the result of applying a function across DataFrame rows.
 
     This method does not mutate the original DataFrame.
 
@@ -4379,7 +4379,7 @@ def join_apply(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def flag_nulls(
     df: pd.DataFrame,
     column_name: Optional[Hashable] = "null_flag",
@@ -4420,12 +4420,12 @@ def flag_nulls(
         #   4  | 8.0  |   0
 
 
-    :param df: Input Pandas dataframe.
+    :param df: Input Pandas DataFrame.
     :param column_name: Name for the output column. Defaults to 'null_flag'.
     :param columns: List of columns to look at for finding null values. If you
         only want to look at one column, you can simply give its name. If set
         to None (default), all DataFrame columns are used.
-    :returns: Input dataframe with the null flag column.
+    :returns: Input DataFrame with the null flag column.
     :raises ValueError: if `column_name` is already present in the
         DataFrame.
     :raises ValueError: if a column within `columns` is no present in
@@ -4456,7 +4456,7 @@ def flag_nulls(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def drop_constant_columns(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -4494,7 +4494,7 @@ def drop_constant_columns(
 
         df = df.drop_constant_columns()
 
-    :param df: Input Pandas dataframe
+    :param df: Input Pandas DataFrame
     :returns: The Pandas data frame with the constant columns dropped.
     """
 
@@ -4540,7 +4540,7 @@ def drop_constant_columns(
     return df.drop(labels=constant_columns, axis=1)
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def count_cumulative_unique(
     df: pd.DataFrame,
     column_name: Hashable,
@@ -4588,7 +4588,7 @@ def count_cumulative_unique(
 
     This method mutates the original DataFrame.
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of the column containing
         values from which a running count of unique values
         will be created.
@@ -4656,7 +4656,7 @@ def toset(series: pd.Series) -> Set:
     return set(series.tolist())
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def jitter(
     df: pd.DataFrame,
     column_name: Hashable,
@@ -4719,7 +4719,7 @@ def jitter(
 
     This method mutates the original DataFrame.
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of the column containing
         values to add Gaussian jitter to.
     :param dest_column_name: The name of the new column containing the
@@ -4768,7 +4768,7 @@ def jitter(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def sort_naturally(
     df: pd.DataFrame, column_name: str, **natsorted_kwargs
 ) -> pd.DataFrame:
@@ -4790,11 +4790,11 @@ def sort_naturally(
         ["A1", "A2", "A3", "A10", "A11"]
 
     This function thus provides "natural" sorting
-    on a single column of a dataframe.
+    on a single column of a DataFrame.
 
     To accomplish this, we do a natural sort
-    on the unique values that are present in the dataframe.
-    Then, we reconstitute the entire dataframe
+    on the unique values that are present in the DataFrame.
+    Then, we reconstitute the entire DataFrame
     in the naturally sorted order.
 
     Natural sorting is provided by the Python package natsort_.
@@ -4904,113 +4904,121 @@ def sort_column_value_order(
         raise ValueError("column_value_order dictionary cannot be empty")
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
     others: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
-    Creates a dataframe from a cartesian combination of all inputs.
+    Creates a DataFrame from a cartesian combination of all inputs.
 
     This works with a dictionary of name value pairs.
 
-    It is also not restricted to dataframes;
+    It is also not restricted to DataFrames;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
 
-    If method-chaining to a dataframe,
+    If method-chaining to a DataFrame,
     a key to represent the column name in the output must be provided.
 
 
     Data types are preserved in this function,
     including Pandas' extension array dtypes.
 
-    The output will always be a dataframe.
+    The output will always be a DataFrame.
 
     Example:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
         df = pd.DataFrame({"x":range(1,3), "y":[2,1]})
         others = {"z" : range(1,4)}
 
+        df
+           x  y
+        0  1  2
+        1  2  1
+
         df.expand_grid(df_key="df",others=others)
 
-        # df_x |   df_y |   z
-        #    1 |      2 |   1
-        #    1 |      2 |   2
-        #    1 |      2 |   3
-        #    2 |      1 |   1
-        #    2 |      1 |   2
-        #    2 |      1 |   3
+           df_x  df_y  z
+        0     1     2  1
+        1     1     2  2
+        2     1     2  3
+        3     2     1  1
+        4     2     1  2
+        5     2     1  3
+    ```
 
-        # create a dataframe from all combinations in a dictionary
+    Create a DataFrame from all combinations in a dictionary:
+
+    ```python
         data = {"x":range(1,4), "y":[1,2]}
 
         jn.expand_grid(others=data)
 
-        #  x |   y
-        #  1 |   1
-        #  1 |   2
-        #  2 |   1
-        #  2 |   2
-        #  3 |   1
-        #  3 |   2
+            x  y
+        0  1  1
+        1  1  2
+        2  2  1
+        3  2  2
+        4  3  1
+        5  3  2
+    ```
 
-    .. note:: If a MultiIndex DataFrame or Series is passed, the index/columns
-        will be discarded, and a single indexed dataframe will be returned.
+    !!!note
+        If a MultiIndex DataFrame or Series is passed, the index/columns
+        will be discarded, and a single indexed DataFrame will be returned.
 
     Functional usage syntax:
 
-
+    ```python
 
         import pandas as pd
         import janitor as jn
 
         df = pd.DataFrame(...)
         df = jn.expand_grid(df=df, df_key="...", others={...})
+    ```
 
     Method-chaining usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
         df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
+    ```
 
-    Usage independent of a dataframe
+    Usage independent of a DataFrame
 
-
-
+    ```python
         import pandas as pd
         from janitor import expand_grid
 
         df = expand_grid({"x":range(1,4), "y":[1,2]})
+    ```
 
-    :param df: A pandas dataframe.
-    :param df_key: name of key for the dataframe.
-        It becomes part of the column names of the dataframe.
+    :param df: A pandas DataFrame.
+    :param df_key: name of key for the DataFrame.
+        It becomes part of the column names of the DataFrame.
     :param others: A dictionary that contains the data
-        to be combined with the dataframe.
-        If no dataframe exists, all inputs
-        in others will be combined to create a dataframe.
-    :returns: A pandas dataframe of all combinations of name value pairs.
+        to be combined with the DataFrame.
+        If no DataFrame exists, all inputs
+        in others will be combined to create a DataFrame.
+    :returns: A pandas DataFrame of all combinations of name value pairs.
     :raises TypeError: if `others` is not a dictionary
-    :raises KeyError: if there is a dataframe and no key is provided.
+    :raises KeyError: if there is a DataFrame and no key is provided.
     :raises ValueError: if `others` is empty.
-
-    .. # noqa: DAR402
 
     """
 
     check("others", others, [dict])
 
-    # if there is a dataframe, for the method chaining,
+    # if there is a DataFrame, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
         df = df.copy()
@@ -5033,7 +5041,7 @@ def expand_grid(
     return _computations_expand_grid(others)
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 @deprecated_alias(column="column_name")
 def process_text(
     df: pd.DataFrame,
@@ -5044,7 +5052,7 @@ def process_text(
     **kwargs: str,
 ) -> pd.DataFrame:
     """
-    Apply a Pandas string method to an existing column and return a dataframe.
+    Apply a Pandas string method to an existing column and return a DataFrame.
 
     This function aims to make string cleaning easy, while chaining,
     by simply passing the string method name to the `process_text` function.
@@ -5144,28 +5152,28 @@ def process_text(
         )
 
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: String column to be operated on.
     :param new_column_names: Name(s) to assign to the new column(s) created
         from the text processing. `new_column_names` can be a string, if
         the result of the text processing is a Series or string; if the
-        result of the text processing is a dataframe, then `new_column_names`
-        is treated as a prefix for each of the columns in the new dataframe.
+        result of the text processing is a DataFrame, then `new_column_names`
+        is treated as a prefix for each of the columns in the new DataFrame.
         `new_column_names` can also be a list of strings to act as new
-        column names for the new dataframe. The existing `column_name`
+        column names for the new DataFrame. The existing `column_name`
         stays unmodified if `new_column_names` is not None.
     :param merge_frame: This comes into play if the result of the text
-        processing is a dataframe. If `True`, the resulting dataframe
-        will be merged with the original dataframe, else the resulting
-        dataframe, not the original dataframe, will be returned.
+        processing is a DataFrame. If `True`, the resulting DataFrame
+        will be merged with the original DataFrame, else the resulting
+        DataFrame, not the original DataFrame, will be returned.
     :param string_function: Pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
-    :returns: A pandas dataframe with modified column(s).
+    :returns: A pandas DataFrame with modified column(s).
     :raises KeyError: if `string_function` is not a Pandas string method.
     :raises TypeError: if wrong `arg` or `kwarg` is supplied.
-    :raises ValueError: if `column_name` not found in dataframe.
+    :raises ValueError: if `column_name` not found in DataFrame.
     :raises ValueError: if `new_column_names` is not None and is found in
-        dataframe.
+        DataFrame.
 
     .. # noqa: DAR402
     """
@@ -5174,7 +5182,7 @@ def process_text(
     check("column_name", column_name, [str])
     check_column(df, [column_name])
 
-    # new_column_names should not already exist in the dataframe
+    # new_column_names should not already exist in the DataFrame
     if new_column_names:
         check("new_column_names", new_column_names, [list, str])
         if isinstance(new_column_names, str):
@@ -5200,7 +5208,7 @@ def process_text(
     if string_function == "extractall" and merge_frame:
         # create unique indices
         # comes in handy for executing joins if there are
-        # duplicated indices in the original dataframe
+        # duplicated indices in the original DataFrame
         df = df.set_index(np.arange(len(df)), append=True)  # extra_index_line
 
     result = getattr(df[column_name].str, string_function)(**kwargs)
@@ -5219,7 +5227,7 @@ def process_text(
     )
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
     Provide a method-chainable function for filling missing values
@@ -5306,12 +5314,12 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 )
 
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param kwargs: Key - value pairs of columns and directions. Directions
         can be either `down`, `up`, `updown` (fill up then down) and
         `downup` (fill down then up).
-    :returns: A pandas dataframe with modified column(s).
-    :raises ValueError: if column supplied is not in the dataframe.
+    :returns: A pandas DataFrame with modified column(s).
+    :raises ValueError: if column supplied is not in the DataFrame.
     :raises ValueError: if direction supplied is not one of `down`, `up`,
         `updown`, or `downup`.
 
@@ -5370,7 +5378,7 @@ def _chain_func(column: pd.Series, *funcs):
     return new_value
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def groupby_topk(
     df: pd.DataFrame,
     groupby_column_name: Hashable,
@@ -5381,49 +5389,58 @@ def groupby_topk(
     """
     Return top `k` rows from a groupby of a set of columns.
 
-    Returns a dataframe that has the top `k` values grouped by `groupby_column_name`
+    Returns a DataFrame that has the top `k` values grouped by `groupby_column_name`
     and sorted by `sort_column_name`.
     Additional parameters to the sorting (such as ascending=True)
     can be passed using `sort_values_kwargs`.
 
-    List of all sort_values() parameters can be found here_.
-
-    .. _here: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html
-
+    List of all sort_values() parameters can be found 
+    [here](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html).
 
 
-
+    ```python
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({'age' : [20, 22, 24, 23, 21, 22],
-                           'ID' : [1,2,3,4,5,6],
-                           'result' : ["pass", "fail", "pass",
-                                       "pass", "fail", "pass"]})
+           age  ID result
+        0   20   1   pass
+        1   22   2   fail
+        2   24   3   pass
+        3   23   4   pass
+        4   21   5   fail
+        5   22   6   pass
+    ```
 
-        # Ascending top 3:
+    Ascending top 3:
+
+    ```python
         df.groupby_topk('result', 'age', 3)
-        #       age  ID  result
-        #result
-        #fail   21   5   fail
-        #       22   2   fail
-        #pass   20   1   pass
-        #       22   6   pass
-        #       23   4   pass
 
-        #Descending top 2:
+                    age  ID result
+        result                  
+        fail    4   21   5   fail
+                1   22   2   fail
+        pass    0   20   1   pass
+                5   22   6   pass
+                3   23   4   pass
+    ```
+
+    Descending top 2:
+
+    ```python
         df.groupby_topk('result', 'age', 2, {'ascending':False})
-        #       age  ID result
-        #result
-        #fail   22   2   fail
-        #       21   5   fail
-        #pass   24   3   pass
-        #       23   4   pass
+
+                    age  ID result
+        result                  
+        fail    1   22   2   fail
+                4   21   5   fail
+        pass    2   24   3   pass
+                3   23   4   pass
+    ```
 
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -5434,11 +5451,11 @@ def groupby_topk(
             sort_column_name = 'sort_column',
             k = 5
             )
+    ```
 
     Method-chaining usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -5451,26 +5468,27 @@ def groupby_topk(
             k = 5
             )
         )
+    ```
 
-    :param df: A pandas dataframe.
-    :param groupby_column_name: Column name to group input dataframe `df` by.
+    :param df: A pandas DataFrame.
+    :param groupby_column_name: Column name to group input DataFrame `df` by.
     :param sort_column_name: Name of the column to sort along the
-        input dataframe `df`.
+        input DataFrame `df`.
     :param k: Number of top rows to return from each group after sorting.
     :param sort_values_kwargs: Arguments to be passed to sort_values function.
-    :returns: A pandas dataframe with top `k` rows that are grouped by
+    :returns: A pandas DataFrame with top `k` rows that are grouped by
         `groupby_column_name` column with each group sorted along the
         column `sort_column_name`.
     :raises ValueError: if `k` is less than 1.
-    :raises ValueError: if `groupby_column_name` not in dataframe `df`.
-    :raises ValueError: if `sort_column_name` not in dataframe `df`.
+    :raises ValueError: if `groupby_column_name` not in DataFrame `df`.
+    :raises ValueError: if `sort_column_name` not in DataFrame `df`.
     :raises KeyError: if `inplace:True` is present in `sort_values_kwargs`.
     """  # noqa: E501
 
     # Convert the default sort_values_kwargs from None to empty Dict
     sort_values_kwargs = sort_values_kwargs or {}
 
-    # Check if groupby_column_name and sort_column_name exists in the dataframe
+    # Check if groupby_column_name and sort_column_name exists in the DataFrame
     check_column(df, [groupby_column_name, sort_column_name])
 
     # Check if k is greater than 0.
@@ -5491,7 +5509,7 @@ def groupby_topk(
     )
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def complete(
     df: pd.DataFrame,
     *columns,
@@ -5668,7 +5686,6 @@ def complete(
     ```
 
     !!! note
-
         MultiIndex columns are not supported.
 
 
@@ -5715,7 +5732,7 @@ def complete(
         str/dict/list/tuple.
     :raises ValueError: if entry in `*columns`
         is a dict/list/tuple and is empty.
-    :returns: A pandas dataframe with modified column(s).
+    :returns: A pandas DataFrame with modified column(s).
     """
 
     if not columns:
@@ -5737,14 +5754,14 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     :param regex_pattern: string to be converted to compiled regular
         expression.
     :returns: A compile regular expression from provided
-        `regex_pattern``.
+        `regex_pattern`.
     """
     check("regular expression", regex_pattern, [str, Pattern])
 
     return re.compile(regex_pattern)
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def pivot_longer(
     df: pd.DataFrame,
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
@@ -5833,7 +5850,7 @@ def pivot_longer(
     ```
 
     You can set `ignore_index` to `False`, if you wish to reuse the index
-    from the source dataframe (the index will be repeated as many times as
+    from the source DataFrame (the index will be repeated as many times as
     necessary):
 
 
@@ -5856,7 +5873,7 @@ def pivot_longer(
         2	Gregory	   b	50
     ```
 
-    MultiIndex dataframes are unpivoted in the same form that you would
+    MultiIndex DataFrames are unpivoted in the same form that you would
     expect from pandas' `melt`:
 
     ```python
@@ -5898,7 +5915,7 @@ def pivot_longer(
         2  c        B      5
     ```
 
-    Example 2: The dataframe below has year and month variables embedded within
+    Example 2: The DataFrame below has year and month variables embedded within
     the column names.
 
 
@@ -5909,7 +5926,7 @@ def pivot_longer(
         2	c	    0.282978	 1.651437	 1.265936
     ```
 
-    `pivot_longer` can conveniently reshape the dataframe into long format, with
+    `pivot_longer` can conveniently reshape the DataFrame into long format, with
     new columns for the year and month. You simply pass in the new column names
     to `names_to`, and pass the hyphen `-` to the `names_sep` argument.
 
@@ -5934,7 +5951,7 @@ def pivot_longer(
         8    c  2020     02      1.265936
     ```
 
-    Example 3: The dataframe below has names embedded in it
+    Example 3: The DataFrame below has names embedded in it
     `(measure1, measure2)` that we would love to reuse as column names.
 
 
@@ -6069,7 +6086,7 @@ def pivot_longer(
     ```
 
     !!!note
-        Unpivoting a dataframe with MultiIndex columns, when
+        Unpivoting a DataFrame with MultiIndex columns, when
         either `names_sep` or `names_pattern` is provided is not
         supported.
 
@@ -6114,7 +6131,7 @@ def pivot_longer(
         )
     ```
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list/tuple of
         column names. The `janitor.select_columns` syntax is supported here,
@@ -6158,11 +6175,11 @@ def pivot_longer(
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
     :param column_level: If columns are a MultiIndex, then use this level to
-        unpivot the dataframe. Provided for compatibility with pandas' melt,
+        unpivot the DataFrame. Provided for compatibility with pandas' melt,
         and applies only if neither `names_sep` nor `names_pattern` is
         provided.
     :param sort_by_appearance: Default `False`. Boolean value that determines
-        the final look of the dataframe. If `True`, the unpivoted dataframe
+        the final look of the DataFrame. If `True`, the unpivoted DataFrame
         will be stacked in order of first appearance. See examples for more
         details. `pivot_longer` is usually more performant if
         `sort_by_appearance` is `False``.
@@ -6222,7 +6239,7 @@ def pivot_longer(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def pivot_wider(
     df: pd.DataFrame,
     index: Optional[Union[Sequence[str], str]] = None,
@@ -6237,7 +6254,7 @@ def pivot_wider(
     fill_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
     """
-    Reshapes data from 'long' to 'wide' form.
+    Reshapes data from *long* to *wide* form.
 
     The number of columns are increased, while decreasing
     the number of rows. It is the inverse of the `pivot_longer`
@@ -6247,6 +6264,7 @@ def pivot_wider(
 
     Reshaping to wide form :
 
+    ```python
              name variable  value
         0   Alice      wk1      5
         1   Alice      wk2      9
@@ -6261,83 +6279,46 @@ def pivot_wider(
         10  Carla      wk3     39
         11  Carla      wk4     40
 
-        df = (
-            pd.DataFrame(...)
-            .pivot_wider(
-                index = "name",
-                names_from = "variable",
-                values_from = "value"
+        df.pivot_wider(
+            index = "name",
+            names_from = "variable",
+            values_from = "value"
             )
 
              name    wk1   wk2   wk3   wk4
         0    Alice     5     9    20    22
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
+    ```
 
     Pivoting on multiple columns is possible :
 
+    ```python
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2
         2     3  30.0  0.3
 
-        df = (
-            pd.DataFrame(...)
-            .assign(num = 0)
-            .pivot_wider(
-                index = "num",
-                names_from = "name",
-                values_from = ["n", "pct"],
-                names_sep = "_"
-             )
+        (df.assign(num = 0)
+           .pivot_wider(
+              index = "num",
+              names_from = "name",
+              values_from = ["n", "pct"],
+              names_sep = "_"
+              )
          )
 
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
+    ```
 
-    Aggregations are also possible with the `aggfunc` parameter::
-
-        df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
-                           {'id': 'b', 'name': 'Eve', 'value': 6},
-                           {'id': 'c', 'name': 'Adam', 'value': 4},
-                           {'id': 'a', 'name': 'Eve', 'value': 3},
-                           {'id': 'd', 'name': 'Seth', 'value': 2},
-                           {'id': 'b', 'name': 'Adam', 'value': 4},
-                           {'id': 'a', 'name': 'Adam', 'value': 2}])
-
-        id  name    value
-        a   Adam    5
-        b   Eve     6
-        c   Adam    4
-        a   Eve     3
-        d   Seth    2
-        b   Adam    4
-        a   Adam    2
-
-        df.pivot_wider(
-            index = "id",
-            names_from = "name",
-            aggfunc = np.sum,
-            values_from = "value",
-            flatten_levels = True,
-            fill_value = 0
-            )
-
-            id  Adam  Eve  Seth
-        0   a     7    3     0
-        1   b     4    6     0
-        2   c     4    0     0
-        3   d     0    0     2
-
-
-    .. note:: You may choose not to collapse the levels by passing `False`
+    !!!note
+        You may choose not to collapse the levels by passing `False`
         to the `flatten_levels` argument.
-
-    .. note:: A ValueError is raised if the index is not unique and
-        `aggfunc` is None.
 
     Functional usage syntax:
 
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -6356,9 +6337,11 @@ def pivot_wider(
             aggfunc,
             fill_value = fill_value
         )
+    ```
 
     Method chaining syntax:
 
+    ```python
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -6374,32 +6357,33 @@ def pivot_wider(
                 fill_value = fill_value
                 )
         )
+    ```
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If `index` is not provided, the current dataframe's index is used.
+        If `index` is not provided, the current DataFrame's index is used.
     :param names_from: Name(s) of column(s) to use to make the new
-        dataframe's columns. Should be either a single column name, or a
+        DataFrame's columns. Should be either a single column name, or a
         list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        A label or labels must be provided for `names_from``.
+        A label or labels must be provided for `names_from`.
     :param values_from: Name(s) of column(s) that will be used for populating
-        the new dataframe's values. Should be either a single column name,
+        the new DataFrame's values. Should be either a single column name,
         or a list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
         If `values_from` is not specified,
-        all remaining columns will be used. If `flatten_levels` is `False``,
-        a MultiIndex dataframe is created.
+        all remaining columns will be used. If `flatten_levels` is `False`,
+        a MultiIndex DataFrame is created.
     :param names_sort: Default is `True`. Sorts columns by order of
         appearance.
         Set as `True` to get the columns sorted lexicographicially,
         or if the columns are of category type.
-    :param flatten_levels: Default is `True`. If `False`, the dataframe stays
+    :param flatten_levels: Default is `True`. If `False`, the DataFrame stays
         as a MultiIndex.
     :param names_from_position: By default, the values in `names_from` stay
         at the front of the new column names. This can be changed to "last";
@@ -6410,29 +6394,13 @@ def pivot_wider(
         Applicable only if `flatten_levels` is True.
     :param names_sep: If `names_from` or `values_from` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is `_``.
-        Applicable only if `flatten_levels` is `True``.
-    :param aggfunc: An aggregate function. It can be a function, a string,
-        list of functions, or a dictionary, pairing column name with aggregate
-        function.
-    :param fill_value: Scalar value to replace missing values with
-        (after pivoting).
+        to use as a column name. Default is `_`.
+        Applicable only if `flatten_levels` is `True`.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
     :raises TypeError: if `index` or `names_from` is not a string, or a list of
         strings.
     :raises ValueError: if `names_from` is None.
-    :raises TypeError: if `names_sep` is not a string.
-    :raises TypeError: if `values_from` is not a string or a list of strings.
-    :raises TypeError: if `names_sort` is not a boolean.
-    :raises TypeError: if `flatten_levels` is not a boolean.
-    :raises ValueError: if values in `index` or `names_from` or `values_from`
-        do not exist in the dataframe.
-    :raises ValueError: if the combination of `index` and `names_from` is not
-        unique and `aggfunc` is `None``.
-
-
-    .. # noqa: DAR402
     """
 
     df = df.copy()
@@ -6480,7 +6448,7 @@ def pivot_wider(
     return df
 
 
-@pf.register_dataframe_method
+@pf.register_DataFrame_method
 def conditional_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
@@ -6630,7 +6598,7 @@ def conditional_join(
     The default for the `suffixes` parameter is `(_x, _y)``,
     One of the suffixes can be set as `None``;
     this avoids a suffix on the columns from the
-    relevant dataframe::
+    relevant DataFrame::
 
         df1.conditional_join(
                 right = df2,
@@ -6732,7 +6700,7 @@ def conditional_join(
                 )
 
 
-    :param df: A Pandas dataframe.
+    :param df: A Pandas DataFrame.
     :param right: Named Series or DataFrame to join to.
     :param conditions: Variable argument of tuple(s) of the form
         `(left_on, right_on, op)``, where `left_on` is the column
@@ -6744,7 +6712,7 @@ def conditional_join(
         Full join is not supported. Defaults to `inner`.
     :param sort_by_appearance: Default is `False`. If True,
         values from `right` that meet the join condition will be returned
-        in the final dataframe in the same order that they were before the
+        in the final DataFrame in the same order that they were before the
         join.
     :param suffixes: tuple, default is `(_x, _y)``.
         A sequence of length 2, where each element is optionally a string,

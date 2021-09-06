@@ -4911,106 +4911,113 @@ def expand_grid(
     others: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
-    Creates a dataframe from a cartesian combination of all inputs.
+    Creates a DataFrame from a cartesian combination of all inputs.
 
     This works with a dictionary of name value pairs.
 
-    It is also not restricted to dataframes;
+    It is also not restricted to DataFrames;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
 
-    If method-chaining to a dataframe,
+    If method-chaining to a DataFrame,
     a key to represent the column name in the output must be provided.
 
 
     Data types are preserved in this function,
     including Pandas' extension array dtypes.
 
-    The output will always be a dataframe.
+    The output will always be a DataFrame.
 
     Example:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
         df = pd.DataFrame({"x":range(1,3), "y":[2,1]})
         others = {"z" : range(1,4)}
 
+        df
+           x  y
+        0  1  2
+        1  2  1
+
         df.expand_grid(df_key="df",others=others)
 
-        # df_x |   df_y |   z
-        #    1 |      2 |   1
-        #    1 |      2 |   2
-        #    1 |      2 |   3
-        #    2 |      1 |   1
-        #    2 |      1 |   2
-        #    2 |      1 |   3
+           df_x  df_y  z
+        0     1     2  1
+        1     1     2  2
+        2     1     2  3
+        3     2     1  1
+        4     2     1  2
+        5     2     1  3
+    ```
 
-        # create a dataframe from all combinations in a dictionary
+    Create a DataFrame from all combinations in a dictionary:
+
+    ```python
         data = {"x":range(1,4), "y":[1,2]}
 
         jn.expand_grid(others=data)
 
-        #  x |   y
-        #  1 |   1
-        #  1 |   2
-        #  2 |   1
-        #  2 |   2
-        #  3 |   1
-        #  3 |   2
+            x  y
+        0  1  1
+        1  1  2
+        2  2  1
+        3  2  2
+        4  3  1
+        5  3  2
+    ```
 
-    .. note:: If a MultiIndex DataFrame or Series is passed, the index/columns
-        will be discarded, and a single indexed dataframe will be returned.
+    !!!note
+        If a MultiIndex DataFrame or Series is passed, the index/columns
+        will be discarded, and a single indexed DataFrame will be returned.
 
     Functional usage syntax:
 
-
+    ```python
 
         import pandas as pd
         import janitor as jn
 
         df = pd.DataFrame(...)
         df = jn.expand_grid(df=df, df_key="...", others={...})
+    ```
 
     Method-chaining usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
         df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
+    ```
 
-    Usage independent of a dataframe
+    Usage independent of a DataFrame
 
-
-
+    ```python
         import pandas as pd
         from janitor import expand_grid
 
         df = expand_grid({"x":range(1,4), "y":[1,2]})
+    ```
 
-    :param df: A pandas dataframe.
-    :param df_key: name of key for the dataframe.
-        It becomes part of the column names of the dataframe.
+    :param df: A pandas DataFrame.
+    :param df_key: name of key for the DataFrame.
+        It becomes part of the column names of the DataFrame.
     :param others: A dictionary that contains the data
-        to be combined with the dataframe.
-        If no dataframe exists, all inputs
-        in others will be combined to create a dataframe.
-    :returns: A pandas dataframe of all combinations of name value pairs.
-    :raises TypeError: if `others` is not a dictionary
-    :raises KeyError: if there is a dataframe and no key is provided.
+        to be combined with the DataFrame.
+        If no DataFrame exists, all inputs
+        in others will be combined to create a DataFrame.
+    :returns: A pandas DataFrame of all combinations of name value pairs.
+    :raises KeyError: if there is a DataFrame and no key is provided.
     :raises ValueError: if `others` is empty.
-
-    .. # noqa: DAR402
 
     """
 
     check("others", others, [dict])
 
-    # if there is a dataframe, for the method chaining,
+    # if there is a DataFrame, for the method chaining,
     # it must have a key, to create a name value pair
     if df is not None:
         df = df.copy()

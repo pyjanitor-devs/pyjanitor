@@ -4970,6 +4970,7 @@ def expand_grid(
     ```
 
     !!!note
+
         If a MultiIndex DataFrame or Series is passed, the index/columns
         will be discarded, and a single indexed DataFrame will be returned.
 
@@ -5390,7 +5391,7 @@ def groupby_topk(
 
     Returns a DataFrame that has the top `k` values grouped by `groupby_column_name`
     and sorted by `sort_column_name`.
-    Additional parameters to the sorting (such as ascending=True)
+    Additional parameters to the sorting (such as `ascending=True`)
     can be passed using `sort_values_kwargs`.
 
     List of all sort_values() parameters can be found

@@ -6173,24 +6173,8 @@ def pivot_longer(
         format.
     :raises TypeError: if `index` or `column_names` is not a string, or a
         list/tuple of column names, or a `janitor.patterns` function.
-    :raises TypeError: if `names_to` or `column_names` is not a string, or a
-        list/tuple of strings.
-    :raises TypeError: if `names_sep` is not a string or regular expression.
-    :raises TypeError: if `names_pattern` is not a regular expression, or a
-        list/tuple of regular expressions.
-    :raises TypeError: if `values_to` is not a string.
-    :raises TypeError: if `sort_by_appearance` is not a boolean.
-    :raises TypeError: if `ignore_index` is not a boolean.
-    :raises ValueError: if `names_to` is a string or a list/tuple of length 1,
-        and `names_sep` is provided.
-    :raises ValueError: if `names_to` is a string, and the number of extracted
-        columns is greater than 1.
     :raises ValueError: if `names_to` is a list/tuple, and its length does not
         match the number of extracted columns.
-    :raises ValueError: if the dataframe contains MultiIndex columns, and
-        `index` or `column_names` is not a list of tuples.
-    :raises ValueError: if the dataframe contains MultiIndex columns, and
-        either `names_sep` or `names_pattern` is provided.
     """
 
     # this code builds on the wonderful work of @benjaminjack’s PR

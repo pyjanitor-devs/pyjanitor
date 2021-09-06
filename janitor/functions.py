@@ -80,7 +80,7 @@ def unionize_dataframe_categories(
     If, for a given categorical column, all input dataframes do not have at
     least one instance of all the possible categories,
     Pandas will change the output dtype of that column from `category` to
-    `object``, losing out on dramatic speed gains you get from the former
+    `object`, losing out on dramatic speed gains you get from the former
     format.
 
     Usage example for concatenation of categorical column-containing
@@ -88,24 +88,29 @@ def unionize_dataframe_categories(
 
     Instead of:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
 
-        concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
+    concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
+    ```
 
     which in your case has resulted in `category` -> `object` conversion,
     use:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    from janitor.functions import unionize_dataframe_categories
 
-        unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
-        concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+    unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
+    concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+    ```
 
     :param dataframes: The dataframes you wish to unionize the categorical
         objects for.
     :param column_names: If supplied, only unionize this subset of columns.
     :returns: A list of the category-unioned dataframes in the same order they
         were provided.
-    :raises TypeError: if any inputs are not pandas DataFrames.
+    :raises TypeError: If any of the inputs are not pandas DataFrames.
     """
 
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
@@ -174,25 +179,28 @@ def move(
 
     Functional usage syntax:
 
-    .. code-block:: python
+    ```python
 
-        df = move(df, source=3, target=15, position='after', axis=0)
+    df = move(df, source=3, target=15, position='after', axis=0)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
 
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).move(source=3, target=15, position='after',
-        axis=0)
+    import pandas as pd
+    import janitor
+
+    df = pd.DataFrame(...).move(source=3, target=15, position='after',
+    axis=0)
+    ```
 
     :param df: The pandas Dataframe object.
     :param source: column or row to move
     :param target: column or row to move adjacent to
     :param position: Specifies whether the Series is moved to before or
-        after the adjacent Series. Values can be either 'before' or 'after';
-        defaults to 'before'.
+        after the adjacent Series. Values can be either `before` or `after`;
+        defaults to `before`.
     :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
     :returns: The dataframe with the Series moved.
@@ -265,30 +273,33 @@ def clean_names(
     then replaces all spaces with underscores.
 
     By default, column names are converted to string types.
-    This can be switched off by passing in `enforce_string=False``.
+    This can be switched off by passing in `enforce_string=False`.
 
     This method does not mutate the original DataFrame.
 
     Functional usage syntax:
 
-    .. code-block:: python
+    ```python
 
-        df = clean_names(df)
+    df = clean_names(df)
+    ```
 
     Method chaining syntax:
 
-    .. code-block:: python
+    ```python
 
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).clean_names()
+    import pandas as pd
+    import janitor
+    df = pd.DataFrame(...).clean_names()
+    ```
 
-    :Example of transformation:
+    Example of transformation:
 
-    .. code-block:: python
+    ```python
 
-        Columns before: First Name, Last Name, Employee Status, Subject
-        Columns after: first_name, last_name, employee_status, subject
+    Columns before: First Name, Last Name, Employee Status, Subject
+    Columns after: first_name, last_name, employee_status, subject
+    ```
 
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all

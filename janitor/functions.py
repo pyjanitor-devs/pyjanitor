@@ -3575,7 +3575,8 @@ def impute(
 
 @pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
-    """Add an arbitrary function to run in the `pyjanitor` method chain.
+    """
+    Add an arbitrary function to run in the `pyjanitor` method chain.
 
     This method does not mutate the original DataFrame.
 
@@ -3592,7 +3593,8 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
 @pf.register_dataframe_method
 def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
-    """Add an arbitrary function with no return value to run in the
+    """
+    Add an arbitrary function with no return value to run in the
     `pyjanitor` method chain. This returns the input dataframe instead,
     not the output of `func`.
 
@@ -3600,8 +3602,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
 
     Example usage:
 
-
-
+    ```python
         df = (
             pd.DataFrame(...)
             .query(...)
@@ -3615,13 +3616,14 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
             )
             .group_add(...)
         )
+    ```
 
     :param df: A pandas dataframe.
     :param func: A function you would like to run in the method chain.
         It should take one DataFrame object as a parameter and have no return.
         If there is a return, it will be ignored.
-    :param args: Optional arguments for `func``.
-    :param kwargs: Optional keyword arguments for `func``.
+    :param args: Optional arguments for `func`.
+    :param kwargs: Optional keyword arguments for `func`.
     :returns: The input pandas DataFrame.
     """  # noqa: E501
     func(df.copy(), *args, **kwargs)
@@ -4304,20 +4306,19 @@ def take_first(
 
 @pf.register_dataframe_method
 def shuffle(
-    df: pd.DataFrame, random_state=None, reset_index=True
+    df: pd.DataFrame, random_state=None, reset_index: bool = True
 ) -> pd.DataFrame:
     """Shuffle the rows of the DataFrame.
 
     This method does not mutate the original DataFrame.
 
-    Super-sugary syntax! Underneath the hood, we use `df.sample(frac=1)``,
+    Super-sugary syntax! Underneath the hood, we use `df.sample(frac=1)`,
     with the option to set the random state.
 
     Example usage:
-
-
-
+    ```python
         df = pd.DataFrame(...).shuffle()
+    ```
 
     :param df: A pandas DataFrame
     :param random_state: (optional) A seed for the random number generator.
@@ -4551,8 +4552,7 @@ def count_cumulative_unique(
 
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -4564,11 +4564,11 @@ def count_cumulative_unique(
             dest_column_name='animals_unique_count',
             case_sensitive=True
         )
+    ```
 
     Method chaining usage example:
 
-
-
+    ```python
         import pandas as pd
         import janitor
 
@@ -4579,11 +4579,12 @@ def count_cumulative_unique(
             dest_column_name='animals_unique_count',
             case_sensitive=True
         )
+    ```
 
     A new column will be created containing a running
     count of unique values in the specified column.
     If `case_sensitive` is `True`, then the case of
-    any letters will matter (i.e., 'a' != 'A');
+    any letters will matter (i.e., `a != A`);
     otherwise, the case of any letters will not matter.
 
     This method mutates the original DataFrame.
@@ -4772,10 +4773,10 @@ def jitter(
 def sort_naturally(
     df: pd.DataFrame, column_name: str, **natsorted_kwargs
 ) -> pd.DataFrame:
-    """Sort a DataFrame by a column using "natural" sorting.
+    """Sort a DataFrame by a column using *natural* sorting.
 
     Natural sorting is distinct from
-    the default lexiographical sorting provided by `pandas``.
+    the default lexiographical sorting provided by `pandas`.
     For example, given the following list of items:
 
         ["A1", "A11", "A3", "A2", "A10"]
@@ -4789,7 +4790,7 @@ def sort_naturally(
 
         ["A1", "A2", "A3", "A10", "A11"]
 
-    This function thus provides "natural" sorting
+    This function thus provides *natural* sorting
     on a single column of a dataframe.
 
     To accomplish this, we do a natural sort
@@ -4797,9 +4798,8 @@ def sort_naturally(
     Then, we reconstitute the entire dataframe
     in the naturally sorted order.
 
-    Natural sorting is provided by the Python package natsort_.
-
-    .. _natsort: https://natsort.readthedocs.io/en/master/index.html
+    Natural sorting is provided by the Python package
+    [natsort](https://natsort.readthedocs.io/en/master/index.html)
 
     All keyword arguments to `natsort` should be provided
     after the column name to sort by is provided.
@@ -4807,8 +4807,7 @@ def sort_naturally(
 
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -4818,11 +4817,11 @@ def sort_naturally(
             df=df,
             column_name='alphanumeric_column',
         )
+    ```
 
     Method chaining usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor
 
@@ -4831,7 +4830,7 @@ def sort_naturally(
         df = df.sort_naturally(
             column_name='alphanumeric_column',
         )
-
+    ```
     :param df: A pandas DataFrame.
     :param column_name: The column on which natural sorting should take place.
     :param natsorted_kwargs: Keyword arguments to be passed

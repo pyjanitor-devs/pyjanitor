@@ -717,7 +717,7 @@ def convert_stock(stock_symbol: str) -> str:
     """
     if is_connected("www.google.com"):
         stock_symbol = stock_symbol.upper()
-        return get_symbol(stock_symbol.upper())
+        return get_symbol(stock_symbol)
     else:
         raise ConnectionError(
             "Connection Error: Client Not Connected to Internet"

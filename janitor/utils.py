@@ -2813,9 +2813,10 @@ def _conditional_join_type_check(
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     """
     Create `range` indices for each value in
-    `right_keys` in `_less_than_indices`.
-    Faster than a list comprehension, as
-    the array size increases.
+    `right_keys` in `_equal_indices`, `_less_than_indices`,
+    and `_greater_than_indices`.
+    It is faster than a list comprehension, especially
+    for large arrays.
 
     code copied from Stack Overflow
     https://stackoverflow.com/a/47126435/7175713
@@ -2854,7 +2855,6 @@ def _equal_indices(
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
-    # positions, tempo = left_c.factorize()
 
     lower_boundary = right_c.searchsorted(left_c, side="left")
     upper_boundary = right_c.searchsorted(left_c, side="right")
@@ -3119,7 +3119,7 @@ def _greater_than_indices(
     indices = np.repeat(0, search_indices.size)
 
     if len_conditions > 1:
-        return left_c.index, (search_indices - indices).sum()
+        return left_c.index, search_indices.sum()
 
     positions = _interval_ranges(indices, search_indices)
     right_c = right_c.index.take(positions)
@@ -3164,6 +3164,8 @@ def _multiple_conditional_join(
         return None
 
     # find condition with least number of search points
+    # the lower the number of matching indices from left_c
+    # the better
     base_index = df.index
     base_condition = conditions[0]
     difference = None
@@ -3184,6 +3186,10 @@ def _multiple_conditional_join(
             if difference is None:
                 difference = indices_count
             else:
+                # the smaller the indices_count
+                # the better, as this implies
+                # there is a lower number of search points
+                # for that particular condition
                 if difference > indices_count:
                     base_condition = condition
                     difference = indices_count
@@ -3191,8 +3197,12 @@ def _multiple_conditional_join(
     df = df.loc[base_index]
     df_mapping = None
 
-    # check if df is duplicated
     # 30% duplicate check is just a whim
+    # no statistical backing
+    # the idea here is that the less number of searches
+    # the better; after the search we can then
+    # retroactively `blow` the dataframe up to match
+    # the indices of the original dataframe
     if df.duplicated().mean() > 0.3:
         df_grouped = df.groupby(left_columns)
         df_mapping = df_grouped.groups

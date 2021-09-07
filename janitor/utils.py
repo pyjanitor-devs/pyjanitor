@@ -43,13 +43,15 @@ def check(varname: str, value, expected_types: list):
     One-liner syntactic sugar for checking types.
     It can also check callables.
 
-    Should be used like this::
+    Example usage:
 
-        check('x', x, [int, float])
+    ```python
+    check('x', x, [int, float])
+    ```
 
     :param varname: The name of the variable (for diagnostic error message).
-    :param value: The value of the varname.
-    :param expected_types: The types we expect the item to be.
+    :param value: The value of the `varname`.
+    :param expected_types: The type(s) the item is expected to be.
     :raises TypeError: if data is not the expected type.
     """
     is_expected_type: bool = False
@@ -146,15 +148,17 @@ def _strip_underscores(
 
     Underscores can be stripped from the beginning, end or both.
 
-    .. code-block:: python
+    Example usage:
 
-        df = _strip_underscores(df, strip_underscores='left')
+    ```
+    df = _strip_underscores(df, strip_underscores='left')
+    ```
 
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
-        column names. Default None keeps outer underscores. Values can be
-        either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
-        and True.
+        column names. Default `None` keeps outer underscores. Values can be
+        either `'left'`, `'right'` or `'both'` or the respective shorthand
+        `'l'`, `'r'` and `True`.
     :returns: A pandas DataFrame with underscores removed.
     """
     df = df.rename(
@@ -195,11 +199,11 @@ def import_message(
     optional module / package that is not currently installed. Includes
     installation instructions. Used in `chemistry.py` and `biology.py`.
 
-    :param submodule: pyjanitor submodule that needs an external dependency.
+    :param submodule: `pyjanitor` submodule that needs an external dependency.
     :param package: External package this submodule relies on.
-    :param conda_channel: Conda channel package can be installed from,
+    :param conda_channel: `conda` channel package can be installed from,
         if at all.
-    :param pip_install: Whether package can be installed via pip.
+    :param pip_install: Whether package can be installed via `pip`.
     """
     is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
     installable = True
@@ -231,43 +235,41 @@ def import_message(
 
 def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
     """
-    Raises error if a function operating on a `DataFrame` is not idempotent,
-    that is, `func(func(df)) = func(df)` is not true for all `df`.
+    Raises an error if a function operating on a DataFrame is not idempotent.
+    That is, `func(func(df)) = func(df)` is not `True` for all `df`.
 
-    :param func: A python method.
+    :param func: A Python method.
     :param df: A pandas `DataFrame`.
     :param args: Positional arguments supplied to the method.
     :param kwargs: Keyword arguments supplied to the method.
     :raises ValueError: If `func` is found to not be idempotent for the given
-        `DataFrame` `df`.
+        DataFrame (`df`).
     """
     if not func(df, *args, **kwargs) == func(
         func(df, *args, **kwargs), *args, **kwargs
     ):
         raise ValueError(
-            "Supplied function is not idempotent for the given " "DataFrame."
+            "Supplied function is not idempotent for the given DataFrame."
         )
 
 
 def deprecated_alias(**aliases) -> Callable:
     """
     Used as a decorator when deprecating old function argument names, while
-    keeping backwards compatibility.
+    keeping backwards compatibility. Implementation is inspired from [`StackOverflow`][stack_link].
 
-    Implementation is inspired from `StackOverflow`_.
-
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
+    [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     Functional usage example:
 
-    .. code-block:: python
-
-        @deprecated_alias(a='alpha', b='beta')
-        def simple_sum(alpha, beta):
-            return alpha + beta
+    ```python
+    @deprecated_alias(a='alpha', b='beta')
+    def simple_sum(alpha, beta):
+        return alpha + beta
+    ```
 
     :param aliases: Dictionary of aliases for a function's arguments.
-    :return: Your original function wrapped with the kwarg redirection
+    :return: Your original function wrapped with the `kwarg` redirection
         function.
     """  # noqa: E501
 

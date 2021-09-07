@@ -3048,12 +3048,12 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     check("sep", sep, [str])
 
     # if already single-level, just return the DataFrame
-    if not isinstance(df.columns.values[0], tuple):  # noqa: PD011
+    if not isinstance(df.columns, pd.MultiIndex):
         return df
 
     df.columns = [
-        sep.join([str(el) for el in tup if str(el) != ""])
-        for tup in df.columns.values  # noqa: PD011
+        sep.join(str(el) for el in tup if str(el) != "")
+        for tup in df  # noqa: PD011
     ]
 
     return df

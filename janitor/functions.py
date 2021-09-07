@@ -487,10 +487,10 @@ def As_Categorical(
     Inspired by `pd.NamedAgg`.
 
     :param categories: list-like object to create new categorical column.
-    :param order: string object that can be either "sort" or "appearance".
-        If "sort", the `categories` argument will be sorted with np.sort;
-        if "apperance", the `categories` argument will be used as is.
-    :returns: A namedtuple of (`categories`, `order`).
+    :param order: string object that can be either *sort* or *appearance*.
+        If *sort*, the `categories` argument will be sorted lexicographically;
+        if *appearance*, the `categories` argument will be used as is.
+    :returns: A namedtuple of `(categories, order)`.
     """
 
     return asCategorical(categories=categories, order=order)
@@ -759,14 +759,15 @@ def encode_categorical(
 def label_encode(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable]
 ) -> pd.DataFrame:
-    """Convert labels into numerical data.
+    """
+    Convert labels into numerical data.
 
-    This method will create a new column with the string "_enc" appended
+    This method will create a new column with the string `_enc` appended
     after the original column's name. Consider this to be syntactic sugar.
 
     This method behaves differently from `encode_categorical`. This method
     creates a new column of numeric data. `encode_categorical` replaces the
-    dtype of the original column with a "categorical" dtype.
+    dtype of the original column with a *categorical* dtype.
 
     This method mutates the original DataFrame.
 
@@ -805,17 +806,18 @@ def factorize_columns(
     suffix: str = "_enc",
     **kwargs,
 ) -> pd.DataFrame:
-    """Converts labels into numerical data
+    """
+    Converts labels into numerical data
 
-    This method will create a new column with the string "_enc" appended
+    This method will create a new column with the string `_enc` appended
     after the original column's name.
-    This can be overriden with the suffix parameter
+    This can be overriden with the suffix parameter.
 
-    Internally this method uses pandas factorize method.
-    It takes in optional suffix and keyword arguments also.
-    An empty string as suffix will override the existing column
+    Internally this method uses pandas `factorize` method.
+    It takes in an optional suffix and keyword arguments also.
+    An empty string as suffix will override the existing column.
 
-    This method mutates the original DataFrame
+    This method mutates the original DataFrame.
 
     Functional usage syntax:
 
@@ -1044,6 +1046,7 @@ def coalesce(
 
     Example:
 
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -1063,19 +1066,23 @@ def coalesce(
         0  1.0   NaN   5  1.0
         1  2.0  10.0  10  2.0
         2  NaN   NaN   7  7.0
+    ```
 
     If no target column is provided, then the first column is updated,
-    with the null values removed::
+    with the null values removed:
 
+    ```python
         df.coalesce('A', 'B', 'C')
 
             A     B   C
         0  1.0   NaN   5
         1  2.0  10.0  10
         2  7.0   NaN   7
+    ```
 
-    If nulls remain, you can fill it with the `default_value`::
+    If nulls remain, you can fill it with the `default_value`:
 
+    ```python
         df = pd.DataFrame({'s1':[np.nan,np.nan,6,9,9],
                            's2':[np.nan,8,7,9,9]})
 
@@ -1096,26 +1103,31 @@ def coalesce(
         2  6.0  7.0  6.0
         3  9.0  9.0  9.0
         4  9.0  9.0  9.0
+    ```
 
 
     Functional usage syntax:
 
+    ```python
         df = coalesce(df, 'col1', 'col2', target_column_name ='col3')
+    ```
 
     Method chaining syntax:
 
+    ```python
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).coalesce('col1', 'col2')
+    ```
 
-    The first example will create a new column called 'col3' with values from
-    'col2' inserted where values from 'col1' are NaN.
-    The second example will update the values of 'col1',
+    The first example will create a new column called `col3` with values from
+    `col2` inserted where values from `col1` are `NaN`.
+    The second example will update the values of `col1`,
     since it is the first column in `column_names`.
 
     This is more syntactic diabetes! For R users, this should look familiar to
     `dplyr`'s `coalesce` function; for Python users, the interface
-    should be more intuitive than the :py:meth:`pandas.Series.combine_first`
+    should be more intuitive than the `pandas.Series.combine_first`
     method.
 
     :param df: A pandas DataFrame.
@@ -2880,7 +2892,8 @@ def min_max_scale(
     new_min=0,
     new_max=1,
 ) -> pd.DataFrame:
-    """Scales data to between a minimum and maximum value.
+    """
+    Scales data to between a minimum and maximum value.
 
     This method mutates the original DataFrame.
 
@@ -2897,14 +2910,13 @@ def min_max_scale(
 
     Method chaining syntax:
 
-
-
+    ```python
         df = pd.DataFrame(...).min_max_scale(column_name="a")
+    ```
 
     Setting custom minimum and maximum:
 
-
-
+    ```python
         df = (
             pd.DataFrame(...)
             .min_max_scale(
@@ -2913,12 +2925,13 @@ def min_max_scale(
                 new_max=10
             )
         )
+    ```
 
     Setting a min and max that is not based on the data, while applying to
     entire dataframe:
 
 
-
+    ```python
         df = (
             pd.DataFrame(...)
             .min_max_scale(
@@ -2928,6 +2941,7 @@ def min_max_scale(
                 new_max=1,
             )
         )
+    ```
 
     The aforementioned example might be applied to something like scaling the
     isoelectric points of amino acids. While technically they range from
@@ -2982,7 +2996,8 @@ def min_max_scale(
 
 @pf.register_dataframe_method
 def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
-    """Flatten multi-level column dataframe to a single level.
+    """
+    Flatten multi-level column dataframe to a single level.
 
     This method mutates the original DataFrame.
 
@@ -2990,7 +3005,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     level by string-joining the column labels in each level.
 
     After a `groupby` / `aggregate` operation where `.agg()` is passed a
-    list of multiple aggregation functions, a multi-level `DataFrame` is
+    list of multiple aggregation functions, a multi-level DataFrame is
     returned with the name of the function applied in the second level.
 
     It is sometimes convenient for later indexing to flatten out this
@@ -2998,10 +3013,9 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     this through a simple string-joining of all the names across different
     levels in a single column.
 
-    Method chaining syntax given two value columns `['max_speed', 'type']`:
+    Method chaining syntax given two value columns `[max_speed, type]`:
 
-
-
+    ```python
         data = {"class": ["bird", "bird", "bird", "mammal", "mammal"],
                 "max_speed": [389, 389, 24, 80, 21],
                 "type": ["falcon", "falcon", "parrot", "Lion", "Monkey"]}
@@ -3012,17 +3026,16 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
                 .agg(['mean', 'median'])
                 .collapse_levels(sep='_')
         )
+    ```
 
-    Before applying `.collapse_levels``, the `.agg` operation returns a
-    multi-level column `DataFrame` whose columns are (level 1, level 2):
-
+    Before applying `.collapse_levels`, the `.agg` operation returns a
+    multi-level column DataFrame whose columns are `(level 1, level 2)`:
 
 
         [('class', ''), ('max_speed', 'mean'), ('max_speed', 'median'),
         ('type', 'mean'), ('type', 'median')]
 
     `.collapse_levels` then flattens the column names to:
-
 
 
         ['class', 'max_speed_mean', 'max_speed_median',
@@ -3481,17 +3494,17 @@ def impute(
     value: Optional[Any] = None,
     statistic_column_name: Optional[str] = None,
 ) -> pd.DataFrame:
-    """Method-chainable imputation of values in a column.
+    """
+    Method-chainable imputation of values in a column.
 
     This method mutates the original DataFrame.
 
     Underneath the hood, this function calls the `.fillna()` method available
-    to every pandas.Series object.
+    to every `pandas.Series` object.
 
     Method-chaining example:
 
-
-
+    ```python
         import numpy as np
         import pandas as pd
         import janitor
@@ -3507,11 +3520,12 @@ def impute(
             # Impute null values with median
             .impute(column_name='score', statistic_column_name='median')
         )
+    ```
 
     Either one of `value` or `statistic_column_name` should be provided.
 
     If `value` is provided, then all null values in the selected column will
-        take on the value provided.
+    take on the value provided.
 
     If `statistic_column_name` is provided, then all null values in the
     selected column will take on the summary statistic value of other non-null
@@ -3519,11 +3533,11 @@ def impute(
 
     Currently supported statistics include:
 
-    - `mean` (also aliased by `average``)
-    - `median``
-    - `mode``
-    - `minimum` (also aliased by `min``)
-    - `maximum` (also aliased by `max``)
+    - `mean` (also aliased by `average`)
+    - `median`
+    - `mode`
+    - `minimum` (also aliased by `min`)
+    - `maximum` (also aliased by `max`)
 
     :param df: A pandas DataFrame
     :param column_name: The name of the column on which to impute values.
@@ -3531,8 +3545,8 @@ def impute(
     :param statistic_column_name: (optional) The column statistic to impute.
     :returns: An imputed pandas DataFrame.
     :raises ValueError: if both `value` and `statistic` are provided.
-    :raises KeyError: if `statistic` is not one of `mean``, `average``
-        `median``, `mode``, `minimum``, `min``, `maximum``, or `max``.
+    :raises KeyError: if `statistic` is not one of `mean`, `average`
+        `median`, `mode`, `minimum`, `min`, `maximum`, or `max`.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if value is not None and statistic_column_name is not None:
@@ -4166,15 +4180,15 @@ def bin_numeric(
     num_bins: int = 5,
     labels: Optional[str] = None,
 ) -> pd.DataFrame:
-    """Generate a new column that labels bins for a specified numeric column.
+    """
+    Generate a new column that labels bins for a specified numeric column.
 
     This method mutates the original DataFrame.
 
-    Makes use of pandas cut() function to bin data of one column, generating a
-    new column with the results.
+    Makes use of pandas `cut()` function to bin data of one column,
+    generating a new column with the results.
 
-
-
+    ```python
         import pandas as pd
         import janitor
         df = (
@@ -4186,6 +4200,7 @@ def bin_numeric(
                 labels=['1-2', '3-4', '5-6']
                 )
         )
+    ```
 
     :param df: A pandas DataFrame.
     :param from_column_name: The column whose data you want binned.
@@ -4334,7 +4349,8 @@ def shuffle(
 def join_apply(
     df: pd.DataFrame, func: Callable, new_column_name: str
 ) -> pd.DataFrame:
-    """Join the result of applying a function across dataframe rows.
+    """
+    Join the result of applying a function across dataframe rows.
 
     This method does not mutate the original DataFrame.
 
@@ -4346,18 +4362,17 @@ def join_apply(
     The example below shows us how to sum the result of two columns into a new
     column.
 
-
-
+    ```python
         df = (
             pd.DataFrame({'a':[1, 2, 3], 'b': [2, 3, 4]})
             .join_apply(lambda x: 2 * x['a'] + x['b'], new_column_name="2a+b")
         )
+    ```
 
     This following example shows us how to use conditionals in the same
     function.
 
-
-
+    ```python
         def take_a_if_even(x):
             if x['a'] % 2:
                 return x['a']
@@ -4368,6 +4383,7 @@ def join_apply(
             pd.DataFrame({'a': [1, 2, 3], 'b': [2, 3, 4]})
             .join_apply(take_a_if_even, 'a_if_even')
         )
+    ```
 
     :param df: A pandas DataFrame
     :param func: A function that is applied elementwise across all rows of the

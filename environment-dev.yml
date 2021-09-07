@@ -54,3 +54,5 @@ dependencies:
   - xarray
   - xlrd
   - xorg-libxrender
+  - pip:
+      - mknotebooks

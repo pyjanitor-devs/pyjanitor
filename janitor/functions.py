@@ -6507,7 +6507,11 @@ def conditional_join(
     and non-equi joins.
 
     If the join is solely on equality, `pd.merge` function
-    is more efficient and should be used instead.
+    is more efficient and should be used instead. Infact,
+    for multiple conditions where equality is involved,
+    a `pd.merge`, followed by filter(via `query` or `loc`)
+    is more efficient. This is even more evident when joining
+    on strings.
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
     which can be more efficient for range joins, especially if
@@ -6524,9 +6528,6 @@ def conditional_join(
 
     A binary search is used to get the relevant rows; this avoids
     a cartesian join, and makes the process less memory intensive.
-    For multiple conditions, after the first binary search for
-    the first condition, subsequent conditions are executed via
-    boolean indexing to get the final matching rows.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.

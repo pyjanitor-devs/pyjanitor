@@ -2911,6 +2911,7 @@ def _equal_indices(
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
+    # positions, tempo = left_c.factorize()
 
     lower_boundary = right_c.searchsorted(left_c, side="left")
     upper_boundary = right_c.searchsorted(left_c, side="right")
@@ -2923,7 +2924,7 @@ def _equal_indices(
         lower_boundary = lower_boundary[keep_rows]
         upper_boundary = upper_boundary[keep_rows]
     if len_conditions > 1:
-        return left_c.index, lower_boundary, upper_boundary
+        return left_c.index, (upper_boundary - lower_boundary).sum()
     positions = _interval_ranges(lower_boundary, upper_boundary)
     left_repeat = upper_boundary - lower_boundary
     left_c = left_c.index.repeat(left_repeat)
@@ -2954,28 +2955,24 @@ def _not_equal_indices(
 
         if outcome is None:
             lt_left = dummy
-            lt_lower = dummy
-            lt_upper = dummy
+            lt_counts = 0
         else:
-            lt_left, lt_lower, lt_upper = outcome
+            lt_left, lt_counts = outcome
 
         outcome = _greater_than_indices(left_c, right_c, True, 2)
 
         if outcome is None:
             gt_left = dummy
-            gt_lower = dummy
-            gt_upper = dummy
+            gt_counts = 0
         else:
-            gt_left, gt_lower, gt_upper = outcome
+            gt_left, gt_counts = outcome
 
         left_c = lt_left.append(gt_left)
-        lower_boundary = np.concatenate([lt_lower, gt_lower])
-        upper_boundary = np.concatenate([lt_upper, gt_upper])
 
         if left_c.empty:
             return None
 
-        return left_c, lower_boundary, upper_boundary
+        return left_c, lt_counts + gt_counts
 
     # capture null positions, since NaN != NaN
     # if left_c has nulls, I want to capture the positions
@@ -3099,7 +3096,7 @@ def _less_than_indices(
     indices = np.repeat(len_right, search_indices.size)
 
     if len_conditions > 1:
-        return left_c.index, search_indices, indices
+        return left_c.index, (indices - search_indices).sum()
 
     positions = _interval_ranges(search_indices, indices)
     search_indices = indices - search_indices
@@ -3179,7 +3176,7 @@ def _greater_than_indices(
     indices = np.repeat(0, search_indices.size)
 
     if len_conditions > 1:
-        return left_c.index, indices, search_indices
+        return left_c.index, (search_indices - indices).sum()
 
     positions = _interval_ranges(indices, search_indices)
     right_c = right_c.index.take(positions)
@@ -3235,28 +3232,25 @@ def _multiple_conditional_join(
         if result is None:
             return None
 
-        indexer, low, high = result
+        indexer, indices_count = result
         if base_index.size > indexer.size:
             base_index = indexer
             base_condition = condition
-            difference = low, high
+            difference = indices_count
         else:
             if difference is None:
-                difference = low, high
+                difference = indices_count
             else:
-                low_, high_ = difference
-                diff_base = np.subtract(high_, low_).sum()  # noqa: PD005
-                diff_current = np.subtract(high, low).sum()  # noqa: PD005
-                if diff_base > diff_current:
+                if difference > indices_count:
                     base_condition = condition
-                    difference = low, high
+                    difference = indices_count
 
     df = df.loc[base_index]
     df_mapping = None
 
     # check if df is duplicated
-    # 10% duplicate check is just a whim
-    if df.duplicated().mean() > 0.1:
+    # 30% duplicate check is just a whim
+    if df.duplicated().mean() > 0.3:
         df_grouped = df.groupby(left_columns)
         df_mapping = df_grouped.groups
         df_unique = pd.DataFrame(df_mapping.keys(), columns=left_columns)

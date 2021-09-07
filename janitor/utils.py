@@ -3197,20 +3197,20 @@ def _multiple_conditional_join(
     df = df.loc[base_index]
     df_mapping = None
 
-    # 30% duplicate check is just a whim
+    # 25% duplicate check is just a whim
     # no statistical backing
     # the idea here is that the less number of searches
     # the better; after the search we can then
     # retroactively `blow` the dataframe up to match
     # the indices of the original dataframe
-    if df.duplicated().mean() > 0.3:
+    if df.duplicated().mean() > 0.25:
         df_grouped = df.groupby(left_columns)
         df_mapping = df_grouped.groups
         df_unique = pd.DataFrame(df_mapping.keys(), columns=left_columns)
     else:
         df_unique = df.copy()
     right_mapping = None
-    if right.duplicated().mean() > 0.1:
+    if right.duplicated().mean() > 0.25:
         right_grouped = right.groupby(right_columns)
         right_mapping = right_grouped.groups
         right_unique = pd.DataFrame(

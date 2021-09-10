@@ -447,7 +447,8 @@ def get_dupes(
     df: pd.DataFrame,
     column_names: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
-    """Return all duplicate rows.
+    """
+    Return all duplicate rows.
 
     This method does not mutate the original DataFrame.
 
@@ -1578,7 +1579,8 @@ def filter_string(
     search_string: str,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """Filter a string-based column according to whether it contains a substring.
+    """
+    Filter a string-based column according to whether it contains a substring.
 
     This is super sugary syntax that builds on top of
     `pandas.Series.str.contains`.
@@ -1591,32 +1593,40 @@ def filter_string(
 
     This function allows us to method chain filtering operations:
 
+    ```python
         df = (pd.DataFrame(...)
               .filter_string('column', search_string='pattern', complement=False)
               ...)  # chain on more data preprocessing.
+    ```
 
     This stands in contrast to the in-place syntax that is usually used:
 
+    ```python
         df = pd.DataFrame(...)
         df = df[df['column'].str.contains('pattern')]]
+    ```
 
     As can be seen here, the API design allows for a more seamless flow in
     expressing the filtering operations.
 
     Functional usage syntax:
 
+    ```python
         df = filter_string(df,
                            column_name='column',
                            search_string='pattern',
                            complement=False)
+    ```
 
     Method chaining syntax:
 
+    ```python
         df = (pd.DataFrame(...)
               .filter_string(column_name='column',
                              search_string='pattern',
                              complement=False)
               ...)
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: The column to filter. The column should contain strings.
@@ -1634,7 +1644,8 @@ def filter_string(
 def filter_on(
     df: pd.DataFrame, criteria: str, complement: bool = False
 ) -> pd.DataFrame:
-    """Return a dataframe filtered on a particular criteria.
+    """
+    Return a dataframe filtered on a particular criteria.
 
     This method does not mutate the original DataFrame.
 
@@ -1647,14 +1658,18 @@ def filter_on(
     or not, which is defined as their score (in the "score" column) being less
     than 50.
 
+    ```python
         df = (pd.DataFrame(...)
               .filter_on('score < 50', complement=False)
               ...)  # chain on more data preprocessing.
+    ```
 
     This stands in contrast to the in-place syntax that is usually used:
 
+    ```python
         df = pd.DataFrame(...)
         df = df[df['score'] < 3]
+    ```
 
     As with the `filter_string` function, a more seamless flow can be expressed
     in the code.
@@ -1662,17 +1677,17 @@ def filter_on(
     Functional usage syntax:
 
     ```python
-
         df = filter_on(df,
                        'score < 50',
                        complement=False)
+    ```
 
     Method chaining syntax:
 
     ```python
-
         df = (pd.DataFrame(...)
               .filter_on('score < 50', complement=False))
+    ```
 
     Credit to Brant Peterson for the name.
 
@@ -1700,19 +1715,27 @@ def filter_date(
     column_date_options: Optional[Dict] = None,
     format: Optional[str] = None,  # skipcq: PYL-W0622
 ) -> pd.DataFrame:
-    """Filter a date-based column based on certain criteria.
+    """
+    Filter a date-based column based on certain criteria.
 
     This method does not mutate the original DataFrame.
 
-    Dates may be finicky and this function builds on top of the "magic" from
+    Dates may be finicky and this function builds on top of the *magic* from
     the pandas `to_datetime` function that is able to parse dates well.
 
     Additional options to parse the date type of your column may be found at
-    the official pandas documentation:
+    the official pandas
+    [documentation](pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html)
 
-    pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html
+    !!!note
 
-    **Note:** This method will cast your column to a Timestamp!
+        This method will cast your column to a Timestamp!
+
+    !!!note
+
+        This only affects the format of the `start_date` and `end_date`
+        parameters. If there's an issue with the format of the DataFrame being
+        parsed, you would pass `{'format': your_format}` to `column_date_options`.
 
     :param df: A pandas dataframe.
     :param column_name: The column which to apply the fraction transformation.
@@ -1725,16 +1748,11 @@ def filter_date(
         column in the original DataFrame. The options may be found at the
         official Pandas documentation.'
     :param format: 'If you're using a format for `start_date` or `end_date`
-        that is not recognized natively by pandas' to_datetime function, you
+        that is not recognized natively by pandas' `to_datetime` function, you
         may supply the format yourself. Python date and time formats may be
-        found at http://strftime.org/.'
+        found at [link](http://strftime.org/).
     :returns: A filtered pandas DataFrame.
-
-    **Note:** This only affects the format of the `start_date` and `end_date`
-    parameters. If there's an issue with the format of the DataFrame being
-    parsed, you would pass `{'format': your_format}` to `column_date_options`.
-
-    """
+    """  # noqa: E501
 
     # TODO: need to convert this to notebook.
     #     :Setup:
@@ -1908,28 +1926,33 @@ def filter_column_isin(
     iterable: Iterable,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """Filter a dataframe for values in a column that exist in another iterable.
+    """
+    Filter a dataframe for values in a column that exist in another iterable.
 
     This method does not mutate the original DataFrame.
 
     Assumes exact matching; fuzzy matching not implemented.
 
     The below example syntax will filter the DataFrame such that we only get
-    rows for which the "names" are exactly "James" and "John".
+    rows for which the `names` are exactly `James` and `John`.
 
+    ```python
         df = (
             pd.DataFrame(...)
             .clean_names()
             .filter_column_isin(column_name="names", iterable=["James", "John"]
             )
         )
+    ```
 
     This is the method chaining alternative to:
 
+    ```python
         df = df[df['names'].isin(['James', 'John'])]
+    ```
 
-    If "complement" is true, then we will only get rows for which the names
-    are not James or John.
+    If `complement` is `True`, then we will only get rows for which the names
+    are not `James` or `John`.
 
     :param df: A pandas DataFrame
     :param column_name: The column on which to filter.
@@ -1938,7 +1961,7 @@ def filter_column_isin(
     :param complement: Whether to return the complement of the selection or
         not.
     :returns: A filtered pandas DataFrame.
-    :raises ValueError: if `iterable` does not have a length of `1``
+    :raises ValueError: if `iterable` does not have a length of `1`
         or greater.
     """
     if len(iterable) == 0:
@@ -3295,24 +3318,21 @@ def select_columns(
 
     Not applicable to MultiIndex columns.
 
-    It accepts a string, shell-like glob strings (*string*),
+    It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
 
     This method does not mutate the original DataFrame.
 
     Optional ability to invert selection of columns available as well.
 
-    Examples
-    --------
-
-    ::
-
+    ```python
         import pandas as pd
         import janitor
         import numpy as np
         import datetime
         import re
         from janitor import patterns
+        from pandas.api.types import is_datetime64_dtype
 
         df = pd.DataFrame(
                 {
@@ -3335,35 +3355,42 @@ def select_columns(
            id Name  code  code1 code2 type type1 type2 code3    type3
         0   0  ABC     1    4.0     8    S     E     T     a 2018-01-01
         1   1  XYZ     2    NaN     5    R   NaN     U     b 2018-01-01
+    ```
 
+    - Select by string:
 
-    - Select by string::
-
+    ```
         df.select_columns("id")
            id
        0   0
        1   1
+    ```
 
-    - Select via shell-like glob strings (*) is possible::
+    - Select via shell-like glob strings (`*`) is possible:
 
-        df.select_columns("*type*")
+    ```python
+        df.select_columns("type*")
 
            type type1 type2      type3
         0    S     E     T 2018-01-01
         1    R   NaN     U 2018-01-01
+    ```
 
-    - Select by slice::
+    - Select by slice:
 
+    ```python
         df.select_columns(slice("code1", "type1"))
 
            code1 code2 type type1
         0    4.0     8    S     E
         1    NaN     5    R   NaN
+    ```
 
-    - Select by callable (the callable is applied to every column
-      and should return a single `True` or `False` per column)::
+    - Select by `Callable` (the callable is applied to every column
+      and should return a single `True` or `False` per column):
 
-        df.select_columns(pd.api.types.is_datetime64_dtype)
+    ```python
+        df.select_columns(is_datetime64_dtype)
 
                type3
         0 2018-01-01
@@ -3381,9 +3408,11 @@ def select_columns(
              code1 type1
         0    4.0     E
         1    NaN   NaN
+    ```
 
-    - Select by regular expression::
+    - Select by regular expression:
 
+    ```python
         df.select_columns(re.compile("\\d+"))
 
            code1 code2 type1 type2 code3      type3
@@ -3398,37 +3427,45 @@ def select_columns(
            code1 code2 type1 type2 code3      type3
         0    4.0     8     E     T     a 2018-01-01
         1    NaN     5   NaN     U     b 2018-01-01
+    ```
 
     - Select a combination of the above
-      (you can combine any of the previous options)::
+      (you can combine any of the previous options):
 
+    ```python
         df.select_columns("id", "code*", slice("code", "code2"))
 
            id  code  code1 code2 code3
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
+    ```
 
-    - You can also pass a sequence of booleans::
+    - You can also pass a sequence of booleans:
 
+    ```python
         df.select_columns([True, False, True, True, True,
                            False, False, False, True, False])
 
            id  code  code1 code2 code3
         0   0     1    4.0     8     a
         1   1     2    NaN     5     b
+    ```
 
-    - Setting `invert` to `True``
-      returns the complement of the columns provided::
+    - Setting `invert` to `True`
+      returns the complement of the columns provided:
 
+    ```python
         df.select_columns("id", "code*", slice("code", "code2"),
                           invert = True)
 
            Name type type1 type2      type3
         0  ABC    S     E     T 2018-01-01
         1  XYZ    R   NaN     U 2018-01-01
+    ```
 
-    Functional usage example::
+    Functional usage example:
 
+    ```python
        import pandas as pd
        import janitor as jn
 
@@ -3436,19 +3473,18 @@ def select_columns(
 
        df = jn.select_columns('a', 'b', 'col_*',
                               invert=True)
+    ```
 
     Method-chaining example:
 
-
-
+    ```python
         df = (pd.DataFrame(...)
               .select_columns('a', 'b', 'col_*',
               invert=True))
-
+    ```
 
     :param df: A pandas DataFrame.
     :param args: Valid inputs include:
-
         - an exact column name to look for
         - a shell-style glob string (e.g., `*_thing_*`)
         - a regular expression
@@ -3459,11 +3495,6 @@ def select_columns(
         This will result in the selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    :raises KeyError: if one or more of the specified column names or
-        search strings are not found in DataFrame columns.
-    :raises ValueError: if the columns is a MultiIndex.
-
-    .. # noqa: DAR402
     """
 
     # applicable for any
@@ -3647,15 +3678,16 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
-    """Drop rows that do not have null values in the given column.
+    """
+    Drop rows that do not have null values in the given column.
 
     This method does not mutate the original DataFrame.
 
     Example usage:
 
-
-
+    ```python
         df = pd.DataFrame(...).dropnotnull('column3')
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: The column name to drop rows from.
@@ -4289,12 +4321,12 @@ def take_first(
     by: Hashable,
     ascending: bool = True,
 ) -> pd.DataFrame:
-    """Take the first row within each group specified by `subset`.
+    """
+    Take the first row within each group specified by `subset`.
 
     This method does not mutate the original DataFrame.
 
-
-
+    ```python
         import pandas as pd
         import janitor
 
@@ -4305,6 +4337,7 @@ def take_first(
         df = pd.DataFrame(data)
 
         df.take_first(subset="a", by="b")
+    ```
 
     :param df: A pandas DataFrame.
     :param subset: Column(s) defining the group.
@@ -4478,13 +4511,13 @@ def drop_constant_columns(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Finds and drops the constant columns from a Pandas data frame
+    Finds and drops the constant columns from a Pandas DataFrame.
 
     This method does not mutate the original DataFrame.
+
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -4499,20 +4532,21 @@ def drop_constant_columns(
         df = pd.DataFrame(data_dict)
 
         df = jn.functions.drop_constant_columns(df)
+    ```
 
     Method chaining usage example:
 
-
-
+    ```python
         import pandas as pd
         import janitor
 
         df = pd.DataFrame(...)
 
         df = df.drop_constant_columns()
+    ```
 
-    :param df: Input Pandas dataframe
-    :returns: The Pandas data frame with the constant columns dropped.
+    :param df: Input Pandas DataFrame
+    :returns: The Pandas DataFrame with the constant columns dropped.
     """
 
     # :Example 1: Drop columns with a single value:

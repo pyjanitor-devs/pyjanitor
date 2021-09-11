@@ -843,8 +843,8 @@ def _create_indexer_for_complete(
     columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
-    This creates the index that will be used
-    to expand the dataframe in the `complete` function.
+    This creates the index that will be used to expand the DataFrame in
+    the `complete` function.
 
     A pandas Index is returned.
     """

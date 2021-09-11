@@ -523,15 +523,16 @@ def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
 @_expand_grid.register(list)  # noqa: F811
 def _sub_expand_grid(value, key, mgrid_values):  # noqa: F811
     """
-    Expands the list object based on `mgrid_values`.
-    Converts to an array and passes it
-    to the `_expand_grid` function for arrays.
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
+    Expands the `list` object based on `mgrid_values`.
+
+    Converts to an array and passes it to the `_expand_grid` function
+    for arrays. The `mode` parameter is added, to make the function
+    reusable in the `_computations_complete` function. Also, allowing
+    `key` as `None` enables reuse in the `_computations_complete`
+    function.
+
+    Returns pandas Series with `name` if 1-Dimensional array
+    or pandas DataFrame if 2-Dimensional array with column names.
     """
     if not value:
         raise ValueError("""list object cannot be empty.""")

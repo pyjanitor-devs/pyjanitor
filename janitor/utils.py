@@ -615,13 +615,11 @@ def _sub_expand_grid(  # noqa: F811
     """
     Expands the DataFrame based on `mgrid_values`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added, to make the function reusable in the
+    `_computations_complete` function. Also, allowing `key` as `None`
+    enables reuse in the `_computations_complete` function.
 
     Checks for empty dataframe and returns modified keys.
-
     Returns a DataFrame with new column names.
     """
     if value.empty:

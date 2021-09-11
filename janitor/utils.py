@@ -510,10 +510,9 @@ def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
     """
     Base function for dispatch of `_expand_grid`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added to make the function reusable
+    in the `_computations_complete` function. Also, allowing `key` as
+    `None` enables reuse in the `_computations_complete` function.
     """
 
     raise TypeError(

@@ -742,21 +742,22 @@ def _computations_complete(
     """
     This function computes the final output for the `complete` function.
 
-    If `by` is present, then groupby apply is used.
+    If `by` is present, then `groupby().apply()` is used.
 
-    For some cases, the `stack/unstack` combination is preferred; it is more
-    efficient than `reindex`, as the size of the data grows. It is only
-    applicable if all the entries in `columns` are strings, there are
-    no nulls(stacking implicitly removes nulls in columns),
-    the length of `columns` is greater than 1, and the index
+    For some cases, the `stack/unstack` combination is preferred;
+    it is more efficient than `reindex`, as the size of the data grows.
+    It is only applicable if all the entries in `columns` are strings,
+    there are no nulls (stacking implicitly removes nulls in columns),
+    the length of `columns` is greater than `1`, and the index
     has no duplicates.
 
-    If there is a dictionary in `columns`, it is possible that all the values
-    of a key, or keys, may not be in the existing column with the same key(s);
-    as such, a union of the current index and the generated index is executed,
-    to ensure that all combinations are in the final dataframe.
+    If there is a dictionary in `columns`, it is possible that all the
+    values of a key, or keys, may not be in the existing column with
+    the same key(s); as such, a union of the current index and the
+    generated index is executed, to ensure that all combinations are
+    in the final DataFrame.
 
-    A dataframe, with rows of missing values, if any, is returned.
+    Returns a DataFrame with rows of missing values, if any exist.
     """
 
     df, columns, column_checker, by = _data_checks_complete(df, columns, by)

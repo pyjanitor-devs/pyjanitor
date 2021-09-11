@@ -451,7 +451,7 @@ def skiperror(
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Combines NumPy's `mgrid`, with the `take` method in Numpy/pandas
+    Combines NumPy's `mgrid`, with the `take` method in NumPy/pandas
     to expand each input to the length of the cumulative product of
     all inputs in `others`.
 

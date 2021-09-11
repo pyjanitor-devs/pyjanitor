@@ -545,18 +545,15 @@ def _sub_expand_grid(  # noqa: F811
     value, key, mgrid_values, mode="expand_grid"
 ):
     """
-    Expands the numpy array based on `mgrid_values`.
+    Expands the NumPy array based on `mgrid_values`.
 
-    Ensures array dimension is either 1 or 2.
-
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
+    Ensures array dimension is either 1 or 2. The `mode` parameter is
+    added, to make the function reusable in the `_computations_complete`
+    function. Also, allowing `key` as `None` enables reuse in the
     `_computations_complete` function.
 
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
-
+    Returns a pandas Series with `name` if 1-Dimensional array
+    or pandas DataFrame if 2-Dimensional array with column names.
     The names are derived from the `key` parameter.
     """
     if not (value.size > 0):

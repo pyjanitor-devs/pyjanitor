@@ -451,20 +451,21 @@ def skiperror(
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Combines Numpy's `mgrid`, with the `take` method in numpy/Pandas,
+    Combines NumPy's `mgrid`, with the `take` method in Numpy/pandas
     to expand each input to the length of the cumulative product of
     all inputs in `others`.
 
-    There is a performance penalty for small entries (length less than 10)
-    in using this method, instead of `itertools.product`; however, there is
-    significant performance benefits as the size of the data increases.
+    There is a performance penalty for small entries (length less than
+    `10`) in using this method, instead of `itertools.product`; however,
+    there is significant performance benefits as the size of the data
+    increases.
 
-    Another benefit of this approach,
-    in addition to the significant performance gains,
-    is the preservation of data types. This is particularly relevant for
-    Pandas' extension arrays dtypes (categoricals, nullable integers, ...).
+    Another benefit of this approach, in addition to the significant
+    performance gains, is the preservation of data types.
+    This is particularly relevant for pandas' extension arrays `dtypes`
+    (categoricals, nullable integers, ...).
 
-    A dataframe of all possible combinations is returned.
+    A DataFrame of all possible combinations is returned.
     """
 
     for key, _ in others.items():

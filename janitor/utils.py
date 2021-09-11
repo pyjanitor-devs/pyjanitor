@@ -686,12 +686,10 @@ def _data_checks_complete(
     types within the `columns` parameter.
 
     Check is conducted to ensure that column names are not repeated.
-
     Also checks that the names in `columns` actually exist in `df`.
 
-    Returns `df`, `columns`, `column_checker`,
-    and `by` if all checks pass.
-
+    Returns `df`, `columns`, `column_checker`, and `by` if
+    all checks pass.
     """
     # TODO: get `complete` to work on MultiIndex columns,
     # if there is sufficient interest with use cases

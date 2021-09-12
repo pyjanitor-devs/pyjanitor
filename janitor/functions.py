@@ -80,7 +80,7 @@ def unionize_dataframe_categories(
     If, for a given categorical column, all input dataframes do not have at
     least one instance of all the possible categories,
     Pandas will change the output dtype of that column from `category` to
-    `object``, losing out on dramatic speed gains you get from the former
+    `object`, losing out on dramatic speed gains you get from the former
     format.
 
     Usage example for concatenation of categorical column-containing
@@ -105,7 +105,7 @@ def unionize_dataframe_categories(
     :param column_names: If supplied, only unionize this subset of columns.
     :returns: A list of the category-unioned dataframes in the same order they
         were provided.
-    :raises TypeError: if any inputs are not pandas DataFrames.
+    :raises TypeError: If any of the inputs are not pandas DataFrames.
     """
 
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
@@ -193,8 +193,8 @@ def move(
     :param source: column or row to move
     :param target: column or row to move adjacent to
     :param position: Specifies whether the Series is moved to before or
-        after the adjacent Series. Values can be either 'before' or 'after';
-        defaults to 'before'.
+        after the adjacent Series. Values can be either `before` or `after`;
+        defaults to `before`.
     :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
     :returns: The dataframe with the Series moved.
@@ -267,7 +267,7 @@ def clean_names(
     then replaces all spaces with underscores.
 
     By default, column names are converted to string types.
-    This can be switched off by passing in `enforce_string=False``.
+    This can be switched off by passing in `enforce_string=False`.
 
     This method does not mutate the original DataFrame.
 

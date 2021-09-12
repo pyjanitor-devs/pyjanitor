@@ -1,6 +1,6 @@
 # Contributors
 
-Once you have added your contribution to `pyjanitor``,
+Once you have added your contribution to `pyjanitor`,
 please add your name using this markdown template:
 
 ```

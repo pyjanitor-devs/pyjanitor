@@ -43,13 +43,15 @@ def check(varname: str, value, expected_types: list):
     One-liner syntactic sugar for checking types.
     It can also check callables.
 
-    Should be used like this::
+    Example usage:
 
-        check('x', x, [int, float])
+    ```python
+    check('x', x, [int, float])
+    ```
 
     :param varname: The name of the variable (for diagnostic error message).
-    :param value: The value of the varname.
-    :param expected_types: The types we expect the item to be.
+    :param value: The value of the `varname`.
+    :param expected_types: The type(s) the item is expected to be.
     :raises TypeError: if data is not the expected type.
     """
     is_expected_type: bool = False
@@ -146,15 +148,17 @@ def _strip_underscores(
 
     Underscores can be stripped from the beginning, end or both.
 
-    .. code-block:: python
+    Example usage:
 
-        df = _strip_underscores(df, strip_underscores='left')
+    ```
+    df = _strip_underscores(df, strip_underscores='left')
+    ```
 
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all
-        column names. Default None keeps outer underscores. Values can be
-        either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
-        and True.
+        column names. Default `None` keeps outer underscores. Values can be
+        either `'left'`, `'right'` or `'both'` or the respective shorthand
+        `'l'`, `'r'` and `True`.
     :returns: A pandas DataFrame with underscores removed.
     """
     df = df.rename(
@@ -195,11 +199,11 @@ def import_message(
     optional module / package that is not currently installed. Includes
     installation instructions. Used in `chemistry.py` and `biology.py`.
 
-    :param submodule: pyjanitor submodule that needs an external dependency.
+    :param submodule: `pyjanitor` submodule that needs an external dependency.
     :param package: External package this submodule relies on.
-    :param conda_channel: Conda channel package can be installed from,
+    :param conda_channel: `conda` channel package can be installed from,
         if at all.
-    :param pip_install: Whether package can be installed via pip.
+    :param pip_install: Whether package can be installed via `pip`.
     """
     is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
     installable = True
@@ -231,43 +235,41 @@ def import_message(
 
 def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
     """
-    Raises error if a function operating on a `DataFrame` is not idempotent,
-    that is, `func(func(df)) = func(df)` is not true for all `df`.
+    Raises an error if a function operating on a DataFrame is not idempotent.
+    That is, `func(func(df)) = func(df)` is not `True` for all `df`.
 
-    :param func: A python method.
+    :param func: A Python method.
     :param df: A pandas `DataFrame`.
     :param args: Positional arguments supplied to the method.
     :param kwargs: Keyword arguments supplied to the method.
     :raises ValueError: If `func` is found to not be idempotent for the given
-        `DataFrame` `df`.
+        DataFrame (`df`).
     """
     if not func(df, *args, **kwargs) == func(
         func(df, *args, **kwargs), *args, **kwargs
     ):
         raise ValueError(
-            "Supplied function is not idempotent for the given " "DataFrame."
+            "Supplied function is not idempotent for the given DataFrame."
         )
 
 
 def deprecated_alias(**aliases) -> Callable:
     """
     Used as a decorator when deprecating old function argument names, while
-    keeping backwards compatibility.
+    keeping backwards compatibility. Implementation is inspired from [`StackOverflow`][stack_link].
 
-    Implementation is inspired from `StackOverflow`_.
-
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
+    [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     Functional usage example:
 
-    .. code-block:: python
-
-        @deprecated_alias(a='alpha', b='beta')
-        def simple_sum(alpha, beta):
-            return alpha + beta
+    ```python
+    @deprecated_alias(a='alpha', b='beta')
+    def simple_sum(alpha, beta):
+        return alpha + beta
+    ```
 
     :param aliases: Dictionary of aliases for a function's arguments.
-    :return: Your original function wrapped with the kwarg redirection
+    :return: Your original function wrapped with the `kwarg` redirection
         function.
     """  # noqa: E501
 
@@ -283,21 +285,22 @@ def deprecated_alias(**aliases) -> Callable:
 
 
 def refactored_function(message: str) -> Callable:
-    """Used as a decorator when refactoring functions
+    """
+    Used as a decorator when refactoring functions.
 
-    Implementation is inspired from `Hacker Noon`_.
+    Implementation is inspired from [`Hacker Noon`][hacker_link].
 
-    .. Hacker Noon: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
+    [hacker_link]: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
 
     Functional usage example:
 
-    .. code-block:: python
-
-        @refactored_function(
-            message="simple_sum() has been refactored. Use hard_sum() instead."
-        )
-        def simple_sum(alpha, beta):
-            return alpha + beta
+    ```python
+    @refactored_function(
+        message="simple_sum() has been refactored. Use hard_sum() instead."
+    )
+    def simple_sum(alpha, beta):
+        return alpha + beta
+    ```
 
     :param message: Message to use in warning user about refactoring.
     :return: Your original function wrapped with the kwarg redirection
@@ -317,12 +320,11 @@ def refactored_function(message: str) -> Callable:
 def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
     """
     Used to update deprecated argument names with new names. Throws a
-    TypeError if both arguments are provided, and warns if old alias is used.
-    Nothing is returned as the passed `kwargs` are modified directly.
+    `TypeError` if both arguments are provided, and warns if old alias
+    is used. Nothing is returned as the passed `kwargs` are modified
+    directly. Implementation is inspired from [`StackOverflow`][stack_link].
 
-    Implementation is inspired from `StackOverflow`_.
-
-    .. _StackOverflow: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
+    [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
     :param func_name: name of decorated function.
     :param kwargs: Arguments supplied to the method.
@@ -346,23 +348,27 @@ def check_column(
     df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
 ):
     """
-    One-liner syntactic sugar for checking the presence or absence of columns.
+    One-liner syntactic sugar for checking the presence or absence
+    of columns.
 
-    Should be used like this::
+    Example usage:
 
-        check(df, ['a', 'b'], present=True)
+    ```python
+    check(df, ['a', 'b'], present=True)
+    ```
 
-    This will check whether columns "a" and "b" are present in df's columns.
+    This will check whether columns `'a'` and `'b'` are present in
+    `df`'s columns.
 
-    One can also guarantee that "a" and "b" are not present
-    by switching to `present = False``.
+    One can also guarantee that `'a'` and `'b'` are not present
+    by switching to `present=False`.
 
     :param df: The name of the variable.
     :param column_names: A list of column names we want to check to see if
-        present (or absent) in df.
-    :param present: If True (default), checks to see if all of column_names
-        are in df.columns. If False, checks that none of column_names are
-        in df.columns.
+        present (or absent) in `df`.
+    :param present: If `True` (default), checks to see if all of `column_names`
+        are in `df.columns`. If `False`, checks that none of `column_names` are
+        in `df.columns`.
     :raises ValueError: if data is not the expected type.
     """
     if isinstance(column_names, str) or not isinstance(column_names, Iterable):
@@ -381,20 +387,21 @@ def check_column(
 
 def skipna(f: Callable) -> Callable:
     """
-    Decorator for escaping np.nan and None in a function
+    Decorator for escaping `np.nan` and `None` in a function.
 
-    Should be used like this::
+    Example usage:
 
-        df[column].apply(skipna(transform))
+    ```python
+    df[column].apply(skipna(transform))
 
-    or::
+    # Can also be used as shown below
+    @skipna
+    def transform(x):
+        pass
+    ```
 
-        @skipna
-        def transform(x):
-            pass
-
-    :param f: the function to be wrapped
-    :returns: _wrapped, the wrapped function
+    :param f: the function to be wrapped.
+    :returns: the wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):
@@ -411,23 +418,23 @@ def skiperror(
     """
     Decorator for escaping any error in a function.
 
-    Should be used like this::
+    Example usage:
 
-        df[column].apply(
-            skiperror(transform, return_val=3, return_x=False))
+    ```python
+    df[column].apply(
+        skiperror(transform, return_val=3, return_x=False))
 
-    or::
-
-        @skiperror(return_val=3, return_x=False)
-        def transform(x):
-            pass
-
-    :param f: the function to be wrapped
+    # Can also be used as shown below
+    @skiperror(return_val=3, return_x=False)
+    def transform(x):
+        pass
+    ```
+    :param f: the function to be wrapped.
     :param return_x: whether or not the original value that caused error
-        should be returned
+        should be returned.
     :param return_val: the value to be returned when an error hits.
-        Ignored if return_x is True
-    :returns: _wrapped, the wrapped function
+        Ignored if `return_x` is `True`.
+    :returns: the wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):
@@ -444,20 +451,21 @@ def skiperror(
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Combines Numpy's `mgrid`, with the `take` method in numpy/Pandas,
+    Combines NumPy's `mgrid`, with the `take` method in NumPy/pandas
     to expand each input to the length of the cumulative product of
     all inputs in `others`.
 
-    There is a performance penalty for small entries (length less than 10)
-    in using this method, instead of `itertools.product`; however, there is
-    significant performance benefits as the size of the data increases.
+    There is a performance penalty for small entries (length less than
+    `10`) in using this method, instead of `itertools.product`; however,
+    there is significant performance benefits as the size of the data
+    increases.
 
-    Another benefit of this approach,
-    in addition to the significant performance gains,
-    is the preservation of data types. This is particularly relevant for
-    Pandas' extension arrays dtypes (categoricals, nullable integers, ...).
+    Another benefit of this approach, in addition to the significant
+    performance gains, is the preservation of data types.
+    This is particularly relevant for pandas' extension arrays `dtypes`
+    (categoricals, nullable integers, ...).
 
-    A dataframe of all possible combinations is returned.
+    A DataFrame of all possible combinations is returned.
     """
 
     for key, _ in others.items():
@@ -502,10 +510,9 @@ def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
     """
     Base function for dispatch of `_expand_grid`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added to make the function reusable
+    in the `_computations_complete` function. Also, allowing `key` as
+    `None` enables reuse in the `_computations_complete` function.
     """
 
     raise TypeError(
@@ -516,15 +523,16 @@ def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
 @_expand_grid.register(list)  # noqa: F811
 def _sub_expand_grid(value, key, mgrid_values):  # noqa: F811
     """
-    Expands the list object based on `mgrid_values`.
-    Converts to an array and passes it
-    to the `_expand_grid` function for arrays.
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
+    Expands the `list` object based on `mgrid_values`.
+
+    Converts to an array and passes it to the `_expand_grid` function
+    for arrays. The `mode` parameter is added, to make the function
+    reusable in the `_computations_complete` function. Also, allowing
+    `key` as `None` enables reuse in the `_computations_complete`
+    function.
+
+    Returns pandas Series with `name` if 1-Dimensional array
+    or pandas DataFrame if 2-Dimensional array with column names.
     """
     if not value:
         raise ValueError("""list object cannot be empty.""")
@@ -537,18 +545,15 @@ def _sub_expand_grid(  # noqa: F811
     value, key, mgrid_values, mode="expand_grid"
 ):
     """
-    Expands the numpy array based on `mgrid_values`.
+    Expands the NumPy array based on `mgrid_values`.
 
-    Ensures array dimension is either 1 or 2.
-
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
+    Ensures array dimension is either 1 or 2. The `mode` parameter is
+    added, to make the function reusable in the `_computations_complete`
+    function. Also, allowing `key` as `None` enables reuse in the
     `_computations_complete` function.
 
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
-
+    Returns a pandas Series with `name` if 1-Dimensional array
+    or pandas DataFrame if 2-Dimensional array with column names.
     The names are derived from the `key` parameter.
     """
     if not (value.size > 0):
@@ -577,10 +582,9 @@ def _sub_expand_grid(  # noqa: F811
     """
     Expands the Series based on `mgrid_values`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added, to make the function reusable in the
+    `_computations_complete` function. Also, allowing `key` as `None`
+    enables reuse in the `_computations_complete` function.
 
     Checks for empty Series and returns modified keys.
     Returns Series with new Series name.
@@ -608,13 +612,11 @@ def _sub_expand_grid(  # noqa: F811
     """
     Expands the DataFrame based on `mgrid_values`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added, to make the function reusable in the
+    `_computations_complete` function. Also, allowing `key` as `None`
+    enables reuse in the `_computations_complete` function.
 
     Checks for empty dataframe and returns modified keys.
-
     Returns a DataFrame with new column names.
     """
     if value.empty:
@@ -641,15 +643,13 @@ def _sub_expand_grid(  # noqa: F811
     """
     Expands the Index based on `mgrid_values`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added, to make the function reusable in the
+    `_computations_complete` function. Also, allowing `key` as `None`
+    enables reuse in the `_computations_complete` function.
 
     Checks for empty Index and returns modified keys.
-
     Returns a DataFrame (if MultiIndex) with new column names,
-    or a Series with a new name.
+    or a pandas Series with a new name.
     """
     if value.empty:
         raise ValueError("""Index cannot be empty.""")
@@ -683,12 +683,10 @@ def _data_checks_complete(
     types within the `columns` parameter.
 
     Check is conducted to ensure that column names are not repeated.
-
     Also checks that the names in `columns` actually exist in `df`.
 
-    Returns `df`, `columns`, `column_checker`,
-    and `by` if all checks pass.
-
+    Returns `df`, `columns`, `column_checker`, and `by` if
+    all checks pass.
     """
     # TODO: get `complete` to work on MultiIndex columns,
     # if there is sufficient interest with use cases
@@ -741,21 +739,22 @@ def _computations_complete(
     """
     This function computes the final output for the `complete` function.
 
-    If `by` is present, then groupby apply is used.
+    If `by` is present, then `groupby().apply()` is used.
 
-    For some cases, the `stack/unstack` combination is preferred; it is more
-    efficient than `reindex`, as the size of the data grows. It is only
-    applicable if all the entries in `columns` are strings, there are
-    no nulls(stacking implicitly removes nulls in columns),
-    the length of `columns` is greater than 1, and the index
+    For some cases, the `stack/unstack` combination is preferred;
+    it is more efficient than `reindex`, as the size of the data grows.
+    It is only applicable if all the entries in `columns` are strings,
+    there are no nulls (stacking implicitly removes nulls in columns),
+    the length of `columns` is greater than `1`, and the index
     has no duplicates.
 
-    If there is a dictionary in `columns`, it is possible that all the values
-    of a key, or keys, may not be in the existing column with the same key(s);
-    as such, a union of the current index and the generated index is executed,
-    to ensure that all combinations are in the final dataframe.
+    If there is a dictionary in `columns`, it is possible that all the
+    values of a key, or keys, may not be in the existing column with
+    the same key(s); as such, a union of the current index and the
+    generated index is executed, to ensure that all combinations are
+    in the final DataFrame.
 
-    A dataframe, with rows of missing values, if any, is returned.
+    Returns a DataFrame with rows of missing values, if any exist.
     """
 
     df, columns, column_checker, by = _data_checks_complete(df, columns, by)
@@ -841,8 +840,8 @@ def _create_indexer_for_complete(
     columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
-    This creates the index that will be used
-    to expand the dataframe in the `complete` function.
+    This creates the index that will be used to expand the DataFrame in
+    the `complete` function.
 
     A pandas Index is returned.
     """

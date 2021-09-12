@@ -6501,7 +6501,6 @@ def pivot_wider(
         unique and `aggfunc` is `None`.
 
 
-    .. # noqa: DAR402
     """
 
     df = df.copy()

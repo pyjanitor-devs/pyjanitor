@@ -6843,7 +6843,6 @@ def conditional_join(
     :raises ValueError: if `left_on` and `right_on` in condition are not
         both numeric, or string, or datetime.
 
-     # noqa: DAR402
     """
 
     (

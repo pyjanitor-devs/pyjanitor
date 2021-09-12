@@ -615,13 +615,11 @@ def _sub_expand_grid(  # noqa: F811
     """
     Expands the DataFrame based on `mgrid_values`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added, to make the function reusable in the
+    `_computations_complete` function. Also, allowing `key` as `None`
+    enables reuse in the `_computations_complete` function.
 
     Checks for empty dataframe and returns modified keys.
-
     Returns a DataFrame with new column names.
     """
     if value.empty:
@@ -648,15 +646,13 @@ def _sub_expand_grid(  # noqa: F811
     """
     Expands the Index based on `mgrid_values`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
+    The `mode` parameter is added, to make the function reusable in the
+    `_computations_complete` function. Also, allowing `key` as `None`
+    enables reuse in the `_computations_complete` function.
 
     Checks for empty Index and returns modified keys.
-
     Returns a DataFrame (if MultiIndex) with new column names,
-    or a Series with a new name.
+    or a pandas Series with a new name.
     """
     if value.empty:
         raise ValueError("""Index cannot be empty.""")
@@ -690,12 +686,10 @@ def _data_checks_complete(
     types within the `columns` parameter.
 
     Check is conducted to ensure that column names are not repeated.
-
     Also checks that the names in `columns` actually exist in `df`.
 
-    Returns `df`, `columns`, `column_checker`,
-    and `by` if all checks pass.
-
+    Returns `df`, `columns`, `column_checker`, and `by` if
+    all checks pass.
     """
     # TODO: get `complete` to work on MultiIndex columns,
     # if there is sufficient interest with use cases
@@ -748,21 +742,22 @@ def _computations_complete(
     """
     This function computes the final output for the `complete` function.
 
-    If `by` is present, then groupby apply is used.
+    If `by` is present, then `groupby().apply()` is used.
 
-    For some cases, the `stack/unstack` combination is preferred; it is more
-    efficient than `reindex`, as the size of the data grows. It is only
-    applicable if all the entries in `columns` are strings, there are
-    no nulls(stacking implicitly removes nulls in columns),
-    the length of `columns` is greater than 1, and the index
+    For some cases, the `stack/unstack` combination is preferred;
+    it is more efficient than `reindex`, as the size of the data grows.
+    It is only applicable if all the entries in `columns` are strings,
+    there are no nulls (stacking implicitly removes nulls in columns),
+    the length of `columns` is greater than `1`, and the index
     has no duplicates.
 
-    If there is a dictionary in `columns`, it is possible that all the values
-    of a key, or keys, may not be in the existing column with the same key(s);
-    as such, a union of the current index and the generated index is executed,
-    to ensure that all combinations are in the final dataframe.
+    If there is a dictionary in `columns`, it is possible that all the
+    values of a key, or keys, may not be in the existing column with
+    the same key(s); as such, a union of the current index and the
+    generated index is executed, to ensure that all combinations are
+    in the final DataFrame.
 
-    A dataframe, with rows of missing values, if any, is returned.
+    Returns a DataFrame with rows of missing values, if any exist.
     """
 
     df, columns, column_checker, by = _data_checks_complete(df, columns, by)
@@ -848,8 +843,8 @@ def _create_indexer_for_complete(
     columns: List[Union[List, Dict, str]],
 ) -> pd.DataFrame:
     """
-    This creates the index that will be used
-    to expand the dataframe in the `complete` function.
+    This creates the index that will be used to expand the DataFrame in
+    the `complete` function.
 
     A pandas Index is returned.
     """

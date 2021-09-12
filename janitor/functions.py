@@ -16,7 +16,6 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
-    Sequence,
     Set,
     Tuple,
     Union,
@@ -6165,16 +6164,14 @@ def pivot_longer(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[Sequence[str], str]] = None,
-    names_from: Optional[Union[Sequence[str], str]] = None,
-    values_from: Optional[Union[Sequence[str], str]] = None,
-    names_sort: Optional[bool] = True,
+    index: Optional[Union[List, str]] = None,
+    names_from: Optional[Union[List, str]] = None,
+    values_from: Optional[Union[List, str]] = None,
+    names_sort: Optional[bool] = False,
+    levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
-    names_from_position: Optional[str] = "first",
-    names_prefix: Optional[str] = None,
-    names_sep: Optional[str] = "_",
-    aggfunc: Optional[Union[str, list, dict, Callable]] = None,
-    fill_value: Optional[Union[int, float, str]] = None,
+    names_sep="_",
+    names_glue: Callable = None,
 ) -> pd.DataFrame:
     """
     Reshapes data from 'long' to 'wide' form.
@@ -6184,6 +6181,10 @@ def pivot_wider(
     method, and is a wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.
+
+    .. note:: Column selection in `index`, `names_from`
+        and `values_from` is possible using the
+        `janitor.select_columns` syntax.
 
     Reshaping to wide form :
 
@@ -6203,9 +6204,7 @@ def pivot_wider(
         10  Carla      wk3     39
         11  Carla      wk4     40
 
-        df = (
-            pd.DataFrame(...)
-            .pivot_wider(
+        df.pivot_wider(
                 index = "name",
                 names_from = "variable",
                 values_from = "value"
@@ -6225,60 +6224,137 @@ def pivot_wider(
         1     2  20.0  0.2
         2     3  30.0  0.3
 
-        df = (
-            pd.DataFrame(...)
-            .assign(num = 0)
-            .pivot_wider(
-                index = "num",
-                names_from = "name",
-                values_from = ["n", "pct"],
-                names_sep = "_"
-             )
-         )
+        (df.assign(num = 0)
+           .pivot_wider(
+              index = "num",
+              names_from = "name",
+              values_from = ["n", "pct"],
+              names_sep = "_"
+              )
+        )
 
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
 
-    Aggregations are also possible with the ``aggfunc`` parameter::
 
-        df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
-                           {'id': 'b', 'name': 'Eve', 'value': 6},
-                           {'id': 'c', 'name': 'Adam', 'value': 4},
-                           {'id': 'a', 'name': 'Eve', 'value': 3},
-                           {'id': 'd', 'name': 'Seth', 'value': 2},
-                           {'id': 'b', 'name': 'Adam', 'value': 4},
-                           {'id': 'a', 'name': 'Adam', 'value': 2}])
+    You may choose not to flatten the columns,
+    by setting `flatten_levels` to False::
 
-        id  name    value
-        a   Adam    5
-        b   Eve     6
-        c   Adam    4
-        a   Eve     3
-        d   Seth    2
-        b   Adam    4
-        a   Adam    2
+        df
+
+           dependent_variable  step   a   b
+        0                 5.5     1  20  30
+        1                 5.5     2  25  37
+        2                 6.1     1  22  19
+        3                 6.1     2  18  29
+
 
         df.pivot_wider(
-            index = "id",
-            names_from = "name",
-            aggfunc = np.sum,
-            values_from = "value",
-            flatten_levels = True,
-            fill_value = 0
+            index = "dep*",
+            names_from  = 'step',
+            flatten_levels = False
             )
 
-            id  Adam  Eve  Seth
-        0   a     7    3     0
-        1   b     4    6     0
-        2   c     4    0     0
-        3   d     0    0     2
+                             a       b
+        step                 1   2   1   2
+        dependent_variable
+        5.5                 20  25  30  37
+        6.1                 22  18  19  29
 
 
-    .. note:: You may choose not to collapse the levels by passing `False`
-        to the ``flatten_levels`` argument.
+    The order of the levels can be changed with the `levels_order`
+    parameter, which internally uses `pd.DataFrame.reorder_levels`::
 
-    .. note:: A ValueError is raised if the index is not unique and
-        `aggfunc` is None.
+        df.pivot_wider(
+            index = "dep*",
+            names_from  = 'step',
+            flatten_levels = False,
+            levels_order = ['step', None]
+            )
+
+        step                 1   2   1   2
+                             a   a   b   b
+        dependent_variable
+        5.5                 20  25  30  37
+        6.1                 22  18  19  29
+
+        df.pivot_wider(
+            index = ['a', 'b'],
+            names_from = 'name',
+            flatten_levels = True,
+            )
+
+           dependent_variable  a_1  a_2  b_1  b_2
+        0                 5.5   20   25   30   37
+        1                 6.1   22   18   19   29
+
+
+        df.pivot_wider(
+            index = ['a', 'b'],
+            names_from = 'name',
+            flatten_levels= True,
+            levels_order = ['step', None]
+            )
+
+           dependent_variable  1_a  2_a  1_b  2_b
+        0                 5.5   20   25   30   37
+        1                 6.1   22   18   19   29
+
+    `names_sep` and `names_glue` come in handy in situations where `names_from`
+    and/or `values_from` contain multiple variables; it is used primarily when
+    the columns are flattened. The default value for `names_sep` is `_`::
+
+        # default value of names_sep is '_'
+        df.pivot_wider(index = "dep*", names_from = "step")
+
+           dependent_variable  a_1  a_2  b_1  b_2
+        0                 5.5   20   25   30   37
+        1                 6.1   22   18   19   29
+
+        df.pivot_wider(
+            index = "dep*",
+            names_from = "step",
+            names_sep = "")
+
+           dependent_variable  a1  a2  b1  b2
+        0                 5.5  20  25  30  37
+        1                 6.1  22  18  19  29
+
+    With `names_glue` you can `glue` the individual levels (if MultiIndex)
+    into one (similar to `names_sep`), or you can modify the final columns,
+    as long as it can be passed to `pd.Index.map`::
+
+        # replicate `names_sep`
+        df.pivot_wider(
+            index = "dep*",
+            names_from = "step",
+            names_sep = None,
+            names_glue = "_".join
+            )
+
+           dependent_variable  a_1  a_2  b_1  b_2
+        0                 5.5   20   25   30   37
+        1                 6.1   22   18   19   29
+
+        # going beyond names_sep
+        df.pivot_wider(
+            index = "dep*",
+            names_from = "step",
+            names_sep = None,
+            names_glue = lambda col: f"{col[0]}_step{col[1]}"
+            )
+
+           dependent_variable  a_step1  a_step2  b_step1  b_step2
+        0                 5.5       20       25       30       37
+        1                 6.1       22       18       19       29
+
+    .. note:: A ValueError is raised if the combination
+        of the `index` and `names_from` is not unique.
+
+    .. note:: By default, values from `values_from` are always
+        at the top level if the columns are not flattened.
+        If flattened, the values from `values_from` are usually
+        at the start of each label in the columns.
 
     Functional usage syntax:
 
@@ -6295,12 +6371,11 @@ def pivot_wider(
             names_from = [column3, column4, ...],
             value_from = [column5, column6, ...],
             names_sort = True/False,
-            names_prefix = string,
-            names_sep = string,
+            levels_order = None/list,
             flatten_levels = True/False,
-            names_from_position = "first"/"last",
-            aggfunc,
-            fill_value = fill_value
+            names_sep='_',
+            names_glue= Callable
+
         )
 
     Method chaining syntax:
@@ -6314,12 +6389,10 @@ def pivot_wider(
                 names_from = [column3, column4, ...],
                 value_from = [column5, column6, ...],
                 names_sort = True/False,
-                names_prefix = string,
-                names_sep = string,
+                levels_order = None/list,
                 flatten_levels = True/False,
-                names_from_position = "first"/"last",
-                aggfunc,
-                fill_value = fill_value
+                names_sep='_',
+                names_glue= Callable
                 )
         )
 
@@ -6328,7 +6401,7 @@ def pivot_wider(
         Should be either a single column name, or a list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If `index` is not provided, the current dataframe's index is used.
+        If `index` is not provided, the dataframe's index is used.
     :param names_from: Name(s) of column(s) to use to make the new
         dataframe's columns. Should be either a single column name, or a
         list of column names.
@@ -6336,49 +6409,33 @@ def pivot_wider(
         allowing for flexible and dynamic column selection.
         A label or labels must be provided for ``names_from``.
     :param values_from: Name(s) of column(s) that will be used for populating
-        the new dataframe's values. Should be either a single column name,
-        or a list of column names.
+        the new dataframe's values.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If ``values_from`` is not specified,
-        all remaining columns will be used. If `flatten_levels` is ``False``,
-        a MultiIndex dataframe is created.
+        If ``values_from`` is not specified,  all remaining columns
+        will be used. Note that values from `values_from` are usually at
+        the top level, the dataframe's columns is not flattened, or the
+        start of each label in the columns, if flattened.
     :param names_sort: Default is `True`. Sorts columns by order of
         appearance.
-        Set as `True` to get the columns sorted lexicographicially,
-        or if the columns are of category type.
+    :param levels_order: Applicable if there are multiple `names_from`
+        and/or `values_from`. Reorders the levels. Accepts a list of strings.
+        If there are multiple `values_from`, pass a None to represent that
+        level.
     :param flatten_levels: Default is `True`. If `False`, the dataframe stays
         as a MultiIndex.
-    :param names_from_position: By default, the values in ``names_from`` stay
-        at the front of the new column names. This can be changed to "last";
-        this places the values in ``names_from``
-        at the tail of the column names.
-    :param names_prefix: String to be added to the front of each output column.
-        Can be handy if the values in ``names_from`` are numeric data types.
-        Applicable only if ``flatten_levels`` is True.
     :param names_sep: If ``names_from`` or ``values_from`` contain multiple
         variables, this will be used to join their values into a single string
         to use as a column name. Default is ``_``.
         Applicable only if ``flatten_levels`` is ``True``.
-    :param aggfunc: An aggregate function. It can be a function, a string,
-        list of functions, or a dictionary, pairing column name with aggregate
-        function.
-    :param fill_value: Scalar value to replace missing values with
-        (after pivoting).
+    :param names_glue: A callable to control the output
+        of the flattened columns. Applicable only if
+        ``flatten_levels`` is ``True``. Function should be
+        acceptable to pandas' `map` function.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
-    :raises TypeError: if `index` or `names_from` is not a string, or a list of
-        strings.
     :raises ValueError: if `names_from` is None.
-    :raises TypeError: if `names_sep` is not a string.
-    :raises TypeError: if `values_from` is not a string or a list of strings.
-    :raises TypeError: if `names_sort` is not a boolean.
     :raises TypeError: if `flatten_levels` is not a boolean.
-    :raises ValueError: if values in `index` or `names_from` or `values_from`
-        do not exist in the dataframe.
-    :raises ValueError: if the combination of `index` and `names_from` is not
-        unique and ``aggfunc`` is ``None``.
-
 
     .. # noqa: DAR402
     """
@@ -6391,24 +6448,20 @@ def pivot_wider(
         names_from,
         values_from,
         names_sort,
+        levels_order,
         flatten_levels,
-        names_from_position,
-        names_prefix,
         names_sep,
-        aggfunc,
-        fill_value,
+        names_glue,
     ) = _data_checks_pivot_wider(
         df,
         index,
         names_from,
         values_from,
         names_sort,
+        levels_order,
         flatten_levels,
-        names_from_position,
-        names_prefix,
         names_sep,
-        aggfunc,
-        fill_value,
+        names_glue,
     )
 
     df = _computations_pivot_wider(
@@ -6417,12 +6470,10 @@ def pivot_wider(
         names_from,
         values_from,
         names_sort,
+        levels_order,
         flatten_levels,
-        names_from_position,
-        names_prefix,
         names_sep,
-        aggfunc,
-        fill_value,
+        names_glue,
     )
 
     return df
@@ -6444,11 +6495,15 @@ def conditional_join(
     and non-equi joins.
 
     If the join is solely on equality, `pd.merge` function
-    is more efficient and should be used instead.
+    is more efficient and should be used instead. Infact,
+    for multiple conditions where equality is involved,
+    a `pd.merge`, followed by filter(via `query` or `loc`)
+    is more efficient. This is even more evident when joining
+    on strings.
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
-    which can be more efficient for range joins, if the intervals
-    do not overlap.
+    which can be more efficient for range joins, especially if
+    the intervals do not overlap.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -6459,11 +6514,8 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    If the join operator is a non-equi operator, a binary search is used
-    to get the relevant rows; this avoids a cartesian join, and makes the
-    process less memory intensive. If it is an equality operator, it simply
-    uses pandas' `merge` or `get_indexer_for` method to retrieve the relevant
-    rows.
+    A binary search is used to get the relevant rows; this avoids
+    a cartesian join, and makes the process less memory intensive.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -6503,7 +6555,7 @@ def conditional_join(
     Join on equi and non-equi operators is possible::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6520,7 +6572,7 @@ def conditional_join(
     The default join is `inner`. left and right joins are supported as well::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6539,7 +6591,7 @@ def conditional_join(
 
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6561,7 +6613,7 @@ def conditional_join(
     Join on just the non-equi joins is also possible::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
@@ -6581,7 +6633,7 @@ def conditional_join(
     relevant dataframe::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
@@ -6600,7 +6652,7 @@ def conditional_join(
     Pandas merge/join is more efficient::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '=='),
                 sort_by_appearance = True
             )
@@ -6612,7 +6664,7 @@ def conditional_join(
     Join on not equal -> ``!=`` ::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '!='),
                 sort_by_appearance = True
             )
@@ -6632,7 +6684,7 @@ def conditional_join(
     (this is the default)::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '>'),
                 sort_by_appearance = False
             )
@@ -6654,6 +6706,11 @@ def conditional_join(
     .. note:: All the columns from `df` and `right`
               are returned in the final output.
 
+    .. note:: For multiple condtions, If there are nulls
+              in the join columns, they will not be
+              preserved for `!=` operator. Nulls are only
+              preserved for `!=` operator for single condition.
+
     Functional usage syntax:
 
     .. code-block:: python
@@ -6665,8 +6722,8 @@ def conditional_join(
         right = pd.DataFrame(...)
 
         df = jn.conditional_join(
-                df = df,
-                right = right,
+                df,
+                right,
                 *conditions,
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
@@ -6677,7 +6734,7 @@ def conditional_join(
     .. code-block:: python
 
         df = df.conditional_join(
-                right = right,
+                right,
                 *conditions,
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
@@ -6707,12 +6764,7 @@ def conditional_join(
         At least one of the values must not be ``None``.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     :raises ValueError: if columns from `df` or `right` is a MultiIndex.
-    :raises ValueError: if `right` is an unnamed Series.
     :raises ValueError: if condition in *conditions is not a tuple.
-    :raises ValueError: if condition is not length 3.
-    :raises ValueError: if `left_on` and `right_on` in condition are not
-        both numeric, or string, or datetime.
-
 
     .. # noqa: DAR402
     """

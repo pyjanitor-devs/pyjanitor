@@ -56,6 +56,17 @@ def test_right_MultiIndex(df):
 
 
 @given(df=conditional_df(), s=conditional_series())
+def test_check_conditions_exist(df, s):
+    """Raise ValueError if no condition is provided."""
+
+    assume(not df.empty)
+    assume(not s.empty)
+    with pytest.raises(ValueError):
+        s.name = "B"
+        df.conditional_join(s)
+
+
+@given(df=conditional_df(), s=conditional_series())
 def test_check_condition_type(df, s):
     """Raise TypeError if any condition in conditions is not a tuple."""
 
@@ -274,6 +285,26 @@ def test_dtype_Series(df, s):
     with pytest.raises(ValueError):
         s.name = "A"
         df.conditional_join(s, ("C", "A", "<"), suffixes=("_x", "_y"))
+
+
+@given(df=conditional_df(), s=conditional_right())
+def test_dtype_int(df, s):
+    """
+    Raise ValueError if dtype of column in `df`
+    does not match the dtype of column from `right`.
+    """
+    with pytest.raises(ValueError):
+        df.conditional_join(s, ("A", "Strings", "<"), suffixes=("_x", "_y"))
+
+
+@given(df=conditional_df(), s=conditional_right())
+def test_dtype_dates(df, s):
+    """
+    Raise ValueError if dtype of column in `df`
+    does not match the dtype of column from `right`.
+    """
+    with pytest.raises(ValueError):
+        df.conditional_join(s, ("E", "Integers", "<"), suffixes=("_x", "_y"))
 
 
 @given(df=conditional_df(), right=conditional_right())
@@ -752,6 +783,33 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_(df, right):
+    """
+    Test output for multiple columns from the left
+    and single column from right.
+    """
+    assume(not df.empty)
+    assume(not right.empty)
+    first, second, third = ("Numeric", "Floats", "B")
+    expected = (
+        right.assign(t=1)
+        .merge(df.assign(t=1), on="t")
+        .query(f"{first} > {third} and {second} < {third}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([first, second, third])
+    actual = right.conditional_join(
+        df,
+        (first, third, ">"),
+        (second, third, "<"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.filter([first, second, third])
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_eq_and_ne(df, right):
     """Test output for equal and not equal conditions."""
     assume(not df.empty)
@@ -778,8 +836,10 @@ def test_dual_conditions_eq_and_ne(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ne_and_eq(df, right):
     """Test output for equal and not equal conditions."""
+
     assume(not df.empty)
     assume(not right.empty)
+
     eq_A, eq_B, ne_A, ne_B = ("B", "Numeric", "E", "Dates")
     expected = (
         df.assign(t=1)

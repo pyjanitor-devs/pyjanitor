@@ -6558,11 +6558,15 @@ def conditional_join(
     and non-equi joins.
 
     If the join is solely on equality, `pd.merge` function
-    is more efficient and should be used instead.
+    is more efficient and should be used instead. Infact,
+    for multiple conditions where equality is involved,
+    a `pd.merge`, followed by filter(via `query` or `loc`)
+    is more efficient. This is even more evident when joining
+    on strings.
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
-    which can be more efficient for range joins, if the intervals
-    do not overlap.
+    which can be more efficient for range joins, especially if
+    the intervals do not overlap.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -6573,11 +6577,8 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    If the join operator is a non-equi operator, a binary search is used
-    to get the relevant rows; this avoids a cartesian join, and makes the
-    process less memory intensive. If it is an equality operator, it simply
-    uses pandas' `merge` or `get_indexer_for` method to retrieve the relevant
-    rows.
+    A binary search is used to get the relevant rows; this avoids
+    a cartesian join, and makes the process less memory intensive.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -6617,7 +6618,7 @@ def conditional_join(
     Join on equi and non-equi operators is possible::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6634,7 +6635,7 @@ def conditional_join(
     The default join is `inner`. left and right joins are supported as well::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6653,7 +6654,7 @@ def conditional_join(
 
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('id', 'id', '=='),
                 ('value_1', 'value_2A', '>='),
                 ('value_1', 'value_2B', '<='),
@@ -6675,7 +6676,7 @@ def conditional_join(
     Join on just the non-equi joins is also possible::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
@@ -6695,7 +6696,7 @@ def conditional_join(
     relevant dataframe::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('value_1', 'value_2A', '>'),
                 ('value_1', 'value_2B', '<'),
                 how='inner',
@@ -6714,7 +6715,7 @@ def conditional_join(
     Pandas merge/join is more efficient::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '=='),
                 sort_by_appearance = True
             )
@@ -6726,7 +6727,7 @@ def conditional_join(
     Join on not equal -> ``!=`` ::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '!='),
                 sort_by_appearance = True
             )
@@ -6746,7 +6747,7 @@ def conditional_join(
     (this is the default)::
 
         df1.conditional_join(
-                right = df2,
+                df2,
                 ('col_a', 'col_a', '>'),
                 sort_by_appearance = False
             )
@@ -6768,6 +6769,11 @@ def conditional_join(
     .. note:: All the columns from `df` and `right`
               are returned in the final output.
 
+    .. note:: For multiple condtions, If there are nulls
+              in the join columns, they will not be
+              preserved for `!=` operator. Nulls are only
+              preserved for `!=` operator for single condition.
+
     Functional usage syntax:
 
     .. code-block:: python
@@ -6779,8 +6785,8 @@ def conditional_join(
         right = pd.DataFrame(...)
 
         df = jn.conditional_join(
-                df = df,
-                right = right,
+                df,
+                right,
                 *conditions,
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
@@ -6791,7 +6797,7 @@ def conditional_join(
     .. code-block:: python
 
         df = df.conditional_join(
-                right = right,
+                right,
                 *conditions,
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
@@ -6821,12 +6827,7 @@ def conditional_join(
         At least one of the values must not be ``None``.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     :raises ValueError: if columns from `df` or `right` is a MultiIndex.
-    :raises ValueError: if `right` is an unnamed Series.
     :raises ValueError: if condition in *conditions is not a tuple.
-    :raises ValueError: if condition is not length 3.
-    :raises ValueError: if `left_on` and `right_on` in condition are not
-        both numeric, or string, or datetime.
-
 
     .. # noqa: DAR402
     """

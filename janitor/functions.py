@@ -1180,28 +1180,32 @@ def coalesce(
 def convert_excel_date(
     df: pd.DataFrame, column_name: Hashable
 ) -> pd.DataFrame:
-    """Convert Excel's serial date format into Python datetime format.
+    """
+    Convert Excel's serial date format into Python datetime format.
 
     This method mutates the original DataFrame.
 
-    Implementation is also from [Stack Overflow][so].
-
-    [so]: https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas
+    Implementation is also from
+    [Stack Overflow](https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas)
 
     Functional usage syntax:
 
+    ```python
         df = convert_excel_date(df, column_name='date')
+    ```
 
     Method chaining syntax:
 
+    ```python
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).convert_excel_date('date')
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.
     :returns: A pandas DataFrame with corrected dates.
-    :raises ValueError: if There are non numeric values in the column.
+    :raises ValueError: if there are non numeric values in the column.
     """  # noqa: E501
 
     if not is_numeric_dtype(df[column_name]):
@@ -1223,23 +1227,27 @@ def convert_excel_date(
 def convert_matlab_date(
     df: pd.DataFrame, column_name: Hashable
 ) -> pd.DataFrame:
-    """Convert Matlab's serial date number into Python datetime format.
+    """
+    Convert Matlab's serial date number into Python datetime format.
 
-    Implementation is also from [Stack Overflow][so].
-
-    [so]: https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python
+    Implementation is also from
+    [Stack Overflow](https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python)
 
     This method mutates the original DataFrame.
 
     Functional usage syntax:
 
+    ```python
         df = convert_matlab_date(df, column_name='date')
+    ```
 
     Method chaining syntax:
 
+    ```python
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).convert_matlab_date('date')
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.
@@ -1257,7 +1265,8 @@ def convert_matlab_date(
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
 def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
-    """Convert unix epoch time into Python datetime format.
+    """
+    Convert unix epoch time into Python datetime format.
 
     Note that this ignores local tz and convert all timestamps to naive
     datetime based on UTC!
@@ -1266,13 +1275,17 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
     Functional usage syntax:
 
+    ```python
         df = convert_unix_date(df, column_name='date')
+    ```
 
     Method chaining syntax:
 
+    ```python
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).convert_unix_date('date')
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.
@@ -1291,29 +1304,34 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 def fill_empty(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
 ) -> pd.DataFrame:
-    """Fill `NaN` values in specified columns with a given value.
+    """
+    Fill `NaN` values in specified columns with a given value.
 
-    Super sugary syntax that wraps :py:meth:`pandas.DataFrame.fillna`.
+    Super sugary syntax that wraps `pandas.DataFrame.fillna`.
 
     This method mutates the original DataFrame.
 
     Functional usage syntax:
 
-        df = fill_empty(df, column_names=['col1', 'col2'], value=0)
+    ```python
+        df = fill_empty(df, column_names=[col1, col2], value=0)
+    ```
 
     Method chaining syntax:
 
+    ```python
         import pandas as pd
         import janitor
-        df = pd.DataFrame(...).fill_empty(column_names='col1', value=0)
+        df = pd.DataFrame(...).fill_empty(column_names=col1, value=0)
+    ```
 
     :param df: A pandas DataFrame.
     :param column_names: column_names: A column name or an iterable (list
-        or tuple) of column names If a single column name is passed in, then
+        or tuple) of column names. If a single column name is passed in, then
         only that column will be filled; if a list or tuple is passed in, then
         those columns will all be filled with the same value.
     :param value: The value that replaces the `NaN` values.
-    :returns: A pandas DataFrame with `Nan` values filled.
+    :returns: A pandas DataFrame with `NaN` values filled.
     """
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
@@ -2581,22 +2599,23 @@ def round_to_fraction(
     denominator: float = None,
     digits: float = np.inf,
 ) -> pd.DataFrame:
-    """Round all values in a column to a fraction.
+    """
+    Round all values in a column to a fraction.
 
     This method mutates the original DataFrame.
 
-    Taken from https://github.com/sfirke/janitor/issues/235.
+    Taken from [Source](https://github.com/sfirke/janitor/issues/235).
 
     Also, optionally round to a specified number of digits.
 
     Method-chaining usage:
 
-
-
+    ```python
         # Round to two decimal places
         df = pd.DataFrame(...).round_to_fraction('a', 2)
+    ```
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of column to round to fraction.
     :param denominator: The denominator of the fraction for rounding
     :param digits: The number of digits for rounding after rounding to the
@@ -3700,77 +3719,86 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 def find_replace(
     df: pd.DataFrame, match: str = "exact", **mappings
 ) -> pd.DataFrame:
-    """Perform a find-and-replace action on provided columns.
+    """
+    Perform a find-and-replace action on provided columns.
 
     Depending on use case, users can choose either exact, full-value matching,
     or regular-expression-based fuzzy matching
     (hence allowing substring matching in the latter case).
     For strings, the matching is always case sensitive.
 
-    For instance, given a dataframe containing orders at a coffee shop:
+    For instance, given a DataFrame containing orders at a coffee shop:
 
-
-
+    ```python
         df = pd.DataFrame({
             'customer': ['Mary', 'Tom', 'Lila'],
             'order': ['ice coffee', 'lemonade', 'regular coffee']
         })
 
-    Our task is to replace values `'ice coffee'` and `'regular coffee'`
-    of the `'order'` column into `'latte'`.
+        df
+
+            customer         order
+        0     Mary      ice coffee
+        1      Tom        lemonade
+        2     Lila  regular coffee
+    ```
+
+    Our task is to replace values `ice coffee` and `regular coffee`
+    of the `order` column into `latte`.
 
     Example 1 for exact matching
 
-
-
-        # Functional usage
+    ```python
+        #Functional usage
         df = find_replace(
             df,
             match='exact',
             order={'ice coffee': 'latte', 'regular coffee': 'latte'},
         )
+    ```
 
+    ```python
         # Method chaining usage
         df = df.find_replace(
             match='exact'
             order={'ice coffee': 'latte', 'regular coffee': 'latte'},
         )
+    ```
 
     Example 2: Regular-expression-based matching
 
-
-
+    ```python
         # Functional usage
         df = find_replace(
             df,
             match='regex',
             order={'coffee$': 'latte'},
         )
+    ```
 
+    ```python
         # Method chaining usage
         df = df.find_replace(
             match='regex',
             order={'coffee$': 'latte'},
         )
+    ```
 
-    To perform a find and replace on the entire dataframe,
+    To perform a find and replace on the entire DataFrame,
     pandas' `df.replace()` function provides the appropriate functionality.
-    You can find more detail on the replace_ docs.
+    You can find more detail on the [replace]((https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html)) docs.
 
     This function only works with column names that have no spaces
     or punctuation in them.
-    For example, a column name `item_name` would work with `find_replace``,
+    For example, a column name `item_name` would work with `find_replace`,
     because it is a contiguous string that can be parsed correctly,
     but `item name` would not be parsed correctly by the Python interpreter.
 
     If you have column names that might not be compatible,
     we recommend calling on `clean_names()` as the first method call.
     If, for whatever reason, that is not possible,
-    then `_find_replace()` is available as a function
-    that you can do a pandas pipe_ call on.
-
-    .. _replace: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
-    .. _pipe: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.pipe.html
+    then `_find_replace` is available as a function
+    that you can do a pandas [pipe](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.pipe.html) call on.
 
     :param df: A pandas DataFrame.
     :param match: Whether or not to perform an exact match or not.
@@ -3788,9 +3816,9 @@ def find_replace(
 def _find_replace(
     df: pd.DataFrame, column_name: str, mapper: Dict, match: str = "exact"
 ) -> pd.DataFrame:
-    """Utility function for `find_replace``.
+    """Utility function for `find_replace`.
 
-    The code in here was the original implementation of `find_replace``,
+    The code in here was the original implementation of `find_replace`,
     but we decided to change out the front-facing API to accept
     kwargs + dictionaries for readability,
     and instead dispatch underneath to this function.
@@ -3800,15 +3828,16 @@ def _find_replace(
     :param df: A pandas DataFrame.
     :param column_name: The column on which the find/replace action is to be
         made. Must be a string.
-    :param mapper: A dictionary that maps "thing to find" -> "thing to
-        replace".  Note: Does not support null-value replacement.
+    :param mapper: A dictionary that maps
+        `thing to find` -> `thing to replace`.
+        Note: Does not support null-value replacement.
     :param match: A string that dictates whether exact match or
         regular-expression-based fuzzy match will be used for finding patterns.
-        Default to "exact". Can only be "exact" or "regex".
+        Default to `exact`. Can only be `exact` or `regex`.
     :returns: A pandas DataFrame.
     :raises ValueError: is trying to use null replacement. Kindly use
         `.fillna()` instead.
-    :raises ValueError: if `match` is not one of 'exact' or 'regex'.
+    :raises ValueError: if `match` is not one of `exact` or `regex`.
     """
     if any(map(pd.isna, mapper.keys())):
         raise ValueError(
@@ -3842,8 +3871,7 @@ def update_where(
 
     Example usage:
 
-
-
+    ```python
         data = {
             "a": [1, 2, 3, 4],
             "b": [5, 6, 7, 8],
@@ -3866,9 +3894,11 @@ def update_where(
         1  2  6   0
         2  3  7  10
         3  4  8   0
+    ```
 
-    `update_where` also supports pandas *query* style string expressions::
+    `update_where` also supports pandas *query* style string expressions:
 
+    ```python
         df.update_where(conditions = "a > 2 and b < 8",
                         target_column_name = 'c',
                         target_val = 10)
@@ -3878,20 +3908,17 @@ def update_where(
         1  2  6   0
         2  3  7  10
         3  4  8   0
+    ```
 
 
     :param df: The pandas DataFrame object.
     :param conditions: Conditions used to update a target column
         and target value.
     :param target_column_name: Column to be updated. If column does not exist
-        in dataframe, a new column will be created; note that entries that do
+        in DataFrame, a new column will be created; note that entries that do
         not get set in the new column will be null.
     :param target_val: Value to be updated
     :returns: A pandas DataFrame.
-    :raises IndexError: if `conditions` does not have the same length as
-        `df``.
-    :raises TypeError: if `conditions` is not a pandas-compatible string
-        query.
     :raises ValueError: if `conditions` does not return a boolean array-like
         data structure.
 
@@ -3922,27 +3949,28 @@ def update_where(
 def to_datetime(
     df: pd.DataFrame, column_name: Hashable, **kwargs
 ) -> pd.DataFrame:
-    """Method-chainable to_datetime.
+    """
+    Method-chainable `pd.to_datetime`.
 
     This method mutates the original DataFrame.
 
     Functional usage syntax:
 
-
-
+    ```python
         df = to_datetime(df, 'col1', format='%Y%m%d')
+    ```
 
     Method chaining syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).to_datetime('col1', format='%Y%m%d')
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: Column name.
-    :param kwargs: provide any kwargs that pd.to_datetime can take.
+    :param kwargs: provide any kwargs that `pd.to_datetime` can take.
     :returns: A pandas DataFrame with updated datetime data.
     """
     df[column_name] = pd.to_datetime(df[column_name], **kwargs)
@@ -4716,12 +4744,12 @@ def jitter(
     clip: Optional[Iterable[np.number]] = None,
     random_state: Optional[np.number] = None,
 ) -> pd.DataFrame:
-    """Adds Gaussian noise (jitter) to the values of a column.
+    """
+    Adds Gaussian noise (jitter) to the values of a column.
 
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -4735,11 +4763,11 @@ def jitter(
             clip=None,
             random_state=None,
         )
+    ```
 
     Method chaining usage example:
 
-
-
+    ```
         import pandas as pd
         import janitor
 
@@ -4752,6 +4780,7 @@ def jitter(
             clip=None,
             random_state=None,
         )
+    ```
 
     A new column will be created containing the values of the original column
     with Gaussian noise added.
@@ -4770,7 +4799,7 @@ def jitter(
 
     This method mutates the original DataFrame.
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of the column containing
         values to add Gaussian jitter to.
     :param dest_column_name: The name of the new column containing the
@@ -4784,13 +4813,13 @@ def jitter(
     :param random_state: An integer or 1-d array value used to set the random
         seed, default to None.
 
-    :returns: A pandas DataFrame with a new column containing Gaussian-
-        jittered values from another column.
+    :returns: A pandas DataFrame with a new column containing
+        Gaussian-jittered values from another column.
     :raises TypeError: if `column_name` is not numeric.
     :raises ValueError: if `scale` is not a numerical value
-        greater than `0``.
-    :raises ValueError: if `clip` is not an iterable of length `2``.
-    :raises ValueError: if `clip[0]` is not less than `clip[1]``.
+        greater than `0`.
+    :raises ValueError: if `clip` is not an iterable of length `2`.
+    :raises ValueError: if `clip[0]` is not less than `clip[1]`.
     """
 
     # Check types
@@ -5282,12 +5311,11 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     Provide a method-chainable function for filling missing values
     in selected columns.
 
-    It is a wrapper for `pd.Series.ffill` and `pd.Series.bfill``,
+    It is a wrapper for `pd.Series.ffill` and `pd.Series.bfill`,
     and pairs the column name with one of `up`, `down`, `updown`,
     and `downup`.
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -5299,11 +5327,12 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         2  sammywemmy   3.0
         3         NaN   NaN
         4      ginger   5.0
+    ```
 
 
+    Fill on a single column:
 
-    Fill on a single column::
-
+    ```python
         df.fill_direction(code = 'up')
 
                  text  code
@@ -5312,9 +5341,11 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         2  sammywemmy   3.0
         3         NaN   5.0
         4      ginger   5.0
+    ```
 
-    Fill on multiple columns::
+    Fill on multiple columns:
 
+    ```python
         df.fill_direction(text = 'down', code = 'down')
 
                  text  code
@@ -5323,9 +5354,11 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         2  sammywemmy   3.0
         3  sammywemmy   3.0
         4      ginger   5.0
+    ```
 
-    Fill multiple columns in different directions::
+    Fill multiple columns in different directions:
 
+    ```python
         df.fill_direction(text = 'up', code = 'down')
 
                  text  code
@@ -5334,11 +5367,11 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         2  sammywemmy   3.0
         3      ginger   3.0
         4      ginger   5.0
+    ```
 
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -5348,11 +5381,11 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                     column_1 = direction_1,
                     column_2 = direction_2,
                 )
+    ```
 
     Method-chaining usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -5361,18 +5394,16 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                     column_1 = direction_1,
                     column_2 = direction_2,
                 )
+    ```
 
-
-    :param df: A pandas dataframe.
-    :param kwargs: Key - value pairs of columns and directions. Directions
-        can be either `down`, `up`, `updown` (fill up then down) and
-        `downup` (fill down then up).
-    :returns: A pandas dataframe with modified column(s).
-    :raises ValueError: if column supplied is not in the dataframe.
+    :param df: A pandas DataFrame.
+    :param kwargs: Key - value pairs of columns and directions.
+        Directions can be either `down`, `up`, `updown`
+        (fill up then down) and `downup` (fill down then up).
+    :returns: A pandas DataFrame with modified column(s).
+    :raises ValueError: if column supplied is not in the DataFrame.
     :raises ValueError: if direction supplied is not one of `down`, `up`,
         `updown`, or `downup`.
-
-    .. # noqa: DAR402
     """
 
     if not kwargs:

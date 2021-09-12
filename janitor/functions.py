@@ -6531,7 +6531,7 @@ def pivot_wider(
     :raises ValueError: if the combination of `index` and `names_from` is not
         unique and `aggfunc` is `None`.
 
-
+    # noqa: DAR402
     """
 
     df = df.copy()
@@ -6874,6 +6874,7 @@ def conditional_join(
     :raises ValueError: if `left_on` and `right_on` in condition are not
         both numeric, or string, or datetime.
 
+    # noqa: DAR402
     """
 
     (

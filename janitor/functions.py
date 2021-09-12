@@ -6337,6 +6337,7 @@ def pivot_wider(
 
     Reshaping to wide form :
 
+    ```python
              name variable  value
         0   Alice      wk1      5
         1   Alice      wk2      9
@@ -6363,9 +6364,11 @@ def pivot_wider(
         0    Alice     5     9    20    22
         1    Bob       7    11    17    33
         2    Carla     6    13    39    40
+    ```
 
     Pivoting on multiple columns is possible :
 
+    ```python
             name    n  pct
         0     1  10.0  0.1
         1     2  20.0  0.2
@@ -6384,8 +6387,11 @@ def pivot_wider(
 
             num n_1  n_2  n_3  pct_1  pct_2  pct_3
         0   0   10   20   30   0.1    0.2    0.3
+    ```
 
     Aggregations are also possible with the `aggfunc` parameter::
+
+    ```python
 
         df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
                            {'id': 'b', 'name': 'Eve', 'value': 6},
@@ -6418,16 +6424,17 @@ def pivot_wider(
         1   b     4    6     0
         2   c     4    0     0
         3   d     0    0     2
+    ```
 
-
-    .. note:: You may choose not to collapse the levels by passing `False`
+    **Note**: You may choose not to collapse the levels by passing `False`
         to the `flatten_levels` argument.
 
-    .. note:: A ValueError is raised if the index is not unique and
+    **Note**: A ValueError is raised if the index is not unique and
         `aggfunc` is None.
 
     Functional usage syntax:
 
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -6446,9 +6453,11 @@ def pivot_wider(
             aggfunc,
             fill_value = fill_value
         )
+    ```
 
     Method chaining syntax:
 
+    ```python
         df = (
             pd.DataFrame(...)
             .pivot_wider(
@@ -6464,6 +6473,7 @@ def pivot_wider(
                 fill_value = fill_value
                 )
         )
+    ```
 
     :param df: A pandas dataframe.
     :param index: Name(s) of columns to use as identifier variables.
@@ -6476,14 +6486,14 @@ def pivot_wider(
         list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        A label or labels must be provided for `names_from``.
+        A label or labels must be provided for `names_from`.
     :param values_from: Name(s) of column(s) that will be used for populating
         the new dataframe's values. Should be either a single column name,
         or a list of column names.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
         If `values_from` is not specified,
-        all remaining columns will be used. If `flatten_levels` is `False``,
+        all remaining columns will be used. If `flatten_levels` is `False`,
         a MultiIndex dataframe is created.
     :param names_sort: Default is `True`. Sorts columns by order of
         appearance.
@@ -6493,15 +6503,15 @@ def pivot_wider(
         as a MultiIndex.
     :param names_from_position: By default, the values in `names_from` stay
         at the front of the new column names. This can be changed to "last";
-        this places the values in `names_from``
+        this places the values in `names_from`
         at the tail of the column names.
     :param names_prefix: String to be added to the front of each output column.
         Can be handy if the values in `names_from` are numeric data types.
         Applicable only if `flatten_levels` is True.
     :param names_sep: If `names_from` or `values_from` contain multiple
         variables, this will be used to join their values into a single string
-        to use as a column name. Default is `_``.
-        Applicable only if `flatten_levels` is `True``.
+        to use as a column name. Default is `_`.
+        Applicable only if `flatten_levels` is `True`.
     :param aggfunc: An aggregate function. It can be a function, a string,
         list of functions, or a dictionary, pairing column name with aggregate
         function.
@@ -6519,10 +6529,9 @@ def pivot_wider(
     :raises ValueError: if values in `index` or `names_from` or `values_from`
         do not exist in the dataframe.
     :raises ValueError: if the combination of `index` and `names_from` is not
-        unique and `aggfunc` is `None``.
+        unique and `aggfunc` is `None`.
 
 
-    .. # noqa: DAR402
     """
 
     df = df.copy()
@@ -6580,8 +6589,7 @@ def conditional_join(
     suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
-
-    This is a convenience function that operates similarly to `pd.merge``,
+    This is a convenience function that operates similarly to `pd.merge`,
     but allows joins on inequality operators, or a combination of equi
     and non-equi joins.
 
@@ -6595,7 +6603,7 @@ def conditional_join(
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
     as a variable argument of tuples, where the tuple is of
-    the form `(left_on, right_on, op)``; `left_on` is the column
+    the form `(left_on, right_on, op)`; `left_on` is the column
     label from `df`, `right_on` is the column label from `right`,
     while `op` is the operator.
 
@@ -6619,8 +6627,8 @@ def conditional_join(
 
     Example :
 
-    df1::
-
+    df1:
+    ```python
             id  value_1
         0   1        2
         1   1        5
@@ -6628,10 +6636,10 @@ def conditional_join(
         3   2        1
         4   2        3
         5   3        4
+    ```
 
-
-    df2::
-
+    df2:
+    ```python
             id  value_2A  value_2B
         0   1         0         1
         1   1         3         5
@@ -6641,9 +6649,11 @@ def conditional_join(
         5   2         2         4
         6   2         3         6
         7   3         1         3
+    ```
 
-    Join on equi and non-equi operators is possible::
+    Join on equi and non-equi operators is possible:
 
+    ```python
         df1.conditional_join(
                 right = df2,
                 ('id', 'id', '=='),
@@ -6658,9 +6668,11 @@ def conditional_join(
         2     2        1     2         0         1
         3     2        3     2         2         4
         4     2        3     2         3         6
+    ```
 
-    The default join is `inner`. left and right joins are supported as well::
+    The default join is `inner`. left and right joins are supported as well:
 
+    ```python
         df1.conditional_join(
                 right = df2,
                 ('id', 'id', '=='),
@@ -6698,10 +6710,11 @@ def conditional_join(
         5   2.0      3.0     2         2         4
         6   2.0      3.0     2         3         6
         7   NaN      NaN     3         1         3
-
+    ```
 
     Join on just the non-equi joins is also possible::
 
+    ```python
         df1.conditional_join(
                 right = df2,
                 ('value_1', 'value_2A', '>'),
@@ -6716,12 +6729,14 @@ def conditional_join(
         2     2        3     2         2         4
         3     3        4     1         3         5
         4     3        4     2         3         6
+    ```
 
-    The default for the `suffixes` parameter is `(_x, _y)``,
-    One of the suffixes can be set as `None``;
+    The default for the `suffixes` parameter is `(_x, _y)`,
+    One of the suffixes can be set as `None`;
     this avoids a suffix on the columns from the
-    relevant dataframe::
+    relevant dataframe:
 
+    ```python
         df1.conditional_join(
                 right = df2,
                 ('value_1', 'value_2A', '>'),
@@ -6737,10 +6752,12 @@ def conditional_join(
         2   2        3     2         2         4
         3   3        4     1         3         5
         4   3        4     2         3         6
+    ```
 
     Join on just equality is also possible, but should be avoided -
-    Pandas merge/join is more efficient::
+    Pandas merge/join is more efficient:
 
+    ```python
         df1.conditional_join(
                 right = df2,
                 ('col_a', 'col_a', '=='),
@@ -6750,9 +6767,11 @@ def conditional_join(
              col_a_x col_b  col_a_y col_c
         0        2     B        2     X
         1        3     C        3     Y
+    ```
 
-    Join on not equal -> `!=` ::
+    Join on not equal -> `!=` :
 
+    ```python
         df1.conditional_join(
                 right = df2,
                 ('col_a', 'col_a', '!='),
@@ -6767,12 +6786,13 @@ def conditional_join(
         4        2     B        3     Y
         5        3     C        0     Z
         6        3     C        2     X
-
+    ```
 
     If the order from `right` is not important,
-    `sort_by_appearance` can be set to  `False``
-    (this is the default)::
+    `sort_by_appearance` can be set to  `False`
+    (this is the default):
 
+    ```python
         df1.conditional_join(
                 right = df2,
                 ('col_a', 'col_a', '>'),
@@ -6784,20 +6804,21 @@ def conditional_join(
         1        2     B        0     Z
         2        3     C        0     Z
         3        3     C        2     X
+    ```
 
-
-    .. note:: If `df` or `right` has labeled indices,
+    **Note**: If `df` or `right` has labeled indices,
               it will be lost after the merge,
               and replaced with an integer index.
               If you wish to preserve the labeled indices,
               you can convert them to columns
               before running the conditional join.
 
-    .. note:: All the columns from `df` and `right`
+    **Note**: All the columns from `df` and `right`
               are returned in the final output.
 
     Functional usage syntax:
 
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -6811,21 +6832,23 @@ def conditional_join(
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
                 )
+    ```
 
     Method chaining syntax:
 
+    ```python
         df = df.conditional_join(
                 right = right,
                 *conditions,
                 sort_by_appearance = True/False,
                 suffixes = ("_x", "_y"),
                 )
+    ```
 
-
-    :param df: A Pandas dataframe.
+    :param df: A Pandas DataFrame.
     :param right: Named Series or DataFrame to join to.
     :param conditions: Variable argument of tuple(s) of the form
-        `(left_on, right_on, op)``, where `left_on` is the column
+        `(left_on, right_on, op)`, where `left_on` is the column
         label from `df`, `right_on` is the column label from `right`,
         while `op` is the operator. The operator can be any of
         `==`, `!=`, `<=`, `<`, `>=`, `>`.
@@ -6836,13 +6859,13 @@ def conditional_join(
         values from `right` that meet the join condition will be returned
         in the final dataframe in the same order that they were before the
         join.
-    :param suffixes: tuple, default is `(_x, _y)``.
+    :param suffixes: tuple, default is `(_x, _y)`.
         A sequence of length 2, where each element is optionally a string,
         indicating the suffix to add to the overlapping column names
-        in `df` and `right`. Pass a value of `None``
+        in `df` and `right`. Pass a value of `None`
         instead of a string to indicate that the  column name
         from `df` or `right` should be left as-is, with no suffix.
-        At least one of the values must not be `None``.
+        At least one of the values must not be `None`.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     :raises ValueError: if columns from `df` or `right` is a MultiIndex.
     :raises ValueError: if `right` is an unnamed Series.
@@ -6851,8 +6874,6 @@ def conditional_join(
     :raises ValueError: if `left_on` and `right_on` in condition are not
         both numeric, or string, or datetime.
 
-
-    .. # noqa: DAR402
     """
 
     (

@@ -6651,6 +6651,18 @@ def conditional_join(
     Join on just equality is also possible, but should be avoided -
     Pandas merge/join is more efficient::
 
+        df1
+            col_a col_b
+        0      1     A
+        1      2     B
+        2      3     C
+
+        df2
+            col_a col_c
+        0      0     Z
+        1      2     X
+        2      3     Y
+
         df1.conditional_join(
                 df2,
                 ('col_a', 'col_a', '=='),

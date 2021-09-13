@@ -1922,7 +1922,7 @@ def _computations_pivot_wider(
     # check dtype of `names_from` is string
     names_from_all_strings = df.filter(names_from).agg(is_string_dtype).all()
 
-    if names_sort is True:
+    if names_sort:
         # Categorical dtypes created only for `names_from`
         # since that is what will become the new column names
         dtypes = {
@@ -1941,7 +1941,7 @@ def _computations_pivot_wider(
         df = df.reorder_levels(order=levels_order, axis="columns")
 
     # an empty df is likely because
-    # there are no `values_from`
+    # there is no `values_from`
     if any((df.empty, flatten_levels is False)):
         return df
 
@@ -1953,7 +1953,7 @@ def _computations_pivot_wider(
         else:
             df.columns = df.columns.astype(str)
 
-    if names_sep is not None and (isinstance(df.columns, pd.MultiIndex)):
+    if (names_sep is not None) and (isinstance(df.columns, pd.MultiIndex)):
         df.columns = df.columns.map(names_sep.join)
 
     if names_glue:

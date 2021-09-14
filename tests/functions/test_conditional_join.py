@@ -826,14 +826,7 @@ def test_dual_conditions_eq_and_ne(df, right):
     """Test output for equal and not equal conditions."""
     assume(not df.empty)
     assume(not right.empty)
-
     eq_A, eq_B, ne_A, ne_B = ("B", "Numeric", "E", "Dates")
-
-    # nulls are not preserved for multiple conditions
-    # that involve `!=`
-    df = df.dropna(subset=["B", "E"])
-    right = right.dropna(subset=["Numeric", "Dates"])
-
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
@@ -848,8 +841,9 @@ def test_dual_conditions_eq_and_ne(df, right):
         how="inner",
         sort_by_appearance=True,
     )
-
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
+    # nulls are not preserved for multiple conditions
+    # that involve `!=`
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
     assert_frame_equal(actual, actual)
 
 
@@ -861,12 +855,6 @@ def test_dual_conditions_ne_and_eq(df, right):
     assume(not right.empty)
 
     eq_A, eq_B, ne_A, ne_B = ("B", "Numeric", "E", "Dates")
-
-    # nulls are not preserved for multiple conditions
-    # that involve `!=`
-    df = df.dropna(subset=["B", "E"])
-    right = right.dropna(subset=["Numeric", "Dates"])
-
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
@@ -881,6 +869,7 @@ def test_dual_conditions_ne_and_eq(df, right):
         how="inner",
         sort_by_appearance=True,
     )
-
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
+    # nulls are not preserved for multiple conditions
+    # that involve `!=`
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
     assert_frame_equal(expected, actual)

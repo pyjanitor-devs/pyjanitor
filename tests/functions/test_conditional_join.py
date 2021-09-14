@@ -833,7 +833,9 @@ def test_dual_conditions_eq_and_ne(df, right):
         .query(f"{eq_A} == {eq_B} and {ne_A} != {ne_B}")
         .reset_index(drop=True)
     )
-    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
+    # nulls are not preserved for multiple conditions
+    # that involve `!=`
+    expected = expected.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
     actual = df.conditional_join(
         right,
         (eq_A, eq_B, "=="),
@@ -841,9 +843,8 @@ def test_dual_conditions_eq_and_ne(df, right):
         how="inner",
         sort_by_appearance=True,
     )
-    # nulls are not preserved for multiple conditions
-    # that involve `!=`
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
+
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
     assert_frame_equal(actual, actual)
 
 
@@ -861,7 +862,9 @@ def test_dual_conditions_ne_and_eq(df, right):
         .query(f"{eq_A} != {eq_B} and {ne_A} == {ne_B}")
         .reset_index(drop=True)
     )
-    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
+    # nulls are not preserved for multiple conditions
+    # that involve `!=`
+    expected = expected.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
     actual = df.conditional_join(
         right,
         (eq_A, eq_B, "!="),
@@ -869,7 +872,6 @@ def test_dual_conditions_ne_and_eq(df, right):
         how="inner",
         sort_by_appearance=True,
     )
-    # nulls are not preserved for multiple conditions
-    # that involve `!=`
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
+
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
     assert_frame_equal(expected, actual)

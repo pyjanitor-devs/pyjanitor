@@ -2692,20 +2692,41 @@ def _conditional_join_type_check(
                        Strings can only be compared
                        on the equal(`==`) operator.
                        """
+    error_msg_dtype = """
+                       The left column ({l_name}) is a {dtype} type,
+                       while the right column ({r_name}) is not.
+                       Kindly ensure both columns are the same dtype.
+                       """
     if is_string_dtype(left_column):
         if not is_string_dtype(right_column):
-            raise ValueError(error_msg)
+            mapper = {
+                "l_name": left_column.name,
+                "dtype": "string",
+                "r_name": right_column.name,
+            }
+            raise ValueError(error_msg_dtype.format(**mapper))
         if op != JOINOPERATOR.STRICTLY_EQUAL.value:
             raise ValueError(error_msg_string)
         return None
     if is_numeric_dtype(left_column):
         if not is_numeric_dtype(right_column):
-            raise ValueError(error_msg)
+            mapper = {
+                "l_name": left_column.name,
+                "dtype": "numeric",
+                "r_name": right_column.name,
+            }
+            raise ValueError(error_msg_dtype.format(**mapper))
         return None
     if is_datetime64_dtype(left_column):
         if not is_datetime64_dtype(right_column):
-            raise ValueError(error_msg)
+            mapper = {
+                "l_name": left_column.name,
+                "dtype": "datetime",
+                "r_name": right_column.name,
+            }
+            raise ValueError(error_msg_dtype.format(**mapper))
         return None
+    raise ValueError(error_msg)
 
 
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:

@@ -277,13 +277,25 @@ def test_dtype_strings_non_equi(df, right):
 
 
 @given(df=conditional_df(), s=conditional_series())
-def test_dtype_Series(df, s):
+def test_dtype_str(df, s):
     """
     Raise ValueError if dtype of column in `df`
     does not match the dtype of column from `right`.
     """
     with pytest.raises(ValueError):
         s.name = "A"
+        df.conditional_join(s, ("C", "A", "<"), suffixes=("_x", "_y"))
+
+
+@given(df=conditional_df(), s=conditional_series())
+def test_dtype_not_string_datetime_numeric(df, s):
+    """
+    Raise ValueError if the dtype of column in `df`
+    is not a string, numeric, or datetime dtype.
+    """
+    with pytest.raises(ValueError):
+        s.name = "A"
+        df["C"] = df["C"].astype("category")
         df.conditional_join(s, ("C", "A", "<"), suffixes=("_x", "_y"))
 
 

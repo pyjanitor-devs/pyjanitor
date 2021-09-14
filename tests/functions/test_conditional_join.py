@@ -841,7 +841,9 @@ def test_dual_conditions_eq_and_ne(df, right):
         how="inner",
         sort_by_appearance=True,
     )
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
+    # nulls are not preserved for multiple conditions
+    # that involve `!=`
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
     assert_frame_equal(actual, actual)
 
 
@@ -867,5 +869,7 @@ def test_dual_conditions_ne_and_eq(df, right):
         how="inner",
         sort_by_appearance=True,
     )
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
+    # nulls are not preserved for multiple conditions
+    # that involve `!=`
+    actual = actual.filter([eq_A, eq_B, ne_A, ne_B]).dropna()
     assert_frame_equal(expected, actual)

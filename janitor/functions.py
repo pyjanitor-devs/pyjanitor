@@ -6517,10 +6517,6 @@ def pivot_wider(
         form.
     :raises ValueError: if `names_from` is None.
     :raises TypeError: if `flatten_levels` is not a boolean.
-    :raises ValueError: if values in `index` or `names_from` or `values_from`
-        do not exist in the dataframe.
-    :raises ValueError: if the combination of `index` and `names_from` is not
-        unique and `aggfunc` is `None`.
 
     # noqa: DAR402
     """

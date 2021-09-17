@@ -1,13 +1,16 @@
 # Changelog
 
 ## [Unreleased]
--   [INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521
 
 
 ## [v0.21.2] - 2021-09-01
 
 -   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
 -   [INF] Add SciPy as explicit dependency in `base.in`. Issue #895 @ericmjl
+-   [ENH] Fix bug in `pivot_longer` for wrong output when `names_pattern` is a sequence with a single value. Issue #885 @samukweku
+-   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
+-   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku
+-   [INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521
 
 ## [v0.21.1] - 2021-08-29
 

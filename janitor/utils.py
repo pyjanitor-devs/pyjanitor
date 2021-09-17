@@ -2,13 +2,15 @@
 
 import fnmatch
 import functools
+from collections import defaultdict
 import os
 import re
 import socket
 import sys
 import warnings
+import operator
 from collections.abc import Callable as dispatch_callable
-from itertools import chain, combinations
+from itertools import chain
 from typing import (
     Callable,
     Dict,
@@ -668,7 +670,6 @@ def _sub_expand_grid(  # noqa: F811
             value.name = f"{key}_{value.name}"
         else:
             value.name = key
-
     return value
 
 
@@ -1067,97 +1068,140 @@ def _data_checks_pivot_longer(
             column_names = list(column_names)
         column_names = _select_columns(column_names, df)
 
-    if isinstance(names_to, str):
-        names_to = [names_to]
+    len_names_to = 0
+    if names_to is not None:
+        if isinstance(names_to, str):
+            names_to = [names_to]
+        elif isinstance(names_to, tuple):
+            names_to = list(names_to)
+        check("names_to", names_to, [list])
 
-    elif isinstance(names_to, tuple):
-        names_to = list(names_to)
+        unique_names_to = set()
+        for word in names_to:
+            if not isinstance(word, str):
+                raise TypeError(
+                    f"""
+                    All entries in the names_to
+                    argument must be strings.
+                    {word} is of type {type(word).__name__}
+                    """
+                )
 
-    check("names_to", names_to, [list])
+            if word in unique_names_to:
+                raise ValueError(
+                    f"""
+                    {word} already exists in names_to.
+                    Duplicates are not allowed.
+                    """
+                )
+            unique_names_to.add(word)  # noqa: PD005
+        unique_names_to = None
 
-    if not all((isinstance(word, str) for word in names_to)):
-        raise TypeError("All entries in `names_to` argument must be strings.")
+        len_names_to = len(names_to)
 
-    if len(names_to) > 1:
-        if all((names_pattern, names_sep)):
-            raise ValueError(
-                """
-                Only one of `names_pattern` or `names_sep`
-                should be provided.
-                """
-            )
-
-        if (".value" in names_to) and (names_to.count(".value") > 1):
-            raise ValueError("There can be only one `.value` in `names_to`.")
-
-    # names_sep creates more than one column
-    # whereas regex with names_pattern can be limited to one column
-    if (len(names_to) == 1) and (names_sep is not None):
+    if names_sep and names_pattern:
         raise ValueError(
             """
-            For a single `names_to` value,
-            `names_sep` is not required.
-            """
+                Only one of names_pattern or names_sep
+                should be provided.
+                """
         )
+
     if names_pattern is not None:
-        check("names_pattern", names_pattern, [str, Pattern, List, Tuple])
+        check("names_pattern", names_pattern, [str, Pattern, list, tuple])
+        if names_to is None:
+            raise ValueError(
+                """
+                Kindly provide values for names_to.
+                """
+            )
+        if isinstance(names_pattern, (str, Pattern)):
+            num_regex_grps = re.compile(names_pattern).groups
+
+            if len_names_to != num_regex_grps:
+                raise ValueError(
+                    f"""
+                    The length of names_to does not match
+                    the number of groups in names_pattern.
+                    The length of names_to is {len_names_to}
+                    while the number of groups in the regex
+                    is {num_regex_grps}
+                    """
+                )
 
         if isinstance(names_pattern, (list, tuple)):
-            if not all(
-                isinstance(word, (str, Pattern)) for word in names_pattern
-            ):
-                raise TypeError(
-                    """
-                    All entries in the `names_pattern` argument
-                    must be regular expressions.
+            for word in names_pattern:
+                if not isinstance(word, (str, Pattern)):
+                    raise TypeError(
+                        f"""
+                        All entries in the names_pattern argument
+                        must be regular expressions.
+                        `{word}` is of type {type(word).__name__}
+                        """
+                    )
+
+            if len(names_pattern) != len_names_to:
+                raise ValueError(
+                    f"""
+                    The length of names_to does not match
+                    the number of regexes in names_pattern.
+                    The length of names_to is {len_names_to}
+                    while the number of regexes
+                    is {len(names_pattern)}
                     """
                 )
 
-            if len(names_pattern) != len(names_to):
+            if names_to and (".value" in names_to):
                 raise ValueError(
                     """
-                    Length of `names_to` does not match
-                    number of patterns.
-                    """
-                )
-
-            if ".value" in names_to:
-                raise ValueError(
-                    """
-                    `.value` is not accepted
-                    if `names_pattern``
-                    is a list/tuple.
+                    `.value` is not accepted in names_to
+                    if names_pattern is a list/tuple.
                     """
                 )
 
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
+        if names_to is None:
+            raise ValueError(
+                """
+                Kindly provide values for names_to.
+                """
+            )
 
     check("values_to", values_to, [str])
+    df_columns = df.columns
 
-    if (values_to in df.columns) and not any(
-        (
-            ".value" in names_to,
-            isinstance(names_pattern, (list, tuple)),
-        )
-    ):
+    dot_value = (names_to is not None) and (
+        (".value" in names_to) or (isinstance(names_pattern, (list, tuple)))
+    )
+    if (values_to in df_columns) and (not dot_value):
         # copied from pandas' melt source code
         # with a minor tweak
         raise ValueError(
             """
             This dataframe has a column name that matches the
-            'values_to' column name of the resulting Dataframe.
-            Kindly set the 'values_to' parameter to a unique name.
+            values_to argument.
+            Kindly set the values_to parameter to a unique name.
+            """
+        )
+
+    # avoid duplicate columns in the final output
+    if (names_to is not None) and (not dot_value) and (values_to in names_to):
+        raise ValueError(
+            """
+            `values_to` is present in names_to;
+            this is not allowed. Kindly use a unique
+            name.
             """
         )
 
     if any((names_sep, names_pattern)) and (
-        isinstance(df.columns, pd.MultiIndex)
+        isinstance(df_columns, pd.MultiIndex)
     ):
         raise ValueError(
             """
             Unpivoting a MultiIndex column dataframe
-            when `names_sep` or `names_pattern` is supplied
+            when names_sep or names_pattern is supplied
             is not supported.
             """
         )
@@ -1166,7 +1210,7 @@ def _data_checks_pivot_longer(
         # adapted from pandas' melt source code
         if (
             (index is not None)
-            and isinstance(df.columns, pd.MultiIndex)
+            and isinstance(df_columns, pd.MultiIndex)
             and (not isinstance(index, list))
         ):
             raise ValueError(
@@ -1178,7 +1222,7 @@ def _data_checks_pivot_longer(
 
         if (
             (column_names is not None)
-            and isinstance(df.columns, pd.MultiIndex)
+            and isinstance(df_columns, pd.MultiIndex)
             and (not isinstance(column_names, list))
         ):
             raise ValueError(
@@ -1207,285 +1251,297 @@ def _data_checks_pivot_longer(
 
 
 def _sort_by_appearance_for_melt(
-    df: pd.DataFrame, ignore_index: bool, len_index: int
+    df: pd.DataFrame, len_index: int
 ) -> pd.DataFrame:
     """
     This function sorts the resulting dataframe by appearance,
     via the `sort_by_appearance` parameter in `computations_pivot_longer`.
-
-    An example for `sort_by_appearance`:
-
-    Say data looks like this :
-        id, a1, a2, a3, A1, A2, A3
-         1, a, b, c, A, B, C
-
-    when unpivoted into long form, it will look like this :
-              id instance    a     A
-        0     1     1        a     A
-        1     1     2        b     B
-        2     1     3        c     C
-
-    where the column `a` comes before `A`, as it was in the source data,
-    and in column `a`, `a > b > c`, also as it was in the source data.
 
     A dataframe that is sorted by appearance is returned.
     """
 
     index_sorter = None
 
+    # explanation here to help future me :)
+
     # if the height of the new dataframe
     # is the same as the height of the original dataframe,
     # then there is no need to sort by appearance
     length_check = any((len_index == 1, len_index == len(df)))
 
-    if not length_check:
-        index_sorter = np.reshape(np.arange(len(df)), (-1, len_index)).ravel(
-            order="F"
-        )
-        df = df.take(index_sorter)
+    # pd.melt flips the columns into vertical positions
+    # it `tiles` the index during the flipping
+    # example:
 
-        if ignore_index:
-            df.index = np.arange(len(df))
+    #          first last  height  weight
+    # person A  John  Doe     5.5     130
+    #        B  Mary   Bo     6.0     150
+
+    # melting the dataframe above yields:
+    # df.melt(['first', 'last'])
+
+    #   first last variable  value
+    # 0  John  Doe   height    5.5
+    # 1  Mary   Bo   height    6.0
+    # 2  John  Doe   weight  130.0
+    # 3  Mary   Bo   weight  150.0
+
+    # sort_by_appearance `untiles` the index
+    # and keeps all `John` before all `Mary`
+    # since `John` appears first in the original dataframe:
+
+    #   first last variable  value
+    # 0  John  Doe   height    5.5
+    # 1  John  Doe   weight  130.0
+    # 2  Mary   Bo   height    6.0
+    # 3  Mary   Bo   weight  150.0
+
+    # to get to this second form, which is sorted by appearance,
+    # get the lengths of the dataframe
+    # before and after it is melted
+    # for the example above, the length before melting is 2
+    # and after - 4.
+    # reshaping allows us to track the original positions
+    # in the previous dataframe ->
+    # np.reshape([0,1,2,3], (-1, 2))
+    # array([[0, 1],
+    #        [2, 3]])
+    # ravel, with the Fortran order (`F`) ensures the John's are aligned
+    # before the Mary's -> [0, 2, 1, 3]
+    # the raveled array is then passed to `take`
+    if not length_check:
+        index_sorter = np.arange(len(df))
+        index_sorter = np.reshape(index_sorter, (-1, len_index))
+        index_sorter = index_sorter.ravel(order="F")
+        df = df.take(index_sorter)
 
     return df
 
 
-def _pivot_longer_extractions(
+def _pivot_longer_names_sep(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple]] = None,
-    column_names: Optional[Union[List, Tuple]] = None,
-    names_to: Optional[List] = None,
-    names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[
-        Union[
-            List[Union[str, Pattern]], Tuple[Union[str, Pattern]], str, Pattern
-        ]
-    ] = None,
-) -> Tuple:
-
+    index,
+    names_to: list,
+    names_sep: Union[str, Pattern],
+    values_to: str,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+) -> pd.DataFrame:
     """
-    This is where the labels within the column names are separated
-    into new columns, and is executed if `names_sep` or `names_pattern`
-    is not None.
-
-    A dataframe is returned.
+    This takes care of pivoting scenarios where
+    names_sep is provided.
     """
 
-    if any((names_sep, names_pattern)):
-        if index:
-            df = df.set_index(index, append=True)
+    mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
+    len_mapping_columns = len(mapping.columns)
+    len_names_to = len(names_to)
 
-        if column_names:
-            df = df.loc[:, column_names]
-
-    mapping = None
-    if names_sep:
-        mapping = df.columns.str.split(names_sep, expand=True)
-
-        if len(mapping.names) != len(names_to):
-            raise ValueError(
-                """
-                The length of `names_to` does not match
-                the number of columns extracted.
-                """
-            )
-        mapping.names = names_to
-
-    elif isinstance(names_pattern, str):
-        mapping = df.columns.str.extract(names_pattern, expand=True)
-
-        if mapping.isna().all(axis=None):
-            raise ValueError(
-                """
-                No labels in the columns
-                matched the regular expression
-                in `names_pattern``.
-                Kindly provide a regular expression
-                that matches all labels in the columns.
-                """
-            )
-
-        if mapping.isna().any(axis=None):
-            raise ValueError(
-                """
-                Not all labels in the columns
-                matched the regular expression
-                in `names_pattern``.
-                Kindly provide a regular expression
-                that matches all labels in the columns.
-                """
-            )
-
-        if len(names_to) != len(mapping.columns):
-            raise ValueError(
-                """
-                The length of `names_to` does not match
-                the number of columns extracted.
-                """
-            )
-
-        if len(mapping.columns) == 1:
-            mapping = pd.Index(mapping.iloc[:, 0], name=names_to[0])
-        else:
-            mapping = pd.MultiIndex.from_frame(mapping, names=names_to)
-
-    elif isinstance(names_pattern, (list, tuple)):
-        mapping = [
-            df.columns.str.contains(regex, na=False) for regex in names_pattern
-        ]
-
-        if not np.any(mapping):
-            raise ValueError(
-                """
-                Not all labels in the columns
-                matched the regular expression
-                in `names_pattern``.
-                Kindly provide a regular expression
-                that matches all labels in the columns.
-                """
-            )
-
-        mapping = np.select(mapping, names_to, None)
-        mapping = pd.Index(mapping, name=".value")
-
-        if np.any(mapping.isna()):
-            raise ValueError(
-                """
-                The regular expressions in `names_pattern``
-                did not return all matches.
-                Kindly provide a regular expression that
-                captures all patterns.
-                """
-            )
-
-    outcome = None
-    single_index_mapping = not isinstance(mapping, pd.MultiIndex)
-    if single_index_mapping:
-        outcome = pd.Series(mapping)
-        outcome = outcome.groupby(outcome).cumcount()
-        mapping = pd.MultiIndex.from_arrays([mapping, outcome])
-        outcome = None
-
-    df.columns = mapping
-
-    dot_value = any(
-        ((".value" in names_to), isinstance(names_pattern, (list, tuple)))
-    )
-
-    first = None
-    last = None
-    complete_index = None
-    dtypes = None
-    cumcount = None
-    if dot_value:
-        if not mapping.is_unique:
-            cumcount = pd.factorize(mapping)[0]
-            cumcount = pd.Series(cumcount).groupby(cumcount).cumcount()
-        cumcount_check = cumcount is not None
-        mapping_names = mapping.names
-        mapping = [mapping.get_level_values(name) for name in mapping_names]
-        dtypes = [
-            CategoricalDtype(categories=entry.unique(), ordered=True)
-            for entry in mapping
-        ]
-        mapping = [
-            entry.astype(dtype) for entry, dtype in zip(mapping, dtypes)
-        ]
-
-        if cumcount_check:
-            mapping.append(cumcount)
-        mapping = pd.MultiIndex.from_arrays(mapping)
-        df.columns = mapping
-
-        mapping = df.columns
-        if cumcount_check:
-            mapping = mapping.droplevel(-1)
-
-        # test if all combinations are present
-        first = mapping.get_level_values(".value")
-        last = mapping.droplevel(".value")
-        outcome = first.groupby(last)
-        outcome = (value for _, value in outcome.items())
-        outcome = combinations(outcome, 2)
-        outcome = (
-            left.symmetric_difference(right).empty for left, right in outcome
+    if len_names_to != len_mapping_columns:
+        raise ValueError(
+            f"""
+            The length of names_to does not match
+            the number of levels extracted.
+            The length of names_to is {len_names_to}
+            while the number of levels extracted is
+            {len_mapping_columns}.
+            """
         )
 
-        # include all combinations into the columns
-        if not all(outcome):
-            if isinstance(last, pd.MultiIndex):
-                indexer = (first.drop_duplicates(), last.drop_duplicates())
-                complete_index = _complete_indexer_expand_grid(indexer)
-                complete_index = complete_index.reorder_levels(
-                    [*mapping.names]
+    mapping.columns = names_to
+
+    if ".value" in names_to:
+        exclude = mapping[".value"].array
+        for word in names_to:
+            if (word != ".value") and (word in exclude):
+                raise ValueError(
+                    f"""
+                    `{word}` in names_to already exists
+                    in the new dataframe's columns.
+                    Kindly use a unique name.
+                    """
                 )
 
-            else:
-                complete_index = pd.MultiIndex.from_product(mapping.levels)
+    # having unique columns ensure the data can be recombined
+    # successfully via pd.concat; if the columns are not unique,
+    # a counter is created with cumcount to ensure uniqueness.
+    # This is dropped later on, and is not part of the final
+    # dataframe.
+    # This is relevant only for scenarios where `.value` is
+    # in names_to.
+    mapping_is_unique = not mapping.duplicated().any(axis=None).item()
 
-            df = df.reindex(columns=complete_index)
-        if cumcount_check:
-            df = df.droplevel(-1, axis=1)
+    if mapping_is_unique or (".value" not in names_to):
+        mapping = pd.MultiIndex.from_frame(mapping)
+    else:
+        cumcount = mapping.groupby(names_to).cumcount()
+        mapping = [series for _, series in mapping.items()]
+        mapping.append(cumcount)
+        mapping = pd.MultiIndex.from_arrays(mapping)
+    df.columns = mapping
 
-    return df, single_index_mapping
+    return _pivot_longer_frame_MultiIndex(
+        df, index, sort_by_appearance, ignore_index, values_to
+    )
+
+
+def _pivot_longer_names_pattern_str(
+    df: pd.DataFrame,
+    index,
+    names_to: list,
+    names_pattern: Union[str, Pattern],
+    values_to: str,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+) -> pd.DataFrame:
+    """
+    This takes care of pivoting scenarios where
+    names_pattern is provided, and is a string.
+    """
+
+    mapping = df.columns.str.extract(names_pattern, expand=True)
+
+    nulls_found = mapping.isna()
+
+    if nulls_found.all(axis=None):
+        raise ValueError(
+            """
+            No labels in the columns
+            matched the regular expression
+            in names_pattern.
+            Kindly provide a regular expression
+            that matches all labels in the columns.
+            """
+        )
+
+    if nulls_found.any(axis=None):
+        raise ValueError(
+            f"""
+            Not all labels in the columns
+            matched the regular expression
+            in names_pattern.Column Labels
+            {*df.columns[nulls_found.any(axis='columns')],}
+            could not be matched with the regex.
+            Kindly provide a regular expression
+            (with the correct groups) that matches all labels
+            in the columns.
+            """
+        )
+
+    mapping.columns = names_to
+
+    if len(names_to) == 1:
+        mapping = mapping.squeeze()
+        df.columns = mapping
+        return _pivot_longer_frame_single_Index(
+            df, index, sort_by_appearance, ignore_index, values_to
+        )
+
+    if ".value" in names_to:
+        exclude = mapping[".value"].array
+        for word in names_to:
+            if (word != ".value") and (word in exclude):
+                raise ValueError(
+                    f"""
+                    `{word}` in names_to already exists
+                    in the new dataframe's columns.
+                    Kindly use a unique name.
+                    """
+                )
+
+    mapping_is_unique = not mapping.duplicated().any(axis=None).item()
+
+    if mapping_is_unique or (".value" not in names_to):
+        mapping = pd.MultiIndex.from_frame(mapping)
+    else:
+        cumcount = mapping.groupby(names_to).cumcount()
+        mapping = [series for _, series in mapping.items()]
+        mapping.append(cumcount)
+        mapping = pd.MultiIndex.from_arrays(mapping)
+    df.columns = mapping
+
+    return _pivot_longer_frame_MultiIndex(
+        df, index, sort_by_appearance, ignore_index, values_to
+    )
+
+
+def _pivot_longer_names_pattern_sequence(
+    df: pd.DataFrame,
+    index,
+    names_to: list,
+    names_pattern: Union[list, tuple],
+    sort_by_appearance: bool,
+    ignore_index: bool,
+) -> pd.DataFrame:
+    """
+    This takes care of pivoting scenarios where
+    names_pattern is provided, and is a list/tuple.
+    """
+
+    df_columns = df.columns
+    mapping = [
+        df_columns.str.contains(regex, na=False, regex=True)
+        for regex in names_pattern
+    ]
+
+    matches = [arr.any() for arr in mapping]
+    if np.any(matches).item() is False:
+        raise ValueError(
+            """
+            No label in the columns
+            matched the regexes
+            in names_pattern.
+            Kindly provide regexes
+            that match all labels
+            in the columns.
+            """
+        )
+    for position, boolean in enumerate(matches):
+        if boolean.item() is False:
+            raise ValueError(
+                f"""
+                No match was returned for
+                regex `{names_pattern[position]}`
+                """
+            )
+
+    mapping = np.select(mapping, names_to, None)
+    # guard .. for scenarios where not all labels
+    # in the columns are matched to the regex(es)
+    # the any_nulls takes care of that,
+    # via boolean indexing
+    any_nulls = pd.notna(mapping)
+    mapping = pd.MultiIndex.from_arrays([mapping, df_columns])
+    mapping.names = [".value", None]
+    df.columns = mapping
+    if any_nulls.any():
+        df = df.loc[:, any_nulls]
+    df = df.droplevel(level=-1, axis="columns")
+
+    return _pivot_longer_frame_single_Index(
+        df, index, sort_by_appearance, ignore_index, values_to=None
+    )
 
 
 def _computations_pivot_longer(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple]] = None,
-    column_names: Optional[Union[List, Tuple]] = None,
-    names_to: Optional[Union[List, Tuple, str]] = None,
-    values_to: Optional[str] = "value",
-    column_level: Optional[Union[int, str]] = None,
-    names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[
-        Union[
-            List[Union[str, Pattern]], Tuple[Union[str, Pattern]], str, Pattern
-        ]
-    ] = None,
-    sort_by_appearance: Optional[bool] = False,
-    ignore_index: Optional[bool] = True,
+    index: list = None,
+    column_names: list = None,
+    names_to: list = None,
+    values_to: str = "value",
+    column_level: Union[int, str] = None,
+    names_sep: Union[str, Pattern] = None,
+    names_pattern: Union[list, tuple, str, Pattern] = None,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
 ) -> pd.DataFrame:
     """
-    This is the main workhorse of the `pivot_longer` function.
-    Below is a summary of how the function accomplishes its tasks:
-
-    1. If `names_sep` or `names_pattern` is not provided, then regular data
-       unpivoting is covered with pandas melt.
-
-    2. If `names_sep` or `names_pattern` is not None, the first step is to
-       extract the relevant values from the columns, using either
-       `str.split(expand=True)`, if `names_sep` is provided, or `str.extract()`
-       if `names_pattern` is provided. If `names_pattern` is a list/tuple of
-       regular expressions, then `str.contains` along with `numpy` select is
-       used for the extraction.
-
-        After the extraction, `pd.melt` is executed.
-
-    3. 'The labels in `names_to` become the new column names, if `.value`
-        is not in `names_to`, or if `names_pattern` is not a list/tuple of
-        regexes.
-
-    4.  If, however, `names_to` contains `.value`, or `names_pattern` is a
-        list/tuple of regexes, then the `.value` column is unstacked(in a
-        manner of speaking, `pd.DataFrame.unstack` is not actually used) to
-        become new column name(s), while the other values, if any, go under
-        different column names. `values_to` is overriden.
-
-    5.  If `ignore_index` is `False`, then the index of the source dataframe is
-        returned, and repeated as necessary.
-
-    6.  If the user wants the data in order of appearance, in which case, the
-        unpivoted data appears in stacked form, then `sort_by_appearance`
-        covers that.
-
-    An unpivoted dataframe is returned.
+    This is where the final dataframe in long form is created.
     """
 
     if (
         (index is None)
         and column_names
-        and (len(df.columns) > len(column_names))
+        and (df.columns.size > len(column_names))
     ):
         index = [
             column_name
@@ -1493,10 +1549,21 @@ def _computations_pivot_longer(
             if column_name not in column_names
         ]
 
-    len_index = len(df)
-
     # scenario 1
     if all((names_pattern is None, names_sep is None)):
+        if names_to:
+            for word in names_to:
+                if word in index:
+                    raise ValueError(
+                        f"""
+                        `{word}` in names_to already exists
+                        in column labels assigned
+                        to the dataframe's index parameter.
+                        Kindly use a unique name.
+                        """
+                    )
+
+        len_index = len(df)
 
         df = pd.melt(
             df,
@@ -1509,83 +1576,256 @@ def _computations_pivot_longer(
         )
 
         if sort_by_appearance:
-            df = _sort_by_appearance_for_melt(
-                df=df, ignore_index=ignore_index, len_index=len_index
-            )
+            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+        if ignore_index:
+            df.index = np.arange(len(df))
 
         return df
 
-    df, single_index_mapping = _pivot_longer_extractions(
-        df=df,
-        index=index,
-        column_names=column_names,
-        names_to=names_to,
-        names_sep=names_sep,
-        names_pattern=names_pattern,
+    # names_sep or names_pattern
+    if index:
+        df = df.set_index(index, append=True)
+
+    if column_names:
+        df = df.loc[:, column_names]
+
+    df_index_names = df.index.names
+
+    # checks to avoid duplicate columns
+    # idea is that if there is no `.value`
+    # then the word should not exist in the index
+    # if, however there is `.value`
+    # then the word should not be found in
+    # neither the index or column names
+
+    # idea from pd.wide_to_long
+    for word in names_to:
+        if (".value" not in names_to) and (word in df_index_names):
+            raise ValueError(
+                f"""
+                `{word}` in names_to already exists
+                in column labels assigned
+                to the dataframe's index.
+                Kindly use a unique name.
+                """
+            )
+
+        if (
+            (".value" in names_to)
+            and (word != ".value")
+            and (word in df_index_names)
+        ):
+            raise ValueError(
+                f"""
+                `{word}` in names_to already exists
+                in column labels assigned
+                to the dataframe's index.
+                Kindly use a unique name.
+                """
+            )
+
+    if names_sep:
+        return _pivot_longer_names_sep(
+            df,
+            index,
+            names_to,
+            names_sep,
+            values_to,
+            sort_by_appearance,
+            ignore_index,
+        )
+
+    if isinstance(names_pattern, (str, Pattern)):
+        return _pivot_longer_names_pattern_str(
+            df,
+            index,
+            names_to,
+            names_pattern,
+            values_to,
+            sort_by_appearance,
+            ignore_index,
+        )
+
+    return _pivot_longer_names_pattern_sequence(
+        df, index, names_to, names_pattern, sort_by_appearance, ignore_index
     )
 
-    # df_columns = df.columns
-    unique_names = None
-    drop_column = None
-    dot_value = ".value" in df.columns.names
 
-    if not dot_value:
-        if single_index_mapping:
-            unique_names = df.columns.names[0]
-            drop_column = "_".join([unique_names, values_to])
-            df.columns.names = [unique_names, drop_column]
-        df = pd.melt(
-            df, id_vars=None, value_name=values_to, ignore_index=False
-        )
+def _pivot_longer_frame_MultiIndex(
+    df: pd.DataFrame,
+    index,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+    values_to: str,
+) -> pd.DataFrame:
+    """
+    This creates the final dataframe,
+    where names_sep/names_pattern is provided,
+    and the extraction/split of the columns
+    result in a MultiIndex. This applies only
+    to names_sep or names_pattern as a string,
+    where more than one group is present in the
+    regex.
+    """
 
+    len_index = len(df)
+    mapping = df.columns
+    if ".value" not in mapping.names:
+        df = df.melt(ignore_index=False, value_name=values_to)
+
+        if sort_by_appearance:
+            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+        if index:
+            df = df.reset_index(index)
+
+        if ignore_index:
+            df.index = range(len(df))
+
+        return df
+
+    # labels that are not `.value`
+    # required when recombining list of individual dataframes
+    # as they become the keys in the concatenation
+    others = mapping.droplevel(".value").unique()
+    if isinstance(others, pd.MultiIndex):
+        levels = others.names
     else:
-        unique_names = df.columns.get_level_values(".value").categories
-        if single_index_mapping:
-            # passing `drop_column` to `melt` downstream
-            # avoids any name conflict with `var_name`,
-            # especially if var_name exists in the names
-            # associated with .value.
-            drop_column = "_".join(unique_names)
-        # ensures that the correct values are aligned,
-        # in preparation for the recombination
-        # of the columns downstream
-        df = df.sort_index(axis=1)
-
-        df = [
-            df.xs(key=name, level=".value", axis=1).melt(
-                ignore_index=False, var_name=drop_column, value_name=name
-            )
-            for name in unique_names
-        ]
-
-        first, *rest = df
-
-        # `first` has all the required columns;
-        # as such, there is no need to keep these columns in
-        # the other dataframes in `rest`;
-        # plus, we avoid duplicate columns during concatenation
-        # the only column we need is the last column,
-        # from each dataframe in `rest`
-        # uniformity in the data is already assured
-        # with the categorical dtype creation,
-        # followed by the sorting on the columns earlier.
-        rest = [frame.iloc[:, -1] for frame in rest]
-        # df = first.join(rest, how = 'outer', sort = False)
-        df = pd.concat([first, *rest], axis=1)
-
-    if single_index_mapping:
-        df = df.drop(columns=drop_column)
-
+        levels = others.name
+    # here, we get the dataframes containing the `.value` labels
+    # as columns
+    # and then concatenate vertically, using the other variables
+    # in `names_to`, which in this is case, is captured in `others`
+    # as keys. This forms a MultiIndex; reset_index puts it back
+    # as columns into the dataframe.
+    df = [df.xs(key=key, axis="columns", level=levels) for key in others]
+    df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
+    if isinstance(levels, str):
+        levels = [levels]
+    # represents the cumcount,
+    # used in making the columns unique (if they werent originally)
+    null_in_levels = None in levels
+    # gets rid of None, for scenarios where we
+    # generated cumcount to make the columns unique
+    levels = [level for level in levels if level]
+    # need to order the dataframe's index
+    # so that when resetting,
+    # the index appears before the other columns
+    # this is relevant only if `index` is True
+    # using numbers here, in case there are multiple Nones
+    # in the index names
     if index:
-        df = df.reset_index(level=index)
+        new_order = np.roll(np.arange(len(df.index.names)), len(index) + 1)
+        df = df.reorder_levels(new_order, axis="index")
+        df = df.reset_index(level=index + levels)
+    else:
+        df = df.reset_index(levels)
+
+    if null_in_levels:
+        df = df.droplevel(level=-1, axis="index")
+
+    if df.columns.names:
+        df = df.rename_axis(columns=None)
 
     if sort_by_appearance:
-        df = _sort_by_appearance_for_melt(
-            df=df, ignore_index=ignore_index, len_index=len_index
-        )
+        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
 
-    elif ignore_index:
-        df.index = np.arange(len(df))
+    if ignore_index:
+        df.index = range(len(df))
+
+    return df
+
+
+def _pivot_longer_frame_single_Index(
+    df: pd.DataFrame,
+    index,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+    values_to: str = None,
+) -> pd.DataFrame:
+    """
+    This creates the final dataframe,
+    where names_pattern is provided,
+    and the extraction/split of the columns
+    result in a single Index.
+    This covers scenarios where names_pattern
+    is a list/tuple, or where a single group
+    is present in the regex string.
+    """
+
+    if df.columns.name != ".value":
+        len_index = len(df)
+        df = df.melt(ignore_index=False, value_name=values_to)
+
+        if sort_by_appearance:
+            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+        if index:
+            df = df.reset_index(index)
+
+        if ignore_index:
+            df.index = range(len(df))
+
+        return df
+
+    mapping = df.columns
+    len_df_columns = mapping.size
+    mapping = mapping.unique()
+    len_mapping = mapping.size
+
+    len_index = len(df)
+
+    if len_df_columns > 1:
+        container = defaultdict(list)
+        for name, series in df.items():
+            container[name].append(series)
+        if len_mapping == 1:  # single unique column
+            container = container[mapping[0]]
+            df = pd.concat(
+                container, axis="index", join="outer", sort=False, copy=False
+            )
+            df = df.to_frame()
+        else:
+            # concat works fine here and efficient too,
+            # since we are combining Series
+            # a Series is returned for each concatenation
+            # the outer keys serve as a pairing mechanism
+            # for recombining the dataframe
+            # so if we have a dataframe like below:
+            #        id  x1  x2  y1  y2
+            #    0   1   4   5   7  10
+            #    1   2   5   6   8  11
+            #    2   3   6   7   9  12
+            # then x1 will pair with y1, and x2 will pair with y2
+            # if the dataframe column positions were alternated, like below:
+            #        id  x2  x1  y1  y2
+            #    0   1   5   4   7  10
+            #    1   2   6   5   8  11
+            #    2   3   7   6   9  12
+            # then x2 will pair with y1 and x1 will pair with y2
+            # it is simply a first come first serve approach
+            df = [
+                pd.concat(value, copy=False, keys=np.arange(len(value)))
+                for _, value in container.items()
+            ]
+            first, *rest = df
+            first = first.to_frame()
+            df = first.join(rest, how="outer", sort=False)
+            # drop outermost keys (used in the concatenation)
+            df = df.droplevel(level=0, axis="index")
+
+    if df.columns.names:
+        df = df.rename_axis(columns=None)
+
+    if sort_by_appearance:
+        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+    if index:
+        df = df.reset_index(index)
+
+    if ignore_index:
+        df.index = range(len(df))
 
     return df
 
@@ -1596,12 +1836,10 @@ def _data_checks_pivot_wider(
     names_from,
     values_from,
     names_sort,
+    levels_order,
     flatten_levels,
-    names_from_position,
-    names_prefix,
     names_sep,
-    aggfunc,
-    fill_value,
+    names_glue,
 ):
 
     """
@@ -1614,47 +1852,37 @@ def _data_checks_pivot_wider(
 
     if index is not None:
         if is_list_like(index):
-            index = list(index)
+            index = [*index]
         index = _select_columns(index, df)
 
     if names_from is None:
         raise ValueError(
-            "pivot_wider() missing 1 required argument: 'names_from'"
+            "pivot_wider() is missing 1 required argument: 'names_from'"
         )
 
     if is_list_like(names_from):
-        names_from = list(names_from)
+        names_from = [*names_from]
     names_from = _select_columns(names_from, df)
 
     if values_from is not None:
-        check("values_from", values_from, [list, str])
+        if is_list_like(values_from):
+            values_from = [*values_from]
         values_from = _select_columns(values_from, df)
+        if len(values_from) == 1:
+            values_from = values_from[0]
 
     check("names_sort", names_sort, [bool])
 
+    if levels_order is not None:
+        check("levesl_order", levels_order, [list])
+
     check("flatten_levels", flatten_levels, [bool])
-
-    if names_from_position is not None:
-        check("names_from_position", names_from_position, [str])
-        if names_from_position not in ("first", "last"):
-            raise ValueError(
-                """
-                The position of `names_from`
-                must be either "first" or "last".
-                """
-            )
-
-    if names_prefix is not None:
-        check("names_prefix", names_prefix, [str])
 
     if names_sep is not None:
         check("names_sep", names_sep, [str])
 
-    if aggfunc is not None:
-        check("aggfunc", aggfunc, [str, list, dict, callable])
-
-    if fill_value is not None:
-        check("fill_value", fill_value, [int, float, str])
+    if names_glue is not None:
+        check("names_glue", names_glue, [callable])
 
     return (
         df,
@@ -1662,12 +1890,10 @@ def _data_checks_pivot_wider(
         names_from,
         values_from,
         names_sort,
+        levels_order,
         flatten_levels,
-        names_from_position,
-        names_prefix,
         names_sep,
-        aggfunc,
-        fill_value,
+        names_glue,
     )
 
 
@@ -1677,103 +1903,60 @@ def _computations_pivot_wider(
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
     names_sort: Optional[bool] = False,
+    levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
-    names_from_position: Optional[str] = "first",
-    names_prefix: Optional[str] = None,
-    names_sep: Optional[str] = "_",
-    aggfunc: Optional[Union[str, list, dict, Callable]] = None,
-    fill_value: Optional[Union[int, float, str]] = None,
+    names_sep="_",
+    names_glue: Callable = None,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
 
-    By default, values from `names_from` are at the front of
-    each output column. If there are multiple `values_from`,
-    this can be changed via the `names_from_position`,
-    by setting it to `last`.
+    It is a wrapper around `pd.pivot`. For a MultiIndex, the
+    order of the levels can be changed with `levels_order`.
+    The output for multiple `names_from` and/or `values_from`
+    can be controlled with `names_glue` and/or `names_sep`.
 
-    A dataframe is returned.
+    A dataframe pivoted from long to wide form is returned.
     """
+    # check dtype of `names_from` is string
+    names_from_all_strings = df.filter(names_from).agg(is_string_dtype).all()
 
-    if not names_sort:
+    if names_sort is True:
         # Categorical dtypes created only for `names_from`
         # since that is what will become the new column names
         dtypes = {
             column_name: CategoricalDtype(
-                categories=column.dropna().unique(), ordered=True
+                df[column_name].factorize(sort=False)[-1], ordered=True
             )
-            if column.hasnans
-            else CategoricalDtype(categories=column.unique(), ordered=True)
-            for column_name, column in df.filter(names_from).items()
+            for column_name in names_from
         }
-
         df = df.astype(dtypes)
 
-    if aggfunc is None:
-        df = df.pivot(  # noqa: PD010
-            index=index, columns=names_from, values=values_from
-        )
+    df = df.pivot(  # noqa: PD010
+        index=index, columns=names_from, values=values_from
+    )
 
-    else:
-        if index:
-            df = df.set_index(index + names_from)
-        else:
-            df = df.set_index(names_from, append=True)
+    if levels_order and (isinstance(df.columns, pd.MultiIndex)):
+        df = df.reorder_levels(order=levels_order, axis="columns")
 
-        if values_from:
-            df = df.groupby(
-                level=[*range(df.index.nlevels)],
-                observed=True,
-                dropna=False,
-                sort=False,
-            )[values_from].agg(aggfunc)
-        else:
-            df = df.groupby(
-                level=[*range(df.index.nlevels)],
-                observed=True,
-                dropna=False,
-                sort=False,
-            ).agg(aggfunc)
-
-        df = df.unstack(level=names_from)  # noqa: PD010
-
-    if fill_value is not None:
-        df = df.fillna(fill_value)
-
-    # no point keeping `values_from`
-    # if it's just one name;
-    # could do same for aggfunc; but not worth the extra check
-    if df.columns.get_level_values(0).unique().size == 1:
-        df = df.droplevel(0, axis="columns")
-
-    other_levels = None
-    names_from_levels = None
-    df_columns = df.columns
-    df_columns_names = df_columns.names
-    if names_from_position == "first":
-        if df_columns_names[: len(names_from)] != names_from:
-            other_levels = [
-                num
-                for num, name in enumerate(df_columns_names)
-                if name not in names_from
-            ]
-            names_from_levels = [
-                num
-                for num, name in enumerate(df_columns_names)
-                if name in names_from
-            ]
-            df = df.reorder_levels(
-                names_from_levels + other_levels, axis="columns"
-            )
-
-    if not flatten_levels:
+    # an empty df is likely because
+    # there are no `values_from`
+    if any((df.empty, flatten_levels is False)):
         return df
 
-    if df_columns.nlevels > 1:
-        df.columns = [names_sep.join(column_tuples) for column_tuples in df]
+    # ensure all entries in names_from are strings
+    if not names_from_all_strings:
+        if isinstance(df.columns, pd.MultiIndex):
+            new_columns = [tuple(map(str, ent)) for ent in df]
+            df.columns = pd.MultiIndex.from_tuples(new_columns)
+        else:
+            df.columns = df.columns.astype(str)
 
-    if names_prefix:
-        df = df.add_prefix(names_prefix)
+    if names_sep is not None and (isinstance(df.columns, pd.MultiIndex)):
+        df.columns = df.columns.map(names_sep.join)
+
+    if names_glue:
+        df.columns = df.columns.map(names_glue)
 
     # if columns are of category type
     # this returns columns to object dtype
@@ -2426,7 +2609,7 @@ def _conditional_join_preliminary_checks(
     suffixes=("_x", "_y"),
 ) -> tuple:
     """
-    Preliminary checks are conducted here.
+    Preliminary checks for conditional_join are conducted here.
     This function checks for conditions such as
     MultiIndexed dataframe columns,
     improper `suffixes` configuration,
@@ -2486,14 +2669,21 @@ def _conditional_join_preliminary_checks(
             """
         )
 
+    if not conditions:
+        raise ValueError(
+            """
+            Kindly provide at least one join condition.
+            """
+        )
     # each condition should be a tuple of length 3:
     for condition in conditions:
         check("condition", condition, [tuple])
-        if len(condition) != 3:
+        len_condition = len(condition)
+        if len_condition != 3:
             raise ValueError(
                 f"""
                 condition should have only three elements.
-                Your condition however is of length {len(condition)}
+                Your condition however is of length {len_condition}
                 """
             )
 
@@ -2550,7 +2740,7 @@ def _cond_join_suffixes(
                     raise ValueError(
                         f"""
                         {new_label} is present in `df` columns.
-                        Kindly provide unique suffixes to create
+                        Kindly provide a unique suffix to create
                         columns that are not present in `df`.
                         """
                     )
@@ -2568,7 +2758,7 @@ def _cond_join_suffixes(
                     raise ValueError(
                         f"""
                         {new_label} is present in `right` columns.
-                        Kindly provide unique suffixes to create
+                        Kindly provide a unique suffix to create
                         columns that are not present in `right`.
                         """
                     )
@@ -2594,41 +2784,43 @@ def _conditional_join_type_check(
     Strings are not supported on non-equi operators.
     """
 
-    numeric_type = all(map(is_numeric_dtype, (left_column, right_column)))
-    date_type = all(map(is_datetime64_dtype, (left_column, right_column)))
-    string_type = all(map(is_string_dtype, (left_column, right_column)))
-
-    non_equi = {op.value for op in JOINOPERATOR if op.name != "STRICTLY_EQUAL"}
-    if all((op in non_equi, string_type)):
-        raise ValueError(
-            """
-            Strings can only be compared
-            on the equal(`==`) operator.
-            """
-        )
-    numeric_date_string = numeric_type, date_type, string_type
-    if any(numeric_date_string):
+    error_msg = """
+          conditional_join only supports
+          numeric, date, or string dtypes.
+          The columns must also be of the same type.
+          """
+    error_msg_string = """
+                       Strings can only be compared
+                       on the equal(`==`) operator.
+                       """
+    if is_string_dtype(left_column):
+        if not is_string_dtype(right_column):
+            raise ValueError(error_msg)
+        if op != JOINOPERATOR.STRICTLY_EQUAL.value:
+            raise ValueError(error_msg_string)
+        return None
+    if is_numeric_dtype(left_column):
+        if not is_numeric_dtype(right_column):
+            raise ValueError(error_msg)
+        return None
+    if is_datetime64_dtype(left_column):
+        if not is_datetime64_dtype(right_column):
+            raise ValueError(error_msg)
         return None
 
-    raise ValueError(
-        """
-        conditional_join only supports
-        numeric, date, or string dtypes.
-        """
-    )
 
-
-def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
+def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     """
-    Create ordered indices for each value in
-    `right_keys` in `_less_than_indices`.
-    Faster than a list comprehension, as
-    the array size increases.
+    Create `range` indices for each value in
+    `right_keys` in `_equal_indices`, `_less_than_indices`,
+    and `_greater_than_indices`.
+    It is faster than a list comprehension, especially
+    for large arrays.
 
     code copied from Stack Overflow
     https://stackoverflow.com/a/47126435/7175713
     """
-    cum_length = len_right - indices
+    cum_length = right - indices
     cum_length = cum_length.cumsum()
     # generate ones
     # note that cum_length[-1] is the total
@@ -2641,69 +2833,51 @@ def _le_create_ranges(indices: np.array, len_right: int) -> np.array:
     # we get, 0, 1, 2, 3, 4, 0, 1,2, 3, 0, ...
     # our ranges is obtained, with more efficiency
     # for larger arrays
-    ids[cum_length[:-1]] = indices[1:] - len_right + 1
+    ids[cum_length[:-1]] = indices[1:] - right[:-1] + 1
     # the cumsum here gives us the same output as
     # [np.range(start, len_right) for start in search_indices]
     # but much faster
     return ids.cumsum()
 
 
-def _ge_create_ranges(indices: np.array) -> np.array:
+def _equal_indices(
+    left_c: pd.Series, right_c: pd.Series, len_conditions: int
+) -> tuple:
     """
-    Create ordered indices for each value in
-    `right_keys` in `_greater_than_indices`.
-    Faster than a list comprehension, as
-    the array size increases.
-
-    code copied from Stack Overflow
-    https://stackoverflow.com/a/47126435/7175713
-    """
-    cum_length = indices.cumsum()
-    ids = np.ones(cum_length[-1], dtype=int)
-    ids[0] = 0
-    ids[cum_length[:-1]] = -1 * indices[:-1] + 1
-    return ids.cumsum()
-
-
-def _equal_indices(left_c: pd.Series, right_c: pd.Series, len_conditions: int):
-    """
-    Use pandas' join method to get the index labels.
-    If len_condition is > 1, then get_indexer is used
-    to get relevant index labels for left_c.
+    Use binary search to get indices where
+    `left_c` is exactly  equal to `right_c`.
 
     Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
     """
 
-    if len_conditions > 1:
-        if not right_c.is_unique:
-            right_c = right_c.factorize()[-1]
-        result = pd.Index(left_c).get_indexer_for(right_c)
-        exclude_rows = result == -1
-        if exclude_rows.all():
-            return None
-        if exclude_rows.any():
-            result = result[~exclude_rows]
-        return left_c.index.take(result)
+    if right_c.hasnans:
+        right_c = right_c.dropna()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
 
-    left_c.index.name = "l"
-    right_c.index.name = "r"
-    left_c.name = "merge"
-    right_c.name = "merge"
-    left_c = left_c.reset_index()
-    right_c = right_c.reset_index()
-    result = left_c.merge(right_c, how="inner", sort=False, on="merge")
-    if result.empty:
+    lower_boundary = right_c.searchsorted(left_c, side="left")
+    upper_boundary = right_c.searchsorted(left_c, side="right")
+    keep_rows = lower_boundary < upper_boundary
+    if keep_rows.sum() == 0:  # no match
         return None
-    return pd.Index(result["l"]), pd.Index(result["r"])
+    # keep only matching rows
+    if keep_rows.sum() < keep_rows.size:
+        left_c = left_c[keep_rows]
+        lower_boundary = lower_boundary[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+    if len_conditions > 1:
+        return left_c.index, (upper_boundary - lower_boundary).sum()
+    positions = _interval_ranges(lower_boundary, upper_boundary)
+    left_repeat = upper_boundary - lower_boundary
+    left_c = left_c.index.repeat(left_repeat)
+    right_c = right_c.index.take(positions)
+
+    return left_c, right_c
 
 
 def _not_equal_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
-    len_conditions: int,
-    strict: bool = True,
-):
+    left_c: pd.Series, right_c: pd.Series, len_conditions: int
+) -> tuple:
     """
     Use binary search to get indices where
     `left_c` is exactly  not equal to `right_c`.
@@ -2711,125 +2885,111 @@ def _not_equal_indices(
     and strictly greater than indices.
 
     Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
     """
 
-    # get nulls, since they are not equal to anything
-    # NaNs are not equal to NaNs
-    l_nulls = pd.Index([], dtype=int)
-    r_nulls = pd.Index([], dtype=int)
-    nulls_l = pd.Index([], dtype=int)
-    nulls_r = pd.Index([], dtype=int)
-    left_hasnans = left_c.hasnans
-    right_hasnans = right_c.hasnans
-    if len_conditions == 1:
-        if left_hasnans:
-            left_c_isna = left_c.isna()
-            nulls_count = left_c_isna.sum()
-            l_nulls = left_c.index[left_c_isna]
-            # each value in right_c MUST be matched to all the null groups
-            l_nulls = pd.Int64Index(np.tile(l_nulls, right_c.size))
-            if nulls_count > 1:
-                nulls_r = right_c.index.repeat(nulls_count)
-            else:
-                nulls_r = right_c.index
+    dummy = pd.Int64Index([])
+    left_nulls = dummy
+    right_nulls = dummy
 
-        if right_hasnans:
-            if left_hasnans:  # avoids duplication of NaN matching NaN
-                left_c = left_c.dropna()
-            right_c_isna = right_c.isna()
-            nulls_count = right_c_isna.sum()
-            r_nulls = right_c.index[right_c_isna]
-            # each value in left_c must be matched to all the null groups
-            r_nulls = pd.Int64Index(np.tile(r_nulls, left_c.size))
-            if nulls_count > 1:
-                nulls_l = left_c.index.repeat(nulls_count)
-            else:
-                nulls_l = left_c.index
+    # nulls are not preserved here
+    if len_conditions > 1:
+        outcome = _less_than_indices(left_c, right_c, True, 2)
 
-        l_nulls = l_nulls.append(nulls_l)
-        r_nulls = nulls_r.append(r_nulls)
-    else:
-        if right_c.hasnans:
-            # every row in left_c
-            # will not be equal to NaN
-            return left_c.index
-        if left_c.hasnans:
-            l_nulls = left_c.index[left_c.isna()]
+        if outcome is None:
+            lt_left = dummy
+            lt_counts = 0
+        else:
+            lt_left, lt_counts = outcome
 
-    # sort and drop nulls here
-    # to avoid sorting twice, in less_than_indices
-    # and greater_than _indices functions
+        outcome = _greater_than_indices(left_c, right_c, True, 2)
+
+        if outcome is None:
+            gt_left = dummy
+            gt_counts = 0
+        else:
+            gt_left, gt_counts = outcome
+
+        left_c = lt_left.append(gt_left)
+
+        if left_c.empty:
+            return None
+
+        return left_c, lt_counts + gt_counts
+
+    # capture null positions, since NaN != NaN
+    # if left_c has nulls, I want to capture the positions
+    # and hook it up with the index positions for nulls
+    # in right_c, it it exists
+    base_left = left_c.copy()
+    if right_c.hasnans:
+        nulls = right_c.isna()
+        right_nulls = right_c.index[nulls]
+        right_c = right_c[~nulls]
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
-    if right_hasnans:
-        right_c = right_c.dropna()
+    if left_c.hasnans:
+        nulls = left_c.isna()
+        left_nulls = left_c.index[nulls]
+        left_c = left_c[~nulls]
 
-    # get less than index labels
-    result = _less_than_indices(left_c, right_c, len_conditions, strict, True)
-    if len_conditions == 1:
-        if result is None:
-            lt_left = pd.Index([], dtype=int)
-            lt_right = pd.Index([], dtype=int)
-        else:
-            lt_left, lt_right = result
-    else:
-        if result is None:
-            lt_left = pd.Index([], dtype=int)
-        else:
-            lt_left = result
+    outcome = _less_than_indices(left_c, right_c, True, 1)
 
-    # greater than index labels
-    result = _greater_than_indices(
-        left_c, right_c, len_conditions, strict, True
-    )
-    if len_conditions == 1:
-        if result is None:
-            gt_left = pd.Index([], dtype=int)
-            gt_right = pd.Index([], dtype=int)
-        else:
-            gt_left, gt_right = result
+    if outcome is None:
+        lt_left = dummy
+        lt_right = dummy
     else:
-        if result is None:
-            gt_left = pd.Index([], dtype=int)
-        else:
-            gt_left = result
-    if len_conditions > 1:
-        left_c = lt_left.append([gt_left, l_nulls]).unique()
-        return left_c
+        lt_left, lt_right = outcome
+
+    outcome = _greater_than_indices(left_c, right_c, True, 1)
+
+    if outcome is None:
+        gt_left = dummy
+        gt_right = dummy
     else:
-        left_c = lt_left.append([gt_left, l_nulls])
-        right_c = lt_right.append([gt_right, r_nulls])
+        gt_left, gt_right = outcome
+
+    nulls_left = dummy
+    nulls_right = dummy
+    if left_nulls.empty is False:
+        # repeat right index, tile left_nulls to ensure match
+        nulls_right = right_c.index.repeat(left_nulls.size)
+        left_nulls = np.tile(left_nulls, right_c.size)
+        left_nulls = pd.Index(left_nulls)
+    if right_nulls.empty is False:
+        # repeat left index, tile right nulls
+        # base_left is used here, to capture index for nulls,
+        # if present
+        nulls_left = base_left.index.repeat(right_nulls.size)
+        right_nulls = np.tile(right_nulls, base_left.size)
+        right_nulls = pd.Index(right_nulls)
+
+    left_c = lt_left.append([gt_left, left_nulls, nulls_left])
+    right_c = lt_right.append([gt_right, nulls_right, right_nulls])
 
     return left_c, right_c
 
 
 def _less_than_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
-    len_conditions: int,
-    strict: bool,
-    not_equal: bool = False,
-):
+    left_c: pd.Series, right_c: pd.Series, strict: bool, len_conditions: int
+) -> tuple:
     """
-    Use binary search to get indices where left_c is less than
-    or equal to right_c. If strict is True,
-    then only indices where `left_c`
-    is less than (but not equal to) `right_c` are returned.
+    Use binary search to get indices where left_c
+    is less than or equal to right_c.
+    If strict is True,then only indices
+    where `left_c` is less than
+    (but not equal to) `right_c` are returned.
 
     Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
     """
 
     # no point going through all the hassle
     if left_c.min() > right_c.max():
         return None
 
-    if not_equal is False:
-        if right_c.hasnans:
-            right_c = right_c.dropna()
-        if not right_c.is_monotonic_increasing:
-            right_c = right_c.sort_values()
+    if right_c.hasnans:
+        right_c = right_c.dropna()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
@@ -2845,97 +3005,310 @@ def _less_than_indices(
     if search_indices.size == 0:
         return None
 
-    if len_conditions > 1:
-        return left_c.index
-    # for each index in `search_indices`,
-    # generate all indices for `right_keys`,
-    # where the values in `right_keys` are greater than
-    # or equal to `left_c`
-    positions = _le_create_ranges(search_indices, len_right)
-    search_indices = len_right - search_indices
+    # the idea here is that if there are any equal values
+    # shift upwards to the immediate next position
+    # that is not equal
     if strict:
-        right_c = right_c.take(positions)
-        left_c = left_c.repeat(search_indices)
-        rows_equal = left_c.array == right_c.array
-        if rows_equal.all():
-            return None
+        rows_equal = right_c.take(search_indices).array
+        rows_equal = left_c.array == rows_equal
+        # replace positions where rows are equal
+        # with positions from searchsorted('right')
+        # positions from searchsorted('right') will never
+        # be equal and will be the furthermost in terms of position
+        # example : right_c -> [2, 2,2,3], and we need
+        # positions where values are not equal for 2;
+        # the furthermost will be 3, and searchsorted('right')
+        # will return position 3.
         if rows_equal.any():
-            left_c = left_c.index[~rows_equal]
-            right_c = right_c.index[~rows_equal]
-            return left_c, right_c
-        return left_c.index, right_c.index
+            replacements = right_c.searchsorted(left_c, side="right")
+            # now we can safely replace values
+            # with strictly less than positions
+            search_indices = np.where(rows_equal, replacements, search_indices)
+        # check again if any of the values
+        # have become equal to length of right_c
+        # and get rid of them
+        rows_equal = search_indices == len_right
+        if rows_equal.any():
+            left_c = left_c[~rows_equal]
+            search_indices = search_indices[~rows_equal]
+
+    if search_indices.size == 0:
+        return None
+
+    indices = np.repeat(len_right, search_indices.size)
+
+    if len_conditions > 1:
+        return left_c.index, (indices - search_indices).sum()
+
+    positions = _interval_ranges(search_indices, indices)
+    search_indices = indices - search_indices
 
     right_c = right_c.index.take(positions)
     left_c = left_c.index.repeat(search_indices)
-
     return left_c, right_c
 
 
 def _greater_than_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
-    len_conditions: int,
-    strict: bool,
-    not_equal: bool = False,
-):
+    left_c: pd.Series, right_c: pd.Series, strict: bool, len_conditions: int
+) -> tuple:
     """
-    Use binary search to get indices where left_c is greater than
-    or equal to right_c. If strict is True,
-    then only indices where `left_c`
-    is greater than (but not equal to) `right_c` are returned.
+    Use binary search to get indices where left_c
+    is greater than or equal to right_c.
+    If strict is True,then only indices
+    where `left_c` is greater than
+    (but not equal to) `right_c` are returned.
 
-    Returns a tuple of (left_c, right_c)
-    if len_conditions is == 1, else left_c.
+    Returns a tuple of (left_c, right_c).
+    Nulls are discarded, even when the operator is `!=`.
     """
 
     # quick break, avoiding the hassle
     if left_c.max() < right_c.min():
         return None
 
-    if not_equal is False:
-        if right_c.hasnans:
-            right_c = right_c.dropna()
-        if not right_c.is_monotonic_increasing:
-            right_c = right_c.sort_values()
+    if right_c.hasnans:
+        right_c = right_c.dropna()
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values()
     if left_c.hasnans:
         left_c = left_c.dropna()
 
     search_indices = right_c.searchsorted(left_c, side="right")
     # if any of the positions in `search_indices`
-    # is equal to 0
-    # that means the respective position in `left_c`
-    # has no values from `right_c` that are greater than
-    # or equal, and should therefore be discarded
-    rows_equal = search_indices == 0
+    # is equal to 0 (less than 1)
+    # left_c[position] is not greater than any value
+    # in right_c
+    rows_equal = search_indices < 1
     if rows_equal.any():
         left_c = left_c[~rows_equal]
         search_indices = search_indices[~rows_equal]
     if search_indices.size == 0:
         return None
 
-    if len_conditions > 1:
-        return left_c.index
-    # for each index in `search_indices`,
-    # generate all indices for `right_keys`,
-    # where the values in `right_keys` are less than
-    # or equal to `left_c`
-    positions = _ge_create_ranges(search_indices)
+    # the idea here is that if there are any equal values
+    # shift downwards to the immediate next position
+    # that is not equal
     if strict:
-        right_c = right_c.take(positions)
-        left_c = left_c.repeat(search_indices)
-        rows_equal = left_c.array == right_c.array
-        if rows_equal.all():
-            return None
+        rows_equal = right_c.take(search_indices - 1).array
+        rows_equal = left_c.array == rows_equal
+        # replace positions where rows are equal with
+        # searchsorted('left');
+        # however there can be scenarios where positions
+        # from searchsorted('left') would still be equal;
+        # in that case, we shift down by 1
         if rows_equal.any():
-            left_c = left_c.index[~rows_equal]
-            right_c = right_c.index[~rows_equal]
-            return left_c, right_c
-        return left_c.index, right_c.index
+            replacements = right_c.searchsorted(left_c, side="left")
+            # return replacements
+            # `left` might result in values equal to len right_c
+            replacements = np.where(
+                replacements == right_c.size, replacements - 1, replacements
+            )
+            # now we can safely replace values
+            # with strictly greater than positions
+            search_indices = np.where(rows_equal, replacements, search_indices)
+        # any value less than 1 should be discarded
+        rows_equal = search_indices < 1
+        if rows_equal.any():
+            left_c = left_c[~rows_equal]
+            search_indices = search_indices[~rows_equal]
 
+    if search_indices.size == 0:
+        return None
+
+    indices = np.repeat(0, search_indices.size)
+
+    if len_conditions > 1:
+        return left_c.index, search_indices.sum()
+
+    positions = _interval_ranges(indices, search_indices)
     right_c = right_c.index.take(positions)
     left_c = left_c.index.repeat(search_indices)
-
     return left_c, right_c
+
+
+operator_map = {
+    JOINOPERATOR.STRICTLY_EQUAL.value: operator.eq,
+    JOINOPERATOR.LESS_THAN.value: operator.lt,
+    JOINOPERATOR.LESS_THAN_OR_EQUAL.value: operator.le,
+    JOINOPERATOR.GREATER_THAN.value: operator.gt,
+    JOINOPERATOR.GREATER_THAN_OR_EQUAL.value: operator.ge,
+    JOINOPERATOR.NOT_EQUAL.value: operator.ne,
+}
+
+
+def _multiple_conditional_join(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: list
+) -> tuple:
+    """
+    Use binary search to get indices for paired conditions.
+
+    Returns a tuple of (left_c, right_c)
+    """
+    left_columns, right_columns, _ = zip(*conditions)
+    right_columns = pd.unique(right_columns)
+    right_columns = [*right_columns]
+    left_columns = pd.unique(left_columns)
+    left_columns = [*left_columns]
+
+    df = df.loc[:, left_columns]
+    right = right.loc[:, right_columns]
+
+    if right.isna().any(axis=None):
+        right = right.dropna()
+    if right.empty:
+        return None
+    if df.isna().any(axis=None):
+        df = df.dropna()
+    if df.empty:
+        return None
+
+    # find condition with least number of search points
+    # the lower the number of matching indices from left_c
+    # the better
+    base_index = df.index
+    base_condition = conditions[0]
+    difference = None
+    for condition in conditions:
+        left_on, right_on, op = condition
+        left_c = df[left_on]
+        right_c = right[right_on]
+        result = _generic_func_cond_join(left_c, right_c, op, 2)
+        if result is None:
+            return None
+
+        indexer, indices_count = result
+        if base_index.size > indexer.size:
+            base_index = indexer
+            base_condition = condition
+            difference = indices_count
+        else:
+            if difference is None:
+                difference = indices_count
+            else:
+                # the smaller the indices_count
+                # the better, as this implies
+                # there is a lower number of search points
+                # for that particular condition
+                if difference > indices_count:
+                    base_condition = condition
+                    difference = indices_count
+
+    df = df.loc[base_index]
+    df_mapping = None
+
+    # 25% duplicate check is just a whim
+    # no statistical backing
+    # the idea here is that the less number of searches
+    # the better; after the search we can then
+    # retroactively `blow` the dataframe up to match
+    # the indices of the original dataframe
+    if df.duplicated().mean() > 0.25:
+        df_grouped = df.groupby(left_columns)
+        df_mapping = df_grouped.groups
+        df_unique = pd.DataFrame(df_mapping.keys(), columns=left_columns)
+    else:
+        df_unique = df.copy()
+    right_mapping = None
+    if right.duplicated().mean() > 0.25:
+        right_grouped = right.groupby(right_columns)
+        right_mapping = right_grouped.groups
+        right_unique = pd.DataFrame(
+            right_mapping.keys(), columns=right_columns
+        )
+    else:
+        right_unique = right.copy()
+
+    conditions = [
+        condition for condition in conditions if condition != base_condition
+    ]
+
+    # get the starting indices
+    # we'll take these indices,
+    # iterate through the rest of the conditions
+    # and index df_unique and right_unique
+    # with the booleans to get the final matching rows
+    left_on, right_on, op = base_condition
+    left_c = df_unique[left_on]
+    right_c = right_unique[right_on]
+    result = _generic_func_cond_join(left_c, right_c, op, 1)
+    if result is None:
+        return None
+    left_index, right_index = result
+
+    # iterate through the remaining conditions
+    # to get matching indices
+    for condition in conditions:
+        left_on, right_on, op = condition
+        left_c = df_unique.loc[left_index, left_on].array
+        right_c = right_unique.loc[right_index, right_on].array
+        op = operator_map[op]
+        boolean_array = op(left_c, right_c)
+        if not boolean_array.any():
+            return None
+        if boolean_array.all():
+            continue
+        left_index = left_index[boolean_array]
+        right_index = right_index[boolean_array]
+
+    index_left = None
+    index_right = None
+    # here we blow up the dataframe to match the original size
+    # for duplicated dataframes
+    if df_mapping:
+        mapper = (series for _, series in df_unique.items())
+        mapper = zip(*mapper)
+        if df.columns.size == 1:
+            mapper = [ent[0] for ent in mapper]
+        mapper = dict(zip(mapper, df_unique.index))
+        # align df_unique's index with all the indices
+        # from the original dataframe
+        df_mapping = {mapper[ent]: value for ent, value in df_mapping.items()}
+        # use left_index_map if right is duplicated as well
+        left_index_map = left_index.map(df_mapping)
+        index_left = np.concatenate(left_index_map)
+        repeater = []
+        # this takes care of duplicates in left_index as well
+        for key in left_index:
+            value = df_mapping[key]
+            repeater.append(value.size)
+        index_right = right_index.repeat(repeater)
+
+    if right_mapping:
+        mapper = (series for _, series in right_unique.items())
+        mapper = zip(*mapper)
+        if right.columns.size == 1:
+            # takes care of tuples with just one entry
+            # if not taken care of, it returns a KeyError
+            mapper = [ent[0] for ent in mapper]
+        mapper = dict(zip(mapper, right_unique.index))
+        right_mapping = {
+            mapper[ent]: value for ent, value in right_mapping.items()
+        }
+        if index_right is not None:
+            index_right = index_right.map(right_mapping)
+        else:
+            index_right = right_index.map(right_mapping)
+        index_right = np.concatenate(index_right)
+        repeater = []
+        # takes care of duplicates in right_index as well
+        for key in right_index:
+            value = right_mapping[key]
+            repeater.append(value.size)
+
+        if index_left is None:
+            index_left = left_index.repeat(repeater)
+        else:
+            # allows us to keep the alignment between
+            # left and right
+            index_left = zip(left_index_map, repeater)
+            index_left = [np.repeat(ent, rep) for ent, rep in index_left]
+            index_left = np.concatenate(index_left)
+
+    if df_mapping or right_mapping:
+        left_index = index_left
+        right_index = index_right
+
+    return left_index, right_index
 
 
 def _create_conditional_join_empty_frame(
@@ -3011,6 +3384,16 @@ def _create_conditional_join_frame(
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
 
+less_than_join_types = {
+    JOINOPERATOR.LESS_THAN.value,
+    JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+}
+greater_than_join_types = {
+    JOINOPERATOR.GREATER_THAN.value,
+    JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+}
+
+
 def _generic_func_cond_join(
     left_c: pd.Series, right_c: pd.Series, op: str, len_conditions: int
 ):
@@ -3028,20 +3411,14 @@ def _generic_func_cond_join(
     }:
         strict = True
 
-    if op in {
-        JOINOPERATOR.LESS_THAN.value,
-        JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
-    }:
-        return _less_than_indices(left_c, right_c, len_conditions, strict)
-    elif op in {
-        JOINOPERATOR.GREATER_THAN.value,
-        JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
-    }:
-        return _greater_than_indices(left_c, right_c, len_conditions, strict)
+    if op in less_than_join_types:
+        return _less_than_indices(left_c, right_c, strict, len_conditions)
+    elif op in greater_than_join_types:
+        return _greater_than_indices(left_c, right_c, strict, len_conditions)
     elif op == JOINOPERATOR.STRICTLY_EQUAL.value:
         return _equal_indices(left_c, right_c, len_conditions)
     elif op == JOINOPERATOR.NOT_EQUAL.value:
-        return _not_equal_indices(left_c, right_c, len_conditions, strict)
+        return _not_equal_indices(left_c, right_c, len_conditions)
 
 
 def _conditional_join_compute(
@@ -3067,7 +3444,7 @@ def _conditional_join_compute(
 
         _conditional_join_type_check(left_c, right_c, op)
 
-        result = _generic_func_cond_join(left_c, right_c, op, len_conditions)
+        result = _generic_func_cond_join(left_c, right_c, op, 1)
 
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
@@ -3078,53 +3455,17 @@ def _conditional_join_compute(
             df, right, left_c, right_c, how, sort_by_appearance
         )
 
-    # TODO: improve the efficiency for multiple conditions
-    df_index = df.index
-    # iteratively reduce the number of rows
-    # from df, until we have the certain index labels
-    # that will be in the final dataframe
-    # usually much smaller, which should help
-    # reduce overall processing time
     for condition in conditions:
         left_on, right_on, op = condition
-        left_c = df.loc[df_index, left_on]
+        left_c = df[left_on]
         right_c = right[right_on]
 
         _conditional_join_type_check(left_c, right_c, op)
 
-        df_index = _generic_func_cond_join(left_c, right_c, op, len_conditions)
-
-        if df_index is None:
-            return _create_conditional_join_empty_frame(df, right, how)
-
-    df = df.loc[df_index]
-
-    conditions = [
-        (df[left_on], right[right_on], op)
-        for left_on, right_on, op in conditions
-    ]
-    first, *rest = conditions
-    left_c, right_c, op = first
-
-    result = _generic_func_cond_join(left_c, right_c, op, 1)
-
+    result = _multiple_conditional_join(df, right, conditions)
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
-
-    df_index, right_index = result
-
-    # use booleans to get the index labels
-    # for df and right, to create the final dataframe
-    for left_c, right_c, op in rest:
-        left_c = left_c[df_index].array
-        right_c = right_c[right_index].array
-        # using pd.eval might be faster for larger arrays
-        # if the user has numexpr installed
-        keep_rows = pd.eval(f"left_c {op} right_c")
-        if keep_rows.sum() == 0:
-            return _create_conditional_join_empty_frame(df, right, how)
-        df_index = df_index[keep_rows]
-        right_index = right_index[keep_rows]
+    left_c, right_c = result
     return _create_conditional_join_frame(
-        df, right, df_index, right_index, how, sort_by_appearance
+        df, right, left_c, right_c, how, sort_by_appearance
     )

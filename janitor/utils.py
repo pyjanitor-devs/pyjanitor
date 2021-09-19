@@ -1996,7 +1996,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
     This function is executed before proceeding to the computation phase.
 
-    If all checks pass, a dictionary of column names and namedtuple
+    If all checks pass, a dictionary of column names and tuple
     of (categories, order) is returned.
 
     :param df: The pandas DataFrame object.

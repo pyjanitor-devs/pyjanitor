@@ -628,10 +628,9 @@ def encode_categorical(
         df = jn.encode_categorical(
                     df,
                     col1 = (categories, order),
-                    col2 = (
-                                categories = [values],
-                                order="sort"/"appearance"/None
-                                )
+                    col2 = (categories = [values],
+                            order="sort"/"appearance"/None
+                           )
                 )
 
     Method chaining syntax:
@@ -649,10 +648,9 @@ def encode_categorical(
             pd.DataFrame(...)
             .encode_categorical(
                 col1 = (categories, order),
-                col2 = (
-                            categories = [values]/None,
-                            order="sort"/"appearance"/None
-                            )
+                col2 = (categories = [values]/None,
+                        order="sort"/"appearance"/None
+                        )
         )
 
 

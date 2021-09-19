@@ -1984,7 +1984,7 @@ class CATEGORY_ORDER(Enum):
     APPEARANCE = "appearance"
 
 
-def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
+def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     """
     This function raises errors if columns in `kwargs` are
     absent in the the dataframe's columns.
@@ -1996,15 +1996,14 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
     This function is executed before proceeding to the computation phase.
 
-    If all checks pass, the dataframe,
-    and a pairing of column names and namedtuple
+    If all checks pass, a dictionary of column names and namedtuple
     of (categories, order) is returned.
 
     :param df: The pandas DataFrame object.
     :param kwargs: A pairing of column name
         to a tuple of (`categories`, `order`).
-    :returns: A tuple (pandas DataFrame, dictionary).
-    :raises TypeError: if ``kwargs`` is not a tuple.
+    :returns: A dictionary.
+    :raises TypeError: if the value in ``kwargs`` is not a tuple.
     :raises ValueError: if ``categories`` is not a 1-D array.
     :raises ValueError: if ``order`` is not one of
         `sort`, `appearance`, or `None`.
@@ -2015,12 +2014,20 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
     categories_dict = {}
 
-    # type checks
     for column_name, value in kwargs.items():
+        # type check
         check("Pair of `categories` and `order`", value, [tuple])
 
-        if len(value) != 2:
-            raise ValueError("Must provide tuple of (categories, order).")
+        len_value = len(value)
+
+        if len_value != 2:
+            raise ValueError(
+                f"""
+                The tuple of (categories, order) for {column_name}
+                should be length 2; the tuple provided is
+                length {len_value}.
+                """
+            )
 
         cat, order = value
         if cat is not None:
@@ -2067,24 +2074,24 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
                     """
                 )
 
-            error_msg = f"""
-                         Kindly ensure there is at least
-                         one non-null value in {column_name}.
-                         """
-
             uniques = df[column_name].factorize(sort=False)[-1]
             if uniques.empty:
-                raise ValueError(error_msg)
+                raise ValueError(
+                    f"""
+                     Kindly ensure there is at least
+                     one non-null value in {column_name}.
+                     """
+                )
 
             missing = uniques.difference(checker, sort=False)
             if not missing.empty and (uniques.size > missing.size):
                 warnings.warn(
                     f"""
-                        Values {tuple(missing)} are missing from
-                        the provided categories {cat}
-                        for {column_name}; this may create nulls
-                        in the new categorical column.
-                        """,
+                     Values {tuple(missing)} are missing from
+                     the provided categories {cat}
+                     for {column_name}; this may create nulls
+                     in the new categorical column.
+                     """,
                     UserWarning,
                     stacklevel=2,
                 )
@@ -2092,11 +2099,11 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
             elif uniques.equals(missing):
                 warnings.warn(
                     f"""
-                        None of the values in {column_name} are in
-                        {cat};
-                        this might create nulls for all values
-                        in the new categorical column.
-                        """,
+                     None of the values in {column_name} are in
+                     {cat};
+                     this might create nulls for all values
+                     in the new categorical column.
+                     """,
                     UserWarning,
                     stacklevel=2,
                 )
@@ -2127,6 +2134,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     The defaults for the tuple are (None, None)
     and will return a categorical dtype
     with no order and categories inferred from the column.
+    A DataFrame, with catetorical columns, is returned.
     """
 
     categories_dict = as_categorical_checks(df, **kwargs)
@@ -2138,9 +2146,9 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         order,
     ) in categories_dict.items():
         error_msg = f"""
-                        Kindly ensure there is at least
-                        one non-null value in {column_name}.
-                        """
+                     Kindly ensure there is at least
+                     one non-null value in {column_name}.
+                     """
         if (cat is None) and (order is None):
             cat_dtype = pd.CategoricalDtype()
 

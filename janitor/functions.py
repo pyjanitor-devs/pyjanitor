@@ -1349,14 +1349,17 @@ def expand_column(
 
     Functional usage syntax:
 
+    ```python
         df = expand_column(
             df,
             column_name='col_name',
             sep=', '  # note space in sep
         )
+    ```
 
     Method chaining syntax:
 
+    ```python
         import pandas as pd
         import janitor
         df = (
@@ -1366,20 +1369,20 @@ def expand_column(
                 sep=', '
             )
         )
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.
     :param sep: The delimiter, same to
-        :py:meth:`~pandas.Series.str.get_dummies`'s `sep`, default as `|`.
+        `pandas.Series.str.get_dummies`'s `sep`, default as `|`.
     :param concat: Whether to return the expanded column concatenated to
-        the original dataframe (`concat=True`), or to return it standalone
+        the original DataFrame (`concat=True`), or to return it standalone
         (`concat=False`).
     :returns: A pandas DataFrame with an expanded column.
     """
     expanded_df = df[column_name].str.get_dummies(sep=sep)
     if concat:
-        df = df.join(expanded_df)
-        return df
+        return df.join(expanded_df)
     return expanded_df
 
 
@@ -1399,17 +1402,21 @@ def concatenate_columns(
 
     Functional usage syntax:
 
+    ```python
         df = concatenate_columns(df,
                                  column_names=['col1', 'col2'],
                                  new_column_name='id',
                                  sep='-')
+    ```
 
     Method chaining syntax:
 
+    ```python
         df = (pd.DataFrame(...).
               concatenate_columns(column_names=['col1', 'col2'],
                                   new_column_name='id',
                                   sep='-'))
+    ```
 
     :param df: A pandas DataFrame.
     :param column_names: A list of columns to concatenate together.
@@ -1445,7 +1452,7 @@ def deconcatenate_column(
     """De-concatenates a single column into multiple columns.
 
     The column to de-concatenate can be either a collection (list, tuple, ...)
-    which can be separated out with `pd.Series.tolist()``,
+    which can be separated out with `pd.Series.tolist()`,
     or a string to slice based on `sep``.
 
     To determine this behaviour automatically,
@@ -1453,7 +1460,7 @@ def deconcatenate_column(
 
     If it is a string, then `sep` must be specified.
     Else, the function assumes that it is an iterable type
-    (e.g. `list` or `tuple``),
+    (e.g. `list` or `tuple`),
     and will attempt to deconcatenate by splitting the list.
 
     Given a column with string values, this is the inverse of the
@@ -1461,17 +1468,17 @@ def deconcatenate_column(
 
     Used to quickly split columns out of a single column.
 
-    The keyword argument `preserve_position``
+    The keyword argument `preserve_position`
     takes `True` or `False` boolean
-    that controls whether the `new_column_names``
+    that controls whether the `new_column_names`
     will take the original position
-    of the to-be-deconcatenated `column_name``:
+    of the to-be-deconcatenated `column_name`:
 
-    - When `preserve_position=False` (default), `df.columns` change from
+    - When `preserve_position=False` (default), `df.columns` changes from
       `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
       In other words, the deconcatenated new columns are appended to the right
       of the original dataframe and the original `column_name` is NOT dropped.
-    - When `preserve_position=True`, `df.column` change from
+    - When `preserve_position=True`, `df.column` changes from
       `[..., column_name, ...]` to `[..., new_column_names, ...]`.
       In other words, the deconcatenated new column will REPLACE the original
       `column_name` at its original position, and `column_name` itself
@@ -1481,10 +1488,10 @@ def deconcatenate_column(
     and then automatically creates numbered column names
     based off the base string.
     For example, if `col` is passed in
-    as the argument to `autoname``,
+    as the argument to `autoname`,
     and 4 columns are created,
     then the resulting columns will be named
-    `col1, col2, col3, col4``.
+    `col1, col2, col3, col4`.
     Numbering is always 1-indexed, not 0-indexed,
     in order to make the column names human-friendly.
 
@@ -1492,18 +1499,22 @@ def deconcatenate_column(
 
     Functional usage syntax:
 
+    ```python
         df = deconcatenate_column(
                 df, column_name='id', new_column_names=['col1', 'col2'],
                 sep='-', preserve_position=True
         )
+    ```
 
     Method chaining syntax:
 
+    ```python
         df = (pd.DataFrame(...).
                 deconcatenate_column(
                     column_name='id', new_column_names=['col1', 'col2'],
                     sep='-', preserve_position=True
                 ))
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: The column to split.
@@ -1988,7 +1999,16 @@ def remove_columns(
 
     Method chaining syntax:
 
+    ```python
         df = pd.DataFrame(...).remove_columns(column_names=['col1', 'col2'])
+    ```
+
+    Functional usage syntax:
+
+    ```python
+        df = pd.DataFrame(...)
+        remove_columns(df, column_names=['col1', 'col2'])
+    ```
 
     :param df: A pandas DataFrame
     :param column_names: The columns to remove.
@@ -2016,22 +2036,24 @@ def change_type(
 
     Intended to be the method-chaining alternative to:
 
+    ```python
         df[col] = df[col].astype(dtype)
+    ```
 
     Method chaining syntax:
 
-
-
+    ```python
         df = pd.DataFrame(...).change_type('col1', str)
+    ```
 
-    :param df: A pandas dataframe.
-    :param column_name: A column in the dataframe.
+    :param df: A pandas DataFrame.
+    :param column_name: A column in the DataFrame.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
-    :param ignore_exception: one of `{False, "fillna", "keep_values"}``.
+    :param ignore_exception: one of `{False, "fillna", "keep_values"}`.
     :returns: A pandas DataFrame with changed column types.
     :raises ValueError: if unknown option provided for
-        `ignore_exception``.
+        `ignore_exception`.
     """
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)
@@ -2069,18 +2091,18 @@ def add_column(
 
     Method chaining syntax adding a column with only a single value:
 
-
-
+    ```python
         # This will add a column with only one value.
         df = pd.DataFrame(...).add_column(column_name="new_column", 2)
+    ```
 
     Method chaining syntax adding a column with more than one value:
 
-
-
+    ```python
         # This will add a column with an iterable of values.
         vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
         df = pd.DataFrame(...).add_column(column_name="new_column", vals)
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: Name of the new column. Should be a string, in order
@@ -2096,7 +2118,7 @@ def add_column(
         rows in the DataFrame.
     :raises ValueError: if attempting to add an iterable of values with
         a length not equal to the number of DataFrame rows.
-    :raises ValueError: if `value` has length of `0``.
+    :raises ValueError: if `value` has length of `0`.
     """
     # TODO: Convert examples to notebook.
     # :Setup:
@@ -2247,11 +2269,11 @@ def add_columns(
 
     Usage example:
 
-
-
+    ```python
         x = 3
         y = np.arange(0, 10)
         df = pd.DataFrame(...).add_columns(x=x, y=y)
+    ```
 
     :param df: A pandas dataframe.
     :param fill_remaining: If value is a tuple or list that is smaller than
@@ -2403,8 +2425,7 @@ def row_to_names(
 
     Method chaining usage:
 
-
-
+    ```python
         df = (
             pd.DataFrame(...)
             .row_to_names(
@@ -2414,6 +2435,7 @@ def row_to_names(
                 reset_index=False,
             )
         )
+    ```
 
     :param df: A pandas DataFrame.
     :param row_number: The row containing the variable names
@@ -2708,23 +2730,23 @@ def transform_column(
 
     Functions can be applied one of two ways:
 
-    - Element-wise (default; `elementwise=True``)
-    - Column-wise  (alternative; `elementwise=False``)
+    - Element-wise (default; `elementwise=True`)
+    - Column-wise  (alternative; `elementwise=False`)
 
     If the function is applied "elementwise",
     then the first argument of the function signature
     should be the individual element of each function.
-    This is the default behaviour of `transform_column``,
+    This is the default behaviour of `transform_column`,
     because it is easy to understand.
     For example:
 
-
-
+    ```python
         def elemwise_func(x):
             modified_x = ... # do stuff here
             return modified_x
 
         df.transform_column(column_name="my_column", function=elementwise_func)
+    ```
 
     On the other hand, columnwise application of a function
     behaves as if the function takes in a pandas Series
@@ -2733,8 +2755,7 @@ def transform_column(
     is to gain access to `pandas` native string methods,
     which are super fast!
 
-
-
+    ```python
         def columnwise_func(s: pd.Series) -> pd.Series:
             return s.str[0:5]
 
@@ -2743,6 +2764,7 @@ def transform_column(
             lambda s: s.str[0:5],
             elementwise=False
         )
+    ```
 
     This method does not mutate the original DataFrame.
 
@@ -2750,26 +2772,26 @@ def transform_column(
 
     Originally one would write code like this:
 
-
-
+    ```python
         # YOU NO LONGER NEED TO WRITE THIS!
         df[column_name] = df[column_name].apply(np.log10)
+    ```
 
     With the method chaining syntax, we can do the following instead:
 
-
-
+    ```python
         df = (
             pd.DataFrame(...)
             .transform_column(column_name, np.log10)
-        )
+           )
+    ```
 
     With the functional syntax:
 
-
-
+    ```python
         df = pd.DataFrame(...)
         df = transform_column(df, column_name, np.log10)
+    ```
 
     :param df: A pandas DataFrame.
     :param column_name: The column to transform.
@@ -2795,8 +2817,7 @@ def transform_column(
     else:
         result = function(df[column_name])
 
-    df = df.assign(**{dest_column_name: result})
-    return df
+    return df.assign(**{dest_column_name: result})
 
 
 @pf.register_dataframe_method
@@ -2826,18 +2847,18 @@ def transform_columns(
     A few examples below. Firstly, to just log10 transform a list of columns
     without creating new columns to hold the transformed values:
 
-
-
+    ```python
         df = (
             pd.DataFrame(...)
             .transform_columns(['col1', 'col2', 'col3'], np.log10)
         )
+    ```
 
     Secondly, to add a '_log' suffix when creating a new column, which we think
     is going to be the most common use case:
 
 
-
+    ```python
         df = (
             pd.DataFrame(...)
             .transform_columns(
@@ -2846,11 +2867,11 @@ def transform_columns(
                 suffix="_log"
             )
         )
+    ```
 
     Finally, to provide new names explicitly:
 
-
-
+    ```python
         df = (
             pd.DataFrame(...)
             .transform_column(
@@ -2863,6 +2884,7 @@ def transform_columns(
                     }
                 )
         )
+    ```
 
     :param df: A pandas DataFrame.
     :param column_names: An iterable of columns to transform.
@@ -4276,17 +4298,19 @@ def drop_duplicate_columns(
 
     Method chaining syntax:
 
-
-
+    ```python
         df = pd.DataFrame({
             "a": range(10),
             "b": range(10),
             "A": range(10, 20),
             "a*": range(20, 30),
         }).clean_names(remove_special=True)
+    ```
 
+    ```python
         # remove a duplicated second 'a' column
         df.drop_duplicate_columns(column_name="a", nth_index=1)
+    ```
 
 
 

@@ -34,7 +34,6 @@ from pandas.api.types import (
     is_datetime64_dtype,
 )
 from pandas.core.common import apply_if_callable
-from pandas.core.dtypes.inference import is_array_like
 from enum import Enum
 
 
@@ -2034,9 +2033,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             if not is_list_like(cat):
                 raise TypeError(f"{cat} should be list-like.")
 
-            if (not is_array_like(cat)) and (
-                not isinstance(cat, pd.DataFrame)
-            ):
+            if not hasattr(cat, "shape"):
                 checker = pd.Index([*cat])
             else:
                 checker = cat

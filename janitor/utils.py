@@ -10,7 +10,7 @@ import sys
 import warnings
 import operator
 from collections.abc import Callable as dispatch_callable
-from itertools import chain
+from itertools import chain, count
 from typing import (
     Callable,
     Dict,
@@ -35,6 +35,7 @@ from pandas.api.types import (
     is_datetime64_dtype,
 )
 from pandas.core.common import apply_if_callable
+from pandas.core.dtypes.inference import is_array_like
 from enum import Enum
 
 from .errors import JanitorError
@@ -3470,3 +3471,110 @@ def _conditional_join_compute(
     return _create_conditional_join_frame(
         df, right, left_c, right_c, how, sort_by_appearance
     )
+
+
+def _case_when_checks(df: pd.DataFrame, args, column_name):
+    """
+    Preliminary checks on the case_when function.
+    """
+    if len(args) < 3:
+        raise ValueError(
+            """
+            At least three arguments are required
+            for the `args` parameter.
+            """
+        )
+    if len(args) % 2 != 1:
+        raise ValueError(
+            """
+            It seems the `default` argument is missing
+            from the variable `args` parameter.
+            """
+        )
+
+    check("column_name", column_name, [str])
+    default = args[-1]
+    args = args[:-1]
+
+    booleans = []
+    replacements = []
+    for index, value in enumerate(args):
+        if index % 2 == 0:
+            booleans.append(value)
+        else:
+            replacements.append(value)
+    conditions = []
+    for condition in booleans:
+        if callable(condition):
+            condition = apply_if_callable(condition, df)
+        elif isinstance(condition, str):
+            condition = df.eval(condition)
+        conditions.append(condition)
+
+    targets = []
+    for replacement in replacements:
+        if callable(replacement):
+            replacement = apply_if_callable(replacement, df)
+        targets.append(replacement)
+
+    if callable(default):
+        default = apply_if_callable(default, df)
+    if not is_list_like(default):
+        default = pd.Series([default]).repeat(len(df))
+        default.index = df.index
+    if not is_array_like(default):
+        default = pd.Series([*default])
+    if isinstance(default, pd.Index):
+        arr_ndim = default.nlevels
+    else:
+        arr_ndim = default.ndim
+    if arr_ndim != 1:
+        raise ValueError(
+            """
+            The `default` argument should either be a 1-D array,
+            a scalar, or a callable that can evaluate to
+            a 1-D array.
+            """
+        )
+    if not isinstance(default, pd.Series):
+        default = pd.Series(default)
+    if default.size != len(df):
+        raise ValueError(
+            """
+            The length of the `default` argument
+            should be equal to the length
+            of the DataFrame.
+            """
+        )
+    return conditions, targets, default
+
+
+def _case_when(df: pd.DataFrame, args, column_name):
+    """
+    Actual computation of the case_when function.
+    """
+    conditions, targets, default = _case_when_checks(df, args, column_name)
+
+    if len(conditions) == 1:
+        default = default.mask(conditions[0], targets[0])
+        return df.assign(**{column_name: default})
+
+    # ensures value assignment is on a first come basis
+    conditions = conditions[::-1]
+    targets = targets[::-1]
+    for condition, value, index in zip(conditions, targets, count()):
+        try:
+            default = default.mask(condition, value)
+        # error `feedoff` idea from SO
+        # https://stackoverflow.com/a/46091127/7175713
+        # as much as possible, pass error checking to Pandas
+        except Exception as e:
+            raise ValueError(
+                f"""
+                condition{index} and value{index}
+                failed to evaluate.
+                Original error message: {e}
+                """
+            ) from e
+
+    return df.assign(**{column_name: default})

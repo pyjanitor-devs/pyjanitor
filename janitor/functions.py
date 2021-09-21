@@ -4929,7 +4929,7 @@ def sort_column_value_order(
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
-    others: Optional[Dict] = None,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Creates a dataframe from a cartesian combination of all inputs.
@@ -5016,7 +5016,7 @@ def expand_grid(
     :param df: A pandas dataframe.
     :param df_key: name of key for the dataframe.
         It becomes part of the column names of the dataframe.
-    :param others: A dictionary that contains the data
+    :param kwargs: A dictionary that contains the data
         to be combined with the dataframe.
         If no dataframe exists, all inputs
         in others will be combined to create a dataframe.
@@ -5029,7 +5029,10 @@ def expand_grid(
 
     """
 
-    check("others", others, [dict])
+    if not kwargs:
+        if df is not None:
+            return df
+        return
 
     # if there is a dataframe, for the method chaining,
     # it must have a key, to create a name value pair
@@ -5046,10 +5049,7 @@ def expand_grid(
 
         check("df_key", df_key, [str])
 
-        others = {**{df_key: df}, **others}
-
-    if not others:
-        raise ValueError("""`others` cannot be empty.""")
+        others = {**{df_key: df}, **kwargs}
 
     return _computations_expand_grid(others)
 

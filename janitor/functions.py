@@ -6860,80 +6860,85 @@ def conditional_join(
         df, right, conditions, how, sort_by_appearance
     )
 
+
 @pf.register_dataframe_method
 def case_when(
-    df: pd.DataFrame, column_name: str, *args,
+    df: pd.DataFrame,
+    column_name: str,
+    *args,
 ) -> pd.DataFrame:
     """
-    Similar to both SQL's CASE statement and R's 'dplyr::case_when' function, pass a list of multiple
-    conditional queries with replacement values to an existing column or to a new column. When conditions
-    are met, the corresponding values will be replaced. Conditions must evaluate to 'bool' and can
-    come from multiple columns.
-​
-    This method does not mutate the original DataFrame.
-​
-    .. code-block:: python
-            df = pd.DataFrame({
-                "a" : [0, 0, 1, 2, "hi"],
-                "b" : [0, 3, 4, 5, "bye"],
-                "c" : [6, 7, 8, 9, "wait"]
-            })
-​
-            (df.
-              .case_when(
-                df,
-                "value",
-                [((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a],
-                [(df.b == 0) & (df.a == 0), "x"],
-                [True, df.c]
-            ))
-​
-                 a   b    c    value
-            0    0   0    6      x
-            1    0   3    7      0
-            2    1   4    8      8
-            3    2   5    9      9
-            4    hi  bye  wait   hi
-​
-    Functional usage syntax:
-    .. code-block:: python
-​
-        import pandas as pd
-        import numpy as np
-        import janitor jn
-​
-        df = pd.DataFrame(...)
-        df = jn.case_when(
-            df = df,
-            "column",
-            [True/False, replacement],
-            [(True/False) & (True/False), replacement],
-            [True, replacement])
-​
-    Method-chaining usage syntax:
-​
-    .. code-block:: python
-        df = (pd.DataFrame(...)
-            .case_when(
-            "column",
-            [True/False, replacement],
-            [(True/False) & (True/False), replacement],
-            [True, replacement])
-        )
+        Similar to both SQL's CASE statement and R's 'dplyr::case_when'
+        function, pass a list of multiple
+        conditional queries with replacement values
+        to an existing column or to a new column.
+        When conditions are met,
+        the corresponding values will be replaced.
+        Conditions must evaluate to 'bool' and can
+        come from multiple columns.
+    ​
+        This method does not mutate the original DataFrame.
+    ​
+        .. code-block:: python
+                df = pd.DataFrame({
+                    "a" : [0, 0, 1, 2, "hi"],
+                    "b" : [0, 3, 4, 5, "bye"],
+                    "c" : [6, 7, 8, 9, "wait"]
+                })
+    ​
+                (df.
+                  .case_when(
+                    df,
+                    "value",
+                    [((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a],
+                    [(df.b == 0) & (df.a == 0), "x"],
+                    [True, df.c]
+                ))
+    ​
+                     a   b    c    value
+                0    0   0    6      x
+                1    0   3    7      0
+                2    1   4    8      8
+                3    2   5    9      9
+                4    hi  bye  wait   hi
+    ​
+        Functional usage syntax:
+        .. code-block:: python
+    ​
+            import pandas as pd
+            import numpy as np
+            import janitor jn
+    ​
+            df = pd.DataFrame(...)
+            df = jn.case_when(
+                df = df,
+                "column",
+                [True/False, replacement],
+                [(True/False) & (True/False), replacement],
+                [True, replacement])
+    ​
+        Method-chaining usage syntax:
+    ​
+        .. code-block:: python
+            df = (pd.DataFrame(...)
+                .case_when(
+                "column",
+                [True/False, replacement],
+                [(True/False) & (True/False), replacement],
+                [True, replacement])
+            )
 
-        :param df: A pandas dataframe.
-        :param column_name: Column name where replacements will be updated.
-        :param *args: List with two elements; elements[0] passess the conditions while
-            elements[1] passes the replacement. Each list is separated by a comma.
-        :returns: A pandas DataFrame with replaced values.
-​
+    :param df: A Pandas dataframe.
+    :param column_name: name of column.
+    :param args: Variable arguments.
+    :returns: A pandas DataFrame.
     """
-    mapper = {"cond" : [], "~" : []}
+    mapper = {"cond": [], "~": []}
     for query, result in args:
-        mapper['cond'].append(query)
-        mapper['~'].append(result)
+        mapper["cond"].append(query)
+        mapper["~"].append(result)
     df = df.copy()
     df[column_name] = np.select(
-        condlist = mapper.get("cond"),
-        choicelist = mapper.get("~"))
+        condlist=mapper.get("cond"), choicelist=mapper.get("~")
+    )
     return df

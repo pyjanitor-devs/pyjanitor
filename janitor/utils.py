@@ -35,7 +35,6 @@ from pandas.api.types import (
     is_datetime64_dtype,
 )
 from pandas.core.common import apply_if_callable
-from pandas.core.dtypes.inference import is_array_like
 from enum import Enum
 
 from .errors import JanitorError
@@ -3503,6 +3502,7 @@ def _case_when_checks(df: pd.DataFrame, args, column_name):
             booleans.append(value)
         else:
             replacements.append(value)
+
     conditions = []
     for condition in booleans:
         if callable(condition):
@@ -3522,7 +3522,7 @@ def _case_when_checks(df: pd.DataFrame, args, column_name):
     if not is_list_like(default):
         default = pd.Series([default]).repeat(len(df))
         default.index = df.index
-    if not is_array_like(default):
+    if not hasattr(default, "shape"):
         default = pd.Series([*default])
     if isinstance(default, pd.Index):
         arr_ndim = default.nlevels
@@ -3567,7 +3567,6 @@ def _case_when(df: pd.DataFrame, args, column_name):
             default = default.mask(condition, value)
         # error `feedoff` idea from SO
         # https://stackoverflow.com/a/46091127/7175713
-        # as much as possible, pass error checking to Pandas
         except Exception as e:
             raise ValueError(
                 f"""

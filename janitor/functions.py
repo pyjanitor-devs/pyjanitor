@@ -6951,7 +6951,7 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         If `condition` is a callable, it should evaluate
         to a 1-D boolean array. The array should have the same length
         as the DataFrame. If it is a string, it is computed on the dataframe,
-        via `pd.eval`, and should return a 1-D boolean array.
+        via `df.eval`, and should return a 1-D boolean array.
         `result` can be a scalar, a 1-D array, or a callable.
         If `result` is a callable, it should evaluate to a 1-D array.
         For a 1-D array, it should have the same length as the DataFrame.

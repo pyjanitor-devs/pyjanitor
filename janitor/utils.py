@@ -731,7 +731,7 @@ def _data_checks_complete(
             by = [by]
         check("by", by, [list])
 
-    return df, columns, column_checker, by
+    return columns, column_checker, by
 
 
 def _computations_complete(
@@ -759,10 +759,49 @@ def _computations_complete(
     A dataframe, with rows of missing values, if any, is returned.
     """
 
-    df, columns, column_checker, by = _data_checks_complete(df, columns, by)
+    columns, column_checker, by = _data_checks_complete(df, columns, by)
+    columns_to_stack = None
+    df_empty = None
+
+    all_strings = True
+    for column in columns:
+        if not isinstance(column, str):
+            all_strings = False
+            break
+
+    # nothing to 'complete' here
+    if all_strings and len(columns) == 1:
+        return df
+
+    # check for nulls
+    no_nulls = True
+    for column in column_checker:
+        if df[column].hasnans:
+            no_nulls = False
+            break
+
+    if no_nulls and all_strings:
+        if not df.duplicated(subset=columns).any(axis=None):
+            df = df.set_index(column_checker)
+            df_empty = df.empty
+            if df_empty:
+                df["dummy"] = 1
+            columns_to_stack = columns[1:]
+            df = df.unstack(columns_to_stack)  # noqa: PD010
+            df = df.stack(columns_to_stack, dropna=False)  # noqa: PD013
+            if df_empty:
+                df = df.iloc[:, :-1]
+            columns_to_stack = None
+            return df.reset_index()
+        uniques = {col: df[col].unique() for col in columns}
+        uniques = _computations_expand_grid(uniques)
+        return df.merge(uniques, how="outer", on=columns)
+
+    return df
+
+    return df
 
     dict_present = any((isinstance(entry, dict) for entry in columns))
-    all_strings = all(isinstance(column, str) for column in columns)
 
     df = df.set_index(column_checker)
 

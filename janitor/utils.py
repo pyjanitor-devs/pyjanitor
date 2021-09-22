@@ -451,16 +451,17 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     to expand each input to the length of the cumulative product of
     all inputs in `others`.
 
-    There is a performance penalty for small entries (length less than 10)
-    in using this method, instead of `itertools.product`; however, there is
-    significant performance benefits as the size of the data increases.
+    There is a performance penalty for small entries
+    in using this method, instead of `itertools.product`;
+    however, there is significant performance benefits
+    as the size of the data increases.
 
     Another benefit of this approach,
     in addition to the significant performance gains,
     is the preservation of data types. This is particularly relevant for
     Pandas' extension arrays dtypes (categoricals, nullable integers, ...).
 
-    A dataframe of all possible combinations is returned.
+    A MultiIndex DataFrame of all possible combinations is returned.
     """
 
     for key in others:
@@ -470,19 +471,15 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     for key, value in others.items():
         if is_scalar(value):
-            grid[key] = pd.Series([value])
+            value = pd.DataFrame([value])
         elif is_extension_array_dtype(value) and not (
             isinstance(value, pd.Series)
         ):
-            grid[key] = pd.Series(value)
-        elif is_list_like(value):
-            if hasattr(value, "shape"):
-                grid[key] = value
-            else:
-                value = np.asarray([*value])
-                grid[key] = value
-        else:
-            raise ValueError(f"{value} is not supported in expand_grid.")
+            value = pd.DataFrame(value)
+        elif is_list_like(value) and (not hasattr(value, "shape")):
+            value = np.asarray([*value])
+
+        grid[key] = value
 
     others = None
 
@@ -530,8 +527,10 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
     Returns Series if 1-D array,
     or DataFrame if 2-D array.
     """
+
     if not (value.size > 0):
         raise ValueError("""array cannot be empty.""")
+
     if value.ndim > 2:
         raise ValueError(
             """
@@ -540,10 +539,8 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
             """
         )
 
-    value = value.take(grid_index, axis=0)
+    value = value[grid_index]
 
-    if value.ndim == 1:
-        return pd.Series(value)
     return pd.DataFrame(value)
 
 
@@ -557,10 +554,10 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
     if value.empty:
         raise ValueError("""Series cannot be empty.""")
 
-    value = value.take(grid_index)
-    value.index = np.arange(len(value))
+    value = value.iloc[grid_index]
+    value.index = pd.RangeIndex(start=0, stop=len(value))
 
-    return value
+    return value.to_frame()
 
 
 @_expand_grid.register(pd.DataFrame)
@@ -573,8 +570,10 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
     if value.empty:
         raise ValueError("""DataFrame cannot be empty.""")
 
-    value = value.take(grid_index)
-    value.index = np.arange(len(value))
+    value = value.iloc[grid_index]
+    value.index = pd.RangeIndex(start=0, stop=len(value))
+    if isinstance(value.columns, pd.MultiIndex):
+        value.columns = ["_".join(map(str, ent)) for ent in value]
 
     return value
 
@@ -589,14 +588,9 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
     if value.empty:
         raise ValueError("""Index cannot be empty.""")
 
-    value = value.take(grid_index)
+    value = value[grid_index]
 
-    if isinstance(value, pd.MultiIndex):
-        value = value.to_frame(index=False)
-    else:
-        value = value.to_series(index=np.arange(len(value)))
-
-    return value
+    return value.to_frame(index=False)
 
 
 def _data_checks_complete(

@@ -35,7 +35,7 @@ from pandas.api.types import (
     is_datetime64_dtype,
 )
 
-# from pandas.core.common import apply_if_callable
+from pandas.core.common import apply_if_callable
 from enum import Enum
 
 from .errors import JanitorError
@@ -721,11 +721,12 @@ def _computations_complete(
     if all_strings:
         uniques = {col: df[col].unique() for col in columns}
         uniques = _computations_expand_grid(uniques)
+        uniques = uniques.droplevel(level=-1, axis="columns")
         return df.merge(uniques, how="outer", on=columns)
 
-    # complete_columns = [_complete_column(column, df) for column in columns]
+    complete_columns = [_complete_column(column, df) for column in columns]
 
-    # return complete_columns
+    return complete_columns
 
 
 #     return df
@@ -855,134 +856,134 @@ def _computations_complete(
 #     return indexer
 
 
-# @functools.singledispatch
-# def _complete_column(column, df):
-#     """
-#     This function processes the `columns` argument,
-#     to create a pandas Index or a list.
+@functools.singledispatch
+def _complete_column(column, df):
+    """
+    This function processes the `columns` argument,
+    to create a pandas Index or a list.
 
-#     Args:
-#         column : str/list/dict
-#         index: pandas Index
+    Args:
+        column : str/list/dict
+        index: pandas Index
 
-#     A unique pandas Index or a list of unique pandas Indices is returned.
-#     """
-#     raise TypeError(
-#         """This type is not supported in the `complete` function."""
-#     )
-
-
-# @_complete_column.register(str)  # noqa: F811
-# def _sub_complete_column(column, df):  # noqa: F811
-#     """
-#     This function processes the `columns` argument,
-#     to create a pandas Index.
-
-#     Args:
-#         column : str
-#         index: pandas Index
-
-#     Returns:
-#         pd.Index: A pandas Index with a single level
-#     """
-
-#     arr = df[column]
-
-#     if not arr.is_unique:
-#         return arr.drop_duplicates()
-#     return arr
+    A unique pandas Index or a list of unique pandas Indices is returned.
+    """
+    raise TypeError(
+        """This type is not supported in the `complete` function."""
+    )
 
 
-# @_complete_column.register(list)  # noqa: F811
-# def _sub_complete_column(column, df):  # noqa: F811
-#     """
-#     This function processes the `columns` argument,
-#     to create a pandas Index.
+@_complete_column.register(str)  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
+    """
+    This function processes the `columns` argument,
+    to create a pandas Index.
 
-#     Args:
-#         column : list
-#         index: pandas Index
+    Args:
+        column : str
+        index: pandas Index
 
-#     Returns:
-#         pd.MultiIndex
-#     """
+    Returns:
+        pd.Index: A pandas Index with a single level
+    """
 
-#     arr = df.loc[:, column]
+    arr = df[column]
 
-#     if not arr.duplicated().any(axis=None):
-#         return arr.drop_duplicates()
+    if not arr.is_unique:
+        return arr.drop_duplicates()
+    return arr
 
-#     return arr
+
+@_complete_column.register(list)  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
+    """
+    This function processes the `columns` argument,
+    to create a pandas Index.
+
+    Args:
+        column : list
+        index: pandas Index
+
+    Returns:
+        pd.MultiIndex
+    """
+
+    arr = df.loc[:, column]
+
+    if not arr.duplicated().any(axis=None):
+        return arr.drop_duplicates()
+
+    return arr
 
 
-# @_complete_column.register(dict)  # noqa: F811
-# def _sub_complete_column(column, index):  # noqa: F811
-#     """
-#     This function processes the `columns` argument,
-#     to create a pandas Index or a list.
+@_complete_column.register(dict)  # noqa: F811
+def _sub_complete_column(column, index):  # noqa: F811
+    """
+    This function processes the `columns` argument,
+    to create a pandas Index or a list.
 
-#     Args:
-#         column : dict
-#         index: pandas Index
+    Args:
+        column : dict
+        index: pandas Index
 
-#     Returns:
-#         list: A list of unique pandas Indices.
-#     """
+    Returns:
+        list: A list of unique pandas Indices.
+    """
 
-#     collection = []
-#     for key, value in column.items():
-#         arr = apply_if_callable(value, index.get_level_values(key))
-#         if not is_list_like(arr):
-#             raise ValueError(
-#                 """
-#                 Input in the supplied dictionary
-#                 must be list-like.
-#                 """
-#             )
-#         if (
-#             not isinstance(
-#                 arr, (pd.DataFrame, pd.Series, np.ndarray, pd.Index)
-#             )
-#         ) and (not is_extension_array_dtype(arr)):
-#             arr = pd.Index([*arr], name=key)
+    collection = []
+    for key, value in column.items():
+        arr = apply_if_callable(value, index.get_level_values(key))
+        if not is_list_like(arr):
+            raise ValueError(
+                """
+                Input in the supplied dictionary
+                must be list-like.
+                """
+            )
+        if (
+            not isinstance(
+                arr, (pd.DataFrame, pd.Series, np.ndarray, pd.Index)
+            )
+        ) and (not is_extension_array_dtype(arr)):
+            arr = pd.Index([*arr], name=key)
 
-#         if arr.ndim != 1:
-#             raise ValueError(
-#                 """
-#                 It seems the supplied pair in the supplied dictionary
-#                 cannot be converted to a 1-dimensional Pandas object.
-#                 Kindly provide data that can be converted to
-#                 a 1-dimensional Pandas object.
-#                 """
-#             )
-#         if isinstance(arr, pd.MultiIndex):
-#             raise ValueError(
-#                 """
-#                 MultiIndex object not acceptable
-#                 in the supplied dictionary.
-#                 """
-#             )
+        if arr.ndim != 1:
+            raise ValueError(
+                """
+                It seems the supplied pair in the supplied dictionary
+                cannot be converted to a 1-dimensional Pandas object.
+                Kindly provide data that can be converted to
+                a 1-dimensional Pandas object.
+                """
+            )
+        if isinstance(arr, pd.MultiIndex):
+            raise ValueError(
+                """
+                MultiIndex object not acceptable
+                in the supplied dictionary.
+                """
+            )
 
-#         if not isinstance(arr, pd.Index):
-#             arr = pd.Index(arr, name=key)
+        if not isinstance(arr, pd.Index):
+            arr = pd.Index(arr, name=key)
 
-#         if arr.empty:
-#             raise ValueError(
-#                 """
-#                 Input in the supplied dictionary
-#                 cannot be empty.
-#                 """
-#             )
+        if arr.empty:
+            raise ValueError(
+                """
+                Input in the supplied dictionary
+                cannot be empty.
+                """
+            )
 
-#         if not arr.is_unique:
-#             arr = arr.drop_duplicates()
+        if not arr.is_unique:
+            arr = arr.drop_duplicates()
 
-#         if arr.name is None:
-#             arr.name = key
+        if arr.name is None:
+            arr.name = key
 
-#         collection.append(arr)
+        collection.append(arr)
 
-#     return collection
+    return collection
 
 
 def _data_checks_pivot_longer(

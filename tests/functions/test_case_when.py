@@ -56,9 +56,9 @@ def test_args_even(df):
 
 @given(df=df_strategy())
 def test_column_name(df):
-    """Raise TypeError if `column_name` is not a string."""
+    """Raise TypeError if `column_name` is not hashable."""
     with pytest.raises(TypeError):
-        df.case_when(df.a < 10, "less_than_10", df.a, column_name=("a",))
+        df.case_when(df.a < 10, "less_than_10", df.a, column_name={3})
 
 
 @given(df=df_strategy())

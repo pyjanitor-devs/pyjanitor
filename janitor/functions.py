@@ -6880,6 +6880,8 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
 
     This function relies on `pd.Series.mask` method.
 
+    When multiple conditions are satisfied, the first one is used.
+
     The variable `*args` parameters takes arguments of the form :
     `condition0`, `value0`, `condition1`, `value1`, ..., `default`.
     If `condition0` evaluates to `True`, then assign `value0` to

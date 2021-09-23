@@ -649,6 +649,7 @@ def _data_checks_complete(
         if isinstance(by, str):
             by = [by]
         check("by", by, [list])
+        check_column(df, by)
 
     return columns, column_checker, by
 
@@ -764,7 +765,7 @@ def _sub_complete_column(column, df):  # noqa: F811
 
     column = df.loc[:, column]
 
-    if not column.duplicated().any(axis=None):
+    if column.duplicated().any(axis=None):
         return column.drop_duplicates()
 
     return column

@@ -5441,150 +5441,14 @@ def complete(
     This function turns implicit missing values into explicit missing values.
 
     It is modeled after tidyr's `complete` function, and is a wrapper around
-    `expand_grid`, `pd.DataFrame.reindex`, `pd.DataFrame.join`
-    and `pd.DataFrame.fillna`.
+    `expand_grid` and `pd.merge`.
 
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible.
 
     It can also handle duplicated data.
 
-    `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
-
-            group	item_id	    item_name	value1	value2
-        0	1	    1	        a	1	4
-        1	2	    2	        b	2	5
-        2	1	    2	        b	3	6
-
-    Find all the unique combinations of `group`, `item_id`, and `item_name`,
-    including combinations not present in the data::
-
-        df.complete('group', 'item_id', 'item_name')
-
-              group	item_id	    item_name	value1	value2
-        0	1	    1	        a	1.0	4.0
-        1	1	    1	        b	NaN	NaN
-        2	1	    2	        a	NaN	NaN
-        3	1	    2	        b	3.0	6.0
-        4	2	    1	        a	NaN	NaN
-        5	2	    1	        b	NaN	NaN
-        6	2	    2	        a	NaN	NaN
-        7	2	    2	        b	2.0	5.0
-
-    To expose just the missing values based only on the existing data,
-    `item_id` and `item_name` column names can be wrapped in a list/tuple,
-    while `group` is passed in as a separate variable::
-
-        df.complete("group", ("item_id", "item_name"))
-            group	item_id	    item_name	value1	   value2
-        0	1	    1	        a	  1.0	    4.0
-        1	1	    2	        b	  3.0	    6.0
-        2	2	    1	        a	  NaN 	    NaN
-        3	2	    2	        b	  2.0	    5.0
-
-    Let's look at another example:
-
-    `Source Data <http://imachordata.com/2016/02/05/you-complete-me/>`_
-
-    .. code-block:: python
-
-            Year      Taxon         Abundance
-        0   1999    Saccharina         4
-        1   2000    Saccharina         5
-        2   2004    Saccharina         2
-        3   1999     Agarum            1
-        4   2004     Agarum            8
-
-    Note that Year 2000 and Agarum pairing is missing. Let's make it
-    explicit::
-
-        df.complete('Year', 'Taxon')
-
-           Year      Taxon     Abundance
-        0  1999     Agarum         1.0
-        1  1999     Saccharina     4.0
-        2  2000     Agarum         NaN
-        3  2000     Saccharina     5.0
-        4  2004     Agarum         8.0
-        5  2004     Saccharina     2.0
-
-    The null value can be replaced with the Pandas `fillna` argument::
-
-        df.complete('Year', 'Taxon').fillna(0)
-
-           Year      Taxon     Abundance
-        0  1999     Agarum         1.0
-        1  1999     Saccharina     4.0
-        2  2000     Agarum         0.0
-        3  2000     Saccharina     5.0
-        4  2004     Agarum         8.0
-        5  2004     Saccharina     2.0
-
-    What if we wanted the explicit missing values for all the years from
-    1999 to 2004? Easy - simply pass a dictionary pairing the column name
-    with the new values::
-
-        new_year_values = lambda year: range(year.min(), year.max() + 1)
-
-        df.complete({"Year": new_year_values}, "Taxon")
-
-            Year       Taxon  Abundance
-        0   1999      Agarum        1.0
-        1   1999  Saccharina        4.0
-        2   2000      Agarum        NaN
-        3   2000  Saccharina        5.0
-        4   2001      Agarum        NaN
-        5   2001  Saccharina        NaN
-        6   2002      Agarum        NaN
-        7   2002  Saccharina        NaN
-        8   2003      Agarum        NaN
-        9   2003  Saccharina        NaN
-        10  2004      Agarum        8.0
-        11  2004  Saccharina        2.0
-
-    It is also possible to expose missing values within a groupby,
-    by using the `by` parameter::
-
-          state  year  value
-        0    CA  2010      1
-        1    CA  2013      3
-        2    HI  2010      1
-        3    HI  2012      2
-        4    HI  2016      3
-        5    NY  2009      2
-        6    NY  2013      5
-
-    Let's get all the missing years per state::
-
-        df.complete(
-            {'year': new_year_values},
-            by='state'
-        )
-
-            state  year  value
-        0     CA  2010    1.0
-        1     CA  2011    NaN
-        2     CA  2012    NaN
-        3     CA  2013    3.0
-        4     HI  2010    1.0
-        5     HI  2011    NaN
-        6     HI  2012    2.0
-        7     HI  2013    NaN
-        8     HI  2014    NaN
-        9     HI  2015    NaN
-        10    HI  2016    3.0
-        11    NY  2009    2.0
-        12    NY  2010    NaN
-        13    NY  2011    NaN
-        14    NY  2012    NaN
-        15    NY  2013    5.0
-
-    .. note:: MultiIndex columns are not supported.
+    MultiIndex columns are not supported.
 
     Functional usage syntax:
 
@@ -5617,19 +5481,13 @@ def complete(
             )
 
     :param df: A pandas dataframe.
-    :param *columns: This is a sequence containing the columns to be
+    :param *columns: This refers to the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
     :param by: label or list of labels to group by.
-        The explicit missing values are returned per group.
-    :returns: A pandas dataframe with modified column(s).
-    :raises ValueError: if entry in `*columns` is not a
-        str/dict/list/tuple.
-    :raises ValueError: if entry in `*columns` is a dict/list/tuple
-        and is empty.
-
-    .. # noqa: DAR402
+        The explicit missing rows are returned per group.
+    :returns: A pandas DataFrame with explicit missing rows, if any.
     """
 
     if not columns:
@@ -5637,9 +5495,7 @@ def complete(
 
     df = df.copy()
 
-    df = _computations_complete(df, columns, by)
-
-    return df
+    return _computations_complete(df, columns, by)
 
 
 def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:

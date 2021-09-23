@@ -112,9 +112,9 @@ def test_all_strings_no_nulls(df):
     result = result.sort_values(cols, ignore_index=True)
     columns = df.columns
     expected = (
-        df.set_index(cols)
-        .unstack(cols[-1])
-        .stack(dropna=False)
+        df.set_index(cols)  # noqa: PD013, PD010
+        .unstack(cols[-1])  # noqa: PD010
+        .stack(dropna=False)  # noqa: PD013
         .reset_index()
         .reindex(columns=columns)
     )

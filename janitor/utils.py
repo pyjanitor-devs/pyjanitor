@@ -473,8 +473,8 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     for key, value in others.items():
         if is_scalar(value):
             value = pd.DataFrame([value])
-        elif is_extension_array_dtype(value) and not (
-            isinstance(value, pd.Series)
+        elif (not isinstance(value, pd.Series)) and is_extension_array_dtype(
+            value
         ):
             value = pd.DataFrame(value)
         elif is_list_like(value) and (not hasattr(value, "shape")):
@@ -501,9 +501,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     # creates a MultiIndex with the keys
     # since grid is a dictionary
-    grid = pd.concat(grid, axis="columns", sort=False, copy=False)
-
-    return grid
+    return pd.concat(grid, axis="columns", sort=False, copy=False)
 
 
 @functools.singledispatch
@@ -665,20 +663,10 @@ def _computations_complete(
 
     If `by` is present, then groupby apply is used.
 
-    For some cases, the `stack/unstack` combination is preferred; it is more
-    efficient than `reindex`, as the size of the data grows. It is only
-    applicable if all the entries in `columns` are strings, there are
-    no nulls(stacking implicitly removes nulls in columns),
-    the length of `columns` is greater than 1, and the index
-    has no duplicates.
-
-    A dataframe, with rows of missing values, if any, is returned.
+    A DataFrame, with rows of missing values, if any, is returned.
     """
 
     columns, column_checker, by = _data_checks_complete(df, columns, by)
-    columns_to_stack = None
-    df_empty = None
-    df_unique = None
 
     all_strings = True
     for column in columns:
@@ -690,35 +678,29 @@ def _computations_complete(
     if all_strings and len(columns) == 1:
         return df
 
-    # check for nulls
-    no_nulls = True
-    for column in column_checker:
-        if df[column].hasnans:
-            no_nulls = False
-            break
-    df_unique = not df.duplicated(subset=column_checker).any(axis=None)
+    if by is None:
+        uniques = _generic_complete(df, columns, all_strings)
+        return df.merge(uniques, how="outer", on=column_checker, sort=False)
 
-    if no_nulls and all_strings and df_unique:
-        df_columns = df.columns
-        df = df.set_index(column_checker)
-        df_empty = df.empty
-        if df_empty:
-            df["dummy"] = 1
-        columns_to_stack = columns[1:]
-        # stack/unstack used here primarily because of speed
-        # faster than reindex under the right conditions
-        df = df.unstack(columns_to_stack)  # noqa: PD010
-        df = df.stack(columns_to_stack, dropna=False)  # noqa: PD013
-        if df_empty:
-            df = df.iloc[:, :-1]
-        columns_to_stack = None
-        return df.reset_index().loc[:, df_columns]
+    uniques = df.groupby(by)
+    uniques = uniques.apply(_generic_complete, columns, all_strings)
+    uniques = uniques.droplevel(-1)
+    return df.merge(uniques, how="outer", on=by + column_checker, sort=False)
 
+
+def _generic_complete(
+    df: pd.DataFrame, columns: list, all_strings: bool = True
+):
+    """
+    Generate cartesian product for `_computations_complete`.
+
+    Returns a Series or DataFrame, with no duplicates.
+    """
     if all_strings:
         uniques = {col: df[col].unique() for col in columns}
         uniques = _computations_expand_grid(uniques)
         uniques = uniques.droplevel(level=-1, axis="columns")
-        return df.merge(uniques, how="outer", on=columns)
+        return uniques
 
     uniques = {}
     for index, column in enumerate(columns):
@@ -728,23 +710,23 @@ def _computations_complete(
         else:
             uniques[index] = _complete_column(column, df)
 
-    uniques = _computations_expand_grid(uniques)
-    uniques = uniques.droplevel(level=0, axis="columns")
-
-    return df.merge(uniques, how="outer", on=column_checker)
+    if len(uniques) == 1:
+        _, uniques = uniques.popitem()
+    else:
+        uniques = _computations_expand_grid(uniques)
+        uniques = uniques.droplevel(level=0, axis="columns")
+    return uniques
 
 
 @functools.singledispatch
 def _complete_column(column, df):
     """
-    This function processes the `columns` argument,
-    to create a pandas Index or a list.
-
     Args:
         column : str/list/dict
-        index: pandas Index
+        df: Pandas DataFrame
 
-    A unique pandas Index or a list of unique pandas Indices is returned.
+    A Pandas Series/DataFrame with no duplicates,
+    or a list of unique Pandas Series is returned.
     """
     raise TypeError(
         """This type is not supported in the `complete` function."""
@@ -754,30 +736,24 @@ def _complete_column(column, df):
 @_complete_column.register(str)  # noqa: F811
 def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a Pandas Series.
-
     Args:
         column : str
-        index: Pandas Series
+        df: Pandas DataFrame
 
     Returns:
         Pandas Series
     """
 
-    arr = df[column]
+    column = df[column]
 
-    if not arr.is_unique:
-        return arr.drop_duplicates()
-    return arr
+    if not column.is_unique:
+        return column.drop_duplicates()
+    return column
 
 
 @_complete_column.register(list)  # noqa: F811
 def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a Pandas DataFrame.
-
     Args:
         column : list
         df: Pandas DataFrame
@@ -786,20 +762,17 @@ def _sub_complete_column(column, df):  # noqa: F811
         Pandas DataFrame
     """
 
-    arr = df.loc[:, column]
+    column = df.loc[:, column]
 
-    if not arr.duplicated().any(axis=None):
-        return arr.drop_duplicates()
+    if not column.duplicated().any(axis=None):
+        return column.drop_duplicates()
 
-    return arr
+    return column
 
 
 @_complete_column.register(dict)  # noqa: F811
 def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a list.
-
     Args:
         column : dictionary
         df: Pandas DataFrame
@@ -820,11 +793,11 @@ def _sub_complete_column(column, df):  # noqa: F811
         if not hasattr(arr, "shape"):
             arr = pd.Series([*arr], name=key)
 
-        if is_extension_array_dtype(arr) and not (isinstance(arr, pd.Series)):
+        if (not isinstance(arr, pd.Series)) and is_extension_array_dtype(arr):
             arr = pd.Series(arr)
 
         if isinstance(arr, pd.Index):
-            arr_ndim = arr.index.nlevels
+            arr_ndim = arr.nlevels
         else:
             arr_ndim = arr.ndim
 

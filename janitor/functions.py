@@ -4877,13 +4877,12 @@ def expand_grid(
     """
     Creates a DataFrame from a cartesian combination of all inputs.
 
-    It is also not restricted to DataFrame;
+    It is not restricted to DataFrame;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
 
-    If method-chaining to a DataFrame,
-    a key to represent the column name
-    in the output must be provided.
+    If method-chaining to a DataFrame, a string argument
+    to `df_key` parameter must be provided.
 
 
     Data types are preserved in this function,

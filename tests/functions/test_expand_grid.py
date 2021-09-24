@@ -23,6 +23,11 @@ def test_others_None(df):
     assert_frame_equal(df.expand_grid("df"), df)
 
 
+def test_others_empty():
+    """Return None if no `others`."""
+    assert expand_grid(), None
+
+
 @given(df=df_strategy())
 def test_df_key(df):
     """Raise error if dataframe key is not supplied."""

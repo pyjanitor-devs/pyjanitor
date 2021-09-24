@@ -712,10 +712,10 @@ def _generic_complete(
 
     if len(uniques) == 1:
         _, uniques = uniques.popitem()
-    else:
-        uniques = _computations_expand_grid(uniques)
-        uniques = uniques.droplevel(level=0, axis="columns")
-    return uniques
+        return uniques.to_frame()
+
+    uniques = _computations_expand_grid(uniques)
+    return uniques.droplevel(level=0, axis="columns")
 
 
 @functools.singledispatch

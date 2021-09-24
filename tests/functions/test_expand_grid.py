@@ -25,7 +25,7 @@ def test_others_None(df):
 
 def test_others_empty():
     """Return None if no `others`."""
-    assert expand_grid(), None
+    assert (expand_grid(), None)  # noqa : F631
 
 
 @given(df=df_strategy())

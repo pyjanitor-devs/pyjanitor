@@ -81,9 +81,16 @@ def test_type_groups(df):
 
 @given(df=df_strategy())
 def test_type_by(df):
-    """Raise TypeError if `by`` is not a permitted type."""
+    """Raise TypeError if `by` is not a permitted type."""
     with pytest.raises(TypeError):
         df.complete("a", "cities", by=1)
+
+
+@given(df=df_strategy())
+def test_type_sort(df):
+    """Raise TypeError if `sort` is not boolean."""
+    with pytest.raises(TypeError):
+        df.complete("a", "cities", sort=11)
 
 
 @given(df=df_strategy())
@@ -108,8 +115,7 @@ def test_all_strings_no_nulls(df):
     """
     cols = ["names", "numbers"]
     df = df.assign(dummy=1, names=[*ascii_lowercase[: len(df)]])
-    result = df.complete(*cols)
-    result = result.sort_values(cols, ignore_index=True)
+    result = df.complete(*cols, sort=True)
     columns = df.columns
     expected = (
         df.set_index(cols)  # noqa: PD013, PD010
@@ -132,8 +138,7 @@ def test_dict(df):
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
     new_numbers = {"numbers": lambda df: range(df.min(), df.max() + 1)}
     cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names")
-    result = result.sort_values(cols, ignore_index=True)
+    result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
@@ -160,8 +165,7 @@ def test_dict_extension_array(df):
     new_numbers = pd.array(new_numbers)
     new_numbers = {"numbers": new_numbers}
     cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names")
-    result = result.sort_values(cols, ignore_index=True)
+    result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
@@ -187,8 +191,7 @@ def test_dict_numpy(df):
     new_numbers = np.arange(df.numbers.min(), df.numbers.max() + 1)
     new_numbers = {"numbers": new_numbers}
     cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names")
-    result = result.sort_values(cols, ignore_index=True)
+    result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
@@ -216,8 +219,7 @@ def test_dict_Index(df):
     )
     new_numbers = {"numbers": new_numbers}
     cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names")
-    result = result.sort_values(cols, ignore_index=True)
+    result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
@@ -246,8 +248,7 @@ def test_dict_duplicated(df):
     new_numbers = new_numbers.append(new_numbers)
     new_numbers = {"numbers": new_numbers}
     cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names")
-    result = result.sort_values(cols, ignore_index=True)
+    result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
@@ -280,10 +281,8 @@ def test_tuple_column():
         }
     )
 
-    result = df.complete("group", ("item_id", "item_name"))
-    result = result.sort_values(
-        ["group", "item_id", "item_name"], ignore_index=True
-    )
+    result = df.complete("group", ("item_id", "item_name"), sort=True)
+
     expected = pd.DataFrame(
         {
             "group": [1, 1, 2, 2],
@@ -319,17 +318,9 @@ def test_complete_multiple_groupings():
         }
     )
 
-    result = (
-        df3.complete(
-            ("meta", "domain1"),
-            ("project_id", "question_count"),
-        )
-        .fillna({"tag_count": 0})
-        .sort_values(
-            ["meta", "domain1", "project_id", "question_count"],
-            ignore_index=True,
-        )
-    )
+    result = df3.complete(
+        ("meta", "domain1"), ("project_id", "question_count"), sort=True
+    ).fillna({"tag_count": 0})
     assert_frame_equal(result, output3)
 
 
@@ -357,11 +348,9 @@ def test_dict_tuple():
     result = df.complete(
         {"Year": lambda x: range(x.min(), x.max() + 1)},
         ("Taxon", "Abundance"),
+        sort=True,
     )
 
-    result = result.sort_values(
-        ["Year", "Taxon", "Abundance"], ignore_index=True
-    )
     expected = pd.DataFrame(
         [
             {"Year": 1999, "Taxon": "Agarum", "Abundance": 1},
@@ -411,11 +400,8 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        {"year": lambda x: range(x.min(), x.max() + 1)},
-        by="state",
+        {"year": lambda x: range(x.min(), x.max() + 1)}, by="state", sort=True
     )
-
-    result = result.sort_values(["state", "year"], ignore_index=True)
 
     expected = pd.DataFrame(
         [

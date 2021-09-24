@@ -14,7 +14,6 @@ from itertools import chain, count
 from typing import (
     Callable,
     Dict,
-    Hashable,
     Iterable,
     List,
     NamedTuple,
@@ -3492,7 +3491,7 @@ def _case_when_checks(df: pd.DataFrame, args, column_name):
             """
         )
 
-    check("column_name", column_name, [Hashable])
+    check("column_name", column_name, [str])
     default = args[-1]
     args = args[:-1]
 

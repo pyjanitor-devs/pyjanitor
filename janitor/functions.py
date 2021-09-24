@@ -4929,61 +4929,38 @@ def sort_column_value_order(
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
+    *,
     others: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
-    Creates a dataframe from a cartesian combination of all inputs.
+    Creates a DataFrame from a cartesian combination of all inputs.
 
-    This works with a dictionary of name value pairs.
-
-    It is also not restricted to dataframes;
+    It is not restricted to DataFrame;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
 
-    If method-chaining to a dataframe,
-    a key to represent the column name in the output must be provided.
+    If method-chaining to a DataFrame, a string argument
+    to `df_key` parameter must be provided.
 
 
     Data types are preserved in this function,
     including Pandas' extension array dtypes.
 
-    The output will always be a dataframe.
+    The output will always be a DataFrame, usually a MultiIndex,
+    with the keys of the `others` dictionary serving as
+    the top level columns.
 
-    Example:
+    If a DataFrame with MultiIndex columns is part of the arguments in
+    `others`, the columns are flattened, before the final
+    cartesian DataFrame is generated.
 
-    .. code-block:: python
+    If a Pandas Series/DataFrame is passed, and has a labeled index, or
+    a MultiIndex index, the index is discarded; the final DataFrame
+    will have a RangeIndex.
 
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame({"x":range(1,3), "y":[2,1]})
-        others = {"z" : range(1,4)}
-
-        df.expand_grid(df_key="df",others=others)
-
-        # df_x |   df_y |   z
-        #    1 |      2 |   1
-        #    1 |      2 |   2
-        #    1 |      2 |   3
-        #    2 |      1 |   1
-        #    2 |      1 |   2
-        #    2 |      1 |   3
-
-        # create a dataframe from all combinations in a dictionary
-        data = {"x":range(1,4), "y":[1,2]}
-
-        jn.expand_grid(others=data)
-
-        #  x |   y
-        #  1 |   1
-        #  1 |   2
-        #  2 |   1
-        #  2 |   2
-        #  3 |   1
-        #  3 |   2
-
-    .. note:: If a MultiIndex DataFrame or Series is passed, the index/columns
-        will be discarded, and a single indexed dataframe will be returned.
+    The MultiIndexed DataFrame can be flattened using pyjanitor's
+    `collapse_levels` method; the user can also decide to drop any of the
+    levels, via Pandas' `droplevel` method.
 
     Functional usage syntax:
 
@@ -5004,30 +4981,30 @@ def expand_grid(
 
         df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
 
-    Usage independent of a dataframe
+    Usage independent of a DataFrame
 
     .. code-block:: python
 
         import pandas as pd
         from janitor import expand_grid
 
-        df = expand_grid({"x":range(1,4), "y":[1,2]})
+        df = expand_grid(others = {"x":range(1,4), "y":[1,2]})
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param df_key: name of key for the dataframe.
         It becomes part of the column names of the dataframe.
     :param others: A dictionary that contains the data
         to be combined with the dataframe.
         If no dataframe exists, all inputs
-        in others will be combined to create a dataframe.
-    :returns: A pandas dataframe of all combinations of name value pairs.
-    :raises TypeError: if `others` is not a dictionary
-    :raises KeyError: if there is a dataframe and no key is provided.
-    :raises ValueError: if `others` is empty.
-
-    .. # noqa: DAR402
-
+        in `others` will be combined to create a DataFrame.
+    :returns: A pandas DataFrame of the cartesian product.
+    :raises KeyError: if there is a DataFrame and `df_key` is not provided.
     """
+
+    if not others:
+        if df is not None:
+            return df
+        return
 
     check("others", others, [dict])
 
@@ -5039,17 +5016,16 @@ def expand_grid(
         if not df_key:
             raise KeyError(
                 """
-                Using `expand_grid` as part of a DataFrame method chain
-                requires that a string `df_key` be passed in.
+                Using `expand_grid` as part of a
+                DataFrame method chain requires that
+                a string argument be provided for
+                the `df_key` parameter.
                 """
             )
 
         check("df_key", df_key, [str])
 
         others = {**{df_key: df}, **others}
-
-    if not others:
-        raise ValueError("""`others` cannot be empty.""")
 
     return _computations_expand_grid(others)
 
@@ -5522,150 +5498,14 @@ def complete(
     This function turns implicit missing values into explicit missing values.
 
     It is modeled after tidyr's `complete` function, and is a wrapper around
-    `expand_grid`, `pd.DataFrame.reindex`, `pd.DataFrame.join`
-    and `pd.DataFrame.fillna`.
+    `expand_grid` and `pd.merge`.
 
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible.
 
     It can also handle duplicated data.
 
-    `Source <https://tidyr.tidyverse.org/reference/complete.html#examples>`_
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
-
-            group	item_id	    item_name	value1	value2
-        0	1	    1	        a	1	4
-        1	2	    2	        b	2	5
-        2	1	    2	        b	3	6
-
-    Find all the unique combinations of `group`, `item_id`, and `item_name`,
-    including combinations not present in the data::
-
-        df.complete('group', 'item_id', 'item_name')
-
-              group	item_id	    item_name	value1	value2
-        0	1	    1	        a	1.0	4.0
-        1	1	    1	        b	NaN	NaN
-        2	1	    2	        a	NaN	NaN
-        3	1	    2	        b	3.0	6.0
-        4	2	    1	        a	NaN	NaN
-        5	2	    1	        b	NaN	NaN
-        6	2	    2	        a	NaN	NaN
-        7	2	    2	        b	2.0	5.0
-
-    To expose just the missing values based only on the existing data,
-    `item_id` and `item_name` column names can be wrapped in a list/tuple,
-    while `group` is passed in as a separate variable::
-
-        df.complete("group", ("item_id", "item_name"))
-            group	item_id	    item_name	value1	   value2
-        0	1	    1	        a	  1.0	    4.0
-        1	1	    2	        b	  3.0	    6.0
-        2	2	    1	        a	  NaN 	    NaN
-        3	2	    2	        b	  2.0	    5.0
-
-    Let's look at another example:
-
-    `Source Data <http://imachordata.com/2016/02/05/you-complete-me/>`_
-
-    .. code-block:: python
-
-            Year      Taxon         Abundance
-        0   1999    Saccharina         4
-        1   2000    Saccharina         5
-        2   2004    Saccharina         2
-        3   1999     Agarum            1
-        4   2004     Agarum            8
-
-    Note that Year 2000 and Agarum pairing is missing. Let's make it
-    explicit::
-
-        df.complete('Year', 'Taxon')
-
-           Year      Taxon     Abundance
-        0  1999     Agarum         1.0
-        1  1999     Saccharina     4.0
-        2  2000     Agarum         NaN
-        3  2000     Saccharina     5.0
-        4  2004     Agarum         8.0
-        5  2004     Saccharina     2.0
-
-    The null value can be replaced with the Pandas `fillna` argument::
-
-        df.complete('Year', 'Taxon').fillna(0)
-
-           Year      Taxon     Abundance
-        0  1999     Agarum         1.0
-        1  1999     Saccharina     4.0
-        2  2000     Agarum         0.0
-        3  2000     Saccharina     5.0
-        4  2004     Agarum         8.0
-        5  2004     Saccharina     2.0
-
-    What if we wanted the explicit missing values for all the years from
-    1999 to 2004? Easy - simply pass a dictionary pairing the column name
-    with the new values::
-
-        new_year_values = lambda year: range(year.min(), year.max() + 1)
-
-        df.complete({"Year": new_year_values}, "Taxon")
-
-            Year       Taxon  Abundance
-        0   1999      Agarum        1.0
-        1   1999  Saccharina        4.0
-        2   2000      Agarum        NaN
-        3   2000  Saccharina        5.0
-        4   2001      Agarum        NaN
-        5   2001  Saccharina        NaN
-        6   2002      Agarum        NaN
-        7   2002  Saccharina        NaN
-        8   2003      Agarum        NaN
-        9   2003  Saccharina        NaN
-        10  2004      Agarum        8.0
-        11  2004  Saccharina        2.0
-
-    It is also possible to expose missing values within a groupby,
-    by using the `by` parameter::
-
-          state  year  value
-        0    CA  2010      1
-        1    CA  2013      3
-        2    HI  2010      1
-        3    HI  2012      2
-        4    HI  2016      3
-        5    NY  2009      2
-        6    NY  2013      5
-
-    Let's get all the missing years per state::
-
-        df.complete(
-            {'year': new_year_values},
-            by='state'
-        )
-
-            state  year  value
-        0     CA  2010    1.0
-        1     CA  2011    NaN
-        2     CA  2012    NaN
-        3     CA  2013    3.0
-        4     HI  2010    1.0
-        5     HI  2011    NaN
-        6     HI  2012    2.0
-        7     HI  2013    NaN
-        8     HI  2014    NaN
-        9     HI  2015    NaN
-        10    HI  2016    3.0
-        11    NY  2009    2.0
-        12    NY  2010    NaN
-        13    NY  2011    NaN
-        14    NY  2012    NaN
-        15    NY  2013    5.0
-
-    .. note:: MultiIndex columns are not supported.
+    MultiIndex columns are not supported.
 
     Functional usage syntax:
 
@@ -5698,19 +5538,13 @@ def complete(
             )
 
     :param df: A pandas dataframe.
-    :param *columns: This is a sequence containing the columns to be
+    :param *columns: This refers to the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
     :param by: label or list of labels to group by.
-        The explicit missing values are returned per group.
-    :returns: A pandas dataframe with modified column(s).
-    :raises ValueError: if entry in `*columns` is not a
-        str/dict/list/tuple.
-    :raises ValueError: if entry in `*columns` is a dict/list/tuple
-        and is empty.
-
-    .. # noqa: DAR402
+        The explicit missing rows are returned per group.
+    :returns: A pandas DataFrame with explicit missing rows, if any.
     """
 
     if not columns:
@@ -5718,9 +5552,7 @@ def complete(
 
     df = df.copy()
 
-    df = _computations_complete(df, columns, by)
-
-    return df
+    return _computations_complete(df, columns, by)
 
 
 def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:

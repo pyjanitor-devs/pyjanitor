@@ -5492,6 +5492,7 @@ def groupby_topk(
 def complete(
     df: pd.DataFrame,
     *columns,
+    sort: bool = False,
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -5542,6 +5543,7 @@ def complete(
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
+    :param sort: Sort DataFrame based on *columns. Default is `False`.
     :param by: label or list of labels to group by.
         The explicit missing rows are returned per group.
     :returns: A pandas DataFrame with explicit missing rows, if any.
@@ -5552,7 +5554,7 @@ def complete(
 
     df = df.copy()
 
-    return _computations_complete(df, columns, by)
+    return _computations_complete(df, columns, sort, by)
 
 
 def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:

@@ -594,6 +594,7 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
 def _data_checks_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
+    sort: Optional[bool] = False,
     by: Optional[Union[list, str]] = None,
 ):
     """
@@ -644,18 +645,21 @@ def _data_checks_complete(
     check_column(df, column_checker)
     column_checker_no_duplicates = None
 
+    check("sort", sort, [bool])
+
     if by is not None:
         if isinstance(by, str):
             by = [by]
         check("by", by, [list])
         check_column(df, by)
 
-    return columns, column_checker, by
+    return columns, column_checker, sort, by
 
 
 def _computations_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
+    sort: bool = False,
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -666,7 +670,9 @@ def _computations_complete(
     A DataFrame, with rows of missing values, if any, is returned.
     """
 
-    columns, column_checker, by = _data_checks_complete(df, columns, by)
+    columns, column_checker, sort, by = _data_checks_complete(
+        df, columns, sort, by
+    )
 
     all_strings = True
     for column in columns:
@@ -678,14 +684,23 @@ def _computations_complete(
     if all_strings and len(columns) == 1:
         return df
 
+    # under the right conditions, stack/unstack can be faster
+    # plus it always returns a sorted DataFrame
+    # which does help in viewing the missing rows
+    # however, using a merge keeps things simple
+    # with a stack/unstack,
+    # the relevant columns combination should be unique
+    # and there should be no nulls
+    # trade-off for the simplicity of merge is not so bad
+    # of course there could be a better way ...
     if by is None:
         uniques = _generic_complete(df, columns, all_strings)
-        return df.merge(uniques, how="outer", on=column_checker, sort=False)
+        return df.merge(uniques, how="outer", on=column_checker, sort=sort)
 
     uniques = df.groupby(by)
     uniques = uniques.apply(_generic_complete, columns, all_strings)
     uniques = uniques.droplevel(-1)
-    return df.merge(uniques, how="outer", on=by + column_checker, sort=False)
+    return df.merge(uniques, how="outer", on=by + column_checker, sort=sort)
 
 
 def _generic_complete(

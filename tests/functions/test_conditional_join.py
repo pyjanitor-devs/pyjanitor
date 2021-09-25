@@ -378,7 +378,8 @@ def test_single_condition_not_equal_numeric(df, right):
     left_on, right_on = ["A", "Integers"]
     expected = (
         df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        .dropna(subset=["A"])
+        .merge(right.assign(t=1).dropna(subset=["Integers"]), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -390,6 +391,9 @@ def test_single_condition_not_equal_numeric(df, right):
     assert_frame_equal(expected, actual)
 
 
+# SQL does not return nulls for not equal
+
+
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_not_equal_ints_only(df, right):
     """Test output for a single condition. "!="."""
@@ -398,7 +402,8 @@ def test_single_condition_not_equal_ints_only(df, right):
     left_on, right_on = ["A", "Integers"]
     expected = (
         df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        .dropna(subset=["A"])
+        .merge(right.assign(t=1).dropna(subset=["Integers"]), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -419,7 +424,8 @@ def test_single_condition_not_equal_floats_only(df, right):
     left_on, right_on = ["B", "Numeric"]
     expected = (
         df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        .dropna(subset=["B"])
+        .merge(right.assign(t=1).dropna(subset=["Numeric"]), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -440,7 +446,8 @@ def test_single_condition_not_equal_datetime(df, right):
     left_on, right_on = ["E", "Dates"]
     expected = (
         df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        .dropna(subset=["E"])
+        .merge(right.assign(t=1).dropna(subset=["Dates"]), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -817,6 +824,7 @@ def test_dual_conditions_eq_and_ne(df, right):
     A, B, C, D = ("B", "Numeric", "E", "Dates")
     expected = (
         df.assign(t=1)
+        .dropna(subset=["C"])
         .merge(right.assign(t=1), on="t")
         .query(f"{A} == {B} and {C} != {D}")
         .reset_index(drop=True)
@@ -843,6 +851,7 @@ def test_dual_conditions_ne_and_eq(df, right):
     A, B, C, D = ("A", "Integers", "E", "Dates")
     expected = (
         df.assign(t=1)
+        .dropna(subset=["A"])
         .merge(right.assign(t=1), on="t")
         .query(f"{A} != {B} and {C} == {D}")
         .reset_index(drop=True)

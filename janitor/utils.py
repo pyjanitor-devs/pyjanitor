@@ -2855,16 +2855,21 @@ def _equal_indices(
     left_c: pd.Series, right_c: pd.Series, len_conditions: int
 ) -> tuple:
     """
-    Use binary search to get indices where
-    `left_c` is exactly  equal to `right_c`.
+    Uses a hash join (Pandas' internal implementation)
+    to get the positional indexes where
+    left_c is equal to right_c.
+
+    Binary search is used to get just the matching indices
+    from left_c; this is useful in multiple conditions,
+    to trim the number of searches.
 
     Returns a tuple of (left_c, right_c)
     """
     if len_conditions == 1:
-        if right_c.hasnans:
-            right_c = right_c.dropna()
-        if left_c.hasnans:
-            left_c = left_c.dropna()
+        # NaN issues
+        # if nulls exist in both columns
+        # they are merged (differs from SQL where nulls are not returned)
+        # https://github.com/pandas-dev/pandas/issues/32306
         outcome = _MergeOperation(
             left=left_c,
             right=right_c,
@@ -2904,14 +2909,14 @@ def _not_equal_indices(
     It is a combination of strictly less than
     and strictly greater than indices.
 
+    If nulls exist in left_c or right_c,
+    they are not returned.
+
     Returns a tuple of (left_c, right_c)
     """
 
     dummy = pd.Int64Index([])
-    left_nulls = dummy
-    right_nulls = dummy
 
-    # nulls are not preserved here
     if len_conditions > 1:
         outcome = _less_than_indices(left_c, right_c, True, 2)
 
@@ -2936,22 +2941,6 @@ def _not_equal_indices(
 
         return left_c, lt_counts + gt_counts
 
-    # capture null positions, since NaN != NaN
-    # if left_c has nulls, I want to capture the positions
-    # and hook it up with the index positions for nulls
-    # in right_c, it it exists
-    base_left = left_c.copy()
-    if right_c.hasnans:
-        nulls = right_c.isna()
-        right_nulls = right_c.index[nulls]
-        right_c = right_c[~nulls]
-    if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
-    if left_c.hasnans:
-        nulls = left_c.isna()
-        left_nulls = left_c.index[nulls]
-        left_c = left_c[~nulls]
-
     outcome = _less_than_indices(left_c, right_c, True, 1)
 
     if outcome is None:
@@ -2968,23 +2957,8 @@ def _not_equal_indices(
     else:
         gt_left, gt_right = outcome
 
-    nulls_left = dummy
-    nulls_right = dummy
-    if left_nulls.empty is False:
-        # repeat right index, tile left_nulls to ensure match
-        nulls_right = right_c.index.repeat(left_nulls.size)
-        left_nulls = np.tile(left_nulls, right_c.size)
-        left_nulls = pd.Index(left_nulls)
-    if right_nulls.empty is False:
-        # repeat left index, tile right nulls
-        # base_left is used here, to capture index for nulls,
-        # if present
-        nulls_left = base_left.index.repeat(right_nulls.size)
-        right_nulls = np.tile(right_nulls, base_left.size)
-        right_nulls = pd.Index(right_nulls)
-
-    left_c = lt_left.append([gt_left, left_nulls, nulls_left])
-    right_c = lt_right.append([gt_right, nulls_right, right_nulls])
+    left_c = lt_left.append(gt_left)
+    right_c = lt_right.append(gt_right)
 
     return left_c, right_c
 
@@ -3159,10 +3133,17 @@ def _multiple_conditional_join(
     df: pd.DataFrame, right: pd.DataFrame, conditions: list
 ) -> tuple:
     """
-    Use binary search to get indices for paired conditions.
+    Get indices for multiple conditions.
 
     Returns a tuple of (left_c, right_c)
     """
+
+    # For performance of interval joins, it might be worth
+    # looking at other libraries to co-opt
+    # https://www.biosciencestack.com/static/ailist/docs/tutorial.html
+    # https://www.staircase.dev/en/latest/
+    # ailist looks particularly promising efficiency wise
+
     left_columns, right_columns, _ = zip(*conditions)
     right_columns = pd.unique(right_columns)
     right_columns = [*right_columns]

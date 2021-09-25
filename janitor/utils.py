@@ -2823,7 +2823,7 @@ def _conditional_join_type_check(
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     """
     Create `range` indices for each value in
-    `right_keys` in `_equal_indices`, `_less_than_indices`,
+    `right_keys` in  `_less_than_indices`,
     and `_greater_than_indices`.
     It is faster than a list comprehension, especially
     for large arrays.
@@ -2875,7 +2875,7 @@ def _equal_indices(
         left_index, right_index = outcome._get_join_indexers()
         if not (left_index.size > 0):
             return None
-        return pd.Index(left_index), pd.Index(right_index)
+        return left_index, right_index
 
     if right_c.hasnans:
         right_c = right_c.dropna()

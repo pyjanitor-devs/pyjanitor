@@ -2855,7 +2855,7 @@ def _equal_indices(
     left_c: pd.Series, right_c: pd.Series, len_conditions: int
 ) -> tuple:
     """
-    Uses a hash join (Pandas' internal implementation)
+    Use a hash join (Pandas' internal implementation)
     to get the positional indexes where
     left_c is equal to right_c.
 
@@ -2910,7 +2910,8 @@ def _not_equal_indices(
     and strictly greater than indices.
 
     If nulls exist in left_c or right_c,
-    they are not returned.
+    they are not returned. This aligns with
+    how SQL joins work for `!=` operator.
 
     Returns a tuple of (left_c, right_c)
     """
@@ -2934,10 +2935,10 @@ def _not_equal_indices(
         else:
             gt_left, gt_counts = outcome
 
-        left_c = lt_left.append(gt_left)
-
-        if left_c.empty:
+        if lt_left.empty and gt_left.empty:
             return None
+
+        left_c = lt_left.append(gt_left)
 
         return left_c, lt_counts + gt_counts
 
@@ -2956,6 +2957,9 @@ def _not_equal_indices(
         gt_right = dummy
     else:
         gt_left, gt_right = outcome
+
+    if lt_left.empty and gt_left.empty:
+        return None
 
     left_c = lt_left.append(gt_left)
     right_c = lt_right.append(gt_right)
@@ -3203,7 +3207,7 @@ def _multiple_conditional_join(
     # the better; after the search we can then
     # `blow` the dataframe up to match
     # the indices of the original dataframe
-    if (df.duplicated().mean() > 0.25) and (len(df) > 100):
+    if (df.duplicated().mean() > 0.25) and (len(df) > 10):
         df_grouped = df.groupby(left_columns)
         df_mapping = df_grouped.groups
         df_unique = pd.DataFrame(df_mapping.keys(), columns=left_columns)

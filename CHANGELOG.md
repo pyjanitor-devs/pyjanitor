@@ -5,6 +5,7 @@
 -   [ENH] Fix bug in `pivot_longer` for wrong output when `names_pattern` is a sequence with a single value. Issue #885 @samukweku
 -   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku
+-    [ENH] conditional_join uses Pandas' internal get_join_indexers for the equality operator. #926 @samukweku
 
 ## [v0.21.1] - 2021-08-29
 

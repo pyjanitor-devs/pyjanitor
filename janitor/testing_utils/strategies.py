@@ -77,16 +77,17 @@ def conditional_df():
         [
             column(name="A", dtype=int),
             column(name="B", elements=st.floats(allow_nan=True)),
-            column(name="C", elements=st.text(max_size=20)),
+            column(name="C", elements=st.sampled_from(names)),
             column(name="D", dtype=bool),
             column(name="E", dtype="datetime64[ns]"),
-        ]
+        ],
+        index=range_indexes(min_size=1, max_size=20),
     )
 
 
 def conditional_series():
     """Series used in tests_conditional_join"""
-    return series(dtype=int)
+    return series(dtype=int, index=range_indexes(min_size=1, max_size=20))
 
 
 def conditional_right():
@@ -95,10 +96,11 @@ def conditional_right():
         [
             column(name="Integers", dtype=int),
             column(name="Numeric", elements=st.floats(allow_nan=True)),
-            column(name="Floats", elements=st.floats(max_value=20)),
-            column(name="Strings", dtype=str),
+            column(name="Floats", elements=st.floats()),
+            column(name="Strings", elements=st.sampled_from(names)),
             column(name="Booleans", dtype=np.bool_),
             column(name="Dates", dtype="datetime64[ns]"),
             column(name="Dates_Right", dtype="datetime64[ns]"),
-        ]
+        ],
+        index=range_indexes(min_size=1, max_size=20),
     )

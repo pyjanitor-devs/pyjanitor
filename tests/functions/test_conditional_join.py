@@ -313,7 +313,7 @@ def test_single_condition_equality_numeric(df, right):
     assume(not df.empty)
     assume(not right.empty)
     # simulate output as it would be in SQL
-    left_on, right_on = ["B", "Integers"]
+    left_on, right_on = ["A", "Integers"]
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
@@ -375,7 +375,7 @@ def test_single_condition_not_equal_numeric(df, right):
     """Test output for a single condition. "!="."""
     assume(not df.empty)
     assume(not right.empty)
-    left_on, right_on = ["B", "Integers"]
+    left_on, right_on = ["A", "Integers"]
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
@@ -519,11 +519,11 @@ def test_single_condition_less_than_floats(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_less_than_int_float(df, right):
+def test_single_condition_less_than_float_float(df, right):
     """Test output for a single condition. "<".Ints vs Floats."""
     assume(not df.empty)
     assume(not right.empty)
-    left_on, right_on = ["A", "Numeric"]
+    left_on, right_on = ["B", "Numeric"]
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
@@ -619,11 +619,11 @@ def test_single_condition_greater_than_ints(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_greater_than_ints_floats(df, right):
+def test_single_condition_greater_than_floats_floats(df, right):
     """Test output for a single condition. ">". Ints vs Floats"""
     assume(not df.empty)
     assume(not right.empty)
-    left_on, right_on = ["A", "Numeric"]
+    left_on, right_on = ["B", "Numeric"]
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
@@ -814,23 +814,23 @@ def test_dual_conditions_eq_and_ne(df, right):
     """Test output for equal and not equal conditions."""
     assume(not df.empty)
     assume(not right.empty)
-    eq_A, eq_B, ne_A, ne_B = ("B", "Numeric", "E", "Dates")
+    A, B, C, D = ("B", "Numeric", "E", "Dates")
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
-        .query(f"{eq_A} == {eq_B} and {ne_A} != {ne_B}")
+        .query(f"{A} == {B} and {C} != {D}")
         .reset_index(drop=True)
     )
-    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
+    expected = expected.filter([A, B, C, D])
     actual = df.conditional_join(
         right,
-        (eq_A, eq_B, "=="),
-        (ne_A, ne_B, "!="),
+        (A, B, "=="),
+        (C, D, "!="),
         how="inner",
         sort_by_appearance=True,
     )
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
-    assert_frame_equal(actual, actual)
+    actual = actual.filter([A, B, C, D])
+    assert_frame_equal(expected, actual)
 
 
 @given(df=conditional_df(), right=conditional_right())
@@ -840,20 +840,20 @@ def test_dual_conditions_ne_and_eq(df, right):
     assume(not df.empty)
     assume(not right.empty)
 
-    eq_A, eq_B, ne_A, ne_B = ("B", "Numeric", "E", "Dates")
+    A, B, C, D = ("A", "Integers", "E", "Dates")
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
-        .query(f"{eq_A} != {eq_B} and {ne_A} == {ne_B}")
+        .query(f"{A} != {B} and {C} == {D}")
         .reset_index(drop=True)
     )
-    expected = expected.filter([eq_A, eq_B, ne_A, ne_B])
+    expected = expected.filter([A, B, C, D])
     actual = df.conditional_join(
         right,
-        (eq_A, eq_B, "!="),
-        (ne_A, ne_B, "=="),
+        (A, B, "!="),
+        (C, D, "=="),
         how="inner",
         sort_by_appearance=True,
     )
-    actual = actual.filter([eq_A, eq_B, ne_A, ne_B])
+    actual = actual.filter([A, B, C, D])
     assert_frame_equal(expected, actual)

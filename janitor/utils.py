@@ -35,6 +35,7 @@ from pandas.api.types import (
     is_datetime64_dtype,
 )
 from pandas.core.common import apply_if_callable
+from pandas.core.dtypes.common import is_dtype_equal
 from enum import Enum
 
 from .errors import JanitorError
@@ -2623,21 +2624,19 @@ def _conditional_join_preliminary_checks(
      `suffixes`)
     is returned.
     """
-
+    multi_index_msg = """
+                      MultiIndex columns are not
+                      supported for conditional_join.
+                      """
     if df.empty:
         raise ValueError(
             """
-            The dataframe on the left should not be empty.
+            The DataFrame on the left should not be empty.
             """
         )
 
     if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError(
-            """
-            MultiIndex columns are not
-            supported for conditional_join.
-            """
-        )
+        raise ValueError(multi_index_msg)
 
     check("`right`", right, [pd.DataFrame, pd.Series])
 
@@ -2663,12 +2662,7 @@ def _conditional_join_preliminary_checks(
         )
 
     if isinstance(right.columns, pd.MultiIndex):
-        raise ValueError(
-            """
-            MultiIndex columns are not supported
-            for conditional joins.
-            """
-        )
+        raise ValueError(multi_index_msg)
 
     if not conditions:
         raise ValueError(
@@ -2729,6 +2723,12 @@ def _cond_join_suffixes(
 
     common_columns = df.columns.intersection(right.columns, sort=False)
 
+    label_already_exists = """
+                           {0} is present in the {1} DataFrame's columns.
+                           Kindly provide a unique suffix to create
+                           columns that are not present in the {1} DataFrame.
+                           """
+
     left_on, right_on, operators = zip(*conditions)
     if not common_columns.empty:
         left_suffix, right_suffix = suffixes
@@ -2739,11 +2739,7 @@ def _cond_join_suffixes(
                 new_label = f"{common}{left_suffix}"
                 if new_label in df.columns:
                     raise ValueError(
-                        f"""
-                        {new_label} is present in `df` columns.
-                        Kindly provide a unique suffix to create
-                        columns that are not present in `df`.
-                        """
+                        label_already_exists.format(new_label, "left")
                     )
                 mapping[common] = new_label
             left_on = [
@@ -2757,11 +2753,7 @@ def _cond_join_suffixes(
                 new_label = f"{common}{right_suffix}"
                 if new_label in right.columns:
                     raise ValueError(
-                        f"""
-                        {new_label} is present in `right` columns.
-                        Kindly provide a unique suffix to create
-                        columns that are not present in `right`.
-                        """
+                        label_already_exists.format(new_label, "right")
                     )
 
                 mapping[common] = new_label
@@ -2785,29 +2777,39 @@ def _conditional_join_type_check(
     Strings are not supported on non-equi operators.
     """
 
-    error_msg = """
+    left_type = left_column.dtype
+    right_type = right_column.dtype
+    permitted_types = {
+        is_string_dtype(left_type),
+        is_numeric_dtype(left_type),
+        is_datetime64_dtype(left_type),
+    }
+    if not any(permitted_types):
+        raise ValueError(
+            """
           conditional_join only supports
           numeric, date, or string dtypes.
-          The columns must also be of the same type.
           """
-    error_msg_string = """
-                       Strings can only be compared
-                       on the equal(`==`) operator.
-                       """
-    if is_string_dtype(left_column):
-        if not is_string_dtype(right_column):
-            raise ValueError(error_msg)
+        )
+
+    if not is_dtype_equal(left_type, right_type):
+        raise ValueError(
+            f"""
+             Both columns must have the same dtype.
+             Left dtype is {left_type},
+             right dtype is {right_type}
+             """
+        )
+
+    if is_string_dtype(left_type):
         if op != JOINOPERATOR.STRICTLY_EQUAL.value:
-            raise ValueError(error_msg_string)
-        return None
-    if is_numeric_dtype(left_column):
-        if not is_numeric_dtype(right_column):
-            raise ValueError(error_msg)
-        return None
-    if is_datetime64_dtype(left_column):
-        if not is_datetime64_dtype(right_column):
-            raise ValueError(error_msg)
-        return None
+            raise ValueError(
+                """
+                Strings can only be compared
+                on the equal(`==`) operator.
+                """
+            )
+    return None
 
 
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:

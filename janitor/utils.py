@@ -3390,14 +3390,16 @@ def _create_conditional_join_frame(
     if sort_by_appearance:
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
-        left_index = left_index.take(sorter)
+        left_index = left_index[sorter]
 
     if how == JOINTYPES.INNER.value:
         df = df.reindex(left_index)
         right = right.reindex(right_index)
         df.index = np.arange(left_index.size)
         right.index = df.index
-        return pd.concat([df, right], axis="columns", join=how, sort=False)
+        return pd.concat(
+            [df, right], axis="columns", join=how, sort=False, copy=False
+        )
 
     if how == JOINTYPES.LEFT.value:
         right = right.reindex(right_index)

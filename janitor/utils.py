@@ -2885,7 +2885,7 @@ def _equal_indices(
     if right_c.hasnans:
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
+        right_c = right_c.sort_values(kind="stable")
 
     lower_boundary = right_c.searchsorted(left_c, side="left")
     upper_boundary = right_c.searchsorted(left_c, side="right")
@@ -2987,7 +2987,7 @@ def _less_than_indices(
     if right_c.hasnans:
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
+        right_c = right_c.sort_values(kind="stable")
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
     # is equal to the length of `right_keys`
@@ -3066,7 +3066,7 @@ def _greater_than_indices(
     if right_c.hasnans:
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
+        right_c = right_c.sort_values(kind="stable")
     if left_c.hasnans:
         left_c = left_c.dropna()
 
@@ -3388,7 +3388,8 @@ def _create_conditional_join_frame(
     if there are matches.
     """
     if sort_by_appearance:
-        sorter = np.lexsort((right_index, left_index))
+        sorter = (right_index, left_index)
+        sorter = np.lexsort(sorter)
         right_index = right_index[sorter]
         left_index = left_index[sorter]
 

@@ -6558,6 +6558,9 @@ def conditional_join(
 
     If the join is solely on equality, `pd.merge` function
     is more efficient and should be used instead.
+    Infact, for multiple conditions where equality is involved,
+    a pd.merge, followed by filter(via query or loc) is more efficient.
+    This is even more evident when joining on strings.
 
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,

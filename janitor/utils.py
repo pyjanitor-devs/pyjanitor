@@ -3214,7 +3214,7 @@ def _multiple_conditional_join(
     else:
         df_unique = df.copy()
     right_mapping = None
-    if right.duplicated().mean() > 0.25:
+    if (right.duplicated().mean() > 0.25) and (len(right) > 10):
         right_grouped = right.groupby(right_columns)
         right_mapping = right_grouped.groups
         right_unique = pd.DataFrame(
@@ -3258,7 +3258,7 @@ def _multiple_conditional_join(
             right_index = right_c.index
         else:
             left_index = left_c.index[boolean_array]
-            right_index = left_c.index[boolean_array]
+            right_index = right_c.index[boolean_array]
 
     if conditions:
         # iterate through the remaining conditions

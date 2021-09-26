@@ -19,6 +19,14 @@ def test_df_empty(s):
 
 
 @given(df=conditional_df())
+def test_right_empty(df):
+    """Raise ValueError if `right` is empty."""
+    s = pd.DataFrame([], dtype="object")
+    with pytest.raises(ValueError):
+        df.conditional_join(s, ("A", "non", "=="))
+
+
+@given(df=conditional_df())
 def test_right_df(df):
     """Raise TypeError if `right` is not a Series/DataFrame."""
     assume(not df.empty)
@@ -277,6 +285,18 @@ def test_dtype_strings_non_equi(df, right):
 
 
 @given(df=conditional_df(), s=conditional_series())
+def test_dtype_not_permitted(df, s):
+    """
+    Raise ValueError if dtype of column in `df`
+    is not an acceptable type.
+    """
+    df["C"] = df["C"].astype("category")
+    with pytest.raises(ValueError):
+        s.name = "A"
+        df.conditional_join(s, ("C", "A", "<"), suffixes=("_x", "_y"))
+
+
+@given(df=conditional_df(), s=conditional_series())
 def test_dtype_Series(df, s):
     """
     Raise ValueError if dtype of column in `df`
@@ -325,6 +345,28 @@ def test_single_condition_equality_numeric(df, right):
         right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
     actual = actual.filter([left_on, right_on])
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_suffixes(df, right):
+    """Test output for suffixes."""
+    assume(not df.empty)
+    assume(not right.empty)
+    # simulate output as it would be in SQL
+    right = right.rename(columns={"Integers": "A"})
+    left_on, right_on = ["A", "A"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query("A_x == A_y")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(["A_x", "A_y"])
+    actual = df.conditional_join(
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
+    )
+    actual = actual.filter(["A_x", "A_y"])
     assert_frame_equal(expected, actual)
 
 

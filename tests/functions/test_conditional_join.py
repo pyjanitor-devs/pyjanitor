@@ -908,3 +908,30 @@ def test_dual_conditions_ne_and_eq(df, right):
     )
     actual = actual.filter([A, B, C, D])
     assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_eq_ge_and_le_numbers(df, right):
+    """Test output for multiple conditions."""
+    assume(not df.empty)
+    assume(not right.empty)
+    l_eq, l_ge, l_le = ["C", "A", "E"]
+    r_eq, r_ge, r_le = ["Strings", "Integers", "Dates"]
+    columns = ["C", "A", "E", "Strings", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{l_eq} == {r_eq} and {l_ge} >= {r_ge} and {l_le} <= {r_le}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_eq, r_eq, "=="),
+        (l_ge, r_ge, ">="),
+        (l_le, r_le, "<="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)

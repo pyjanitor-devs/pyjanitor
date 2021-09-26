@@ -21,7 +21,6 @@ from typing import (
     Pattern,
     Tuple,
     Union,
-    Hashable,
 )
 
 import numpy as np
@@ -465,7 +464,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
 
     for key in others:
-        check("key", key, [Hashable])
+        check("key", key, [str])
 
     grid = {}
 

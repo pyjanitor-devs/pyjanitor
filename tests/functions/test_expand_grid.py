@@ -35,6 +35,13 @@ def test_df_key(df):
         expand_grid(df, others={"y": [5, 4, 3, 2, 1]})
 
 
+@given(df=df_strategy())
+def test_df_key_string(df):
+    """Raise error if dataframe key is not a string."""
+    with pytest.raises(TypeError):
+        expand_grid(df, df_key=1, others={"y": [5, 4, 3, 2, 1]})
+
+
 def test_numpy_zero_d():
     """Raise ValueError if numpy array dimension is zero."""
     with pytest.raises(ValueError):

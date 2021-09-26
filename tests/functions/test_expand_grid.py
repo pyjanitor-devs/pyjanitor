@@ -36,10 +36,10 @@ def test_df_key(df):
 
 
 @given(df=df_strategy())
-def test_df_key_string(df):
-    """Raise error if dataframe key is not a string."""
+def test_df_key_hashable(df):
+    """Raise error if dataframe key is not Hashable."""
     with pytest.raises(TypeError):
-        expand_grid(df, df_key=1, others={"y": [5, 4, 3, 2, 1]})
+        expand_grid(df, df_key=["a"], others={"y": [5, 4, 3, 2, 1]})
 
 
 def test_numpy_zero_d():

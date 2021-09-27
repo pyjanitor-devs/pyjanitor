@@ -30,7 +30,8 @@ from pandas.api.types import (
     is_extension_array_dtype,
     is_list_like,
     is_scalar,
-    is_numeric_dtype,
+    is_integer_dtype,
+    is_float_dtype,
     is_string_dtype,
     is_datetime64_dtype,
 )
@@ -2729,6 +2730,13 @@ def _cond_join_suffixes(
 
     common_columns = df.columns.intersection(right.columns, sort=False)
 
+    label_already_exists = """
+                           {label} is present in the {frame} DataFrame's
+                           columns. Kindly provide a unique suffix
+                           to create columns that are not present
+                           in the {frame} DataFrame.
+                           """
+
     left_on, right_on, operators = zip(*conditions)
     if not common_columns.empty:
         left_suffix, right_suffix = suffixes
@@ -2739,17 +2747,12 @@ def _cond_join_suffixes(
                 new_label = f"{common}{left_suffix}"
                 if new_label in df.columns:
                     raise ValueError(
-                        f"""
-                        {new_label} is present in `df` columns.
-                        Kindly provide a unique suffix to create
-                        columns that are not present in `df`.
-                        """
+                        label_already_exists.format(
+                            label=new_label, frame="left"
+                        )
                     )
                 mapping[common] = new_label
-            left_on = [
-                f"{label}{left_suffix}" if label in common_columns else label
-                for label in left_on
-            ]
+            left_on = [mapping.get(label, label) for label in left_on]
             df = df.rename(columns=mapping)
         if right_suffix:
             mapping = {}
@@ -2757,18 +2760,13 @@ def _cond_join_suffixes(
                 new_label = f"{common}{right_suffix}"
                 if new_label in right.columns:
                     raise ValueError(
-                        f"""
-                        {new_label} is present in `right` columns.
-                        Kindly provide a unique suffix to create
-                        columns that are not present in `right`.
-                        """
+                        label_already_exists.format(
+                            label=new_label, frame="right"
+                        )
                     )
 
                 mapping[common] = new_label
-            right_on = [
-                f"{label}{right_suffix}" if label in common_columns else label
-                for label in right_on
-            ]
+            right_on = [mapping.get(label, label) for label in right_on]
             right = right.rename(columns=mapping)
 
     conditions = [*zip(left_on, right_on, operators)]
@@ -2785,29 +2783,46 @@ def _conditional_join_type_check(
     Strings are not supported on non-equi operators.
     """
 
-    error_msg = """
-          conditional_join only supports
-          numeric, date, or string dtypes.
-          The columns must also be of the same type.
-          """
-    error_msg_string = """
-                       Strings can only be compared
-                       on the equal(`==`) operator.
-                       """
-    if is_string_dtype(left_column):
-        if not is_string_dtype(right_column):
-            raise ValueError(error_msg)
-        if op != JOINOPERATOR.STRICTLY_EQUAL.value:
-            raise ValueError(error_msg_string)
-        return None
-    if is_numeric_dtype(left_column):
-        if not is_numeric_dtype(right_column):
-            raise ValueError(error_msg)
-        return None
-    if is_datetime64_dtype(left_column):
-        if not is_datetime64_dtype(right_column):
-            raise ValueError(error_msg)
-        return None
+    permitted_types = {
+        is_string_dtype,
+        is_datetime64_dtype,
+        is_integer_dtype,
+        is_float_dtype,
+    }
+    for func in permitted_types:
+        if func(left_column):
+            break
+    else:
+        raise ValueError(
+            """
+            conditional_join only supports
+            numeric, date, or string dtypes.
+            """
+        )
+    cols = (left_column, right_column)
+    for func in permitted_types:
+        if all(map(func, cols)):
+            break
+    else:
+        raise ValueError(
+            f"""
+             Both columns should have the same type.
+             `{left_column.name}` has {left_column.dtype} type;
+             `{right_column.name}` has {right_column.dtype} type.
+             """
+        )
+
+    if is_string_dtype(left_column) and (
+        op != JOINOPERATOR.STRICTLY_EQUAL.value
+    ):
+        raise ValueError(
+            """
+            Strings can only be compared
+            on the equal(`==`) operator.
+            """
+        )
+
+    return None
 
 
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:

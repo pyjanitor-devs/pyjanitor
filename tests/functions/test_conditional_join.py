@@ -312,15 +312,16 @@ def test_single_condition_equality_numeric(df, right):
     """Test output for a single condition. "=="."""
     assume(not df.empty)
     assume(not right.empty)
-    # simulate output as it would be in SQL
-    left_on, right_on = ["B", "Integers"]
-    expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        .query(f"{left_on} == {right_on}")
-        .reset_index(drop=True)
+    left_on, right_on = ["A", "Integers"]
+    expected = pd.merge(
+        df[left_on],
+        right[right_on],
+        left_on=left_on,
+        right_on=right_on,
+        how="inner",
+        sort=False,
     )
-    expected = expected.filter([left_on, right_on])
+
     actual = df.conditional_join(
         right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )
@@ -329,21 +330,45 @@ def test_single_condition_equality_numeric(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
+def test_suffixes(df, right):
+    """Test output for suffixes."""
+    assume(not df.empty)
+    assume(not right.empty)
+    right = right.rename(columns={"Integers": "A"})
+    left_on, right_on = ["A", "A"]
+    left_c = df[left_on].rename("A_x")
+    right_c = right[right_on].rename("A_y")
+    expected = pd.merge(
+        left_c,
+        right_c,
+        left_on="A_x",
+        right_on="A_y",
+        how="left",
+        sort=False,
+    )
+
+    actual = df.conditional_join(right, (left_on, right_on, "=="), how="left")
+    actual = actual.filter(["A_x", "A_y"])
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
 def test_single_condition_equality_datetime(df, right):
     """Test output for a single condition. "=="."""
     assume(not df.empty)
     assume(not right.empty)
-    # simulate output as it would be in SQL
     left_on, right_on = ["E", "Dates"]
-    expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        .query(f"{left_on} == {right_on}")
-        .reset_index(drop=True)
+    expected = pd.merge(
+        df[left_on],
+        right[right_on],
+        left_on=left_on,
+        right_on=right_on,
+        how="right",
+        sort=False,
     )
-    expected = expected.filter([left_on, right_on])
+
     actual = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
+        right, (left_on, right_on, "=="), how="right", sort_by_appearance=True
     )
     actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
@@ -354,15 +379,16 @@ def test_single_condition_equality_strings(df, right):
     """Test output for a single condition. "=="."""
     assume(not df.empty)
     assume(not right.empty)
-    # simulate output as it would be in SQL
     left_on, right_on = ["C", "Strings"]
-    expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        .query(f"{left_on} == {right_on}")
-        .reset_index(drop=True)
+    expected = pd.merge(
+        df[left_on],
+        right[right_on],
+        left_on=left_on,
+        right_on=right_on,
+        how="inner",
+        sort=False,
     )
-    expected = expected.filter([left_on, right_on])
+
     actual = df.conditional_join(
         right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
     )

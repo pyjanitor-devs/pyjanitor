@@ -3445,6 +3445,16 @@ def _conditional_join_compute(
 
         _conditional_join_type_check(left_c, right_c, op)
 
+        if op == JOINOPERATOR.STRICTLY_EQUAL.value:
+            return pd.merge(
+                df,
+                right,
+                how=how,
+                left_on=left_on,
+                right_on=right_on,
+                sort=False,
+            )
+
         result = _generic_func_cond_join(left_c, right_c, op, 1)
 
         if result is None:

@@ -2899,15 +2899,14 @@ def _not_equal_indices(
     `left_c` is exactly  not equal to `right_c`.
     It is a combination of strictly less than
     and strictly greater than indices.
-
+    If nulls exist in left_c or right_c,
+    they are not returned. This aligns with
+    how SQL joins work for `!=` operator.
     Returns a tuple of (left_c, right_c)
     """
 
     dummy = pd.Int64Index([])
-    left_nulls = dummy
-    right_nulls = dummy
 
-    # nulls are not preserved here
     if len_conditions > 1:
         outcome = _less_than_indices(left_c, right_c, True, 2)
 
@@ -2925,28 +2924,12 @@ def _not_equal_indices(
         else:
             gt_left, gt_counts = outcome
 
-        left_c = lt_left.append(gt_left)
-
-        if left_c.empty:
+        if lt_left.empty and gt_left.empty:
             return None
 
-        return left_c, lt_counts + gt_counts
+        left_c = lt_left.append(gt_left)
 
-    # capture null positions, since NaN != NaN
-    # if left_c has nulls, I want to capture the positions
-    # and hook it up with the index positions for nulls
-    # in right_c, it it exists
-    base_left = left_c.copy()
-    if right_c.hasnans:
-        nulls = right_c.isna()
-        right_nulls = right_c.index[nulls]
-        right_c = right_c[~nulls]
-    if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
-    if left_c.hasnans:
-        nulls = left_c.isna()
-        left_nulls = left_c.index[nulls]
-        left_c = left_c[~nulls]
+        return left_c, lt_counts + gt_counts
 
     outcome = _less_than_indices(left_c, right_c, True, 1)
 
@@ -2964,23 +2947,11 @@ def _not_equal_indices(
     else:
         gt_left, gt_right = outcome
 
-    nulls_left = dummy
-    nulls_right = dummy
-    if left_nulls.empty is False:
-        # repeat right index, tile left_nulls to ensure match
-        nulls_right = right_c.index.repeat(left_nulls.size)
-        left_nulls = np.tile(left_nulls, right_c.size)
-        left_nulls = pd.Index(left_nulls)
-    if right_nulls.empty is False:
-        # repeat left index, tile right nulls
-        # base_left is used here, to capture index for nulls,
-        # if present
-        nulls_left = base_left.index.repeat(right_nulls.size)
-        right_nulls = np.tile(right_nulls, base_left.size)
-        right_nulls = pd.Index(right_nulls)
+    if lt_left.empty and gt_left.empty:
+        return None
 
-    left_c = lt_left.append([gt_left, left_nulls, nulls_left])
-    right_c = lt_right.append([gt_right, nulls_right, right_nulls])
+    left_c = lt_left.append(gt_left)
+    right_c = lt_right.append(gt_right)
 
     return left_c, right_c
 

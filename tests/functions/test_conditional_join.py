@@ -437,7 +437,8 @@ def test_single_condition_not_equal_ints_only(df, right):
     left_on, right_on = ["A", "Integers"]
     expected = (
         df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        .dropna(subset=["A"])
+        .merge(right.assign(t=1).dropna(subset=["Integers"]), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -458,7 +459,8 @@ def test_single_condition_not_equal_floats_only(df, right):
     left_on, right_on = ["B", "Numeric"]
     expected = (
         df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        .dropna(subset=["B"])
+        .merge(right.assign(t=1).dropna(subset=["Numeric"]), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -479,7 +481,8 @@ def test_single_condition_not_equal_datetime(df, right):
     left_on, right_on = ["E", "Dates"]
     expected = (
         df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        .dropna(subset=["E"])
+        .merge(right.assign(t=1).dropna(subset=["Dates"]), on="t")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )

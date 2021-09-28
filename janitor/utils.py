@@ -2845,10 +2845,23 @@ def _conditional_join_compute(
         right_c = right[right_on]
 
         _conditional_join_type_check(left_c, right_c, op)
+        eq_check = op == JOINOPERATOR.STRICTLY_EQUAL.value
 
     df, right, conditions = _cond_join_suffixes(
         df, right, conditions, suffixes
     )
+
+    # equality operator
+    if eq_check and (len(conditions) == 1):
+        left_on, right_on, _ = conditions[0]
+        return pd.merge(  # noqa: PD015
+            df,
+            right,
+            how=how,
+            left_on=left_on,
+            right_on=right_on,
+            sort=False,
+        )
 
     df_dup = None
     right_dup = None

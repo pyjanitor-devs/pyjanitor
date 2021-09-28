@@ -325,7 +325,7 @@ def test_single_condition_equality_numeric(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
-    expected = pd.merge(
+    expected = pd.merge(  # noqa: PD015
         df[left_on],
         right[right_on],
         left_on=left_on,
@@ -350,7 +350,7 @@ def test_suffixes(df, right):
     left_on, right_on = ["A", "A"]
     left_c = df[left_on].rename("A_x")
     right_c = right[right_on].rename("A_y")
-    expected = pd.merge(
+    expected = pd.merge(  # noqa: PD015
         left_c,
         right_c,
         left_on="A_x",
@@ -370,7 +370,7 @@ def test_single_condition_equality_datetime(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
-    expected = pd.merge(
+    expected = pd.merge(  # noqa: PD015
         df[left_on],
         right[right_on],
         left_on=left_on,
@@ -392,7 +392,7 @@ def test_single_condition_equality_strings(df, right):
     assume(not df.empty)
     assume(not right.empty)
     left_on, right_on = ["C", "Strings"]
-    expected = pd.merge(
+    expected = pd.merge(  # noqa: PD015
         df[left_on],
         right[right_on],
         left_on=left_on,

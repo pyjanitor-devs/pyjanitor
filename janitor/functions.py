@@ -59,7 +59,6 @@ from .utils import (
     deprecated_alias,
     _conditional_join_preliminary_checks,
     _conditional_join_compute,
-    _cond_join_suffixes,
 )
 
 
@@ -6549,7 +6548,7 @@ def conditional_join(
     *conditions,
     how: str = "inner",
     sort_by_appearance: bool = False,
-    suffixes=("_x", "_y"),
+    suffixes: tuple = ("_x", "_y"),
 ) -> pd.DataFrame:
     """
 
@@ -6848,14 +6847,10 @@ def conditional_join(
         suffixes,
     )
 
-    df, right, conditions = _cond_join_suffixes(
-        df, right, conditions, suffixes
-    )
-
     # the numeric indexes play a crucial part in position tracking
     df.index = np.arange(len(df))
     right.index = np.arange(len(right))
 
     return _conditional_join_compute(
-        df, right, conditions, how, sort_by_appearance
+        df, right, conditions, how, sort_by_appearance, suffixes
     )

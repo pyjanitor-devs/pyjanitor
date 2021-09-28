@@ -45,6 +45,7 @@ Modify values
     find_replace
     round_to_fraction
     update_where
+    case_when
     to_datetime
     jitter
 

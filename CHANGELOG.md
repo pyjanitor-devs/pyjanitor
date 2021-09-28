@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- [ENH] Added `case_when` to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv
 
 ## [v0.21.2] - 2021-09-01
 

@@ -1741,8 +1741,9 @@ def filter_date(
     the pandas `to_datetime` function that is able to parse dates well.
 
     Additional options to parse the date type of your column may be found at
-    the official pandas
-    [documentation](pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html)
+    the official pandas [documentation][datetime]
+
+    [datetime]: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html
 
     !!!note
 
@@ -3785,7 +3786,9 @@ def find_replace(
 
     To perform a find and replace on the entire DataFrame,
     pandas' `df.replace()` function provides the appropriate functionality.
-    You can find more detail on the [replace]((https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html)) docs.
+    You can find more detail on the [replace] docs.
+
+    [replace]: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
 
     This function only works with column names that have no spaces
     or punctuation in them.

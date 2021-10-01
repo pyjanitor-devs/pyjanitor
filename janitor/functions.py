@@ -1366,7 +1366,7 @@ def expand_column(
     return expanded_df
 
 
-@pf.register_dataframe_methodex
+@pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def concatenate_columns(
     df: pd.DataFrame,
@@ -1415,7 +1415,9 @@ def concatenate_columns(
     df[new_column_name] = df[column_names].astype(str).agg(sep.join, axis=1)
 
     if ignore_empty:
-        remove_empty_string = lambda x: sep.join(x for x in x.split(sep) if x)
+        def remove_empty_string(x):
+            return sep.join(x for x in x.split(sep) if x)
+
         df[new_column_name] = df[new_column_name].transform(remove_empty_string)
 
     return df

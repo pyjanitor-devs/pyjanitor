@@ -1366,7 +1366,7 @@ def expand_column(
     return expanded_df
 
 
-@pf.register_dataframe_method
+@pf.register_dataframe_methodex
 @deprecated_alias(columns="column_names")
 def concatenate_columns(
     df: pd.DataFrame,
@@ -1403,7 +1403,7 @@ def concatenate_columns(
     :param column_names: A list of columns to concatenate together.
     :param new_column_name: The name of the new column.
     :param sep: The separator between each column's data.
-    :param ignore_empty: .
+    :param ignore_empty: Ignore null values if exists.
     :returns: A pandas DataFrame with concatenated columns.
     :raises JanitorError: if at least two columns are not provided
         within ``column_names``.

@@ -1373,6 +1373,7 @@ def concatenate_columns(
     column_names: List[Hashable],
     new_column_name,
     sep: str = "-",
+    ignore_empty: bool = True
 ) -> pd.DataFrame:
     """Concatenates the set of columns into a single column.
 
@@ -1408,14 +1409,10 @@ def concatenate_columns(
     """
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")
-    for i, col in enumerate(column_names):
-        if i == 0:
-            df[new_column_name] = df[col].astype(str)
-        else:
-            df[new_column_name] = (
-                df[new_column_name] + sep + df[col].astype(str)
-            )
 
+    if ignore_empty:
+        df[column_names] = df[column_names].fillna('')
+    df[new_column_name] = df[column_names].astype(str).agg(sep.join, axis=1)
     return df
 
 

@@ -25,7 +25,7 @@ nav:
       - Biology: api/biology.md
       - Chemistry: api/chemistry.md
       - Engineering: api/engineering.md
-      # - Finance: api/finance.md
+      - Finance: api/finance.md
       - Input/Output (io): api/io.md
       - Machine Learning: api/ml.md
       - Math: api/math.md

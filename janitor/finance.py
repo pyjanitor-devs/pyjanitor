@@ -630,51 +630,52 @@ def inflate_currency(
     the currency's country.
 
     The provided country can be any economy name or code from the World Bank
-    list of economies:
-    https://databank.worldbank.org/data/download/site-content/CLASS.xls.
+    [list of economies]
+    (https://databank.worldbank.org/data/download/site-content/CLASS.xls).
 
-    This method mutates the original DataFrame.
+    **Note**: This method mutates the original DataFrame.
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.finance
 
-        import pandas as pd
-        import janitor.finance
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = janitor.finance.inflate_currency(
-            df=df,
-            column_name='profit',
-            country='USA',
-            currency_year=2015,
-            to_year=2018,
-            make_new_column=True
-        )
+    df = janitor.finance.inflate_currency(
+        df=df,
+        column_name='profit',
+        country='USA',
+        currency_year=2015,
+        to_year=2018,
+        make_new_column=True
+    )
+    ```
 
     Method chaining usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.finance
 
-        import pandas as pd
-        import janitor.finance
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-        df = df.inflate_currency(
-            column_name='profit',
-            country='USA',
-            currency_year=2015,
-            to_year=2018,
-            make_new_column=True
-        )
+    df = df.inflate_currency(
+        column_name='profit',
+        country='USA',
+        currency_year=2015,
+        to_year=2018,
+        make_new_column=True
+    )
+    ```
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: Name of the column containing monetary
         values to inflate.
     :param country: The country associated with the currency being inflated.
-        May be any economy or code from the World Bank list of economies:
-        https://databank.worldbank.org/data/download/site-content/CLASS.xls.
+        May be any economy or code from the World Bank [List of economies]
+        (https://databank.worldbank.org/data/download/site-content/CLASS.xls).
     :param currency_year: The currency year to inflate from.
         The year should be 1960 or later.
     :param to_year: The currency year to inflate to.
@@ -702,19 +703,21 @@ def convert_stock(stock_symbol: str) -> str:
     queries an API for the companies full name and returns
     it
 
-    Example:
-        print(convert_stock("aapl"))
+    Functional usage example:
 
-        console >> Apple Inc.
+    ```python
+    import janitor.finance
 
-    :param stock_symbol: This is our input stock symbol
-        to be converted
-    :raises ConnectionError: if stock ticker data cannot be retrieved
-    :return: We return the full company name
+    janitor.finance.convert_stock("aapl")
+    ```
+
+    :param stock_symbol: Stock ticker Symbol
+    :raises ConnectionError: Internet connection is not available
+    :returns: Full company name
     """
     if is_connected("www.google.com"):
         stock_symbol = stock_symbol.upper()
-        return get_symbol(stock_symbol.upper())
+        return get_symbol(stock_symbol)
     else:
         raise ConnectionError(
             "Connection Error: Client Not Connected to Internet"
@@ -726,13 +729,17 @@ def get_symbol(symbol: str):
     This is a helper function to get a companies full
     name based on the stock symbol.
 
-    Example:
-        print(get_symbol("aapl"))
-        console >> Apple Inc.
+    Functional usage example:
+
+    ```python
+    import janitor.finance
+
+    janitor.finance.get_symbol("aapl")
+    ```
 
     :param symbol: This is our stock symbol that we use
-        to query te api for the companies full name.
-    :return: This is the company name
+        to query the api for the companies full name.
+    :return: Company full name
     """
     result = requests.get(
         "http://d.yimg.com/autoc."

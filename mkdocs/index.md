@@ -9,6 +9,11 @@ provides a clean API for cleaning data.
 
 [janitor]: https://github.com/sfirke/janitor
 
+## Quick start
+
+- Installation: `conda install -c conda-forge pyjanitor`
+- Check out the collection of [general functions](./api/functions)
+
 ## Why janitor?
 
 Originally a port of the R package,
@@ -328,4 +333,4 @@ as part of the official deprecation record.
 
 Test data for chemistry submodule can be found at [Predictive Toxicology][predtox].
 
-[_predtox]: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt
+[predtox]: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt

@@ -934,17 +934,13 @@ def _sub_complete_column(column, index):  # noqa: F811
 @_complete_column.register(list)  # noqa: F811
 def _sub_complete_column(column, index):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index.
+    This function processes the `columns` argument to create a
+    pandas Index.
 
-    Args:
-        column : list
-        index: pandas Index
-
-    Returns:
-        pd.MultiIndex
+    :param column: list
+    :param index: pandas Index
+    :returns: pd.MultiIndex
     """
-
     level_to_drop = [name for name in index.names if name not in column]
     arr = index.droplevel(level_to_drop)
     if not arr.is_unique:

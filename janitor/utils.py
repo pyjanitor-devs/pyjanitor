@@ -1904,12 +1904,12 @@ def _computations_pivot_wider(
     """
     This is the main workhorse of the `pivot_wider` function.
 
-    It is a wrapper around `pd.pivot`. For a MultiIndex, the
-    order of the levels can be changed with `levels_order`.
-    The output for multiple `names_from` and/or `values_from`
-    can be controlled with `names_glue` and/or `names_sep`.
+    It is a wrapper around `pd.pivot`. For a MultiIndex, the order of
+    the levels can be changed with `levels_order`. The output for
+    multiple `names_from` and/or `values_from` can be controlled with
+    `names_glue` and/or `names_sep`.
 
-    A dataframe pivoted from long to wide form is returned.
+    :returns: a dataframe pivoted from long to wide form.
     """
     # check dtype of `names_from` is string
     names_from_all_strings = df.filter(names_from).agg(is_string_dtype).all()

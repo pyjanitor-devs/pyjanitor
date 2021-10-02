@@ -2071,6 +2071,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
                     """
                 )
 
+            # uniques, without nulls
             uniques = df[column_name].factorize(sort=False)[-1]
             if uniques.empty:
                 raise ValueError(

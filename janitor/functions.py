@@ -677,7 +677,7 @@ def encode_categorical(
     # or user supplies specific categories to create the categorical
     if column_names is not None:
         check("column_names", column_names, [list, tuple, Hashable])
-        if isinstance(column_names, (list, Tuple)):
+        if isinstance(column_names, (list, tuple)):
             check_column(df, column_names)
             dtypes = {col: "category" for col in column_names}
             return df.astype(dtypes)

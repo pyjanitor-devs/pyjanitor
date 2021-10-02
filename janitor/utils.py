@@ -1325,8 +1325,7 @@ def _pivot_longer_names_sep(
     ignore_index: bool,
 ) -> pd.DataFrame:
     """
-    This takes care of pivoting scenarios where
-    names_sep is provided.
+    This takes care of pivoting scenarios where names_sep is provided.
     """
 
     mapping = pd.Series(df.columns).str.split(names_sep, expand=True)

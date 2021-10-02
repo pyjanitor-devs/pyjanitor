@@ -67,13 +67,17 @@ def sigmoid(s: pd.Series) -> pd.Series:
 def softmax(s: pd.Series) -> pd.Series:
     """
     Take the softmax transform of the series.
+
     The softmax function transforms each element of a collection by
     computing the exponential of each element divided by the sum of the
     exponentials of all the elements.
+
     That is, if x is a one-dimensional numpy array or pandas Series:
+
     ```python
     softmax(x) = exp(x)/sum(exp(x))
     ```
+
     :param s: Input Series.
     :return: Transformed Series.
     """

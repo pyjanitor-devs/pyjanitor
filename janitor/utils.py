@@ -2054,12 +2054,12 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
 def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
-    This function handles cases where categorical columns are created with
-    an order, or specific values supplied for the categories. It uses a kwarg,
-    with a namedtuple - `column_name: (categories, order)`, with the idea
-    inspired by Pandas' NamedAggregation. The defaults for the namedtuple are
-    (None, None) and will return a categorical dtype with no order and
-    categories inferred from the column.
+    This function handles cases where categorical columns are created
+    with an order, or specific values supplied for the categories.
+    It uses a kwarg, with a namedtuple - `column_name: (categories, order)`,
+    with the idea inspired by Pandas' NamedAggregation. The defaults for
+    the namedtuple are (`None`, `None`) and will return a categorical
+    dtype with no order and categories inferred from the column.
     """
 
     df, categories_dict = as_categorical_checks(df, **kwargs)

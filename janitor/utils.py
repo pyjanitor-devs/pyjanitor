@@ -845,7 +845,7 @@ def _create_indexer_for_complete(
     This creates the index that will be used to expand the DataFrame in
     the `complete` function.
 
-    Returns a pandas Index.
+    :returns: a pandas Index.
     """
 
     complete_columns = (

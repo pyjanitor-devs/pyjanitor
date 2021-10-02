@@ -1251,9 +1251,10 @@ def _sort_by_appearance_for_melt(
 ) -> pd.DataFrame:
     """
     This function sorts the resulting dataframe by appearance,
-    via the `sort_by_appearance` parameter in `computations_pivot_longer`.
+    via the `sort_by_appearance` parameter in
+    `computations_pivot_longer`.
 
-    A dataframe that is sorted by appearance is returned.
+    :returns: a dataframe that is sorted by appearance.
     """
 
     index_sorter = None

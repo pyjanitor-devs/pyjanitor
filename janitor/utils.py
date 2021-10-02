@@ -844,7 +844,7 @@ def _create_indexer_for_complete(
     This creates the index that will be used to expand the DataFrame in
     the `complete` function.
 
-    A pandas Index is returned.
+    Returns a pandas Index.
     """
 
     complete_columns = (
@@ -869,8 +869,8 @@ def _create_indexer_for_complete(
 
 def _complete_indexer_expand_grid(indexer):
     """
-    Generate indices to expose explicitly missing values,
-    using the `expand_grid` function.
+    Generate indices to expose explicitly missing values, using the
+    `expand_grid` function.
 
     Returns a pandas Index.
     """

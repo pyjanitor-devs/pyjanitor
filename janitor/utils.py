@@ -900,14 +900,12 @@ def _complete_indexer_expand_grid(indexer):
 @functools.singledispatch
 def _complete_column(column, index):
     """
-    This function processes the `columns` argument,
-    to create a pandas Index or a list.
+    This function processes the `columns` argument, to create a pandas
+    Index or a list.
 
-    Args:
-        column : str/list/dict
-        index: pandas Index
-
-    A unique pandas Index or a list of unique pandas Indices is returned.
+    :param column: str/list/dict
+    :param index: pandas Index
+    :returns: A unique pandas Index or a list of unique pandas Indices
     """
     raise TypeError(
         """This type is not supported in the `complete` function."""

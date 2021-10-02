@@ -959,17 +959,13 @@ def _sub_complete_column(column, index):  # noqa: F811
 @_complete_column.register(dict)  # noqa: F811
 def _sub_complete_column(column, index):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index or a list.
+    This function processes the `columns` argument, to create a
+    pandas Index or a list.
 
-    Args:
-        column : dict
-        index: pandas Index
-
-    Returns:
-        list: A list of unique pandas Indices.
+    :param column: dict.
+    :param index: pandas Index
+    :returns: a list of unique pandas Indices.
     """
-
     collection = []
     for key, value in column.items():
         arr = apply_if_callable(value, index.get_level_values(key))

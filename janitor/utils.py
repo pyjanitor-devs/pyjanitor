@@ -1660,13 +1660,10 @@ def _pivot_longer_frame_MultiIndex(
     values_to: str,
 ) -> pd.DataFrame:
     """
-    This creates the final dataframe,
-    where names_sep/names_pattern is provided,
-    and the extraction/split of the columns
-    result in a MultiIndex. This applies only
-    to names_sep or names_pattern as a string,
-    where more than one group is present in the
-    regex.
+    This creates the final dataframe, where names_sep/names_pattern is
+    provided, and the extraction/split of the columns result in a
+    MultiIndex. This applies only to names_sep or names_pattern as a
+    string, where more than one group is present in the regex.
     """
 
     len_index = len(df)

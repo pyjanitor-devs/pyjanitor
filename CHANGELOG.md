@@ -7,6 +7,8 @@
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku
 -   [ENH] `complete` uses `pd.merge` internally, providing a simpler logic, with some speed improvements in certain cases over `pd.reindex`. @samukweku
 -   [ENH] `expand_grid` returns a MultiIndex DataFrame, allowing the user to decide how to manipulate the columns. @samukweku
+- [ENH] Added `case_when` to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv
+
 
 ## [v0.21.1] - 2021-08-29
 

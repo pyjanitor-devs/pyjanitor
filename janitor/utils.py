@@ -2111,9 +2111,8 @@ def is_connected(url: str) -> bool:
 @functools.singledispatch
 def _encode_categories(cat, df, column):
     """
-    base function for processing `categories`
-    in `_computations_as_categorical`.
-    Returns a Series.
+    Base function for `_computations_as_categorical`.
+    :returns: a pandas Series.
     """
     raise TypeError("This type is not supported in `categories`.")
 

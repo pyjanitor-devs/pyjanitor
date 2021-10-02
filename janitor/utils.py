@@ -1981,7 +1981,7 @@ class asCategorical(NamedTuple):
     :param categories: list-like object to create new categorical column.
     :param order: string object that can be either "sort" or "appearance".
         If "sort", the `categories` argument will be sorted with np.sort;
-        if "apperance", the `categories` argument will be used as is.
+        if "appearance", the `categories` argument will be used as is.
     :returns: A namedtuple of (`categories`, `order`).
     """
 

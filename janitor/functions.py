@@ -630,8 +630,8 @@ def encode_categorical(
                     df,
                     col1 = (categories, order),
                     col2 = (categories = [values],
-                            order="sort"  # or "appearance" or None
-                           )
+                    order="sort"  # or "appearance" or None
+
                 )
 
     Method chaining syntax:
@@ -650,7 +650,7 @@ def encode_categorical(
             .encode_categorical(
                 col1 = (categories, order),
                 col2 = (categories = [values]/None,
-                        order="sort"/"appearance"/None
+                        order="sort"  # or "appearance" or None
                         )
         )
 

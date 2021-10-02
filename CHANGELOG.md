@@ -2,7 +2,8 @@
 
 ## [Unreleased]
 
-- [ENH] Added `case_when` to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv
+-   [ENH] Add `softmax` to `math` module. Issue #902. @loganthomas
+-   [ENH] Added `case_when` to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv
 
 ## [v0.21.2] - 2021-09-01
 

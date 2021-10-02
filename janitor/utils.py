@@ -1991,28 +1991,25 @@ class asCategorical(NamedTuple):
 
 def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
     """
-    This function raises errors if columns in `kwargs` are
-    absent in the the dataframe's columns.
-    It also raises errors if the tuple in `kwargs`
-    has a length greater than 2, or the `order` value,
-    if not None, is not one of `appearance` or `sort`.
-    Error is raised if the `categories` in the tuple in `kwargs`
-    is not a 1-D array-like object.
+    This function raises errors if columns in `kwargs` are absent in the
+    dataframe's columns. It also raises errors if the tuple in `kwargs`
+    has a length greater than 2, or the `order` value, if not None, is
+    not one of `appearance` or `sort`. Error is raised if the
+    `categories` in the tuple in `kwargs`is not a 1-D array-like object.
 
     This function is executed before proceeding to the computation phase.
 
-    If all checks pass, the dataframe,
-    and a pairing of column names and namedtuple
-    of (categories, order) is returned.
+    If all checks pass, the dataframe, and a pairing of column names and
+    namedtuple of (categories, order) is returned.
 
     :param df: The pandas DataFrame object.
-    :param kwargs: A pairing of column name
-        to a tuple of (`categories`, `order`).
+    :param kwargs: A pairing of column name to a tuple of
+        (`categories`, `order`).
     :returns: A tuple (pandas DataFrame, dictionary).
     :raises TypeError: if `kwargs` is not a tuple.
     :raises ValueError: if `categories` is not a 1-D array.
-    :raises ValueError: if `order` is not one of
-        `sort`, `appearance`, or `None`.
+    :raises ValueError: if `order` is not one of `sort`, `appearance`,
+        or `None`.
     """
 
     # column checks

@@ -629,7 +629,7 @@ def encode_categorical(
                     df,
                     col1 = (categories, order),
                     col2 = (categories = [values],
-                            order="sort"/"appearance"/None
+                            order="sort"  # or "appearance" or None
                            )
                 )
 

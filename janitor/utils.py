@@ -1390,8 +1390,8 @@ def _pivot_longer_names_pattern_str(
     ignore_index: bool,
 ) -> pd.DataFrame:
     """
-    This takes care of pivoting scenarios where
-    names_pattern is provided, and is a string.
+    This takes care of pivoting scenarios where names_pattern is
+    provided, and is a string.
     """
 
     mapping = df.columns.str.extract(names_pattern, expand=True)

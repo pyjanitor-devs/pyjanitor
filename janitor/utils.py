@@ -2863,20 +2863,6 @@ def _conditional_join_compute(
             sort=False,
         )
 
-    df_dup = None
-    right_dup = None
-    left_columns, right_columns, _ = zip(*conditions)
-    left_columns = pd.unique(left_columns)
-    right_columns = pd.unique(right_columns)
-    if (df.duplicated(subset=left_columns).mean() > 0.25) & (len(df) > 1):
-        df_dup = df.loc[:, left_on]
-        df = df.drop_duplicates(subset=left_columns)
-    if (right.duplicated(subset=right_columns).mean() > 0.25) & (
-        len(right) > 1
-    ):
-        right_dup = pd.DataFrame([], index=right[right_on])
-        right = right.drop_duplicates(subset=right_columns)
-
     # credits to https://stackoverflow.com/a/69354962/7175713
     # and https://stackoverflow.com/a/62923444/7175713
     # the answers were related to SUMIFs, but they totally
@@ -2884,46 +2870,19 @@ def _conditional_join_compute(
     # that is better than a naive cartesian join
     # this compares each row from `right`
     #  against the entire frame from `df`
-    outcome = right.apply(cond_apply, df=df, conditions=conditions, axis=1)
-    keys = outcome.index
-    outcome = [ent for ent in outcome]
-    outcome = pd.concat(outcome, keys=keys)
-    if how == JOINTYPES.INNER.value:
-        outcome = outcome.droplevel(-1)
-        outcome = outcome.join(right, how=how, sort=False)
-    elif how == JOINTYPES.LEFT.value:
-        outcome = outcome.index
-        right = right.loc[outcome.get_level_values(0)]
-        right.index = outcome.get_level_values(-1)
-        outcome = df.join(right, how=how, sort=False)
-    elif how == JOINTYPES.RIGHT.value:
-        outcome = outcome.index
-        df = df.loc[outcome.get_level_values(-1)]
-        df.index = outcome.get_level_values(0)
-        outcome = df.join(right, how=how, sort=False)
-    if df_dup is not None:
-        outcome = outcome.set_index(left_on)
-        outcome = pd.merge(  # noqa: PD015
-            df_dup,
-            outcome,
-            left_on=left_on,
-            right_index=True,
-            how=how,
-            sort=False,
-        )  # noqa: PD015
-    if right_dup is not None:
-        outcome = outcome.merge(
-            right_dup, left_on=right_on, right_index=True, how="left"
-        )
-    if (
-        ((df_dup is not None) or (right_dup is not None))
-        and sort_by_appearance
-        and (not outcome.index.is_monotonic_increasing)
-    ):
-        outcome = outcome.sort_index(kind="stable")
-    outcome.index = pd.RangeIndex(start=0, stop=len(outcome))
+    # a binary search is much faster,
+    # however, this is simpler to maintain, while still
+    # offering some convenience for non-equi conditions
 
-    return outcome
+    right_index = right.apply(
+        cond_apply, df=df, conditions=conditions, axis=1, result_type="reduce"
+    )
+    left_index = right_index.index
+    right_index = [(ent, ent.size) for ent in right_index]
+    right_index, counts = [*zip(*right_index)]
+    right_index = right_index[0].append(right_index[1:])
+    left_index = left_index.repeat(counts)
+    return right_index, left_index
 
 
 operator_map = {
@@ -2946,16 +2905,17 @@ def cond_apply(
     :param right: right DataFrame
     :param df: left DataFrame
     :param conditions: list of conditions for the join
-    :returns: A pandas Series.
+    :returns: A pandas Index.
     """
+    df_index = df.index
     first, *rest = conditions
     left_on, right_on, op = first
     op = operator_map[op]
     mask = op(df[left_on], right[right_on])
     if not rest:
-        return df[mask]
+        return df_index[mask]
     for left_on, right_on, op in rest:
         op = operator_map[op]
         mask &= op(df[left_on], right[right_on])
 
-    return df[mask]
+    return df_index[mask]

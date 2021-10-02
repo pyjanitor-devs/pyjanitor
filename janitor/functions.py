@@ -59,6 +59,7 @@ from .utils import (
     _conditional_join_preliminary_checks,
     _conditional_join_compute,
     _cond_join_suffixes,
+    _case_when,
 )
 
 
@@ -6808,3 +6809,111 @@ def conditional_join(
     return _conditional_join_compute(
         df, right, conditions, how, sort_by_appearance
     )
+
+
+@pf.register_dataframe_method
+def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
+    """
+    Convenience function for creating a column,
+    based on a condition, or multiple conditions.
+
+    It similar to SQL and dplyr's case_when,
+    with inspiration from `pydatatable` if_else function.
+
+    If your scenario requires direct replacement of values,
+    pandas' `replace` method or `map` method should be better
+    suited and more efficient; if the conditions scenario checks
+    if a value is within a range of values, pandas' `cut` or `qcut`
+    should be more efficient; `np.where/np.select` are also
+    performant options.
+
+    This function relies on `pd.Series.mask` method.
+
+    When multiple conditions are satisfied, the first one is used.
+
+    The variable `*args` parameters takes arguments of the form :
+    `condition0`, `value0`, `condition1`, `value1`, ..., `default`.
+    If `condition0` evaluates to `True`, then assign `value0` to
+    `column_name`, if `condition1` evaluates to `True`, then
+    assign `value1` to `column_name`, and so on. If none of the
+    conditions evaluate to `True`, assign `default` to
+    `column_name`.
+
+    This function can be likened to SQL's `case_when`:
+
+    .. code-block:: SQL
+
+        CASE WHEN condition0 THEN value0
+             WHEN condition1 THEN value1
+            --- more conditions
+             ELSE default
+        END AS column_name
+
+    compared to python's `if-elif-else`:
+
+    .. code-block:: python
+
+        if condition0:
+            value0
+        elif condition1:
+            value1
+        # more elifs
+        else:
+            default
+
+
+
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.case_when(
+                df,
+                condition0, result0,
+                condition1, result1,
+                ...,
+                default,
+                column_name = 'column',
+                )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df = df.case_when(
+                condition0, result0,
+                condition1, result1,
+                ...,
+                default,
+                column_name = 'column',
+                )
+
+    :param df: A Pandas dataframe.
+    :param args: Variable argument of conditions and expected values.
+        Takes the form
+        `condition0`, `value0`, `condition1`, `value1`, ..., `default`.
+        `condition` can be a 1-D boolean array, a callable, or a string.
+        If `condition` is a callable, it should evaluate
+        to a 1-D boolean array. The array should have the same length
+        as the DataFrame. If it is a string, it is computed on the dataframe,
+        via `df.eval`, and should return a 1-D boolean array.
+        `result` can be a scalar, a 1-D array, or a callable.
+        If `result` is a callable, it should evaluate to a 1-D array.
+        For a 1-D array, it should have the same length as the DataFrame.
+        The `default` argument applies if none of `condition0`,
+        `condition1`, ..., evaluates to `True`.
+        Value can be a scalar, a callabe, or a 1-D array. if `default` is a
+        callable, it should evaluate to a 1-D array.
+        The 1-D array should be the same length as the DataFrame.
+    :param column_name: Name of column to assign results to. A new column
+        is created, if it does not already exist in the DataFrame.
+    :returns: A pandas DataFrame.
+    """
+
+    return _case_when(df, args, column_name)

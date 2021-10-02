@@ -2080,19 +2080,17 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 def is_connected(url: str) -> bool:
     """
-    This is a helper function to check if the client
-    is connected to the internet.
+    This is a helper function to check if the client is connected to
+    the internet.
 
-    Example:
-        print(is_connected("www.google.com"))
-        console >> True
-
-    :param url: We take a test url to check if we are
-        able to create a valid connection.
-    :raises OSError: if connection to `URL` cannot be
-        established
-    :return: We return a boolean that signifies our
-        connection to the internet
+    Usage example:
+    ```python
+    >>> is_connected('www.google.com')
+    True
+    ```
+    :param url: Url to check if able to create a valid connection.
+    :raises OSError: if connection to `URL` cannot be established.
+    :return: Boolean that signifies connection to the internet.
     """
     try:
         sock = socket.create_connection((url, 80))

@@ -8,6 +8,7 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_numeric_dtype
 from scipy.special import expit
+from scipy.special import softmax as scipy_softmax
 from scipy.stats import norm
 
 
@@ -60,6 +61,23 @@ def sigmoid(s: pd.Series) -> pd.Series:
     .. # noqa: DAR201
     """
     return expit(s)
+
+
+@pf.register_series_method
+def softmax(s: pd.Series) -> pd.Series:
+    """
+    Take the softmax transform of the series.
+    The softmax function transforms each element of a collection by
+    computing the exponential of each element divided by the sum of the
+    exponentials of all the elements.
+    That is, if x is a one-dimensional numpy array or pandas Series:
+    ```python
+    softmax(x) = exp(x)/sum(exp(x))
+    ```
+    :param s: Input Series.
+    :return: Transformed Series.
+    """
+    return scipy_softmax(s)
 
 
 @pf.register_series_method

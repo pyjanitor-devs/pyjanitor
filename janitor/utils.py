@@ -870,10 +870,10 @@ def _create_indexer_for_complete(
 
 def _complete_indexer_expand_grid(indexer):
     """
-    Generate indices to expose explicitly missing values, using the
-    `expand_grid` function.
+    Generate indices to expose explicitly missing values,
+    using the `expand_grid` function.
 
-    Returns a pandas Index.
+    :returns: a pandas Index.
     """
     indexers = []
     mgrid_values = [slice(len(value)) for value in indexer]
@@ -901,8 +901,8 @@ def _complete_indexer_expand_grid(indexer):
 @functools.singledispatch
 def _complete_column(column, index):
     """
-    This function processes the `columns` argument, to create a pandas
-    Index or a list.
+    This function processes the `columns` argument,
+    to create a pandas Index or a list.
 
     :param column: str/list/dict
     :param index: pandas Index
@@ -916,8 +916,8 @@ def _complete_column(column, index):
 @_complete_column.register(str)  # noqa: F811
 def _sub_complete_column(column, index):  # noqa: F811
     """
-    This function processes the `columns` argument, to create a
-    pandas Index.
+    This function processes the `columns` argument,
+    to create a pandas Index.
 
     :param column: str
     :param index: pandas Index
@@ -934,8 +934,8 @@ def _sub_complete_column(column, index):  # noqa: F811
 @_complete_column.register(list)  # noqa: F811
 def _sub_complete_column(column, index):  # noqa: F811
     """
-    This function processes the `columns` argument to create a
-    pandas Index.
+    This function processes the `columns` argument,
+    to create a pandas Index.
 
     :param column: list
     :param index: pandas Index

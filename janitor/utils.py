@@ -1034,13 +1034,15 @@ def _data_checks_pivot_longer(
     sort_by_appearance,
     ignore_index,
 ):
-
     """
-    This function raises errors if the arguments have the wrong python
-    type, or if an unneeded argument is provided. It also raises errors
-    for some other scenarios (e.g if there are no matches returned for
-    the regular expression in `names_pattern`, or if the dataframe has
-    MultiIndex columns and `names_sep` or `names_pattern` is provided).
+    This function raises errors if the arguments have the wrong python type,
+    or if an unneeded argument is provided.
+
+    It also raises errors for some other scenarios
+    (e.g if there are no matches returned for the regular expression in
+    `names_pattern`,
+    or if the dataframe has MultiIndex columns and `names_sep`
+    or `names_pattern` is provided).
 
     This function is executed before proceeding to the computation phase.
 

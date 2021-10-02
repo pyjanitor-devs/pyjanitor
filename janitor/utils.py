@@ -1835,13 +1835,12 @@ def _data_checks_pivot_wider(
     names_sep,
     names_glue,
 ):
-
     """
     This function raises errors if the arguments have the wrong
     python type, or if the column does not exist in the dataframe.
-    This function is executed before proceeding to the computation phase.
-    Type annotations are not provided because this function is where type
-    checking happens.
+    This function is executed before proceeding to the computation
+    phase. Type annotations are not provided because this function is
+    where type checking happens.
     """
 
     if index is not None:

@@ -431,6 +431,7 @@ def skiperror(
     def transform(x):
         pass
     ```
+
     :param f: the function to be wrapped.
     :param return_x: whether or not the original value that caused error
         should be returned.
@@ -915,15 +916,12 @@ def _complete_column(column, index):
 @_complete_column.register(str)  # noqa: F811
 def _sub_complete_column(column, index):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index.
+    This function processes the `columns` argument, to create a
+    pandas Index.
 
-    Args:
-        column : str
-        index: pandas Index
-
-    Returns:
-        pd.Index: A pandas Index with a single level
+    :param column: str
+    :param index: pandas Index
+    :returns: pandas Index with a single level
     """
 
     arr = index.get_level_values(column)

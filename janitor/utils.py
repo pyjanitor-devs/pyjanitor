@@ -1991,15 +1991,18 @@ class asCategorical(NamedTuple):
 
 def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
     """
-    This function raises errors if columns in `kwargs` are absent in the
-    dataframe's columns. It also raises errors if the tuple in `kwargs`
-    has a length greater than 2, or the `order` value, if not None, is
-    not one of `appearance` or `sort`. Error is raised if the
-    `categories` in the tuple in `kwargs`is not a 1-D array-like object.
+    This function raises errors if columns in `kwargs` are
+    absent in the dataframe's columns.
+    It also raises errors if the tuple in `kwargs`
+    has a length greater than 2, or the `order` value,
+    if not None, is not one of `appearance` or `sort`.
+    Error is raised if the `categories` in the tuple in `kwargs`
+    is not a 1-D array-like object.
 
     This function is executed before proceeding to the computation phase.
 
-    If all checks pass, the dataframe, and a pairing of column names and
+    If all checks pass,
+    the dataframe, and a pairing of column names and
     namedtuple of (categories, order) is returned.
 
     :param df: The pandas DataFrame object.
@@ -2054,12 +2057,14 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
 def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
-    This function handles cases where categorical columns are created
-    with an order, or specific values supplied for the categories.
+    This function handles cases where
+    categorical columns are created with an order,
+    or specific values supplied for the categories.
     It uses a kwarg, with a namedtuple - `column_name: (categories, order)`,
-    with the idea inspired by Pandas' NamedAggregation. The defaults for
-    the namedtuple are (`None`, `None`) and will return a categorical
-    dtype with no order and categories inferred from the column.
+    with the idea inspired by Pandas' NamedAggregation.
+    The defaults for the namedtuple are (`None`, `None`)
+    and will return a categorical dtype
+    with no order and categories inferred from the column.
     """
 
     df, categories_dict = as_categorical_checks(df, **kwargs)
@@ -2080,8 +2085,9 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 def is_connected(url: str) -> bool:
     """
-    This is a helper function to check if the client is connected to
-    the internet.
+    This is a helper function
+    to check if the client
+    is connected to the internet.
 
     Usage example:
     ```python

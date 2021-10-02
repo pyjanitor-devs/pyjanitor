@@ -6702,12 +6702,12 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
     Convenience function for creating a column,
     based on a condition, or multiple conditions.
 
-    It similar to SQL and dplyr's case_when,
+    It is similar to SQL and dplyr's case_when,
     with inspiration from `pydatatable` if_else function.
 
     If your scenario requires direct replacement of values,
     pandas' `replace` method or `map` method should be better
-    suited and more efficient; if the conditions scenario checks
+    suited and more efficient; if the conditions check
     if a value is within a range of values, pandas' `cut` or `qcut`
     should be more efficient; `np.where/np.select` are also
     performant options.

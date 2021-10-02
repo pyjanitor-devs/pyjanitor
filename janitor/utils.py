@@ -1742,13 +1742,10 @@ def _pivot_longer_frame_single_Index(
     values_to: str = None,
 ) -> pd.DataFrame:
     """
-    This creates the final dataframe,
-    where names_pattern is provided,
-    and the extraction/split of the columns
-    result in a single Index.
-    This covers scenarios where names_pattern
-    is a list/tuple, or where a single group
-    is present in the regex string.
+    This creates the final dataframe, where names_pattern is provided,
+    and the extraction/split of the columns result in a single Index.
+    This covers scenarios where names_pattern is a list/tuple, or where
+    a single group is present in the regex string.
     """
 
     if df.columns.name != ".value":

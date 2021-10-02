@@ -1473,8 +1473,8 @@ def _pivot_longer_names_pattern_sequence(
     ignore_index: bool,
 ) -> pd.DataFrame:
     """
-    This takes care of pivoting scenarios where
-    names_pattern is provided, and is a list/tuple.
+    This takes care of pivoting scenarios where names_pattern is
+    provided, and is a list/tuple.
     """
 
     df_columns = df.columns

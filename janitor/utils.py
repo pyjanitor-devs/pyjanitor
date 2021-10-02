@@ -2124,9 +2124,10 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
 def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
-    This function handles cases where categorical columns
-    are created with an order, or specific values supplied for
-    the categories. It uses a kwarg, where the key is the column name,
+    This function handles cases where
+    categorical columns are created with an order,
+    or specific values supplied for the categories.
+    It uses a kwarg, where the key is the column name,
     and the value is a tuple of categories, order.
     The defaults for the tuple are (None, None)
     and will return a categorical dtype

@@ -1473,8 +1473,8 @@ def _pivot_longer_names_pattern_sequence(
     ignore_index: bool,
 ) -> pd.DataFrame:
     """
-    This takes care of pivoting scenarios where names_pattern is
-    provided, and is a list/tuple.
+    This takes care of pivoting scenarios where
+    names_pattern is provided, and is a list/tuple.
     """
 
     df_columns = df.columns
@@ -1660,10 +1660,13 @@ def _pivot_longer_frame_MultiIndex(
     values_to: str,
 ) -> pd.DataFrame:
     """
-    This creates the final dataframe, where names_sep/names_pattern is
-    provided, and the extraction/split of the columns result in a
-    MultiIndex. This applies only to names_sep or names_pattern as a
-    string, where more than one group is present in the regex.
+    This creates the final dataframe,
+    where names_sep/names_pattern is provided,
+    and the extraction/split of the columns
+    result in a MultiIndex. This applies only
+    to names_sep or names_pattern as a string,
+    where more than one group is present in the
+    regex.
     """
 
     len_index = len(df)
@@ -1742,10 +1745,13 @@ def _pivot_longer_frame_single_Index(
     values_to: str = None,
 ) -> pd.DataFrame:
     """
-    This creates the final dataframe, where names_pattern is provided,
-    and the extraction/split of the columns result in a single Index.
-    This covers scenarios where names_pattern is a list/tuple, or where
-    a single group is present in the regex string.
+    This creates the final dataframe,
+    where names_pattern is provided,
+    and the extraction/split of the columns
+    result in a single Index.
+    This covers scenarios where names_pattern
+    is a list/tuple, or where a single group
+    is present in the regex string.
     """
 
     if df.columns.name != ".value":
@@ -1836,11 +1842,13 @@ def _data_checks_pivot_wider(
     names_glue,
 ):
     """
-    This function raises errors if the arguments have the wrong
-    python type, or if the column does not exist in the dataframe.
-    This function is executed before proceeding to the computation
-    phase. Type annotations are not provided because this function is
-    where type checking happens.
+    This function raises errors
+    if the arguments have the wrong python type,
+    or if the column does not exist in the dataframe.
+    This function is executed before proceeding
+    to the computation phase.
+    Type annotations are not provided because
+    this function is where type checking happens.
     """
 
     if index is not None:
@@ -1904,10 +1912,11 @@ def _computations_pivot_wider(
     """
     This is the main workhorse of the `pivot_wider` function.
 
-    It is a wrapper around `pd.pivot`. For a MultiIndex, the order of
-    the levels can be changed with `levels_order`. The output for
-    multiple `names_from` and/or `values_from` can be controlled with
-    `names_glue` and/or `names_sep`.
+    It is a wrapper around `pd.pivot`.
+    For a MultiIndex,
+    the order of the levels can be changed with `levels_order`.
+    The output for multiple `names_from` and/or `values_from`
+    can be controlled with `names_glue` and/or `names_sep`.
 
     :returns: a dataframe pivoted from long to wide form.
     """

@@ -48,7 +48,6 @@ from .utils import (
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
     _data_checks_pivot_wider,
-    _process_text,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,
@@ -5036,9 +5035,7 @@ def expand_grid(
 def process_text(
     df: pd.DataFrame,
     column_name: str,
-    new_column_names: Optional[Union[str, list]] = None,
-    merge_frame: Optional[bool] = False,
-    string_function: Optional[str] = None,
+    string_function: str,
     **kwargs: str,
 ) -> pd.DataFrame:
     """
@@ -5046,11 +5043,9 @@ def process_text(
 
     This function aims to make string cleaning easy, while chaining,
     by simply passing the string method name to the ``process_text`` function.
-    This modifies an existing column and can also be used to create a new
-    column.
+    This modifies an existing column; it does not create a new column.
+    New columns can be created via pyjanitor's `transform_columns`.
 
-    .. note:: In versions < 0.20.11, this function did not support the
-        creation of new columns.
 
     A list of all the string methods in Pandas can be accessed `here
     <https://pandas.pydata.org/docs/user_guide/text.html#method-summary>`__.
@@ -5062,10 +5057,10 @@ def process_text(
         import pandas as pd
         import janitor as jn
 
-        df = pd.DataFrame({"text" : ["Ragnar",
-                                    "sammywemmy",
-                                    "ginger"],
-                           "code" : [1, 2, 3]})
+                 text  code
+        0      Ragnar     1
+        1  sammywemmy     2
+        2      ginger     3
 
         df.process_text(column_name = "text",
                         string_function = "lower")
@@ -5090,22 +5085,6 @@ def process_text(
         1 NaN       2
         2 NaN       3
 
-    A new column can be created, leaving the existing column unmodified::
-
-        df.process_text(
-            column_name = "text",
-            new_column_names = "new_text",
-            string_function = "extract",
-            pat = r"(ag)",
-            flags = re.IGNORECASE
-            )
-
-          text           code     new_text
-        0 Ragnar          1          ag
-        1 sammywemmy      2          NaN
-        2 ginger          3          NaN
-
-
     Functional usage syntax:
 
     .. code-block:: python
@@ -5117,8 +5096,6 @@ def process_text(
         df = jn.process_text(
             df = df,
             column_name,
-            new_column_names = None/string/list_of_strings,
-            merge_frame = True/False,
             string_function = "string_func_name_here",
             kwargs
             )
@@ -5134,8 +5111,6 @@ def process_text(
             pd.DataFrame(...)
             .process_text(
                 column_name,
-                new_column_names = None/string/list_of_strings,
-                merge_frame = True/False
                 string_function = "string_func_name_here",
                 kwargs
                 )
@@ -5144,44 +5119,18 @@ def process_text(
 
     :param df: A pandas dataframe.
     :param column_name: String column to be operated on.
-    :param new_column_names: Name(s) to assign to the new column(s) created
-        from the text processing. `new_column_names` can be a string, if
-        the result of the text processing is a Series or string; if the
-        result of the text processing is a dataframe, then `new_column_names`
-        is treated as a prefix for each of the columns in the new dataframe.
-        `new_column_names` can also be a list of strings to act as new
-        column names for the new dataframe. The existing `column_name`
-        stays unmodified if `new_column_names` is not None.
-    :param merge_frame: This comes into play if the result of the text
-        processing is a dataframe. If `True`, the resulting dataframe
-        will be merged with the original dataframe, else the resulting
-        dataframe, not the original dataframe, will be returned.
     :param string_function: Pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
     :returns: A pandas dataframe with modified column(s).
     :raises KeyError: if ``string_function`` is not a Pandas string method.
-    :raises TypeError: if wrong ``arg`` or ``kwarg`` is supplied.
+    :raises TypeError: if the wrong ``kwarg`` is supplied.
     :raises ValueError: if `column_name` not found in dataframe.
-    :raises ValueError: if `new_column_names` is not None and is found in
-        dataframe.
 
     .. # noqa: DAR402
     """
-    df = df.copy()
-
     check("column_name", column_name, [str])
+    check("string_function", string_function, [str])
     check_column(df, [column_name])
-
-    # new_column_names should not already exist in the dataframe
-    if new_column_names:
-        check("new_column_names", new_column_names, [list, str])
-        if isinstance(new_column_names, str):
-            check_column(df, [new_column_names], present=False)
-        else:
-            check_column(df, new_column_names, present=False)
-
-    if merge_frame:
-        check("merge_frame", merge_frame, [bool])
 
     pandas_string_methods = [
         func.__name__
@@ -5189,32 +5138,20 @@ def process_text(
         if not func.__name__.startswith("_")
     ]
 
-    if not string_function:
-        return df
-
     if string_function not in pandas_string_methods:
         raise KeyError(f"{string_function} is not a Pandas string method.")
 
-    if string_function == "extractall" and merge_frame:
-        # create unique indices
-        # comes in handy for executing joins if there are
-        # duplicated indices in the original dataframe
-        df = df.set_index(np.arange(len(df)), append=True)  # extra_index_line
-
     result = getattr(df[column_name].str, string_function)(**kwargs)
 
-    # TODO: Support for str.cat with `join` parameter
-    # need a robust way to handle the results
-    # if there is a `join` parameter, as this could create more
-    # or less rows with varying indices or even duplicate indices
+    if isinstance(result, pd.DataFrame):
+        raise ValueError(
+            """
+            The outcome of the processed text is a DataFrame,
+            which is not supported in `process_text`.
+            """
+        )
 
-    return _process_text(
-        result,
-        df=df,
-        column_name=column_name,
-        new_column_names=new_column_names,
-        merge_frame=merge_frame,
-    )
+    return df.assign(**{column_name: result})
 
 
 @pf.register_dataframe_method
@@ -6548,6 +6485,18 @@ def conditional_join(
 
     Join on just equality is also possible, but should be avoided -
     Pandas merge/join is more efficient::
+
+        df1
+            col_a col_b
+        0      1     A
+        1      2     B
+        2      3     C
+
+        df2
+            col_a col_c
+        0      0     Z
+        1      2     X
+        2      3     Y
 
         df1.conditional_join(
                 df2,

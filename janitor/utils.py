@@ -30,9 +30,9 @@ from pandas.api.types import (
     is_extension_array_dtype,
     is_list_like,
     is_scalar,
+    is_string_dtype,
     is_integer_dtype,
     is_float_dtype,
-    is_string_dtype,
     is_datetime64_dtype,
 )
 from pandas.core.common import apply_if_callable
@@ -2572,7 +2572,6 @@ class JOINOPERATOR(Enum):
     LESS_THAN = "<"
     GREATER_THAN_OR_EQUAL = ">="
     LESS_THAN_OR_EQUAL = "<="
-    STRICTLY_EQUAL = "=="
     NOT_EQUAL = "!="
 
 
@@ -2589,7 +2588,7 @@ class JOINTYPES(Enum):
 def _check_operator(op: str):
     """
     Check that operator is one of
-    `>`, `>=`, `==`, `!=`, `<`, `<=`.
+    `>`, `>=`, `!=`, `<`, `<=`.
     Used in `conditional_join`.
     """
     sequence_of_operators = {op.value for op in JOINOPERATOR}
@@ -2607,8 +2606,6 @@ def _conditional_join_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     conditions: tuple,
     how: str = "inner",
-    sort_by_appearance: bool = False,
-    suffixes=("_x", "_y"),
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -2703,75 +2700,7 @@ def _conditional_join_preliminary_checks(
     if how not in join_types:
         raise ValueError(f"`how` should be one of {', '.join(join_types)}.")
 
-    check("sort_by_appearance", sort_by_appearance, [bool])
-
-    check("suffixes", suffixes, [tuple])
-
-    if len(suffixes) != 2:
-        raise ValueError("`suffixes` argument should be a 2-length tuple")
-
-    if suffixes == (None, None):
-        raise ValueError("At least one of the suffixes should be non-null.")
-
-    for suffix in suffixes:
-        check("suffix", suffix, [str, type(None)])
-
-    return (df, right, conditions, how, sort_by_appearance, suffixes)
-
-
-def _cond_join_suffixes(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: tuple, suffixes: tuple
-):
-    """
-    If there are overlapping columns in `df` and `right`,
-    modify the columns, using the suffix in suffixes.
-    A tuple of (df, right, conditions) is returned.
-    """
-
-    common_columns = df.columns.intersection(right.columns, sort=False)
-
-    label_already_exists = """
-                           {label} is present in the {frame} DataFrame's
-                           columns. Kindly provide a unique suffix
-                           to create columns that are not present
-                           in the {frame} DataFrame.
-                           """
-
-    left_on, right_on, operators = zip(*conditions)
-    if not common_columns.empty:
-        left_suffix, right_suffix = suffixes
-
-        if left_suffix:
-            mapping = {}
-            for common in common_columns:
-                new_label = f"{common}{left_suffix}"
-                if new_label in df.columns:
-                    raise ValueError(
-                        label_already_exists.format(
-                            label=new_label, frame="left"
-                        )
-                    )
-                mapping[common] = new_label
-            left_on = [mapping.get(label, label) for label in left_on]
-            df = df.rename(columns=mapping)
-        if right_suffix:
-            mapping = {}
-            for common in common_columns:
-                new_label = f"{common}{right_suffix}"
-                if new_label in right.columns:
-                    raise ValueError(
-                        label_already_exists.format(
-                            label=new_label, frame="right"
-                        )
-                    )
-
-                mapping[common] = new_label
-            right_on = [mapping.get(label, label) for label in right_on]
-            right = right.rename(columns=mapping)
-
-    conditions = [*zip(left_on, right_on, operators)]
-
-    return df, right, conditions
+    return (df, right, conditions, how)
 
 
 def _conditional_join_type_check(
@@ -2784,7 +2713,6 @@ def _conditional_join_type_check(
     """
 
     permitted_types = {
-        is_string_dtype,
         is_datetime64_dtype,
         is_integer_dtype,
         is_float_dtype,
@@ -2812,16 +2740,6 @@ def _conditional_join_type_check(
              """
         )
 
-    if is_string_dtype(left_column) and (
-        op != JOINOPERATOR.STRICTLY_EQUAL.value
-    ):
-        raise ValueError(
-            """
-            Strings can only be compared
-            on the equal(`==`) operator.
-            """
-        )
-
     return None
 
 
@@ -2830,8 +2748,6 @@ def _conditional_join_compute(
     right: pd.DataFrame,
     conditions: list,
     how: str,
-    sort_by_appearance: bool,
-    suffixes: tuple,
 ) -> pd.DataFrame:
     """
     This is where the actual computation for the conditional join takes place.
@@ -2845,23 +2761,6 @@ def _conditional_join_compute(
         right_c = right[right_on]
 
         _conditional_join_type_check(left_c, right_c, op)
-        eq_check = op == JOINOPERATOR.STRICTLY_EQUAL.value
-
-    df, right, conditions = _cond_join_suffixes(
-        df, right, conditions, suffixes
-    )
-
-    # equality operator
-    if eq_check and (len(conditions) == 1):
-        left_on, right_on, _ = conditions[0]
-        return pd.merge(  # noqa: PD015
-            df,
-            right,
-            how=how,
-            left_on=left_on,
-            right_on=right_on,
-            sort=False,
-        )
 
     # credits to https://stackoverflow.com/a/69354962/7175713
     # and https://stackoverflow.com/a/62923444/7175713
@@ -2872,21 +2771,27 @@ def _conditional_join_compute(
     #  against the entire frame from `df`
     # a binary search is much faster,
     # however, this is simpler to maintain, while still
-    # offering some convenience for non-equi conditions
+    # offering some (meh) convenience for non-equi conditions
+    # improvements can be incremental, wrt to ease of maintenance
 
-    right_index = right.apply(
+    df_index = right.apply(
         cond_apply, df=df, conditions=conditions, axis=1, result_type="reduce"
     )
-    left_index = right_index.index
-    right_index = [(ent, ent.size) for ent in right_index]
-    right_index, counts = [*zip(*right_index)]
-    right_index = right_index[0].append(right_index[1:])
-    left_index = left_index.repeat(counts)
-    return right_index, left_index
+    right_index = df_index.index
+    df_index = [(ent, ent.size) for ent in df_index]
+    df_index, counts = [*zip(*df_index)]
+    df_index = df_index[0].append(df_index[1:])
+    right_index = right_index.repeat(counts)
+    return _create_conditional_join_frame(
+        df,
+        right,
+        df_index,
+        right_index,
+        how,
+    )
 
 
 operator_map = {
-    JOINOPERATOR.STRICTLY_EQUAL.value: operator.eq,
     JOINOPERATOR.LESS_THAN.value: operator.lt,
     JOINOPERATOR.LESS_THAN_OR_EQUAL.value: operator.le,
     JOINOPERATOR.GREATER_THAN.value: operator.gt,
@@ -2919,3 +2824,40 @@ def cond_apply(
         mask &= op(df[left_on], right[right_on])
 
     return df_index[mask]
+
+
+def _create_conditional_join_frame(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    df_index: pd.Index,
+    right_index: pd.Index,
+    how: str,
+):
+    """
+    Create final dataframe for conditional join.
+    """
+    sorter = right_index, df_index
+    sorter = np.lexsort(sorter)
+    right_index = right_index[sorter]
+    df_index = df_index[sorter]
+
+    df.columns = pd.MultiIndex.from_product([["left"], df.columns])
+    right.columns = pd.MultiIndex.from_product([["right"], right.columns])
+    if how == JOINTYPES.INNER.value:
+        df = df.reindex(df_index)
+        right = right.reindex(right_index)
+        df.index = np.arange(df_index.size)
+        right.index = df.index
+        return pd.concat(
+            [df, right], axis="columns", join=how, sort=False, copy=False
+        )
+
+    if how == JOINTYPES.LEFT.value:
+        right = right.reindex(right_index)
+        right.index = df_index
+        return df.join(right, how=how, sort=False).reset_index(drop=True)
+
+    if how == JOINTYPES.RIGHT.value:
+        df = df.reindex(df_index)
+        df.index = right_index
+        return df.join(right, how=how, sort=False).reset_index(drop=True)

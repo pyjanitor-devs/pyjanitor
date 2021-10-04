@@ -2618,7 +2618,7 @@ def _conditional_join_type_check(
         raise ValueError(
             """
             conditional_join only supports
-            numeric, or date dtypes.
+            integer, float or date dtypes.
             """
         )
     cols = (left_column, right_column)
@@ -2663,9 +2663,10 @@ def _conditional_join_compute(
     # this compares each row from `right`
     #  against the entire frame from `df`
     # a binary search is much faster,
-    # however, this is simpler to maintain, while still
-    # offering some (meh) convenience for non-equi conditions
-    # improvements can be incremental, wrt to ease of maintenance
+    # however, this is simpler to maintain,
+    # improvements in subsequent PRs
+
+    # TODO: improve performance
 
     df_index = right.apply(
         cond_apply, df=df, conditions=conditions, axis=1, result_type="reduce"

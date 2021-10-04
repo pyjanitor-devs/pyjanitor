@@ -57,9 +57,7 @@ from .utils import (
     check,
     check_column,
     deprecated_alias,
-    _conditional_join_preliminary_checks,
     _conditional_join_compute,
-    _cond_join_suffixes,
 )
 
 
@@ -6549,7 +6547,6 @@ def conditional_join(
     *conditions,
     how: str = "inner",
     sort_by_appearance: bool = False,
-    suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
 
@@ -6818,43 +6815,12 @@ def conditional_join(
         values from `right` that meet the join condition will be returned
         in the final dataframe in the same order that they were before the
         join.
-    :param suffixes: tuple, default is ``(_x, _y)``.
-        A sequence of length 2, where each element is optionally a string,
-        indicating the suffix to add to the overlapping column names
-        in `df` and `right`. Pass a value of ``None``
-        instead of a string to indicate that the  column name
-        from `df` or `right` should be left as-is, with no suffix.
-        At least one of the values must not be ``None``.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     :raises ValueError: if columns from `df` or `right` is a MultiIndex.
     :raises ValueError: if condition in *conditions is not a tuple.
 
     .. # noqa: DAR402
     """
-
-    (
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        suffixes,
-    ) = _conditional_join_preliminary_checks(
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        suffixes,
-    )
-
-    df, right, conditions = _cond_join_suffixes(
-        df, right, conditions, suffixes
-    )
-
-    # the numeric indexes play a crucial part in position tracking
-    df.index = np.arange(len(df))
-    right.index = np.arange(len(right))
 
     return _conditional_join_compute(
         df, right, conditions, how, sort_by_appearance

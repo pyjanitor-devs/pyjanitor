@@ -2602,9 +2602,8 @@ def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series
 ) -> None:
     """
-    Raise error if column type is not any of
-    numeric, datetime, or string.
-    Strings are not supported on non-equi operators.
+    Raise error if column type is not
+    any of numeric or datetime.
     """
 
     permitted_types = {
@@ -2619,7 +2618,7 @@ def _conditional_join_type_check(
         raise ValueError(
             """
             conditional_join only supports
-            numeric, date, or string dtypes.
+            numeric, or date dtypes.
             """
         )
     cols = (left_column, right_column)

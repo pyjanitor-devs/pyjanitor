@@ -25,6 +25,7 @@ def test_column_name_type(process_test_df):
         process_test_df.process_text(["text"])
 
 
+@pytest.mark.xfail(reason="new_column_names is deprecated.")
 def test_new_column_names_type(process_test_df):
     """Raise TypeError if `new_column_names` type is not string or list."""
     with pytest.raises(TypeError):
@@ -36,9 +37,12 @@ def test_new_column_names_type(process_test_df):
 def test_column_name_presence(process_test_df):
     """Raise ValueError if `column_name` is not in dataframe."""
     with pytest.raises(ValueError):
-        process_test_df.process_text(column_name="Test")
+        process_test_df.process_text(
+            column_name="Test", string_function="lower"
+        )
 
 
+@pytest.mark.xfail(reason="new_column_names is deprecated.")
 def test_new_column_names_presence_str(test_returns_dataframe):
     """
     Raise ValueError if `new_column_names` is a str
@@ -53,6 +57,7 @@ def test_new_column_names_presence_str(test_returns_dataframe):
         )
 
 
+@pytest.mark.xfail(reason="new_column_names is deprecated.")
 def test_new_column_names_presence_list(test_returns_dataframe):
     """
     Raise ValueError if `new_column_names` is a list and at least
@@ -67,6 +72,7 @@ def test_new_column_names_presence_list(test_returns_dataframe):
         )
 
 
+@pytest.mark.xfail(reason="merge_frame is deprecated.")
 def test_merge_frame_type(test_returns_dataframe):
     """
     Raise TypeError if `merge_frame` type is not bool."""
@@ -80,6 +86,7 @@ def test_merge_frame_type(test_returns_dataframe):
         )
 
 
+@pytest.mark.xfail(reason="string_function must be present.")
 def test_string_function_is_None(process_test_df):
     """Test that dataframe is returned if string_function is None."""
     result = process_test_df.process_text(column_name="text")
@@ -100,6 +107,7 @@ def test_str_split(process_test_df):
     assert_frame_equal(result, expected)
 
 
+@pytest.mark.xfail(reason="new_column_names is deprecated.")
 def test_new_column_names(process_test_df):
     """
     Test that a new column name is created when
@@ -154,6 +162,7 @@ def test_str_cat_result_is_a_string(no_nulls_df):
     assert_frame_equal(result, expected)
 
 
+@pytest.mark.xfail(reason="new_column_names is deprecated.")
 def test_str_cat_result_is_a_string_and_new_column_names(no_nulls_df):
     """
     Test wrapper for Pandas ``.str.cat()`` method when the outcome is a string,
@@ -236,6 +245,7 @@ def returns_frame_1():
     )
 
 
+@pytest.mark.xfail(reason="merge_frame is deprecated.")
 def test_return_dataframe_merge_is_None(returns_frame_1):
     """
     Test that the dataframe returned when `merge_frame` is None
@@ -250,6 +260,7 @@ def test_return_dataframe_merge_is_None(returns_frame_1):
     assert_frame_equal(result, expected_output)
 
 
+@pytest.mark.xfail(reason="merge_frame is deprecated.")
 def test_return_dataframe_merge_is_not_None(returns_frame_1):
     """
     Test that the dataframe returned when `merge_frame` is not None
@@ -276,6 +287,7 @@ def test_return_dataframe_merge_is_not_None(returns_frame_1):
     assert_frame_equal(result, expected_output)
 
 
+@pytest.mark.xfail(reason="merge_frame is deprecated.")
 def test_return_dataframe_merge_is_not_None_new_column_names_is_a_list(
     returns_frame_1,
 ):
@@ -306,6 +318,7 @@ def test_return_dataframe_merge_is_not_None_new_column_names_is_a_list(
     assert_frame_equal(result, expected_output)
 
 
+@pytest.mark.xfail(reason="new_column_names is deprecated.")
 def test_return_dataframe_new_column_names_is_a_list_len_unequal(
     returns_frame_1,
 ):
@@ -329,20 +342,17 @@ def test_return_dataframe_new_column_names_is_a_list_len_unequal(
 
 def test_output_extractall(test_returns_dataframe):
     """
-    Test output when `string_function` is "extractall"
-    and `merge_frame` is None.
+    Raise ValueError if the output is a dataframe.
     """
-    expected_output = test_returns_dataframe["text"].str.extractall(
-        r"(?P<letter>[ab])?(?P<digit>\d)"
-    )
-    result = test_returns_dataframe.process_text(
-        column_name="text",
-        string_function="extractall",
-        pat=r"(?P<letter>[ab])?(?P<digit>\d)",
-    )
-    assert_frame_equal(result, expected_output)
+    with pytest.raises(ValueError):
+        test_returns_dataframe.process_text(
+            column_name="text",
+            string_function="extractall",
+            pat=r"(?P<letter>[ab])?(?P<digit>\d)",
+        )
 
 
+@pytest.mark.xfail(reason="merge_frame is deprecated.")
 def test_output_extractall_merge_frame_is_not_None(test_returns_dataframe):
     """
     Test output when `string_function` is "extractall"

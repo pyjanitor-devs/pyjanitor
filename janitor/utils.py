@@ -2829,7 +2829,12 @@ def _less_than_indices(
         return None
 
     if len_conditions > 1:
-        return left_c.index
+        return (
+            left_c.index,
+            right_c.index,
+            search_indices,
+            np.repeat(len_right, search_indices.size),
+        )
 
     indices = np.repeat(len_right, search_indices.size)
     positions = _interval_ranges(search_indices, indices)
@@ -2908,7 +2913,12 @@ def _greater_than_indices(
         return None
 
     if len_conditions > 1:
-        return left_c.index
+        return (
+            left_c.index,
+            right_c.index,
+            search_indices,
+            np.zeros(search_indices.size, dtype=np.int8),
+        )
 
     indices = np.zeros(search_indices.size, dtype=np.int8)
     positions = _interval_ranges(indices, search_indices)
@@ -3092,6 +3102,87 @@ def _conditional_join_compute(
         return _create_conditional_join_frame(
             df, right, left_c, right_c, how, sort_by_appearance
         )
+
+    result = _multiple_conditional_join(df, right, conditions)
+
+    # return result
+
+    if result is None:
+        return _create_conditional_join_empty_frame(df, right, how)
+
+    left_c, right_c = result
+
+    return _create_conditional_join_frame(
+        df, right, left_c, right_c, how, sort_by_appearance
+    )
+
+
+def _multiple_conditional_join(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: list
+) -> tuple:
+    """
+    Get indices for multiple conditions.
+    Returns a tuple of (left_c, right_c)
+    """
+    # find minimum df_index and right_index
+    # aim is to reduce search space
+    df_index = df.index
+    right_index = right.index
+    for left_on, right_on, op in conditions:
+        left_c = df.loc[df_index, left_on]
+        right_c = right.loc[right_index, right_on]
+        result = _generic_func_cond_join(left_c, right_c, op, 2)
+        if result is None:
+            return None
+
+        df_index, right_index, *_ = result
+
+    first, *rest = conditions
+    left_on, right_on, op = first
+    left_c = df.loc[df_index, left_on]
+    right_c = right.loc[right_index, right_on]
+    _, right_index, search_indices, indices = _generic_func_cond_join(
+        left_c, right_c, op, 2
+    )
+    if op in less_than_join_types:
+        search_indices = zip(search_indices, indices)
+    else:
+        search_indices = zip(indices, search_indices)
+    right = right.reindex(right_index)
+    first, *rest = rest
+    left_on, right_on, op = first
+    left_c = df.loc[df_index, left_on].to_numpy()
+    right_c = right.loc[right_index, right_on].to_numpy()
+
+    op = operator_map[op]
+    collection = []
+    right_index = right_index.to_numpy()
+    for index, search in enumerate(search_indices):
+        indexer = right_index[slice(*search)]
+        mask = op(left_c[index], right_c[slice(*search)])
+        indexer = indexer[mask]
+        collection.append((indexer, indexer.size))
+
+    right_index, repeater = zip(*collection)
+    right_index = np.concatenate(indexer)
+    df_index = df_index.repeat(repeater)
+
+    if not rest:
+        return df_index, right_index
+
+    # just blow it up
+    mask = None
+    for left_on, right_on, op in rest:
+        left_c = df.loc[df_index, left_on].to_numpy()
+        right_c = right.loc[right_index, right_on].to_numpy()
+        op = operator_map[op]
+        if mask is None:
+            mask = op(left_c, right_c)
+        else:
+            mask &= op(left_c, right_c)
+    if not mask.any():
+        return None
+    return df_index[mask], right_index[mask]
 
 
 def _case_when_checks(df: pd.DataFrame, args, column_name):

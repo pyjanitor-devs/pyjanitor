@@ -553,173 +553,179 @@ def test_how_right(df, right):
     assert_frame_equal(expected, actual)
 
 
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_conditions_gt_and_lt_dates(df, right):
-#     """Test output for interval conditions."""
-#     assume(not df.empty)
-#     assume(not right.empty)
-#     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
-#     expected = (
-#         df.assign(t=1)
-#         .merge(right.assign(t=1), on="t")
-#         .query(f"{left_on} < {middle} < {right_on}")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter([left_on, middle, right_on])
-#     actual = df.conditional_join(
-#         right,
-#         (middle, left_on, ">"),
-#         (middle, right_on, "<"),
-#         how="inner",
-#            sort_by_appearance=True
-#     )
-#     actual = actual.droplevel(level=0, axis=1)
-#     actual = actual.filter([left_on, middle, right_on])
-#     assert_frame_equal(expected, actual)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_dates(df, right):
+    """Test output for interval conditions."""
+    assume(not df.empty)
+    assume(not right.empty)
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} < {middle} < {right_on}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
+        right,
+        (middle, left_on, ">"),
+        (middle, right_on, "<"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, middle, right_on])
+    assert_frame_equal(expected, actual)
 
 
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_conditions_ge_and_le_dates(df, right):
-#     """Test output for interval conditions."""
-#     assume(not df.empty)
-#     assume(not right.empty)
-#     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
-#     expected = (
-#         df.assign(t=1)
-#         .merge(right.assign(t=1), on="t")
-#         .query(f"{left_on} <= {middle} <= {right_on}")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter([left_on, middle, right_on])
-#     actual = df.conditional_join(
-#         right,
-#         (middle, left_on, ">="),
-#         (middle, right_on, "<="),
-#         how="inner",
-#     )
-#     actual = actual.droplevel(level=0, axis=1)
-#     actual = actual.filter([left_on, middle, right_on])
-#     assert_frame_equal(expected, actual)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ge_and_le_dates(df, right):
+    """Test output for interval conditions."""
+    assume(not df.empty)
+    assume(not right.empty)
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} <= {middle} <= {right_on}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
+        right,
+        (middle, left_on, ">="),
+        (middle, right_on, "<="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, middle, right_on])
+    assert_frame_equal(expected, actual)
 
 
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_conditions_le_and_ge_dates(df, right):
-#     """Test output for interval conditions."""
-#     assume(not df.empty)
-#     assume(not right.empty)
-#     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
-#     expected = (
-#         df.assign(t=1)
-#         .merge(right.assign(t=1), on="t")
-#         .query(f"{left_on} <= {middle} <= {right_on}")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter([left_on, middle, right_on])
-#     actual = df.conditional_join(
-#         right,
-#         (middle, right_on, "<="),
-#         (middle, left_on, ">="),
-#         how="inner",
-#     )
-#     actual = actual.droplevel(level=0, axis=1)
-#     actual = actual.filter([left_on, middle, right_on])
-#     assert_frame_equal(expected, actual)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_le_and_ge_dates(df, right):
+    """Test output for interval conditions."""
+    assume(not df.empty)
+    assume(not right.empty)
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} <= {middle} <= {right_on}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
+        right,
+        (middle, right_on, "<="),
+        (middle, left_on, ">="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, middle, right_on])
+    assert_frame_equal(expected, actual)
 
 
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_conditions_ge_and_le_numbers(df, right):
-#     """Test output for interval conditions."""
-#     assume(not df.empty)
-#     assume(not right.empty)
-#     middle, left_on, right_on = ("B", "Numeric", "Floats")
-#     expected = (
-#         df.assign(t=1)
-#         .merge(right.assign(t=1), on="t")
-#         .query(f"{left_on} <= {middle} <= {right_on}")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter([left_on, middle, right_on])
-#     actual = df.conditional_join(
-#         right,
-#         (middle, left_on, ">="),
-#         (middle, right_on, "<="),
-#         how="inner",
-#     )
-#     actual = actual.droplevel(level=0, axis=1)
-#     actual = actual.filter([left_on, middle, right_on])
-#     assert_frame_equal(expected, actual)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ge_and_le_numbers(df, right):
+    """Test output for interval conditions."""
+    assume(not df.empty)
+    assume(not right.empty)
+    middle, left_on, right_on = ("B", "Numeric", "Floats")
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} <= {middle} <= {right_on}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
+        right,
+        (middle, left_on, ">="),
+        (middle, right_on, "<="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, middle, right_on])
+    assert_frame_equal(expected, actual)
 
 
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_conditions_le_and_ge_numbers(df, right):
-#     """Test output for interval conditions."""
-#     assume(not df.empty)
-#     assume(not right.empty)
-#     middle, left_on, right_on = ("B", "Numeric", "Floats")
-#     expected = (
-#         df.assign(t=1)
-#         .merge(right.assign(t=1), on="t")
-#         .query(f"{left_on} <= {middle} <= {right_on}")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter([left_on, middle, right_on])
-#     actual = df.conditional_join(
-#         right,
-#         (middle, right_on, "<="),
-#         (middle, left_on, ">="),
-#         how="inner",
-#     )
-#     actual = actual.droplevel(level=0, axis=1)
-#     actual = actual.filter([left_on, middle, right_on])
-#     assert_frame_equal(expected, actual)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_le_and_ge_numbers(df, right):
+    """Test output for interval conditions."""
+    assume(not df.empty)
+    assume(not right.empty)
+    middle, left_on, right_on = ("B", "Numeric", "Floats")
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} <= {middle} <= {right_on}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
+        right,
+        (middle, right_on, "<="),
+        (middle, left_on, ">="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, middle, right_on])
+    assert_frame_equal(expected, actual)
 
 
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_conditions_gt_and_lt_numbers(df, right):
-#     """Test output for interval conditions."""
-#     assume(not df.empty)
-#     assume(not right.empty)
-#     middle, left_on, right_on = ("B", "Numeric", "Floats")
-#     expected = (
-#         df.assign(t=1)
-#         .merge(right.assign(t=1), on="t")
-#         .query(f"{left_on} < {middle} < {right_on}")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter([left_on, middle, right_on])
-#     actual = df.conditional_join(
-#         right,
-#         (middle, left_on, ">"),
-#         (middle, right_on, "<"),
-#         how="inner",
-#     )
-#     actual = actual.droplevel(level=0, axis=1)
-#     actual = actual.filter([left_on, middle, right_on])
-#     assert_frame_equal(expected, actual)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers(df, right):
+    """Test output for interval conditions."""
+    assume(not df.empty)
+    assume(not right.empty)
+    middle, left_on, right_on = ("B", "Numeric", "Floats")
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} < {middle} < {right_on}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([left_on, middle, right_on])
+    actual = df.conditional_join(
+        right,
+        (middle, left_on, ">"),
+        (middle, right_on, "<"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, middle, right_on])
+    assert_frame_equal(expected, actual)
 
 
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_conditions_gt_and_lt_numbers_(df, right):
-#     """
-#     Test output for multiple columns from the left
-#     and single column from right.
-#     """
-#     assume(not df.empty)
-#     assume(not right.empty)
-#     first, second, third = ("Numeric", "Floats", "B")
-#     expected = (
-#         right.assign(t=1)
-#         .merge(df.assign(t=1), on="t")
-#         .query(f"{first} > {third} and {second} < {third}")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter([first, second, third])
-#     actual = right.conditional_join(
-#         df,
-#         (first, third, ">"),
-#         (second, third, "<"),
-#         how="inner",
-#     )
-#     actual = actual.droplevel(level=0, axis=1)
-#     actual = actual.filter([first, second, third])
-#     assert_frame_equal(expected, actual)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_(df, right):
+    """
+    Test output for multiple columns from the left
+    and single column from right.
+    """
+    assume(not df.empty)
+    assume(not right.empty)
+    first, second, third = ("Numeric", "Floats", "B")
+    expected = (
+        right.assign(t=1)
+        .merge(df.assign(t=1), on="t")
+        .query(f"{first} > {third} and {second} < {third}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([first, second, third])
+    actual = right.conditional_join(
+        df,
+        (first, third, ">"),
+        (second, third, "<"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([first, second, third])
+    assert_frame_equal(expected, actual)

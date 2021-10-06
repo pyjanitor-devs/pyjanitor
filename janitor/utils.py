@@ -10,7 +10,7 @@ import sys
 import warnings
 import operator
 from collections.abc import Callable as dispatch_callable
-from itertools import chain
+from itertools import chain, count
 from typing import (
     Callable,
     Dict,
@@ -1923,7 +1923,7 @@ def _computations_pivot_wider(
     # check dtype of `names_from` is string
     names_from_all_strings = df.filter(names_from).agg(is_string_dtype).all()
 
-    if names_sort is True:
+    if names_sort:
         # Categorical dtypes created only for `names_from`
         # since that is what will become the new column names
         dtypes = {
@@ -1942,7 +1942,7 @@ def _computations_pivot_wider(
         df = df.reorder_levels(order=levels_order, axis="columns")
 
     # an empty df is likely because
-    # there are no `values_from`
+    # there is no `values_from`
     if any((df.empty, flatten_levels is False)):
         return df
 
@@ -1954,7 +1954,7 @@ def _computations_pivot_wider(
         else:
             df.columns = df.columns.astype(str)
 
-    if names_sep is not None and (isinstance(df.columns, pd.MultiIndex)):
+    if (names_sep is not None) and (isinstance(df.columns, pd.MultiIndex)):
         df.columns = df.columns.map(names_sep.join)
 
     if names_glue:
@@ -2459,108 +2459,6 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             filtered_columns.append(column_name)
 
     return filtered_columns
-
-
-@functools.singledispatch
-def _process_text(result: str, df, column_name, new_column_names, merge_frame):
-    """
-    Base function for `process_text` when `result` is of ``str`` type.
-    """
-    if new_column_names:
-        return df.assign(**{new_column_names: result})
-    df[column_name] = result
-    return df
-
-
-@_process_text.register
-def _sub_process_text(
-    result: pd.Series, df, column_name, new_column_names, merge_frame
-):
-    """
-    Base function for `process_text` when `result` is of ``pd.Series`` type.
-    """
-    if new_column_names:
-        return df.assign(**{new_column_names: result})
-    df[column_name] = result
-    return df
-
-
-@_process_text.register  # noqa: F811
-def _sub_process_text(  # noqa: F811
-    result: pd.DataFrame, df, column_name, new_column_names, merge_frame
-):  # noqa: F811
-    """
-    Base function for `process_text` when `result` is of ``pd.DataFrame`` type.
-    """
-    result = _process_text_result_is_frame(new_column_names, result)
-    if not merge_frame:
-        return result
-    return _process_text_result_MultiIndex(result.index, result, df)
-
-
-@functools.singledispatch
-def _process_text_result_is_frame(new_column_names: str, result):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe. Applies only if `new_column_names`
-    is a string type.
-    """
-    if new_column_names:
-        return result.add_prefix(new_column_names)
-    return result
-
-
-@_process_text_result_is_frame.register
-def _sub_process_text_result_is_frame(new_column_names: list, result):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe. Applies only if `new_column_names`
-    is a list type.
-    """
-    if len(new_column_names) != len(result.columns):
-        raise ValueError(
-            """
-            The length of `new_column_names` does not
-            match the number of columns in the new
-            dataframe generated from the text processing.
-            """
-        )
-    result.columns = new_column_names
-    return result
-
-
-@functools.singledispatch
-def _process_text_result_MultiIndex(index: pd.Index, result, df):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe and it has a single Index.
-    """
-    return pd.concat([df, result], axis="columns")
-
-
-@_process_text_result_MultiIndex.register
-def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe and it has a MultiIndex.
-    At the moment, this function is primarily to cater for `str.extractall`,
-    since at the moment,
-    this is the only string method that returns a MultiIndex.
-    The function may be modified,
-    if another string function that returns a  MultIndex
-    is added to Pandas string methods.
-
-    For this function, `df` has been converted to a MultiIndex,
-    with the extra index added to create unique indices.
-    This comes in handy when merging back the dataframe,
-    especially if `result` returns duplicate indices.
-    """
-    result = result.reset_index(level="match")
-    df = df.join(result, how="outer")
-    # droplevel gets rid of the extra index added at the start
-    # (# extra_index_line)
-    df = df.droplevel(-1).set_index("match", append=True)
-    return df
 
 
 class JOINOPERATOR(Enum):
@@ -3194,3 +3092,110 @@ def _conditional_join_compute(
         return _create_conditional_join_frame(
             df, right, left_c, right_c, how, sort_by_appearance
         )
+
+
+def _case_when_checks(df: pd.DataFrame, args, column_name):
+    """
+    Preliminary checks on the case_when function.
+    """
+    if len(args) < 3:
+        raise ValueError(
+            """
+            At least three arguments are required
+            for the `args` parameter.
+            """
+        )
+    if len(args) % 2 != 1:
+        raise ValueError(
+            """
+            It seems the `default` argument is missing
+            from the variable `args` parameter.
+            """
+        )
+
+    check("column_name", column_name, [str])
+
+    *args, default = args
+
+    booleans = []
+    replacements = []
+    for index, value in enumerate(args):
+        if index % 2 == 0:
+            booleans.append(value)
+        else:
+            replacements.append(value)
+
+    conditions = []
+    for condition in booleans:
+        if callable(condition):
+            condition = apply_if_callable(condition, df)
+        elif isinstance(condition, str):
+            condition = df.eval(condition)
+        conditions.append(condition)
+
+    targets = []
+    for replacement in replacements:
+        if callable(replacement):
+            replacement = apply_if_callable(replacement, df)
+        targets.append(replacement)
+
+    if callable(default):
+        default = apply_if_callable(default, df)
+    if not is_list_like(default):
+        default = pd.Series([default]).repeat(len(df))
+        default.index = df.index
+    if not hasattr(default, "shape"):
+        default = pd.Series([*default])
+    if isinstance(default, pd.Index):
+        arr_ndim = default.nlevels
+    else:
+        arr_ndim = default.ndim
+    if arr_ndim != 1:
+        raise ValueError(
+            """
+            The `default` argument should either be a 1-D array,
+            a scalar, or a callable that can evaluate to
+            a 1-D array.
+            """
+        )
+    if not isinstance(default, pd.Series):
+        default = pd.Series(default)
+    if default.size != len(df):
+        raise ValueError(
+            """
+            The length of the `default` argument
+            should be equal to the length
+            of the DataFrame.
+            """
+        )
+    return conditions, targets, default
+
+
+def _case_when(df: pd.DataFrame, args, column_name):
+    """
+    Actual computation of the case_when function.
+    """
+    conditions, targets, default = _case_when_checks(df, args, column_name)
+
+    if len(conditions) == 1:
+        default = default.mask(conditions[0], targets[0])
+        return df.assign(**{column_name: default})
+
+    # ensures value assignment is on a first come basis
+    conditions = conditions[::-1]
+    targets = targets[::-1]
+    for condition, value, index in zip(conditions, targets, count()):
+        try:
+            default = default.mask(condition, value)
+        # error `feedoff` idea from SO
+        # https://stackoverflow.com/a/46091127/7175713
+        except Exception as e:
+            raise ValueError(
+                f"""
+                condition{index} and value{index}
+                failed to evaluate.
+                Original error message: {e}
+                """
+            ) from e
+
+    return df.assign(**{column_name: default})

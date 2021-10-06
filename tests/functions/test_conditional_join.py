@@ -234,7 +234,7 @@ def test_dtype_not_string_datetime_numeric(df, s):
     with pytest.raises(ValueError):
         s.name = "A"
         df["C"] = df["C"].astype("category")
-        df.conditional_join(s, ("C", "A", "<"), suffixes=("_x", "_y"))
+        df.conditional_join(s, ("C", "A", "<"))
 
 
 @given(df=conditional_df(), s=conditional_right())

@@ -20,6 +20,7 @@ from typing import (
     Pattern,
     Tuple,
     Union,
+    Hashable,
 )
 
 import numpy as np
@@ -450,232 +451,150 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     to expand each input to the length of the cumulative product of
     all inputs in `others`.
 
-    There is a performance penalty for small entries (length less than 10)
-    in using this method, instead of `itertools.product`; however, there is
-    significant performance benefits as the size of the data increases.
+    There is a performance penalty for small entries
+    in using this method, instead of `itertools.product`;
+    however, there is significant performance benefits
+    as the size of the data increases.
 
     Another benefit of this approach,
     in addition to the significant performance gains,
     is the preservation of data types. This is particularly relevant for
     Pandas' extension arrays dtypes (categoricals, nullable integers, ...).
 
-    A dataframe of all possible combinations is returned.
+    A MultiIndex DataFrame of all possible combinations is returned.
     """
 
-    for key, _ in others.items():
-        check("key", key, [str])
+    for key in others:
+        check("key", key, [Hashable])
 
     grid = {}
 
     for key, value in others.items():
         if is_scalar(value):
-            grid[key] = pd.Series([value])
-        elif is_extension_array_dtype(value) and not (
-            isinstance(value, pd.Series)
+            value = pd.DataFrame([value])
+        elif (not isinstance(value, pd.Series)) and is_extension_array_dtype(
+            value
         ):
-            grid[key] = pd.Series(value)
-        elif is_list_like(value):
-            if not isinstance(
-                value, (pd.DataFrame, pd.Series, np.ndarray, list, pd.Index)
-            ):
-                grid[key] = list(value)
-            else:
-                grid[key] = value
+            value = pd.DataFrame(value)
+        elif is_list_like(value) and (not hasattr(value, "shape")):
+            value = np.asarray([*value])
+
+        grid[key] = value
 
     others = None
 
-    mgrid_values = [slice(len(value)) for _, value in grid.items()]
-    mgrid_values = np.mgrid[mgrid_values]
-    mgrid_values = map(np.ravel, mgrid_values)
-    grid = zip([*grid.items()], mgrid_values)
+    # slice obtained here is used in `np.mgrid`
+    # to generate cartesian indices
+    # which is then paired with grid.items()
+    # to blow up each individual value
+    # before finally recombining, via pd.concat,
+    # to create a dataframe.
+    grid_index = [slice(len(value)) for _, value in grid.items()]
+    grid_index = np.mgrid[grid_index]
+    grid_index = map(np.ravel, grid_index)
+    grid = zip(grid.items(), grid_index)
     grid = ((*left, right) for left, right in grid)
-    grid = (
-        _expand_grid(value, key, mgrid_values)
-        for key, value, mgrid_values in grid
-    )
+    grid = {
+        key: _expand_grid(value, grid_index) for key, value, grid_index in grid
+    }
 
-    grid = pd.concat(grid, axis="columns", sort=False)
-
-    return grid
+    # creates a MultiIndex with the keys
+    # since grid is a dictionary
+    return pd.concat(grid, axis="columns", sort=False, copy=False)
 
 
 @functools.singledispatch
-def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
+def _expand_grid(value, grid_index):
     """
     Base function for dispatch of `_expand_grid`.
-
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
     """
 
     raise TypeError(
-        f"{type(value).__name__} data type is not supported in `expand_grid`."
+        f"""
+        {type(value).__name__} data type
+        is not supported in `expand_grid`.
+        """
     )
 
 
-@_expand_grid.register(list)  # noqa: F811
-def _sub_expand_grid(value, key, mgrid_values):  # noqa: F811
-    """
-    Expands the list object based on `mgrid_values`.
-    Converts to an array and passes it
-    to the `_expand_grid` function for arrays.
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
-    """
-    if not value:
-        raise ValueError("""list object cannot be empty.""")
-    value = np.array(value)
-    return _expand_grid(value, key, mgrid_values)
-
-
 @_expand_grid.register(np.ndarray)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the numpy array based on `mgrid_values`.
+    Expands the numpy array based on `grid_index`.
 
-    Ensures array dimension is either 1 or 2.
-
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
-
-    The names are derived from the `key` parameter.
+    Returns Series if 1-D array,
+    or DataFrame if 2-D array.
     """
+
     if not (value.size > 0):
         raise ValueError("""array cannot be empty.""")
+
     if value.ndim > 2:
-        raise ValueError("""expand_grid works only on 1D and 2D structures.""")
+        raise ValueError(
+            """
+            expand_grid works only
+            on 1D and 2D arrays.
+            """
+        )
 
-    value = value.take(mgrid_values, axis=0)
+    value = value[grid_index]
 
-    if value.ndim == 1:
-        value = pd.Series(value)
-        # a tiny bit faster than chaining with `rename`
-        value.name = key
-    else:
-        value = pd.DataFrame(value)
-        # a tiny bit faster than using `add_prefix`
-        value.columns = value.columns.map(lambda column: f"{key}_{column}")
-
-    return value
+    return pd.DataFrame(value)
 
 
 @_expand_grid.register(pd.Series)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the Series based on `mgrid_values`.
+    Expands the Series based on `grid_index`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Checks for empty Series and returns modified keys.
-    Returns Series with new Series name.
+    Returns Series.
     """
     if value.empty:
         raise ValueError("""Series cannot be empty.""")
 
-    value = value.take(mgrid_values)
-    value.index = np.arange(len(value))
+    value = value.iloc[grid_index]
+    value.index = pd.RangeIndex(start=0, stop=len(value))
 
-    if mode != "expand_grid":
-        return value
-
-    if value.name:
-        value.name = f"{key}_{value.name}"
-    else:
-        value.name = key
-    return value
+    return value.to_frame()
 
 
 @_expand_grid.register(pd.DataFrame)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the DataFrame based on `mgrid_values`.
+    Expands the DataFrame based on `grid_index`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Checks for empty dataframe and returns modified keys.
-
-    Returns a DataFrame with new column names.
+    Returns a DataFrame.
     """
     if value.empty:
         raise ValueError("""DataFrame cannot be empty.""")
 
-    value = value.take(mgrid_values)
-    value.index = np.arange(len(value))
-
-    if mode != "expand_grid":
-        return value
-
+    value = value.iloc[grid_index]
+    value.index = pd.RangeIndex(start=0, stop=len(value))
     if isinstance(value.columns, pd.MultiIndex):
-        value.columns = [f"{key}_{num}" for num, _ in enumerate(value.columns)]
-    else:
-        value.columns = value.columns.map(lambda column: f"{key}_{column}")
+        value.columns = ["_".join(map(str, ent)) for ent in value]
 
     return value
 
 
 @_expand_grid.register(pd.Index)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the Index based on `mgrid_values`.
+    Expands the Index based on `grid_index`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Checks for empty Index and returns modified keys.
-
-    Returns a DataFrame (if MultiIndex) with new column names,
-    or a Series with a new name.
+    Returns a DataFrame (if MultiIndex), or a Series.
     """
     if value.empty:
         raise ValueError("""Index cannot be empty.""")
 
-    value = value.take(mgrid_values)
+    value = value[grid_index]
 
-    if mode != "expand_grid":
-        return value
-
-    if isinstance(value, pd.MultiIndex):
-        value = value.to_frame(index=False)
-        value.columns = value.columns.map(lambda column: f"{key}_{column}")
-    else:
-        value = value.to_series(index=np.arange(len(value)))
-        if value.name:
-            value.name = f"{key}_{value.name}"
-        else:
-            value.name = key
-    return value
+    return value.to_frame(index=False)
 
 
 def _data_checks_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
+    sort: Optional[bool] = False,
     by: Optional[Union[list, str]] = None,
 ):
     """
@@ -726,17 +645,21 @@ def _data_checks_complete(
     check_column(df, column_checker)
     column_checker_no_duplicates = None
 
+    check("sort", sort, [bool])
+
     if by is not None:
         if isinstance(by, str):
             by = [by]
         check("by", by, [list])
+        check_column(df, by)
 
-    return df, columns, column_checker, by
+    return columns, column_checker, sort, by
 
 
 def _computations_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
+    sort: bool = False,
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -744,171 +667,81 @@ def _computations_complete(
 
     If `by` is present, then groupby apply is used.
 
-    For some cases, the `stack/unstack` combination is preferred; it is more
-    efficient than `reindex`, as the size of the data grows. It is only
-    applicable if all the entries in `columns` are strings, there are
-    no nulls(stacking implicitly removes nulls in columns),
-    the length of `columns` is greater than 1, and the index
-    has no duplicates.
-
-    If there is a dictionary in `columns`, it is possible that all the values
-    of a key, or keys, may not be in the existing column with the same key(s);
-    as such, a union of the current index and the generated index is executed,
-    to ensure that all combinations are in the final dataframe.
-
-    A dataframe, with rows of missing values, if any, is returned.
+    A DataFrame, with rows of missing values, if any, is returned.
     """
 
-    df, columns, column_checker, by = _data_checks_complete(df, columns, by)
-
-    dict_present = any((isinstance(entry, dict) for entry in columns))
-    all_strings = all(isinstance(column, str) for column in columns)
-
-    df = df.set_index(column_checker)
-
-    df_index = df.index
-    df_names = df_index.names
-
-    any_nulls = any(
-        df_index.get_level_values(name).hasnans for name in df_names
+    columns, column_checker, sort, by = _data_checks_complete(
+        df, columns, sort, by
     )
 
-    if not by:
+    all_strings = True
+    for column in columns:
+        if not isinstance(column, str):
+            all_strings = False
+            break
 
-        df = _base_complete(df, columns, all_strings, any_nulls, dict_present)
-
-    # a better (and faster) way would be to create a dataframe
-    # from the groupby ...
-    # solution here got me thinking
-    # https://stackoverflow.com/a/66667034/7175713
-    # still thinking on how to improve speed of groupby apply
-    else:
-        df = df.groupby(by).apply(
-            _base_complete,
-            columns,
-            all_strings,
-            any_nulls,
-            dict_present,
-        )
-        df = df.drop(columns=by)
-
-    df = df.reset_index()
-
-    return df
-
-
-def _base_complete(
-    df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]],
-    all_strings: bool,
-    any_nulls: bool,
-    dict_present: bool,
-) -> pd.DataFrame:
-
-    df_empty = df.empty
-    df_index = df.index
-    unique_index = df_index.is_unique
-    columns_to_stack = None
-
-    # stack...unstack implemented here if conditions are met
-    # usually faster than reindex
-    if all_strings and (not any_nulls) and (len(columns) > 1) and unique_index:
-        if df_empty:
-            df["dummy"] = 1
-
-        columns_to_stack = columns[1:]
-        df = df.unstack(columns_to_stack)  # noqa: PD010
-        df = df.stack(columns_to_stack, dropna=False)  # noqa: PD013
-        if df_empty:
-            df = df.drop(columns="dummy")
-        columns_to_stack = None
+    # nothing to 'complete' here
+    if all_strings and len(columns) == 1:
         return df
 
-    indexer = _create_indexer_for_complete(df_index, columns)
+    # under the right conditions, stack/unstack can be faster
+    # plus it always returns a sorted DataFrame
+    # which does help in viewing the missing rows
+    # however, using a merge keeps things simple
+    # with a stack/unstack,
+    # the relevant columns combination should be unique
+    # and there should be no nulls
+    # trade-off for the simplicity of merge is not so bad
+    # of course there could be a better way ...
+    if by is None:
+        uniques = _generic_complete(df, columns, all_strings)
+        return df.merge(uniques, how="outer", on=column_checker, sort=sort)
 
-    if unique_index:
-        if dict_present:
-            indexer = df_index.union(indexer, sort=None)
-        df = df.reindex(indexer)
-
-    else:  # reindex not possible on duplicate indices
-        df = df.join(pd.DataFrame([], index=indexer), how="outer")
-
-    return df
+    uniques = df.groupby(by)
+    uniques = uniques.apply(_generic_complete, columns, all_strings)
+    uniques = uniques.droplevel(-1)
+    return df.merge(uniques, how="outer", on=by + column_checker, sort=sort)
 
 
-def _create_indexer_for_complete(
-    df_index: pd.Index,
-    columns: List[Union[List, Dict, str]],
-) -> pd.DataFrame:
+def _generic_complete(
+    df: pd.DataFrame, columns: list, all_strings: bool = True
+):
     """
-    This creates the index that will be used
-    to expand the dataframe in the `complete` function.
+    Generate cartesian product for `_computations_complete`.
 
-    A pandas Index is returned.
+    Returns a Series or DataFrame, with no duplicates.
     """
+    if all_strings:
+        uniques = {col: df[col].unique() for col in columns}
+        uniques = _computations_expand_grid(uniques)
+        uniques = uniques.droplevel(level=-1, axis="columns")
+        return uniques
 
-    complete_columns = (
-        _complete_column(column, df_index) for column in columns
-    )
-
-    complete_columns = (
-        (entry,) if not isinstance(entry, list) else entry
-        for entry in complete_columns
-    )
-    complete_columns = chain.from_iterable(complete_columns)
-    indexer = [*complete_columns]
-
-    if len(indexer) > 1:
-        indexer = _complete_indexer_expand_grid(indexer)
-
-    else:
-        indexer = indexer[0]
-
-    return indexer
-
-
-def _complete_indexer_expand_grid(indexer):
-    """
-    Generate indices to expose explicitly missing values,
-    using the `expand_grid` function.
-
-    Returns a pandas Index.
-    """
-    indexers = []
-    mgrid_values = [slice(len(value)) for value in indexer]
-    mgrid_values = np.mgrid[mgrid_values]
-    mgrid_values = map(np.ravel, mgrid_values)
-
-    indexer = zip(indexer, mgrid_values)
-    indexer = (
-        _expand_grid(value, None, mgrid_values, mode=None)
-        for value, mgrid_values in indexer
-    )
-
-    for entry in indexer:
-        if isinstance(entry, pd.MultiIndex):
-            names = entry.names
-            val = (entry.get_level_values(name) for name in names)
-            indexers.extend(val)
+    uniques = {}
+    for index, column in enumerate(columns):
+        if isinstance(column, dict):
+            column = _complete_column(column, df)
+            uniques = {**uniques, **column}
         else:
-            indexers.append(entry)
-    indexer = pd.MultiIndex.from_arrays(indexers)
-    indexers = None
-    return indexer
+            uniques[index] = _complete_column(column, df)
+
+    if len(uniques) == 1:
+        _, uniques = uniques.popitem()
+        return uniques.to_frame()
+
+    uniques = _computations_expand_grid(uniques)
+    return uniques.droplevel(level=0, axis="columns")
 
 
 @functools.singledispatch
-def _complete_column(column, index):
+def _complete_column(column, df):
     """
-    This function processes the `columns` argument,
-    to create a pandas Index or a list.
-
     Args:
         column : str/list/dict
-        index: pandas Index
+        df: Pandas DataFrame
 
-    A unique pandas Index or a list of unique pandas Indices is returned.
+    A Pandas Series/DataFrame with no duplicates,
+    or a list of unique Pandas Series is returned.
     """
     raise TypeError(
         """This type is not supported in the `complete` function."""
@@ -916,105 +749,90 @@ def _complete_column(column, index):
 
 
 @_complete_column.register(str)  # noqa: F811
-def _sub_complete_column(column, index):  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index.
-
     Args:
         column : str
-        index: pandas Index
+        df: Pandas DataFrame
 
     Returns:
-        pd.Index: A pandas Index with a single level
+        Pandas Series
     """
 
-    arr = index.get_level_values(column)
+    column = df[column]
 
-    if not arr.is_unique:
-        arr = arr.drop_duplicates()
-    return arr
+    if not column.is_unique:
+        return column.drop_duplicates()
+    return column
 
 
 @_complete_column.register(list)  # noqa: F811
-def _sub_complete_column(column, index):  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index.
-
     Args:
         column : list
-        index: pandas Index
+        df: Pandas DataFrame
 
     Returns:
-        pd.MultiIndex
+        Pandas DataFrame
     """
 
-    level_to_drop = [name for name in index.names if name not in column]
-    arr = index.droplevel(level_to_drop)
-    if not arr.is_unique:
-        return arr.drop_duplicates()
-    return arr
+    column = df.loc[:, column]
+
+    if column.duplicated().any(axis=None):
+        return column.drop_duplicates()
+
+    return column
 
 
 @_complete_column.register(dict)  # noqa: F811
-def _sub_complete_column(column, index):  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index or a list.
-
     Args:
-        column : dict
-        index: pandas Index
+        column : dictionary
+        df: Pandas DataFrame
 
     Returns:
-        list: A list of unique pandas Indices.
+        A dictionary of unique pandas Series.
     """
 
-    collection = []
+    collection = {}
     for key, value in column.items():
-        arr = apply_if_callable(value, index.get_level_values(key))
+        arr = apply_if_callable(value, df[key])
         if not is_list_like(arr):
             raise ValueError(
-                """
-                Input in the supplied dictionary
-                must be list-like.
+                f"""
+                value for {key} should be a 1-D array.
                 """
             )
-        if (
-            not isinstance(
-                arr, (pd.DataFrame, pd.Series, np.ndarray, pd.Index)
-            )
-        ) and (not is_extension_array_dtype(arr)):
-            arr = pd.Index([*arr], name=key)
+        if not hasattr(arr, "shape"):
+            arr = pd.Series([*arr], name=key)
 
-        if arr.ndim != 1:
+        if (not isinstance(arr, pd.Series)) and is_extension_array_dtype(arr):
+            arr = pd.Series(arr)
+
+        if isinstance(arr, pd.Index):
+            arr_ndim = arr.nlevels
+        else:
+            arr_ndim = arr.ndim
+
+        if arr_ndim != 1:
             raise ValueError(
-                """
-                It seems the supplied pair in the supplied dictionary
-                cannot be converted to a 1-dimensional Pandas object.
-                Kindly provide data that can be converted to
-                a 1-dimensional Pandas object.
-                """
-            )
-        if isinstance(arr, pd.MultiIndex):
-            raise ValueError(
-                """
-                MultiIndex object not acceptable
-                in the supplied dictionary.
+                f"""
+                Kindly provide a 1-D array for {key}.
                 """
             )
 
-        if not isinstance(arr, pd.Index):
-            arr = pd.Index(arr, name=key)
-
-        if arr.empty:
+        if not (arr.size > 0):
             raise ValueError(
-                """
-                Input in the supplied dictionary
-                cannot be empty.
+                f"""
+                Kindly ensure the provided array for {key}
+                has at least one value.
                 """
             )
+
+        if isinstance(arr, np.ndarray):
+            arr = pd.Series(arr)
 
         if not arr.is_unique:
             arr = arr.drop_duplicates()
@@ -1022,7 +840,7 @@ def _sub_complete_column(column, index):  # noqa: F811
         if arr.name is None:
             arr.name = key
 
-        collection.append(arr)
+        collection[key] = arr
 
     return collection
 

@@ -729,3 +729,117 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter([first, second, third])
     assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ne(df, right):
+    """
+    Test output for multiple columns from the left
+    and single column from right.
+    """
+    assume(not df.empty)
+    assume(not right.empty)
+    filters = ["A", "Integers", "B", "Numeric"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query("A != Integers and B != Numeric")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", "!="),
+        ("B", "Numeric", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ne_dates(df, right):
+    """
+    Test output for multiple columns from the left
+    and single column from right.
+    """
+    assume(not df.empty)
+    assume(not right.empty)
+    filters = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query("A != Integers and E != Dates")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", "!="),
+        ("E", "Dates", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_more_than_two_conditions(df, right):
+    """
+    Test output for multiple columns from the left
+    and single column from right.
+    """
+    assume(not df.empty)
+    assume(not right.empty)
+    filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query("A > Integers and B < Numeric and E != Dates")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", ">"),
+        ("B", "Numeric", "<"),
+        ("E", "Dates", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_more_than_two_conditions_ne_start(df, right):
+    """
+    Test output for multiple columns from the left
+    and single column from right.
+    """
+    assume(not df.empty)
+    assume(not right.empty)
+    filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query("A > Integers and B < Numeric and E != Dates")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "!="),
+        ("A", "Integers", ">"),
+        ("B", "Numeric", "<"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)

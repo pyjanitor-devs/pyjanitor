@@ -2432,7 +2432,8 @@ def _conditional_join_type_check(
     any of numeric or datetime.
     """
 
-    # TODO : Allow merges on strings, but only on the `==` operator?
+    # Allow merges on strings/categoricals,
+    # but only on the `==` operator?
     permitted_types = {
         is_datetime64_dtype,
         is_integer_dtype,

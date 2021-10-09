@@ -6489,15 +6489,12 @@ def conditional_join(
     """
 
     This is a convenience function that operates similarly to ``pd.merge``,
-    but allows joins on inequality operators, or a combination of equi
-    and non-equi joins.
+    but allows joins on inequality operators,
+    or a combination of equi and non-equi joins.
 
     If the join is solely on equality, `pd.merge` function
-    is more efficient and should be used instead. Infact,
-    for multiple conditions where equality is involved,
-    a `pd.merge`, followed by filter(via `query` or `loc`)
-    is more efficient. This is even more evident when joining
-    on strings.
+    is more efficient and should be used instead.
+
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
     which can be more efficient for range joins, especially if
@@ -6512,8 +6509,10 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    A binary search is used to get the relevant rows; this avoids
-    a cartesian join, and makes the process less memory intensive.
+    A binary search is used to get the relevant rows for non-equi joins;
+    this avoids a cartesian join, and makes the process less memory intensive.
+
+    For equi-joins, Pandas internal merge function is used.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -6525,233 +6524,7 @@ def conditional_join(
     Only `inner`, `left`, and `right` joins are supported.
 
 
-    Example :
-
-    df1::
-
-            id  value_1
-        0   1        2
-        1   1        5
-        2   1        7
-        3   2        1
-        4   2        3
-        5   3        4
-
-
-    df2::
-
-            id  value_2A  value_2B
-        0   1         0         1
-        1   1         3         5
-        2   1         7         9
-        3   1        12        15
-        4   2         0         1
-        5   2         2         4
-        6   2         3         6
-        7   3         1         3
-
-    Join on equi and non-equi operators is possible::
-
-        df1.conditional_join(
-                df2,
-                ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>='),
-                ('value_1', 'value_2B', '<='),
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0     1        5     1         3         5
-        1     1        7     1         7         9
-        2     2        1     2         0         1
-        3     2        3     2         2         4
-        4     2        3     2         3         6
-
-    The default join is `inner`. left and right joins are supported as well::
-
-        df1.conditional_join(
-                df2,
-                ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>='),
-                ('value_1', 'value_2B', '<='),
-                how='left',
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0     1        2   NaN       NaN       NaN
-        1     1        5   1.0       3.0       5.0
-        2     1        7   1.0       7.0       9.0
-        3     2        1   2.0       0.0       1.0
-        4     2        3   2.0       2.0       4.0
-        5     2        3   2.0       3.0       6.0
-        6     3        4   NaN       NaN       NaN
-
-
-        df1.conditional_join(
-                df2,
-                ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>='),
-                ('value_1', 'value_2B', '<='),
-                how='right',
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0   NaN      NaN     1         0         1
-        1   1.0      5.0     1         3         5
-        2   1.0      7.0     1         7         9
-        3   NaN      NaN     1        12        15
-        4   2.0      1.0     2         0         1
-        5   2.0      3.0     2         2         4
-        6   2.0      3.0     2         3         6
-        7   NaN      NaN     3         1         3
-
-
-    Join on just the non-equi joins is also possible::
-
-        df1.conditional_join(
-                df2,
-                ('value_1', 'value_2A', '>'),
-                ('value_1', 'value_2B', '<'),
-                how='inner',
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0     1        2     3         1         3
-        1     1        5     2         3         6
-        2     2        3     2         2         4
-        3     3        4     1         3         5
-        4     3        4     2         3         6
-
-    The default for the `suffixes` parameter is ``(_x, _y)``,
-    One of the suffixes can be set as ``None``;
-    this avoids a suffix on the columns from the
-    relevant dataframe::
-
-        df1.conditional_join(
-                df2,
-                ('value_1', 'value_2A', '>'),
-                ('value_1', 'value_2B', '<'),
-                how='inner',
-                sort_by_appearance = True,
-                suffixes = (None, '_y')
-            )
-
-            id  value_1  id_y  value_2A  value_2B
-        0   1        2     3         1         3
-        1   1        5     2         3         6
-        2   2        3     2         2         4
-        3   3        4     1         3         5
-        4   3        4     2         3         6
-
-    Join on just equality is also possible, but should be avoided -
-    Pandas merge/join is more efficient::
-
-        df1
-            col_a col_b
-        0      1     A
-        1      2     B
-        2      3     C
-
-        df2
-            col_a col_c
-        0      0     Z
-        1      2     X
-        2      3     Y
-
-        df1.conditional_join(
-                df2,
-                ('col_a', 'col_a', '=='),
-                sort_by_appearance = True
-            )
-
-             col_a_x col_b  col_a_y col_c
-        0        2     B        2     X
-        1        3     C        3     Y
-
-    Join on not equal -> ``!=`` ::
-
-        df1.conditional_join(
-                df2,
-                ('col_a', 'col_a', '!='),
-                sort_by_appearance = True
-            )
-
-             col_a_x col_b  col_a_y col_c
-        0        1     A        0     Z
-        1        1     A        2     X
-        2        1     A        3     Y
-        3        2     B        0     Z
-        4        2     B        3     Y
-        5        3     C        0     Z
-        6        3     C        2     X
-
-
-    If the order from `right` is not important,
-    `sort_by_appearance` can be set to  ``False``
-    (this is the default)::
-
-        df1.conditional_join(
-                df2,
-                ('col_a', 'col_a', '>'),
-                sort_by_appearance = False
-            )
-
-             col_a_x col_b  col_a_y col_c
-        0        1     A        0     Z
-        1        2     B        0     Z
-        2        3     C        0     Z
-        3        3     C        2     X
-
-
-    .. note:: If `df` or `right` has labeled indices,
-              it will be lost after the merge,
-              and replaced with an integer index.
-              If you wish to preserve the labeled indices,
-              you can convert them to columns
-              before running the conditional join.
-
-    .. note:: All the columns from `df` and `right`
-              are returned in the final output.
-
-    .. note:: For multiple condtions, If there are nulls
-              in the join columns, they will not be
-              preserved for `!=` operator. Nulls are only
-              preserved for `!=` operator for single condition.
-
-    Functional usage syntax:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame(...)
-        right = pd.DataFrame(...)
-
-        df = jn.conditional_join(
-                df,
-                right,
-                *conditions,
-                sort_by_appearance = True/False,
-                suffixes = ("_x", "_y"),
-                )
-
-    Method chaining syntax:
-
-    .. code-block:: python
-
-        df = df.conditional_join(
-                right,
-                *conditions,
-                sort_by_appearance = True/False,
-                suffixes = ("_x", "_y"),
-                )
-
-
-    :param df: A Pandas dataframe.
+    :param df: A Pandas DataFrame.
     :param right: Named Series or DataFrame to join to.
     :param conditions: Variable argument of tuple(s) of the form
         ``(left_on, right_on, op)``, where `left_on` is the column

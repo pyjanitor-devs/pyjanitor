@@ -26,6 +26,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 from pandas.core.reshape.merge import _MergeOperation
+from pandas.core.construction import extract_array
 from pandas.api.types import (
     CategoricalDtype,
     is_extension_array_dtype,
@@ -2776,9 +2777,9 @@ def _less_than_indices(
     if left_c.hasnans:
         left_c = left_c.dropna()
     left_index = left_c.index.to_numpy(dtype=int)
-    left_c = left_c.to_numpy()
+    left_c = extract_array(left_c, extract_numpy=True)
     right_index = right_c.index.to_numpy(dtype=int)
-    right_c = right_c.to_numpy()
+    right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
@@ -2867,9 +2868,9 @@ def _greater_than_indices(
     if left_c.hasnans:
         left_c = left_c.dropna()
     left_index = left_c.index.to_numpy(dtype=int)
-    left_c = left_c.to_numpy()
+    left_c = extract_array(left_c, extract_numpy=True)
     right_index = right_c.index.to_numpy(dtype=int)
-    right_c = right_c.to_numpy()
+    right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="right")
     # if any of the positions in `search_indices`
@@ -3114,6 +3115,8 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
+    # return result
+
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -3199,9 +3202,9 @@ def _multiple_conditional_join_eq(
     # non-equi conditions are present
     mask = None
     for left_on, right_on, op in rest:
-        left_c = df[left_on].to_numpy()
+        left_c = extract_array(df[left_on], extract_numpy=True)
         left_c = left_c[df_index]
-        right_c = right[right_on].to_numpy()
+        right_c = extract_array(right[right_on], extract_numpy=True)
         right_c = right_c[right_index]
 
         op = operator_map[op]
@@ -3241,8 +3244,10 @@ def _multiple_conditional_join_ne(
 
     mask = None
     for left_on, right_on, op in rest:
-        left_c = df.loc[df_index, left_on].to_numpy()
-        right_c = right.loc[right_index, right_on].to_numpy()
+        left_c = df.loc[df_index, left_on]
+        left_c = extract_array(left_c, extract_numpy=True)
+        right_c = right.loc[right_index, right_on]
+        right_c = extract_array(right_c, extract_numpy=True)
         op = operator_map[op]
 
         if mask is None:
@@ -3277,7 +3282,7 @@ def _multiple_conditional_join_le_lt(
             lt_gt = left_on, right_on, op
         # no point checking for `!=`, since best case scenario
         # they'll have the same no of rows for the less/greater operators
-        else:
+        elif op == JOINOPERATOR.NOT_EQUAL.value:
             continue
 
         left_c = df.loc[df_index, left_on]
@@ -3315,8 +3320,11 @@ def _multiple_conditional_join_le_lt(
 
     first, *rest = rest
     left_on, right_on, op = first
-    left_c = df.loc[df_index, left_on].to_numpy()
-    right_c = right.loc[right_index, right_on].to_numpy()
+    # last troublesome spot for extension arrays
+    left_c = df.loc[df_index, left_on]
+    left_c = extract_array(left_c, extract_numpy=True)
+    right_c = right.loc[right_index, right_on]
+    right_c = extract_array(right_c, extract_numpy=True)
     op = operator_map[op]
     index_df = []
     repeater = []
@@ -3327,17 +3335,18 @@ def _multiple_conditional_join_le_lt(
     # if the join conditions are limited to two, this is helpful;
     # for more than two, then broadcasting kicks in after this step
     # running this within numba should offer more speed
-    for ind, l, lo, hi in zip(df_index, left_c, low, high):
+    for indx, val, lo, hi in zip(df_index, left_c, low, high):
         search = right_c[lo:hi]
         indexer = right_index[lo:hi]
-        mask = op(l, search)
+        mask = op(val, search)
         if not mask.any():
             continue
-        else:
-            indexer = indexer[mask]
-            index_df.append(ind)
-            index_right.append(indexer)
-            repeater.append(indexer.size)
+        if is_extension_array_dtype(mask):
+            mask = mask.to_numpy(dtype=bool, na_value=False)
+        indexer = indexer[mask]
+        index_df.append(indx)
+        index_right.append(indexer)
+        repeater.append(indexer.size)
 
     if not index_df:
         return None
@@ -3351,8 +3360,10 @@ def _multiple_conditional_join_le_lt(
     # blow it up
     mask = None
     for left_on, right_on, op in rest:
-        left_c = df.loc[df_index, left_on].to_numpy()
-        right_c = right.loc[right_index, right_on].to_numpy()
+        left_c = df.loc[df_index, left_on]
+        left_c = extract_array(left_c, extract_numpy=True)
+        right_c = right.loc[right_index, right_on]
+        right_c = extract_array(right_c, extract_numpy=True)
         op = operator_map[op]
 
         if mask is None:
@@ -3362,6 +3373,8 @@ def _multiple_conditional_join_le_lt(
 
     if not mask.any():
         return None
+    if is_extension_array_dtype(mask):
+        mask = mask.to_numpy(dtype=bool, na_value=False)
 
     return df_index[mask], right_index[mask]
 

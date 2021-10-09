@@ -180,8 +180,8 @@ def test_check_how_type(df, s):
 @given(df=conditional_df(), s=conditional_series())
 def test_check_how_value(df, s):
     """
-    Raise ValueError if `how` is not one of `inner`,
-    `left`, or `right`.
+    Raise ValueError if `how` is not one of
+    `inner`, `left`, or `right`.
     """
 
     with pytest.raises(ValueError):
@@ -192,7 +192,7 @@ def test_check_how_value(df, s):
 @given(df=conditional_df(), right=conditional_right())
 def test_dtype_strings_non_equi(df, right):
     """
-    Raise ValueError if the dtypes are both strings,
+    Raise ValueError if the dtypes are both strings
     """
     with pytest.raises(ValueError):
         df.conditional_join(right, ("C", "Strings", "<"))
@@ -237,7 +237,7 @@ def test_dtype_not_datetime_numeric(df, s):
 def test_dtype_not_string_datetime_numeric(df, s):
     """
     Raise ValueError if the dtype of column in `df`
-    is not a string, numeric, or datetime dtype.
+    is not a numeric, or datetime dtype.
     """
     with pytest.raises(ValueError):
         s.name = "A"
@@ -803,8 +803,7 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions.
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -831,8 +830,7 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions, and how is `left`.
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -862,8 +860,7 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions, and how is `right`.
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -893,8 +890,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions. `!=`
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -923,8 +919,7 @@ def test_dual_ne(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_extension(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions. `!=`
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -952,8 +947,7 @@ def test_dual_ne_extension(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_extension_right(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions. `!=`
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -981,8 +975,7 @@ def test_dual_ne_extension_right(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_dates(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions. `!=`
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -1009,8 +1002,7 @@ def test_dual_ne_dates(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_ne_dates(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions. `!=`
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -1089,10 +1081,9 @@ def test_dual_conditions_ne_and_eq(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
-def test_more_than_two_conditions(df, right):
+def test_gt_lt_ne_conditions(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions.
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -1118,10 +1109,9 @@ def test_more_than_two_conditions(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
-def test_more_than_two_conditions_ne_start(df, right):
+def test_gt_lt_ne_start(df, right):
     """
-    Test output for multiple columns from the left
-    and single column from right.
+    Test output for multiple conditions.
     """
     assume(not df.empty)
     assume(not right.empty)
@@ -1147,7 +1137,7 @@ def test_more_than_two_conditions_ne_start(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
-def test_more_than_two_conditions_extension_array(df, right):
+def test_ge_le_ne_extension_array(df, right):
     """
     Test output for multiple conditions.
     """
@@ -1178,7 +1168,7 @@ def test_more_than_two_conditions_extension_array(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
-def test_more_than_two_conditions_extension(df, right):
+def test_ge_lt_ne_extension(df, right):
     """
     Test output for multiple conditions.
     """

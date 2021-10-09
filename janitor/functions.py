@@ -6351,9 +6351,7 @@ def conditional_join(
     The join is done only on the columns.
     MultiIndex columns are not supported.
 
-    Only numeric, date and string columns are supported.
-
-    If joining on strings, only the `==` operator is supported.
+    Only numeric and date columns are supported.
 
     Only `inner`, `left`, and `right` joins are supported.
 

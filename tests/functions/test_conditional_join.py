@@ -1034,8 +1034,7 @@ def test_dual_conditions_eq_and_ne(df, right):
     assume(not right.empty)
     A, B, C, D = ("B", "Numeric", "E", "Dates")
     expected = (
-        df.assign(t=1)
-        .merge(right, left_on=A, right_on=B)
+        df.merge(right, left_on=A, right_on=B)
         .dropna(subset=[A, B])
         .query(f"{C} != {D}")
         .reset_index(drop=True)
@@ -1181,7 +1180,9 @@ def test_ge_lt_ne_extension(df, right):
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
-        .query("A != Integers and B < Numeric and E >= Dates")
+        .query(
+            "A != Integers and B < Numeric and E >= Dates and E != Dates_Right"
+        )
         .reset_index(drop=True)
     )
     expected = expected.filter(filters)
@@ -1190,6 +1191,7 @@ def test_ge_lt_ne_extension(df, right):
         ("E", "Dates", ">="),
         ("B", "Numeric", "<"),
         ("A", "Integers", "!="),
+        ("E", "Dates_Right", "!="),
         how="inner",
         sort_by_appearance=True,
     )

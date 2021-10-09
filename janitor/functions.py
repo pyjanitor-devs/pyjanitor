@@ -6497,7 +6497,7 @@ def conditional_join(
 
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
-    which can be more efficient for range joins, especially if
+    which is usually more efficient for range joins, especially if
     the intervals do not overlap.
 
     This function returns rows, if any, where values from `df` meet the

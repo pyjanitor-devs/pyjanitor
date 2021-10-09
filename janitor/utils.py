@@ -3320,7 +3320,6 @@ def _multiple_conditional_join_le_lt(
 
     first, *rest = rest
     left_on, right_on, op = first
-    # last troublesome spot for extension arrays
     left_c = df.loc[df_index, left_on]
     left_c = extract_array(left_c, extract_numpy=True)
     right_c = right.loc[right_index, right_on]
@@ -3341,6 +3340,8 @@ def _multiple_conditional_join_le_lt(
         mask = op(val, search)
         if not mask.any():
             continue
+        # pandas boolean arrays do not play well with numpy
+        # hence the conversion
         if is_extension_array_dtype(mask):
             mask = mask.to_numpy(dtype=bool, na_value=False)
         indexer = indexer[mask]

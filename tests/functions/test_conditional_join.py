@@ -576,7 +576,7 @@ def test_single_condition_equality_numeric(df, right):
 
     expected = expected.filter([left_on, right_on])
     actual = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter([left_on, right_on])
@@ -595,7 +595,7 @@ def test_single_condition_equality_datetime(df, right):
     expected = expected.reset_index(drop=True)
     expected = expected.filter([left_on, right_on])
     actual = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=True
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter([left_on, right_on])
@@ -1045,7 +1045,7 @@ def test_dual_conditions_eq_and_ne(df, right):
         (A, B, "=="),
         (C, D, "!="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter([A, B, C, D])
@@ -1072,7 +1072,7 @@ def test_dual_conditions_ne_and_eq(df, right):
         (A, B, "!="),
         (C, D, "=="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter([A, B, C, D])
@@ -1221,7 +1221,7 @@ def test_eq_ge_and_le_numbers(df, right):
         (l_ge, r_ge, ">="),
         (l_le, r_le, "<="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter(columns)
@@ -1249,7 +1249,7 @@ def test_ge_eq_and_le_numbers(df, right):
         (l_le, r_le, "<="),
         (l_eq, r_eq, "=="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter(columns)
@@ -1281,7 +1281,7 @@ def test_multiple_eqs(df, right):
         ("B", "Floats", "=="),
         ("A", "Integers", "=="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter(columns)
@@ -1315,7 +1315,7 @@ def test_multiple_eqs_extension_array(df, right):
         ("B", "Floats", "=="),
         ("A", "Integers", "=="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter(columns)
@@ -1350,7 +1350,7 @@ def test_multiple_eqs_only(df, right):
         ("B", "Floats", "=="),
         ("A", "Integers", "=="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter(columns)

@@ -2526,7 +2526,7 @@ def _equal_indices(
 
     left_index, right_index = outcome._get_join_indexers()
 
-    if not (left_c.size > 0):
+    if not left_index.size > 0:
         return None
 
     if len_conditions > 1:
@@ -2934,8 +2934,6 @@ def _conditional_join_compute(
         result = _multiple_conditional_join_le_lt(df, right, conditions)
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
-
-    # return result
 
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)

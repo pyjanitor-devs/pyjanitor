@@ -193,6 +193,7 @@ def test_check_how_value(df, s):
 def test_dtype_strings_non_equi(df, right):
     """
     Raise ValueError if the dtypes are both strings
+    on a non-equi operator.
     """
     with pytest.raises(ValueError):
         df.conditional_join(right, ("C", "Strings", "<"))
@@ -204,10 +205,10 @@ def test_dtype_not_permitted(df, s):
     Raise ValueError if dtype of column in `df`
     is not an acceptable type.
     """
-    df["C"] = df["C"].astype("category")
+    df["F"] = pd.Timedelta("1 days")
     with pytest.raises(ValueError):
         s.name = "A"
-        df.conditional_join(s, ("C", "A", "<"))
+        df.conditional_join(s, ("F", "A", "<"))
 
 
 @given(df=conditional_df(), s=conditional_series())
@@ -222,47 +223,16 @@ def test_dtype_str(df, s):
 
 
 @given(df=conditional_df(), s=conditional_series())
-def test_dtype_not_datetime_numeric(df, s):
+def test_dtype_category_non_equi(df, s):
     """
-    Raise ValueError if the dtype of column in `df`
-    is not a numeric or datetime dtype.
-    """
-    with pytest.raises(ValueError):
-        s.name = "A"
-        df["C"] = df["C"].astype("category")
-        df.conditional_join(s, ("C", "A", "<"))
-
-
-@given(df=conditional_df(), s=conditional_series())
-def test_dtype_not_string_datetime_numeric(df, s):
-    """
-    Raise ValueError if the dtype of column in `df`
-    is not a numeric, or datetime dtype.
+    Raise ValueError if dtype is category,
+    and op is non-equi.
     """
     with pytest.raises(ValueError):
         s.name = "A"
+        s = s.astype("category")
         df["C"] = df["C"].astype("category")
         df.conditional_join(s, ("C", "A", "<"))
-
-
-@given(df=conditional_df(), s=conditional_right())
-def test_dtype_int(df, s):
-    """
-    Raise ValueError if dtype of column in `df`
-    does not match the dtype of column from `right`.
-    """
-    with pytest.raises(ValueError):
-        df.conditional_join(s, ("A", "Strings", "<"))
-
-
-@given(df=conditional_df(), s=conditional_right())
-def test_dtype_dates(df, s):
-    """
-    Raise ValueError if dtype of column in `df`
-    does not match the dtype of column from `right`.
-    """
-    with pytest.raises(ValueError):
-        df.conditional_join(s, ("E", "Integers", "<"))
 
 
 @given(df=conditional_df(), s=conditional_series())
@@ -553,6 +523,48 @@ def test_single_condition_not_equal_datetime(df, right):
     expected = expected.filter([left_on, right_on])
     actual = df.conditional_join(
         right, (left_on, right_on, "!="), how="inner", sort_by_appearance=True
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, right_on])
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_equality_string(df, right):
+    """Test output for a single condition. "=="."""
+    assume(not df.empty)
+    assume(not right.empty)
+    left_on, right_on = ["C", "Strings"]
+    expected = df.dropna(subset=[left_on]).merge(
+        right.dropna(subset=[right_on]), left_on=left_on, right_on=right_on
+    )
+    expected = expected.reset_index(drop=True)
+
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
+    )
+    actual = actual.droplevel(level=0, axis=1)
+    actual = actual.filter([left_on, right_on])
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_equality_category(df, right):
+    """Test output for a single condition. "=="."""
+    assume(not df.empty)
+    assume(not right.empty)
+    left_on, right_on = ["C", "Strings"]
+    df = df.assign(C=df["C"].astype("string"))
+    right = right.assign(Strings=right["Strings"].astype("string"))
+    expected = df.dropna(subset=[left_on]).merge(
+        right.dropna(subset=[right_on]), left_on=left_on, right_on=right_on
+    )
+    expected = expected.reset_index(drop=True)
+
+    expected = expected.filter([left_on, right_on])
+    actual = df.conditional_join(
+        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter([left_on, right_on])

@@ -6346,12 +6346,12 @@ def conditional_join(
     A binary search is used to get the relevant rows for non-equi joins;
     this avoids a cartesian join, and makes the process less memory intensive.
 
-    For equi-joins, Pandas internal merge function is used.
+    For equi-joins, Pandas internal merge function (a hash join) is used.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
 
-    Only numeric and date columns are supported.
+    For non-equi joins, onnly numeric and date columns are supported.
 
     Only `inner`, `left`, and `right` joins are supported.
 
@@ -6368,8 +6368,8 @@ def conditional_join(
         Full join is not supported. Defaults to `inner`.
     :param sort_by_appearance: Default is `False`. If True,
         values from `right` that meet the join condition will be returned
-        in the final dataframe in the same order that they were before the
-        join.
+        in the final dataframe in the same order
+        that they were before the join.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     """
 

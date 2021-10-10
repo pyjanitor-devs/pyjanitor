@@ -37,6 +37,7 @@ from pandas.api.types import (
     is_float_dtype,
     is_string_dtype,
     is_datetime64_dtype,
+    is_categorical_dtype,
 )
 from pandas.core.common import apply_if_callable
 from enum import Enum
@@ -2425,7 +2426,7 @@ def _conditional_join_preliminary_checks(
 
 
 def _conditional_join_type_check(
-    left_column: pd.Series, right_column: pd.Series
+    left_column: pd.Series, right_column: pd.Series, op: str
 ) -> None:
     """
     Raise error if column type is not
@@ -2438,6 +2439,8 @@ def _conditional_join_type_check(
         is_datetime64_dtype,
         is_integer_dtype,
         is_float_dtype,
+        is_string_dtype,
+        is_categorical_dtype,
     }
     for func in permitted_types:
         if func(left_column):
@@ -2446,7 +2449,8 @@ def _conditional_join_type_check(
         raise ValueError(
             """
             conditional_join only supports
-            integer, float or date dtypes.
+            string, category, integer,
+            float or date dtypes.
             """
         )
     cols = (left_column, right_column)
@@ -2460,6 +2464,28 @@ def _conditional_join_type_check(
              `{left_column.name}` has {left_column.dtype} type;
              `{right_column.name}` has {right_column.dtype} type.
              """
+        )
+
+    if (
+        is_categorical_dtype(left_column)
+        and op != JOINOPERATOR.STRICTLY_EQUAL.value
+    ):
+        raise ValueError(
+            """
+            For categorical columns,
+            only the `==` operator is supported.
+            """
+        )
+
+    if (
+        is_string_dtype(left_column)
+        and op != JOINOPERATOR.STRICTLY_EQUAL.value
+    ):
+        raise ValueError(
+            """
+            For string columns,
+            only the `==` operator is supported.
+            """
         )
 
     return None
@@ -2895,7 +2921,7 @@ def _conditional_join_compute(
         left_c = df[left_on]
         right_c = right[right_on]
 
-        _conditional_join_type_check(left_c, right_c)
+        _conditional_join_type_check(left_c, right_c, op)
 
         if op == JOINOPERATOR.STRICTLY_EQUAL.value:
             eq_check = True

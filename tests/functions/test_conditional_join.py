@@ -1340,8 +1340,11 @@ def test_multiple_eqs_only(df, right):
     assume(not df.empty)
     assume(not right.empty)
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    df = df.assign(A=df["A"].astype("Int64"))
-    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+    df = df.assign(A=df["A"].astype("Int64"), C=df["C"].astype("string"))
+    right = right.assign(
+        Integers=right["Integers"].astype(pd.Int64Dtype()),
+        Strings=right["Strings"].astype("string"),
+    )
     df.loc[0, "A"] = pd.NA
     right.loc[0, "Integers"] = pd.NA
     expected = (

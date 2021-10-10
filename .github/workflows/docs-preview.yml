@@ -1,16 +1,12 @@
-# This Action ensures that code coverage is always uploaded to codecov
-# whenever a new commit is made to the dev branch.
-name: Upload test coverage to codecov
+name: Build documentation preview
 
 on:
-  push:
-    branch:
-      dev
+  [pull_request]
 
 jobs:
   build-environment:
+    runs-on: ubuntu-18.04
     name: Build environment
-    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -22,7 +18,6 @@ jobs:
         with:
           conda-channels: "conda-forge"
 
-      # Build cache of environment
       - name: Cache conda environment
         id: cache-environment
         uses: actions/cache@v2
@@ -52,8 +47,8 @@ jobs:
           name: pyjanitor-dev-tarball
           path: pyjanitor-dev.tar.gz
 
-  unit-tests:
-    name: Run unit tests
+  docs:
+    name: Build static site docs
     runs-on: ubuntu-latest
     needs: build-environment
 
@@ -68,15 +63,28 @@ jobs:
           name: pyjanitor-dev-tarball
 
       - name: Unpack environment and activate it
-        run: bash scripts/ci/unpack_environment.sh
+        run: |
+          bash scripts/ci/unpack_environment.sh
 
-      - name: Run tests
+      - name: Build docs
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
-          python -m pip install -e .
-          pytest
+          python -m ipykernel install --user --name pyjanitor-dev
+          pip install -e .
+          mkdocs build
 
-      - name: Upload code coverage
-        run: |
-          source /tmp/pyjanitor-dev_env/bin/activate
-          bash <(curl -s https://codecov.io/bash)
+      - name: Deploy docs preview to Netlify
+        uses: nwtgck/actions-netlify@v1.1
+        with:
+          publish-dir: "./site"
+          production-deploy: false
+          github-token: ${{ secrets.GHPAGES_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: deploy-preview-${{ github.event.number }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1

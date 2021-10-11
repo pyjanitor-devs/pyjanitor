@@ -6305,6 +6305,39 @@ def conditional_join(
 
     Only `inner`, `left`, and `right` joins are supported.
 
+    Functional usage syntax:
+
+    .. code-block:: python
+
+        import pandas as pd
+        import janitor as jn
+
+        df = pd.DataFrame(...)
+        right = pd.DataFrame(...)
+
+        df = jn.conditional_join(
+                df,
+                right,
+                (col_from_df, col_from_right, join_operator),
+                (col_from_df, col_from_right, join_operator),
+                ...,
+                how = 'inner' # or left/right
+                sort_by_appearance = True # or False
+                )
+
+    Method chaining syntax:
+
+    .. code-block:: python
+
+        df.conditional_join(
+            right,
+            (col_from_df, col_from_right, join_operator),
+            (col_from_df, col_from_right, join_operator),
+            ...,
+            how = 'inner' # or left/right
+            sort_by_appearance = True # or False
+            )
+
 
     :param df: A Pandas DataFrame.
     :param right: Named Series or DataFrame to join to.

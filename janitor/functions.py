@@ -6301,7 +6301,7 @@ def conditional_join(
     The join is done only on the columns.
     MultiIndex columns are not supported.
 
-    For non-equi joins, onnly numeric and date columns are supported.
+    For non-equi joins, only numeric and date columns are supported.
 
     Only `inner`, `left`, and `right` joins are supported.
 

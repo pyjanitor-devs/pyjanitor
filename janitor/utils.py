@@ -16,7 +16,6 @@ from typing import (
     Dict,
     Iterable,
     List,
-    NamedTuple,
     Optional,
     Pattern,
     Tuple,
@@ -41,6 +40,7 @@ from pandas.api.types import (
 )
 from pandas.core.common import apply_if_callable
 from enum import Enum
+
 
 from .errors import JanitorError
 
@@ -1796,23 +1796,16 @@ def _computations_pivot_wider(
     return df
 
 
-class asCategorical(NamedTuple):
+class CategoryOrder(Enum):
     """
-    Helper class for `encode_categorical`. It makes creating the
-    `categories` and `order` more explicit. Inspired by pd.NamedAgg.
-
-    :param categories: list-like object to create new categorical column.
-    :param order: string object that can be either "sort" or "appearance".
-        If "sort", the `categories` argument will be sorted with np.sort;
-        if "apperance", the `categories` argument will be used as is.
-    :returns: A namedtuple of (`categories`, `order`).
+    order types for encode_categorical.
     """
 
-    categories: list = None
-    order: str = None
+    SORT = "sort"
+    APPEARANCE = "appearance"
 
 
-def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
+def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     """
     This function raises errors if columns in `kwargs` are
     absent in the the dataframe's columns.
@@ -1824,15 +1817,14 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
     This function is executed before proceeding to the computation phase.
 
-    If all checks pass, the dataframe,
-    and a pairing of column names and namedtuple
+    If all checks pass, a dictionary of column names and tuple
     of (categories, order) is returned.
 
     :param df: The pandas DataFrame object.
     :param kwargs: A pairing of column name
         to a tuple of (`categories`, `order`).
-    :returns: A tuple (pandas DataFrame, dictionary).
-    :raises TypeError: if ``kwargs`` is not a tuple.
+    :returns: A dictionary.
+    :raises TypeError: if the value in ``kwargs`` is not a tuple.
     :raises ValueError: if ``categories`` is not a 1-D array.
     :raises ValueError: if ``order`` is not one of
         `sort`, `appearance`, or `None`.
@@ -1843,65 +1835,162 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
     categories_dict = {}
 
-    # type checks
     for column_name, value in kwargs.items():
+        # type check
         check("Pair of `categories` and `order`", value, [tuple])
-        if len(value) != 2:
-            raise ValueError("Must provide tuple of (categories, order).")
-        value = asCategorical(*value)
-        value_categories = value.categories
-        if value_categories is not None:
-            if not is_list_like(value_categories):
-                raise TypeError(f"{value_categories} should be list-like.")
-            value_categories = [*value_categories]
-            arr_ndim = np.asarray(value_categories).ndim
-            if any((arr_ndim < 1, arr_ndim > 1)):
+
+        len_value = len(value)
+
+        if len_value != 2:
+            raise ValueError(
+                f"""
+                The tuple of (categories, order) for {column_name}
+                should be length 2; the tuple provided is
+                length {len_value}.
+                """
+            )
+
+        cat, order = value
+        if cat is not None:
+            if not is_list_like(cat):
+                raise TypeError(f"{cat} should be list-like.")
+
+            if not hasattr(cat, "shape"):
+                checker = pd.Index([*cat])
+            else:
+                checker = cat
+
+            arr_ndim = checker.ndim
+            if (arr_ndim != 1) or isinstance(checker, pd.MultiIndex):
                 raise ValueError(
                     f"""
-                    {value_categories} is not a 1-D array.
+                    {cat} is not a 1-D array.
+                    Kindly provide a 1-D array-like object to `categories`.
                     """
                 )
-        value_order = value.order
-        if value_order is not None:
-            check("order", value_order, [str])
-            if value_order not in ("appearance", "sort"):
+
+            if not isinstance(checker, (pd.Series, pd.Index)):
+                checker = pd.Index(checker)
+
+            if checker.hasnans:
+                raise ValueError(
+                    "Kindly ensure there are no nulls in `categories`."
+                )
+
+            if not checker.is_unique:
+                raise ValueError(
+                    """
+                    Kindly provide unique,
+                    non-null values for `categories`.
+                    """
+                )
+
+            if checker.empty:
+                raise ValueError(
+                    """
+                    Kindly ensure there is at least
+                    one non-null value in `categories`.
+                    """
+                )
+
+            # uniques, without nulls
+            uniques = df[column_name].factorize(sort=False)[-1]
+            if uniques.empty:
+                raise ValueError(
+                    f"""
+                     Kindly ensure there is at least
+                     one non-null value in {column_name}.
+                     """
+                )
+
+            missing = uniques.difference(checker, sort=False)
+            if not missing.empty and (uniques.size > missing.size):
+                warnings.warn(
+                    f"""
+                     Values {tuple(missing)} are missing from
+                     the provided categories {cat}
+                     for {column_name}; this may create nulls
+                     in the new categorical column.
+                     """,
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+            elif uniques.equals(missing):
+                warnings.warn(
+                    f"""
+                     None of the values in {column_name} are in
+                     {cat};
+                     this might create nulls for all values
+                     in the new categorical column.
+                     """,
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        if order is not None:
+            check("order", order, [str])
+
+            category_order_types = [ent.value for ent in CategoryOrder]
+            if order.lower() not in category_order_types:
                 raise ValueError(
                     """
                     `order` argument should be one of
                     "appearance", "sort" or `None`.
                     """
                 )
-        categories_dict[column_name] = asCategorical(
-            categories=value_categories, order=value_order
-        )
 
-    return df, categories_dict
+        categories_dict[column_name] = value
+
+    return categories_dict
 
 
 def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
-    This function handles cases where categorical columns are created with
-    an order, or specific values supplied for the categories. It uses a kwarg,
-    with a namedtuple - `column_name: (categories, order)`, with the idea
-    inspired by Pandas' NamedAggregation. The defaults for the namedtuple are
-    (None, None) and will return a categorical dtype with no order and
-    categories inferred from the column.
+    This function handles cases where
+    categorical columns are created with an order,
+    or specific values supplied for the categories.
+    It uses a kwarg, where the key is the column name,
+    and the value is a tuple of categories, order.
+    The defaults for the tuple are (None, None)
+    and will return a categorical dtype
+    with no order and categories inferred from the column.
+    A DataFrame, with catetorical columns, is returned.
     """
 
-    df, categories_dict = as_categorical_checks(df, **kwargs)
+    categories_dict = as_categorical_checks(df, **kwargs)
 
     categories_dtypes = {}
-    for column_name, ascategorical in categories_dict.items():
-        categories = _encode_categories(
-            ascategorical.categories, df, column_name
-        )
-        categories_dtypes[column_name] = _encode_order(
-            ascategorical.order, categories
-        )
 
-    df = df.astype(categories_dtypes)
+    for column_name, (
+        cat,
+        order,
+    ) in categories_dict.items():
+        error_msg = f"""
+                     Kindly ensure there is at least
+                     one non-null value in {column_name}.
+                     """
+        if (cat is None) and (order is None):
+            cat_dtype = pd.CategoricalDtype()
 
-    return df
+        elif (cat is None) and (order is CategoryOrder.SORT.value):
+            cat = df[column_name].factorize(sort=True)[-1]
+            if cat.empty:
+                raise ValueError(error_msg)
+            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
+
+        elif (cat is None) and (order is CategoryOrder.APPEARANCE.value):
+            cat = df[column_name].factorize(sort=False)[-1]
+            if cat.empty:
+                raise ValueError(error_msg)
+            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
+
+        elif cat is not None:  # order is irrelevant if cat is provided
+            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
+
+        categories_dtypes[column_name] = cat_dtype
+
+    return df.astype(categories_dtypes)
 
 
 def is_connected(url: str) -> bool:
@@ -1934,112 +2023,6 @@ def is_connected(url: str) -> bool:
         )
         raise e
     return False
-
-
-@functools.singledispatch
-def _encode_categories(cat, df, column):
-    """
-    base function for processing `categories`
-    in `_computations_as_categorical`.
-    Returns a Series.
-    """
-    raise TypeError("This type is not supported in `categories`.")
-
-
-@_encode_categories.register(type(None))  # noqa: F811
-def _sub_categories(cat, df, column):  # noqa: F811
-    """
-    base function for processing `categories`
-    in `_computations_as_categorical`.
-    Apllies to only NoneType.
-    Returns a Series.
-    """
-    column = df[column]
-    if column.hasnans:
-        column = column.dropna()
-    return column
-
-
-@_encode_categories.register(list)  # noqa: F811
-def _sub_categories(cat, df, column):  # noqa: F811
-    """
-    base function for processing `categories`
-    in `_computations_as_categorical`.
-    Apllies to only list type.
-    Returns a Series.
-    """
-    if pd.isna(cat).any():
-        raise ValueError("""`categories` cannot have null values.""")
-    col = df[column]
-    check_presence = col.isin(cat)
-    check_presence_sum = check_presence.sum()
-
-    if check_presence_sum == 0:
-        warnings.warn(
-            f"""
-            None of the values in `{column}` are in
-            {cat};
-            this might create nulls for all your values
-            in the new categorical column.
-            """,
-            UserWarning,
-            stacklevel=2,
-        )
-    elif check_presence_sum != check_presence.size:
-        missing_values = col[~check_presence]
-        if missing_values.hasnans:
-            missing_values = missing_values.dropna()
-        warnings.warn(
-            f"""
-            Values {tuple(missing_values)} are missing from
-            categories {cat}
-            for {column}; this may create nulls
-            in the new categorical column.
-            """,
-            UserWarning,
-            stacklevel=2,
-        )
-    return pd.Series(cat)
-
-
-@functools.singledispatch
-def _encode_order(order, categories):
-    """
-    base function for processing `order`
-    in `_computations_as_categorical`.
-    Returns a pd.CategoricalDtype().
-    """
-    raise TypeError("This type is not supported in `order`.")
-
-
-@_encode_order.register(type(None))  # noqa: F811
-def _sub_encode_order(order, categories):  # noqa: F811
-    """
-    base function for processing `order`
-    in `_computations_as_categorical`.
-    Apllies to only NoneType.
-    Returns a pd.CategoricalDtype().
-    """
-    if not categories.is_unique:
-        categories = categories.unique()
-
-    return pd.CategoricalDtype(categories=categories, ordered=False)
-
-
-@_encode_order.register(str)  # noqa: F811
-def _sub_encode_order(order, categories):  # noqa: F811
-    """
-    base function for processing `order`
-    in `_computations_as_categorical`.
-    Apllies to only strings.
-    Returns a pd.CategoricalDtype().
-    """
-    if (order == "sort") and (not categories.is_monotonic_increasing):
-        categories = categories.sort_values()
-    if not categories.is_unique:
-        categories = categories.unique()
-
-    return pd.CategoricalDtype(categories=categories, ordered=True)
 
 
 @functools.singledispatch
@@ -2282,7 +2265,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     return filtered_columns
 
 
-class JOINOPERATOR(Enum):
+class JoinOperator(Enum):
     """
     List of operators used in conditional_join.
     """
@@ -2295,7 +2278,7 @@ class JOINOPERATOR(Enum):
     NOT_EQUAL = "!="
 
 
-class JOINTYPES(Enum):
+class JoinTypes(Enum):
     """
     List of join types for conditional_join.
     """
@@ -2312,7 +2295,7 @@ def _check_operator(op: str):
 
     Used in `conditional_join`.
     """
-    sequence_of_operators = {op.value for op in JOINOPERATOR}
+    sequence_of_operators = {op.value for op in JoinOperator}
     if op not in sequence_of_operators:
         raise ValueError(
             f"""
@@ -2416,7 +2399,7 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    join_types = {jointype.value for jointype in JOINTYPES}
+    join_types = {jointype.value for jointype in JoinTypes}
     if how not in join_types:
         raise ValueError(f"`how` should be one of {', '.join(join_types)}.")
 
@@ -2468,7 +2451,7 @@ def _conditional_join_type_check(
 
     if (
         is_categorical_dtype(left_column)
-        and op != JOINOPERATOR.STRICTLY_EQUAL.value
+        and op != JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
             """
@@ -2479,7 +2462,7 @@ def _conditional_join_type_check(
 
     if (
         is_string_dtype(left_column)
-        and op != JOINOPERATOR.STRICTLY_EQUAL.value
+        and op != JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
             """
@@ -2784,14 +2767,14 @@ def _create_conditional_join_empty_frame(
     df.columns = pd.MultiIndex.from_product([["left"], df.columns])
     right.columns = pd.MultiIndex.from_product([["right"], right.columns])
 
-    if how == JOINTYPES.INNER.value:
+    if how == JoinTypes.INNER.value:
         df = df.dtypes.to_dict()
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
         return pd.DataFrame(df)
 
-    if how == JOINTYPES.LEFT.value:
+    if how == JoinTypes.LEFT.value:
         right = right.dtypes.to_dict()
         right = {
             key: float if dtype.kind == "i" else dtype
@@ -2803,7 +2786,7 @@ def _create_conditional_join_empty_frame(
         right = pd.DataFrame(right)
         return df.join(right, how=how, sort=False)
 
-    if how == JOINTYPES.RIGHT.value:
+    if how == JoinTypes.RIGHT.value:
         df = df.dtypes.to_dict()
         df = {
             key: float if dtype.kind == "i" else dtype
@@ -2834,31 +2817,31 @@ def _create_conditional_join_frame(
     df.columns = pd.MultiIndex.from_product([["left"], df.columns])
     right.columns = pd.MultiIndex.from_product([["right"], right.columns])
 
-    if how == JOINTYPES.INNER.value:
+    if how == JoinTypes.INNER.value:
         df = df.loc[left_index]
         right = right.loc[right_index]
         df.index = pd.RangeIndex(start=0, stop=left_index.size)
         right.index = df.index
         return pd.concat([df, right], axis="columns", join=how, sort=False)
 
-    if how == JOINTYPES.LEFT.value:
+    if how == JoinTypes.LEFT.value:
         right = right.loc[right_index]
         right.index = left_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
-    if how == JOINTYPES.RIGHT.value:
+    if how == JoinTypes.RIGHT.value:
         df = df.loc[left_index]
         df.index = right_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
 
 less_than_join_types = {
-    JOINOPERATOR.LESS_THAN.value,
-    JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+    JoinOperator.LESS_THAN.value,
+    JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
 greater_than_join_types = {
-    JOINOPERATOR.GREATER_THAN.value,
-    JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+    JoinOperator.GREATER_THAN.value,
+    JoinOperator.GREATER_THAN_OR_EQUAL.value,
 }
 
 
@@ -2873,9 +2856,9 @@ def _generic_func_cond_join(
     strict = False
 
     if op in {
-        JOINOPERATOR.GREATER_THAN.value,
-        JOINOPERATOR.LESS_THAN.value,
-        JOINOPERATOR.NOT_EQUAL.value,
+        JoinOperator.GREATER_THAN.value,
+        JoinOperator.LESS_THAN.value,
+        JoinOperator.NOT_EQUAL.value,
     }:
         strict = True
 
@@ -2883,7 +2866,7 @@ def _generic_func_cond_join(
         return _less_than_indices(left_c, right_c, strict, len_conditions)
     elif op in greater_than_join_types:
         return _greater_than_indices(left_c, right_c, strict, len_conditions)
-    elif op == JOINOPERATOR.NOT_EQUAL.value:
+    elif op == JoinOperator.NOT_EQUAL.value:
         return _not_equal_indices(left_c, right_c)
     else:
         return _equal_indices(left_c, right_c, len_conditions)
@@ -2923,7 +2906,7 @@ def _conditional_join_compute(
 
         _conditional_join_type_check(left_c, right_c, op)
 
-        if op == JOINOPERATOR.STRICTLY_EQUAL.value:
+        if op == JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
         elif op in less_greater_types:
             less_great = True
@@ -2972,12 +2955,12 @@ def _conditional_join_compute(
 
 
 operator_map = {
-    JOINOPERATOR.STRICTLY_EQUAL.value: operator.eq,
-    JOINOPERATOR.LESS_THAN.value: operator.lt,
-    JOINOPERATOR.LESS_THAN_OR_EQUAL.value: operator.le,
-    JOINOPERATOR.GREATER_THAN.value: operator.gt,
-    JOINOPERATOR.GREATER_THAN_OR_EQUAL.value: operator.ge,
-    JOINOPERATOR.NOT_EQUAL.value: operator.ne,
+    JoinOperator.STRICTLY_EQUAL.value: operator.eq,
+    JoinOperator.LESS_THAN.value: operator.lt,
+    JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
+    JoinOperator.GREATER_THAN.value: operator.gt,
+    JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
+    JoinOperator.NOT_EQUAL.value: operator.ne,
 }
 
 
@@ -2994,12 +2977,12 @@ def _multiple_conditional_join_eq(
     eq_cond = [
         cond
         for cond in conditions
-        if cond[-1] == JOINOPERATOR.STRICTLY_EQUAL.value
+        if cond[-1] == JoinOperator.STRICTLY_EQUAL.value
     ]
     rest = [
         cond
         for cond in conditions
-        if cond[-1] != JOINOPERATOR.STRICTLY_EQUAL.value
+        if cond[-1] != JoinOperator.STRICTLY_EQUAL.value
     ]
 
     # get rid of nulls, if any
@@ -3032,7 +3015,7 @@ def _multiple_conditional_join_eq(
     # get join indices
     # these are positional, not label indices
     result = _generic_func_cond_join(
-        left_c, right_c, JOINOPERATOR.STRICTLY_EQUAL.value, 2
+        left_c, right_c, JoinOperator.STRICTLY_EQUAL.value, 2
     )
 
     if result is None:
@@ -3126,7 +3109,7 @@ def _multiple_conditional_join_le_lt(
             lt_gt = left_on, right_on, op
         # no point checking for `!=`, since best case scenario
         # they'll have the same no of rows for the less/greater operators
-        elif op == JOINOPERATOR.NOT_EQUAL.value:
+        elif op == JoinOperator.NOT_EQUAL.value:
             continue
 
         left_c = df.loc[df_index, left_on]

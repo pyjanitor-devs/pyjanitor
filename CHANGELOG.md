@@ -1,7 +1,6 @@
 # Changelog
 
 ## [Unreleased]
--   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku
 -   [ENH] Added `case_when` to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv
 -   [ENH] Deprecate `new_column_names` and `merge_frame` from `process_text`. Only existing columns are supported. @samukweku
@@ -10,6 +9,7 @@
 -   [INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521
 -   [ENH] Fix bug in `pivot_longer` for wrong output when `names_pattern` is a sequence with a single value. Issue #885 @samukweku
 -   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
+-   [ENH] `As_Categorical` deprecated from `encode_categorical`; a tuple of `(categories, order)` suffices for **kwargs. @samukweku
 
 ## [v0.21.2] - 2021-09-01
 

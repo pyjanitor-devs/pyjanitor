@@ -825,7 +825,7 @@ def _sub_complete_column(column, df):  # noqa: F811
         else:
             arr_ndim = arr.ndim
 
-        if arr_ndim > 1:
+        if arr_ndim != 1:
             raise ValueError(
                 f"""
                 Kindly provide a 1-D array for {key}.

@@ -835,6 +835,9 @@ def _sub_complete_column(column, df):  # noqa: F811
                 """
             )
 
+        if isinstance(arr, pd.Index):
+            arr = arr.to_series(index=pd.RangeIndex(start=0, stop=arr.size))
+
         if isinstance(arr, np.ndarray):
             arr = pd.Series(arr)
 

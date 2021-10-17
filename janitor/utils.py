@@ -812,23 +812,23 @@ def _sub_complete_column(column, df):  # noqa: F811
         if not hasattr(arr, "shape"):
             arr = pd.Series([*arr], name=key)
 
-        if isinstance(arr, pd.Index):
-            arr_ndim = arr.nlevels
-        else:
-            arr_ndim = arr.ndim
-
-        if arr_ndim != 1:
-            raise ValueError(
-                f"""
-                Kindly provide a 1-D array for {key}.
-                """
-            )
-
         if not arr.size > 0:
             raise ValueError(
                 f"""
                 Kindly ensure the provided array for {key}
                 has at least one value.
+                """
+            )
+
+        if isinstance(arr, pd.Index):
+            arr_ndim = arr.nlevels
+        else:
+            arr_ndim = arr.ndim
+
+        if arr_ndim > 1:
+            raise ValueError(
+                f"""
+                Kindly provide a 1-D array for {key}.
                 """
             )
 

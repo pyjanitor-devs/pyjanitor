@@ -838,8 +838,7 @@ def _sub_complete_column(column, df):  # noqa: F811
         if not arr.is_unique:
             arr = arr.drop_duplicates()
 
-        if arr.name is None:
-            arr.name = key
+        arr.name = key
 
         collection[key] = arr
 

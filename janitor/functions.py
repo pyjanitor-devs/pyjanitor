@@ -46,7 +46,6 @@ from .utils import (
     _computations_pivot_wider,
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
-    _data_checks_pivot_wider,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,
@@ -5950,7 +5949,6 @@ def pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
     levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
@@ -6199,8 +6197,6 @@ def pivot_wider(
         will be used. Note that values from `values_from` are usually at
         the top level, the dataframe's columns is not flattened, or the
         start of each label in the columns, if flattened.
-    :param names_sort: Default is `True`. Sorts columns by order of
-        appearance.
     :param levels_order: Applicable if there are multiple `names_from`
         and/or `values_from`. Reorders the levels. Accepts a list of strings.
         If there are multiple `values_from`, pass a None to represent that
@@ -6225,41 +6221,16 @@ def pivot_wider(
 
     df = df.copy()
 
-    (
+    return _computations_pivot_wider(
         df,
         index,
         names_from,
         values_from,
-        names_sort,
-        levels_order,
-        flatten_levels,
-        names_sep,
-        names_glue,
-    ) = _data_checks_pivot_wider(
-        df,
-        index,
-        names_from,
-        values_from,
-        names_sort,
         levels_order,
         flatten_levels,
         names_sep,
         names_glue,
     )
-
-    df = _computations_pivot_wider(
-        df,
-        index,
-        names_from,
-        values_from,
-        names_sort,
-        levels_order,
-        flatten_levels,
-        names_sep,
-        names_glue,
-    )
-
-    return df
 
 
 @pf.register_dataframe_method

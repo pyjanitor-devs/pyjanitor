@@ -28,7 +28,6 @@ import pandas as pd
 from pandas.core.reshape.merge import _MergeOperation
 from pandas.core.construction import extract_array
 from pandas.api.types import (
-    CategoricalDtype,
     is_extension_array_dtype,
     is_list_like,
     is_scalar,
@@ -1658,7 +1657,6 @@ def _data_checks_pivot_wider(
     index,
     names_from,
     values_from,
-    names_sort,
     levels_order,
     flatten_levels,
     names_sep,
@@ -1694,8 +1692,6 @@ def _data_checks_pivot_wider(
         if len(values_from) == 1:
             values_from = values_from[0]
 
-    check("names_sort", names_sort, [bool])
-
     if levels_order is not None:
         check("levesl_order", levels_order, [list])
 
@@ -1712,7 +1708,6 @@ def _data_checks_pivot_wider(
         index,
         names_from,
         values_from,
-        names_sort,
         levels_order,
         flatten_levels,
         names_sep,
@@ -1725,7 +1720,6 @@ def _computations_pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
     levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
@@ -1741,19 +1735,33 @@ def _computations_pivot_wider(
 
     A dataframe pivoted from long to wide form is returned.
     """
-    # check dtype of `names_from` is string
-    names_from_all_strings = df.filter(names_from).agg(is_string_dtype).all()
 
-    if names_sort:
-        # Categorical dtypes created only for `names_from`
-        # since that is what will become the new column names
-        dtypes = {
-            column_name: CategoricalDtype(
-                df[column_name].factorize(sort=False)[-1], ordered=True
-            )
-            for column_name in names_from
-        }
-        df = df.astype(dtypes)
+    (
+        df,
+        index,
+        names_from,
+        values_from,
+        levels_order,
+        flatten_levels,
+        names_sep,
+        names_glue,
+    ) = _data_checks_pivot_wider(
+        df,
+        index,
+        names_from,
+        values_from,
+        levels_order,
+        flatten_levels,
+        names_sep,
+        names_glue,
+    )
+    # check dtype of `names_from` is string
+    names_from_all_strings = (
+        df.filter(names_from).agg(is_string_dtype).all().item()
+    )
+
+    # check dtype of columns
+    column_dtype = is_string_dtype(df.columns)
 
     df = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
@@ -1768,7 +1776,7 @@ def _computations_pivot_wider(
         return df
 
     # ensure all entries in names_from are strings
-    if not names_from_all_strings:
+    if (names_from_all_strings is False) or (column_dtype is False):
         if isinstance(df.columns, pd.MultiIndex):
             new_columns = [tuple(map(str, ent)) for ent in df]
             df.columns = pd.MultiIndex.from_tuples(new_columns)
@@ -1784,8 +1792,7 @@ def _computations_pivot_wider(
     # if columns are of category type
     # this returns columns to object dtype
     # also, resetting index with category columns is not possible
-    if names_sort:
-        df.columns = [*df.columns]
+    df.columns = [*df.columns]
 
     if index:
         df = df.reset_index()

@@ -1,7 +1,8 @@
 import pandas_flavor as pf
 import pandas as pd
-from janitor.utils import FILLTYPE, check, check_column
+from janitor.utils import check, check_column
 from operator import methodcaller
+from enum import Enum
 
 
 @pf.register_dataframe_method
@@ -146,3 +147,12 @@ def _chain_func(column: pd.Series, *funcs):
     for func in funcs:
         new_value = func(new_value)
     return new_value
+
+
+class FILLTYPE(Enum):
+    """List of fill types for fill_direction."""
+
+    UP = ("bfill",)
+    DOWN = ("ffill",)
+    UPDOWN = "bfill", "ffill"
+    DOWNUP = "ffill", "bfill"

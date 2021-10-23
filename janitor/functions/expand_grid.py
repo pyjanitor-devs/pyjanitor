@@ -4,7 +4,7 @@ import pandas as pd
 
 from janitor.utils import check
 
-from janitor.utils import _computations_expand_grid
+from janitor.functions.utils import _computations_expand_grid
 
 
 @pf.register_dataframe_method

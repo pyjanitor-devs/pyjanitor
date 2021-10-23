@@ -4,7 +4,8 @@ import pandas as pd
 
 from pandas.api.types import is_list_like, is_string_dtype
 
-from janitor.utils import check, _select_column_names
+from janitor.utils import check
+from janitor.functions.utils import _select_column_names
 import re
 import numpy as np
 from collections import defaultdict

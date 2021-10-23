@@ -2,7 +2,8 @@ from typing import Optional, Union
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.utils import check, deprecated_alias, _select_column_names
+from janitor.utils import check, deprecated_alias
+from janitor.functions.utils import _select_column_names
 
 
 @pf.register_dataframe_method

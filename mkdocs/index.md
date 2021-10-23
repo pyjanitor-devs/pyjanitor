@@ -1,7 +1,5 @@
 # pyjanitor
 
-[![](https://dev.azure.com/ericmjl/Open%20Source%20Packages/_apis/build/status/ericmjl.pyjanitor?branchName=dev)](https://dev.azure.com/ericmjl/Open%20Source%20Packages/_build/latest?definitionId=2&branchName=dev)
-
 [![](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev)
 
 `pyjanitor` is a Python implementation of the R package [`janitor`][janitor], and
@@ -121,7 +119,7 @@ df = (
     .dropna(subset=['Company2', 'Company3'])
     .rename(columns={"Company2": "Amazon", "Company3": "Facebook"})
     .assign(Google=[450.0, 550.0, 800.0])
-    )
+)
 
 # Output looks like this:
 # Out[15]:
@@ -200,7 +198,6 @@ Current functionality includes:
 - Concatenating and deconcatenating columns, based on a delimiter
 - Syntactic sugar for filtering the dataframe based on queries on a column
 - Experimental submodules for finance, biology, chemistry, engineering, and pyspark
-
 
 ## API
 

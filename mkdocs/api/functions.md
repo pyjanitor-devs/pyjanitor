@@ -1,3 +1,3 @@
 # Functions
 
-::: janitor.functions
+<!-- ::: janitor.functions -->

@@ -6,8 +6,8 @@ docs_dir: mkdocs/
 theme:
   name: "material"
   palette:
-    primary: "indigo"
-    accent: "indigo"
+    primary: "blue grey"
+    accent: "blue grey"
   icon:
     logo: "fontawesome/solid/book"
   features:

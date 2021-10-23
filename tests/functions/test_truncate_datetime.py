@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from janitor import truncate_datetime
+from janitor.functions.truncate_datetime import _truncate_datetime
 
 """
 Creates 2 datetime objects, one
@@ -30,9 +30,10 @@ Test 4 asserts that if bad data is passed
 
 
 @pytest.mark.functions
-def test_truncate_datetime():
+def test__truncate_datetime():
+    """Test for _truncate_datetime."""
     x = datetime.now()
-    x = truncate_datetime("month", x)
+    x = _truncate_datetime("month", x)
 
     time = {
         "Year": [x.year],
@@ -51,8 +52,9 @@ def test_truncate_datetime():
 
 # bad data, error handling test
 @pytest.mark.functions
-def test_bad_data():
+def test___truncate_datetime_bad_data():
+    """Test for _truncate_datetime with bad data passed in."""
     with pytest.raises(KeyError):
         y = datetime.now()
-        y = truncate_datetime("mon", y)
+        y = _truncate_datetime("mon", y)
         assert y is None

@@ -1,4 +1,7 @@
-"""General purpose data cleaning functions.
+"""
+# General Functions
+
+pyjanitor's general-purpose data cleaning functions.
 
 NOTE: Instructions for future contributors:
 

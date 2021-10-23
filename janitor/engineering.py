@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor import check
 
-from .utils import import_message
+from .utils import check, import_message
+
 
 try:
     import unyt

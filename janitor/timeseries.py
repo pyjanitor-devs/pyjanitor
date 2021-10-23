@@ -6,8 +6,7 @@ from typing import Dict, Union
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor import check
-
+from .utils import check
 from .errors import JanitorError
 
 

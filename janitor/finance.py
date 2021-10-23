@@ -10,10 +10,10 @@ import pandas as pd
 import pandas_flavor as pf
 import requests
 
-from janitor import check
 from janitor.errors import JanitorError
 
-from .utils import deprecated_alias, is_connected
+from .utils import check, deprecated_alias, is_connected
+
 
 currency_set = {
     "AUD",

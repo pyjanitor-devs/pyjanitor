@@ -1,9 +1,9 @@
 from typing import Hashable
-import pandas_flavor as pf
-import pandas as pd
 
-from janitor.utils import check, deprecated_alias
 import numpy as np
+import pandas as pd
+import pandas_flavor as pf
+from janitor.utils import check, deprecated_alias
 
 
 @pf.register_dataframe_method
@@ -19,15 +19,15 @@ def round_to_fraction(
 
     This method mutates the original DataFrame.
 
-    Taken from [Source](https://github.com/sfirke/janitor/issues/235).
+    Taken from [the R package](https://github.com/sfirke/janitor/issues/235).
 
     Also, optionally round to a specified number of digits.
 
     Method-chaining usage:
 
     ```python
-        # Round to two decimal places
-        df = pd.DataFrame(...).round_to_fraction('a', 2)
+    # Round to two decimal places
+    df = pd.DataFrame(...).round_to_fraction('a', 2)
     ```
 
     :param df: A pandas DataFrame.

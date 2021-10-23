@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from janitor import patterns
-from janitor.utils import _select_column_names
+from janitor.functions.utils import _select_column_names
 
 
 @pytest.fixture

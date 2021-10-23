@@ -812,8 +812,13 @@ def _sub_complete_column(column, df):  # noqa: F811
         if not hasattr(arr, "shape"):
             arr = pd.Series([*arr], name=key)
 
-        if (not isinstance(arr, pd.Series)) and is_extension_array_dtype(arr):
-            arr = pd.Series(arr)
+        if not arr.size > 0:
+            raise ValueError(
+                f"""
+                Kindly ensure the provided array for {key}
+                has at least one value.
+                """
+            )
 
         if isinstance(arr, pd.Index):
             arr_ndim = arr.nlevels
@@ -827,22 +832,13 @@ def _sub_complete_column(column, df):  # noqa: F811
                 """
             )
 
-        if not (arr.size > 0):
-            raise ValueError(
-                f"""
-                Kindly ensure the provided array for {key}
-                has at least one value.
-                """
-            )
-
-        if isinstance(arr, np.ndarray):
+        if not isinstance(arr, pd.Series):
             arr = pd.Series(arr)
 
         if not arr.is_unique:
             arr = arr.drop_duplicates()
 
-        if arr.name is None:
-            arr.name = key
+        arr.name = key
 
         collection[key] = arr
 

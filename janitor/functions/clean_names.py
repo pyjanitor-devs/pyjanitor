@@ -1,3 +1,4 @@
+"""Functions for cleaning columns names."""
 import re
 from typing import Hashable, Optional, Union
 import pandas as pd

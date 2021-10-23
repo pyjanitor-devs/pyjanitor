@@ -5,9 +5,14 @@ General purpose data cleaning functions for pyspark.
 import re
 from typing import Union
 
-from .. import functions as janitor_func
-from .. import utils as janitor_utils
+from janitor import utils as janitor_utils
 from . import backend
+from janitor.functions.clean_names import (
+    _change_case,
+    _normalize_1,
+    _remove_special,
+    _strip_underscores_func,
+)
 
 try:
     from pyspark.sql import DataFrame
@@ -73,19 +78,16 @@ def clean_names(
 
     cols = df.columns
 
-    cols = [janitor_func._change_case(col, case_type) for col in cols]
+    cols = [_change_case(col, case_type) for col in cols]
 
-    cols = [janitor_func._normalize_1(col) for col in cols]
+    cols = [_normalize_1(col) for col in cols]
 
     if remove_special:
-        cols = [janitor_func._remove_special(col) for col in cols]
+        cols = [_remove_special(col) for col in cols]
 
     cols = [re.sub("_+", "_", col) for col in cols]  # noqa: PD005
 
-    cols = [
-        janitor_utils._strip_underscores_func(col, strip_underscores)
-        for col in cols
-    ]
+    cols = [_strip_underscores_func(col, strip_underscores) for col in cols]
 
     cols = [
         f"`{col}` AS `{new_col}`" for col, new_col in zip(df.columns, cols)

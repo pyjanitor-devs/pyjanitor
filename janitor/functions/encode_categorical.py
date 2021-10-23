@@ -252,13 +252,13 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         if (cat is None) and (order is None):
             cat_dtype = pd.CategoricalDtype()
 
-        elif (cat is None) and (order is CategoryOrder.SORT.value):
+        elif (cat is None) and (order is _CategoryOrder.SORT.value):
             cat = df[column_name].factorize(sort=True)[-1]
             if cat.empty:
                 raise ValueError(error_msg)
             cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
 
-        elif (cat is None) and (order is CategoryOrder.APPEARANCE.value):
+        elif (cat is None) and (order is _CategoryOrder.APPEARANCE.value):
             cat = df[column_name].factorize(sort=False)[-1]
             if cat.empty:
                 raise ValueError(error_msg)
@@ -398,7 +398,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
         if order is not None:
             check("order", order, [str])
 
-            category_order_types = [ent.value for ent in CategoryOrder]
+            category_order_types = [ent.value for ent in _CategoryOrder]
             if order.lower() not in category_order_types:
                 raise ValueError(
                     """
@@ -412,7 +412,7 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     return categories_dict
 
 
-class CategoryOrder(Enum):
+class _CategoryOrder(Enum):
     """
     order types for encode_categorical.
     """

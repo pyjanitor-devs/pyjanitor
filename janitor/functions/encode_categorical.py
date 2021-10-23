@@ -237,7 +237,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     A DataFrame, with catetorical columns, is returned.
     """
 
-    categories_dict = as_categorical_checks(df, **kwargs)
+    categories_dict = _as_categorical_checks(df, **kwargs)
 
     categories_dtypes = {}
 
@@ -272,7 +272,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     return df.astype(categories_dtypes)
 
 
-def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
+def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     """
     This function raises errors if columns in `kwargs` are
     absent in the the dataframe's columns.

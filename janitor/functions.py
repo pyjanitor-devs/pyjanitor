@@ -13,7 +13,6 @@ from typing import (
     Hashable,
     Iterable,
     List,
-    NamedTuple,
     Optional,
     Pattern,
     Set,
@@ -47,18 +46,14 @@ from .utils import (
     _computations_pivot_wider,
     _currency_column_to_numeric,
     _data_checks_pivot_longer,
-    _data_checks_pivot_wider,
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
     _select_columns,
     _strip_underscores,
-    asCategorical,
     check,
     check_column,
     deprecated_alias,
-    _conditional_join_preliminary_checks,
     _conditional_join_compute,
-    _cond_join_suffixes,
     _case_when,
 )
 
@@ -477,25 +472,6 @@ def get_dupes(
     return df[dupes == True]  # noqa: E712
 
 
-def As_Categorical(
-    categories: Optional[List] = None,
-    order: Optional[str] = None,
-) -> NamedTuple:
-    """
-    Helper function for `encode_categorical`.
-    It makes creating the `categories` and `order` more explicit.
-    Inspired by `pd.NamedAgg`.
-
-    :param categories: list-like object to create new categorical column.
-    :param order: string object that can be either *sort* or *appearance*.
-        If *sort*, the `categories` argument will be sorted lexicographically;
-        if *appearance*, the `categories` argument will be used as is.
-    :returns: A namedtuple of `(categories, order)`.
-    """
-
-    return asCategorical(categories=categories, order=order)
-
-
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names")
 def encode_categorical(
@@ -507,11 +483,6 @@ def encode_categorical(
 
     [cat]: http://pandas.pydata.org/pandas-docs/stable/user_guide/categorical.html
 
-    Categories and order can be explicitly specified via the `kwargs` option,
-    which is a pairing of column name and a tuple of (categories, order).
-
-    The `janitor.As_Categorical` function is provided
-    to make it clearer what the arguments to the function are.
     It is syntactic sugar around `pd.Categorical`.
 
     This method does not mutate the original DataFrame.
@@ -607,21 +578,6 @@ def encode_categorical(
     if `order` is `None``,
     then the categories argument is applied unordered.
 
-    The `janitor.As_Categorical` function can also be used to make clearer
-    what the arguments to the function are::
-
-        df = (pd.DataFrame(...)
-                .encode_categorical(
-                    col1 = As_Categorical(
-                                categories = [3, 2, 1, 4],
-                                order = "appearance"
-                                ),
-                    col2 = As_Categorical(
-                                categories = ['a','d','c','b'],
-                                order = "sort"
-                                )
-                    )
-            )
 
     A User Warning will be generated if some or all of the unique values
     in the column are not present in the provided `categories` argument.
@@ -629,7 +585,7 @@ def encode_categorical(
     ```python
         df = (pd.DataFrame(...)
                 .encode_categorical(
-                    col1 = As_Categorical(
+                    col1 = (
                             categories = [4, 5, 6],
                             order = "appearance"
                             )
@@ -675,10 +631,9 @@ def encode_categorical(
         df = jn.encode_categorical(
                     df,
                     col1 = (categories, order),
-                    col2 = jn.As_Categorical(
-                                categories = [values],
-                                order="sort"/"appearance"/None
-                                )
+                    col2 = (categories = [values],
+                    order="sort"  # or "appearance" or None
+
                 )
 
     Method chaining syntax:
@@ -696,29 +651,20 @@ def encode_categorical(
             pd.DataFrame(...)
             .encode_categorical(
                 col1 = (categories, order),
-                col2 = jn.As_Categorical(
-                            categories = [values]/None,
-                            order="sort"/"appearance"/None
-                            )
+                col2 = (categories = [values]/None,
+                        order="sort"  # or "appearance" or None
+                        )
         )
 
     :param df: The pandas DataFrame object.
     :param column_names: A column name or an iterable (list or
         tuple) of column names.
     :param kwargs: A pairing of column name to a tuple of (`categories`, `order`).
-        There is also the `janitor.As_Categorical` function, which creates a
-        namedtuple of (`categories`, `order`) to make it clearer what the arguments
-        are. This is useful in creating categorical columns that are ordered, or
+        This is useful in creating categorical columns that are ordered, or
         if the user needs to explicitly specify the categories.
     :returns: A pandas DataFrame.
-    :raises JanitorError: if a column specified within `column_names``
-        is not found in the DataFrame.
-    :raises JanitorError: if `column_names` is not hashable
-        nor iterable.
-    :raises ValueError: if both `column_names` and `kwargs` are provided.
+    :raises ValueError: if both ``column_names`` and ``kwargs`` are provided.
     """  # noqa: E501
-
-    df = df.copy()
 
     if all((column_names, kwargs)):
         raise ValueError(
@@ -730,28 +676,17 @@ def encode_categorical(
     # column_names deal with only category dtype (unordered)
     # kwargs takes care of scenarios where user wants an ordered category
     # or user supplies specific categories to create the categorical
-    if column_names:
-        if isinstance(column_names, (list, Tuple)):
-            for col in column_names:
-                if col not in df.columns:
-                    raise JanitorError(
-                        f"{col} missing from DataFrame columns!"
-                    )
-                df[col] = pd.Categorical(df[col])
-        elif isinstance(column_names, Hashable):
-            if column_names not in df.columns:
-                raise JanitorError(
-                    f"{column_names} missing from DataFrame columns!"
-                )
-            df[column_names] = pd.Categorical(df[column_names])
-        else:
-            raise JanitorError(
-                "kwarg `column_names` must be hashable or iterable!"
-            )
-        return df
+    if column_names is not None:
+        check("column_names", column_names, [list, tuple, Hashable])
+        if isinstance(column_names, (list, tuple)):
+            check_column(df, column_names)
+            dtypes = {col: "category" for col in column_names}
+            return df.astype(dtypes)
+        if isinstance(column_names, Hashable):
+            check_column(df, [column_names])
+            return df.astype({column_names: "category"})
 
-    df = _computations_as_categorical(df, **kwargs)
-    return df
+    return _computations_as_categorical(df, **kwargs)
 
 
 @pf.register_dataframe_method
@@ -6050,7 +5985,7 @@ def pivot_longer(
         ignore_index,
     )
 
-    df = _computations_pivot_longer(
+    return _computations_pivot_longer(
         df,
         index,
         column_names,
@@ -6063,8 +5998,6 @@ def pivot_longer(
         ignore_index,
     )
 
-    return df
-
 
 @pf.register_dataframe_method
 def pivot_wider(
@@ -6072,7 +6005,6 @@ def pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
     levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
@@ -6091,108 +6023,13 @@ def pivot_wider(
         and `values_from` is possible using the
         `janitor.select_columns` syntax.
 
-    Reshaping to wide form :
+    .. note:: A ValueError is raised if the combination
+        of the `index` and `names_from` is not unique.
 
-    ```python
-             name variable  value
-        0   Alice      wk1      5
-        1   Alice      wk2      9
-        2   Alice      wk3     20
-        3   Alice      wk4     22
-        4     Bob      wk1      7
-        5     Bob      wk2     11
-        6     Bob      wk3     17
-        7     Bob      wk4     33
-        8   Carla      wk1      6
-        9   Carla      wk2     13
-        10  Carla      wk3     39
-        11  Carla      wk4     40
-
-        df.pivot_wider(
-                index = "name",
-                names_from = "variable",
-                values_from = "value"
-            )
-
-             name    wk1   wk2   wk3   wk4
-        0    Alice     5     9    20    22
-        1    Bob       7    11    17    33
-        2    Carla     6    13    39    40
-    ```
-
-    Pivoting on multiple columns is possible :
-
-    ```python
-            name    n  pct
-        0     1  10.0  0.1
-        1     2  20.0  0.2
-        2     3  30.0  0.3
-
-        (df.assign(num = 0)
-           .pivot_wider(
-              index = "num",
-              names_from = "name",
-              values_from = ["n", "pct"],
-              names_sep = "_"
-              )
-        )
-
-            num n_1  n_2  n_3  pct_1  pct_2  pct_3
-        0   0   10   20   30   0.1    0.2    0.3
-    ```
-
-    Aggregations are also possible with the `aggfunc` parameter::
-
-    ```python
-
-        df = pd.DataFrame([{'id': 'a', 'name': 'Adam', 'value': 5},
-                           {'id': 'b', 'name': 'Eve', 'value': 6},
-                           {'id': 'c', 'name': 'Adam', 'value': 4},
-                           {'id': 'a', 'name': 'Eve', 'value': 3},
-                           {'id': 'd', 'name': 'Seth', 'value': 2},
-                           {'id': 'b', 'name': 'Adam', 'value': 4},
-                           {'id': 'a', 'name': 'Adam', 'value': 2}])
-
-        id  name    value
-        a   Adam    5
-        b   Eve     6
-        c   Adam    4
-        a   Eve     3
-        d   Seth    2
-        b   Adam    4
-        a   Adam    2
-
-        df.pivot_wider(
-            index = "dep*",
-            names_from  = 'step',
-            flatten_levels = False,
-            levels_order = ['step', None]
-            )
-
-        step                 1   2   1   2
-                             a   a   b   b
-        dependent_variable
-        5.5                 20  25  30  37
-        6.1                 22  18  19  29
-
-        df.pivot_wider(
-            index = ['a', 'b'],
-            names_from = 'name',
-            flatten_levels = True,
-            )
-
-            id  Adam  Eve  Seth
-        0   a     7    3     0
-        1   b     4    6     0
-        2   c     4    0     0
-        3   d     0    0     2
-    ```
-
-    **Note**: You may choose not to collapse the levels by passing `False`
-        to the `flatten_levels` argument.
-
-    **Note**: A ValueError is raised if the index is not unique and
-        `aggfunc` is None.
+    .. note:: By default, values from `values_from` are always
+        at the top level if the columns are not flattened.
+        If flattened, the values from `values_from` are usually
+        at the start of each label in the columns.
 
     Functional usage syntax:
 
@@ -6207,7 +6044,6 @@ def pivot_wider(
             index = [column1, column2, ...],
             names_from = [column3, column4, ...],
             value_from = [column5, column6, ...],
-            names_sort = True/False,
             levels_order = None/list,
             flatten_levels = True/False,
             names_sep='_',
@@ -6225,7 +6061,6 @@ def pivot_wider(
                 index = [column1, column2, ...],
                 names_from = [column3, column4, ...],
                 value_from = [column5, column6, ...],
-                names_sort = True/False,
                 levels_order = None/list,
                 flatten_levels = True/False,
                 names_sep='_',
@@ -6250,11 +6085,10 @@ def pivot_wider(
         the new dataframe's values.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If `values_from` is not specified,
-        all remaining columns will be used. If `flatten_levels` is `False`,
-        a MultiIndex dataframe is created.
-    :param names_sort: Default is `True`. Sorts columns by order of
-        appearance.
+        If ``values_from`` is not specified,  all remaining columns
+        will be used. Note that values from `values_from` are usually at
+        the top level, the dataframe's columns is not flattened, or the
+        start of each label in the columns, if flattened.
     :param levels_order: Applicable if there are multiple `names_from`
         and/or `values_from`. Reorders the levels. Accepts a list of strings.
         If there are multiple `values_from`, pass a None to represent that
@@ -6271,49 +6105,20 @@ def pivot_wider(
         Function should be acceptable to pandas’ `map` function.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
-    :raises ValueError: if `names_from` is None.
-    :raises TypeError: if `flatten_levels` is not a boolean.
-
-    # noqa: DAR402
     """
 
     df = df.copy()
 
-    (
+    return _computations_pivot_wider(
         df,
         index,
         names_from,
         values_from,
-        names_sort,
-        levels_order,
-        flatten_levels,
-        names_sep,
-        names_glue,
-    ) = _data_checks_pivot_wider(
-        df,
-        index,
-        names_from,
-        values_from,
-        names_sort,
         levels_order,
         flatten_levels,
         names_sep,
         names_glue,
     )
-
-    df = _computations_pivot_wider(
-        df,
-        index,
-        names_from,
-        values_from,
-        names_sort,
-        levels_order,
-        flatten_levels,
-        names_sep,
-        names_glue,
-    )
-
-    return df
 
 
 @pf.register_dataframe_method
@@ -6323,22 +6128,19 @@ def conditional_join(
     *conditions,
     how: str = "inner",
     sort_by_appearance: bool = False,
-    suffixes=("_x", "_y"),
 ) -> pd.DataFrame:
     """
-    This is a convenience function that operates similarly to `pd.merge`,
-    but allows joins on inequality operators, or a combination of equi
-    and non-equi joins.
+
+    This is a convenience function that operates similarly to ``pd.merge``,
+    but allows joins on inequality operators,
+    or a combination of equi and non-equi joins.
 
     If the join is solely on equality, `pd.merge` function
-    is more efficient and should be used instead. Infact,
-    for multiple conditions where equality is involved,
-    a `pd.merge`, followed by filter(via `query` or `loc`)
-    is more efficient. This is even more evident when joining
-    on strings.
+    is more efficient and should be used instead.
+
     If you are interested in nearest joins, or rolling joins,
     `pd.merge_asof` covers that. There is also the IntervalIndex,
-    which can be more efficient for range joins, especially if
+    which is usually more efficient for range joins, especially if
     the intervals do not overlap.
 
     This function returns rows, if any, where values from `df` meet the
@@ -6350,225 +6152,17 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    A binary search is used to get the relevant rows; this avoids
-    a cartesian join, and makes the process less memory intensive.
+    A binary search is used to get the relevant rows for non-equi joins;
+    this avoids a cartesian join, and makes the process less memory intensive.
+
+    For equi-joins, Pandas internal merge function (a hash join) is used.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
 
-    Only numeric, date and string columns are supported.
-
-    If joining on strings, only the `==` operator is supported.
+    For non-equi joins, only numeric and date columns are supported.
 
     Only `inner`, `left`, and `right` joins are supported.
-
-
-    Example :
-
-    df1:
-    ```python
-            id  value_1
-        0   1        2
-        1   1        5
-        2   1        7
-        3   2        1
-        4   2        3
-        5   3        4
-    ```
-
-    df2:
-    ```python
-            id  value_2A  value_2B
-        0   1         0         1
-        1   1         3         5
-        2   1         7         9
-        3   1        12        15
-        4   2         0         1
-        5   2         2         4
-        6   2         3         6
-        7   3         1         3
-    ```
-
-    Join on equi and non-equi operators is possible:
-
-    ```python
-        df1.conditional_join(
-                df2,
-                ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>='),
-                ('value_1', 'value_2B', '<='),
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0     1        5     1         3         5
-        1     1        7     1         7         9
-        2     2        1     2         0         1
-        3     2        3     2         2         4
-        4     2        3     2         3         6
-    ```
-
-    The default join is `inner`. left and right joins are supported as well:
-
-    ```python
-        df1.conditional_join(
-                df2,
-                ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>='),
-                ('value_1', 'value_2B', '<='),
-                how='left',
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0     1        2   NaN       NaN       NaN
-        1     1        5   1.0       3.0       5.0
-        2     1        7   1.0       7.0       9.0
-        3     2        1   2.0       0.0       1.0
-        4     2        3   2.0       2.0       4.0
-        5     2        3   2.0       3.0       6.0
-        6     3        4   NaN       NaN       NaN
-
-
-        df1.conditional_join(
-                df2,
-                ('id', 'id', '=='),
-                ('value_1', 'value_2A', '>='),
-                ('value_1', 'value_2B', '<='),
-                how='right',
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0   NaN      NaN     1         0         1
-        1   1.0      5.0     1         3         5
-        2   1.0      7.0     1         7         9
-        3   NaN      NaN     1        12        15
-        4   2.0      1.0     2         0         1
-        5   2.0      3.0     2         2         4
-        6   2.0      3.0     2         3         6
-        7   NaN      NaN     3         1         3
-    ```
-
-    Join on just the non-equi joins is also possible::
-
-    ```python
-        df1.conditional_join(
-                df2,
-                ('value_1', 'value_2A', '>'),
-                ('value_1', 'value_2B', '<'),
-                how='inner',
-                sort_by_appearance = True
-            )
-
-            id_x  value_1  id_y  value_2A  value_2B
-        0     1        2     3         1         3
-        1     1        5     2         3         6
-        2     2        3     2         2         4
-        3     3        4     1         3         5
-        4     3        4     2         3         6
-    ```
-
-    The default for the `suffixes` parameter is `(_x, _y)`,
-    One of the suffixes can be set as `None`;
-    this avoids a suffix on the columns from the
-    relevant dataframe:
-
-    ```python
-        df1.conditional_join(
-                df2,
-                ('value_1', 'value_2A', '>'),
-                ('value_1', 'value_2B', '<'),
-                how='inner',
-                sort_by_appearance = True,
-                suffixes = (None, '_y')
-            )
-
-            id  value_1  id_y  value_2A  value_2B
-        0   1        2     3         1         3
-        1   1        5     2         3         6
-        2   2        3     2         2         4
-        3   3        4     1         3         5
-        4   3        4     2         3         6
-    ```
-
-    Join on just equality is also possible, but should be avoided -
-    Pandas merge/join is more efficient:
-
-        df1
-            col_a col_b
-        0      1     A
-        1      2     B
-        2      3     C
-
-        df2
-            col_a col_c
-        0      0     Z
-        1      2     X
-        2      3     Y
-
-        df1.conditional_join(
-                df2,
-                ('col_a', 'col_a', '=='),
-                sort_by_appearance = True
-            )
-
-             col_a_x col_b  col_a_y col_c
-        0        2     B        2     X
-        1        3     C        3     Y
-    ```
-
-    Join on not equal -> `!=` :
-
-    ```python
-        df1.conditional_join(
-                df2,
-                ('col_a', 'col_a', '!='),
-                sort_by_appearance = True
-            )
-
-             col_a_x col_b  col_a_y col_c
-        0        1     A        0     Z
-        1        1     A        2     X
-        2        1     A        3     Y
-        3        2     B        0     Z
-        4        2     B        3     Y
-        5        3     C        0     Z
-        6        3     C        2     X
-    ```
-
-    If the order from `right` is not important,
-    `sort_by_appearance` can be set to  `False`
-    (this is the default):
-
-    ```python
-        df1.conditional_join(
-                df2,
-                ('col_a', 'col_a', '>'),
-                sort_by_appearance = False
-            )
-
-             col_a_x col_b  col_a_y col_c
-        0        1     A        0     Z
-        1        2     B        0     Z
-        2        3     C        0     Z
-        3        3     C        2     X
-    ```
-
-    **Note**: If `df` or `right` has labeled indices,
-              it will be lost after the merge,
-              and replaced with an integer index.
-              If you wish to preserve the labeled indices,
-              you can convert them to columns
-              before running the conditional join.
-
-    **Note**: All the columns from `df` and `right`
-              are returned in the final output.
-
-    .. note:: For multiple condtions, If there are nulls
-              in the join columns, they will not be
-              preserved for `!=` operator. Nulls are only
-              preserved for `!=` operator for single condition.
 
     Functional usage syntax:
 
@@ -6582,22 +6176,27 @@ def conditional_join(
         df = jn.conditional_join(
                 df,
                 right,
-                *conditions,
-                sort_by_appearance = True/False,
-                suffixes = ("_x", "_y"),
+                (col_from_df, col_from_right, join_operator),
+                (col_from_df, col_from_right, join_operator),
+                ...,
+                how = 'inner' # or left/right
+                sort_by_appearance = True # or False
                 )
     ```
 
     Method chaining syntax:
 
-    ```python
-        df = df.conditional_join(
-                right,
-                *conditions,
-                sort_by_appearance = True/False,
-                suffixes = ("_x", "_y"),
-                )
-    ```
+    .. code-block:: python
+
+        df.conditional_join(
+            right,
+            (col_from_df, col_from_right, join_operator),
+            (col_from_df, col_from_right, join_operator),
+            ...,
+            how = 'inner' # or left/right
+            sort_by_appearance = True # or False
+            )
+
 
     :param df: A Pandas DataFrame.
     :param right: Named Series or DataFrame to join to.
@@ -6611,48 +6210,10 @@ def conditional_join(
         Full join is not supported. Defaults to `inner`.
     :param sort_by_appearance: Default is `False`. If True,
         values from `right` that meet the join condition will be returned
-        in the final dataframe in the same order that they were before the
-        join.
-    :param suffixes: tuple, default is `(_x, _y)`.
-        A sequence of length 2, where each element is optionally a string,
-        indicating the suffix to add to the overlapping column names
-        in `df` and `right`. Pass a value of `None`
-        instead of a string to indicate that the  column name
-        from `df` or `right` should be left as-is, with no suffix.
-        At least one of the values must not be `None`.
+        in the final dataframe in the same order
+        that they were before the join.
     :returns: A pandas DataFrame of the two merged Pandas objects.
-    :raises ValueError: if columns from `df` or `right` is a MultiIndex.
-    :raises ValueError: if condition in *conditions is not a tuple.
-    :raises ValueError: if condition is not length 3.
-    :raises ValueError: if `left_on` and `right_on` in condition are not
-        both numeric, or string, or datetime.
-
-    # noqa: DAR402
     """
-
-    (
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        suffixes,
-    ) = _conditional_join_preliminary_checks(
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        suffixes,
-    )
-
-    df, right, conditions = _cond_join_suffixes(
-        df, right, conditions, suffixes
-    )
-
-    # the numeric indexes play a crucial part in position tracking
-    df.index = np.arange(len(df))
-    right.index = np.arange(len(right))
 
     return _conditional_join_compute(
         df, right, conditions, how, sort_by_appearance

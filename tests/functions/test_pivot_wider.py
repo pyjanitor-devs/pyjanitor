@@ -300,8 +300,8 @@ def test_no_index():
     assert_frame_equal(result, expected_output)
 
 
-def test_no_index_names_sort_True():
-    """Test output if no `index` is supplied and `names_sort` is True."""
+def test_no_index_names_from_order():
+    """Test output if no `index` is supplied and column order is maintained."""
     df_in = pd.DataFrame(
         {
             "gender": ["Male", "Female", "Female", "Male", "Male"],
@@ -317,13 +317,15 @@ def test_no_index_names_sort_True():
         }
     )
 
-    result = df_in.pivot_wider(names_from="gender", names_sort=True)
+    result = df_in.encode_categorical(gender=(None, "appearance")).pivot_wider(
+        names_from="gender"
+    )
 
     assert_frame_equal(result, expected_output)
 
 
-def test_index_names_sort_True():
-    """Test output if index is supplied and `names_sort ` is True."""
+def test_index_names():
+    """Test output if index is supplied."""
     df = pd.DataFrame(
         [
             {"stat": "mean", "score": 4, "var": "var1"},
@@ -340,7 +342,7 @@ def test_index_names_sort_True():
     )
 
     result = df.pivot_wider(
-        index="var", names_from="stat", values_from="score", names_sort=True
+        index="var", names_from="stat", values_from="score"
     )
 
     assert_frame_equal(result, expected_output)
@@ -373,7 +375,10 @@ def test_names_glue():
 
 
 def test_change_level_order():
-    """Test output with `levels_order`"""
+    """
+    Test output with `levels_order`,
+    while maintaining order from `names_from`.
+    """
     df_in = pd.DataFrame(
         {
             "geoid": [1, 1, 13, 13],
@@ -399,12 +404,13 @@ def test_change_level_order():
         }
     )
 
-    result = df_in.pivot_wider(
+    result = df_in.encode_categorical(
+        variable=(None, "appearance")
+    ).pivot_wider(
         index=["geoid", "name"],
         names_from="variable",
         values_from=["estimate", "error"],
         levels_order=["variable", None],
-        names_sort=True,
     )
     assert_frame_equal(result, df_out)
 

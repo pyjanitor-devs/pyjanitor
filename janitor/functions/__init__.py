@@ -39,8 +39,7 @@ from .encode_categorical import encode_categorical
 from .expand_column import expand_column
 from .expand_grid import expand_grid
 from .factorize_columns import factorize_columns
-from .fill_direction import fill_direction
-from .fill_empty import fill_empty
+from .fill import fill_direction, fill_empty
 from .filter import filter_date, filter_column_isin, filter_on, filter_string
 from .find_replace import find_replace
 from .flag_nulls import flag_nulls
@@ -73,3 +72,4 @@ from .toset import toset
 from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
+from .utils import patterns, unionize_dataframe_categories

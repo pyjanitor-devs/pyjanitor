@@ -150,7 +150,7 @@ def _conditional_join_compute(
 
         _conditional_join_type_check(left_c, right_c, op)
 
-        if op == JoinOperator.STRICTLY_EQUAL.value:
+        if op == _JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
         elif op in less_greater_types:
             less_great = True
@@ -292,7 +292,7 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    join_types = {jointype.value for jointype in JoinTypes}
+    join_types = {jointype.value for jointype in _JoinTypes}
     if how not in join_types:
         raise ValueError(f"`how` should be one of {', '.join(join_types)}.")
 
@@ -344,7 +344,7 @@ def _conditional_join_type_check(
 
     if (
         is_categorical_dtype(left_column)
-        and op != JoinOperator.STRICTLY_EQUAL.value
+        and op != _JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
             """
@@ -355,7 +355,7 @@ def _conditional_join_type_check(
 
     if (
         is_string_dtype(left_column)
-        and op != JoinOperator.STRICTLY_EQUAL.value
+        and op != _JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
             """
@@ -378,9 +378,9 @@ def _generic_func_cond_join(
     strict = False
 
     if op in {
-        JoinOperator.GREATER_THAN.value,
-        JoinOperator.LESS_THAN.value,
-        JoinOperator.NOT_EQUAL.value,
+        _JoinOperator.GREATER_THAN.value,
+        _JoinOperator.LESS_THAN.value,
+        _JoinOperator.NOT_EQUAL.value,
     }:
         strict = True
 
@@ -388,7 +388,7 @@ def _generic_func_cond_join(
         return _less_than_indices(left_c, right_c, strict, len_conditions)
     elif op in greater_than_join_types:
         return _greater_than_indices(left_c, right_c, strict, len_conditions)
-    elif op == JoinOperator.NOT_EQUAL.value:
+    elif op == _JoinOperator.NOT_EQUAL.value:
         return _not_equal_indices(left_c, right_c)
     else:
         return _equal_indices(left_c, right_c, len_conditions)
@@ -407,12 +407,12 @@ def _multiple_conditional_join_eq(
     eq_cond = [
         cond
         for cond in conditions
-        if cond[-1] == JoinOperator.STRICTLY_EQUAL.value
+        if cond[-1] == _JoinOperator.STRICTLY_EQUAL.value
     ]
     rest = [
         cond
         for cond in conditions
-        if cond[-1] != JoinOperator.STRICTLY_EQUAL.value
+        if cond[-1] != _JoinOperator.STRICTLY_EQUAL.value
     ]
 
     # get rid of nulls, if any
@@ -445,7 +445,7 @@ def _multiple_conditional_join_eq(
     # get join indices
     # these are positional, not label indices
     result = _generic_func_cond_join(
-        left_c, right_c, JoinOperator.STRICTLY_EQUAL.value, 2
+        left_c, right_c, _JoinOperator.STRICTLY_EQUAL.value, 2
     )
 
     if result is None:
@@ -539,7 +539,7 @@ def _multiple_conditional_join_le_lt(
             lt_gt = left_on, right_on, op
         # no point checking for `!=`, since best case scenario
         # they'll have the same no of rows for the less/greater operators
-        elif op == JoinOperator.NOT_EQUAL.value:
+        elif op == _JoinOperator.NOT_EQUAL.value:
             continue
 
         left_c = df.loc[df_index, left_on]
@@ -637,7 +637,7 @@ def _multiple_conditional_join_le_lt(
     return df_index[mask], right_index[mask]
 
 
-class JoinOperator(Enum):
+class _JoinOperator(Enum):
     """
     List of operators used in conditional_join.
     """
@@ -661,14 +661,14 @@ def _create_conditional_join_empty_frame(
     df.columns = pd.MultiIndex.from_product([["left"], df.columns])
     right.columns = pd.MultiIndex.from_product([["right"], right.columns])
 
-    if how == JoinTypes.INNER.value:
+    if how == _JoinTypes.INNER.value:
         df = df.dtypes.to_dict()
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
         return pd.DataFrame(df)
 
-    if how == JoinTypes.LEFT.value:
+    if how == _JoinTypes.LEFT.value:
         right = right.dtypes.to_dict()
         right = {
             key: float if dtype.kind == "i" else dtype
@@ -680,7 +680,7 @@ def _create_conditional_join_empty_frame(
         right = pd.DataFrame(right)
         return df.join(right, how=how, sort=False)
 
-    if how == JoinTypes.RIGHT.value:
+    if how == _JoinTypes.RIGHT.value:
         df = df.dtypes.to_dict()
         df = {
             key: float if dtype.kind == "i" else dtype
@@ -691,7 +691,7 @@ def _create_conditional_join_empty_frame(
         return df.join(right, how=how, sort=False)
 
 
-class JoinTypes(Enum):
+class _JoinTypes(Enum):
     """
     List of join types for conditional_join.
     """
@@ -721,31 +721,31 @@ def _create_conditional_join_frame(
     df.columns = pd.MultiIndex.from_product([["left"], df.columns])
     right.columns = pd.MultiIndex.from_product([["right"], right.columns])
 
-    if how == JoinTypes.INNER.value:
+    if how == _JoinTypes.INNER.value:
         df = df.loc[left_index]
         right = right.loc[right_index]
         df.index = pd.RangeIndex(start=0, stop=left_index.size)
         right.index = df.index
         return pd.concat([df, right], axis="columns", join=how, sort=False)
 
-    if how == JoinTypes.LEFT.value:
+    if how == _JoinTypes.LEFT.value:
         right = right.loc[right_index]
         right.index = left_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
-    if how == JoinTypes.RIGHT.value:
+    if how == _JoinTypes.RIGHT.value:
         df = df.loc[left_index]
         df.index = right_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
 
 less_than_join_types = {
-    JoinOperator.LESS_THAN.value,
-    JoinOperator.LESS_THAN_OR_EQUAL.value,
+    _JoinOperator.LESS_THAN.value,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
 greater_than_join_types = {
-    JoinOperator.GREATER_THAN.value,
-    JoinOperator.GREATER_THAN_OR_EQUAL.value,
+    _JoinOperator.GREATER_THAN.value,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value,
 }
 
 
@@ -756,7 +756,7 @@ def _check_operator(op: str):
 
     Used in `conditional_join`.
     """
-    sequence_of_operators = {op.value for op in JoinOperator}
+    sequence_of_operators = {op.value for op in _JoinOperator}
     if op not in sequence_of_operators:
         raise ValueError(
             f"""
@@ -1017,12 +1017,12 @@ def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
 
 
 operator_map = {
-    JoinOperator.STRICTLY_EQUAL.value: operator.eq,
-    JoinOperator.LESS_THAN.value: operator.lt,
-    JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
-    JoinOperator.GREATER_THAN.value: operator.gt,
-    JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
-    JoinOperator.NOT_EQUAL.value: operator.ne,
+    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
+    _JoinOperator.LESS_THAN.value: operator.lt,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
+    _JoinOperator.GREATER_THAN.value: operator.gt,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
+    _JoinOperator.NOT_EQUAL.value: operator.ne,
 }
 
 

@@ -31,7 +31,6 @@ from .convert_date import (
 )
 from .count_cumulative_unique import count_cumulative_unique
 from .currency_column_to_numeric import currency_column_to_numeric
-from .data_description import DataDescription
 from .deconcatenate_column import deconcatenate_column
 from .drop_constant_columns import drop_constant_columns
 from .drop_duplicate_columns import drop_duplicate_columns

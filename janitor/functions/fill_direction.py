@@ -109,7 +109,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     if not kwargs:
         return df
 
-    fill_types = {fill.name for fill in FILLTYPE}
+    fill_types = {fill.name for fill in _FILLTYPE}
     for column_name, fill_type in kwargs.items():
         check("column_name", column_name, [str])
         check("fill_type", fill_type, [str])
@@ -125,7 +125,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     new_values = {}
     for column_name, fill_type in kwargs.items():
-        direction = FILLTYPE[f"{fill_type.upper()}"].value
+        direction = _FILLTYPE[f"{fill_type.upper()}"].value
         if len(direction) == 1:
             direction = methodcaller(direction[0])
             output = direction(df[column_name])
@@ -149,7 +149,7 @@ def _chain_func(column: pd.Series, *funcs):
     return new_value
 
 
-class FILLTYPE(Enum):
+class _FILLTYPE(Enum):
     """List of fill types for fill_direction."""
 
     UP = ("bfill",)

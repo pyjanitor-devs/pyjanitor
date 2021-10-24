@@ -62,7 +62,7 @@ def clone_using(
         `DataArray``.
         The data inside `attrs` itself is not copied, only the mapping.
         Otherwise, use the supplied attrs.
-    :param new_name: If set, use as the new name of the returned `DataArray``.
+    :param new_name: If set, use as the new name of the returned `DataArray`.
         Otherwise, use the name of `da``.
     :return: A `DataArray` styled like the input `DataArray` containing the
         NumPy array data.

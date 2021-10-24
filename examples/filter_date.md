@@ -84,7 +84,7 @@ example_dataframe.filter_date('DATE', start=start, end=end)
     2       3 2019-01-30
 
 ## Example 2: Using a different date format for filtering
- ``python
+ ```python
 end = "01$$$30$$$19"
 format = "%m$$$%d$$$%y"
 

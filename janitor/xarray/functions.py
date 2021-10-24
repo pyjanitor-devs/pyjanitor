@@ -52,7 +52,7 @@ def clone_using(
                                 use_coords=False)
 
     :param da: The `DataArray` supplied by the method itself.
-    :param np_arr: The NumPy array which will be wrapped in a new `DataArray``
+    :param np_arr: The NumPy array which will be wrapped in a new `DataArray`
         given the properties copied over from the source `DataArray``.
     :param use_coords: If `True``, use the coordinates of the source
         `DataArray` for the coordinates of the newly-generated array. Shapes

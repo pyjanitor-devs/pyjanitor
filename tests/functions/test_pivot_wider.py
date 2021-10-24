@@ -45,7 +45,7 @@ def test_type_names_from(df_checks_output):
 
 
 def test_names_from_None(df_checks_output):
-    """Raise ValueError if no value is provided for `names_from``."""
+    """Raise ValueError if no value is provided for `names_from`."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geoid", names_from=None)
 

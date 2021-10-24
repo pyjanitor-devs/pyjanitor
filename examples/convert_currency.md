@@ -39,7 +39,7 @@ data_dict = {
 ```
 
 ## Example: Converting a column from one currency to another using rates from 01/01/2018
- ``python
+ ```python
 example_dataframe = pd.DataFrame(data_dict)
 
 example_dataframe.convert_currency(

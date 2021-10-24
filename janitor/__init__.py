@@ -8,9 +8,7 @@ from .functions import *  # noqa: F403, F401
 from .math import *  # noqa: F403, F401
 from .ml import get_features_targets as _get_features_targets
 from .utils import refactored_function
-
-# from .dataframe import JanitorDataFrame as DataFrame  # noqa: F401
-# from .dataframe import JanitorSeries as Series  # noqa: F401
+from .accessors import *  # noqa: F403, F401
 
 
 @refactored_function(

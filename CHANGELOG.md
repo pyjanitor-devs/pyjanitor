@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku
 -   [ENH] Added `case_when` to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv
 -   [ENH] Deprecate `new_column_names` and `merge_frame` from `process_text`. Only existing columns are supported. @samukweku

@@ -1,0 +1,3 @@
+# Timeseries
+
+::: janitor.timeseries

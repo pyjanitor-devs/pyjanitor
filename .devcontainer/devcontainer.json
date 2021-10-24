@@ -2,8 +2,12 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.117.1/containers/python-3-miniconda
 {
 	"name": "pyjanitor dev container",
-	"context": "..",
-	"image": "registry.hub.docker.com/ericmjl/pyjanitor:devcontainer",
+	// "context": "..",
+	// "image": "registry.hub.docker.com/ericmjl/pyjanitor:devcontainer",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": ".."
+	},
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"terminal.integrated.shell.linux": "/bin/bash",
@@ -16,12 +20,15 @@
 	"extensions": [
 		"ms-python.python",
 		"ms-python.vscode-pylance",
-		"ms-vsliveshare.vsliveshare-pack"
+		"ms-vsliveshare.vsliveshare-pack",
+		"arcticicestudio.nord-visual-studio-code"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [
+		8000
+	],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "python setup.py develop"
+	"postCreateCommand": "pre-commit install && python setup.py develop"
 	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
 	// "remoteUser": "vscode"
 }

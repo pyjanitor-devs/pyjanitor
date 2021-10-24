@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 
-from janitor.utils import (
+from janitor.functions.currency_column_to_numeric import (
     _replace_empty_string_with_none,
     _replace_original_empty_string_with_none,
 )

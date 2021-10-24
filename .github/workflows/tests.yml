@@ -30,9 +30,7 @@ jobs:
 
       - name: Build environment
         if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: |
-          conda env create -f environment-dev.yml
-          python -m pip install .
+        run: bash ./scripts/ci/build_environment.sh
 
       - name: Install conda-pack
         if: steps.cache-environment.outputs.cache-hit != 'true'
@@ -127,9 +125,9 @@ jobs:
         run: |
           source /tmp/pyjanitor-dev_env/bin/activate
           python -m pip install -e .
-          cd docs && make html
+          mkdocs build
 
       - name: Netlify PR preview
         uses: netlify/actions/cli@master
         with:
-          args: deploy --site ${{ secrets.NETLIFY_SITE_ID }} --auth ${{ secrets.NETLIFY_AUTH_TOKEN }} --dir=docs/_build/html/
+          args: deploy --site ${{ secrets.NETLIFY_SITE_ID }} --auth ${{ secrets.NETLIFY_AUTH_TOKEN }} --dir=site/

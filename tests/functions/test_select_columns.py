@@ -11,7 +11,7 @@ from pandas.testing import assert_frame_equal
         (True, ["decorated-elephant", "animals@#$%^"]),
     ],
 )
-def test_select_columns(dataframe, invert, expected):
+def test_select_column_names(dataframe, invert, expected):
     columns = ["a", "Bell__Chart", "cities"]
     df = dataframe.select_columns(columns, invert=invert)
 
@@ -26,7 +26,7 @@ def test_select_columns(dataframe, invert, expected):
         (True, ["decorated-elephant", "cities"]),
     ],
 )
-def test_select_columns_glob_inputs(dataframe, invert, expected):
+def test_select_column_names_glob_inputs(dataframe, invert, expected):
     columns = ["Bell__Chart", "a*"]
     df = dataframe.select_columns(columns, invert=invert)
 
@@ -43,7 +43,7 @@ def test_select_columns_glob_inputs(dataframe, invert, expected):
         ["a*", "Bell__Chart", "foo", "bar"],
     ],
 )
-def test_select_columns_missing_columns(dataframe, columns):
+def test_select_column_names_missing_columns(dataframe, columns):
     """Check that passing non-existent column names or search strings raises KeyError"""  # noqa: E501
     with pytest.raises(KeyError):
         dataframe.select_columns(columns)
@@ -73,7 +73,7 @@ def test_select_columns_missing_columns(dataframe, columns):
         ),
     ],
 )
-def test_select_columns_input(dataframe, columns):
+def test_select_column_names_input(dataframe, columns):
     """Check that passing an iterable that is not a list raises TypeError."""
     with pytest.raises(TypeError):
         dataframe.select_columns(columns)

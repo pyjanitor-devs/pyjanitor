@@ -41,34 +41,34 @@ def join_fasta(
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.biology
 
-        import pandas as pd
-        import janitor.biology
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = janitor.biology.join_fasta(
-            df=df,
-            filename='fasta_file.fasta',
-            id_col='sequence_accession',
-            column_name='sequence',
-        )
+    df = janitor.biology.join_fasta(
+        df=df,
+        filename='fasta_file.fasta',
+        id_col='sequence_accession',
+        column_name='sequence',
+    )
+    ```
 
     Method chaining usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.biology
 
-        import pandas as pd
-        import janitor.biology
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = df.join_fasta(
-            filename='fasta_file.fasta',
-            id_col='sequence_accession',
-            column_name='sequence',
-        )
+    df = df.join_fasta(
+        filename='fasta_file.fasta',
+        id_col='sequence_accession',
+        column_name='sequence',
+    )
+    ```
 
     :param df: A pandas DataFrame.
     :param filename: Path to the FASTA file.

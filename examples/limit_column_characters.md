@@ -32,7 +32,7 @@ data_dict = {
 ```
 
 ## Example1: Standard truncation
- ``python
+ ```python
 example_dataframe = pd.DataFrame(data_dict)
 
 example_dataframe.limit_column_characters(7)

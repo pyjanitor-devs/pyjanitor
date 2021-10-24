@@ -107,7 +107,7 @@ def convert_datetime_to_number(
     Convert the coordinates of a datetime axis to a human-readable float
     representation.
 
-    Usage example to convert a `DataArray``'s time dimension coordinates from
+    Usage example to convert a `DataArray`'s time dimension coordinates from
     a `datetime` to minutes:
 
     .. code-block:: python

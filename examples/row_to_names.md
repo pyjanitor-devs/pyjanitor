@@ -41,7 +41,7 @@ data_dict = {
 
 
 ## Example1: Move first row to column names
- ``python
+ ```python
 example_dataframe = pd.DataFrame(data_dict)
 
 example_dataframe.row_to_names(0)

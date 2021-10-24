@@ -58,7 +58,7 @@ def clone_using(
         `DataArray` for the coordinates of the newly-generated array. Shapes
         must match in this case. If `False`, only the number of dimensions
         must match.
-    :param use_attrs: If `True``, copy over the `attrs` from the source
+    :param use_attrs: If `True`, copy over the `attrs` from the source
         `DataArray`.
         The data inside `attrs` itself is not copied, only the mapping.
         Otherwise, use the supplied attrs.

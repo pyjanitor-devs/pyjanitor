@@ -68,7 +68,7 @@ def clone_using(
         NumPy array data.
     :raises ValueError: if number of dimensions in `NumPy` array and
         `DataArray` do not match.
-    :raises ValueError: if shape of `NumPy` array and `DataArray``
+    :raises ValueError: if shape of `NumPy` array and `DataArray`
         do not match.
     """
 

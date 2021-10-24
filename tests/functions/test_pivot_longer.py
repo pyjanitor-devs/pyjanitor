@@ -434,7 +434,7 @@ def test_pivot_index_patterns_only_sort_by_appearance(
 ):
     """
     Test output if the `patterns` function is passed to `index`,
-    and `sort_by_appearance` is `True``.
+    and `sort_by_appearance` is `True`.
     """
     result = df_checks.pivot_longer(
         index=patterns(r"[^\d+]"),

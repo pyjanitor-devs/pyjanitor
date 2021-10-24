@@ -16,26 +16,30 @@ from typing import (
     Dict,
     Iterable,
     List,
-    NamedTuple,
     Optional,
     Pattern,
     Tuple,
     Union,
+    Hashable,
 )
 
 import numpy as np
 import pandas as pd
+from pandas.core.reshape.merge import _MergeOperation
+from pandas.core.construction import extract_array
 from pandas.api.types import (
-    CategoricalDtype,
     is_extension_array_dtype,
     is_list_like,
     is_scalar,
-    is_numeric_dtype,
+    is_integer_dtype,
+    is_float_dtype,
     is_string_dtype,
     is_datetime64_dtype,
+    is_categorical_dtype,
 )
 from pandas.core.common import apply_if_callable
 from enum import Enum
+
 
 from .errors import JanitorError
 
@@ -450,232 +454,150 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     to expand each input to the length of the cumulative product of
     all inputs in `others`.
 
-    There is a performance penalty for small entries (length less than 10)
-    in using this method, instead of `itertools.product`; however, there is
-    significant performance benefits as the size of the data increases.
+    There is a performance penalty for small entries
+    in using this method, instead of `itertools.product`;
+    however, there is significant performance benefits
+    as the size of the data increases.
 
     Another benefit of this approach,
     in addition to the significant performance gains,
     is the preservation of data types. This is particularly relevant for
     Pandas' extension arrays dtypes (categoricals, nullable integers, ...).
 
-    A dataframe of all possible combinations is returned.
+    A MultiIndex DataFrame of all possible combinations is returned.
     """
 
-    for key, _ in others.items():
-        check("key", key, [str])
+    for key in others:
+        check("key", key, [Hashable])
 
     grid = {}
 
     for key, value in others.items():
         if is_scalar(value):
-            grid[key] = pd.Series([value])
-        elif is_extension_array_dtype(value) and not (
-            isinstance(value, pd.Series)
+            value = pd.DataFrame([value])
+        elif (not isinstance(value, pd.Series)) and is_extension_array_dtype(
+            value
         ):
-            grid[key] = pd.Series(value)
-        elif is_list_like(value):
-            if not isinstance(
-                value, (pd.DataFrame, pd.Series, np.ndarray, list, pd.Index)
-            ):
-                grid[key] = list(value)
-            else:
-                grid[key] = value
+            value = pd.DataFrame(value)
+        elif is_list_like(value) and (not hasattr(value, "shape")):
+            value = np.asarray([*value])
+
+        grid[key] = value
 
     others = None
 
-    mgrid_values = [slice(len(value)) for _, value in grid.items()]
-    mgrid_values = np.mgrid[mgrid_values]
-    mgrid_values = map(np.ravel, mgrid_values)
-    grid = zip([*grid.items()], mgrid_values)
+    # slice obtained here is used in `np.mgrid`
+    # to generate cartesian indices
+    # which is then paired with grid.items()
+    # to blow up each individual value
+    # before finally recombining, via pd.concat,
+    # to create a dataframe.
+    grid_index = [slice(len(value)) for _, value in grid.items()]
+    grid_index = np.mgrid[grid_index]
+    grid_index = map(np.ravel, grid_index)
+    grid = zip(grid.items(), grid_index)
     grid = ((*left, right) for left, right in grid)
-    grid = (
-        _expand_grid(value, key, mgrid_values)
-        for key, value, mgrid_values in grid
-    )
+    grid = {
+        key: _expand_grid(value, grid_index) for key, value, grid_index in grid
+    }
 
-    grid = pd.concat(grid, axis="columns", sort=False)
-
-    return grid
+    # creates a MultiIndex with the keys
+    # since grid is a dictionary
+    return pd.concat(grid, axis="columns", sort=False, copy=False)
 
 
 @functools.singledispatch
-def _expand_grid(value, key, mgrid_values, mode="expand_grid"):
+def _expand_grid(value, grid_index):
     """
     Base function for dispatch of `_expand_grid`.
-
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
     """
 
     raise TypeError(
-        f"{type(value).__name__} data type is not supported in `expand_grid`."
+        f"""
+        {type(value).__name__} data type
+        is not supported in `expand_grid`.
+        """
     )
 
 
-@_expand_grid.register(list)  # noqa: F811
-def _sub_expand_grid(value, key, mgrid_values):  # noqa: F811
-    """
-    Expands the list object based on `mgrid_values`.
-    Converts to an array and passes it
-    to the `_expand_grid` function for arrays.
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
-    """
-    if not value:
-        raise ValueError("""list object cannot be empty.""")
-    value = np.array(value)
-    return _expand_grid(value, key, mgrid_values)
-
-
 @_expand_grid.register(np.ndarray)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the numpy array based on `mgrid_values`.
+    Expands the numpy array based on `grid_index`.
 
-    Ensures array dimension is either 1 or 2.
-
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Returns Series with name if 1-Dimensional array
-    or DataFrame if 2-Dimensional array with column names.
-
-    The names are derived from the `key` parameter.
+    Returns Series if 1-D array,
+    or DataFrame if 2-D array.
     """
+
     if not (value.size > 0):
         raise ValueError("""array cannot be empty.""")
+
     if value.ndim > 2:
-        raise ValueError("""expand_grid works only on 1D and 2D structures.""")
+        raise ValueError(
+            """
+            expand_grid works only
+            on 1D and 2D arrays.
+            """
+        )
 
-    value = value.take(mgrid_values, axis=0)
+    value = value[grid_index]
 
-    if value.ndim == 1:
-        value = pd.Series(value)
-        # a tiny bit faster than chaining with `rename`
-        value.name = key
-    else:
-        value = pd.DataFrame(value)
-        # a tiny bit faster than using `add_prefix`
-        value.columns = value.columns.map(lambda column: f"{key}_{column}")
-
-    return value
+    return pd.DataFrame(value)
 
 
 @_expand_grid.register(pd.Series)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the Series based on `mgrid_values`.
+    Expands the Series based on `grid_index`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Checks for empty Series and returns modified keys.
-    Returns Series with new Series name.
+    Returns Series.
     """
     if value.empty:
         raise ValueError("""Series cannot be empty.""")
 
-    value = value.take(mgrid_values)
-    value.index = np.arange(len(value))
+    value = value.iloc[grid_index]
+    value.index = pd.RangeIndex(start=0, stop=len(value))
 
-    if mode != "expand_grid":
-        return value
-
-    if value.name:
-        value.name = f"{key}_{value.name}"
-    else:
-        value.name = key
-    return value
+    return value.to_frame()
 
 
 @_expand_grid.register(pd.DataFrame)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the DataFrame based on `mgrid_values`.
+    Expands the DataFrame based on `grid_index`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Checks for empty dataframe and returns modified keys.
-
-    Returns a DataFrame with new column names.
+    Returns a DataFrame.
     """
     if value.empty:
         raise ValueError("""DataFrame cannot be empty.""")
 
-    value = value.take(mgrid_values)
-    value.index = np.arange(len(value))
-
-    if mode != "expand_grid":
-        return value
-
+    value = value.iloc[grid_index]
+    value.index = pd.RangeIndex(start=0, stop=len(value))
     if isinstance(value.columns, pd.MultiIndex):
-        value.columns = [f"{key}_{num}" for num, _ in enumerate(value.columns)]
-    else:
-        value.columns = value.columns.map(lambda column: f"{key}_{column}")
+        value.columns = ["_".join(map(str, ent)) for ent in value]
 
     return value
 
 
 @_expand_grid.register(pd.Index)
-def _sub_expand_grid(  # noqa: F811
-    value, key, mgrid_values, mode="expand_grid"
-):
+def _sub_expand_grid(value, grid_index):  # noqa: F811
     """
-    Expands the Index based on `mgrid_values`.
+    Expands the Index based on `grid_index`.
 
-    `mode` parameter is added, to make the function reusable
-    in the `_computations_complete` function.
-    Also, allowing `key` as None enables reuse in the
-    `_computations_complete` function.
-
-    Checks for empty Index and returns modified keys.
-
-    Returns a DataFrame (if MultiIndex) with new column names,
-    or a Series with a new name.
+    Returns a DataFrame (if MultiIndex), or a Series.
     """
     if value.empty:
         raise ValueError("""Index cannot be empty.""")
 
-    value = value.take(mgrid_values)
+    value = value[grid_index]
 
-    if mode != "expand_grid":
-        return value
-
-    if isinstance(value, pd.MultiIndex):
-        value = value.to_frame(index=False)
-        value.columns = value.columns.map(lambda column: f"{key}_{column}")
-    else:
-        value = value.to_series(index=np.arange(len(value)))
-        if value.name:
-            value.name = f"{key}_{value.name}"
-        else:
-            value.name = key
-    return value
+    return value.to_frame(index=False)
 
 
 def _data_checks_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
+    sort: Optional[bool] = False,
     by: Optional[Union[list, str]] = None,
 ):
     """
@@ -726,17 +648,21 @@ def _data_checks_complete(
     check_column(df, column_checker)
     column_checker_no_duplicates = None
 
+    check("sort", sort, [bool])
+
     if by is not None:
         if isinstance(by, str):
             by = [by]
         check("by", by, [list])
+        check_column(df, by)
 
-    return df, columns, column_checker, by
+    return columns, column_checker, sort, by
 
 
 def _computations_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
+    sort: bool = False,
     by: Optional[Union[list, str]] = None,
 ) -> pd.DataFrame:
     """
@@ -744,171 +670,81 @@ def _computations_complete(
 
     If `by` is present, then groupby apply is used.
 
-    For some cases, the `stack/unstack` combination is preferred; it is more
-    efficient than `reindex`, as the size of the data grows. It is only
-    applicable if all the entries in `columns` are strings, there are
-    no nulls(stacking implicitly removes nulls in columns),
-    the length of `columns` is greater than 1, and the index
-    has no duplicates.
-
-    If there is a dictionary in `columns`, it is possible that all the values
-    of a key, or keys, may not be in the existing column with the same key(s);
-    as such, a union of the current index and the generated index is executed,
-    to ensure that all combinations are in the final dataframe.
-
-    A dataframe, with rows of missing values, if any, is returned.
+    A DataFrame, with rows of missing values, if any, is returned.
     """
 
-    df, columns, column_checker, by = _data_checks_complete(df, columns, by)
-
-    dict_present = any((isinstance(entry, dict) for entry in columns))
-    all_strings = all(isinstance(column, str) for column in columns)
-
-    df = df.set_index(column_checker)
-
-    df_index = df.index
-    df_names = df_index.names
-
-    any_nulls = any(
-        df_index.get_level_values(name).hasnans for name in df_names
+    columns, column_checker, sort, by = _data_checks_complete(
+        df, columns, sort, by
     )
 
-    if not by:
+    all_strings = True
+    for column in columns:
+        if not isinstance(column, str):
+            all_strings = False
+            break
 
-        df = _base_complete(df, columns, all_strings, any_nulls, dict_present)
-
-    # a better (and faster) way would be to create a dataframe
-    # from the groupby ...
-    # solution here got me thinking
-    # https://stackoverflow.com/a/66667034/7175713
-    # still thinking on how to improve speed of groupby apply
-    else:
-        df = df.groupby(by).apply(
-            _base_complete,
-            columns,
-            all_strings,
-            any_nulls,
-            dict_present,
-        )
-        df = df.drop(columns=by)
-
-    df = df.reset_index()
-
-    return df
-
-
-def _base_complete(
-    df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]],
-    all_strings: bool,
-    any_nulls: bool,
-    dict_present: bool,
-) -> pd.DataFrame:
-
-    df_empty = df.empty
-    df_index = df.index
-    unique_index = df_index.is_unique
-    columns_to_stack = None
-
-    # stack...unstack implemented here if conditions are met
-    # usually faster than reindex
-    if all_strings and (not any_nulls) and (len(columns) > 1) and unique_index:
-        if df_empty:
-            df["dummy"] = 1
-
-        columns_to_stack = columns[1:]
-        df = df.unstack(columns_to_stack)  # noqa: PD010
-        df = df.stack(columns_to_stack, dropna=False)  # noqa: PD013
-        if df_empty:
-            df = df.drop(columns="dummy")
-        columns_to_stack = None
+    # nothing to 'complete' here
+    if all_strings and len(columns) == 1:
         return df
 
-    indexer = _create_indexer_for_complete(df_index, columns)
+    # under the right conditions, stack/unstack can be faster
+    # plus it always returns a sorted DataFrame
+    # which does help in viewing the missing rows
+    # however, using a merge keeps things simple
+    # with a stack/unstack,
+    # the relevant columns combination should be unique
+    # and there should be no nulls
+    # trade-off for the simplicity of merge is not so bad
+    # of course there could be a better way ...
+    if by is None:
+        uniques = _generic_complete(df, columns, all_strings)
+        return df.merge(uniques, how="outer", on=column_checker, sort=sort)
 
-    if unique_index:
-        if dict_present:
-            indexer = df_index.union(indexer, sort=None)
-        df = df.reindex(indexer)
-
-    else:  # reindex not possible on duplicate indices
-        df = df.join(pd.DataFrame([], index=indexer), how="outer")
-
-    return df
+    uniques = df.groupby(by)
+    uniques = uniques.apply(_generic_complete, columns, all_strings)
+    uniques = uniques.droplevel(-1)
+    return df.merge(uniques, how="outer", on=by + column_checker, sort=sort)
 
 
-def _create_indexer_for_complete(
-    df_index: pd.Index,
-    columns: List[Union[List, Dict, str]],
-) -> pd.DataFrame:
+def _generic_complete(
+    df: pd.DataFrame, columns: list, all_strings: bool = True
+):
     """
-    This creates the index that will be used
-    to expand the dataframe in the `complete` function.
+    Generate cartesian product for `_computations_complete`.
 
-    A pandas Index is returned.
+    Returns a Series or DataFrame, with no duplicates.
     """
+    if all_strings:
+        uniques = {col: df[col].unique() for col in columns}
+        uniques = _computations_expand_grid(uniques)
+        uniques = uniques.droplevel(level=-1, axis="columns")
+        return uniques
 
-    complete_columns = (
-        _complete_column(column, df_index) for column in columns
-    )
-
-    complete_columns = (
-        (entry,) if not isinstance(entry, list) else entry
-        for entry in complete_columns
-    )
-    complete_columns = chain.from_iterable(complete_columns)
-    indexer = [*complete_columns]
-
-    if len(indexer) > 1:
-        indexer = _complete_indexer_expand_grid(indexer)
-
-    else:
-        indexer = indexer[0]
-
-    return indexer
-
-
-def _complete_indexer_expand_grid(indexer):
-    """
-    Generate indices to expose explicitly missing values,
-    using the `expand_grid` function.
-
-    Returns a pandas Index.
-    """
-    indexers = []
-    mgrid_values = [slice(len(value)) for value in indexer]
-    mgrid_values = np.mgrid[mgrid_values]
-    mgrid_values = map(np.ravel, mgrid_values)
-
-    indexer = zip(indexer, mgrid_values)
-    indexer = (
-        _expand_grid(value, None, mgrid_values, mode=None)
-        for value, mgrid_values in indexer
-    )
-
-    for entry in indexer:
-        if isinstance(entry, pd.MultiIndex):
-            names = entry.names
-            val = (entry.get_level_values(name) for name in names)
-            indexers.extend(val)
+    uniques = {}
+    for index, column in enumerate(columns):
+        if isinstance(column, dict):
+            column = _complete_column(column, df)
+            uniques = {**uniques, **column}
         else:
-            indexers.append(entry)
-    indexer = pd.MultiIndex.from_arrays(indexers)
-    indexers = None
-    return indexer
+            uniques[index] = _complete_column(column, df)
+
+    if len(uniques) == 1:
+        _, uniques = uniques.popitem()
+        return uniques.to_frame()
+
+    uniques = _computations_expand_grid(uniques)
+    return uniques.droplevel(level=0, axis="columns")
 
 
 @functools.singledispatch
-def _complete_column(column, index):
+def _complete_column(column, df):
     """
-    This function processes the `columns` argument,
-    to create a pandas Index or a list.
-
     Args:
         column : str/list/dict
-        index: pandas Index
+        df: Pandas DataFrame
 
-    A unique pandas Index or a list of unique pandas Indices is returned.
+    A Pandas Series/DataFrame with no duplicates,
+    or a list of unique Pandas Series is returned.
     """
     raise TypeError(
         """This type is not supported in the `complete` function."""
@@ -916,113 +752,94 @@ def _complete_column(column, index):
 
 
 @_complete_column.register(str)  # noqa: F811
-def _sub_complete_column(column, index):  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index.
-
     Args:
         column : str
-        index: pandas Index
+        df: Pandas DataFrame
 
     Returns:
-        pd.Index: A pandas Index with a single level
+        Pandas Series
     """
 
-    arr = index.get_level_values(column)
+    column = df[column]
 
-    if not arr.is_unique:
-        arr = arr.drop_duplicates()
-    return arr
+    if not column.is_unique:
+        return column.drop_duplicates()
+    return column
 
 
 @_complete_column.register(list)  # noqa: F811
-def _sub_complete_column(column, index):  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index.
-
     Args:
         column : list
-        index: pandas Index
+        df: Pandas DataFrame
 
     Returns:
-        pd.MultiIndex
+        Pandas DataFrame
     """
 
-    level_to_drop = [name for name in index.names if name not in column]
-    arr = index.droplevel(level_to_drop)
-    if not arr.is_unique:
-        return arr.drop_duplicates()
-    return arr
+    column = df.loc[:, column]
+
+    if column.duplicated().any(axis=None):
+        return column.drop_duplicates()
+
+    return column
 
 
 @_complete_column.register(dict)  # noqa: F811
-def _sub_complete_column(column, index):  # noqa: F811
+def _sub_complete_column(column, df):  # noqa: F811
     """
-    This function processes the `columns` argument,
-    to create a pandas Index or a list.
-
     Args:
-        column : dict
-        index: pandas Index
+        column : dictionary
+        df: Pandas DataFrame
 
     Returns:
-        list: A list of unique pandas Indices.
+        A dictionary of unique pandas Series.
     """
 
-    collection = []
+    collection = {}
     for key, value in column.items():
-        arr = apply_if_callable(value, index.get_level_values(key))
+        arr = apply_if_callable(value, df[key])
         if not is_list_like(arr):
             raise ValueError(
-                """
-                Input in the supplied dictionary
-                must be list-like.
+                f"""
+                value for {key} should be a 1-D array.
                 """
             )
-        if (
-            not isinstance(
-                arr, (pd.DataFrame, pd.Series, np.ndarray, pd.Index)
-            )
-        ) and (not is_extension_array_dtype(arr)):
-            arr = pd.Index([*arr], name=key)
+        if not hasattr(arr, "shape"):
+            arr = pd.Series([*arr], name=key)
 
-        if arr.ndim != 1:
+        if not arr.size > 0:
             raise ValueError(
-                """
-                It seems the supplied pair in the supplied dictionary
-                cannot be converted to a 1-dimensional Pandas object.
-                Kindly provide data that can be converted to
-                a 1-dimensional Pandas object.
-                """
-            )
-        if isinstance(arr, pd.MultiIndex):
-            raise ValueError(
-                """
-                MultiIndex object not acceptable
-                in the supplied dictionary.
+                f"""
+                Kindly ensure the provided array for {key}
+                has at least one value.
                 """
             )
 
-        if not isinstance(arr, pd.Index):
-            arr = pd.Index(arr, name=key)
+        if isinstance(arr, pd.Index):
+            arr_ndim = arr.nlevels
+        else:
+            arr_ndim = arr.ndim
 
-        if arr.empty:
+        if arr_ndim != 1:
             raise ValueError(
-                """
-                Input in the supplied dictionary
-                cannot be empty.
+                f"""
+                Kindly provide a 1-D array for {key}.
                 """
             )
+
+        if not isinstance(arr, pd.Series):
+            arr = pd.Series(arr)
 
         if not arr.is_unique:
             arr = arr.drop_duplicates()
 
-        if arr.name is None:
-            arr.name = key
+        arr.name = key
 
-        collection.append(arr)
+        collection[key] = arr
 
     return collection
 
@@ -1836,7 +1653,6 @@ def _data_checks_pivot_wider(
     index,
     names_from,
     values_from,
-    names_sort,
     levels_order,
     flatten_levels,
     names_sep,
@@ -1872,8 +1688,6 @@ def _data_checks_pivot_wider(
         if len(values_from) == 1:
             values_from = values_from[0]
 
-    check("names_sort", names_sort, [bool])
-
     if levels_order is not None:
         check("levesl_order", levels_order, [list])
 
@@ -1890,7 +1704,6 @@ def _data_checks_pivot_wider(
         index,
         names_from,
         values_from,
-        names_sort,
         levels_order,
         flatten_levels,
         names_sep,
@@ -1903,7 +1716,6 @@ def _computations_pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    names_sort: Optional[bool] = False,
     levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
@@ -1919,19 +1731,33 @@ def _computations_pivot_wider(
 
     A dataframe pivoted from long to wide form is returned.
     """
-    # check dtype of `names_from` is string
-    names_from_all_strings = df.filter(names_from).agg(is_string_dtype).all()
 
-    if names_sort is True:
-        # Categorical dtypes created only for `names_from`
-        # since that is what will become the new column names
-        dtypes = {
-            column_name: CategoricalDtype(
-                df[column_name].factorize(sort=False)[-1], ordered=True
-            )
-            for column_name in names_from
-        }
-        df = df.astype(dtypes)
+    (
+        df,
+        index,
+        names_from,
+        values_from,
+        levels_order,
+        flatten_levels,
+        names_sep,
+        names_glue,
+    ) = _data_checks_pivot_wider(
+        df,
+        index,
+        names_from,
+        values_from,
+        levels_order,
+        flatten_levels,
+        names_sep,
+        names_glue,
+    )
+    # check dtype of `names_from` is string
+    names_from_all_strings = (
+        df.filter(names_from).agg(is_string_dtype).all().item()
+    )
+
+    # check dtype of columns
+    column_dtype = is_string_dtype(df.columns)
 
     df = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
@@ -1941,19 +1767,19 @@ def _computations_pivot_wider(
         df = df.reorder_levels(order=levels_order, axis="columns")
 
     # an empty df is likely because
-    # there are no `values_from`
+    # there is no `values_from`
     if any((df.empty, flatten_levels is False)):
         return df
 
     # ensure all entries in names_from are strings
-    if not names_from_all_strings:
+    if (names_from_all_strings is False) or (column_dtype is False):
         if isinstance(df.columns, pd.MultiIndex):
             new_columns = [tuple(map(str, ent)) for ent in df]
             df.columns = pd.MultiIndex.from_tuples(new_columns)
         else:
             df.columns = df.columns.astype(str)
 
-    if names_sep is not None and (isinstance(df.columns, pd.MultiIndex)):
+    if (names_sep is not None) and (isinstance(df.columns, pd.MultiIndex)):
         df.columns = df.columns.map(names_sep.join)
 
     if names_glue:
@@ -1962,8 +1788,7 @@ def _computations_pivot_wider(
     # if columns are of category type
     # this returns columns to object dtype
     # also, resetting index with category columns is not possible
-    if names_sort:
-        df.columns = [*df.columns]
+    df.columns = [*df.columns]
 
     if index:
         df = df.reset_index()
@@ -1974,23 +1799,16 @@ def _computations_pivot_wider(
     return df
 
 
-class asCategorical(NamedTuple):
+class CategoryOrder(Enum):
     """
-    Helper class for `encode_categorical`. It makes creating the
-    `categories` and `order` more explicit. Inspired by pd.NamedAgg.
-
-    :param categories: list-like object to create new categorical column.
-    :param order: string object that can be either "sort" or "appearance".
-        If "sort", the `categories` argument will be sorted with np.sort;
-        if "apperance", the `categories` argument will be used as is.
-    :returns: A namedtuple of (`categories`, `order`).
+    order types for encode_categorical.
     """
 
-    categories: list = None
-    order: str = None
+    SORT = "sort"
+    APPEARANCE = "appearance"
 
 
-def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
+def as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     """
     This function raises errors if columns in `kwargs` are
     absent in the the dataframe's columns.
@@ -2002,15 +1820,14 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
     This function is executed before proceeding to the computation phase.
 
-    If all checks pass, the dataframe,
-    and a pairing of column names and namedtuple
+    If all checks pass, a dictionary of column names and tuple
     of (categories, order) is returned.
 
     :param df: The pandas DataFrame object.
     :param kwargs: A pairing of column name
         to a tuple of (`categories`, `order`).
-    :returns: A tuple (pandas DataFrame, dictionary).
-    :raises TypeError: if ``kwargs`` is not a tuple.
+    :returns: A dictionary.
+    :raises TypeError: if the value in ``kwargs`` is not a tuple.
     :raises ValueError: if ``categories`` is not a 1-D array.
     :raises ValueError: if ``order`` is not one of
         `sort`, `appearance`, or `None`.
@@ -2021,65 +1838,162 @@ def as_categorical_checks(df: pd.DataFrame, **kwargs) -> tuple:
 
     categories_dict = {}
 
-    # type checks
     for column_name, value in kwargs.items():
+        # type check
         check("Pair of `categories` and `order`", value, [tuple])
-        if len(value) != 2:
-            raise ValueError("Must provide tuple of (categories, order).")
-        value = asCategorical(*value)
-        value_categories = value.categories
-        if value_categories is not None:
-            if not is_list_like(value_categories):
-                raise TypeError(f"{value_categories} should be list-like.")
-            value_categories = [*value_categories]
-            arr_ndim = np.asarray(value_categories).ndim
-            if any((arr_ndim < 1, arr_ndim > 1)):
+
+        len_value = len(value)
+
+        if len_value != 2:
+            raise ValueError(
+                f"""
+                The tuple of (categories, order) for {column_name}
+                should be length 2; the tuple provided is
+                length {len_value}.
+                """
+            )
+
+        cat, order = value
+        if cat is not None:
+            if not is_list_like(cat):
+                raise TypeError(f"{cat} should be list-like.")
+
+            if not hasattr(cat, "shape"):
+                checker = pd.Index([*cat])
+            else:
+                checker = cat
+
+            arr_ndim = checker.ndim
+            if (arr_ndim != 1) or isinstance(checker, pd.MultiIndex):
                 raise ValueError(
                     f"""
-                    {value_categories} is not a 1-D array.
+                    {cat} is not a 1-D array.
+                    Kindly provide a 1-D array-like object to `categories`.
                     """
                 )
-        value_order = value.order
-        if value_order is not None:
-            check("order", value_order, [str])
-            if value_order not in ("appearance", "sort"):
+
+            if not isinstance(checker, (pd.Series, pd.Index)):
+                checker = pd.Index(checker)
+
+            if checker.hasnans:
+                raise ValueError(
+                    "Kindly ensure there are no nulls in `categories`."
+                )
+
+            if not checker.is_unique:
+                raise ValueError(
+                    """
+                    Kindly provide unique,
+                    non-null values for `categories`.
+                    """
+                )
+
+            if checker.empty:
+                raise ValueError(
+                    """
+                    Kindly ensure there is at least
+                    one non-null value in `categories`.
+                    """
+                )
+
+            # uniques, without nulls
+            uniques = df[column_name].factorize(sort=False)[-1]
+            if uniques.empty:
+                raise ValueError(
+                    f"""
+                     Kindly ensure there is at least
+                     one non-null value in {column_name}.
+                     """
+                )
+
+            missing = uniques.difference(checker, sort=False)
+            if not missing.empty and (uniques.size > missing.size):
+                warnings.warn(
+                    f"""
+                     Values {tuple(missing)} are missing from
+                     the provided categories {cat}
+                     for {column_name}; this may create nulls
+                     in the new categorical column.
+                     """,
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+            elif uniques.equals(missing):
+                warnings.warn(
+                    f"""
+                     None of the values in {column_name} are in
+                     {cat};
+                     this might create nulls for all values
+                     in the new categorical column.
+                     """,
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        if order is not None:
+            check("order", order, [str])
+
+            category_order_types = [ent.value for ent in CategoryOrder]
+            if order.lower() not in category_order_types:
                 raise ValueError(
                     """
                     `order` argument should be one of
                     "appearance", "sort" or `None`.
                     """
                 )
-        categories_dict[column_name] = asCategorical(
-            categories=value_categories, order=value_order
-        )
 
-    return df, categories_dict
+        categories_dict[column_name] = value
+
+    return categories_dict
 
 
 def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
-    This function handles cases where categorical columns are created with
-    an order, or specific values supplied for the categories. It uses a kwarg,
-    with a namedtuple - `column_name: (categories, order)`, with the idea
-    inspired by Pandas' NamedAggregation. The defaults for the namedtuple are
-    (None, None) and will return a categorical dtype with no order and
-    categories inferred from the column.
+    This function handles cases where
+    categorical columns are created with an order,
+    or specific values supplied for the categories.
+    It uses a kwarg, where the key is the column name,
+    and the value is a tuple of categories, order.
+    The defaults for the tuple are (None, None)
+    and will return a categorical dtype
+    with no order and categories inferred from the column.
+    A DataFrame, with catetorical columns, is returned.
     """
 
-    df, categories_dict = as_categorical_checks(df, **kwargs)
+    categories_dict = as_categorical_checks(df, **kwargs)
 
     categories_dtypes = {}
-    for column_name, ascategorical in categories_dict.items():
-        categories = _encode_categories(
-            ascategorical.categories, df, column_name
-        )
-        categories_dtypes[column_name] = _encode_order(
-            ascategorical.order, categories
-        )
 
-    df = df.astype(categories_dtypes)
+    for column_name, (
+        cat,
+        order,
+    ) in categories_dict.items():
+        error_msg = f"""
+                     Kindly ensure there is at least
+                     one non-null value in {column_name}.
+                     """
+        if (cat is None) and (order is None):
+            cat_dtype = pd.CategoricalDtype()
 
-    return df
+        elif (cat is None) and (order is CategoryOrder.SORT.value):
+            cat = df[column_name].factorize(sort=True)[-1]
+            if cat.empty:
+                raise ValueError(error_msg)
+            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
+
+        elif (cat is None) and (order is CategoryOrder.APPEARANCE.value):
+            cat = df[column_name].factorize(sort=False)[-1]
+            if cat.empty:
+                raise ValueError(error_msg)
+            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
+
+        elif cat is not None:  # order is irrelevant if cat is provided
+            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
+
+        categories_dtypes[column_name] = cat_dtype
+
+    return df.astype(categories_dtypes)
 
 
 def is_connected(url: str) -> bool:
@@ -2112,112 +2026,6 @@ def is_connected(url: str) -> bool:
         )
         raise e
     return False
-
-
-@functools.singledispatch
-def _encode_categories(cat, df, column):
-    """
-    base function for processing `categories`
-    in `_computations_as_categorical`.
-    Returns a Series.
-    """
-    raise TypeError("This type is not supported in `categories`.")
-
-
-@_encode_categories.register(type(None))  # noqa: F811
-def _sub_categories(cat, df, column):  # noqa: F811
-    """
-    base function for processing `categories`
-    in `_computations_as_categorical`.
-    Apllies to only NoneType.
-    Returns a Series.
-    """
-    column = df[column]
-    if column.hasnans:
-        column = column.dropna()
-    return column
-
-
-@_encode_categories.register(list)  # noqa: F811
-def _sub_categories(cat, df, column):  # noqa: F811
-    """
-    base function for processing `categories`
-    in `_computations_as_categorical`.
-    Apllies to only list type.
-    Returns a Series.
-    """
-    if pd.isna(cat).any():
-        raise ValueError("""`categories` cannot have null values.""")
-    col = df[column]
-    check_presence = col.isin(cat)
-    check_presence_sum = check_presence.sum()
-
-    if check_presence_sum == 0:
-        warnings.warn(
-            f"""
-            None of the values in `{column}` are in
-            {cat};
-            this might create nulls for all your values
-            in the new categorical column.
-            """,
-            UserWarning,
-            stacklevel=2,
-        )
-    elif check_presence_sum != check_presence.size:
-        missing_values = col[~check_presence]
-        if missing_values.hasnans:
-            missing_values = missing_values.dropna()
-        warnings.warn(
-            f"""
-            Values {tuple(missing_values)} are missing from
-            categories {cat}
-            for {column}; this may create nulls
-            in the new categorical column.
-            """,
-            UserWarning,
-            stacklevel=2,
-        )
-    return pd.Series(cat)
-
-
-@functools.singledispatch
-def _encode_order(order, categories):
-    """
-    base function for processing `order`
-    in `_computations_as_categorical`.
-    Returns a pd.CategoricalDtype().
-    """
-    raise TypeError("This type is not supported in `order`.")
-
-
-@_encode_order.register(type(None))  # noqa: F811
-def _sub_encode_order(order, categories):  # noqa: F811
-    """
-    base function for processing `order`
-    in `_computations_as_categorical`.
-    Apllies to only NoneType.
-    Returns a pd.CategoricalDtype().
-    """
-    if not categories.is_unique:
-        categories = categories.unique()
-
-    return pd.CategoricalDtype(categories=categories, ordered=False)
-
-
-@_encode_order.register(str)  # noqa: F811
-def _sub_encode_order(order, categories):  # noqa: F811
-    """
-    base function for processing `order`
-    in `_computations_as_categorical`.
-    Apllies to only strings.
-    Returns a pd.CategoricalDtype().
-    """
-    if (order == "sort") and (not categories.is_monotonic_increasing):
-        categories = categories.sort_values()
-    if not categories.is_unique:
-        categories = categories.unique()
-
-    return pd.CategoricalDtype(categories=categories, ordered=True)
 
 
 @functools.singledispatch
@@ -2460,109 +2268,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     return filtered_columns
 
 
-@functools.singledispatch
-def _process_text(result: str, df, column_name, new_column_names, merge_frame):
-    """
-    Base function for `process_text` when `result` is of ``str`` type.
-    """
-    if new_column_names:
-        return df.assign(**{new_column_names: result})
-    df[column_name] = result
-    return df
-
-
-@_process_text.register
-def _sub_process_text(
-    result: pd.Series, df, column_name, new_column_names, merge_frame
-):
-    """
-    Base function for `process_text` when `result` is of ``pd.Series`` type.
-    """
-    if new_column_names:
-        return df.assign(**{new_column_names: result})
-    df[column_name] = result
-    return df
-
-
-@_process_text.register  # noqa: F811
-def _sub_process_text(  # noqa: F811
-    result: pd.DataFrame, df, column_name, new_column_names, merge_frame
-):  # noqa: F811
-    """
-    Base function for `process_text` when `result` is of ``pd.DataFrame`` type.
-    """
-    result = _process_text_result_is_frame(new_column_names, result)
-    if not merge_frame:
-        return result
-    return _process_text_result_MultiIndex(result.index, result, df)
-
-
-@functools.singledispatch
-def _process_text_result_is_frame(new_column_names: str, result):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe. Applies only if `new_column_names`
-    is a string type.
-    """
-    if new_column_names:
-        return result.add_prefix(new_column_names)
-    return result
-
-
-@_process_text_result_is_frame.register
-def _sub_process_text_result_is_frame(new_column_names: list, result):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe. Applies only if `new_column_names`
-    is a list type.
-    """
-    if len(new_column_names) != len(result.columns):
-        raise ValueError(
-            """
-            The length of `new_column_names` does not
-            match the number of columns in the new
-            dataframe generated from the text processing.
-            """
-        )
-    result.columns = new_column_names
-    return result
-
-
-@functools.singledispatch
-def _process_text_result_MultiIndex(index: pd.Index, result, df):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe and it has a single Index.
-    """
-    return pd.concat([df, result], axis="columns")
-
-
-@_process_text_result_MultiIndex.register
-def _sub_process_text_result_MultiIndex(index: pd.MultiIndex, result, df):
-    """
-    Function to modify `result` columns from `process_text` if
-    `result` is a dataframe and it has a MultiIndex.
-    At the moment, this function is primarily to cater for `str.extractall`,
-    since at the moment,
-    this is the only string method that returns a MultiIndex.
-    The function may be modified,
-    if another string function that returns a  MultIndex
-    is added to Pandas string methods.
-
-    For this function, `df` has been converted to a MultiIndex,
-    with the extra index added to create unique indices.
-    This comes in handy when merging back the dataframe,
-    especially if `result` returns duplicate indices.
-    """
-    result = result.reset_index(level="match")
-    df = df.join(result, how="outer")
-    # droplevel gets rid of the extra index added at the start
-    # (# extra_index_line)
-    df = df.droplevel(-1).set_index("match", append=True)
-    return df
-
-
-class JOINOPERATOR(Enum):
+class JoinOperator(Enum):
     """
     List of operators used in conditional_join.
     """
@@ -2575,7 +2281,7 @@ class JOINOPERATOR(Enum):
     NOT_EQUAL = "!="
 
 
-class JOINTYPES(Enum):
+class JoinTypes(Enum):
     """
     List of join types for conditional_join.
     """
@@ -2589,9 +2295,10 @@ def _check_operator(op: str):
     """
     Check that operator is one of
     `>`, `>=`, `==`, `!=`, `<`, `<=`.
+
     Used in `conditional_join`.
     """
-    sequence_of_operators = {op.value for op in JOINOPERATOR}
+    sequence_of_operators = {op.value for op in JoinOperator}
     if op not in sequence_of_operators:
         raise ValueError(
             f"""
@@ -2605,22 +2312,19 @@ def _conditional_join_preliminary_checks(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
     conditions: tuple,
-    how: str = "inner",
-    sort_by_appearance: bool = False,
-    suffixes=("_x", "_y"),
+    how: str,
+    sort_by_appearance: tuple,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
+
     This function checks for conditions such as
     MultiIndexed dataframe columns,
     improper `suffixes` configuration,
     as well as unnamed Series.
 
     A tuple of
-    (`df`, `right`,
-     `left_on`, `right_on`,
-     `operator`, `sort_by_appearance`,
-     `suffixes`)
+    (`df`, `right`, `left_on`, `right_on`, `operator`)
     is returned.
     """
 
@@ -2676,7 +2380,7 @@ def _conditional_join_preliminary_checks(
             Kindly provide at least one join condition.
             """
         )
-    # each condition should be a tuple of length 3:
+
     for condition in conditions:
         check("condition", condition, [tuple])
         len_condition = len(condition)
@@ -2684,7 +2388,7 @@ def _conditional_join_preliminary_checks(
             raise ValueError(
                 f"""
                 condition should have only three elements.
-                Your condition however is of length {len_condition}
+                {condition} however is of length {len_condition}.
                 """
             )
 
@@ -2698,123 +2402,87 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    join_types = {jointype.value for jointype in JOINTYPES}
+    join_types = {jointype.value for jointype in JoinTypes}
     if how not in join_types:
         raise ValueError(f"`how` should be one of {', '.join(join_types)}.")
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
-    check("suffixes", suffixes, [tuple])
-
-    if len(suffixes) != 2:
-        raise ValueError("`suffixes` argument should be a 2-length tuple")
-
-    if suffixes == (None, None):
-        raise ValueError("At least one of the suffixes should be non-null.")
-
-    for suffix in suffixes:
-        check("suffix", suffix, [str, type(None)])
-
-    return (df, right, conditions, how, sort_by_appearance, suffixes)
-
-
-def _cond_join_suffixes(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: tuple, suffixes: tuple
-):
-    """
-    If there are overlapping columns in `df` and `right`,
-    modify the columns, using the suffix in suffixes.
-    A tuple of (df, right, conditions) is returned.
-    """
-
-    common_columns = df.columns.intersection(right.columns, sort=False)
-
-    left_on, right_on, operators = zip(*conditions)
-    if not common_columns.empty:
-        left_suffix, right_suffix = suffixes
-
-        if left_suffix:
-            mapping = {}
-            for common in common_columns:
-                new_label = f"{common}{left_suffix}"
-                if new_label in df.columns:
-                    raise ValueError(
-                        f"""
-                        {new_label} is present in `df` columns.
-                        Kindly provide a unique suffix to create
-                        columns that are not present in `df`.
-                        """
-                    )
-                mapping[common] = new_label
-            left_on = [
-                f"{label}{left_suffix}" if label in common_columns else label
-                for label in left_on
-            ]
-            df = df.rename(columns=mapping)
-        if right_suffix:
-            mapping = {}
-            for common in common_columns:
-                new_label = f"{common}{right_suffix}"
-                if new_label in right.columns:
-                    raise ValueError(
-                        f"""
-                        {new_label} is present in `right` columns.
-                        Kindly provide a unique suffix to create
-                        columns that are not present in `right`.
-                        """
-                    )
-
-                mapping[common] = new_label
-            right_on = [
-                f"{label}{right_suffix}" if label in common_columns else label
-                for label in right_on
-            ]
-            right = right.rename(columns=mapping)
-
-    conditions = [*zip(left_on, right_on, operators)]
-
-    return df, right, conditions
+    return df, right, conditions, how, sort_by_appearance
 
 
 def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series, op: str
 ) -> None:
     """
-    Raise error if column type is not any of
-    numeric, datetime, or string.
-    Strings are not supported on non-equi operators.
+    Raise error if column type is not
+    any of numeric or datetime.
     """
 
-    error_msg = """
-          conditional_join only supports
-          numeric, date, or string dtypes.
-          The columns must also be of the same type.
-          """
-    error_msg_string = """
-                       Strings can only be compared
-                       on the equal(`==`) operator.
-                       """
-    if is_string_dtype(left_column):
-        if not is_string_dtype(right_column):
-            raise ValueError(error_msg)
-        if op != JOINOPERATOR.STRICTLY_EQUAL.value:
-            raise ValueError(error_msg_string)
-        return None
-    if is_numeric_dtype(left_column):
-        if not is_numeric_dtype(right_column):
-            raise ValueError(error_msg)
-        return None
-    if is_datetime64_dtype(left_column):
-        if not is_datetime64_dtype(right_column):
-            raise ValueError(error_msg)
-        return None
+    # Allow merges on strings/categoricals,
+    # but only on the `==` operator?
+    permitted_types = {
+        is_datetime64_dtype,
+        is_integer_dtype,
+        is_float_dtype,
+        is_string_dtype,
+        is_categorical_dtype,
+    }
+    for func in permitted_types:
+        if func(left_column):
+            break
+    else:
+        raise ValueError(
+            """
+            conditional_join only supports
+            string, category, integer,
+            float or date dtypes.
+            """
+        )
+    cols = (left_column, right_column)
+    for func in permitted_types:
+        if all(map(func, cols)):
+            break
+    else:
+        raise ValueError(
+            f"""
+             Both columns should have the same type.
+             `{left_column.name}` has {left_column.dtype} type;
+             `{right_column.name}` has {right_column.dtype} type.
+             """
+        )
+
+    if (
+        is_categorical_dtype(left_column)
+        and op != JoinOperator.STRICTLY_EQUAL.value
+    ):
+        raise ValueError(
+            """
+            For categorical columns,
+            only the `==` operator is supported.
+            """
+        )
+
+    if (
+        is_string_dtype(left_column)
+        and op != JoinOperator.STRICTLY_EQUAL.value
+    ):
+        raise ValueError(
+            """
+            For string columns,
+            only the `==` operator is supported.
+            """
+        )
+
+    return None
 
 
 def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     """
     Create `range` indices for each value in
-    `right_keys` in `_equal_indices`, `_less_than_indices`,
+    `right_keys` in  `_less_than_indices`
     and `_greater_than_indices`.
+
     It is faster than a list comprehension, especially
     for large arrays.
 
@@ -2825,13 +2493,13 @@ def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
     cum_length = cum_length.cumsum()
     # generate ones
     # note that cum_length[-1] is the total
-    # number of inidices to be generated
+    # number of index positions to be generated
     ids = np.ones(cum_length[-1], dtype=int)
     ids[0] = indices[0]
     # at each specific point in id, replace the value
     # so, we should have say 0, 1, 1, 1, 1, -5, 1, 1, 1, -3, ...
     # when a cumsum is implemented in the next line,
-    # we get, 0, 1, 2, 3, 4, 0, 1,2, 3, 0, ...
+    # we get, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, ...
     # our ranges is obtained, with more efficiency
     # for larger arrays
     ids[cum_length[:-1]] = indices[1:] - right[:-1] + 1
@@ -2842,96 +2510,55 @@ def _interval_ranges(indices: np.ndarray, right: np.ndarray) -> np.ndarray:
 
 
 def _equal_indices(
-    left_c: pd.Series, right_c: pd.Series, len_conditions: int
+    left_c: Union[pd.Series, pd.DataFrame],
+    right_c: Union[pd.Series, pd.DataFrame],
+    len_conditions: int,
 ) -> tuple:
     """
-    Use binary search to get indices where
-    `left_c` is exactly  equal to `right_c`.
+    Use Pandas' merge internal functions
+    to find the matches, if any.
 
     Returns a tuple of (left_c, right_c)
     """
 
-    if right_c.hasnans:
-        right_c = right_c.dropna()
-    if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
+    if isinstance(left_c, pd.Series):
+        left_on = left_c.name
+        right_on = right_c.name
+    else:
+        left_on = [*left_c.columns]
+        right_on = [*right_c.columns]
 
-    lower_boundary = right_c.searchsorted(left_c, side="left")
-    upper_boundary = right_c.searchsorted(left_c, side="right")
-    keep_rows = lower_boundary < upper_boundary
-    if keep_rows.sum() == 0:  # no match
+    outcome = _MergeOperation(
+        left=left_c,
+        right=right_c,
+        left_on=left_on,
+        right_on=right_on,
+        sort=False,
+    )
+
+    left_index, right_index = outcome._get_join_indexers()
+
+    if not left_index.size > 0:
         return None
-    # keep only matching rows
-    if keep_rows.sum() < keep_rows.size:
-        left_c = left_c[keep_rows]
-        lower_boundary = lower_boundary[keep_rows]
-        upper_boundary = upper_boundary[keep_rows]
+
     if len_conditions > 1:
-        return left_c.index, (upper_boundary - lower_boundary).sum()
-    positions = _interval_ranges(lower_boundary, upper_boundary)
-    left_repeat = upper_boundary - lower_boundary
-    left_c = left_c.index.repeat(left_repeat)
-    right_c = right_c.index.take(positions)
+        return left_index, right_index
 
-    return left_c, right_c
+    return left_c.index[left_index], right_c.index[right_index]
 
 
-def _not_equal_indices(
-    left_c: pd.Series, right_c: pd.Series, len_conditions: int
-) -> tuple:
+def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     """
     Use binary search to get indices where
     `left_c` is exactly  not equal to `right_c`.
+
     It is a combination of strictly less than
     and strictly greater than indices.
 
     Returns a tuple of (left_c, right_c)
     """
 
-    dummy = pd.Int64Index([])
-    left_nulls = dummy
-    right_nulls = dummy
-
-    # nulls are not preserved here
-    if len_conditions > 1:
-        outcome = _less_than_indices(left_c, right_c, True, 2)
-
-        if outcome is None:
-            lt_left = dummy
-            lt_counts = 0
-        else:
-            lt_left, lt_counts = outcome
-
-        outcome = _greater_than_indices(left_c, right_c, True, 2)
-
-        if outcome is None:
-            gt_left = dummy
-            gt_counts = 0
-        else:
-            gt_left, gt_counts = outcome
-
-        left_c = lt_left.append(gt_left)
-
-        if left_c.empty:
-            return None
-
-        return left_c, lt_counts + gt_counts
-
-    # capture null positions, since NaN != NaN
-    # if left_c has nulls, I want to capture the positions
-    # and hook it up with the index positions for nulls
-    # in right_c, it it exists
-    base_left = left_c.copy()
-    if right_c.hasnans:
-        nulls = right_c.isna()
-        right_nulls = right_c.index[nulls]
-        right_c = right_c[~nulls]
-    if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
-    if left_c.hasnans:
-        nulls = left_c.isna()
-        left_nulls = left_c.index[nulls]
-        left_c = left_c[~nulls]
+    dummy = np.array([], dtype=int)
 
     outcome = _less_than_indices(left_c, right_c, True, 1)
 
@@ -2949,23 +2576,10 @@ def _not_equal_indices(
     else:
         gt_left, gt_right = outcome
 
-    nulls_left = dummy
-    nulls_right = dummy
-    if left_nulls.empty is False:
-        # repeat right index, tile left_nulls to ensure match
-        nulls_right = right_c.index.repeat(left_nulls.size)
-        left_nulls = np.tile(left_nulls, right_c.size)
-        left_nulls = pd.Index(left_nulls)
-    if right_nulls.empty is False:
-        # repeat left index, tile right nulls
-        # base_left is used here, to capture index for nulls,
-        # if present
-        nulls_left = base_left.index.repeat(right_nulls.size)
-        right_nulls = np.tile(right_nulls, base_left.size)
-        right_nulls = pd.Index(right_nulls)
-
-    left_c = lt_left.append([gt_left, left_nulls, nulls_left])
-    right_c = lt_right.append([gt_right, nulls_right, right_nulls])
+    if (not lt_left.size > 0) and (not gt_left.size > 0):
+        return None
+    left_c = np.concatenate([lt_left, gt_left])
+    right_c = np.concatenate([lt_right, gt_right])
 
     return left_c, right_c
 
@@ -2976,6 +2590,7 @@ def _less_than_indices(
     """
     Use binary search to get indices where left_c
     is less than or equal to right_c.
+
     If strict is True,then only indices
     where `left_c` is less than
     (but not equal to) `right_c` are returned.
@@ -2991,6 +2606,12 @@ def _less_than_indices(
         right_c = right_c.dropna()
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
+    if left_c.hasnans:
+        left_c = left_c.dropna()
+    left_index = left_c.index.to_numpy(dtype=int)
+    left_c = extract_array(left_c, extract_numpy=True)
+    right_index = right_c.index.to_numpy(dtype=int)
+    right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
@@ -3000,9 +2621,12 @@ def _less_than_indices(
     # or equal, and should therefore be discarded
     len_right = right_c.size
     rows_equal = search_indices == len_right
+
     if rows_equal.any():
         left_c = left_c[~rows_equal]
+        left_index = left_index[~rows_equal]
         search_indices = search_indices[~rows_equal]
+
     if search_indices.size == 0:
         return None
 
@@ -3010,13 +2634,13 @@ def _less_than_indices(
     # shift upwards to the immediate next position
     # that is not equal
     if strict:
-        rows_equal = right_c.take(search_indices).array
-        rows_equal = left_c.array == rows_equal
+        rows_equal = right_c[search_indices]
+        rows_equal = left_c == rows_equal
         # replace positions where rows are equal
         # with positions from searchsorted('right')
         # positions from searchsorted('right') will never
         # be equal and will be the furthermost in terms of position
-        # example : right_c -> [2, 2,2,3], and we need
+        # example : right_c -> [2, 2, 2, 3], and we need
         # positions where values are not equal for 2;
         # the furthermost will be 3, and searchsorted('right')
         # will return position 3.
@@ -3029,8 +2653,10 @@ def _less_than_indices(
         # have become equal to length of right_c
         # and get rid of them
         rows_equal = search_indices == len_right
+
         if rows_equal.any():
             left_c = left_c[~rows_equal]
+            left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
     if search_indices.size == 0:
@@ -3039,13 +2665,13 @@ def _less_than_indices(
     indices = np.repeat(len_right, search_indices.size)
 
     if len_conditions > 1:
-        return left_c.index, (indices - search_indices).sum()
+        return (left_index, right_index, search_indices, indices)
 
     positions = _interval_ranges(search_indices, indices)
     search_indices = indices - search_indices
 
-    right_c = right_c.index.take(positions)
-    left_c = left_c.index.repeat(search_indices)
+    right_c = right_index[positions]
+    left_c = left_index.repeat(search_indices)
     return left_c, right_c
 
 
@@ -3055,12 +2681,12 @@ def _greater_than_indices(
     """
     Use binary search to get indices where left_c
     is greater than or equal to right_c.
+
     If strict is True,then only indices
     where `left_c` is greater than
     (but not equal to) `right_c` are returned.
 
     Returns a tuple of (left_c, right_c).
-    Nulls are discarded, even when the operator is `!=`.
     """
 
     # quick break, avoiding the hassle
@@ -3073,15 +2699,20 @@ def _greater_than_indices(
         right_c = right_c.sort_values()
     if left_c.hasnans:
         left_c = left_c.dropna()
+    left_index = left_c.index.to_numpy(dtype=int)
+    left_c = extract_array(left_c, extract_numpy=True)
+    right_index = right_c.index.to_numpy(dtype=int)
+    right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="right")
     # if any of the positions in `search_indices`
-    # is equal to 0 (less than 1)
+    # is equal to 0 (less than 1), it implies that
     # left_c[position] is not greater than any value
     # in right_c
     rows_equal = search_indices < 1
     if rows_equal.any():
         left_c = left_c[~rows_equal]
+        left_index = left_index[~rows_equal]
         search_indices = search_indices[~rows_equal]
     if search_indices.size == 0:
         return None
@@ -3090,8 +2721,8 @@ def _greater_than_indices(
     # shift downwards to the immediate next position
     # that is not equal
     if strict:
-        rows_equal = right_c.take(search_indices - 1).array
-        rows_equal = left_c.array == rows_equal
+        rows_equal = right_c[search_indices - 1]
+        rows_equal = left_c == rows_equal
         # replace positions where rows are equal with
         # searchsorted('left');
         # however there can be scenarios where positions
@@ -3111,205 +2742,21 @@ def _greater_than_indices(
         rows_equal = search_indices < 1
         if rows_equal.any():
             left_c = left_c[~rows_equal]
+            left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
     if search_indices.size == 0:
         return None
 
-    indices = np.repeat(0, search_indices.size)
+    indices = np.zeros(search_indices.size, dtype=np.int8)
 
     if len_conditions > 1:
-        return left_c.index, search_indices.sum()
+        return (left_index, right_index, search_indices, indices)
 
     positions = _interval_ranges(indices, search_indices)
-    right_c = right_c.index.take(positions)
-    left_c = left_c.index.repeat(search_indices)
+    right_c = right_index[positions]
+    left_c = left_index.repeat(search_indices)
     return left_c, right_c
-
-
-operator_map = {
-    JOINOPERATOR.STRICTLY_EQUAL.value: operator.eq,
-    JOINOPERATOR.LESS_THAN.value: operator.lt,
-    JOINOPERATOR.LESS_THAN_OR_EQUAL.value: operator.le,
-    JOINOPERATOR.GREATER_THAN.value: operator.gt,
-    JOINOPERATOR.GREATER_THAN_OR_EQUAL.value: operator.ge,
-    JOINOPERATOR.NOT_EQUAL.value: operator.ne,
-}
-
-
-def _multiple_conditional_join(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: list
-) -> tuple:
-    """
-    Use binary search to get indices for paired conditions.
-
-    Returns a tuple of (left_c, right_c)
-    """
-    left_columns, right_columns, _ = zip(*conditions)
-    right_columns = pd.unique(right_columns)
-    right_columns = [*right_columns]
-    left_columns = pd.unique(left_columns)
-    left_columns = [*left_columns]
-
-    df = df.loc[:, left_columns]
-    right = right.loc[:, right_columns]
-
-    if right.isna().any(axis=None):
-        right = right.dropna()
-    if right.empty:
-        return None
-    if df.isna().any(axis=None):
-        df = df.dropna()
-    if df.empty:
-        return None
-
-    # find condition with least number of search points
-    # the lower the number of matching indices from left_c
-    # the better
-    base_index = df.index
-    base_condition = conditions[0]
-    difference = None
-    for condition in conditions:
-        left_on, right_on, op = condition
-        left_c = df[left_on]
-        right_c = right[right_on]
-        result = _generic_func_cond_join(left_c, right_c, op, 2)
-        if result is None:
-            return None
-
-        indexer, indices_count = result
-        if base_index.size > indexer.size:
-            base_index = indexer
-            base_condition = condition
-            difference = indices_count
-        else:
-            if difference is None:
-                difference = indices_count
-            else:
-                # the smaller the indices_count
-                # the better, as this implies
-                # there is a lower number of search points
-                # for that particular condition
-                if difference > indices_count:
-                    base_condition = condition
-                    difference = indices_count
-
-    df = df.loc[base_index]
-    df_mapping = None
-
-    # 25% duplicate check is just a whim
-    # no statistical backing
-    # the idea here is that the less number of searches
-    # the better; after the search we can then
-    # retroactively `blow` the dataframe up to match
-    # the indices of the original dataframe
-    if df.duplicated().mean() > 0.25:
-        df_grouped = df.groupby(left_columns)
-        df_mapping = df_grouped.groups
-        df_unique = pd.DataFrame(df_mapping.keys(), columns=left_columns)
-    else:
-        df_unique = df.copy()
-    right_mapping = None
-    if right.duplicated().mean() > 0.25:
-        right_grouped = right.groupby(right_columns)
-        right_mapping = right_grouped.groups
-        right_unique = pd.DataFrame(
-            right_mapping.keys(), columns=right_columns
-        )
-    else:
-        right_unique = right.copy()
-
-    conditions = [
-        condition for condition in conditions if condition != base_condition
-    ]
-
-    # get the starting indices
-    # we'll take these indices,
-    # iterate through the rest of the conditions
-    # and index df_unique and right_unique
-    # with the booleans to get the final matching rows
-    left_on, right_on, op = base_condition
-    left_c = df_unique[left_on]
-    right_c = right_unique[right_on]
-    result = _generic_func_cond_join(left_c, right_c, op, 1)
-    if result is None:
-        return None
-    left_index, right_index = result
-
-    # iterate through the remaining conditions
-    # to get matching indices
-    for condition in conditions:
-        left_on, right_on, op = condition
-        left_c = df_unique.loc[left_index, left_on].array
-        right_c = right_unique.loc[right_index, right_on].array
-        op = operator_map[op]
-        boolean_array = op(left_c, right_c)
-        if not boolean_array.any():
-            return None
-        if boolean_array.all():
-            continue
-        left_index = left_index[boolean_array]
-        right_index = right_index[boolean_array]
-
-    index_left = None
-    index_right = None
-    # here we blow up the dataframe to match the original size
-    # for duplicated dataframes
-    if df_mapping:
-        mapper = (series for _, series in df_unique.items())
-        mapper = zip(*mapper)
-        if df.columns.size == 1:
-            mapper = [ent[0] for ent in mapper]
-        mapper = dict(zip(mapper, df_unique.index))
-        # align df_unique's index with all the indices
-        # from the original dataframe
-        df_mapping = {mapper[ent]: value for ent, value in df_mapping.items()}
-        # use left_index_map if right is duplicated as well
-        left_index_map = left_index.map(df_mapping)
-        index_left = np.concatenate(left_index_map)
-        repeater = []
-        # this takes care of duplicates in left_index as well
-        for key in left_index:
-            value = df_mapping[key]
-            repeater.append(value.size)
-        index_right = right_index.repeat(repeater)
-
-    if right_mapping:
-        mapper = (series for _, series in right_unique.items())
-        mapper = zip(*mapper)
-        if right.columns.size == 1:
-            # takes care of tuples with just one entry
-            # if not taken care of, it returns a KeyError
-            mapper = [ent[0] for ent in mapper]
-        mapper = dict(zip(mapper, right_unique.index))
-        right_mapping = {
-            mapper[ent]: value for ent, value in right_mapping.items()
-        }
-        if index_right is not None:
-            index_right = index_right.map(right_mapping)
-        else:
-            index_right = right_index.map(right_mapping)
-        index_right = np.concatenate(index_right)
-        repeater = []
-        # takes care of duplicates in right_index as well
-        for key in right_index:
-            value = right_mapping[key]
-            repeater.append(value.size)
-
-        if index_left is None:
-            index_left = left_index.repeat(repeater)
-        else:
-            # allows us to keep the alignment between
-            # left and right
-            index_left = zip(left_index_map, repeater)
-            index_left = [np.repeat(ent, rep) for ent, rep in index_left]
-            index_left = np.concatenate(index_left)
-
-    if df_mapping or right_mapping:
-        left_index = index_left
-        right_index = index_right
-
-    return left_index, right_index
 
 
 def _create_conditional_join_empty_frame(
@@ -3320,14 +2767,17 @@ def _create_conditional_join_empty_frame(
     if there are no matches.
     """
 
-    if how == JOINTYPES.INNER.value:
+    df.columns = pd.MultiIndex.from_product([["left"], df.columns])
+    right.columns = pd.MultiIndex.from_product([["right"], right.columns])
+
+    if how == JoinTypes.INNER.value:
         df = df.dtypes.to_dict()
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
         return pd.DataFrame(df)
 
-    if how == JOINTYPES.LEFT.value:
+    if how == JoinTypes.LEFT.value:
         right = right.dtypes.to_dict()
         right = {
             key: float if dtype.kind == "i" else dtype
@@ -3339,7 +2789,7 @@ def _create_conditional_join_empty_frame(
         right = pd.DataFrame(right)
         return df.join(right, how=how, sort=False)
 
-    if how == JOINTYPES.RIGHT.value:
+    if how == JoinTypes.RIGHT.value:
         df = df.dtypes.to_dict()
         df = {
             key: float if dtype.kind == "i" else dtype
@@ -3365,33 +2815,36 @@ def _create_conditional_join_frame(
     if sort_by_appearance:
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
-        left_index = left_index.take(sorter)
+        left_index = left_index[sorter]
 
-    if how == JOINTYPES.INNER.value:
-        df = df.reindex(left_index)
-        right = right.reindex(right_index)
-        df.index = np.arange(left_index.size)
+    df.columns = pd.MultiIndex.from_product([["left"], df.columns])
+    right.columns = pd.MultiIndex.from_product([["right"], right.columns])
+
+    if how == JoinTypes.INNER.value:
+        df = df.loc[left_index]
+        right = right.loc[right_index]
+        df.index = pd.RangeIndex(start=0, stop=left_index.size)
         right.index = df.index
         return pd.concat([df, right], axis="columns", join=how, sort=False)
 
-    if how == JOINTYPES.LEFT.value:
-        right = right.reindex(right_index)
+    if how == JoinTypes.LEFT.value:
+        right = right.loc[right_index]
         right.index = left_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
-    if how == JOINTYPES.RIGHT.value:
-        df = df.reindex(left_index)
+    if how == JoinTypes.RIGHT.value:
+        df = df.loc[left_index]
         df.index = right_index
         return df.join(right, how=how, sort=False).reset_index(drop=True)
 
 
 less_than_join_types = {
-    JOINOPERATOR.LESS_THAN.value,
-    JOINOPERATOR.LESS_THAN_OR_EQUAL.value,
+    JoinOperator.LESS_THAN.value,
+    JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
 greater_than_join_types = {
-    JOINOPERATOR.GREATER_THAN.value,
-    JOINOPERATOR.GREATER_THAN_OR_EQUAL.value,
+    JoinOperator.GREATER_THAN.value,
+    JoinOperator.GREATER_THAN_OR_EQUAL.value,
 }
 
 
@@ -3406,9 +2859,9 @@ def _generic_func_cond_join(
     strict = False
 
     if op in {
-        JOINOPERATOR.GREATER_THAN.value,
-        JOINOPERATOR.LESS_THAN.value,
-        JOINOPERATOR.NOT_EQUAL.value,
+        JoinOperator.GREATER_THAN.value,
+        JoinOperator.LESS_THAN.value,
+        JoinOperator.NOT_EQUAL.value,
     }:
         strict = True
 
@@ -3416,10 +2869,10 @@ def _generic_func_cond_join(
         return _less_than_indices(left_c, right_c, strict, len_conditions)
     elif op in greater_than_join_types:
         return _greater_than_indices(left_c, right_c, strict, len_conditions)
-    elif op == JOINOPERATOR.STRICTLY_EQUAL.value:
+    elif op == JoinOperator.NOT_EQUAL.value:
+        return _not_equal_indices(left_c, right_c)
+    else:
         return _equal_indices(left_c, right_c, len_conditions)
-    elif op == JOINOPERATOR.NOT_EQUAL.value:
-        return _not_equal_indices(left_c, right_c, len_conditions)
 
 
 def _conditional_join_compute(
@@ -3430,20 +2883,50 @@ def _conditional_join_compute(
     sort_by_appearance: bool,
 ) -> pd.DataFrame:
     """
-    This is where the actual computation for the conditional join takes place.
-    If there are no matches, None is returned; if however, there is a match,
-    then a pandas DataFrame is returned.
+    This is where the actual computation
+    for the conditional join takes place.
+    A pandas DataFrame is returned.
     """
 
-    len_conditions = len(conditions)
+    (
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+    ) = _conditional_join_preliminary_checks(
+        df, right, conditions, how, sort_by_appearance
+    )
 
-    if len_conditions == 1:
+    eq_check = False
+    less_great = False
+    less_greater_types = less_than_join_types.union(greater_than_join_types)
+
+    for condition in conditions:
+        left_on, right_on, op = condition
+        left_c = df[left_on]
+        right_c = right[right_on]
+
+        _conditional_join_type_check(left_c, right_c, op)
+
+        if op == JoinOperator.STRICTLY_EQUAL.value:
+            eq_check = True
+        elif op in less_greater_types:
+            less_great = True
+
+    df.index = pd.RangeIndex(start=0, stop=len(df))
+    right.index = pd.RangeIndex(start=0, stop=len(right))
+
+    if len(conditions) == 1:
         left_on, right_on, op = conditions[0]
 
         left_c = df[left_on]
         right_c = right[right_on]
 
-        _conditional_join_type_check(left_c, right_c, op)
+        if eq_check & left_c.hasnans:
+            left_c = left_c.dropna()
+        if eq_check & right_c.hasnans:
+            right_c = right_c.dropna()
 
         result = _generic_func_cond_join(left_c, right_c, op, 1)
 
@@ -3456,20 +2939,275 @@ def _conditional_join_compute(
             df, right, left_c, right_c, how, sort_by_appearance
         )
 
-    for condition in conditions:
-        left_on, right_on, op = condition
-        left_c = df[left_on]
-        right_c = right[right_on]
+    # multiple conditions
+    if eq_check:
+        result = _multiple_conditional_join_eq(df, right, conditions)
+    elif less_great:
+        result = _multiple_conditional_join_le_lt(df, right, conditions)
+    else:
+        result = _multiple_conditional_join_ne(df, right, conditions)
 
-        _conditional_join_type_check(left_c, right_c, op)
-
-    result = _multiple_conditional_join(df, right, conditions)
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
+
     left_c, right_c = result
+
     return _create_conditional_join_frame(
         df, right, left_c, right_c, how, sort_by_appearance
     )
+
+
+operator_map = {
+    JoinOperator.STRICTLY_EQUAL.value: operator.eq,
+    JoinOperator.LESS_THAN.value: operator.lt,
+    JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
+    JoinOperator.GREATER_THAN.value: operator.gt,
+    JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
+    JoinOperator.NOT_EQUAL.value: operator.ne,
+}
+
+
+def _multiple_conditional_join_eq(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: list
+) -> tuple:
+    """
+    Get indices for multiple conditions,
+    if any of the conditions has an `==` operator.
+
+    Returns a tuple of (df_index, right_index)
+    """
+
+    eq_cond = [
+        cond
+        for cond in conditions
+        if cond[-1] == JoinOperator.STRICTLY_EQUAL.value
+    ]
+    rest = [
+        cond
+        for cond in conditions
+        if cond[-1] != JoinOperator.STRICTLY_EQUAL.value
+    ]
+
+    # get rid of nulls, if any
+    if len(eq_cond) == 1:
+        left_on, right_on, _ = eq_cond[0]
+        left_c = df.loc[:, left_on]
+        right_c = right.loc[:, right_on]
+
+        if left_c.hasnans:
+            left_c = left_c.dropna()
+            df = df.loc[left_c.index]
+
+        if right_c.hasnans:
+            right_c = right_c.dropna()
+            right = right.loc[right_c.index]
+
+    else:
+        left_on, right_on, _ = zip(*eq_cond)
+        left_c = df.loc[:, [*left_on]]
+        right_c = right.loc[:, [*right_on]]
+
+        if left_c.isna().any(axis=None):
+            left_c = left_c.dropna()
+            df = df.loc[left_c.index]
+
+        if right_c.isna().any(axis=None):
+            right_c = right_c.dropna()
+            right = right.loc[right_c.index]
+
+    # get join indices
+    # these are positional, not label indices
+    result = _generic_func_cond_join(
+        left_c, right_c, JoinOperator.STRICTLY_EQUAL.value, 2
+    )
+
+    if result is None:
+        return None
+
+    df_index, right_index = result
+
+    if not rest:
+        return df.index[df_index], right.index[right_index]
+
+    # non-equi conditions are present
+    mask = None
+    for left_on, right_on, op in rest:
+        left_c = extract_array(df[left_on], extract_numpy=True)
+        left_c = left_c[df_index]
+        right_c = extract_array(right[right_on], extract_numpy=True)
+        right_c = right_c[right_index]
+
+        op = operator_map[op]
+        if mask is None:
+            mask = op(left_c, right_c)
+        else:
+            mask &= op(left_c, right_c)
+
+    if not mask.any():
+        return None
+
+    df_index = df_index[mask]
+    right_index = right_index[mask]
+
+    return df.index[df_index], right.index[right_index]
+
+
+def _multiple_conditional_join_ne(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: list
+) -> tuple:
+    """
+    Get indices for multiple conditions,
+    where all the operators are `!=`.
+
+    Returns a tuple of (df_index, right_index)
+    """
+
+    first, *rest = conditions
+    left_on, right_on, op = first
+    left_c = df[left_on]
+    right_c = right[right_on]
+    result = _generic_func_cond_join(left_c, right_c, op, 1)
+    if result is None:
+        return None
+
+    df_index, right_index = result
+
+    mask = None
+    for left_on, right_on, op in rest:
+        left_c = df.loc[df_index, left_on]
+        left_c = extract_array(left_c, extract_numpy=True)
+        right_c = right.loc[right_index, right_on]
+        right_c = extract_array(right_c, extract_numpy=True)
+        op = operator_map[op]
+
+        if mask is None:
+            mask = op(left_c, right_c)
+        else:
+            mask &= op(left_c, right_c)
+
+    if not mask.any():
+        return None
+    return df_index[mask], right_index[mask]
+
+
+def _multiple_conditional_join_le_lt(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: list
+) -> tuple:
+    """
+    Get indices for multiple conditions,
+    if there is no `==` operator, and there is
+    at least one `<`, `<=`, `>`, or `>=` operator.
+
+    Returns a tuple of (df_index, right_index)
+    """
+
+    # find minimum df_index and right_index
+    # aim is to reduce search space
+    df_index = df.index
+    right_index = right.index
+    lt_gt = None
+    less_greater_types = less_than_join_types.union(greater_than_join_types)
+    for left_on, right_on, op in conditions:
+        if op in less_greater_types:
+            lt_gt = left_on, right_on, op
+        # no point checking for `!=`, since best case scenario
+        # they'll have the same no of rows for the less/greater operators
+        elif op == JoinOperator.NOT_EQUAL.value:
+            continue
+
+        left_c = df.loc[df_index, left_on]
+        right_c = right.loc[right_index, right_on]
+
+        result = _generic_func_cond_join(left_c, right_c, op, 2)
+
+        if result is None:
+            return None
+
+        df_index, right_index, *_ = result
+
+    # move le,lt,ge,gt to the fore
+    # less rows to search, compared to !=
+    if conditions[0][-1] not in less_greater_types:
+        conditions = [*conditions]
+        conditions.remove(lt_gt)
+        conditions = [lt_gt] + conditions
+
+    first, *rest = conditions
+    left_on, right_on, op = first
+    left_c = df.loc[df_index, left_on]
+    right_c = right.loc[right_index, right_on]
+
+    result = _generic_func_cond_join(left_c, right_c, op, 2)
+
+    if result is None:
+        return None
+
+    df_index, right_index, search_indices, indices = result
+    if op in less_than_join_types:
+        low, high = search_indices, indices
+    else:
+        low, high = indices, search_indices
+
+    first, *rest = rest
+    left_on, right_on, op = first
+    left_c = df.loc[df_index, left_on]
+    left_c = extract_array(left_c, extract_numpy=True)
+    right_c = right.loc[right_index, right_on]
+    right_c = extract_array(right_c, extract_numpy=True)
+    op = operator_map[op]
+    index_df = []
+    repeater = []
+    index_right = []
+    # offers a bit of a speed up, compared to broadcasting
+    # we go through each search space, and keep only matching rows
+    # constrained to just one loop;
+    # if the join conditions are limited to two, this is helpful;
+    # for more than two, then broadcasting kicks in after this step
+    # running this within numba should offer more speed
+    for indx, val, lo, hi in zip(df_index, left_c, low, high):
+        search = right_c[lo:hi]
+        indexer = right_index[lo:hi]
+        mask = op(val, search)
+        if not mask.any():
+            continue
+        # pandas boolean arrays do not play well with numpy
+        # hence the conversion
+        if is_extension_array_dtype(mask):
+            mask = mask.to_numpy(dtype=bool, na_value=False)
+        indexer = indexer[mask]
+        index_df.append(indx)
+        index_right.append(indexer)
+        repeater.append(indexer.size)
+
+    if not index_df:
+        return None
+
+    df_index = np.repeat(index_df, repeater)
+    right_index = np.concatenate(index_right)
+
+    if not rest:
+        return df_index, right_index
+
+    # blow it up
+    mask = None
+    for left_on, right_on, op in rest:
+        left_c = df.loc[df_index, left_on]
+        left_c = extract_array(left_c, extract_numpy=True)
+        right_c = right.loc[right_index, right_on]
+        right_c = extract_array(right_c, extract_numpy=True)
+        op = operator_map[op]
+
+        if mask is None:
+            mask = op(left_c, right_c)
+        else:
+            mask &= op(left_c, right_c)
+
+    if not mask.any():
+        return None
+    if is_extension_array_dtype(mask):
+        mask = mask.to_numpy(dtype=bool, na_value=False)
+
+    return df_index[mask], right_index[mask]
 
 
 def _case_when_checks(df: pd.DataFrame, args, column_name):

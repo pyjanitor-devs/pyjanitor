@@ -319,7 +319,7 @@ def test_pivot_no_args_passed():
 def test_pivot_index_only_and_sort_by_appearance(df_checks, df_checks_output):
     """
     Test output if only `index` is passed and
-    `sort_by_apperance is ``True``.
+    `sort_by_apperance is `True`.
     """
     result = df_checks.pivot_longer(
         index="region",
@@ -434,7 +434,7 @@ def test_pivot_index_patterns_only_sort_by_appearance(
 ):
     """
     Test output if the `patterns` function is passed to `index`,
-    and `sort_by_appearance` is ``True``.
+    and `sort_by_appearance` is `True`.
     """
     result = df_checks.pivot_longer(
         index=patterns(r"[^\d+]"),

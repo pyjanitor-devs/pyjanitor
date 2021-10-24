@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - dev
-      - ghactions-docs
 
 jobs:
   build-environment:
@@ -33,9 +32,7 @@ jobs:
 
       - name: Build environment
         if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: |
-          conda env create -f environment-dev.yml
-          python -m pip install .
+        run: bash ./scripts/ci/build_environment.sh
 
       - name: Install conda-pack
         if: steps.cache-environment.outputs.cache-hit != 'true'
@@ -76,14 +73,14 @@ jobs:
           source /tmp/pyjanitor-dev_env/bin/activate
           python -m ipykernel install --user --name pyjanitor-dev
           pip install -e .
-          make docs
+          mkdocs build
 
       - name: Deploy website
         uses: peaceiris/actions-gh-pages@v3
         with:
           # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token
           personal_token: ${{ secrets.GHPAGES_TOKEN }}
-          publish_dir: ./docs/_build/html
+          publish_dir: ./site/
           publish_branch: gh-pages
           # destination_dir: manuscript
           allow_empty_commit: false

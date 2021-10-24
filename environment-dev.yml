@@ -1,53 +1,58 @@
 name: pyjanitor-dev
 channels:
-- conda-forge
-- rdkit
+  - conda-forge
+  - rdkit
 dependencies:
-- python>=3.6, <3.9
-- biopython
-- black=21.7b0
-- bumpversion
-- cairo
-- conda
-- darglint
-- doc8
-- flake8
-- hypothesis>=4.4.0
-- interrogate
-- ipykernel
-- ipython
-- isort
-- jupyterlab
-- lxml
-- make
-- missingno
-- multipledispatch
-- mypy
-- natsort
-- nbsphinx
-- nox
-- numpy>=1.16
-- openpyxl
-- pandas-flavor
-- pandas-vet
-- pandas>=1.1.0
-- pip
-- pipreqs
-- pre-commit
-- pyflakes
-- pylint
-- pyspark
-- pytest
-- pytest-cov
-- pytest-xdist
-- python-language-server
-- rdkit
-- recommonmark
-- seaborn
-- sphinx
-- sphinxcontrib-fulltoc
-- twine
-- unyt
-- xarray
-- xlrd
-- xorg-libxrender
+  - python>=3.6, <3.9
+  - biopython
+  - black=21.7b0
+  - bumpversion
+  - cairo
+  - conda
+  - darglint
+  - doc8
+  - flake8
+  - hypothesis
+  - interrogate
+  - ipykernel
+  - ipython
+  - isort
+  - jupyterlab
+  - lxml
+  - make
+  - mkdocs
+  - mkdocs-material
+  - mkdocstrings
+  - missingno
+  - multipledispatch
+  - mypy
+  - natsort
+  - nbsphinx
+  - nox
+  - numpy
+  - openpyxl
+  - pandas-flavor
+  - pandas-vet
+  - pandas
+  - pip
+  - pipreqs
+  - pre-commit
+  - pyflakes
+  - pylint
+  - pyspark
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - python-language-server
+  - rdkit
+  - recommonmark
+  - seaborn
+  - sphinx
+  - sphinxcontrib-fulltoc
+  - twine
+  - unyt
+  - xarray
+  - xlrd
+  - xorg-libxrender
+  - pip:
+      - mknotebooks

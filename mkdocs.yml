@@ -1,0 +1,89 @@
+site_name: pyjanitor documentation
+site_url: https://pyjanitor-devs.github.io/pyjanitor
+
+docs_dir: mkdocs/
+
+theme:
+  name: "material"
+  palette:
+    primary: "blue grey"
+    accent: "blue grey"
+  icon:
+    logo: "fontawesome/solid/book"
+  features:
+    - instant
+    # - tabs
+  language: en
+
+# We customize the navigation by hand to control the order
+# in which pages show up.
+nav:
+  - Home: index.md
+  - Development Guide: devguide.md
+  - API Reference:
+      - Functions: api/functions.md
+      - Biology: api/biology.md
+      - Chemistry: api/chemistry.md
+      - Engineering: api/engineering.md
+      - Finance: api/finance.md
+      - Input/Output (io): api/io.md
+      - Machine Learning: api/ml.md
+      - Math: api/math.md
+      - PySpark: api/pyspark.md
+      - Timeseries: api/timeseries.md
+      - Utils: api/utils.md
+      - XArray: api/xarray.md
+  - Changelog: CHANGELOG.md
+  - Authors: AUTHORS.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+          # https://github.com/mkdocstrings/mkdocstrings/issues/278#issuecomment-831411193
+          selection:
+            docstring_style: restructured-text
+      # custom_templates: templates
+      watch:
+        - janitor/
+# - mknotebooks:
+#     execute: true
+#     write_markdown: true
+#     allow_errors: true
+#     timeout: 1200
+#     binder: true
+#     binder_service_name: "gh"
+#     binder_branch: "master"
+
+# Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
+markdown_extensions:
+  # - codehilite
+  - admonition
+  - pymdownx.highlight:
+      use_pygments: false
+  - pymdownx.inlinehilite
+  # - pymdownx.tabbed
+  # - pymdownx.arithmatex
+  # - pymdownx.details
+  # - pymdownx.superfences
+  # - markdown.extensions.attr_list
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js
+  - js/config.js
+
+extra_css:
+  - css/nb_mods.css
+  - css/apidocs.css
+  # This sets the theme for syntax highlighting.
+  # Theme names are available here: https://highlightjs.org/static/demo/
+  # Not sure how the theme names map onto CSS filenames though.
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/nord.min.css
+
+repo_name: "pyjanitor-devs/pyjanitor"
+repo_url: "https://github.com/pyjanitor-devs/pyjanitor"

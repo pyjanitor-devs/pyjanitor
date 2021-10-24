@@ -15,7 +15,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.mark.biology
 def test_join_fasta(biodf):
-    """Test adding sequence from FASTA file in ``sequence`` column."""
+    """Test adding sequence from FASTA file in `sequence` column."""
     df = biodf.join_fasta(
         filename=os.path.join(pytest.TEST_DATA_DIR, "sequences.fasta"),
         id_col="sequence_accession",

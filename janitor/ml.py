@@ -25,27 +25,28 @@ def get_features_targets(
 
     The behaviour is as such:
 
-    - ``target_column_names`` is mandatory.
-    - If ``feature_column_names`` is present, then we will respect the column
+    - `target_column_names` is mandatory.
+    - If `feature_column_names` is present, then we will respect the column
         names inside there.
-    - If ``feature_column_names`` is not passed in, then we will assume that
+    - If `feature_column_names` is not passed in, then we will assume that
     the rest of the columns are feature columns, and return them.
 
     Functional usage example:
 
-    .. code-block:: python
-
-        X, y = get_features_targets(df, target_column_names="measurement")
+    ```python
+    X, y = get_features_targets(df, target_column_names="measurement")
+    ```
 
     Method chaining example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.ml
 
-        import pandas as pd
-        import janitor.ml
-        df = pd.DataFrame(...)
-        target_cols = ['output1', 'output2']
-        X, y = df.get_features_targets(target_column_names=target_cols)
+    df = pd.DataFrame(...)
+    target_cols = ['output1', 'output2']
+    X, y = df.get_features_targets(target_column_names=target_cols)
+    ```
 
     :param df: The pandas DataFrame object.
     :param target_column_names: Either a column name or an
@@ -54,8 +55,8 @@ def get_features_targets(
     :param feature_column_names: (optional) The column name or
         iterable of column names that are the features (a.k.a. predictors)
         used to predict the targets.
-    :returns: (X, Y) the feature matrix (X) and the target matrix (Y). Both
-        are pandas DataFrames.
+    :returns: `(X, Y)` the feature matrix (`X`) and the target matrix (`y`).
+        Both are pandas DataFrames.
     """
     Y = df[target_column_names]
 

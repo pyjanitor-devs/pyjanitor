@@ -59,7 +59,7 @@ def clone_using(
         must match in this case. If `False``, only the number of dimensions
         must match.
     :param use_attrs: If `True``, copy over the `attrs` from the source
-        `DataArray``.
+        `DataArray`.
         The data inside `attrs` itself is not copied, only the mapping.
         Otherwise, use the supplied attrs.
     :param new_name: If set, use as the new name of the returned `DataArray`.

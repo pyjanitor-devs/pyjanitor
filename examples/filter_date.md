@@ -70,7 +70,7 @@ example_dataframe = pd.DataFrame(date_list, columns=['AMOUNT', 'DATE'])
 ```
 
 ## Example 1: Filter dataframe between two dates
- ``python
+ ```python
 start = "01/29/19"
 end = "01/30/19"
 

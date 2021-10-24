@@ -29,7 +29,7 @@ def clone_using(
 
     This is similar to `xr.DataArray.copy()` with more specificity for
     the type of cloning you would like to perform - the different properties
-    that you desire to mirror in the new `DataArray``.
+    that you desire to mirror in the new `DataArray`.
 
     If the coordinates from the source `DataArray` are not desired, the shape
     of the source and new NumPy arrays don't need to match.

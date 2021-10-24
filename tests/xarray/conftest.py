@@ -12,7 +12,7 @@ def da():
     It creates a two-dimensional array of random integers adds axis coordinates
     that are either linearly or log-spaced increments.
 
-    Included is a simple metadata dictionary passed as `attrs``.
+    Included is a simple metadata dictionary passed as `attrs`.
 
     .. # noqa: DAR201
     """

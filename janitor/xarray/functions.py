@@ -25,7 +25,7 @@ def clone_using(
     """
     Given a NumPy array, return an XArray `DataArray` which contains the same
     dimension names and (optionally) coordinates and other properties as the
-    supplied `DataArray``.
+    supplied `DataArray`.
 
     This is similar to `xr.DataArray.copy()` with more specificity for
     the type of cloning you would like to perform - the different properties

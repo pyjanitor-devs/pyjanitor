@@ -35,9 +35,7 @@ jobs:
 
       - name: Build environment
         if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: |
-          conda env create -f environment-dev.yml
-          python -m pip install .
+        run: bash ./scripts/ci/build_environment.sh
 
       - name: Install conda-pack
         if: steps.cache-environment.outputs.cache-hit != 'true'

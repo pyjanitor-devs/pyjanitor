@@ -1,0 +1,14 @@
+/* https://mkdocstrings.github.io/theming/#css-classes */
+.doc-property { border-radius: 15px; padding: 0 5px; }
+.doc-property-special { background-color: blue; color: white; }
+.doc-property-private { background-color: red; color: white; }
+.doc-property-property { background-color: green; color: white; }
+.doc-property-read-only { background-color: yellow; color: black; }
+
+/* https://mkdocstrings.github.io/handlers/python/#recommended-style-material */
+/* Indentation. */
+div.doc-contents:not(.first) {
+    padding-left: 25px;
+    border-left: 4px solid rgba(230, 230, 230);
+    margin-bottom: 80px;
+  }

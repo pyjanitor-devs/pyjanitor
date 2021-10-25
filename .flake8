@@ -1,0 +1,4 @@
+[flake8]
+per-file-ignores =
+    janitor/functions/__init__.py:F401
+    janitor/accessors/__init__.py:F401

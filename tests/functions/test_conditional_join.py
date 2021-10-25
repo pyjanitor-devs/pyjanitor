@@ -269,6 +269,7 @@ def test_single_condition_less_than_floats(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_ints(df, right):
     """Test output for a single condition. "<"."""
@@ -290,6 +291,7 @@ def test_single_condition_less_than_ints(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_ints_extension_array(df, right):
     """Test output for a single condition. "<"."""
@@ -313,6 +315,7 @@ def test_single_condition_less_than_ints_extension_array(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_equal(df, right):
     """Test output for a single condition. "<=". DateTimes"""
@@ -334,6 +337,7 @@ def test_single_condition_less_than_equal(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_date(df, right):
     """Test output for a single condition. "<". Dates"""
@@ -376,6 +380,7 @@ def test_single_condition_greater_than_datetime(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_ints(df, right):
     """Test output for a single condition. ">="."""
@@ -441,6 +446,7 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_not_equal_numeric(df, right):
     """Test output for a single condition. "!="."""
@@ -485,6 +491,7 @@ def test_single_condition_not_equal_ints_only(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_not_equal_floats_only(df, right):
     """Test output for a single condition. "!="."""
@@ -549,6 +556,7 @@ def test_single_condition_equality_string(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_equality_category(df, right):
     """Test output for a single condition. "=="."""
@@ -637,6 +645,7 @@ def test_how_left(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_how_right(df, right):
     """Test output when `how==right`. ">"."""
@@ -687,6 +696,7 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_dates(df, right):
     """Test output for interval conditions."""
@@ -737,6 +747,7 @@ def test_dual_conditions_le_and_ge_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_numbers(df, right):
     """Test output for interval conditions."""
@@ -787,6 +798,7 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers(df, right):
     """Test output for interval conditions."""
@@ -839,6 +851,7 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
     """
@@ -869,6 +882,7 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     """
@@ -899,6 +913,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne(df, right):
     """
@@ -928,6 +943,7 @@ def test_dual_ne(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_extension(df, right):
     """
@@ -956,6 +972,7 @@ def test_dual_ne_extension(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_extension_right(df, right):
     """
@@ -984,6 +1001,7 @@ def test_dual_ne_extension_right(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_dates(df, right):
     """
@@ -1011,6 +1029,7 @@ def test_dual_ne_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_ne_dates(df, right):
     """
@@ -1064,6 +1083,7 @@ def test_dual_conditions_eq_and_ne(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ne_and_eq(df, right):
     """Test output for equal and not equal conditions."""
@@ -1091,6 +1111,7 @@ def test_dual_conditions_ne_and_eq(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_gt_lt_ne_conditions(df, right):
     """
@@ -1119,6 +1140,7 @@ def test_gt_lt_ne_conditions(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_gt_lt_ne_start(df, right):
     """
@@ -1300,6 +1322,7 @@ def test_multiple_eqs(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_extension_array(df, right):
     """Test output for multiple conditions."""
@@ -1334,6 +1357,7 @@ def test_multiple_eqs_extension_array(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_only(df, right):
     """Test output for multiple conditions."""

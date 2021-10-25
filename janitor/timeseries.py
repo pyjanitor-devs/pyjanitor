@@ -6,8 +6,7 @@ from typing import Dict, Union
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor import check
-
+from .utils import check
 from .errors import JanitorError
 
 
@@ -19,51 +18,49 @@ def fill_missing_timestamps(
     last_time_stamp: pd.Timestamp = None,
 ) -> pd.DataFrame:
     """
-    Fill dataframe with missing timestamps based on a defined frequency.
+    Fills a DataFrame with missing timestamps based on a defined frequency.
 
-    If timestamps are missing,
-    this function will reindex the dataframe.
-    If timestamps are not missing,
-    then the function will return the dataframe unmodified.
+    If timestamps are missing, this function will re-index the DataFrame.
+    If timestamps are not missing, then the function will return the DataFrame
+    unmodified.
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = janitor.timeseries.fill_missing_timestamps(
-            df=df,
-            frequency="1H",
-        )
+    df = janitor.timeseries.fill_missing_timestamps(
+        df=df,
+        frequency="1H",
+    )
+    ```
 
     Method chaining example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = (
+        pd.DataFrame(...)
+        .fill_missing_timestamps(frequency="1H")
+    )
+    ```
 
-        df = (
-            pd.DataFrame(...)
-            .fill_missing_timestamps(frequency="1H")
-        )
-
-    :param df: Dataframe which needs to be tested for missing timestamps
-    :param frequency: frequency i.e. sampling frequency of the data.
+    :param df: DataFrame which needs to be tested for missing timestamps
+    :param frequency: sampling frequency of the data.
         Acceptable frequency strings are available
-        `here <https://pandas.pydata.org/pandas-docs/stable/>`_
+        [here](https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases).
         Check offset aliases under time series in user guide
-    :param first_time_stamp: timestamp expected to start from
-        Defaults to None.
-        If no input is provided assumes the minimum value in time_series
-    :param last_time_stamp: timestamp expected to end with.
-        Defaults to None.
-        If no input is provided, assumes the maximum value in time_series
-    :returns: dataframe that has a complete set of contiguous datetimes.
+    :param first_time_stamp: timestamp expected to start from;
+        defaults to `None`. If no input is provided, assumes the
+        minimum value in `time_series`.
+    :param last_time_stamp: timestamp expected to end with; defaults to `None`.
+        If no input is provided, assumes the maximum value in `time_series`.
+    :returns: DataFrame that has a complete set of contiguous datetimes.
     """
     # Check all the inputs are the correct data type
     check("frequency", frequency, [str])
@@ -90,18 +87,17 @@ def _get_missing_timestamps(
     last_time_stamp: pd.Timestamp = None,
 ) -> pd.DataFrame:
     """
-    Return the timestamps that are missing in a dataframe.
+    Return the timestamps that are missing in a DataFrame.
 
-    This function takes in a dataframe,
-    and checks its index against a dataframe
-    that contains the expected timestamps.
-    Here, we assume that the expected timestamps
-    are going to be of a larger size
-    than the timestamps available in the input dataframe ``df``.
+    This function takes in a DataFrame, and checks its index
+    against a DataFrame that contains the expected timestamps.
+    Here, we assume that the expected timestamps are going to be
+    of a larger size than the timestamps available in the input
+    DataFrame `df`.
 
-    If there are any missing timestamps in the input dataframe,
-    this function will return those missing timestamps
-    from the expected dataframe.
+    If there are any missing timestamps in the input DataFrame,
+    this function will return those missing timestamps from the
+    expected DataFrame.
     """
     expected_df = df.fill_missing_timestamps(
         frequency, first_time_stamp, last_time_stamp
@@ -117,51 +113,46 @@ def sort_timestamps_monotonically(
     df: pd.DataFrame, direction: str = "increasing", strict: bool = False
 ) -> pd.DataFrame:
     """
-    Sort dataframe such that index is monotonic.
+    Sort DataFrame such that index is monotonic.
 
-    If timestamps are monotonic,
-    this function will return the dataframe unmodified.
-    If timestamps are not monotonic,
-    then the function will sort the dataframe.
+    If timestamps are monotonic, this function will return
+    the DataFrame unmodified. If timestamps are not monotonic,
+    then the function will sort the DataFrame.
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
-
-        df = janitor.timeseries.sort_timestamps_monotonically(
-            direction="increasing"
-        )
+    df = janitor.timeseries.sort_timestamps_monotonically(
+        direction="increasing"
+    )
+    ```
 
     Method chaining example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = (
+        pd.DataFrame(...)
+        .sort_timestamps_monotonically(direction="increasing")
+    )
+    ```
 
-        df = (
-            pd.DataFrame(...)
-            .sort_timestamps_monotonically(direction="increasing")
-        )
-
-    :param df: Dataframe which needs to be tested for monotonicity
+    :param df: DataFrame which needs to be tested for monotonicity.
     :param direction: type of monotonicity desired.
-        Acceptable arguments are:
-            1. increasing
-            2. decreasing
+        Acceptable arguments are `'increasing'` or `'decreasing'`.
     :param strict: flag to enable/disable strict monotonicity.
-        If set to True,
-        will remove duplicates in the index,
+        If set to `True`, will remove duplicates in the index
         by retaining first occurrence of value in index.
-        If set to False,
-        will not test for duplicates in the index.
-        Defaults to False.
-    :returns: Dataframe that has monotonically increasing
+        If set to `False`, will not test for duplicates in the index;
+        defaults to `False`.
+    :returns: DataFrame that has monotonically increasing
         (or decreasing) timestamps.
     """
     # Check all the inputs are the correct data type
@@ -179,7 +170,7 @@ def sort_timestamps_monotonically(
     else:
         df = df.sort_index(ascending=False)
 
-    # Return the dataframe
+    # Return the DataFrame
     return df
 
 
@@ -192,7 +183,7 @@ def _flag_jumps_single_col(
 ) -> pd.Series:
     """
     Creates a boolean column that flags whether or not the change
-    between consecutive rows in the provided dataframe column exceeds a
+    between consecutive rows in the provided DataFrame column exceeds a
     provided threshold.
 
     Comparisons are always performed utilizing a GREATER THAN
@@ -286,122 +277,119 @@ def flag_jumps(
 
     Functional usage example:
 
-    .. code-block:: python
+    ```python
+    import pandas as pd
+    import janitor.timeseries
 
-        import pandas as pd
-        import janitor.timeseries
+    df = pd.DataFrame(...)
 
-        df = pd.DataFrame(...)
+    df = flag_jumps(
+        df=df,
+        scale="absolute",
+        direction="any",
+        threshold=2,
+    )
+    ```
 
-        df = flag_jumps(
-            df=df,
+    Method chaining example:
+
+    ```python
+    import pandas as pd
+    import janitor.timeseries
+
+    df = (
+        pd.DatFrame(...)
+        .flag_jumps(
             scale="absolute",
             direction="any",
             threshold=2,
         )
-
-    Method chaining example:
-
-    .. code-block:: python
-
-        import pandas as pd
-        import janitor.timeseries
-
-        df = (
-            pd.DatFrame(...)
-            .flag_jumps(
-                scale="absolute",
-                direction="any",
-                threshold=2,
-            )
-        )
+    )
+    ```
 
     Detailed chaining examples:
 
-    .. code-block:: python
-
-        # Applies specified criteria across all columns of the dataframe
-        # Appends a flag column for each column in the dataframe
-        df = (
-            pd.DataFrame(...)
-            .flag_jumps(
-                scale="absolute",
-                direction="any",
-                threshold=2
-            )
+    ```python
+    # Applies specified criteria across all columns of the DataFrame
+    # Appends a flag column for each column in the DataFrame
+    df = (
+        pd.DataFrame(...)
+        .flag_jumps(
+            scale="absolute",
+            direction="any",
+            threshold=2
         )
+    )
 
-        # Applies specific criteria to certain dataframe columns
-        # Applies default criteria to columns not specifically listed
-        # Appends a flag column for each column in the dataframe
-        df = (
-            pd.DataFrame(...)
-            .flag_jumps(
-                scale=dict(col1="absolute", col2="percentage"),
-                direction=dict(col1="increasing", col2="any"),
-                threshold=dict(col1=1, col2=0.5),
-            )
+    # Applies specific criteria to certain DataFrame columns
+    # Applies default criteria to columns not specifically listed
+    # Appends a flag column for each column in the DataFrame
+    df = (
+        pd.DataFrame(...)
+        .flag_jumps(
+            scale=dict(col1="absolute", col2="percentage"),
+            direction=dict(col1="increasing", col2="any"),
+            threshold=dict(col1=1, col2=0.5),
         )
+    )
 
-        # Applies specific criteria to certain dataframe columns
-        # Applies default criteria to columns not specifically listed
-        # Appends a flag column for each column in the dataframe
-        df = (
-            pd.DataFrame(...)
-            .flag_jumps(
-                scale=dict(col1="absolute"),
-                direction=dict(col2="increasing"),
-            )
+    # Applies specific criteria to certain DataFrame columns
+    # Applies default criteria to columns not specifically listed
+    # Appends a flag column for each column in the DataFrame
+    df = (
+        pd.DataFrame(...)
+        .flag_jumps(
+            scale=dict(col1="absolute"),
+            direction=dict(col2="increasing"),
         )
+    )
 
-        # Applies specific criteria to certain dataframe columns
-        # Applies default criteria to columns not specifically listed
-        # Appends a flag column for only those columns found in
-        #   specified criteria
-        df = (
-            pd.DataFrame(...)
-            .flag_jumps(
-                scale=dict(col1="absolute"),
-                threshold=dict(col2=1),
-                strict=True,
-            )
+    # Applies specific criteria to certain DataFrame columns
+    # Applies default criteria to columns not specifically listed
+    # Appends a flag column for only those columns found in
+    #   specified criteria
+    df = (
+        pd.DataFrame(...)
+        .flag_jumps(
+            scale=dict(col1="absolute"),
+            threshold=dict(col2=1),
+            strict=True,
         )
+    )
+    ```
 
-    :param df: Dataframe which needs to be flagged for changes between
+    :param df: DataFrame which needs to be flagged for changes between
         consecutive rows above a certain threshold.
     :param scale: Type of scaling approach to use.
-        Acceptable arguments are:
-            1. absolute (consider the difference between rows).
-            2. percentage (consider the percentage change between rows).
-        Defaults to percentage.
+        Acceptable arguments are `'absolute'` (consider the difference
+        between rows) and `'percentage'` (consider the percentage
+        change between rows); defaults to `'percentage'`.
     :param direction: Type of method used to handle the sign change when
         comparing consecutive rows.
-        Acceptable arguments are:
-            1. increasing (only consider rows that are increasing in value).
-            2. decreasing (only consider rows that are decreasing in value).
-            3. any (consider rows that are either increasing or decreasing;
-                sign is ignored).
-        Defaults to any.
+        Acceptable arguments are `'increasing'` (only consider rows
+        that are increasing in value), `'decreasing'` (only consider
+        rows that are decreasing in value), and `'any'` (consider rows
+        that are either increasing or decreasing; sign is ignored);
+        defaults to `'any'`.
     :param threshold: The value to check if consecutive row comparisons
-        exceed. Always uses a greater than comparison. Must be >= 0.0.
-        Defaults to 0.0
+        exceed. Always uses a greater than comparison. Must be `>= 0.0`;
+        defaults to `0.0`.
     :param strict: flag to enable/disable appending of a flag column for
-        each column in the provided dataframe.
-        If set to True, will only append a flag column for those columns
-            found in at least one of the input dictionaries.
-        If set to False, will append a flag column for each column found
-             in the provided dataframe. If criteria is not specified,
-             the defaults for each criteria is used.
-        Defaults to False.
-    :returns: Dataframe that has flag jump columns.
-    :raises JanitorError: if ``strict=True`` and at least one of
-        ``scale``, ``direction``, or ``threshold`` inputs is not a
+        each column in the provided DataFrame. If set to `True`, will
+        only append a flag column for those columns found in at least
+        one of the input dictionaries. If set to `False`, will appen
+        a flag column for each column found in the provided DataFrame.
+        If criteria is not specified, the defaults for each criteria
+        is used; defaults to `False`.
+    :returns: DataFrame that has `flag jump` columns.
+    :raises JanitorError: if `strict=True` and at least one of
+        `scale`, `direction`, or `threshold` inputs is not a
         dictionary.
-    :raises JanitorError: if ``scale`` is not one of
-        ``["absolute", "percentage"]``.
-    :raises JanitorError: if ``direction`` is not one of
-        ``["increasing", "decreasing", "any"]``.
-    :raises JanitorError: if ``threshold`` is less than 0.0.
+    :raises JanitorError: if `scale` is not one of
+        `("absolute", "percentage")`.
+    :raises JanitorError: if `direction` is not one of
+        `("increasing", "decreasing", "any")`.
+    :raises JanitorError: if `threshold` is less than `0.0`.
     """
     df = df.copy()
 
@@ -425,7 +413,7 @@ def flag_jumps(
         cols = set(itertools.chain.from_iterable(arg_keys))
 
     else:
-        # Append a flag col for each col in the dataframe
+        # Append a flag col for each col in the DataFrame
         cols = df.columns
 
     columns_to_add = {}

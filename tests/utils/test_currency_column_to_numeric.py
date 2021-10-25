@@ -1,6 +1,8 @@
 import pytest
 
-from janitor.utils import _currency_column_to_numeric
+from janitor.functions.currency_column_to_numeric import (
+    _currency_column_to_numeric,
+)
 
 
 @pytest.mark.utils

@@ -29,9 +29,10 @@ RUN apt-get update \
     #
     # Install pylint
     && /opt/conda/bin/pip install pylint \
+    && /opt/conda/bin/conda install mamba -c conda-forge \
     #
     # Update Python environment based on environment-dev.yml (if present)
-    && if [ -f "/tmp/conda-tmp/environment-dev.yml" ]; then /opt/conda/bin/conda env update -n base -f /tmp/conda-tmp/environment-dev.yml; fi \
+    && if [ -f "/tmp/conda-tmp/environment-dev.yml" ]; then /opt/conda/bin/mamba env update -n base -f /tmp/conda-tmp/environment-dev.yml; fi \
     && rm -rf /tmp/conda-tmp \
     #
     # Create a non-root user to use if preferred - see https://aka.ms/vscode-remote/containers/non-root-user.

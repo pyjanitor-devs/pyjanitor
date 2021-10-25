@@ -167,10 +167,8 @@ def test_dict_extension_array(df):
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
-    # pandas extension array creates Int64 dtype
-    # converting this ensures dtypes match at the end
-    df = df.astype({"numbers": "Int64"})
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
+    new_index = pd.array(new_index)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
     expected = (
         df.set_index(cols)

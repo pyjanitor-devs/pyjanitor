@@ -213,6 +213,14 @@ def _select_column_names(columns_to_select, df):
     raise TypeError("This type is not supported in column selection.")
 
 
+# hack to get it to recognize typing.Pattern
+# functools.singledispatch does not natively
+# recognize types from the typing module
+# `type(re.compile(r"\d+"))` returns re.Pattern
+# which is a type and functools.singledispatch
+# accepts it without drama;
+# however, the same type from typing.Pattern
+# is not accepted.
 @_select_column_names.register(type(re.compile(r"\d+")))  # noqa: F811
 def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """

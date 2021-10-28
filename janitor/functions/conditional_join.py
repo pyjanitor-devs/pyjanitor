@@ -784,12 +784,16 @@ def _less_than_indices(
     if left_c.min() > right_c.max():
         return None
 
-    if right_c.hasnans:
-        right_c = right_c.dropna()
+    any_nulls = pd.isna(right_c.array)
+    if any_nulls.any():
+        right_c = right_c[~any_nulls]
+    any_nulls = pd.isna(left_c.array)
+    if any_nulls.any():
+        left_c = left_c[~any_nulls]
+
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
-    if left_c.hasnans:
-        left_c = left_c.dropna()
+
     left_index = left_c.index.to_numpy(dtype=int)
     left_c = extract_array(left_c, extract_numpy=True)
     right_index = right_c.index.to_numpy(dtype=int)
@@ -844,16 +848,25 @@ def _less_than_indices(
     if search_indices.size == 0:
         return None
 
+    # return search_indices
+    # return right_index[slice()]
+
+    return [right_index[slice(ind, len_right)] for ind in search_indices]
+    # right_c = np.concatenate()
+    # left_c = left_c.repeat(len_right - search_indices)
+    # return left_c, right_c
     indices = np.repeat(len_right, search_indices.size)
 
     if len_conditions > 1:
         return (left_index, right_index, search_indices, indices)
 
     positions = _interval_ranges(search_indices, indices)
-    search_indices = indices - search_indices
+    search_indices = len_right - search_indices
 
     right_c = right_index[positions]
+    # return right_c
     left_c = left_index.repeat(search_indices)
+    return left_c
     return left_c, right_c
 
 
@@ -875,12 +888,16 @@ def _greater_than_indices(
     if left_c.max() < right_c.min():
         return None
 
-    if right_c.hasnans:
-        right_c = right_c.dropna()
+    any_nulls = pd.isna(right_c.array)
+    if any_nulls.any():
+        right_c = right_c[~any_nulls]
+    any_nulls = pd.isna(left_c.array)
+    if any_nulls.any():
+        left_c = left_c[~any_nulls]
+
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values()
-    if left_c.hasnans:
-        left_c = left_c.dropna()
+
     left_index = left_c.index.to_numpy(dtype=int)
     left_c = extract_array(left_c, extract_numpy=True)
     right_index = right_c.index.to_numpy(dtype=int)
@@ -930,6 +947,7 @@ def _greater_than_indices(
     if search_indices.size == 0:
         return None
 
+    return [right_index[slice(0, ind)] for ind in search_indices]
     indices = np.zeros(search_indices.size, dtype=np.int8)
 
     if len_conditions > 1:

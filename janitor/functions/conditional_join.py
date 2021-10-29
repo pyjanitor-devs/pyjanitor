@@ -848,26 +848,13 @@ def _less_than_indices(
     if search_indices.size == 0:
         return None
 
-    # return search_indices
-    # return right_index[slice()]
+    right_c = [right_index[slice(ind, len_right)] for ind in search_indices]
 
-    return [right_index[slice(ind, len_right)] for ind in search_indices]
-    # right_c = np.concatenate()
-    # left_c = left_c.repeat(len_right - search_indices)
-    # return left_c, right_c
-    indices = np.repeat(len_right, search_indices.size)
-
-    if len_conditions > 1:
-        return (left_index, right_index, search_indices, indices)
-
-    positions = _interval_ranges(search_indices, indices)
-    search_indices = len_right - search_indices
-
-    right_c = right_index[positions]
-    # return right_c
-    left_c = left_index.repeat(search_indices)
-    return left_c
-    return left_c, right_c
+    if len_conditions == 1:
+        search_indices = len_right - search_indices
+        left_c = np.repeat(left_index, search_indices)
+        right_c = np.concatenate(right_c)
+        return left_c, right_c
 
 
 def _greater_than_indices(
@@ -947,16 +934,12 @@ def _greater_than_indices(
     if search_indices.size == 0:
         return None
 
-    return [right_index[slice(0, ind)] for ind in search_indices]
-    indices = np.zeros(search_indices.size, dtype=np.int8)
+    right_c = [right_index[slice(0, ind)] for ind in search_indices]
 
-    if len_conditions > 1:
-        return (left_index, right_index, search_indices, indices)
-
-    positions = _interval_ranges(indices, search_indices)
-    right_c = right_index[positions]
-    left_c = left_index.repeat(search_indices)
-    return left_c, right_c
+    if len_conditions == 1:
+        left_c = np.repeat(search_indices)
+        right_c = np.concatenate(right_c)
+        return left_c, right_c
 
 
 def _equal_indices(

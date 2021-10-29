@@ -188,6 +188,8 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
+    return result
+
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -532,14 +534,15 @@ def _multiple_conditional_join_le_lt(
     # aim is to reduce search space
     df_index = df.index
     right_index = right.index
-    lt_gt = None
-    less_greater_types = less_than_join_types.union(greater_than_join_types)
+    # lt_gt = None
+    arrs = []
+    # less_greater_types = less_than_join_types.union(greater_than_join_types)
     for left_on, right_on, op in conditions:
-        if op in less_greater_types:
-            lt_gt = left_on, right_on, op
+        # if op in less_greater_types:
+        # lt_gt = left_on, right_on, op
         # no point checking for `!=`, since best case scenario
         # they'll have the same no of rows for the less/greater operators
-        elif op == _JoinOperator.NOT_EQUAL.value:
+        if op == _JoinOperator.NOT_EQUAL.value:
             continue
 
         left_c = df.loc[df_index, left_on]
@@ -550,74 +553,34 @@ def _multiple_conditional_join_le_lt(
         if result is None:
             return None
 
-        df_index, right_index, *_ = result
+        df_index, right_index, arr, lengths = result
+        arrs.append((df_index, arr, lengths))
 
-    # move le,lt,ge,gt to the fore
-    # less rows to search, compared to !=
-    if conditions[0][-1] not in less_greater_types:
-        conditions = [*conditions]
-        conditions.remove(lt_gt)
-        conditions = [lt_gt] + conditions
+    new_arrs = []
+    from itertools import compress
 
-    first, *rest = conditions
-    left_on, right_on, op = first
-    left_c = df.loc[df_index, left_on]
-    right_c = right.loc[right_index, right_on]
+    for l, r, e in arrs:  # noqa: E741
+        bools = np.isin(l, df_index)
+        if not np.all(bools):
+            l = l[bools]  # noqa: E741
+            r = [*compress(r, bools)]
+            e = e[bools]
+        new_arrs.append((l, r, e))
+    _, arr, ass = zip(*new_arrs)
 
-    result = _generic_func_cond_join(left_c, right_c, op, 2)
+    ass = np.vstack(ass)
+    positions = np.argmin(ass, axis=0)
+    repeats = np.minimum.reduce(ass)
+    arrays = []
+    for row, pos in zip(zip(*arr), positions):
+        arrays.append(row[pos])
+    right_index = np.concatenate(arrays)
+    df_index = df_index.repeat(repeats)
 
-    if result is None:
-        return None
+    return right_index.size
 
-    df_index, right_index, search_indices, indices = result
-    if op in less_than_join_types:
-        low, high = search_indices, indices
-    else:
-        low, high = indices, search_indices
-
-    first, *rest = rest
-    left_on, right_on, op = first
-    left_c = df.loc[df_index, left_on]
-    left_c = extract_array(left_c, extract_numpy=True)
-    right_c = right.loc[right_index, right_on]
-    right_c = extract_array(right_c, extract_numpy=True)
-    op = operator_map[op]
-    index_df = []
-    repeater = []
-    index_right = []
-    # offers a bit of a speed up, compared to broadcasting
-    # we go through each search space, and keep only matching rows
-    # constrained to just one loop;
-    # if the join conditions are limited to two, this is helpful;
-    # for more than two, then broadcasting kicks in after this step
-    # running this within numba should offer more speed
-    for indx, val, lo, hi in zip(df_index, left_c, low, high):
-        search = right_c[lo:hi]
-        indexer = right_index[lo:hi]
-        mask = op(val, search)
-        if not mask.any():
-            continue
-        # pandas boolean arrays do not play well with numpy
-        # hence the conversion
-        if is_extension_array_dtype(mask):
-            mask = mask.to_numpy(dtype=bool, na_value=False)
-        indexer = indexer[mask]
-        index_df.append(indx)
-        index_right.append(indexer)
-        repeater.append(indexer.size)
-
-    if not index_df:
-        return None
-
-    df_index = np.repeat(index_df, repeater)
-    right_index = np.concatenate(index_right)
-
-    if not rest:
-        return df_index, right_index
-
-    # blow it up
     mask = None
-    for left_on, right_on, op in rest:
+    for left_on, right_on, op in conditions:
         left_c = df.loc[df_index, left_on]
         left_c = extract_array(left_c, extract_numpy=True)
         right_c = right.loc[right_index, right_on]
@@ -848,13 +811,20 @@ def _less_than_indices(
     if search_indices.size == 0:
         return None
 
-    right_c = [right_index[slice(ind, len_right)] for ind in search_indices]
+    right_c = [right_index[ind:len_right] for ind in search_indices]
 
-    if len_conditions == 1:
-        search_indices = len_right - search_indices
-        left_c = np.repeat(left_index, search_indices)
-        right_c = np.concatenate(right_c)
-        return left_c, right_c
+    if len_conditions > 1:
+        return (
+            left_index,
+            right_index[search_indices.min() :],  # noqa: E203
+            right_c,
+            len_right - search_indices,
+        )
+
+    search_indices = len_right - search_indices
+    left_c = np.repeat(left_index, search_indices)
+    right_c = np.concatenate(right_c)
+    return left_c, right_c
 
 
 def _greater_than_indices(
@@ -934,12 +904,19 @@ def _greater_than_indices(
     if search_indices.size == 0:
         return None
 
-    right_c = [right_index[slice(0, ind)] for ind in search_indices]
+    right_c = [right_index[:ind] for ind in search_indices]
 
-    if len_conditions == 1:
-        left_c = np.repeat(search_indices)
-        right_c = np.concatenate(right_c)
-        return left_c, right_c
+    if len_conditions > 1:
+        return (
+            left_index,
+            right_index[: search_indices.max()],
+            right_c,
+            search_indices,
+        )
+
+    left_c = np.repeat(left_index, search_indices)
+    right_c = np.concatenate(right_c)
+    return left_c, right_c
 
 
 def _equal_indices(

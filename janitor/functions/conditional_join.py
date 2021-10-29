@@ -188,8 +188,6 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    return result
-
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -536,12 +534,12 @@ def _multiple_conditional_join_le_lt(
     right_index = right.index
     # lt_gt = None
     arrs = []
-    # less_greater_types = less_than_join_types.union(greater_than_join_types)
+    less_greater_types = less_than_join_types.union(greater_than_join_types)
     for left_on, right_on, op in conditions:
-        # if op in less_greater_types:
-        # lt_gt = left_on, right_on, op
+        if op in less_greater_types:
+            lt_gt = left_on, right_on, op  # noqa : F841
         # no point checking for `!=`, since best case scenario
-        # they'll have the same no of rows for the less/greater operators
+        # they'll have the same no of rows as the less/greater operators
         if op == _JoinOperator.NOT_EQUAL.value:
             continue
 
@@ -556,6 +554,23 @@ def _multiple_conditional_join_le_lt(
         df_index, right_index, arr, lengths = result
         arrs.append((df_index, arr, lengths))
 
+    # # move le,lt,ge,gt to the fore
+    # # less rows to search, compared to !=
+    # if conditions[0][-1] not in less_greater_types:
+    #     conditions = [*conditions]
+    #     conditions.remove(lt_gt)
+    #     conditions = [lt_gt] + conditions
+
+    # first, *rest = conditions
+    # left_on, right_on, op = first
+    # left_c = df.loc[df_index, left_on]
+    # right_c = right.loc[right_index, right_on]
+
+    # result = _generic_func_cond_join(left_c, right_c, op, 1)
+
+    # if result is None:
+    #     return None
+    # return result
     new_arrs = []
     from itertools import compress
 
@@ -577,14 +592,12 @@ def _multiple_conditional_join_le_lt(
     right_index = np.concatenate(arrays)
     df_index = df_index.repeat(repeats)
 
-    return right_index.size
-
     mask = None
     for left_on, right_on, op in conditions:
-        left_c = df.loc[df_index, left_on]
-        left_c = extract_array(left_c, extract_numpy=True)
-        right_c = right.loc[right_index, right_on]
-        right_c = extract_array(right_c, extract_numpy=True)
+        left_c = extract_array(df[left_on], extract_numpy=True)
+        left_c = left_c[df_index]
+        right_c = extract_array(right[right_on], extract_numpy=True)
+        right_c = right_c[right_index]
         op = operator_map[op]
 
         if mask is None:

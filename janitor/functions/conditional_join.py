@@ -58,6 +58,10 @@ def conditional_join(
 
     Only `inner`, `left`, and `right` joins are supported.
 
+    If the columns from `df` and `right` have nothing in common,
+    a single index column is returned; else, a MultiIndex column
+    is returned.
+
     Functional usage syntax:
 
     ```python
@@ -500,8 +504,9 @@ def _create_conditional_join_empty_frame(
     if there are no matches.
     """
 
-    df.columns = pd.MultiIndex.from_product([["left"], df.columns])
-    right.columns = pd.MultiIndex.from_product([["right"], right.columns])
+    if set(df.columns).intersection(right.columns):
+        df.columns = pd.MultiIndex.from_product([["left"], df.columns])
+        right.columns = pd.MultiIndex.from_product([["right"], right.columns])
 
     if how == _JoinTypes.INNER.value:
         df = df.dtypes.to_dict()
@@ -560,8 +565,9 @@ def _create_conditional_join_frame(
         right_index = right_index[sorter]
         left_index = left_index[sorter]
 
-    df.columns = pd.MultiIndex.from_product([["left"], df.columns])
-    right.columns = pd.MultiIndex.from_product([["right"], right.columns])
+    if set(df.columns).intersection(right.columns):
+        df.columns = pd.MultiIndex.from_product([["left"], df.columns])
+        right.columns = pd.MultiIndex.from_product([["right"], right.columns])
 
     if how == _JoinTypes.INNER.value:
         df = df.loc[left_index]

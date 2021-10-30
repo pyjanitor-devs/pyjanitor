@@ -10,6 +10,7 @@ from janitor.testing_utils.strategies import (
 )
 
 
+@pytest.mark.xfail(reason="empty object will pass thru")
 @given(s=conditional_series())
 def test_df_empty(s):
     """Raise ValueError if `df` is empty."""
@@ -18,6 +19,7 @@ def test_df_empty(s):
         df.conditional_join(s, ("A", "non", "=="))
 
 
+@pytest.mark.xfail(reason="empty object will pass thru")
 @given(df=conditional_df())
 def test_right_empty(df):
     """Raise ValueError if `right` is empty."""
@@ -29,7 +31,6 @@ def test_right_empty(df):
 @given(df=conditional_df())
 def test_right_df(df):
     """Raise TypeError if `right` is not a Series/DataFrame."""
-    assume(not df.empty)
     with pytest.raises(TypeError):
         df.conditional_join({"non": [2, 3, 4]}, ("A", "non", "=="))
 
@@ -37,7 +38,6 @@ def test_right_df(df):
 @given(df=conditional_df(), s=conditional_series())
 def test_right_series(df, s):
     """Raise ValueError if `right` is not a named Series."""
-
     with pytest.raises(ValueError):
         df.conditional_join(s, ("A", "non", "=="))
 
@@ -67,8 +67,6 @@ def test_right_MultiIndex(df):
 def test_check_conditions_exist(df, s):
     """Raise ValueError if no condition is provided."""
 
-    assume(not df.empty)
-    assume(not s.empty)
     with pytest.raises(ValueError):
         s.name = "B"
         df.conditional_join(s)
@@ -78,8 +76,6 @@ def test_check_conditions_exist(df, s):
 def test_check_condition_type(df, s):
     """Raise TypeError if any condition in conditions is not a tuple."""
 
-    assume(not df.empty)
-    assume(not s.empty)
     with pytest.raises(TypeError):
         s.name = "B"
         df.conditional_join(s, ("A", "B", ""), ["A", "B"])
@@ -99,8 +95,6 @@ def test_check_condition_length(df, s):
 def test_check_left_on_type(df, s):
     """Raise TypeError if left_on is not a string."""
 
-    assume(not df.empty)
-    assume(not s.empty)
     with pytest.raises(TypeError):
         s.name = "B"
         df.conditional_join(s, (1, "B", "<"))
@@ -110,8 +104,6 @@ def test_check_left_on_type(df, s):
 def test_check_right_on_type(df, s):
     """Raise TypeError if right_on is not a string."""
 
-    assume(not df.empty)
-    assume(not s.empty)
     with pytest.raises(TypeError):
         s.name = "B"
         df.conditional_join(s, ("B", 1, "<"))
@@ -121,8 +113,6 @@ def test_check_right_on_type(df, s):
 def test_check_op_type(df, s):
     """Raise TypeError if the operator is not a string."""
 
-    assume(not df.empty)
-    assume(not s.empty)
     with pytest.raises(TypeError):
         s.name = "B"
         df.conditional_join(s, ("B", "B", 1))
@@ -170,8 +160,6 @@ def test_check_how_type(df, s):
     Raise TypeError if `how` is not a string.
     """
 
-    assume(not df.empty)
-    assume(not s.empty)
     with pytest.raises(TypeError):
         s.name = "B"
         df.conditional_join(s, ("B", "B", "<"), how=1)
@@ -222,6 +210,7 @@ def test_dtype_str(df, s):
         df.conditional_join(s, ("C", "A", "<"))
 
 
+@pytest.mark.xfail(reason="binary search does not support categoricals")
 @given(df=conditional_df(), s=conditional_series())
 def test_dtype_category_non_equi(df, s):
     """
@@ -241,8 +230,6 @@ def test_check_sort_by_appearance_type(df, s):
     Raise TypeError if `sort_by_appearance` is not a boolean.
     """
 
-    assume(not df.empty)
-    assume(not s.empty)
     with pytest.raises(TypeError):
         s.name = "B"
         df.conditional_join(s, ("B", "B", "<"), sort_by_appearance="True")
@@ -251,7 +238,7 @@ def test_check_sort_by_appearance_type(df, s):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats(df, right):
     """Test output for a single condition. "<"."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["B", "Numeric"]
     expected = (
@@ -272,7 +259,7 @@ def test_single_condition_less_than_floats(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_ints(df, right):
     """Test output for a single condition. "<"."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
     expected = (
@@ -293,7 +280,7 @@ def test_single_condition_less_than_ints(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_ints_extension_array(df, right):
     """Test output for a single condition. "<"."""
-    assume(not df.empty)
+
     assume(not right.empty)
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
@@ -316,7 +303,7 @@ def test_single_condition_less_than_ints_extension_array(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_equal(df, right):
     """Test output for a single condition. "<=". DateTimes"""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
     expected = (
@@ -337,7 +324,7 @@ def test_single_condition_less_than_equal(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_date(df, right):
     """Test output for a single condition. "<". Dates"""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
     expected = (
@@ -358,7 +345,7 @@ def test_single_condition_less_than_date(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_datetime(df, right):
     """Test output for a single condition. ">". Datetimes"""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
     expected = (
@@ -379,7 +366,7 @@ def test_single_condition_greater_than_datetime(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_ints(df, right):
     """Test output for a single condition. ">="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
     expected = (
@@ -400,7 +387,7 @@ def test_single_condition_greater_than_ints(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_floats_floats(df, right):
     """Test output for a single condition. ">"."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["B", "Numeric"]
     expected = (
@@ -421,7 +408,7 @@ def test_single_condition_greater_than_floats_floats(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_ints_extension_array(df, right):
     """Test output for a single condition. ">="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -444,7 +431,7 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_not_equal_numeric(df, right):
     """Test output for a single condition. "!="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
     expected = (
@@ -466,7 +453,7 @@ def test_single_condition_not_equal_numeric(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_not_equal_ints_only(df, right):
     """Test output for a single condition. "!="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
     expected = (
@@ -488,7 +475,7 @@ def test_single_condition_not_equal_ints_only(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_not_equal_floats_only(df, right):
     """Test output for a single condition. "!="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["B", "Numeric"]
     expected = (
@@ -510,7 +497,7 @@ def test_single_condition_not_equal_floats_only(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_not_equal_datetime(df, right):
     """Test output for a single condition. "!="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
     expected = (
@@ -532,7 +519,7 @@ def test_single_condition_not_equal_datetime(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_equality_string(df, right):
     """Test output for a single condition. "=="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["C", "Strings"]
     expected = df.dropna(subset=[left_on]).merge(
@@ -549,14 +536,15 @@ def test_single_condition_equality_string(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.xfail(reason="binary search does not support categoricals")
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_equality_category(df, right):
     """Test output for a single condition. "=="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["C", "Strings"]
-    df = df.assign(C=df["C"].astype("string"))
-    right = right.assign(Strings=right["Strings"].astype("string"))
+    df = df.assign(C=df["C"].astype("category"))
+    right = right.assign(Strings=right["Strings"].astype("category"))
     expected = df.dropna(subset=[left_on]).merge(
         right.dropna(subset=[right_on]), left_on=left_on, right_on=right_on
     )
@@ -574,7 +562,7 @@ def test_single_condition_equality_category(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_equality_numeric(df, right):
     """Test output for a single condition. "=="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -598,7 +586,7 @@ def test_single_condition_equality_numeric(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_equality_datetime(df, right):
     """Test output for a single condition. "=="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
     expected = df.dropna(subset=[left_on]).merge(
@@ -617,7 +605,7 @@ def test_single_condition_equality_datetime(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_how_left(df, right):
     """Test output when `how==left`. "<="."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["A", "Integers"]
     expected = (
@@ -640,7 +628,7 @@ def test_how_left(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_how_right(df, right):
     """Test output when `how==right`. ">"."""
-    assume(not df.empty)
+
     assume(not right.empty)
     left_on, right_on = ["E", "Dates"]
     expected = (
@@ -665,7 +653,7 @@ def test_how_right(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_dates(df, right):
     """Test output for interval conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
     expected = (
@@ -690,7 +678,7 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_dates(df, right):
     """Test output for interval conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
     expected = (
@@ -715,7 +703,7 @@ def test_dual_conditions_ge_and_le_dates(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_le_and_ge_dates(df, right):
     """Test output for interval conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
     expected = (
@@ -740,7 +728,7 @@ def test_dual_conditions_le_and_ge_dates(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_numbers(df, right):
     """Test output for interval conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     middle, left_on, right_on = ("B", "Numeric", "Floats")
     expected = (
@@ -765,7 +753,7 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_le_and_ge_numbers(df, right):
     """Test output for interval conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     middle, left_on, right_on = ("B", "Numeric", "Floats")
     expected = (
@@ -790,7 +778,7 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers(df, right):
     """Test output for interval conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     middle, left_on, right_on = ("B", "Numeric", "Floats")
     expected = (
@@ -817,7 +805,7 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
     """
     Test output for multiple conditions.
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     first, second, third = ("Numeric", "Floats", "B")
     expected = (
@@ -844,7 +832,7 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
     """
     Test output for multiple conditions, and how is `left`.
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     first, second, third = ("Numeric", "Floats", "B")
     right = right.assign(t=1, check=range(len(right)))
@@ -874,7 +862,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     """
     Test output for multiple conditions, and how is `right`.
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     first, second, third = ("Numeric", "Floats", "B")
     df = df.assign(t=1, check=range(len(df)))
@@ -904,7 +892,7 @@ def test_dual_ne(df, right):
     """
     Test output for multiple conditions. `!=`
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "B", "Numeric"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -933,7 +921,7 @@ def test_dual_ne_extension(df, right):
     """
     Test output for multiple conditions. `!=`
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "B", "Numeric"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -961,7 +949,7 @@ def test_dual_ne_extension_right(df, right):
     """
     Test output for multiple conditions. `!=`
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "B", "Numeric"]
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
@@ -989,7 +977,7 @@ def test_dual_ne_dates(df, right):
     """
     Test output for multiple conditions. `!=`
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "E", "Dates"]
     expected = (
@@ -1016,7 +1004,7 @@ def test_multiple_ne_dates(df, right):
     """
     Test output for multiple conditions. `!=`
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "E", "Dates", "B", "Numeric"]
     expected = (
@@ -1042,13 +1030,14 @@ def test_multiple_ne_dates(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_eq_and_ne(df, right):
     """Test output for equal and not equal conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     A, B, C, D = ("B", "Numeric", "E", "Dates")
     expected = (
         df.merge(right, left_on=A, right_on=B)
         .dropna(subset=[A, B])
         .query(f"{C} != {D}")
+        .sort_index()
         .reset_index(drop=True)
     )
     expected = expected.filter([A, B, C, D])
@@ -1057,7 +1046,7 @@ def test_dual_conditions_eq_and_ne(df, right):
         (A, B, "=="),
         (C, D, "!="),
         how="inner",
-        sort_by_appearance=False,
+        sort_by_appearance=True,
     )
     actual = actual.droplevel(level=0, axis=1)
     actual = actual.filter([A, B, C, D])
@@ -1068,7 +1057,6 @@ def test_dual_conditions_eq_and_ne(df, right):
 def test_dual_conditions_ne_and_eq(df, right):
     """Test output for equal and not equal conditions."""
 
-    assume(not df.empty)
     assume(not right.empty)
 
     A, B, C, D = ("A", "Integers", "E", "Dates")
@@ -1096,7 +1084,7 @@ def test_gt_lt_ne_conditions(df, right):
     """
     Test output for multiple conditions.
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
@@ -1124,7 +1112,7 @@ def test_gt_lt_ne_start(df, right):
     """
     Test output for multiple conditions.
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
@@ -1152,7 +1140,7 @@ def test_ge_le_ne_extension_array(df, right):
     """
     Test output for multiple conditions.
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -1183,7 +1171,7 @@ def test_ge_lt_ne_extension(df, right):
     """
     Test output for multiple conditions.
     """
-    assume(not df.empty)
+
     assume(not right.empty)
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -1215,7 +1203,7 @@ def test_ge_lt_ne_extension(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_eq_ge_and_le_numbers(df, right):
     """Test output for multiple conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     l_eq, l_ge, l_le = ["B", "A", "E"]
     r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
@@ -1243,7 +1231,7 @@ def test_eq_ge_and_le_numbers(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_eq_and_le_numbers(df, right):
     """Test output for multiple conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     l_eq, l_ge, l_le = ["B", "A", "E"]
     r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
@@ -1271,7 +1259,7 @@ def test_ge_eq_and_le_numbers(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
@@ -1303,7 +1291,7 @@ def test_multiple_eqs(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_extension_array(df, right):
     """Test output for multiple conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -1337,7 +1325,7 @@ def test_multiple_eqs_extension_array(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_only(df, right):
     """Test output for multiple conditions."""
-    assume(not df.empty)
+
     assume(not right.empty)
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     df = df.assign(A=df["A"].astype("Int64"), C=df["C"].astype("string"))

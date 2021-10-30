@@ -1,10 +1,12 @@
 from pandas.core.construction import extract_array
+from pandas.core.reshape.merge import _MergeOperation
 from pandas.api.types import (
     is_datetime64_dtype,
     is_integer_dtype,
     is_float_dtype,
     is_string_dtype,
     is_extension_array_dtype,
+    is_categorical_dtype,
 )
 import pandas_flavor as pf
 import pandas as pd
@@ -181,6 +183,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join(df, right, conditions)
 
+    return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -323,6 +326,17 @@ def _conditional_join_type_check(
         raise ValueError(
             """
             For string columns,
+            only the `==` operator is supported.
+            """
+        )
+
+    if (
+        is_categorical_dtype(left_column)
+        and op != _JoinOperator.STRICTLY_EQUAL.value
+    ):
+        raise ValueError(
+            """
+            For categorical columns,
             only the `==` operator is supported.
             """
         )
@@ -807,7 +821,9 @@ def _greater_than_indices(
 
 
 def _equal_indices(
-    left_c: pd.Series, right_c: pd.Series, len_conditions: int
+    left_c: Union[pd.Series, pd.DataFrame],
+    right_c: Union[pd.Series, pd.DataFrame],
+    len_conditions: int,
 ) -> tuple:
     """
     Use Pandas' merge internal functions
@@ -816,49 +832,30 @@ def _equal_indices(
     Returns a tuple of (left_c, right_c)
     """
 
-    any_nulls = pd.isna(right_c.array)
-    if any_nulls.any():
-        right_c = right_c[~any_nulls]
-    any_nulls = pd.isna(left_c.array)
-    if any_nulls.any():
-        left_c = left_c[~any_nulls]
+    if isinstance(left_c, pd.Series):
+        left_on = left_c.name
+        right_on = right_c.name
+    else:
+        left_on = [*left_c.columns]
+        right_on = [*right_c.columns]
 
-    if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values()
+    outcome = _MergeOperation(
+        left=left_c,
+        right=right_c,
+        left_on=left_on,
+        right_on=right_on,
+        sort=False,
+    )
 
-    left_index = left_c.index.to_numpy(dtype=int)
-    left_c = extract_array(left_c, extract_numpy=True)
-    right_index = right_c.index.to_numpy(dtype=int)
-    right_c = extract_array(right_c, extract_numpy=True)
+    left_index, right_index = outcome._get_join_indexers()
 
-    low = right_c.searchsorted(left_c, side="left")
-    high = right_c.searchsorted(left_c, side="right")
-
-    # high must always be greater than low
-    keep_rows = high > low
-
-    if not keep_rows.any():
+    if not left_index.size > 0:
         return None
 
-    if not keep_rows.all():
-        low = low[keep_rows]
-        high = high[keep_rows]
-        left_index = left_index[keep_rows]
-
-    right_c = [right_index[start:end] for start, end in zip(low, high)]
-
     if len_conditions > 1:
-        return (
-            left_index,
-            right_index[slice(low.min(), high.max())],
-            right_c,
-            high - low,
-        )
+        return left_index, right_index
 
-    right_c = np.concatenate(right_c)
-    left_c = np.repeat(left_index, high - low)
-
-    return left_c, right_c
+    return left_c.index[left_index], right_c.index[right_index]
 
 
 def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:

@@ -210,7 +210,6 @@ def test_dtype_str(df, s):
         df.conditional_join(s, ("C", "A", "<"))
 
 
-@pytest.mark.xfail(reason="binary search does not support categoricals")
 @given(df=conditional_df(), s=conditional_series())
 def test_dtype_category_non_equi(df, s):
     """
@@ -522,7 +521,6 @@ def test_single_condition_equality_string(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.xfail(reason="binary search does not support categoricals")
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_equality_category(df, right):
     """Test output for a single condition. "=="."""

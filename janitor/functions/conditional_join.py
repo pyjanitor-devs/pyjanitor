@@ -154,9 +154,6 @@ def _conditional_join_compute(
         elif op in less_than_join_types.union(greater_than_join_types):
             le_lt_check = True
 
-    if df.empty or right.empty:
-        return _create_conditional_join_empty_frame(df, right, how)
-
     df.index = pd.RangeIndex(start=0, stop=len(df))
     right.index = pd.RangeIndex(start=0, stop=len(right))
 
@@ -377,7 +374,7 @@ def _generic_func_cond_join(
     elif op == _JoinOperator.NOT_EQUAL.value:
         return _not_equal_indices(df, right, left_on, right_on)
     else:
-        return _equal_indices(df, right, left_on, right_on, len_conditions)
+        return _equal_indices(df, right, left_on, right_on)
 
 
 def _multiple_conditional_join_ne(
@@ -413,8 +410,7 @@ def _multiple_conditional_join_ne(
 
     if not mask.any():
         return None
-    if is_extension_array_dtype(mask):
-        mask = mask.to_numpy(dtype=bool, na_value=False)
+
     return df_index[mask], right_index[mask]
 
 
@@ -452,10 +448,10 @@ def _multiple_conditional_join_eq(
     if result is None:
         return None
 
-    df_index, right_index = result
-
     if not rest:
-        return df_index, right_index
+        return result
+
+    df_index, right_index = result
 
     # non-equi conditions are present
     mask = None
@@ -473,8 +469,6 @@ def _multiple_conditional_join_eq(
 
     if not mask.any():
         return None
-    if is_extension_array_dtype(mask):
-        mask = mask.to_numpy(dtype=bool, na_value=False)
 
     return df_index[mask], right_index[mask]
 
@@ -907,7 +901,6 @@ def _equal_indices(
     right: pd.DataFrame,
     left_on: Union[str, list],
     right_on: Union[str, list],
-    len_conditions: int,
 ) -> tuple:
     """
     Use Pandas' merge internal functions
@@ -939,9 +932,6 @@ def _equal_indices(
 
     if not left_index.size > 0:
         return None
-
-    if len_conditions > 1:
-        return left_index, right_index
 
     return left_c[left_index], right_c[right_index]
 

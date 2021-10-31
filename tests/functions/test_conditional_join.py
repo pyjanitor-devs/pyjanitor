@@ -1007,7 +1007,6 @@ def test_dual_conditions_eq_and_ne(df, right):
         df.merge(right, left_on=A, right_on=B)
         .dropna(subset=[A, B])
         .query(f"{C} != {D}")
-        .sort_index()
         .reset_index(drop=True)
     )
     expected = expected.filter([A, B, C, D])

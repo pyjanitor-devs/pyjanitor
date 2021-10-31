@@ -49,9 +49,10 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    A binary search is used to get the relevant rows;
-    this avoids a cartesian join,
-    and makes the process less memory intensive.
+    A binary search is used to get the relevant rows for non-equi joins;
+    this avoids a cartesian join, and makes the process less memory intensive.
+
+    For equi-joins, Pandas internal merge function (a hash join) is used.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -143,12 +144,15 @@ def _conditional_join_compute(
         df, right, conditions, how, sort_by_appearance
     )
 
+    eq_check = False
+    le_lt_check = False
     for condition in conditions:
         left_on, right_on, op = condition
-        left_c = df[left_on]
-        right_c = right[right_on]
-
-        _conditional_join_type_check(left_c, right_c, op)
+        _conditional_join_type_check(df[left_on], right[right_on], op)
+        if op == _JoinOperator.STRICTLY_EQUAL.value:
+            eq_check = True
+        elif op in less_than_join_types.union(greater_than_join_types):
+            le_lt_check = True
 
     if df.empty or right.empty:
         return _create_conditional_join_empty_frame(df, right, how)
@@ -159,10 +163,7 @@ def _conditional_join_compute(
     if len(conditions) == 1:
         left_on, right_on, op = conditions[0]
 
-        left_c = df[left_on]
-        right_c = right[right_on]
-
-        result = _generic_func_cond_join(left_c, right_c, op, 1)
+        result = _generic_func_cond_join(df, right, left_on, right_on, op, 1)
 
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
@@ -174,16 +175,14 @@ def _conditional_join_compute(
         )
 
     # multiple conditions
-    all_not_equal = all(
-        op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions
-    )
-
-    if all_not_equal:
-        result = _multiple_conditional_join_ne(df, right, conditions)
+    if eq_check:
+        result = _multiple_conditional_join_eq(df, right, conditions)
+    elif le_lt_check:
+        result = _multiple_conditional_join_le_lt(df, right, conditions)
     else:
-        result = _multiple_conditional_join(df, right, conditions)
+        result = _multiple_conditional_join_ne(df, right, conditions)
 
-    return result
+    # return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -294,6 +293,7 @@ def _conditional_join_type_check(
         is_integer_dtype,
         is_float_dtype,
         is_string_dtype,
+        is_categorical_dtype,
     }
     for func in permitted_types:
         if func(left_column):
@@ -345,7 +345,12 @@ def _conditional_join_type_check(
 
 
 def _generic_func_cond_join(
-    left_c: pd.Series, right_c: pd.Series, op: str, len_conditions: int
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_on: Union[str, list],
+    right_on: Union[str, list],
+    op: str,
+    len_conditions: int,
 ):
     """
     Generic function to call any of the individual functions
@@ -362,13 +367,17 @@ def _generic_func_cond_join(
         strict = True
 
     if op in less_than_join_types:
-        return _less_than_indices(left_c, right_c, strict, len_conditions)
+        return _less_than_indices(
+            df, right, left_on, right_on, strict, len_conditions
+        )
     elif op in greater_than_join_types:
-        return _greater_than_indices(left_c, right_c, strict, len_conditions)
+        return _greater_than_indices(
+            df, right, left_on, right_on, strict, len_conditions
+        )
     elif op == _JoinOperator.NOT_EQUAL.value:
-        return _not_equal_indices(left_c, right_c)
+        return _not_equal_indices(df, right, left_on, right_on)
     else:
-        return _equal_indices(left_c, right_c, len_conditions)
+        return _equal_indices(df, right, left_on, right_on, len_conditions)
 
 
 def _multiple_conditional_join_ne(
@@ -383,9 +392,7 @@ def _multiple_conditional_join_ne(
 
     first, *rest = conditions
     left_on, right_on, op = first
-    left_c = df[left_on]
-    right_c = right[right_on]
-    result = _generic_func_cond_join(left_c, right_c, op, 1)
+    result = _generic_func_cond_join(df, right, left_on, right_on, op, 1)
     if result is None:
         return None
 
@@ -411,7 +418,68 @@ def _multiple_conditional_join_ne(
     return df_index[mask], right_index[mask]
 
 
-def _multiple_conditional_join(
+def _multiple_conditional_join_eq(
+    df: pd.DataFrame, right: pd.DataFrame, conditions: list
+) -> tuple:
+    """
+    Get indices for multiple conditions,
+    if any of the conditions has an `==` operator.
+    Returns a tuple of (df_index, right_index)
+    """
+
+    eq_cond = [
+        cond
+        for cond in conditions
+        if cond[-1] == _JoinOperator.STRICTLY_EQUAL.value
+    ]
+    rest = [
+        cond
+        for cond in conditions
+        if cond[-1] != _JoinOperator.STRICTLY_EQUAL.value
+    ]
+
+    left_on, right_on, _ = zip(*eq_cond)
+
+    result = _generic_func_cond_join(
+        df,
+        right,
+        [*left_on],
+        [*right_on],
+        _JoinOperator.STRICTLY_EQUAL.value,
+        1,
+    )
+
+    if result is None:
+        return None
+
+    df_index, right_index = result
+
+    if not rest:
+        return df_index, right_index
+
+    # non-equi conditions are present
+    mask = None
+    for left_on, right_on, op in rest:
+        left_c = extract_array(df[left_on], extract_numpy=True)
+        left_c = left_c[df_index]
+        right_c = extract_array(right[right_on], extract_numpy=True)
+        right_c = right_c[right_index]
+
+        op = operator_map[op]
+        if mask is None:
+            mask = op(left_c, right_c)
+        else:
+            mask &= op(left_c, right_c)
+
+    if not mask.any():
+        return None
+    if is_extension_array_dtype(mask):
+        mask = mask.to_numpy(dtype=bool, na_value=False)
+
+    return df_index[mask], right_index[mask]
+
+
+def _multiple_conditional_join_le_lt(
     df: pd.DataFrame, right: pd.DataFrame, conditions: list
 ) -> tuple:
     """
@@ -431,10 +499,9 @@ def _multiple_conditional_join(
         if op == _JoinOperator.NOT_EQUAL.value:
             continue
 
-        left_c = df.loc[df_index, left_on]
-        right_c = right.loc[right_index, right_on]
-
-        result = _generic_func_cond_join(left_c, right_c, op, 2)
+        result = _generic_func_cond_join(
+            df.loc[df_index], right.loc[right_index], left_on, right_on, op, 2
+        )
 
         if result is None:
             return None
@@ -629,7 +696,12 @@ def _check_operator(op: str):
 
 
 def _less_than_indices(
-    left_c: pd.Series, right_c: pd.Series, strict: bool, len_conditions: int
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_on: str,
+    right_on: str,
+    strict: bool,
+    len_conditions: int,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -641,6 +713,9 @@ def _less_than_indices(
 
     Returns a tuple of (left_c, right_c)
     """
+
+    left_c = df[left_on]
+    right_c = right[right_on]
 
     # no point going through all the hassle
     if left_c.min() > right_c.max():
@@ -727,7 +802,12 @@ def _less_than_indices(
 
 
 def _greater_than_indices(
-    left_c: pd.Series, right_c: pd.Series, strict: bool, len_conditions: int
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_on: str,
+    right_on: str,
+    strict: bool,
+    len_conditions: int,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -739,6 +819,8 @@ def _greater_than_indices(
 
     Returns a tuple of (left_c, right_c).
     """
+    left_c = df[left_on]
+    right_c = right[right_on]
 
     # quick break, avoiding the hassle
     if left_c.max() < right_c.min():
@@ -821,8 +903,10 @@ def _greater_than_indices(
 
 
 def _equal_indices(
-    left_c: Union[pd.Series, pd.DataFrame],
-    right_c: Union[pd.Series, pd.DataFrame],
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_on: Union[str, list],
+    right_on: Union[str, list],
     len_conditions: int,
 ) -> tuple:
     """
@@ -832,22 +916,26 @@ def _equal_indices(
     Returns a tuple of (left_c, right_c)
     """
 
-    if isinstance(left_c, pd.Series):
-        left_on = left_c.name
-        right_on = right_c.name
-    else:
-        left_on = [*left_c.columns]
-        right_on = [*right_c.columns]
+    # select_columns will take care of duplicates
+    exclude_rows = df.select_columns(left_on).isna().any(axis=1)
+    if exclude_rows.any(axis=None):
+        df = df.loc[~exclude_rows]
+
+    exclude_rows = right.select_columns(right_on).isna().any(axis=1)
+    if exclude_rows.any(axis=None):
+        right = right.loc[~exclude_rows]
 
     outcome = _MergeOperation(
-        left=left_c,
-        right=right_c,
+        left=df,
+        right=right,
         left_on=left_on,
         right_on=right_on,
         sort=False,
     )
 
     left_index, right_index = outcome._get_join_indexers()
+    left_c = df.index.to_numpy(copy=False)
+    right_c = right.index.to_numpy(copy=False)
 
     if not left_index.size > 0:
         return None
@@ -855,10 +943,15 @@ def _equal_indices(
     if len_conditions > 1:
         return left_index, right_index
 
-    return left_c.index[left_index], right_c.index[right_index]
+    return left_c[left_index], right_c[right_index]
 
 
-def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
+def _not_equal_indices(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_on: str,
+    right_on: str,
+) -> tuple:
     """
     Use binary search to get indices where
     `left_c` is exactly  not equal to `right_c`.
@@ -871,7 +964,7 @@ def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
 
     dummy = np.array([], dtype=int)
 
-    outcome = _less_than_indices(left_c, right_c, True, 1)
+    outcome = _less_than_indices(df, right, left_on, right_on, True, 1)
 
     if outcome is None:
         lt_left = dummy
@@ -879,7 +972,7 @@ def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     else:
         lt_left, lt_right = outcome
 
-    outcome = _greater_than_indices(left_c, right_c, True, 1)
+    outcome = _greater_than_indices(df, right, left_on, right_on, True, 1)
 
     if outcome is None:
         gt_left = dummy

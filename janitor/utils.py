@@ -428,13 +428,3 @@ def is_connected(url: str) -> bool:
         )
         raise e
     return False
-
-
-# hack to get it to recognize typing.Pattern
-# functools.singledispatch does not natively
-# recognize types from the typing module
-# `type(re.compile(r"\d+"))` returns re.Pattern
-# which is a type and functools.singledispatch
-# accepts it without drama;
-# however, the same type from typing.Pattern
-# is not accepted.

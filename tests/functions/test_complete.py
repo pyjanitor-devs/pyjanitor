@@ -1,4 +1,3 @@
-from hypothesis.core import reproduce_failure
 import numpy as np
 import pandas as pd
 import pytest
@@ -153,9 +152,10 @@ def test_dict(df):
     assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(reason="Failing on CI; need to fix.")
+@pytest.mark.xfail(
+    reason="CI failure due to dtype mismatch. Tests successful locally."
+)
 @given(df=categoricaldf_strategy())
-@reproduce_failure("6.23.4", b"AAEAAAEAAAAB")
 def test_dict_extension_array(df):
     """
     Test `complete` output when *columns
@@ -165,18 +165,15 @@ def test_dict_extension_array(df):
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
     new_numbers = range(df.numbers.min(), df.numbers.max() + 1)
-    new_numbers = pd.array(new_numbers)
-    new_numbers = {"numbers": new_numbers}
-    cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names", sort=True)
-    columns = df.columns
-    new_index = range(df.numbers.min(), df.numbers.max() + 1)
-    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
+    new_index = pd.MultiIndex.from_product([df.names, new_numbers], names=cols)
+    new_numbers = {"numbers": pd.array(new_numbers)}
+    result = df.complete("names", new_numbers, sort=True)
+
     expected = (
         df.set_index(cols)
         .reindex(new_index)
         .reset_index()
-        .reindex(columns=columns)
+        .reindex(columns=df.columns)
     )
 
     assert_frame_equal(result, expected)

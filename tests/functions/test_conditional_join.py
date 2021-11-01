@@ -1015,7 +1015,7 @@ def test_dual_conditions_eq_and_ne(df, right):
         (A, B, "=="),
         (C, D, "!="),
         how="inner",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
 
     actual = actual.filter([A, B, C, D])

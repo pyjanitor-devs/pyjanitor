@@ -754,6 +754,7 @@ def _range_indices(
 ):
     """
     Retrieve search space for a range/between join.
+
     Idea inspired by article:
     https://www.vertica.com/blog/what-is-a-range-join-and-why-is-it-so-fastba-p223413/
 

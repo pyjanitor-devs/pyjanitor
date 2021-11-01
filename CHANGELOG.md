@@ -12,12 +12,12 @@
 -   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
 -   [ENH] `As_Categorical` deprecated from `encode_categorical`; a tuple of `(categories, order)` suffices for **kwargs. @samukweku
 -   [ENH] Deprecate `names_sort` from `pivot_wider`.@samukweku
+-   [ENH] Add `softmax` to `math` module. Issue #902. @loganthomas
 
 ## [v0.21.2] - 2021-09-01
 
 -   [ENH] Fix warning message in `coalesce`, from bfill/fill;`coalesce` now uses variable arguments. Issue #882 @samukweku
 -   [INF] Add SciPy as explicit dependency in `base.in`. Issue #895 @ericmjl
-
 
 ## [v0.21.1] - 2021-08-29
 

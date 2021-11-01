@@ -181,7 +181,6 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    # return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -391,7 +390,9 @@ def _multiple_conditional_join_ne(
 
     first, *rest = conditions
     left_on, right_on, op = first
-    result = _generic_func_cond_join(df, right, left_on, right_on, op, 1)
+    result = _generic_func_cond_join(
+        df, right, left_on, right_on, op, "single"
+    )
     if result is None:
         return None
 
@@ -412,6 +413,8 @@ def _multiple_conditional_join_ne(
 
     if not mask.any():
         return None
+    if is_extension_array_dtype(mask):
+        mask = mask.to_numpy(dtype=bool, na_value=False)
 
     return df_index[mask], right_index[mask]
 
@@ -444,7 +447,7 @@ def _multiple_conditional_join_eq(
         [*left_on],
         [*right_on],
         _JoinOperator.STRICTLY_EQUAL.value,
-        1,
+        "single",
     )
 
     if result is None:
@@ -471,6 +474,8 @@ def _multiple_conditional_join_eq(
 
     if not mask.any():
         return None
+    if is_extension_array_dtype(mask):
+        mask = mask.to_numpy(dtype=bool, na_value=False)
 
     return df_index[mask], right_index[mask]
 
@@ -479,7 +484,9 @@ def _multiple_conditional_join_le_lt(
     df: pd.DataFrame, right: pd.DataFrame, conditions: list
 ) -> tuple:
     """
-    Get indices for multiple conditions.
+    Get indices for multiple conditions,
+    where `>/>=` or `</<=` is present,
+    and there is no `==` operator.
 
     Returns a tuple of (df_index, right_index)
     """
@@ -500,7 +507,6 @@ def _multiple_conditional_join_le_lt(
         if check2:
             start_right, end_right = end_right, start_right
             left_op, right_op = right_op, left_op
-
         outcome = _range_indices(
             df,
             right,
@@ -518,7 +524,6 @@ def _multiple_conditional_join_le_lt(
         df_index, right_index = outcome
 
     else:
-
         # find minimum df_index and right_index
         # aim is to reduce search space
         df_index = df.index
@@ -581,7 +586,6 @@ def _multiple_conditional_join_le_lt(
         right_index = np.concatenate(arrays)
         df_index = df_index.repeat(repeats)
 
-    # return df_index, right_index
     mask = None
     for left_on, right_on, op in conditions:
         left_c = extract_array(df[left_on], extract_numpy=True)
@@ -690,11 +694,15 @@ def _create_conditional_join_frame(
         right.columns = pd.MultiIndex.from_product([["right"], right.columns])
 
     if how == _JoinTypes.INNER.value:
-        df = df.loc[left_index]
-        right = right.loc[right_index]
-        df.index = pd.RangeIndex(start=0, stop=left_index.size)
-        right.index = df.index
-        return pd.concat([df, right], axis="columns", join=how, sort=False)
+        df = {
+            key: extract_array(value, extract_numpy=True)
+            for key, value in df.loc[left_index].items()
+        }
+        right = {
+            key: extract_array(value, extract_numpy=True)
+            for key, value in right.loc[right_index].items()
+        }
+        return pd.DataFrame({**df, **right})
 
     if how == _JoinTypes.LEFT.value:
         right = right.loc[right_index]
@@ -861,9 +869,9 @@ def _less_than_indices(
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values(kind="stable")
 
-    left_index = left_c.index.to_numpy(dtype=int)
+    left_index = left_c.index.to_numpy(dtype=int, copy=False)
     left_c = extract_array(left_c, extract_numpy=True)
-    right_index = right_c.index.to_numpy(dtype=int)
+    right_index = right_c.index.to_numpy(dtype=int, copy=False)
     right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="left")
@@ -966,9 +974,9 @@ def _greater_than_indices(
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values(kind="stable")
 
-    left_index = left_c.index.to_numpy(dtype=int)
+    left_index = left_c.index.to_numpy(dtype=int, copy=False)
     left_c = extract_array(left_c, extract_numpy=True)
-    right_index = right_c.index.to_numpy(dtype=int)
+    right_index = right_c.index.to_numpy(dtype=int, copy=False)
     right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="right")
@@ -1066,8 +1074,8 @@ def _equal_indices(
     )
 
     left_index, right_index = outcome._get_join_indexers()
-    left_c = df.index.to_numpy(copy=False)
-    right_c = right.index.to_numpy(copy=False)
+    left_c = df.index.to_numpy(dtype=int, copy=False)
+    right_c = right.index.to_numpy(dtype=int, copy=False)
 
     if not left_index.size > 0:
         return None

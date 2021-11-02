@@ -1144,7 +1144,7 @@ def test_ge_lt_ne_extension(df, right):
         df.assign(t=1)
         .merge(right.assign(t=1), on="t")
         .query(
-            "A != Integers and B < Numeric and E >= Dates and E != Dates_Right"
+            "A < Integers and B != Numeric and E >= Dates and E != Dates_Right"
         )
         .reset_index(drop=True)
     )
@@ -1152,8 +1152,8 @@ def test_ge_lt_ne_extension(df, right):
     actual = df.conditional_join(
         right,
         ("E", "Dates", ">="),
-        ("B", "Numeric", "<"),
-        ("A", "Integers", "!="),
+        ("B", "Numeric", "!="),
+        ("A", "Integers", "<"),
         ("E", "Dates_Right", "!="),
         how="inner",
         sort_by_appearance=True,
@@ -1200,13 +1200,38 @@ def test_dual_ge_and_le_diff_numbers(df, right):
     expected = (
         df.assign(t=1)
         .merge(right.assign(t=1), on="t", how="inner", sort=False)
-        .query(f"{l_ge} >= {r_ge} and {l_le} <= {r_le}")
+        .query(f"{l_ge} > {r_ge} and {l_le} <= {r_le}")
         .reset_index(drop=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(
         right,
         (l_le, r_le, "<="),
+        (l_ge, r_ge, ">"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    l_ge, l_le = ["A", "E"]
+    r_ge, r_le = ["Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        .query(f"{l_ge} >= {r_ge} and {l_le} < {r_le}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_le, r_le, "<"),
         (l_ge, r_ge, ">="),
         how="inner",
         sort_by_appearance=True,
@@ -1283,21 +1308,21 @@ def test_multiple_eqs_extension_array(df, right):
     expected = (
         df.merge(
             right,
-            left_on=["B", "A"],
-            right_on=["Floats", "Integers"],
+            left_on=["B", "E"],
+            right_on=["Floats", "Dates"],
             how="inner",
             sort=False,
         )
-        .dropna(subset=["B", "A", "Floats", "Integers"])
-        .query("E != Dates")
+        .dropna(subset=["B", "E", "Floats", "Integers"])
+        .query("A != Integers")
         .reset_index(drop=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(
         right,
-        ("E", "Dates", "!="),
+        ("E", "Dates", "=="),
         ("B", "Floats", "=="),
-        ("A", "Integers", "=="),
+        ("A", "Integers", "!="),
         how="inner",
         sort_by_appearance=False,
     )

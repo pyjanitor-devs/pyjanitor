@@ -214,8 +214,6 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    # return result
-
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -464,6 +462,7 @@ def _multiple_conditional_join_eq(
     """
     Get indices for multiple conditions,
     if any of the conditions has an `==` operator.
+
     Returns a tuple of (df_index, right_index)
     """
 
@@ -858,7 +857,6 @@ def _range_indices(
 
     if not mask.any():
         return None
-
     if not mask.all():
         return left_index[mask], right_index[mask]
 

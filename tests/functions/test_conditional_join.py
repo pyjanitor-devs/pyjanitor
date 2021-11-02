@@ -1216,6 +1216,97 @@ def test_dual_ge_and_le_diff_numbers(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
+def test_ge_lt_ne_extension_variant(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(
+            "A != Integers and B < Numeric and E >= Dates and E != Dates_Right"
+        )
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", ">="),
+        ("B", "Numeric", "<"),
+        ("A", "Integers", "!="),
+        ("E", "Dates_Right", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_eq_and_le_numbers_variant(df, right):
+    """Test output for multiple conditions."""
+
+    l_eq, l_ge, l_le = ["B", "A", "E"]
+    r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(right, left_on=l_eq, right_on=r_eq, how="inner", sort=False)
+        .dropna(subset=[l_eq, r_eq])
+        .query(f"{l_ge} >= {r_ge} and {l_le} <= {r_le}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_ge, r_ge, ">="),
+        (l_le, r_le, "<="),
+        (l_eq, r_eq, "=="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    # actual = actual.droplevel(0, 1)
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_variant(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["B", "A"],
+            right_on=["Floats", "Integers"],
+            how="inner",
+            sort=False,
+        )
+        .dropna(subset=["B", "A", "Floats", "Integers"])
+        .query("E != Dates")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "!="),
+        ("B", "Floats", "=="),
+        ("A", "Integers", "=="),
+        how="inner",
+        sort_by_appearance=False,
+    )
+
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
 def test_dual_ge_and_le_range_numbers(df, right):
     """Test output for multiple conditions."""
 

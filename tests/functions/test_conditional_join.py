@@ -1191,6 +1191,31 @@ def test_eq_ge_and_le_numbers(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_diff_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    l_ge, l_le = ["A", "E"]
+    r_ge, r_le = ["Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        .query(f"{l_ge} >= {r_ge} and {l_le} <= {r_le}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_le, r_le, "<="),
+        (l_ge, r_ge, ">="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@given(df=conditional_df(), right=conditional_right())
 def test_ge_eq_and_le_numbers(df, right):
     """Test output for multiple conditions."""
 

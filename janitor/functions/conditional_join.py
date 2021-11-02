@@ -548,6 +548,7 @@ def _multiple_conditional_join_le_lt(
             (left_op, right_op),
         ) = zip(*conditions)
         if check2:
+            start_left, end_left = end_left, start_left
             start_right, end_right = end_right, start_right
             left_op, right_op = right_op, left_op
         return _range_indices(
@@ -856,6 +857,7 @@ def _range_indices(
     mask = right_op(left_c, right_c)
 
     if not mask.any():
+        print("huh")
         return None
 
     if not mask.all():

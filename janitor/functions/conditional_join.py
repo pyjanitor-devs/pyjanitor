@@ -857,7 +857,6 @@ def _range_indices(
     mask = right_op(left_c, right_c)
 
     if not mask.any():
-        print("huh")
         return None
 
     if not mask.all():

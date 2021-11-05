@@ -18,7 +18,7 @@ def process_text(
 
     This function aims to make string cleaning easy, while chaining,
     by simply passing the string method name,
-    along with keyword arguments, to the function.
+    along with keyword arguments, if any, to the function.
 
     This modifies an existing column; it does not create a new column;
     new columns can be created via pyjanitor's `transform_columns`.
@@ -61,10 +61,10 @@ def process_text(
 
 
     :param df: A pandas DataFrame.
-    :param column_name: String column to be operated on.
-    :param string_function: Pandas string method to be applied.
+    :param column_name: string column to be operated on.
+    :param string_function: pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
-    :returns: A pandas dataframe with modified column.
+    :returns: A pandas DataFrame with modified column.
     :raises KeyError: if ``string_function`` is not a Pandas string method.
     :raises ValueError: if the text function returns a DataFrame, instead of a Series.
     """  # noqa: E501

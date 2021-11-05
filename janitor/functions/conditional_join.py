@@ -87,8 +87,7 @@ def conditional_join(
 
     Method chaining syntax:
 
-    .. code-block:: python
-
+    ```python
         df.conditional_join(
             right,
             (col_from_df, col_from_right, join_operator),
@@ -97,6 +96,7 @@ def conditional_join(
             how = 'inner' # or left/right
             sort_by_appearance = True # or False
             )
+    ```
 
 
     :param df: A Pandas DataFrame.

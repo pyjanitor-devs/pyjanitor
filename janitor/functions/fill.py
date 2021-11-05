@@ -18,59 +18,6 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     and pairs the column name with one of `up`, `down`, `updown`,
     and `downup`.
 
-    ```python
-    import pandas as pd
-    import janitor as jn
-
-    df
-
-                text  code
-    0      ragnar   NaN
-    1         NaN   2.0
-    2  sammywemmy   3.0
-    3         NaN   NaN
-    4      ginger   5.0
-    ```
-
-
-    Fill on a single column:
-
-    ```python
-    df.fill_direction(code = 'up')
-
-                text  code
-    0      ragnar   2.0
-    1         NaN   2.0
-    2  sammywemmy   3.0
-    3         NaN   5.0
-    4      ginger   5.0
-    ```
-
-    Fill on multiple columns:
-
-    ```python
-    df.fill_direction(text = 'down', code = 'down')
-
-                text  code
-    0      ragnar   NaN
-    1      ragnar   2.0
-    2  sammywemmy   3.0
-    3  sammywemmy   3.0
-    4      ginger   5.0
-    ```
-
-    Fill multiple columns in different directions:
-
-    ```python
-    df.fill_direction(text = 'up', code = 'down')
-
-                text  code
-    0      ragnar   NaN
-    1  sammywemmy   2.0
-    2  sammywemmy   3.0
-    3      ginger   3.0
-    4      ginger   5.0
-    ```
 
     Functional usage syntax:
 
@@ -104,7 +51,6 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         Directions can be either `down`, `up`, `updown`
         (fill up then down) and `downup` (fill down then up).
     :returns: A pandas DataFrame with modified column(s).
-    :raises ValueError: if column supplied is not in the DataFrame.
     :raises ValueError: if direction supplied is not one of `down`, `up`,
         `updown`, or `downup`.
     """

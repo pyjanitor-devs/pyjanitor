@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 from janitor.testing_utils.strategies import (
     conditional_df,
@@ -634,6 +634,7 @@ def test_how_right(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_dates(df, right):
     """Test output for interval conditions."""
@@ -658,6 +659,7 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_dates(df, right):
     """Test output for interval conditions."""
@@ -682,6 +684,7 @@ def test_dual_conditions_ge_and_le_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_le_and_ge_dates(df, right):
     """Test output for interval conditions."""
@@ -706,6 +709,7 @@ def test_dual_conditions_le_and_ge_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_numbers(df, right):
     """Test output for interval conditions."""
@@ -730,6 +734,7 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_le_and_ge_numbers(df, right):
     """Test output for interval conditions."""
@@ -754,6 +759,7 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers(df, right):
     """Test output for interval conditions."""
@@ -778,6 +784,7 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_(df, right):
     """
@@ -804,6 +811,7 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
     """
@@ -833,6 +841,7 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     """
@@ -863,6 +872,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne(df, right):
     """
@@ -891,6 +901,7 @@ def test_dual_ne(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_extension(df, right):
     """
@@ -918,6 +929,7 @@ def test_dual_ne_extension(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_extension_right(df, right):
     """
@@ -945,6 +957,7 @@ def test_dual_ne_extension_right(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_dates(df, right):
     """
@@ -971,6 +984,7 @@ def test_dual_ne_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_ne_dates(df, right):
     """
@@ -998,6 +1012,7 @@ def test_multiple_ne_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_eq_and_ne(df, right):
     """Test output for equal and not equal conditions."""
@@ -1022,6 +1037,7 @@ def test_dual_conditions_eq_and_ne(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ne_and_eq(df, right):
     """Test output for equal and not equal conditions."""
@@ -1046,6 +1062,7 @@ def test_dual_conditions_ne_and_eq(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_gt_lt_ne_conditions(df, right):
     """
@@ -1073,6 +1090,7 @@ def test_gt_lt_ne_conditions(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_gt_lt_ne_start(df, right):
     """
@@ -1100,6 +1118,7 @@ def test_gt_lt_ne_start(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_le_ne_extension_array(df, right):
     """
@@ -1130,8 +1149,97 @@ def test_ge_le_ne_extension_array(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_lt_ne_extension(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(
+            "A < Integers and B != Numeric and E >= Dates and E != Dates_Right"
+        )
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", ">="),
+        ("B", "Numeric", "!="),
+        ("A", "Integers", "<"),
+        ("E", "Dates_Right", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_eq_ge_and_le_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    l_eq, l_ge, l_le = ["B", "A", "E"]
+    r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(right, left_on=l_eq, right_on=r_eq, how="inner", sort=False)
+        .dropna(subset=[l_eq, r_eq])
+        .query(f"{l_ge} >= {r_ge} and {l_le} <= {r_le}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_eq, r_eq, "=="),
+        (l_ge, r_ge, ">="),
+        (l_le, r_le, "<="),
+        how="inner",
+        sort_by_appearance=False,
+    )
+
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_diff_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    l_ge, l_le = ["A", "E"]
+    r_ge, r_le = ["Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        .query(f"{l_ge} > {r_ge} and {l_le} <= {r_le}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_le, r_le, "<="),
+        (l_ge, r_ge, ">"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_lt_ne_extension_variant(df, right):
     """
     Test output for multiple conditions.
     """
@@ -1163,8 +1271,9 @@ def test_ge_lt_ne_extension(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
-def test_eq_ge_and_le_numbers(df, right):
+def test_ge_eq_and_le_numbers_variant(df, right):
     """Test output for multiple conditions."""
 
     l_eq, l_ge, l_le = ["B", "A", "E"]
@@ -1179,9 +1288,41 @@ def test_eq_ge_and_le_numbers(df, right):
     expected = expected.filter(columns)
     actual = df.conditional_join(
         right,
-        (l_eq, r_eq, "=="),
         (l_ge, r_ge, ">="),
         (l_le, r_le, "<="),
+        (l_eq, r_eq, "=="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    # actual = actual.droplevel(0, 1)
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_variant(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["B", "A"],
+            right_on=["Floats", "Integers"],
+            how="inner",
+            sort=False,
+        )
+        .dropna(subset=["B", "A", "Floats", "Integers"])
+        .query("E != Dates")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "!="),
+        ("B", "Floats", "=="),
+        ("A", "Integers", "=="),
         how="inner",
         sort_by_appearance=False,
     )
@@ -1190,6 +1331,33 @@ def test_eq_ge_and_le_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    l_ge, l_le = ["A", "E"]
+    r_ge, r_le = ["Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        .query(f"{l_ge} >= {r_ge} and {l_le} < {r_le}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_le, r_le, "<"),
+        (l_ge, r_ge, ">="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_eq_and_le_numbers(df, right):
     """Test output for multiple conditions."""
@@ -1217,6 +1385,66 @@ def test_ge_eq_and_le_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_equi(df, right):
+    """Test output for multiple conditions."""
+
+    l_eq, l_ge, l_le = ["B", "A", "E"]
+    r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        .query(f"{l_ge} >= {r_ge} and {l_le} <= {r_le} and {l_eq} < {r_eq}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_ge, r_ge, ">="),
+        (l_le, r_le, "<="),
+        (l_eq, r_eq, "<"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    # actual = actual.droplevel(0, 1)
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_equii(df, right):
+    """Test output for multiple conditions."""
+
+    l_eq, l_ge, l_le, ex1 = ["B", "A", "E", "B"]
+    r_eq, r_ge, r_le, ex2 = ["Floats", "Integers", "Dates", "Numeric"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        .query(
+            f"{l_ge} >= {r_ge} and {l_le} <= {r_le} and {l_eq} < {r_eq} and {ex1} > {ex2}"  # noqa: E501
+        )
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_ge, r_ge, ">="),
+        (l_le, r_le, "<="),
+        (l_eq, r_eq, "<"),
+        (ex1, ex2, ">"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    # actual = actual.droplevel(0, 1)
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""
@@ -1248,6 +1476,7 @@ def test_multiple_eqs(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_extension_array(df, right):
     """Test output for multiple conditions."""
@@ -1258,21 +1487,21 @@ def test_multiple_eqs_extension_array(df, right):
     expected = (
         df.merge(
             right,
-            left_on=["B", "A"],
-            right_on=["Floats", "Integers"],
+            left_on=["B", "E"],
+            right_on=["Floats", "Dates"],
             how="inner",
             sort=False,
         )
-        .dropna(subset=["B", "A", "Floats", "Integers"])
-        .query("E != Dates")
+        .dropna(subset=["B", "E", "Floats", "Integers"])
+        .query("A != Integers")
         .reset_index(drop=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(
         right,
-        ("E", "Dates", "!="),
+        ("E", "Dates", "=="),
         ("B", "Floats", "=="),
-        ("A", "Integers", "=="),
+        ("A", "Integers", "!="),
         how="inner",
         sort_by_appearance=False,
     )
@@ -1281,6 +1510,7 @@ def test_multiple_eqs_extension_array(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_only(df, right):
     """Test output for multiple conditions."""

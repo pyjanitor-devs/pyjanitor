@@ -121,6 +121,39 @@ def conditional_join(
     )
 
 
+class _JoinOperator(Enum):
+    """
+    List of operators used in conditional_join.
+    """
+
+    GREATER_THAN = ">"
+    LESS_THAN = "<"
+    GREATER_THAN_OR_EQUAL = ">="
+    LESS_THAN_OR_EQUAL = "<="
+    STRICTLY_EQUAL = "=="
+    NOT_EQUAL = "!="
+
+
+class _JoinTypes(Enum):
+    """
+    List of join types for conditional_join.
+    """
+
+    INNER = "inner"
+    LEFT = "left"
+    RIGHT = "right"
+
+
+operator_map = {
+    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
+    _JoinOperator.LESS_THAN.value: operator.lt,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
+    _JoinOperator.GREATER_THAN.value: operator.gt,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
+    _JoinOperator.NOT_EQUAL.value: operator.ne,
+}
+
+
 def _conditional_join_compute(
     df: pd.DataFrame,
     right: pd.DataFrame,
@@ -413,6 +446,10 @@ def _multiple_conditional_join_ne(
 
     if not mask.any():
         return None
+
+    if mask.all():
+        return df_index, right_index
+
     if is_extension_array_dtype(mask):
         mask = mask.to_numpy(dtype=bool, na_value=False)
 
@@ -425,6 +462,7 @@ def _multiple_conditional_join_eq(
     """
     Get indices for multiple conditions,
     if any of the conditions has an `==` operator.
+
     Returns a tuple of (df_index, right_index)
     """
 
@@ -465,8 +503,8 @@ def _multiple_conditional_join_eq(
         left_c = left_c[df_index]
         right_c = extract_array(right[right_on], extract_numpy=True)
         right_c = right_c[right_index]
-
         op = operator_map[op]
+
         if mask is None:
             mask = op(left_c, right_c)
         else:
@@ -474,6 +512,10 @@ def _multiple_conditional_join_eq(
 
     if not mask.any():
         return None
+
+    if mask.all():
+        return df_index, right_index
+
     if is_extension_array_dtype(mask):
         mask = mask.to_numpy(dtype=bool, na_value=False)
 
@@ -505,9 +547,10 @@ def _multiple_conditional_join_le_lt(
             (left_op, right_op),
         ) = zip(*conditions)
         if check2:
+            start_left, end_left = end_left, start_left
             start_right, end_right = end_right, start_right
             left_op, right_op = right_op, left_op
-        outcome = _range_indices(
+        return _range_indices(
             df,
             right,
             start_left,
@@ -518,73 +561,65 @@ def _multiple_conditional_join_le_lt(
             right_op,
         )
 
-        if outcome is None:
+    # find minimum df_index and right_index
+    # aim is to reduce search space
+    df_index = df.index
+    right_index = right.index
+    arrs = []
+    for left_on, right_on, op in conditions:
+        # no point checking for `!=`, since best case scenario
+        # they'll have the same no of rows as the other operators
+        if op == _JoinOperator.NOT_EQUAL.value:
+            continue
+
+        result = _generic_func_cond_join(
+            df.loc[df_index],
+            right.loc[right_index],
+            left_on,
+            right_on,
+            op,
+            join_type="multiple",
+        )
+
+        if result is None:
             return None
 
-        df_index, right_index = outcome
+        df_index, right_index, arr, lengths = result
+        arrs.append((df_index, arr, lengths))
 
-    else:
-        # find minimum df_index and right_index
-        # aim is to reduce search space
-        df_index = df.index
-        right_index = right.index
-        arrs = []
-        for left_on, right_on, op in conditions:
-            # no point checking for `!=`, since best case scenario
-            # they'll have the same no of rows as the other operators
-            if op == _JoinOperator.NOT_EQUAL.value:
-                continue
+    new_arrs = []
 
-            result = _generic_func_cond_join(
-                df.loc[df_index],
-                right.loc[right_index],
-                left_on,
-                right_on,
-                op,
-                join_type="multiple",
-            )
+    # trim to the minimum index for df
+    # and the smallest indices for right
+    # the minimum index for df should be available
+    # to all conditions; we achieve this via boolean indexing
+    for l_index, r_index, repeats in arrs:
+        bools = np.isin(l_index, df_index)
+        if not np.all(bools):
+            l_index = l_index[bools]
+            r_index = compress(r_index, bools)
+            repeats = repeats[bools]
+        new_arrs.append((l_index, r_index, repeats))
+    _, arr, repeats = zip(*new_arrs)
 
-            if result is None:
-                return None
-
-            df_index, right_index, arr, lengths = result
-            arrs.append((df_index, arr, lengths))
-
-        new_arrs = []
-
-        # trim to the minimum index for df
-        # and the smallest indices for right
-        # the minimum index for df should be available
-        # to all conditions; we achieve this via boolean indexing
-        for l_index, r_index, repeats in arrs:
-            bools = np.isin(l_index, df_index)
-            if not np.all(bools):
-                l_index = l_index[bools]
-                r_index = compress(r_index, bools)
-                repeats = repeats[bools]
-            new_arrs.append((l_index, r_index, repeats))
-        _, arr, repeats = zip(*new_arrs)
-
-        # with the aim of reducing the search space
-        # we get the smallest indices for each index in df
-        # e.g if df_index is [1, 2, 3]
-        # and there are two outcomes for the conditions for right:
-        # [[1,2,3], [4]], [[2], [4, 6]]
-        # the reconstituted indices will be the smallest per pairing
-        # which turns out to : [ [2], [4]]
-        # we achieve this by getting the minimum size in `repeats`
-        # and use that to index into `arr`
-        repeats = np.vstack(repeats)
-        positions = np.argmin(repeats, axis=0)
-        repeats = np.minimum.reduce(repeats)
-        arrays = []
-        arr = zip(
-            *arr
-        )  # pair all the indices for right obtained per condition
-        for row, pos in zip(arr, positions):
-            arrays.append(row[pos])
-        right_index = np.concatenate(arrays)
-        df_index = df_index.repeat(repeats)
+    # with the aim of reducing the search space
+    # we get the smallest indices for each index in df
+    # e.g if df_index is [1, 2, 3]
+    # and there are two outcomes for the conditions for right:
+    # [[1,2,3], [4]], [[2], [4, 6]]
+    # the reconstituted indices will be the smallest per pairing
+    # which turns out to : [ [2], [4]]
+    # we achieve this by getting the minimum size in `repeats`
+    # and use that to index into `arr`
+    repeats = np.vstack(repeats)
+    positions = np.argmin(repeats, axis=0)
+    repeats = np.minimum.reduce(repeats)
+    arrays = []
+    arr = zip(*arr)  # pair all the indices for right obtained per condition
+    for row, pos in zip(arr, positions):
+        arrays.append(row[pos])
+    right_index = np.concatenate(arrays)
+    df_index = df_index.repeat(repeats)
 
     mask = None
     for left_on, right_on, op in conditions:
@@ -601,23 +636,14 @@ def _multiple_conditional_join_le_lt(
 
     if not mask.any():
         return None
+
+    if mask.all():
+        return df_index, right_index
+
     if is_extension_array_dtype(mask):
         mask = mask.to_numpy(dtype=bool, na_value=False)
 
     return df_index[mask], right_index[mask]
-
-
-class _JoinOperator(Enum):
-    """
-    List of operators used in conditional_join.
-    """
-
-    GREATER_THAN = ">"
-    LESS_THAN = "<"
-    GREATER_THAN_OR_EQUAL = ">="
-    LESS_THAN_OR_EQUAL = "<="
-    STRICTLY_EQUAL = "=="
-    NOT_EQUAL = "!="
 
 
 def _create_conditional_join_empty_frame(
@@ -662,16 +688,6 @@ def _create_conditional_join_empty_frame(
         return df.join(right, how=how, sort=False)
 
 
-class _JoinTypes(Enum):
-    """
-    List of join types for conditional_join.
-    """
-
-    INNER = "inner"
-    LEFT = "left"
-    RIGHT = "right"
-
-
 def _create_conditional_join_frame(
     df: pd.DataFrame,
     right: pd.DataFrame,
@@ -688,6 +704,7 @@ def _create_conditional_join_frame(
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
         left_index = left_index[sorter]
+        sorter = None
 
     if set(df.columns).intersection(right.columns):
         df.columns = pd.MultiIndex.from_product([["left"], df.columns])
@@ -695,12 +712,12 @@ def _create_conditional_join_frame(
 
     if how == _JoinTypes.INNER.value:
         df = {
-            key: extract_array(value, extract_numpy=True)
-            for key, value in df.loc[left_index].items()
+            key: extract_array(value, extract_numpy=True)[left_index]
+            for key, value in df.items()
         }
         right = {
-            key: extract_array(value, extract_numpy=True)
-            for key, value in right.loc[right_index].items()
+            key: extract_array(value, extract_numpy=True)[right_index]
+            for key, value in right.items()
         }
         return pd.DataFrame({**df, **right})
 
@@ -753,7 +770,7 @@ def _range_indices(
     right_op: str,
 ):
     """
-    Retrieve search space for a range/between join.
+    Retrieve index positions for a range/between join.
 
     Idea inspired by article:
     https://www.vertica.com/blog/what-is-a-range-join-and-why-is-it-so-fastba-p223413/
@@ -830,6 +847,18 @@ def _range_indices(
     ]
     right_index = np.concatenate(right_index)
     left_index = np.repeat(left_index, repeater)
+
+    # here we search for actual positions
+    # where left_c is </<= right_c
+    left_c = extract_array(df[end_left], extract_numpy=True)[left_index]
+    right_c = extract_array(right[end_right], extract_numpy=True)[right_index]
+
+    mask = right_op(left_c, right_c)
+
+    if not mask.any():
+        return None
+    if not mask.all():
+        return left_index[mask], right_index[mask]
 
     return left_index, right_index
 
@@ -926,7 +955,7 @@ def _less_than_indices(
 
     right_c = [right_index[ind:len_right] for ind in search_indices]
 
-    if join_type != "single":
+    if join_type == "multiple":
         return (
             left_index,
             right_index[search_indices.min() :],  # noqa: E203
@@ -1128,13 +1157,3 @@ def _not_equal_indices(
     right_c = np.concatenate([lt_right, gt_right])
 
     return left_c, right_c
-
-
-operator_map = {
-    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
-    _JoinOperator.LESS_THAN.value: operator.lt,
-    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
-    _JoinOperator.GREATER_THAN.value: operator.gt,
-    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
-    _JoinOperator.NOT_EQUAL.value: operator.ne,
-}

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 from janitor.testing_utils.strategies import (
     df_strategy,
@@ -72,6 +72,7 @@ def test_Index_empty():
         expand_grid(others={"x": pd.Index([], dtype=int)})
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_Series(df):
     """Test expand_grid output"""
@@ -89,6 +90,7 @@ def test_Series(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_Series_DataFrame(df):
     """Test expand_grid output"""
@@ -105,6 +107,7 @@ def test_Series_DataFrame(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_Series_MultiIndex_DataFrame(df):
     """Test expand_grid output"""
@@ -123,6 +126,7 @@ def test_Series_MultiIndex_DataFrame(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_numpy_1d(df):
     """Test expand_grid output"""
@@ -140,6 +144,7 @@ def test_numpy_1d(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=categoricaldf_strategy())
 def test_numpy_2d(df):
     """Test expand_grid output"""
@@ -158,6 +163,7 @@ def test_numpy_2d(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_Index(df):
     """Test expand_grid output"""
@@ -175,6 +181,7 @@ def test_Index(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=categoricaldf_strategy())
 def test_MultiIndex(df):
     """Test expand_grid output"""
@@ -193,6 +200,7 @@ def test_MultiIndex(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_Pandas_extension_array(df):
     """Test expand_grid output"""
@@ -210,6 +218,7 @@ def test_Pandas_extension_array(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_sequence(df):
     """Test expand_grid output"""
@@ -227,6 +236,7 @@ def test_sequence(df):
     assert_frame_equal(result, expected)
 
 
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_scalar(df):
     """Test expand_grid output"""

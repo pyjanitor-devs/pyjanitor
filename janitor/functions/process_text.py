@@ -22,48 +22,13 @@ def process_text(
     New columns can be created via pyjanitor's `transform_columns`.
 
 
-    A list of all the string methods in Pandas can be accessed `here
-    <https://pandas.pydata.org/docs/user_guide/text.html#method-summary>`__.
+    A list of all the string methods in Pandas can be accessed [here]
+    (https://pandas.pydata.org/docs/user_guide/text.html#method-summary)
 
-    Example:
-
-
-
-        import pandas as pd
-        import janitor as jn
-
-                 text  code
-        0      Ragnar     1
-        1  sammywemmy     2
-        2      ginger     3
-
-        df.process_text(column_name = "text",
-                        string_function = "lower")
-
-          text          code
-        0 ragnar         1
-        1 sammywemmy     2
-        2 ginger         3
-
-    For string methods with parameters, simply pass the keyword arguments::
-
-        df.process_text(
-            column_name = "text",
-            string_function = "extract",
-            pat = r"(ag)",
-            expand = False,
-            flags = re.IGNORECASE
-            )
-
-          text     code
-        0 ag        1
-        1 NaN       2
-        2 NaN       3
 
     Functional usage syntax:
 
-
-
+    ```python
         import pandas as pd
         import janitor as jn
 
@@ -74,10 +39,11 @@ def process_text(
             string_function = "string_func_name_here",
             kwargs
             )
+    ```
 
     Method-chaining usage syntax:
 
-
+    ```python
 
         import pandas as pd
         import janitor as jn
@@ -90,19 +56,18 @@ def process_text(
                 kwargs
                 )
         )
+    ```
 
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param column_name: String column to be operated on.
     :param string_function: Pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
     :returns: A pandas dataframe with modified column(s).
     :raises KeyError: if ``string_function`` is not a Pandas string method.
-    :raises TypeError: if the wrong ``kwarg`` is supplied.
-    :raises ValueError: if `column_name` not found in dataframe.
+    :raises ValueError: if the text function returns a DataFrame, instead of a Series.
+    """  # noqa: E501
 
-    .. # noqa: DAR402
-    """
     check("column_name", column_name, [str])
     check("string_function", string_function, [str])
     check_column(df, [column_name])

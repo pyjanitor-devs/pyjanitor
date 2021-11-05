@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal
 
 @pytest.fixture
 def df():
+    "Base DataFrame fixture"
     return pd.DataFrame(
         {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 9]}
     )

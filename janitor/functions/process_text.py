@@ -14,16 +14,17 @@ def process_text(
     **kwargs: str,
 ) -> pd.DataFrame:
     """
-    Apply a Pandas string method to an existing column and return a dataframe.
+    Apply a Pandas string method to an existing column.
 
     This function aims to make string cleaning easy, while chaining,
-    by simply passing the string method name to the ``process_text`` function.
-    This modifies an existing column; it does not create a new column.
-    New columns can be created via pyjanitor's `transform_columns`.
+    by simply passing the string method name,
+    along with keyword arguments, to the function.
+
+    This modifies an existing column; it does not create a new column;
+    new columns can be created via pyjanitor's `transform_columns`.
 
 
-    A list of all the string methods in Pandas can be accessed [here]
-    (https://pandas.pydata.org/docs/user_guide/text.html#method-summary)
+    A list of all the string methods in Pandas can be accessed [here](https://pandas.pydata.org/docs/user_guide/text.html#method-summary)
 
 
     Functional usage syntax:
@@ -63,7 +64,7 @@ def process_text(
     :param column_name: String column to be operated on.
     :param string_function: Pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
-    :returns: A pandas dataframe with modified column(s).
+    :returns: A pandas dataframe with modified column.
     :raises KeyError: if ``string_function`` is not a Pandas string method.
     :raises ValueError: if the text function returns a DataFrame, instead of a Series.
     """  # noqa: E501

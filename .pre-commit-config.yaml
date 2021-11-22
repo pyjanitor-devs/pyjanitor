@@ -9,7 +9,7 @@ repos:
   - id: check-yaml
   - id: check-added-large-files
 - repo: https://github.com/psf/black
-  rev: 21.10b0
+  rev: 21.11b1
   hooks:
   - id: black
     args: [--config, pyproject.toml]

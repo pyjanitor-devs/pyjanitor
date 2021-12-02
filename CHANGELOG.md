@@ -15,6 +15,7 @@
 -   [ENH] `As_Categorical` deprecated from `encode_categorical`; a tuple of `(categories, order)` suffices for \*\*kwargs. @samukweku
 -   [ENH] Deprecate `names_sort` from `pivot_wider`.@samukweku
 -   [ENH] Add `softmax` to `math` module. Issue #902. @loganthomas
+-   [ENH] Fix `concatenate_columns` not working on category inputs @zbarry
 
 ## [v0.21.2] - 2021-09-01
 

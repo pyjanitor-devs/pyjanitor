@@ -214,6 +214,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
+    # return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -796,27 +797,23 @@ def _range_indices(
 
     search_indices, right_index, left_index = outcome
     right_c = right.loc[right_index, end_right]
+    # use position, not label
+    uniqs_index = np.arange(right_c.size)
+    dupes = right_c.duplicated(keep="first")
     right_c = extract_array(right_c, extract_numpy=True)
+    uniqs = right_c.copy()
+    if dupes.any():
+        uniqs_index = uniqs_index[~dupes]
+        uniqs = uniqs[~dupes]
+
     left_c = df.loc[left_index, end_left]
     left_c = extract_array(left_c, extract_numpy=True)
     top_pos = np.copy(search_indices)
-    bottom_pos = np.copy(search_indices)
     counter = np.arange(left_index.size)
     right_op = operator_map[right_op]
 
-    for ind in range(np.max(search_indices)):
-        # get rid of rows if it exceeds
-        # the range for the search_indices
-        # e.g search_indices is [2, 4, 6]
-        # our search space for 2( the first index)
-        # is 0, 1. if ind is 2, there is no point
-        # searching within the first index space anymore
-        exclude_rows = search_indices <= ind
-        if exclude_rows.any():
-            counter = counter[~exclude_rows]
-            search_indices = search_indices[~exclude_rows]
-            left_c = left_c[~exclude_rows]
-        keep_rows = right_op(left_c, right_c[ind])
+    for value, ind in zip(uniqs, uniqs_index):
+        keep_rows = right_op(left_c, value)
         # get the index positions where left_c is </<= right_c
         # that minimum position combined with the equivalent position
         # from search_indices becomes our search space
@@ -824,15 +821,17 @@ def _range_indices(
         if keep_rows.any():
             top_pos[counter[keep_rows]] = ind
             counter = counter[~keep_rows]
-            search_indices = search_indices[~keep_rows]
             left_c = left_c[~keep_rows]
         if not counter.size > 0:
             break
+    uniqs = None
+    dupes = None
+    uniqs_index = None
 
     # no point searching within (a, b)
     # if a == b
     # since range(a, b) yields none
-    keep_rows = top_pos < bottom_pos
+    keep_rows = top_pos < search_indices
 
     if not keep_rows.any():
         return None
@@ -840,10 +839,10 @@ def _range_indices(
     if not keep_rows.all():
         left_index = left_index[keep_rows]
         top_pos = top_pos[keep_rows]
-        bottom_pos = bottom_pos[keep_rows]
-    repeater = bottom_pos - top_pos
+        search_indices = search_indices[keep_rows]
+    repeater = search_indices - top_pos
     right_index = [
-        right_index[start:end] for start, end in zip(top_pos, bottom_pos)
+        right_index[start:end] for start, end in zip(top_pos, search_indices)
     ]
     right_index = np.concatenate(right_index)
     left_index = np.repeat(left_index, repeater)

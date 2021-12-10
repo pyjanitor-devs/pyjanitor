@@ -111,7 +111,7 @@ def generate_long_description() -> str:
 
 setup(
     name="pyjanitor",
-    version="0.21.2",
+    version="0.22.0",
     description="Tools for cleaning pandas DataFrames",
     author="pyjanitor devs",
     author_email="ericmajinglong@gmail.com",

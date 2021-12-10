@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.22.0] - 2021-11-21
+
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku
 -   [ENH] Added `case_when` to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv
 -   [ENH] Deprecate `new_column_names` and `merge_frame` from `process_text`. Only existing columns are supported. @samukweku
@@ -10,7 +12,7 @@
 -   [INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521
 -   [ENH] Fix bug in `pivot_longer` for wrong output when `names_pattern` is a sequence with a single value. Issue #885 @samukweku
 -   [ENH] Deprecate `aggfunc` from `pivot_wider`; aggregation can be chained with pandas' `groupby`.
--   [ENH] `As_Categorical` deprecated from `encode_categorical`; a tuple of `(categories, order)` suffices for **kwargs. @samukweku
+-   [ENH] `As_Categorical` deprecated from `encode_categorical`; a tuple of `(categories, order)` suffices for \*\*kwargs. @samukweku
 -   [ENH] Deprecate `names_sort` from `pivot_wider`.@samukweku
 -   [ENH] Add `softmax` to `math` module. Issue #902. @loganthomas
 
@@ -249,7 +251,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.2...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.22.0...HEAD
+
+[v0.22.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.2...v0.22.0
 
 [v0.21.2]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.1...v0.21.2
 

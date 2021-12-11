@@ -534,6 +534,7 @@ def _multiple_conditional_join_le_lt(
     Returns a tuple of (df_index, right_index)
     """
 
+    # applies for range joins
     check1 = len(conditions) == 2
     check2 = (conditions[0][-1] in less_than_join_types) & (
         conditions[-1][-1] in greater_than_join_types
@@ -780,7 +781,7 @@ def _range_indices(
     # get the positions where start_left is >/>= start_right
     # then within the positions,
     # get the positions where end_left is </<= end_right
-    # this should reduce the search space significantly
+    # this should reduce the search space
     strict = False
     if left_op == _JoinOperator.GREATER_THAN.value:
         strict = True

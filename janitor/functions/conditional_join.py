@@ -597,11 +597,10 @@ def _multiple_conditional_join_le_lt(
     for l_index, r_index, repeats in arrs:
         bools = np.isin(l_index, df_index)
         if not np.all(bools):
-            l_index = l_index[bools]
             r_index = compress(r_index, bools)
             repeats = repeats[bools]
-        new_arrs.append((l_index, r_index, repeats))
-    _, arr, repeats = zip(*new_arrs)
+        new_arrs.append((r_index, repeats))
+    arr, repeats = zip(*new_arrs)
 
     # with the aim of reducing the search space
     # we get the smallest indices for each index in df
@@ -609,16 +608,14 @@ def _multiple_conditional_join_le_lt(
     # and there are two outcomes for the conditions for right:
     # [[1,2,3], [4]], [[2], [4, 6]]
     # the reconstituted indices will be the smallest per pairing
-    # which turns out to : [ [2], [4]]
+    # which turns out to : [ [4], [2]]
     # we achieve this by getting the minimum size in `repeats`
     # and use that to index into `arr`
     repeats = np.vstack(repeats)
     positions = np.argmin(repeats, axis=0)
     repeats = np.minimum.reduce(repeats)
-    arrays = []
     arr = zip(*arr)  # pair all the indices for right obtained per condition
-    for row, pos in zip(arr, positions):
-        arrays.append(row[pos])
+    arrays = [row[pos] for row, pos in zip(arr, positions)]
     right_index = np.concatenate(arrays)
     df_index = df_index.repeat(repeats)
 
@@ -797,14 +794,13 @@ def _range_indices(
 
     search_indices, right_index, left_index = outcome
     right_c = right.loc[right_index, end_right]
-    # use position, not label
-    uniqs_index = np.arange(right_c.size)
     dupes = right_c.duplicated(keep="first")
     right_c = extract_array(right_c, extract_numpy=True)
-    uniqs = right_c.copy()
+    # use position, not label
+    uniqs_index = np.arange(right_c.size)
     if dupes.any():
         uniqs_index = uniqs_index[~dupes]
-        uniqs = uniqs[~dupes]
+        right_c = right_c[~dupes]
 
     left_c = df.loc[left_index, end_left]
     left_c = extract_array(left_c, extract_numpy=True)
@@ -812,7 +808,7 @@ def _range_indices(
     counter = np.arange(left_index.size)
     right_op = operator_map[right_op]
 
-    for value, ind in zip(uniqs, uniqs_index):
+    for value, ind in zip(right_c, uniqs_index):
         keep_rows = right_op(left_c, value)
         # get the index positions where left_c is </<= right_c
         # that minimum position combined with the equivalent position
@@ -824,7 +820,6 @@ def _range_indices(
             left_c = left_c[~keep_rows]
         if not counter.size > 0:
             break
-    uniqs = None
     dupes = None
     uniqs_index = None
 
@@ -841,9 +836,11 @@ def _range_indices(
         top_pos = top_pos[keep_rows]
         search_indices = search_indices[keep_rows]
     repeater = search_indices - top_pos
+    # return repeater, left_index
     right_index = [
         right_index[start:end] for start, end in zip(top_pos, search_indices)
     ]
+
     right_index = np.concatenate(right_index)
     left_index = np.repeat(left_index, repeater)
 

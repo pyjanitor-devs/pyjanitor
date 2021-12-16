@@ -534,7 +534,7 @@ def _multiple_conditional_join_le_lt(
     Returns a tuple of (df_index, right_index)
     """
 
-    # applies for range joins
+    # applies to range joins
     check1 = len(conditions) == 2
     check2 = (conditions[0][-1] in less_than_join_types) & (
         conditions[-1][-1] in greater_than_join_types
@@ -596,7 +596,7 @@ def _multiple_conditional_join_le_lt(
     # the minimum index for df should be available
     # to all conditions; we achieve this via boolean indexing
     for l_index, r_index, repeats in arrs:
-        bools = np.isin(l_index, df_index)
+        bools = np.isin(l_index, df_index, assume_unique=True)
         if not np.all(bools):
             r_index = compress(r_index, bools)
             repeats = repeats[bools]
@@ -613,9 +613,12 @@ def _multiple_conditional_join_le_lt(
     # we achieve this by getting the minimum size in `repeats`
     # and use that to index into `arr`
     repeats = np.vstack(repeats)
+    # get the index position for the sub array with the smallest size
     positions = np.argmin(repeats, axis=0)
+    # shrink the sizes to the minimum per row
     repeats = np.minimum.reduce(repeats)
     arr = zip(*arr)  # pair all the indices for right obtained per condition
+    # get the smallest array per row
     arrays = [row[pos] for row, pos in zip(arr, positions)]
     right_index = np.concatenate(arrays)
     df_index = df_index.repeat(repeats)
@@ -955,6 +958,8 @@ def _less_than_indices(
     if join_type == "multiple":
         return (
             left_index,
+            # no point keeping indices lower than the min
+            # less number of rows to deal with
             right_index[search_indices.min() :],  # noqa: E203
             right_c,
             len_right - search_indices,
@@ -1060,6 +1065,7 @@ def _greater_than_indices(
     if join_type == "multiple":
         return (
             left_index,
+            # no point keeping values beyond the max
             right_index[: search_indices.max()],
             right_c,
             search_indices,

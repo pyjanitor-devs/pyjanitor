@@ -36,7 +36,7 @@ def groupby_agg(
                                            agg='mean',
                                            agg_column_name="col1"
                                            new_column_name='col1_mean_by_group',
-                                           dropna = True/False)
+                                           dropna=True/False)
 
     Examples::
 
@@ -58,23 +58,23 @@ def groupby_agg(
     Let's get the count per `group` and `var1`::
 
         df.groupby_agg(
-            by = ['group', 'var1'],
-            agg = 'size',
-            agg_column_name = 'var1',
-            new_column_name = 'count'
+            by=['group', 'var1'],
+            agg='size',
+            agg_column_name='var1',
+            new_column_name='count',
         )
 
-            group  var1  size
-        0      1     1     4
-        1      1     1     4
-        2      1     1     4
-        3      1     1     4
-        4      1     2     1
-        5      2     1     1
-        6      2     2     3
-        7      2     2     3
-        8      2     2     3
-        9      2     3     1
+           group  var1  count
+        0      1     1      4
+        1      1     1      4
+        2      1     1      4
+        3      1     1      4
+        4      1     2      1
+        5      2     1      1
+        6      2     2      3
+        7      2     2      3
+        8      2     2      3
+        9      2     3      1
 
     If the data has null values,
     you can include the null values by passing `False` to `dropna`;

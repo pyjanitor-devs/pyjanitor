@@ -14,7 +14,7 @@ import operator
 from janitor.utils import check, check_column
 import numpy as np
 from enum import Enum
-from itertools import compress
+from itertools import compress, chain, starmap
 
 
 @pf.register_dataframe_method
@@ -212,7 +212,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    return result
+    # return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -506,15 +506,63 @@ def _multiple_conditional_join_eq(
         left_c = (arr for _, arr in left_c.items())
         right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
         right_c = (arr for _, arr in right_c.items())
+
         output = (
-            _generic_func_cond_join(l, r, op, "single")
+            _generic_func_cond_join(l, r, op, _JoinOperator.NOT_EQUAL.value)
             for l, r in zip(left_c, right_c)  # noqa:  E741
         )
         output = [entry for entry in output if entry is not None]
+        # return output
         if not output:
             return None
-        left_c, right_c = map(np.concatenate, zip(*output))
+        if op == _JoinOperator.NOT_EQUAL.value:
+            left_c, right_c = map(np.concatenate, zip(*output))
+            return left_c, right_c
+        left_c, right_c = zip(*output)
+        right_c = chain.from_iterable(right_c)
+        right_c = np.concatenate([*right_c])
+        return np.concatenate(left_c), right_c
+
+    le_lt = None
+    ge_gt = None
+    # #others = [
+    #     condition
+    #     for condition in conditions
+    #     if conditions[-1] == _JoinOperator.NOT_EQUAL.value
+    # ]
+    for condition in rest:
+        *_, op = condition
+        if op in less_than_join_types:
+            le_lt = condition
+        elif op in greater_than_join_types:
+            ge_gt = condition
+        if le_lt and ge_gt:
+            break
+
+    if ge_gt:
+        left_on, right_on, op = ge_gt
+        left_c = df.loc(axis=1)[left_on].loc(axis=1)[common_columns]
+        left_c = (arr for _, arr in left_c.items())
+        right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
+        right_c = (arr for _, arr in right_c.items())
+        # return [(l, r, op) for l, r in zip(left_c, right_c)]
+        ge_gt = [(l, r, op) for l, r in zip(left_c, right_c)]  # noqa:  E741
+    if le_lt:
+        left_on, right_on, op = le_lt
+        left_c = df.loc(axis=1)[left_on].loc(axis=1)[common_columns]
+        left_c = (arr for _, arr in left_c.items())
+        right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
+        right_c = (arr for _, arr in right_c.items())
+        le_lt = [(l, r, op) for l, r in zip(left_c, right_c)]  # noqa:  E741
+    if ge_gt and le_lt:
+        outcome = starmap(_range_indices, zip(ge_gt, le_lt))
+        outcome = [entry for entry in outcome if entry is not None]
+        if not outcome:
+            return None
+        left_c, right_c = map(np.concatenate, zip(*outcome))
         return left_c, right_c
+
+    return ge_gt, le_lt
 
     indices = []
     for condition in rest:
@@ -524,10 +572,11 @@ def _multiple_conditional_join_eq(
         right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
         right_c = (arr for _, arr in right_c.items())
         output = [
-            _generic_func_cond_join(l, r, op, "single")
+            _generic_func_cond_join(l, r, op, "==")
             for l, r in zip(left_c, right_c)  # noqa:  E741
         ]
         indices.append(output)
+    return indices
     indices = [
         [*zip(left, right)]
         for left, right in zip(*indices)
@@ -561,35 +610,26 @@ def _multiple_conditional_join_le_lt(
 
     Returns a tuple of (df_index, right_index)
     """
+    le_lt = None
+    ge_gt = None
+    for condition in conditions:
+        *_, op = condition
+        if op in less_than_join_types:
+            le_lt = condition
+        elif op in greater_than_join_types:
+            ge_gt = condition
+        if le_lt and ge_gt:
+            break
 
-    # applies to range joins
-    check1 = len(conditions) == 2
-    check2 = (conditions[0][-1] in less_than_join_types) & (
-        conditions[-1][-1] in greater_than_join_types
-    )
-    check3 = (conditions[0][-1] in greater_than_join_types) & (
-        conditions[-1][-1] in less_than_join_types
-    )
-    if check1 & (check2 | check3):
-        (
-            (start_left, end_left),
-            (start_right, end_right),
-            (left_op, right_op),
-        ) = zip(*conditions)
-        if check2:
-            start_left, end_left = end_left, start_left
-            start_right, end_right = end_right, start_right
-            left_op, right_op = right_op, left_op
-        return _range_indices(
-            df,
-            right,
-            start_left,
-            end_left,
-            start_right,
-            end_right,
-            left_op,
-            right_op,
-        )
+    if ge_gt:
+        left_on, right_on, op = ge_gt
+        ge_gt = (df[left_on], right[right_on], op)
+    if le_lt:
+        left_on, right_on, op = le_lt
+        le_lt = (df[left_on], right[right_on], op)
+
+    if ge_gt and le_lt:
+        return _range_indices(ge_gt, le_lt)
 
     # find minimum df_index and right_index
     # aim is to reduce search space
@@ -789,16 +829,7 @@ def _check_operator(op: str):
         )
 
 
-def _range_indices(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    start_left: str,
-    end_left: str,
-    start_right: str,
-    end_right: str,
-    left_op: str,
-    right_op: str,
-):
+def _range_indices(ge_gt: tuple, le_lt: tuple):
     """
     Retrieve index positions for a range/between join.
 
@@ -813,19 +844,19 @@ def _range_indices(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
+    left_c, right_c, left_op = ge_gt
     strict = False
     if left_op == _JoinOperator.GREATER_THAN.value:
         strict = True
 
-    outcome = _greater_than_indices(
-        df, right, start_left, start_right, strict, join_type="dual"
-    )
+    outcome = _greater_than_indices(left_c, right_c, strict, join_type="dual")
 
     if outcome is None:
         return None
 
     search_indices, right_index, left_index = outcome
-    right_c = right.loc[right_index, end_right]
+    end_left, end_right, right_op = le_lt
+    right_c = end_right.loc[right_index]
     dupes = right_c.duplicated(keep="first")
     right_c = extract_array(right_c, extract_numpy=True)
     # use position, not label
@@ -834,7 +865,7 @@ def _range_indices(
         uniqs_index = uniqs_index[~dupes]
         right_c = right_c[~dupes]
 
-    left_c = df.loc[left_index, end_left]
+    left_c = end_left.loc[left_index]
     left_c = extract_array(left_c, extract_numpy=True)
     top_pos = np.copy(search_indices)
     counter = np.arange(left_index.size)
@@ -878,8 +909,8 @@ def _range_indices(
 
     # here we search for actual positions
     # where left_c is </<= right_c
-    left_c = extract_array(df[end_left], extract_numpy=True)[left_index]
-    right_c = extract_array(right[end_right], extract_numpy=True)[right_index]
+    left_c = extract_array(end_left, extract_numpy=True)[left_index]
+    right_c = extract_array(end_right, extract_numpy=True)[right_index]
 
     mask = right_op(left_c, right_c)
 
@@ -990,6 +1021,8 @@ def _less_than_indices(
 
     search_indices = len_right - search_indices
     left_c = np.repeat(left_index, search_indices)
+    if join_type == _JoinOperator.STRICTLY_EQUAL.value:
+        return left_c, right_c
     right_c = np.concatenate(right_c)
     return left_c, right_c
 
@@ -1091,6 +1124,8 @@ def _greater_than_indices(
         )
 
     left_c = np.repeat(left_index, search_indices)
+    if join_type == _JoinOperator.STRICTLY_EQUAL.value:
+        return left_c, right_c
     right_c = np.concatenate(right_c)
     return left_c, right_c
 

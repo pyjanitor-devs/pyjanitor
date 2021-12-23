@@ -1030,7 +1030,7 @@ def test_dual_conditions_eq_and_ne(df, right):
         (A, B, "=="),
         (C, D, "!="),
         how="inner",
-        sort_by_appearance=False,
+        sort_by_appearance=True,
     )
 
     actual = actual.filter([A, B, C, D])
@@ -1055,7 +1055,107 @@ def test_dual_conditions_ne_and_eq(df, right):
         (A, B, "!="),
         (C, D, "=="),
         how="inner",
-        sort_by_appearance=False,
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter([A, B, C, D])
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_eq_and_gt(df, right):
+    """Test output for equal and not equal conditions."""
+
+    A, B, C, D = ("B", "Numeric", "E", "Dates")
+    expected = (
+        df.merge(right, left_on=A, right_on=B)
+        .dropna(subset=[A, B])
+        .query(f"{C} > {D}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([A, B, C, D])
+    actual = df.conditional_join(
+        right,
+        (A, B, "=="),
+        (C, D, ">"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter([A, B, C, D])
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_eq_and_ge(df, right):
+    """Test output for equal and not equal conditions."""
+
+    A, B, C, D = ("B", "Numeric", "E", "Dates")
+    expected = (
+        df.merge(right, left_on=A, right_on=B)
+        .dropna(subset=[A, B])
+        .query(f"{C} >= {D}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([A, B, C, D])
+    actual = df.conditional_join(
+        right,
+        (A, B, "=="),
+        (C, D, ">="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter([A, B, C, D])
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_eq_and_lt(df, right):
+    """Test output for equal and not equal conditions."""
+
+    A, B, C, D = ("B", "Numeric", "E", "Dates")
+    expected = (
+        df.merge(right, left_on=C, right_on=D)
+        .dropna(subset=[C, D])
+        .query(f"{A} < {B}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([A, B, C, D])
+    actual = df.conditional_join(
+        right,
+        (A, B, "<"),
+        (C, D, "=="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter([A, B, C, D])
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_eq_and_le(df, right):
+    """Test output for equal and not equal conditions."""
+
+    A, B, C, D = ("B", "Numeric", "E", "Dates")
+    expected = (
+        df.merge(right, left_on=C, right_on=D)
+        .dropna(subset=[C, D])
+        .query(f"{A} <= {B}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter([A, B, C, D])
+    actual = df.conditional_join(
+        right,
+        (A, B, "<="),
+        (C, D, "=="),
+        how="inner",
+        sort_by_appearance=True,
     )
 
     actual = actual.filter([A, B, C, D])

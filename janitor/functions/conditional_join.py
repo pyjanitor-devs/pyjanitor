@@ -212,7 +212,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    # return result
+    return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -508,7 +508,9 @@ def _multiple_conditional_join_eq(
         right_c = (arr for _, arr in right_c.items())
 
         output = (
-            _generic_func_cond_join(l, r, op, _JoinOperator.NOT_EQUAL.value)
+            _generic_func_cond_join(
+                l, r, op, _JoinOperator.STRICTLY_EQUAL.value
+            )
             for l, r in zip(left_c, right_c)  # noqa:  E741
         )
         output = [entry for entry in output if entry is not None]
@@ -525,11 +527,7 @@ def _multiple_conditional_join_eq(
 
     le_lt = None
     ge_gt = None
-    # #others = [
-    #     condition
-    #     for condition in conditions
-    #     if conditions[-1] == _JoinOperator.NOT_EQUAL.value
-    # ]
+
     for condition in rest:
         *_, op = condition
         if op in less_than_join_types:
@@ -539,13 +537,28 @@ def _multiple_conditional_join_eq(
         if le_lt and ge_gt:
             break
 
+    rest = [condition for condition in rest if condition not in (ge_gt, le_lt)]
+
+    if rest:
+        _rest = []
+        for condition in rest:
+            left_on, right_on, op = condition
+            left_c = df.loc(axis=1)[left_on].loc(axis=1)[common_columns]
+            left_c = (arr for _, arr in left_c.items())
+            right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
+            right_c = (arr for _, arr in right_c.items())
+            outcome = (
+                (l, r, op) for l, r in zip(left_c, right_c)  # noqa:  E741
+            )
+            _rest.append(outcome)
+        _rest = [*zip(*_rest)]
+
     if ge_gt:
         left_on, right_on, op = ge_gt
         left_c = df.loc(axis=1)[left_on].loc(axis=1)[common_columns]
         left_c = (arr for _, arr in left_c.items())
         right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
         right_c = (arr for _, arr in right_c.items())
-        # return [(l, r, op) for l, r in zip(left_c, right_c)]
         ge_gt = [(l, r, op) for l, r in zip(left_c, right_c)]  # noqa:  E741
     if le_lt:
         left_on, right_on, op = le_lt
@@ -554,50 +567,125 @@ def _multiple_conditional_join_eq(
         right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
         right_c = (arr for _, arr in right_c.items())
         le_lt = [(l, r, op) for l, r in zip(left_c, right_c)]  # noqa:  E741
+
     if ge_gt and le_lt:
-        outcome = starmap(_range_indices, zip(ge_gt, le_lt))
+        if rest:
+            outcome = zip(ge_gt, le_lt, _rest)
+        else:
+            outcome = zip(ge_gt, le_lt)
+        outcome = starmap(_range_indices, outcome)
         outcome = [entry for entry in outcome if entry is not None]
         if not outcome:
             return None
+
         left_c, right_c = map(np.concatenate, zip(*outcome))
         return left_c, right_c
 
-    return ge_gt, le_lt
+    left_c = None
+    right_c = None
+    if ge_gt:
+        output = (
+            _generic_func_cond_join(
+                l, r, op, _JoinOperator.STRICTLY_EQUAL.value
+            )
+            for l, r, op in ge_gt  # noqa:  E741
+        )
+        output = [entry for entry in output if entry is not None]
+        if not output:
+            return None
+        left_c, right_c = zip(*output)
+        right_c = chain.from_iterable(right_c)
+        right_c = np.concatenate([*right_c])
+        left_c = np.concatenate(left_c)
 
-    indices = []
-    for condition in rest:
-        left_on, right_on, op = condition
-        left_c = df.loc(axis=1)[left_on].loc(axis=1)[common_columns]
-        left_c = (arr for _, arr in left_c.items())
-        right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
-        right_c = (arr for _, arr in right_c.items())
-        output = [
-            _generic_func_cond_join(l, r, op, "==")
-            for l, r in zip(left_c, right_c)  # noqa:  E741
-        ]
-        indices.append(output)
-    return indices
-    indices = [
-        [*zip(left, right)]
-        for left, right in zip(*indices)
-        if (right is not None) and (left is not None)
-    ]
-    return indices
+    elif le_lt:
+        output = (
+            _generic_func_cond_join(
+                l, r, op, _JoinOperator.STRICTLY_EQUAL.value
+            )
+            for l, r, op in le_lt  # noqa:  E741
+        )
+        output = [entry for entry in output if entry is not None]
+        if not output:
+            return None
+        left_c, right_c = zip(*output)
+        right_c = chain.from_iterable(right_c)
+        right_c = np.concatenate([*right_c])
+        left_c = np.concatenate(left_c)
 
-    # return l, r
+    mask = None
+    op_map = {
+        _JoinOperator.NOT_EQUAL.value: pd.DataFrame.ne,
+        _JoinOperator.LESS_THAN.value: pd.DataFrame.lt,
+        _JoinOperator.LESS_THAN_OR_EQUAL.value: pd.DataFrame.le,
+        _JoinOperator.GREATER_THAN.value: pd.DataFrame.gt,
+        _JoinOperator.GREATER_THAN_OR_EQUAL.value: pd.DataFrame.ge,
+    }
 
-    # l = [ent for _, ent in l.items()]
-    # r = [ent for _, ent in r.items()]
-    # z = (
-    #     _greater_than_indices(left_c, right_c, False)
-    #     for left_c, right_c in zip(l, r)
-    # )
-    # # return [*z]
-    # l, r = map(np.concatenate, zip(*z))
-    # # z = dict(zip(common_columns, z))
-    # # return df.loc[l].stack(), right.loc[r].stack()
+    if left_c is not None:
+        for condition in rest:
+            left_on, right_on, op = condition
+            left_arr = df.loc[left_c, left_on].loc(axis=1)[common_columns]
+            right_arr = right.loc[right_c, right_on].loc(axis=1)[
+                common_columns
+            ]
+            left_arr.index = range(0, len(left_arr))
+            right_arr.index = left_arr.index
+            if mask is None:
+                mask = op_map[op](left_arr, right_arr, axis=0)
+            else:
+                mask &= op_map[op](left_arr, right_arr, axis=0)
 
-    # return l, r
+        mask = mask.all(axis=1)
+        if not mask.any(axis=None):
+            return None
+        if not mask.all(axis=None):
+            return left_c[mask], right_c[mask]
+        return left_c, right_c
+
+    first, *rest = rest
+    left_on, right_on, op = first
+    left_c = df.loc(axis=1)[left_on].loc(axis=1)[common_columns]
+    left_c = (arr for _, arr in left_c.items())
+    right_c = right.loc(axis=1)[right_on].loc(axis=1)[common_columns]
+    right_c = (arr for _, arr in right_c.items())
+    outcome = [(l, r, op) for l, r in zip(left_c, right_c)]  # noqa:  E741
+    outcome = (
+        _generic_func_cond_join(l, r, op, _JoinOperator.STRICTLY_EQUAL.value)
+        for l, r, op in outcome  # noqa:  E741
+    )
+    outcome = [entry for entry in outcome if entry is not None]
+    # return outcome
+    if not outcome:
+        return None
+    if op == _JoinOperator.NOT_EQUAL.value:
+        left_c, right_c = map(np.concatenate, zip(*outcome))
+    else:
+        left_c, right_c = zip(*outcome)
+        right_c = chain.from_iterable(right_c)
+        right_c = np.concatenate([*right_c])
+        left_c = np.concatenate(left_c)
+
+    if rest:
+        for condition in rest:
+            left_on, right_on, op = condition
+            left_arr = df.loc[left_c, left_on].loc(axis=1)[common_columns]
+            right_arr = right.loc[right_c, right_on].loc(axis=1)[
+                common_columns
+            ]
+            left_arr.index = range(0, len(left_arr))
+            right_arr.index = left_arr.index
+            if mask is None:
+                mask = op_map[op](left_arr, right_arr, axis=0)
+            else:
+                mask &= op_map[op](left_arr, right_arr, axis=0)
+
+        mask = mask.all(axis=1)
+        if not mask.any(axis=None):
+            return None
+        if not mask.all(axis=None):
+            return left_c[mask], right_c[mask]
+    return left_c, right_c
 
 
 def _multiple_conditional_join_le_lt(
@@ -829,7 +917,7 @@ def _check_operator(op: str):
         )
 
 
-def _range_indices(ge_gt: tuple, le_lt: tuple):
+def _range_indices(ge_gt: tuple, le_lt: tuple, others: None):
     """
     Retrieve index positions for a range/between join.
 
@@ -917,7 +1005,26 @@ def _range_indices(ge_gt: tuple, le_lt: tuple):
     if not mask.any():
         return None
     if not mask.all():
-        return left_index[mask], right_index[mask]
+        left_index = left_index[mask]
+        right_index = right_index[mask]
+
+    if others:
+        mask = None
+        for condition in others:
+            left_c, right_c, op = condition
+            left_c = extract_array(left_c, extract_numpy=True)[left_index]
+            right_c = extract_array(right_c, extract_numpy=True)[right_index]
+            op = operator_map[op]
+            if mask is None:
+                mask = op(left_c, right_c)
+            else:
+                mask &= op(left_c, right_c)
+            if not mask.any():
+                return None
+
+        if not mask.all():
+            left_index = left_index[mask]
+            right_index = right_index[mask]
 
     return left_index, right_index
 

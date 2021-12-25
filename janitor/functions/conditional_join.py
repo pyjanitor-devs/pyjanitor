@@ -853,7 +853,7 @@ def _range_indices(ge_gt: tuple, le_lt: tuple, others: None):
     if outcome is None:
         return None
 
-    search_indices, right_index, left_index = outcome
+    left_index, right_index, search_indices = outcome
     end_left, end_right, right_op = le_lt
     right_c = end_right.loc[right_index]
     dupes = right_c.duplicated(keep="first")
@@ -1011,18 +1011,9 @@ def _less_than_indices(
 
     right_c = [right_index[ind:len_right] for ind in search_indices]
 
-    if join_type == "multiple":
-        return (
-            left_index,
-            # no point keeping indices lower than the min
-            # less number of rows to deal with
-            right_index[search_indices.min() :],  # noqa: E203
-            right_c,
-            len_right - search_indices,
-        )
-
     search_indices = len_right - search_indices
     left_c = np.repeat(left_index, search_indices)
+    # relevant for equi joins
     if join_type == _JoinOperator.STRICTLY_EQUAL.value:
         return left_c, right_c
     right_c = np.concatenate(right_c)
@@ -1112,20 +1103,12 @@ def _greater_than_indices(
         return None
 
     if join_type == "dual":
-        return search_indices, right_index, left_index
+        return left_index, right_index, search_indices
 
     right_c = [right_index[:ind] for ind in search_indices]
 
-    if join_type == "multiple":
-        return (
-            left_index,
-            # no point keeping values beyond the max
-            right_index[: search_indices.max()],
-            right_c,
-            search_indices,
-        )
-
     left_c = np.repeat(left_index, search_indices)
+    # relevant for equi joins
     if join_type == _JoinOperator.STRICTLY_EQUAL.value:
         return left_c, right_c
     right_c = np.concatenate(right_c)

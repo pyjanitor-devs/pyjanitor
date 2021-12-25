@@ -1,8 +1,8 @@
 from pandas.core.construction import extract_array
+from pandas.core.dtypes.common import is_dtype_equal
 from pandas.api.types import (
+    is_numeric_dtype,
     is_datetime64_dtype,
-    is_integer_dtype,
-    is_float_dtype,
     is_string_dtype,
     is_extension_array_dtype,
     is_categorical_dtype,
@@ -212,7 +212,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    # return result
+    return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -238,7 +238,7 @@ def _conditional_join_preliminary_checks(
     as well as unnamed Series.
 
     A tuple of
-    (`df`, `right`, `left_on`, `right_on`, `operator`)
+    (`df`, `right`, `conditions`, `how`, `sort_by_appearance`)
     is returned.
     """
 
@@ -303,7 +303,7 @@ def _conditional_join_preliminary_checks(
     if set(op) == {_JoinOperator.STRICTLY_EQUAL.value}:
         raise ValueError(
             """
-            conditional_join does not support joins solely on inequality.
+            conditional_join does not support equality only joins.
             Kindly use `pd.merge` instead.
             """
         )
@@ -329,8 +329,7 @@ def _conditional_join_type_check(
 
     permitted_types = {
         is_datetime64_dtype,
-        is_integer_dtype,
-        is_float_dtype,
+        is_numeric_dtype,
         is_string_dtype,
         is_categorical_dtype,
     }
@@ -345,11 +344,7 @@ def _conditional_join_type_check(
             float or date dtypes.
             """
         )
-    cols = (left_column, right_column)
-    for func in permitted_types:
-        if all(map(func, cols)):
-            break
-    else:
+    if not is_dtype_equal(left_column, right_column):
         raise ValueError(
             f"""
              Both columns should have the same type.
@@ -370,13 +365,13 @@ def _conditional_join_type_check(
         )
 
     if (
-        is_categorical_dtype(left_column)
+        is_extension_array_dtype(left_column)
         and op != _JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
             """
-            For categorical columns,
-            only the `==` operator is supported.
+            Pandas extension array type is not supported
+            for non-equi joins.
             """
         )
 
@@ -418,7 +413,7 @@ def _multiple_conditional_join_ne(
     Get indices for multiple conditions,
     where all the operators are `!=`.
 
-    Returns a tuple of (df_index, right_index)
+    Returns a tuple of (left_index, right_index)
     """
 
     first, *rest = conditions
@@ -429,13 +424,11 @@ def _multiple_conditional_join_ne(
     if result is None:
         return None
 
-    left_index, right_index = result
-
     rest = (
         (df[left_on], right[right_on], op) for left_on, right_on, op in rest
     )
 
-    return _generate_indices(left_index, right_index, rest)
+    return _generate_indices(*result, rest)
 
 
 def _multiple_conditional_join_eq(
@@ -479,8 +472,10 @@ def _multiple_conditional_join_eq(
     # adding a 1 allows for correct unstacking
     arr = arr + 1
     df = df.set_index([*left_on], append=True).unstack(level=[*arr])
+    return df
 
     # same process above repeated for `right`
+    nulls_exist = right.loc[:, [*right_on]].isna().any(axis=1)
     if nulls_exist.any():
         right = right.loc[~nulls_exist]
     arr, right_on = pd.factorize(right_on)
@@ -634,6 +629,9 @@ def _multiple_conditional_join_le_lt(
 
     Returns a tuple of (df_index, right_index)
     """
+
+    # not a bad idea to generate minimum indices
+    # first pass
     le_lt = None
     ge_gt = None
     for condition in conditions:
@@ -687,10 +685,10 @@ def _generate_indices(
     mask = None
     for condition in conditions:
         left_c, right_c, op = condition
-        left_c = extract_array(left_c, extract_numpy=True)
-        left_c = left_c[left_index]
-        right_c = extract_array(right_c, extract_numpy=True)
-        right_c = right_c[right_index]
+        left_c = left_c.loc[left_index]
+        left_c = left_c.to_numpy(copy=False)
+        right_c = right_c.loc[right_index]
+        right_c = right_c.to_numpy(copy=False)
         op = operator_map[op]
         if mask is None:
             mask = op(left_c, right_c)
@@ -698,9 +696,6 @@ def _generate_indices(
             mask &= op(left_c, right_c)
         if not mask.any():
             return None
-
-    if is_extension_array_dtype(mask):
-        mask = mask.to_numpy(dtype=bool, na_value=False)
 
     if mask.all():
         return left_index, right_index
@@ -850,7 +845,7 @@ def _range_indices(ge_gt: tuple, le_lt: tuple, others: None):
     end_left, end_right, right_op = le_lt
     right_c = end_right.loc[right_index]
     dupes = right_c.duplicated(keep="first")
-    right_c = extract_array(right_c, extract_numpy=True)
+    right_c = right_c.to_numpy(copy=False)
     # use position, not label
     uniqs_index = np.arange(right_c.size)
     if dupes.any():
@@ -858,7 +853,7 @@ def _range_indices(ge_gt: tuple, le_lt: tuple, others: None):
         right_c = right_c[~dupes]
 
     left_c = end_left.loc[left_index]
-    left_c = extract_array(left_c, extract_numpy=True)
+    left_c = left_c.to_numpy(copy=False)
     top_pos = np.copy(search_indices)
     counter = np.arange(left_index.size)
     right_op = operator_map[right_op]
@@ -890,48 +885,29 @@ def _range_indices(ge_gt: tuple, le_lt: tuple, others: None):
         left_index = left_index[keep_rows]
         top_pos = top_pos[keep_rows]
         search_indices = search_indices[keep_rows]
-    repeater = search_indices - top_pos
-    # return repeater, left_index
+
+    right_c = end_right.loc[right_index].to_numpy(copy=False)
     right_index = [
         right_index[start:end] for start, end in zip(top_pos, search_indices)
     ]
 
-    right_index = np.concatenate(right_index)
-    left_index = np.repeat(left_index, repeater)
+    right_c = [
+        right_c[start:end] for start, end in zip(top_pos, search_indices)
+    ]
 
-    # here we search for actual positions
-    # where left_c is </<= right_c
-    left_c = extract_array(end_left, extract_numpy=True)[left_index]
-    right_c = extract_array(end_right, extract_numpy=True)[right_index]
+    left_c = end_left.loc[left_index].to_numpy()
 
-    mask = right_op(left_c, right_c)
-
-    if not mask.any():
+    outcome = starmap(right_op, zip(left_c, right_c))
+    outcome = ((arr, np.count_nonzero(arr)) for arr in outcome)
+    mask, reps = zip(*outcome)
+    mask = np.concatenate(mask)
+    if not mask.any:
         return None
-    if not mask.all():
-        left_index = left_index[mask]
-        right_index = right_index[mask]
+    right_index = np.concatenate(right_index)[mask]
+    left_index = np.repeat(left_index, reps)
 
     if others:
-        # print(others)
         return _generate_indices(left_index, right_index, others)
-        # return others
-        # mask = None
-        # for condition in others:
-        #     left_c, right_c, op = condition
-        #     left_c = extract_array(left_c, extract_numpy=True)[left_index]
-        #     right_c = extract_array(right_c, extract_numpy=True)[right_index]
-        #     op = operator_map[op]
-        #     if mask is None:
-        #         mask = op(left_c, right_c)
-        #     else:
-        #         mask &= op(left_c, right_c)
-        #     if not mask.any():
-        #         return None
-
-        # if not mask.all():
-        #     left_index = left_index[mask]
-        #     right_index = right_index[mask]
 
     return left_index, right_index
 
@@ -968,9 +944,9 @@ def _less_than_indices(
         right_c = right_c.sort_values(kind="stable")
 
     left_index = left_c.index.to_numpy(dtype=int, copy=False)
-    left_c = extract_array(left_c, extract_numpy=True)
+    left_c = left_c.to_numpy(copy=False)
     right_index = right_c.index.to_numpy(dtype=int, copy=False)
-    right_c = extract_array(right_c, extract_numpy=True)
+    right_c = right_c.to_numpy(copy=False)
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
@@ -1073,9 +1049,9 @@ def _greater_than_indices(
         right_c = right_c.sort_values(kind="stable")
 
     left_index = left_c.index.to_numpy(dtype=int, copy=False)
-    left_c = extract_array(left_c, extract_numpy=True)
+    left_c = left_c.to_numpy(copy=False)
     right_index = right_c.index.to_numpy(dtype=int, copy=False)
-    right_c = extract_array(right_c, extract_numpy=True)
+    right_c = right_c.to_numpy(copy=False)
 
     search_indices = right_c.searchsorted(left_c, side="right")
     # if any of the positions in `search_indices`

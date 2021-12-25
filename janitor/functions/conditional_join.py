@@ -212,7 +212,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    return result
+    # return result
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
@@ -440,6 +440,19 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (df_index, right_index)
     """
+    # Summary:
+    # Get equality conditions and non-equi
+    # Get rid of nulls
+    # Unstack the dataframes,
+    # with the equality conditions columns as headers
+    # this way, we skip the merge join
+    # and go straight to the binary search
+    # for the non-equi joins
+    # this also allows for searching column-wise
+    # which is faster than row-wise search
+    # Binary search occurs between multiple pairs
+    # of common columns, and finally
+    # a left_index, right_index is returned.
 
     eq_cond = (
         cond
@@ -472,7 +485,6 @@ def _multiple_conditional_join_eq(
     # adding a 1 allows for correct unstacking
     arr = arr + 1
     df = df.set_index([*left_on], append=True).unstack(level=[*arr])
-    return df
 
     # same process above repeated for `right`
     nulls_exist = right.loc[:, [*right_on]].isna().any(axis=1)
@@ -587,6 +599,7 @@ def _multiple_conditional_join_eq(
         right_c = (arr for _, arr in right_c.items())
         le_lt = [(l, r, op) for l, r in zip(left_c, right_c)]  # noqa:  E741
 
+    # range join
     if ge_gt and le_lt:
         outcome = zip(ge_gt, le_lt, _rest)
         outcome = starmap(_range_indices, outcome)
@@ -656,7 +669,6 @@ def _multiple_conditional_join_le_lt(
         )
     else:
         rest = None
-    # return rest
 
     if ge_gt:
         left_on, right_on, op = ge_gt

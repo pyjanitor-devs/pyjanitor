@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
-
+-   [ENH] conditional_join does not support equality only joins. Also, performance improvements. @samukweku
 ## [v0.22.0] - 2021-11-21
 
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku

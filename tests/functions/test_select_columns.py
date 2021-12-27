@@ -12,6 +12,7 @@ from pandas.testing import assert_frame_equal
     ],
 )
 def test_select_column_names(dataframe, invert, expected):
+    "Base DataFrame"
     columns = ["a", "Bell__Chart", "cities"]
     df = dataframe.select_columns(columns, invert=invert)
 
@@ -27,6 +28,7 @@ def test_select_column_names(dataframe, invert, expected):
     ],
 )
 def test_select_column_names_glob_inputs(dataframe, invert, expected):
+    "Base DataFrame"
     columns = ["Bell__Chart", "a*"]
     df = dataframe.select_columns(columns, invert=invert)
 

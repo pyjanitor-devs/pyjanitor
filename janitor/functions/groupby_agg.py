@@ -35,7 +35,7 @@ def groupby_agg(
                                            agg='mean',
                                            agg_column_name="col1"
                                            new_column_name='col1_mean_by_group',
-                                           dropna = True/False)
+                                           dropna=True/False)
     ```
 
     Functional usage syntax:
@@ -55,6 +55,41 @@ def groupby_agg(
     ```
 
     Method chaining usage syntax:
+
+    ```python
+    df.groupby_agg(
+        by=['group', 'var1'],
+        agg='size',
+        agg_column_name='var1',
+        new_column_name='count',
+    )
+    ```
+
+           group  var1  count
+        0      1     1      4
+        1      1     1      4
+        2      1     1      4
+        3      1     1      4
+        4      1     2      1
+        5      2     1      1
+        6      2     2      3
+        7      2     2      3
+        8      2     2      3
+        9      2     3      1
+
+    If the data has null values,
+    you can include the null values by passing `False` to `dropna`;
+    this feature was introduced in Pandas 1.1:
+
+            name   type  num  nulls
+        0  black  chair    4    1.0
+        1  black  chair    5    1.0
+        2  black   sofa   12    NaN
+        3    red   sofa    4    NaN
+        4    red  plate    3    3.0
+
+    Let's get the count, including the null values,
+    grouping on `nulls` column:
 
     ```python
 

@@ -26,8 +26,8 @@ def bin_numeric(
 
     This method mutates the original DataFrame.
 
-    A wrapper around the pandas [`cut()`][pd_cut_docs] function to bin data of one column,
-    generating a new column with the results.
+    A wrapper around the pandas [`cut()`][pd_cut_docs] function to bin data of
+    one column, generating a new column with the results.
 
     [pd_cut_docs]: https://pandas.pydata.org/docs/reference/api/pandas.cut.html
 
@@ -48,8 +48,8 @@ def bin_numeric(
     :param df: A pandas DataFrame.
     :param from_column_name: The column whose data you want binned.
     :param to_column_name: The new column to be created with the binned data.
-    :param bins: The binning strategy to be utilized. Read the `pd.cut` documentation
-        for more details.
+    :param bins: The binning strategy to be utilized. Read the `pd.cut`
+        documentation for more details.
     :param **kwargs: Additional kwargs to pass to `pd.cut`, except `retbins`.
     :return: A pandas DataFrame.
     :raises ValueError: If `retbins` is passed in as a kwarg.

@@ -58,7 +58,7 @@ def bin_numeric(
     :raises ValueError: If `retbins` is passed in as a kwarg.
     :raises TypeError: If `from_column_name` or `to_column_name` are not string
         types.
-    """
+    """  # noqa: DAR402
     if "retbins" in kwargs:
         raise ValueError("`retbins` is not an acceptable keyword argument.")
 

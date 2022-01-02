@@ -1,3 +1,0 @@
-# PySpark
-
-::: janitor.spark

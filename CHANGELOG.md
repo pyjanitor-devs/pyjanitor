@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Deprecate `num_bins` from `bin_numeric` in favour of `bins`, and allow generic `**kwargs` to be passed into `pd.cut`. Issue #969. @thatlittleboy
+
 ## [v0.22.0] - 2021-11-21
 
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku

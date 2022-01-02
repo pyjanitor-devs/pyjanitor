@@ -16,6 +16,12 @@ def add_column(
 ) -> pd.DataFrame:
     """Add a column to the dataframe.
 
+    Intended to be the method-chaining alternative to:
+
+    ```python
+    df[column_name] = value
+    ```
+
     Example: Add a column of constant values to the dataframe.
 
         >>> import pandas as pd
@@ -131,11 +137,16 @@ def add_columns(
 
     Values passed can be scalar or iterable (list, ndarray, etc.)
 
-    Usage example:
+    Example: Inserting two more columns into a dataframe.
 
-        x = 3
-        y = np.arange(0, 10)
-        df = pd.DataFrame(...).add_columns(x=x, y=y)
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
+        >>> df.add_columns(x=4, y=list("def"))
+           a  b  x  y
+        0  0  a  4  d
+        1  1  b  4  e
+        2  2  c  4  f
 
     :param df: A pandas dataframe.
     :param fill_remaining: If value is a tuple or list that is smaller than

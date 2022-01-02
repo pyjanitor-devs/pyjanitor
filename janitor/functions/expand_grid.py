@@ -66,8 +66,6 @@ def expand_grid(
 
     Usage independent of a DataFrame
 
-    .. code-block:: python
-
     ```python
         import pandas as pd
         from janitor import expand_grid

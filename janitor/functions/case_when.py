@@ -78,8 +78,6 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
 
     Method chaining syntax:
 
-    .. code-block:: python
-
     ```python
     df = df.case_when(
         condition0, result0,

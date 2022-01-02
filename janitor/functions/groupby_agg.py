@@ -22,14 +22,13 @@ def groupby_agg(
 
     Without this function, we would have to write a verbose line:
 
-
-
+    ```python
         df = df.assign(...=df.groupby(...)[...].transform(...))
+    ```
 
     Now, this function can be method-chained:
 
-
-
+    ```python
         import pandas as pd
         import janitor
         df = pd.DataFrame(...).groupby_agg(by='group',
@@ -37,73 +36,36 @@ def groupby_agg(
                                            agg_column_name="col1"
                                            new_column_name='col1_mean_by_group',
                                            dropna = True/False)
+    ```
 
-    Examples::
+    Functional usage syntax:
+
+    ```python
 
         import pandas as pd
         import janitor as jn
 
-            group  var1
-        0      1     1
-        1      1     1
-        2      1     1
-        3      1     1
-        4      1     2
-        5      2     1
-        6      2     2
-        7      2     2
-        8      2     2
-        9      2     3
+        jn.groupby_agg(
+            df,
+            by= column name/list of column names,
+            agg=aggregation function,
+            agg_column_name = col,
+            new_column_name= new column name,
+            dropna = True/False)
+    ```
 
-    Let's get the count per `group` and `var1`::
+    Method chaining usage syntax:
 
-        df.groupby_agg(
-            by = ['group', 'var1'],
-            agg = 'size',
-            agg_column_name = 'var1',
-            new_column_name = 'count'
-        )
-
-            group  var1  size
-        0      1     1     4
-        1      1     1     4
-        2      1     1     4
-        3      1     1     4
-        4      1     2     1
-        5      2     1     1
-        6      2     2     3
-        7      2     2     3
-        8      2     2     3
-        9      2     3     1
-
-    If the data has null values,
-    you can include the null values by passing `False` to `dropna`;
-    this feature was introduced in Pandas 1.1::
-
-            name   type  num  nulls
-        0  black  chair    4    1.0
-        1  black  chair    5    1.0
-        2  black   sofa   12    NaN
-        3    red   sofa    4    NaN
-        4    red  plate    3    3.0
-
-    Let's get the count, including the null values,
-    grouping on `nulls` column::
+    ```python
 
         df.groupby_agg(
-            by="nulls",
-            new_column_name="num_count",
-            agg_column_name="num",
-            agg="size",
-            dropna=False,
-        )
+            by= column name/list of column names,
+            agg=aggregation function,
+            agg_column_name = col,
+            new_column_name= new column name,
+            dropna = True/False)
+    ```
 
-            name   type  num  nulls  num_count
-        0  black  chair    4    1.0          2
-        1  black  chair    5    1.0          2
-        2  black   sofa   12    NaN          2
-        3    red   sofa    4    NaN          2
-        4    red  plate    3    3.0          1
 
     :param df: A pandas DataFrame.
     :param by: Column(s) to groupby on, either a `str` or
@@ -115,9 +77,11 @@ def groupby_agg(
         if present in the `by` column(s). Default is True.
     :returns: A pandas DataFrame.
     """
-    df = df.copy()
 
-    df[new_column_name] = df.groupby(by, dropna=dropna)[
-        agg_column_name
-    ].transform(agg)
-    return df
+    return df.assign(
+        **{
+            new_column_name: df.groupby(by, dropna=dropna)[
+                agg_column_name
+            ].transform(agg)
+        }
+    )

@@ -54,11 +54,8 @@ def bin_numeric(
         documentation for more details.
     :param **kwargs: Additional kwargs to pass to `pd.cut`, except `retbins`.
     :return: A pandas DataFrame.
-    :raises ValueError: If `from_column_name` is not a column of `df`.
     :raises ValueError: If `retbins` is passed in as a kwarg.
-    :raises TypeError: If `from_column_name` or `to_column_name` are not string
-        types.
-    """  # noqa: DAR402
+    """
     if "retbins" in kwargs:
         raise ValueError("`retbins` is not an acceptable keyword argument.")
 

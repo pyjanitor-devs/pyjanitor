@@ -33,7 +33,7 @@ def add_column(
         >>> import janitor
         >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
         >>> df.add_column(column_name="c", value=list("efg"))
-        a  b  c
+           a  b  c
         0  0  a  e
         1  1  b  f
         2  2  c  g
@@ -44,7 +44,7 @@ def add_column(
         >>> import janitor
         >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
         >>> df.add_column(column_name="c", value=range(4, 7))
-        a  b  c
+           a  b  c
         0  0  a  4
         1  1  b  5
         2  2  c  6
@@ -65,87 +65,6 @@ def add_column(
         a length not equal to the number of DataFrame rows.
     :raises ValueError: if `value` has length of `0``.
     """
-    # TODO: Convert examples to notebook.
-    # :Setup:
-
-    # ```python
-
-    #     import pandas as pd
-    #     import janitor
-    #     data = {
-    #         "a": [1, 2, 3] * 3,
-    #         "Bell__Chart": [1, 2, 3] * 3,
-    #         "decorated-elephant": [1, 2, 3] * 3,
-    #         "animals": ["rabbit", "leopard", "lion"] * 3,
-    #         "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-    #     }
-    #     df = pd.DataFrame(data)
-
-    # :Example 1: Create a new column with a single value:
-
-    # ```python
-
-    #     df.add_column("city_pop", 100000)
-
-    # :Output:
-
-    # ```python
-
-    #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
-    #     0  1            1                   1   rabbit  Cambridge    100000
-    #     1  2            2                   2  leopard   Shanghai    100000
-    #     2  3            3                   3     lion      Basel    100000
-    #     3  1            1                   1   rabbit  Cambridge    100000
-    #     4  2            2                   2  leopard   Shanghai    100000
-    #     5  3            3                   3     lion      Basel    100000
-    #     6  1            1                   1   rabbit  Cambridge    100000
-    #     7  2            2                   2  leopard   Shanghai    100000
-    #     8  3            3                   3     lion      Basel    100000
-
-    # :Example 2: Create a new column with an iterator which fills to the
-    # column
-    # size:
-
-    # ```python
-
-    #     df.add_column("city_pop", range(3), fill_remaining=True)
-
-    # :Output:
-
-    # ```python
-
-    #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
-    #     0  1            1                   1   rabbit  Cambridge         0
-    #     1  2            2                   2  leopard   Shanghai         1
-    #     2  3            3                   3     lion      Basel         2
-    #     3  1            1                   1   rabbit  Cambridge         0
-    #     4  2            2                   2  leopard   Shanghai         1
-    #     5  3            3                   3     lion      Basel         2
-    #     6  1            1                   1   rabbit  Cambridge         0
-    #     7  2            2                   2  leopard   Shanghai         1
-    #     8  3            3                   3     lion      Basel         2
-
-    # :Example 3: Add new column based on mutation of other columns:
-
-    # ```python
-
-    #     df.add_column("city_pop", df.Bell__Chart - 2 * df.a)
-
-    # :Output:
-
-    # ```python
-
-    #        a  Bell__Chart  decorated-elephant  animals     cities  city_pop
-    #     0  1            1                   1   rabbit  Cambridge        -1
-    #     1  2            2                   2  leopard   Shanghai        -2
-    #     2  3            3                   3     lion      Basel        -3
-    #     3  1            1                   1   rabbit  Cambridge        -1
-    #     4  2            2                   2  leopard   Shanghai        -2
-    #     5  3            3                   3     lion      Basel        -3
-    #     6  1            1                   1   rabbit  Cambridge        -1
-    #     7  2            2                   2  leopard   Shanghai        -2
-    #     8  3            3                   3     lion      Basel        -3
-
     df = df.copy()
     check("column_name", column_name, [str])
 

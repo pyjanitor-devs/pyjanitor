@@ -16,26 +16,38 @@ def add_column(
 ) -> pd.DataFrame:
     """Add a column to the dataframe.
 
-    This method does not mutate the original DataFrame.
+    Example: Add a column of constant values to the dataframe.
 
-    Intended to be the method-chaining alternative to::
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
+        >>> df.add_column(column_name="c", value=1)
+           a  b  c
+        0  0  a  1
+        1  1  b  1
+        2  2  c  1
 
-        df[column_name] = value
+    Example: Add a column of different values to the dataframe.
 
-    Method chaining syntax adding a column with only a single value:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
+        >>> df.add_column(column_name="c", value=list("efg"))
+        a  b  c
+        0  0  a  e
+        1  1  b  f
+        2  2  c  g
 
+    Example: Add a column using an iterator.
 
-
-        # This will add a column with only one value.
-        df = pd.DataFrame(...).add_column(column_name="new_column", 2)
-
-    Method chaining syntax adding a column with more than one value:
-
-
-
-        # This will add a column with an iterable of values.
-        vals = [1, 2, 5, ..., 3, 4]  # of same length as the dataframe.
-        df = pd.DataFrame(...).add_column(column_name="new_column", vals)
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
+        >>> df.add_column(column_name="c", value=range(4, 7))
+        a  b  c
+        0  0  a  4
+        1  1  b  5
+        2  2  c  6
 
     :param df: A pandas DataFrame.
     :param column_name: Name of the new column. Should be a string, in order

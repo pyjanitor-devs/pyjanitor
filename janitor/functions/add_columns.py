@@ -214,8 +214,6 @@ def add_columns(
 
     Usage example:
 
-
-
         x = 3
         y = np.arange(0, 10)
         df = pd.DataFrame(...).add_columns(x=x, y=y)

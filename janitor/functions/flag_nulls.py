@@ -16,22 +16,27 @@ def flag_nulls(
     row. If the columns parameter is not set, looks across the entire
     DataFrame, otherwise will look only in the columns you set.
 
-    ```python
-    import pandas as pd
-    import janitor as jn
+    This method does not mutate the original DataFrame.
 
-    df = pd.DataFrame(
-        {'a': [1, 2, None, 4],
-            'b': [5.0, None, 7.0, 8.0]})
+    Example:
 
-    df.flag_nulls()
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": ["w", "x", None, "z"], "b": [5, None, 7, 8]})
+        >>> df.flag_nulls()
+              a    b  null_flag
+        0     w  5.0          0
+        1     x  NaN          1
+        2  None  7.0          1
+        3     z  8.0          0
+        >>> df.flag_nulls(columns="b")
+              a    b  null_flag
+        0     w  5.0          0
+        1     x  NaN          1
+        2  None  7.0          0
+        3     z  8.0          0
 
-    jn.functions.flag_nulls(df)
-
-    df.flag_nulls(columns=['b'])
-    ```
-
-    :param df: Input Pandas dataframe.
+    :param df: Input pandas DataFrame.
     :param column_name: Name for the output column. Defaults to 'null_flag'.
     :param columns: List of columns to look at for finding null values. If you
         only want to look at one column, you can simply give its name. If set
@@ -39,11 +44,11 @@ def flag_nulls(
     :returns: Input dataframe with the null flag column.
     :raises ValueError: if `column_name` is already present in the
         DataFrame.
-    :raises ValueError: if a column within `columns` is no present in
+    :raises ValueError: if any column within `columns` is not present in
         the DataFrame.
 
     .. # noqa: DAR402
-    """
+    """  # noqa: E501
     # Sort out columns input
     if isinstance(columns, str):
         columns = [columns]

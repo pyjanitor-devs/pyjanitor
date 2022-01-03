@@ -43,7 +43,7 @@ dependencies:
   - pytest-cov
   - pytest-xdist
   - python-language-server
-  - rdkit
+  - rdkit=2021.09.3
   - recommonmark
   - seaborn
   - sphinx

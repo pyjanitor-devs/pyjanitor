@@ -1,12 +1,11 @@
 name: pyjanitor-dev
 channels:
   - conda-forge
-  - rdkit
 dependencies:
-  - python>=3.6, <3.9
+  - python=3.7
   - biopython
   - black=21.7b0
-  - bumpversion
+  - bump2version=1.0.1
   - cairo
   - conda
   - darglint
@@ -44,7 +43,7 @@ dependencies:
   - pytest-cov
   - pytest-xdist
   - python-language-server
-  - rdkit
+  - rdkit=2021.09.3
   - recommonmark
   - seaborn
   - sphinx

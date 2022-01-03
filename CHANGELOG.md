@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 -   [ENH] Deprecate `num_bins` from `bin_numeric` in favour of `bins`, and allow generic `**kwargs` to be passed into `pd.cut`. Issue #969. @thatlittleboy
+-   [ENH] Fix `concatenate_columns` not working on category inputs @zbarry
+-   [INF] Simplify CI system @ericmjl
 
 ## [v0.22.0] - 2021-11-21
 
@@ -17,7 +19,6 @@
 -   [ENH] `As_Categorical` deprecated from `encode_categorical`; a tuple of `(categories, order)` suffices for \*\*kwargs. @samukweku
 -   [ENH] Deprecate `names_sort` from `pivot_wider`.@samukweku
 -   [ENH] Add `softmax` to `math` module. Issue #902. @loganthomas
--   [ENH] Fix `concatenate_columns` not working on category inputs @zbarry
 
 ## [v0.21.2] - 2021-09-01
 

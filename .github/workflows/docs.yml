@@ -6,71 +6,33 @@ on:
       - dev
 
 jobs:
-  build-environment:
-    runs-on: ubuntu-18.04
-    name: Build environment
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      # See: https://github.com/marketplace/actions/setup-conda
-      - name: Setup anaconda
-        uses: s-weigand/setup-conda@v1
-        with:
-          conda-channels: "conda-forge"
-
-      - name: Cache conda environment
-        id: cache-environment
-        uses: actions/cache@v2
-        # Conda environment build step depends on two files,
-        # so we ensure that the hash key contains both their hashes.
-        with:
-          path: |
-            pyjanitor-dev.tar.gz
-          key: ${{ runner.os }}-env.${{ hashFiles('environment-dev.yml') }}
-
-      - name: Build environment
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: bash ./scripts/ci/build_environment.sh
-
-      - name: Install conda-pack
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: conda install -c conda-forge conda-pack
-
-      - name: Run conda-pack
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: conda pack -n pyjanitor-dev -o pyjanitor-dev.tar.gz
-
-      # See: https://github.com/actions/upload-artifact
-      - name: Upload environment
-        uses: actions/upload-artifact@v2
-        with:
-          name: pyjanitor-dev-tarball
-          path: pyjanitor-dev.tar.gz
-
-  docs:
-    name: Build static site docs
+  build-docs:
     runs-on: ubuntu-latest
-    needs: build-environment
+    name: Build documentation
+
+    # https://github.com/marketplace/actions/setup-miniconda#use-a-default-shell
+    defaults:
+      run:
+        shell: bash -l {0}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # https://github.com/actions/download-artifact
-      - name: Download environment tarball
-        uses: actions/download-artifact@v2
+      # See: https://github.com/marketplace/actions/setup-miniconda
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          name: pyjanitor-dev-tarball
-
-      - name: Unpack environment and activate it
-        run: |
-          bash scripts/ci/unpack_environment.sh
+          auto-update-conda: true
+          miniforge-variant: Mambaforge
+          channels: conda-forge
+          activate-environment: pyjanitor-dev
+          environment-file: environment-dev.yml
+          use-mamba: true
 
       - name: Build docs
         run: |
-          source /tmp/pyjanitor-dev_env/bin/activate
+          conda activate pyjanitor-dev
           python -m ipykernel install --user --name pyjanitor-dev
           pip install -e .
           mkdocs build

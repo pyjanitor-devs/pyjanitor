@@ -23,7 +23,6 @@ jobs:
           auto-update-conda: true
           miniforge-variant: Mambaforge
           channels: conda-forge
-          python-version: 3.9
           activate-environment: pyjanitor-dev
           environment-file: environment-dev.yml
           use-mamba: true

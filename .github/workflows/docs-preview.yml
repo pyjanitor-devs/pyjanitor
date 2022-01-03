@@ -1,90 +1,44 @@
 name: Build documentation preview
 
-on:
-  [pull_request]
+on: [pull_request]
 
 jobs:
-  build-environment:
+  build-docs:
     runs-on: ubuntu-18.04
-    name: Build environment
+    name: Build documentation
+
+    # https://github.com/marketplace/actions/setup-miniconda#use-a-default-shell
+    defaults:
+      run:
+        shell: bash -l {0}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # See: https://github.com/marketplace/actions/setup-conda
-      - name: Setup anaconda
-        uses: s-weigand/setup-conda@v1
+      # See: https://github.com/marketplace/actions/setup-miniconda
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          conda-channels: "conda-forge"
-
-      - name: Cache conda environment
-        id: cache-environment
-        uses: actions/cache@v2
-        # Conda environment build step depends on two files,
-        # so we ensure that the hash key contains both their hashes.
-        with:
-          path: |
-            pyjanitor-dev.tar.gz
-          key: ${{ runner.os }}-env.${{ hashFiles('environment-dev.yml') }}
-
-      - name: Build environment
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: bash ./scripts/ci/build_environment.sh
-
-      - name: Install conda-pack
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: conda install -c conda-forge conda-pack
-
-      - name: Run conda-pack
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: conda pack -n pyjanitor-dev -o pyjanitor-dev.tar.gz
-
-      # See: https://github.com/actions/upload-artifact
-      - name: Upload environment
-        uses: actions/upload-artifact@v2
-        with:
-          name: pyjanitor-dev-tarball
-          path: pyjanitor-dev.tar.gz
-
-  docs:
-    name: Build static site docs
-    runs-on: ubuntu-latest
-    needs: build-environment
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      # https://github.com/actions/download-artifact
-      - name: Download environment tarball
-        uses: actions/download-artifact@v2
-        with:
-          name: pyjanitor-dev-tarball
-
-      - name: Unpack environment and activate it
-        run: |
-          bash scripts/ci/unpack_environment.sh
+          auto-update-conda: true
+          miniforge-variant: Mambaforge
+          channels: conda-forge
+          python-version: 3.9
+          activate-environment: pyjanitor-dev
+          environment-file: environment.yml
+          use-mamba: true
 
       - name: Build docs
         run: |
-          source /tmp/pyjanitor-dev_env/bin/activate
+          conda activate pyjanitor-dev
           python -m ipykernel install --user --name pyjanitor-dev
           pip install -e .
           mkdocs build
 
-      - name: Deploy docs preview to Netlify
-        uses: nwtgck/actions-netlify@v1.1
+      # https://www.bradmcgonigle.com/blog/github-action-for-continuous-deployment
+      # - NETLIFY_SITE_ID maps to the netlify site's API ID
+      # - NETLIFY_AUTH_TOKEN maps to netlify's Personal Access Token that I set on a per-user basis
+      - name: Deploy to Netlify
+        uses: netlify/actions/cli@master
         with:
-          publish-dir: "./site"
-          production-deploy: false
-          github-token: ${{ secrets.GHPAGES_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions"
-          enable-pull-request-comment: true
-          enable-commit-comment: false
-          overwrites-pull-request-comment: true
-          alias: deploy-preview-${{ github.event.number }}
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 1
+          args: deploy --site ${{ secrets.NETLIFY_SITE_ID }} --auth ${{ secrets.NETLIFY_AUTH_TOKEN }} --dir=site/

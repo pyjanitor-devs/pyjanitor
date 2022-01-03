@@ -50,7 +50,8 @@ def reorder_columns(
 
     if any(col not in df.columns for col in column_order):
         raise IndexError(
-            "One or more columns in `column_order` were not found in the DataFrame."
+            "One or more columns in `column_order` were not found in the "
+            "DataFrame."
         )
 
     # if column_order is a Pandas index, needs conversion to list:

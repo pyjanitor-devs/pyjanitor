@@ -48,7 +48,7 @@ def concatenate_columns(
         raise JanitorError("At least two columns must be specified")
 
     df[new_column_name] = (
-        df[column_names].fillna("").astype(str).agg(sep.join, axis=1)
+        df[column_names].astype(str).fillna("").agg(sep.join, axis=1)
     )
 
     if ignore_empty:

@@ -2,7 +2,7 @@ name: pyjanitor-dev
 channels:
   - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.7
   - biopython
   - black=21.7b0
   - bumpversion

@@ -22,7 +22,9 @@ def flag_nulls(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": ["w", "x", None, "z"], "b": [5, None, 7, 8]})
+        >>> df = pd.DataFrame({
+        ...     "a": ["w", "x", None, "z"], "b": [5, None, 7, 8],
+        ... })
         >>> df.flag_nulls()
               a    b  null_flag
         0     w  5.0          0
@@ -37,7 +39,7 @@ def flag_nulls(
         3     z  8.0          0
 
     :param df: Input pandas DataFrame.
-    :param column_name: Name for the output column. Defaults to 'null_flag'.
+    :param column_name: Name for the output column.
     :param columns: List of columns to look at for finding null values. If you
         only want to look at one column, you can simply give its name. If set
         to None (default), all DataFrame columns are used.
@@ -46,7 +48,11 @@ def flag_nulls(
         DataFrame.
     :raises ValueError: if any column within `columns` is not present in
         the DataFrame.
-    """  # noqa: DAR402, E501
+
+    <!--
+    # noqa: DAR402
+    -->
+    """
     # Sort out columns input
     if isinstance(columns, str):
         columns = [columns]

@@ -1,7 +1,6 @@
 name: pyjanitor-dev
 channels:
   - conda-forge
-  - rdkit
 dependencies:
   - python=3.10
   - biopython

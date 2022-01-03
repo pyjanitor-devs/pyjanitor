@@ -46,9 +46,7 @@ def flag_nulls(
         DataFrame.
     :raises ValueError: if any column within `columns` is not present in
         the DataFrame.
-
-    .. # noqa: DAR402
-    """  # noqa: E501
+    """  # noqa: DAR402, E501
     # Sort out columns input
     if isinstance(columns, str):
         columns = [columns]

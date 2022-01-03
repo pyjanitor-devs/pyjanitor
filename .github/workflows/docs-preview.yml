@@ -34,10 +34,18 @@ jobs:
           pip install -e .
           mkdocs build
 
-      # https://www.bradmcgonigle.com/blog/github-action-for-continuous-deployment
-      # - NETLIFY_SITE_ID maps to the netlify site's API ID
-      # - NETLIFY_AUTH_TOKEN maps to netlify's Personal Access Token that I set on a per-user basis
-      - name: Deploy to Netlify
-        uses: netlify/actions/cli@master
+      - name: Deploy docs preview to Netlify
+        uses: nwtgck/actions-netlify@v1.1
         with:
-          args: deploy --site ${{ secrets.NETLIFY_SITE_ID }} --auth ${{ secrets.NETLIFY_AUTH_TOKEN }} --dir=site/
+          publish-dir: "./site"
+          production-deploy: false
+          github-token: ${{ secrets.GHPAGES_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: deploy-preview-${{ github.event.number }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1

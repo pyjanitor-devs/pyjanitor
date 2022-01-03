@@ -4,7 +4,7 @@ on: [pull_request]
 
 jobs:
   build-docs:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     name: Build documentation
 
     # https://github.com/marketplace/actions/setup-miniconda#use-a-default-shell

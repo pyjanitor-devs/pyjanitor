@@ -33,9 +33,9 @@ jobs:
           python -m pip install -e .
           make test
 
-      # # https://github.com/codecov/codecov-action
-      # - name: Upload code coverage
-      #   uses: codecov/codecov-action@v2
-      #   with:
-      #     fail_ci_if_error: true # optional (default = false)
-      #     verbose: true # optional (default = false)
+      # https://github.com/codecov/codecov-action
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v2
+        with:
+          # fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)

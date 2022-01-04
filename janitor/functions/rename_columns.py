@@ -78,10 +78,6 @@ def rename_columns(
         1  1  y
         2  2  z
 
-    This is just syntactic sugar/a convenience function for renaming multiple
-    columns at a time. If you need to rename single column, then use the
-    [`rename_column`][janitor.functions.rename_columns.rename_column] method instead.
-
     One of the `new_column_names` or `function` are a required parameter.
     If both are provided, then `new_column_names` takes priority and `function`
     is never executed.

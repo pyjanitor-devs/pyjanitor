@@ -1,82 +1,44 @@
-# # This Action ensures that code coverage is always uploaded to codecov
-# # whenever a new commit is made to the dev branch.
-# name: Upload test coverage to codecov
+name: Run test suite on latest dev commits
 
-# on:
-#   push:
-#     branch:
-#       dev
+on:
+  push:
+    branches:
+      - dev
 
-# jobs:
-#   build-environment:
-#     name: Build environment
-#     runs-on: ubuntu-latest
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    name: Run test suite on latest dev commits
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v2
+    # https://github.com/marketplace/actions/setup-miniconda#use-a-default-shell
+    defaults:
+      run:
+        shell: bash -l {0}
 
-#       # See: https://github.com/marketplace/actions/setup-conda
-#       - name: Setup anaconda
-#         uses: s-weigand/setup-conda@v1
-#         with:
-#           conda-channels: "conda-forge"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-#       # Build cache of environment
-#       - name: Cache conda environment
-#         id: cache-environment
-#         uses: actions/cache@v2
-#         # Conda environment build step depends on two files,
-#         # so we ensure that the hash key contains both their hashes.
-#         with:
-#           path: |
-#             pyjanitor-dev.tar.gz
-#           key: ${{ runner.os }}-env.${{ hashFiles('environment-dev.yml') }}
+      # See: https://github.com/marketplace/actions/setup-miniconda
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          miniforge-variant: Mambaforge
+          channels: conda-forge
+          activate-environment: pyjanitor-dev
+          environment-file: environment-dev.yml
+          use-mamba: true
 
-#       - name: Build environment
-#         if: steps.cache-environment.outputs.cache-hit != 'true'
-#         run: bash ./scripts/ci/build_environment.sh
+      - name: Run unit tests
+        run: |
+          conda activate pyjanitor-dev
+          python -m pip install -e .
+          make test
 
-#       - name: Install conda-pack
-#         if: steps.cache-environment.outputs.cache-hit != 'true'
-#         run: conda install -c conda-forge conda-pack
-
-#       - name: Run conda-pack
-#         if: steps.cache-environment.outputs.cache-hit != 'true'
-#         run: conda pack -n pyjanitor-dev -o pyjanitor-dev.tar.gz
-
-#       # See: https://github.com/actions/upload-artifact
-#       - name: Upload environment
-#         uses: actions/upload-artifact@v2
-#         with:
-#           name: pyjanitor-dev-tarball
-#           path: pyjanitor-dev.tar.gz
-
-#   unit-tests:
-#     name: Run unit tests
-#     runs-on: ubuntu-latest
-#     needs: build-environment
-
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v2
-
-#       # https://github.com/actions/download-artifact
-#       - name: Download environment tarball
-#         uses: actions/download-artifact@v2
-#         with:
-#           name: pyjanitor-dev-tarball
-
-#       - name: Unpack environment and activate it
-#         run: bash scripts/ci/unpack_environment.sh
-
-#       - name: Run tests
-#         run: |
-#           source /tmp/pyjanitor-dev_env/bin/activate
-#           python -m pip install -e .
-#           pytest
-
-#       - name: Upload code coverage
-#         run: |
-#           source /tmp/pyjanitor-dev_env/bin/activate
-#           bash <(curl -s https://codecov.io/bash)
+      # https://github.com/codecov/codecov-action
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v2
+        with:
+          # fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)

@@ -55,23 +55,28 @@ def rename_columns(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("xyz")})
+        >>> df
+           a  b
+        0  0  x
+        1  1  y
+        2  2  z
         >>> df.rename_columns(new_column_names={"a": "a_new", "b": "b_new"})
            a_new b_new
-        0      0     a
-        1      1     b
-        2      2     c
+        0      0     x
+        1      1     y
+        2      2     z
 
     Example: Rename columns using a generic callable.
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("xyz")})
         >>> df.rename_columns(function=str.upper)
            A  B
-        0  0  a
-        1  1  b
-        2  2  c
+        0  0  x
+        1  1  y
+        2  2  z
 
     This is just syntactic sugar/a convenience function for renaming multiple
     columns at a time. If you need to rename single column, then use the

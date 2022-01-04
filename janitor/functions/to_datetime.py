@@ -23,6 +23,11 @@ def to_datetime(
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({'date': ['20200101', '20200202', '20200303']})
+        >>> df
+               date
+        0  20200101
+        1  20200202
+        2  20200303
         >>> df.to_datetime('date', format='%Y%m%d')
                 date
         0 2020-01-01

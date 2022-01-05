@@ -8,31 +8,26 @@ from janitor.utils import check_column, deprecated_alias
 @pf.register_dataframe_method
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
-    df: pd.DataFrame, old_column_name: str, new_column_name: str
+    df: pd.DataFrame,
+    old_column_name: str,
+    new_column_name: str,
 ) -> pd.DataFrame:
     """Rename a column in place.
 
     This method does not mutate the original DataFrame.
 
-    Functional usage syntax:
+    Example: Change the name of column 'a' to 'a_new'.
 
-    ```python
-    df = rename_column(df, "old_column_name", "new_column_name")
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
+        >>> df.rename_column(old_column_name='a', new_column_name='a_new')
+           a_new  b
+        0      0  a
+        1      1  b
+        2      2  c
 
-    Method chaining syntax:
-
-    ```python
-    import pandas as pd
-    import janitor
-    df = (
-        pd.DataFrame(...)
-        .rename_column("old_column_name", "new_column_name")
-    )
-    ```
-
-    This is just syntactic sugar/a convenience function
-    for renaming one column at a time.
+    This is just syntactic sugar/a convenience function for renaming one column at a time.
     If you are convinced that there are multiple columns in need of changing,
     then use the `pandas.DataFrame.rename` method.
 
@@ -54,38 +49,44 @@ def rename_columns(
 ) -> pd.DataFrame:
     """Rename columns.
 
-    Functional usage syntax:
+    This method does not mutate the original DataFrame.
 
-    ```python
-    df = rename_columns(df, {"old_column_name": "new_column_name"})
-    df = rename_columns(df, function = str.upper)
-    df = rename_columns(
-        df,
-        function = lambda x : x.lower() if x.startswith("double") else x
-    )
-    ```
+    Example: Rename columns using a dictionary which maps old names to new names.
 
-    Method chaining syntax:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("xyz")})
+        >>> df
+           a  b
+        0  0  x
+        1  1  y
+        2  2  z
+        >>> df.rename_columns(new_column_names={"a": "a_new", "b": "b_new"})
+           a_new b_new
+        0      0     x
+        1      1     y
+        2      2     z
 
-    ```python
-    import pandas as pd
-    import janitor
-    df = pd.DataFrame(...).rename_columns({"old_column_name": "new_column_name"})
-    ```
+    Example: Rename columns using a generic callable.
 
-    This is just syntactic sugar/a convenience function
-    for renaming multiple columns at a time.
-    If you need to rename single column, then use the `rename_column` method.
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": list(range(3)), "b": list("xyz")})
+        >>> df.rename_columns(function=str.upper)
+           A  B
+        0  0  x
+        1  1  y
+        2  2  z
 
-    One of the new_column_names or function are a required parameter.
-    If both are provided then new_column_names takes priority and function
+    One of the `new_column_names` or `function` are a required parameter.
+    If both are provided, then `new_column_names` takes priority and `function`
     is never executed.
 
     :param df: The pandas DataFrame object.
     :param new_column_names: A dictionary of old and new column names.
-    :param function: A function which should be applied to all the columns
+    :param function: A function which should be applied to all the columns.
     :returns: A pandas DataFrame with renamed columns.
-    :raises ValueError: if both new_column_names and function are None
+    :raises ValueError: if both `new_column_names` and `function` are None.
     """  # noqa: E501
 
     if new_column_names is None and function is None:

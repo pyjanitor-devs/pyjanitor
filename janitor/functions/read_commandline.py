@@ -5,7 +5,7 @@ import sys
 
 
 @pf.register_dataframe_method
-def read_commandline():
+def read_commandline() -> pd.DataFrame:
     """
     Read command from commandline.
 
@@ -17,18 +17,23 @@ def read_commandline():
     calling
     df = read_commandline()
     will create a new dataframe from the commandline arguments given.
+
+    :returns: a dataframe which has been created based on the arguments
+    given in the commandline
     """
     command = __preprocess_command()
     df = query_df(command)
     return df
 
 
-def manual_read_command(string: str):
+def manual_read_command(string: str) ->  pd.DataFrame:
     """
     Can be used for testing, will take a hard-coded
     string in place of argv[1:]
 
     :param string: said string which takes places of commandline arguments.
+    :returns: a dataframe which has been created based on then string
+    given as a parameter in the function
     """
     df = query_df(string)
     return df

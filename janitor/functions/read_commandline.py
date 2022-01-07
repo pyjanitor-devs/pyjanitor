@@ -19,7 +19,7 @@ def read_commandline() -> pd.DataFrame:
     will create a new dataframe from the commandline arguments given.
 
     :returns: a dataframe which has been created based on the arguments
-    given in the commandline
+        given in the commandline
     """
     command = __preprocess_command()
     df = query_df(command)
@@ -33,7 +33,7 @@ def manual_read_command(string: str) -> pd.DataFrame:
 
     :param string: said string which takes places of commandline arguments.
     :returns: a dataframe which has been created based on then string
-    given as a parameter in the function
+        given as a parameter in the function
     """
     df = query_df(string)
     return df

@@ -26,7 +26,7 @@ def read_commandline() -> pd.DataFrame:
     return df
 
 
-def manual_read_command(string: str) ->  pd.DataFrame:
+def manual_read_command(string: str) -> pd.DataFrame:
     """
     Can be used for testing, will take a hard-coded
     string in place of argv[1:]

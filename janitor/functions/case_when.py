@@ -10,10 +10,33 @@ from janitor.utils import check
 @pf.register_dataframe_method
 def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
     """
-    Convenience function for creating a column,
-    based on a condition, or multiple conditions.
+    Create a column based on a condition or multiple conditions.
 
-    It is similar to SQL and dplyr's case_when,
+    Example usage:
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...         {
+        ...             "a": [0, 0, 1, 2, "hi"],
+        ...             "b": [0, 3, 4, 5, "bye"],
+        ...             "c": [6, 7, 8, 9, "wait"],
+        ...         }
+        ...     )
+        >>> df.case_when(
+        ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a,
+        ...     (df.b == 0) & (df.a == 0), "x",
+        ...     df.c,
+        ...     column_name="value",
+        ... )
+            a    b     c value
+        0   0    0     6     x
+        1   0    3     7     0
+        2   1    4     8     8
+        3   2    5     9     9
+        4  hi  bye  wait    hi
+
+    Similar to SQL and dplyr's case_when
     with inspiration from `pydatatable` if_else function.
 
     If your scenario requires direct replacement of values,
@@ -55,37 +78,6 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
     # more elifs
     else:
         default
-    ```
-
-    Functional usage syntax:
-
-    ```python
-    import pandas as pd
-    import janitor as jn
-
-    df = pd.DataFrame(...)
-    right = pd.DataFrame(...)
-
-    df = jn.case_when(
-        df,
-        condition0, result0,
-        condition1, result1,
-        ...,
-        default,
-        column_name = 'column',
-    )
-    ```
-
-    Method chaining syntax:
-
-    ```python
-    df = df.case_when(
-        condition0, result0,
-        condition1, result1,
-        ...,
-        default,
-        column_name = 'column',
-    )
     ```
 
     :param df: A Pandas dataframe.

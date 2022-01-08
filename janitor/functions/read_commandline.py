@@ -11,13 +11,13 @@ def read_commandline(cmd) -> pd.DataFrame:
 
     For example, you may wish to run the following command on `sep-quarter.csv`
     before reading it into a pandas DataFrame:
-    
+
     ```bash
     cat sep-quarter.csv | grep .SEA1AA
     ```
 
     In this case, you can use the following Python code to load the dataframe:
-    
+
     ```python
     import janitor as jn
     df = jn.read_commandline("cat sep-quarter.csv | grep .SEA1AA")

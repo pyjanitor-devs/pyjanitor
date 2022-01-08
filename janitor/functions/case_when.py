@@ -23,6 +23,13 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         ...             "c": [6, 7, 8, 9, "wait"],
         ...         }
         ...     )
+        >>> df
+            a    b     c
+        0   0    0     6
+        1   0    3     7
+        2   1    4     8
+        3   2    5     9
+        4  hi  bye  wait
         >>> df.case_when(
         ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a,
         ...     (df.b == 0) & (df.a == 0), "x",

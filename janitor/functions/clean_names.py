@@ -30,23 +30,32 @@ def clean_names(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage syntax:
+    Example usage:
 
-    ```python
-    df = clean_names(df)
-    ```
-
-    Method chaining syntax:
-
-    ```python
-    import pandas as pd
-    import janitor
-    df = pd.DataFrame(...).clean_names()
-
-    Examples of transformation:
-
-    - Columns before: First Name, Last Name, Employee Status, Subject
-    - Columns after: first_name, last_name, employee_status, subject
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "Aloha": range(3),
+        ...         "Bell Chart": range(3),
+        ...         "Animals@#$%^": range(3)
+        ...     }
+        ... )
+        >>> df
+           Aloha  Bell Chart  Animals@#$%^
+        0      0           0             0
+        1      1           1             1
+        2      2           2             2
+        >>> df.clean_names()
+           aloha  bell_chart  animals@#$%^
+        0      0           0             0
+        1      1           1             1
+        2      2           2             2
+        >>> df.clean_names(remove_special=True)
+           aloha  bell_chart  animals
+        0      0           0        0
+        1      1           1        1
+        2      2           2        2
 
     :param df: The pandas DataFrame object.
     :param strip_underscores: (optional) Removes the outer underscores from all

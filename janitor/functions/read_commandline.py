@@ -9,10 +9,12 @@ def read_commandline(cmd) -> pd.DataFrame:
     """
     Read a CSV file based on a command-line command.
 
-    argv[0] should be program name
-    argv[1:] will be the a list of commands available to the shell
-    such as:
+    For example, you may wish to run the following command on `sep-quarter.csv`
+    before reading it into a pandas DataFrame:
+    
+    ```bash
     cat sep-quarter.csv | grep .SEA1AA
+    ```
 
     calling
     df = read_commandline()

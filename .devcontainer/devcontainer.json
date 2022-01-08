@@ -20,6 +20,9 @@
 			"--config pyproject.toml",
 		],
 		"editor.formatOnSave": true,
+		"files.insertFinalNewline": true,
+		"files.trimFinalNewlines": true,
+		"files.trimTrailingWhitespace": true,
 		"[python]": {
 			"editor.formatOnSaveMode": "file",
 		},

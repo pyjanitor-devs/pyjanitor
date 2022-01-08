@@ -5,7 +5,7 @@ import sys
 
 
 @pf.register_dataframe_method
-def read_commandline() -> pd.DataFrame:
+def read_commandline(cmd) -> pd.DataFrame:
     """
     Read a CSV file based on a command-line command.
 

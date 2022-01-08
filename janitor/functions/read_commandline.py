@@ -16,9 +16,12 @@ def read_commandline(cmd) -> pd.DataFrame:
     cat sep-quarter.csv | grep .SEA1AA
     ```
 
-    calling
-    df = read_commandline()
-    will create a new dataframe from the commandline arguments given.
+    In this case, you can use the following Python code to load the dataframe:
+    
+    ```python
+    import janitor as jn
+    df = jn.read_commandline("cat sep-quarter.csv | grep .SEA1AA")
+    ```
 
     :returns: a dataframe which has been created based on the arguments
         given in the commandline

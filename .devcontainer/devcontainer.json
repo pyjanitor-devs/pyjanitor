@@ -10,11 +10,18 @@
 	},
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
-		"terminal.integrated.shell.linux": "/bin/bash",
+		"terminal.integrated.defaultProfile.linux": "bash",
 		"python.pythonPath": "/opt/conda/bin/python",
 		"python.linting.enabled": true,
 		"python.linting.pylintEnabled": true,
-		"python.linting.pylintPath": "/opt/conda/bin/pylint"
+		"python.linting.pylintPath": "/opt/conda/bin/pylint",
+		"python.formatting.provider": "black",
+		"python.formatting.blackArgs": [
+			"-l 79",
+		],
+		"[python]": {
+			"editor.formatOnSaveMode": "file",
+		},
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [

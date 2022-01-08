@@ -23,7 +23,8 @@ def read_commandline(cmd) -> pd.DataFrame:
     df = jn.read_commandline("cat sep-quarter.csv | grep .SEA1AA")
     ```
 
-    :returns: a dataframe which has been created based on the arguments
+    :param cmd: Shell command to preprocess a file on disk.
+    :returns: A pandas DataFrame parsed from the stdout of the underlying shell.
         given in the commandline
     """
     cmd = __preprocess_command(cmd)

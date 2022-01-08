@@ -42,12 +42,12 @@ def clean_names(
         ...     }
         ... )
         >>> df.clean_names()
-        aloha  bell_chart  animals@#$%^
+           aloha  bell_chart  animals@#$%^
         0      0           0             0
         1      1           1             1
         2      2           2             2
         >>> df.clean_names(remove_special=True)
-        aloha  bell_chart  animals
+           aloha  bell_chart  animals
         0      0           0        0
         1      1           1        1
         2      2           2        2

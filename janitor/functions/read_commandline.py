@@ -26,7 +26,7 @@ def read_commandline(cmd) -> pd.DataFrame:
     :returns: a dataframe which has been created based on the arguments
         given in the commandline
     """
-    command = __preprocess_command()
+    cmd = __preprocess_command(cmd)
     df = query_df(command)
     return df
 

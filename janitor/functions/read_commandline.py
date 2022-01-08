@@ -58,6 +58,7 @@ def __preprocess_command():
 
 
 def query_df(command: str) -> pd.DataFrame:
+    command = command.split(" ")
     with Popen(command, shell=True, stdout=PIPE) as process:
         df = pd.read_csv(process.stdout)
         return df

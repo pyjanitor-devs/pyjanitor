@@ -19,6 +19,7 @@
 		"python.formatting.blackArgs": [
 			"-l 79",
 		],
+		"editor.formatOnSave": true,
 		"[python]": {
 			"editor.formatOnSaveMode": "file",
 		},

@@ -17,7 +17,7 @@
 		"python.linting.pylintPath": "/opt/conda/bin/pylint",
 		"python.formatting.provider": "black",
 		"python.formatting.blackArgs": [
-			"-l 79",
+			"--config pyproject.toml",
 		],
 		"editor.formatOnSave": true,
 		"[python]": {

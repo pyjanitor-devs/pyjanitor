@@ -41,6 +41,11 @@ def clean_names(
         ...         "Animals@#$%^": range(3)
         ...     }
         ... )
+        >>> df
+           Aloha  Bell Chart  Animals@#$%^
+        0      0           0             0
+        1      1           1             1
+        2      2           2             2
         >>> df.clean_names()
            aloha  bell_chart  animals@#$%^
         0      0           0             0

@@ -32,7 +32,9 @@ def read_commandline(cmd: str) -> pd.DataFrame:
             cmd, shell=True, capture_output=True, text=True
         )
         outcome = outcome.stdout
-    except pd.EmptyDataError or pd.ParserError as err:
+    except pd.ParserError as err:
+        raise pd.ParserError("Be sure the command is a valid string") from err
+    except pd.EmptyDataError as err:
         raise pd.ParserError("Be sure the command is a valid string") from err
 
     return pd.read_csv(StringIO(outcome))

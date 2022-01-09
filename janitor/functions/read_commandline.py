@@ -1,11 +1,10 @@
 import pandas_flavor as pf
 import pandas as pd
-from subprocess import Popen, PIPE
-import sys
+import subprocess
+from io import StringIO
 
 
-@pf.register_dataframe_method
-def read_commandline(cmd) -> pd.DataFrame:
+def read_commandline(cmd: str) -> pd.DataFrame:
     """
     Read a CSV file based on a command-line command.
 
@@ -27,58 +26,13 @@ def read_commandline(cmd) -> pd.DataFrame:
     :returns: A pandas DataFrame parsed from the stdout of the underlying shell.
         given in the commandline
     """
-    cmd = __preprocess_command(cmd)
-    df = query_df(command)
-    return df
+    # cmd = cmd.split(" ")
+    try:
+        outcome = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True
+        )
+        outcome = outcome.stdout
+    except pd.EmptyDataError or pd.ParserError as err:
+        raise pd.ParserError("Be sure the command is a valid string") from err
 
-
-def manual_read_command(string: str) -> pd.DataFrame:
-    """
-    Can be used for testing, will take a hard-coded
-    string in place of argv[1:]
-
-    :param string: said string which takes places of commandline arguments.
-    :returns: a dataframe which has been created based on then string
-        given as a parameter in the function
-    """
-    df = query_df(string)
-    return df
-
-
-def __preprocess_command():
-    """
-    Transforms argv[1:] into a single string
-    which is more easily parsed by PIPE and Popen above
-    """
-    command = ""
-    for word in sys.argv[1:]:  # must be a single string to be used in Popen
-        command += word + " "
-    command = str(command)
-    print(command)
-    return command
-
-
-def query_df(command: str) -> pd.DataFrame:
-    command = command.split(" ")
-    with Popen(command, shell=True, stdout=PIPE) as process:
-        df = pd.read_csv(process.stdout)
-        return df
-
-
-# currently not working as intended:
-# planned to be used as a QOL tool which grabs only column names
-
-# def __preprocess_file(command: str):
-#     df = pd.DataFrame()
-#     cmd_list = command.split()
-#     if ".csv" in command:
-#         for i in cmd_list:
-#             if ".csv" in i:
-#                 df = pd.read_csv(i, nrows=1)  # grab column names only
-#                 break
-#     else:
-#         print("unable to preprocess file.")
-#         print("file should have a csv file extension")
-#         # df = pd.DataFrame()
-#
-#     return df
+    return pd.read_csv(StringIO(outcome))

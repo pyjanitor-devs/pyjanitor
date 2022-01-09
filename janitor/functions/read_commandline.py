@@ -31,9 +31,11 @@ def read_commandline(cmd: str) -> pd.DataFrame:
             cmd, shell=True, capture_output=True, text=True
         )
         outcome = outcome.stdout
-    except pd.ParserError as err:
-        raise pd.ParserError("Be sure the command is a valid string") from err
-    except pd.EmptyDataError as err:
-        raise pd.EmptyDataError("Be sure the command is a valid string") from err
+    except pd.EmptyDataError:
+        msg = (
+            "Empty Data Error: Be sure your parameter"
+            " is both a valid shell command and a string"
+        )
+        raise pd.EmptyDataError(msg)
 
     return pd.read_csv(StringIO(outcome))

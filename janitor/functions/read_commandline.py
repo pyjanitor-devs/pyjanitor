@@ -1,4 +1,3 @@
-import pandas_flavor as pf
 import pandas as pd
 import subprocess
 from io import StringIO
@@ -23,8 +22,8 @@ def read_commandline(cmd: str) -> pd.DataFrame:
     ```
 
     :param cmd: Shell command to preprocess a file on disk.
-    :returns: A pandas DataFrame parsed from the stdout of the underlying shell.
-        given in the commandline
+    :returns: A pandas DataFrame parsed from the stdout of the underlying
+        shell.
     """
     # cmd = cmd.split(" ")
     try:

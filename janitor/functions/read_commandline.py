@@ -34,6 +34,6 @@ def read_commandline(cmd: str) -> pd.DataFrame:
     except pd.ParserError as err:
         raise pd.ParserError("Be sure the command is a valid string") from err
     except pd.EmptyDataError as err:
-        raise pd.ParserError("Be sure the command is a valid string") from err
+        raise pd.EmptyDataError("Be sure the command is a valid string") from err
 
     return pd.read_csv(StringIO(outcome))

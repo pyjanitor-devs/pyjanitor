@@ -24,6 +24,10 @@ def read_commandline(cmd: str) -> pd.DataFrame:
     :param cmd: Shell command to preprocess a file on disk.
     :returns: A pandas DataFrame parsed from the stdout of the underlying
         shell.
+    :raises EmptyDataError: If there is no data to parse, this often happens
+        because the cmd param is either an invalid bash command, thus
+        nothing happens in the shell , or if cmd param is not a string,
+        thus creating an invalid shell command.
     """
     # cmd = cmd.split(" ")
     try:

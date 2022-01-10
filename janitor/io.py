@@ -97,8 +97,8 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
         shell.
     :raises TypeError: If the input is anything except a string.
     :raises EmptyDataError: If there is no data to parse, this often happens
-        because the cmd param is an invalid bash command, thus
-        nothing happens in the shell.
+        because the cmd param is an invalid bash command,
+        thus nothing happens in the shell.
     """
     # cmd = cmd.split(" ")
 

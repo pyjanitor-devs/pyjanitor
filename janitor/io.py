@@ -7,7 +7,7 @@ from typing import Iterable, Union
 import pandas as pd
 
 from .errors import JanitorError
-from .utils import deprecated_alias
+from .utils import deprecated_alias, check
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -100,33 +100,12 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     :param kwargs: Keyword arguments that are passed through to pd.read_csv().
     :returns: A pandas DataFrame parsed from the stdout of the underlying
         shell.
-    :raises TypeError: If the input is anything except a string.
-    :raises EmptyDataError: If there is no data to parse, this often happens
-        because the cmd param is an invalid bash command,
-        thus nothing happens in the shell.
     """
-    # cmd = cmd.split(" ")
 
-    try:
-        outcome = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True
-        )
-        outcome = outcome.stdout
-    except TypeError:
-        msg = (
-            "It appears the command was not a string."
-            " Please check that the input is a string."
-        )
-        raise TypeError(msg)
-
-    try:
-        df = pd.read_csv(StringIO(outcome), **kwargs)
-    except pd.errors.EmptyDataError:
-        msg = (
-            "It appears your DataFrame was loaded incorrectly.\n"
-            " Please check the command string at the terminal"
-            " to ensure that it returns a CSV-like output."
-        )
-        raise pd.errors.EmptyDataError(msg)
-
+    check('cmd', cmd, [str])
+    outcome = subprocess.run(
+        cmd, shell=True, capture_output=True, text=True
+    )
+    outcome = outcome.stdout
+    df = pd.read_csv(StringIO(outcome), **kwargs)
     return df

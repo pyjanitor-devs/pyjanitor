@@ -112,12 +112,11 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
             cmd, shell=True, capture_output=True, text=True
         )
         outcome = outcome.stdout
-    except pd.EmptyDataError:
+    except TypeError:
         msg = (
-            "It appears your DataFrame was loaded incorrectly."
-            " Please check the command string at the terminal "
-            "to ensure that it returns a CSV-like output."
+            "It appears the command was not a string."
+            " Please check that the input is a string."
         )
-        raise pd.EmptyDataError(msg)
+        raise TypeError(msg)
 
     return pd.read_csv(StringIO(outcome), **kwargs)

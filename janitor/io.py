@@ -43,11 +43,14 @@ def read_csvs(
     # String to file/folder or file pattern provided
     if isinstance(files_path, str):
         dfs_dict = {
-            os.path.basename(f): pd.read_csv(f, **kwargs) for f in glob(files_path)
+            os.path.basename(f): pd.read_csv(f, **kwargs)
+            for f in glob(files_path)
         }
     # Iterable of file paths provided
     else:
-        dfs_dict = {os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path}
+        dfs_dict = {
+            os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path
+        }
     # Check if dataframes have been read
     if len(dfs_dict) == 0:
         raise ValueError("No CSV files to read with the given `files_path`")
@@ -62,7 +65,9 @@ def read_csvs(
                     "Files cannot be concatenated"
                 )
         return pd.concat(
-            list(dfs_dict.values()), ignore_index=True, sort=False,  # noqa: PD011
+            list(dfs_dict.values()),
+            ignore_index=True,
+            sort=False,  # noqa: PD011
         )
     else:
         return dfs_dict
@@ -103,7 +108,9 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     # cmd = cmd.split(" ")
 
     try:
-        outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        outcome = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True
+        )
         outcome = outcome.stdout
     except TypeError:
         msg = (

@@ -1,13 +1,13 @@
 import os
 import subprocess
 from glob import glob
+from io import StringIO
 from typing import Iterable, Union
 
 import pandas as pd
 
 from .errors import JanitorError
-from .utils import deprecated_alias
-from io import StringIO
+from .utils import deprecated_alias, check
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -73,7 +73,7 @@ def read_csvs(
         return dfs_dict
 
 
-def read_commandline(cmd: str) -> pd.DataFrame:
+def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     """
     Read a CSV file based on a command-line command.
 
@@ -88,10 +88,16 @@ def read_commandline(cmd: str) -> pd.DataFrame:
 
     ```python
     import janitor as jn
-    df = jn.read_commandline("cat sep-quarter.csv | grep .SEA1AA")
+    df = jn.io.read_commandline("cat data.csv | grep .SEA1AA")
+
+    This function assumes that your command line command will return
+    an output that is parsable using pandas.read_csv and StringIO.
+    We default to using pd.read_csv underneath the hood.
+    Keyword arguments are passed through to read_csv.
     ```
 
     :param cmd: Shell command to preprocess a file on disk.
+    :param kwargs: Keyword arguments that are passed through to `pd.read_csv()`.
     :returns: A pandas DataFrame parsed from the stdout of the underlying
         shell.
     :raises EmptyDataError: If there is no data to parse, this often happens
@@ -100,6 +106,7 @@ def read_commandline(cmd: str) -> pd.DataFrame:
         thus creating an invalid shell command.
     """
     # cmd = cmd.split(" ")
+
     try:
         outcome = subprocess.run(
             cmd, shell=True, capture_output=True, text=True
@@ -107,9 +114,10 @@ def read_commandline(cmd: str) -> pd.DataFrame:
         outcome = outcome.stdout
     except pd.EmptyDataError:
         msg = (
-            "Empty Data Error: Be sure your parameter"
-            " is both a valid shell command and a string"
+            "It appears your DataFrame was loaded incorrectly."
+            " Please check the command string at the terminal "
+            "to ensure that it returns a CSV-like output."
         )
         raise pd.EmptyDataError(msg)
 
-    return pd.read_csv(StringIO(outcome))
+    return pd.read_csv(StringIO(outcome), **kwargs)

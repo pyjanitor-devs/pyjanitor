@@ -7,7 +7,7 @@ from typing import Iterable, Union
 import pandas as pd
 
 from .errors import JanitorError
-from .utils import deprecated_alias, check
+from .utils import deprecated_alias
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -43,14 +43,11 @@ def read_csvs(
     # String to file/folder or file pattern provided
     if isinstance(files_path, str):
         dfs_dict = {
-            os.path.basename(f): pd.read_csv(f, **kwargs)
-            for f in glob(files_path)
+            os.path.basename(f): pd.read_csv(f, **kwargs) for f in glob(files_path)
         }
     # Iterable of file paths provided
     else:
-        dfs_dict = {
-            os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path
-        }
+        dfs_dict = {os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path}
     # Check if dataframes have been read
     if len(dfs_dict) == 0:
         raise ValueError("No CSV files to read with the given `files_path`")
@@ -65,9 +62,7 @@ def read_csvs(
                     "Files cannot be concatenated"
                 )
         return pd.concat(
-            list(dfs_dict.values()),  # noqa: PD011
-            ignore_index=True,
-            sort=False,
+            list(dfs_dict.values()), ignore_index=True, sort=False,  # noqa: PD011
         )
     else:
         return dfs_dict
@@ -100,17 +95,15 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     :param kwargs: Keyword arguments that are passed through to `pd.read_csv()`.
     :returns: A pandas DataFrame parsed from the stdout of the underlying
         shell.
+    :raises TypeError: If the input is anything except a string.
     :raises EmptyDataError: If there is no data to parse, this often happens
-        because the cmd param is either an invalid bash command, thus
-        nothing happens in the shell , or if cmd param is not a string,
-        thus creating an invalid shell command.
+        because the cmd param is an invalid bash command, thus
+        nothing happens in the shell.
     """
     # cmd = cmd.split(" ")
 
     try:
-        outcome = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True
-        )
+        outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         outcome = outcome.stdout
     except TypeError:
         msg = (
@@ -119,4 +112,14 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
         )
         raise TypeError(msg)
 
-    return pd.read_csv(StringIO(outcome), **kwargs)
+    try:
+        df = pd.read_csv(StringIO(outcome), **kwargs)
+    except pd.errors.EmptyDataError:
+        msg = (
+            "It appears your DataFrame was loaded incorrectly.\n"
+            " Please check the command string at the terminal"
+            " to ensure that it returns a CSV-like output."
+        )
+        raise pd.errors.EmptyDataError(msg)
+
+    return df

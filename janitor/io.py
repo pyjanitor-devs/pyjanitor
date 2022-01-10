@@ -97,7 +97,7 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     ```
 
     :param cmd: Shell command to preprocess a file on disk.
-    :param kwargs: Keyword arguments that are passed through to `pd.read_csv()`.
+    :param kwargs: Keyword arguments that are passed through to pd.read_csv().
     :returns: A pandas DataFrame parsed from the stdout of the underlying
         shell.
     :raises TypeError: If the input is anything except a string.

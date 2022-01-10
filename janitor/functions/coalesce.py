@@ -1,3 +1,4 @@
+"""Function for performing coalesce."""
 from typing import Optional, Union
 import pandas as pd
 import pandas_flavor as pf
@@ -14,8 +15,7 @@ def coalesce(
     target_column_name: Optional[str] = None,
     default_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
-    """
-    Coalesce two or more columns of data in order of column names provided.
+    """Coalesce two or more columns of data in order of column names provided.
 
     This finds the first non-missing value at each position.
 
@@ -56,10 +56,7 @@ def coalesce(
 
     if len(column_names) < 2:
         raise ValueError(
-            """
-            The number of columns to coalesce
-            should be a minimum of 2.
-            """
+            "The number of columns to coalesce " "should be a minimum of 2."
         )
 
     column_names = _select_column_names([*column_names], df)

@@ -58,7 +58,6 @@ from .min_max_scale import min_max_scale
 from .move import move
 from .pivot import pivot_longer, pivot_wider
 from .process_text import process_text
-from .read_commandline import read_commandline
 from .remove_columns import remove_columns
 from .remove_empty import remove_empty
 from .rename_columns import rename_column, rename_columns

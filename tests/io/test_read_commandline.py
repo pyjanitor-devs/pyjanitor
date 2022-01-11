@@ -30,13 +30,13 @@ def test_read_commandline(dataframe):
 def test_read_commandline_bad_cmd(dataframe):
     """
     Test 1 raises a TypeError if read_commandline
-        is given an input that is not a string.
+    is given an input that is not a string.
 
     Test 2 raises an EmptyDataError if
-        read_commandline is given a string
-        which is not a valid bash command.
-        This results in the shell not doing anything
-        and thus no dataframe is created.
+    `read_commandline` is given a string
+    which is not a valid bash command.
+    This results in the shell not doing anything
+    and thus no dataframe is created.
     """
     # create a temporary .csv file
     dataframe.to_csv("/tmp/dataframe.csv")

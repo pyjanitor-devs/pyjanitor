@@ -105,7 +105,6 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
 
     check("cmd", cmd, [str])
     outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if outcome.returncode != 0:
         raise JanitorError(outcome.stderr)
     else:

@@ -98,6 +98,7 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
 
     :param cmd: Shell command to preprocess a file on disk.
     :param kwargs: Keyword arguments that are passed through to pd.read_csv().
+    :raises JanitorError: If commandline command is malformed or invalid.
     :returns: A pandas DataFrame parsed from the stdout of the underlying
         shell.
     """

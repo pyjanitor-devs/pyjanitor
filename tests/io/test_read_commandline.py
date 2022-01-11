@@ -8,10 +8,8 @@ import janitor.io
 
 def test_read_commandline(dataframe):
     """
-    Test asserts that the dataframe made
-        from the read_commandline function is
-        identical to the test dataframe from
-        which the .csv file was created.
+    Check that the dataframe returned from the read_commandline function is
+    identical to the test dataframe from which the .csv file was created.
 
     """
     # create a temporary .csv file from test data

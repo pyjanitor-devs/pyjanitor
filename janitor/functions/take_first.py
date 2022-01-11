@@ -1,3 +1,4 @@
+"""Implementation of take_first function."""
 from typing import Hashable, Iterable, Union
 import pandas_flavor as pf
 import pandas as pd
@@ -13,20 +14,21 @@ def take_first(
     """
     Take the first row within each group specified by `subset`.
 
-    This method does not mutate the original DataFrame.
+    Example:
 
-    ```python
-        import pandas as pd
-        import janitor
-
-        data = {
-            "a": ["x", "x", "y", "y"],
-            "b": [0, 1, 2, 3]
-        }
-        df = pd.DataFrame(data)
-
-        df.take_first(subset="a", by="b")
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": ["x", "x", "y", "y"], "b": [0, 1, 2, 3]})
+        >>> df
+           a  b
+        0  x  0
+        1  x  1
+        2  y  2
+        3  y  3
+        >>> df.take_first(subset="a", by="b")
+           a  b
+        0  x  0
+        2  y  2
 
     :param df: A pandas DataFrame.
     :param subset: Column(s) defining the group.

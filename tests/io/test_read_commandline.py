@@ -21,7 +21,7 @@ def test_read_commandline(dataframe):
 
     # Make assertion that new dataframe created with read_commandline
     #   is equal to the test dataframe
-    assert df.equals(dataframe)
+    pd.testing.assert_frame_equal(df, dataframe)
 
     # clean up after the test
     os.unlink("/tmp/dataframe.csv")

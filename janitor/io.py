@@ -110,5 +110,4 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
         raise JanitorError(outcome.stderr)
     else:
         outcome = outcome.stdout
-    df = pd.read_csv(StringIO(outcome), **kwargs)
-    return df
+    return pd.read_csv(StringIO(outcome), **kwargs)

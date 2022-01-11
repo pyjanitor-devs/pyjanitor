@@ -4,15 +4,12 @@ import pandas as pd
 import pytest
 
 import janitor.io
-from janitor.errors import JanitorError
 
 
 def test_read_commandline(dataframe):
     """
-    Test asserts that the dataframe made
-        from the read_commandline function is
-        identical to the test dataframe from
-        which the .csv file was created.
+    Check that the dataframe returned from the read_commandline function is
+    identical to the test dataframe from which the .csv file was created.
 
     """
     # create a temporary .csv file from test data
@@ -24,7 +21,7 @@ def test_read_commandline(dataframe):
 
     # Make assertion that new dataframe created with read_commandline
     #   is equal to the test dataframe
-    assert df.equals(dataframe)
+    pd.testing.assert_frame_equal(df, dataframe)
 
     # clean up after the test
     os.unlink("/tmp/dataframe.csv")
@@ -33,31 +30,22 @@ def test_read_commandline(dataframe):
 def test_read_commandline_bad_cmd(dataframe):
     """
     Test 1 raises a TypeError if read_commandline
-        is given an input that is not a string.
+    is given an input that is not a string.
 
-    Test 2 raises a JanitorError if
-        read_commandline is given a string
-        which is not a valid bash command.
-
-    Test 3 raises an EmptyDataError if
-        read_commandlind is given a string which
-        is a valid bash command, however results
-        in the shell not creating a dataframe.
+    Test 2 raises an EmptyDataError if
+    `read_commandline` is given a string
+    which is not a valid bash command.
+    This results in the shell not doing anything
+    and thus no dataframe is created.
     """
     # create a temporary .csv file
     dataframe.to_csv("/tmp/dataframe.csv")
 
-    # Test 1
     with pytest.raises(TypeError):
         janitor.io.read_commandline(6)
 
-    # Test 2
-    with pytest.raises(JanitorError):
-        janitor.io.read_commandline("bad command")
-
-    # Test 3
     with pytest.raises(pd.errors.EmptyDataError):
-        janitor.io.read_commandline("cat")
+        janitor.io.read_commandline("bad")
 
     # clean up after the tests
     os.unlink("/tmp/dataframe.csv")

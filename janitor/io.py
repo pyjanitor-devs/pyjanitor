@@ -106,6 +106,10 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     outcome = subprocess.run(
         cmd, shell=True, capture_output=True, text=True
     )
-    outcome = outcome.stdout
+    outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if outcome.returncode != 0:
+        raise JanitorError(outcome.stderr)
+    else:
+        outcome = outcome.stdout
     df = pd.read_csv(StringIO(outcome), **kwargs)
     return df

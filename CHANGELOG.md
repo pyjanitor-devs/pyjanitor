@@ -5,6 +5,7 @@
 -   [ENH] Deprecate `num_bins` from `bin_numeric` in favour of `bins`, and allow generic `**kwargs` to be passed into `pd.cut`. Issue #969. @thatlittleboy
 -   [ENH] Fix `concatenate_columns` not working on category inputs @zbarry
 -   [INF] Simplify CI system @ericmjl
+-   [ENH] Added "read_commandline" function to janitor.io
 
 ## [v0.22.0] - 2021-11-21
 

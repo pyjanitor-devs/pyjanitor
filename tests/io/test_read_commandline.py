@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 import janitor.io
+from janitor.errors import JanitorError
 
 
 def test_read_commandline(dataframe):
@@ -47,7 +48,10 @@ def test_read_commandline_bad_cmd(dataframe):
         janitor.io.read_commandline(6)
 
     with pytest.raises(pd.errors.EmptyDataError):
-        janitor.io.read_commandline("bad")
+        janitor.io.read_commandline("cat")
+
+    with pytest.raises(janitor.errors.JanitorError):
+        janitor.io.read_commandline("bad command")
 
     # clean up after the tests
     os.unlink("/tmp/dataframe.csv")

@@ -17,60 +17,40 @@ def filter_string(
     search_string: str,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """
-    Filter a string-based column according to whether it contains a substring.
+    """Filter a string-based column according to whether it contains a substring.
 
     This is super sugary syntax that builds on top of
-    `pandas.Series.str.contains`.
+    `pandas.Series.str.contains`. It is meant to be the method-chaining
+    equivalent of the following:
 
-    Because this uses internally `pandas.Series.str.contains`, which allows a
-    regex string to be passed into it, thus `search_string` can also be a regex
-    pattern.
+    ```python
+    df = df[df[column_name].str.contains(search_string)]]
+    ```
 
     This method does not mutate the original DataFrame.
 
-    This function allows us to method chain filtering operations:
+    Example: Retain rows whose column values contain a particular substring.
 
-    ```python
-        df = (pd.DataFrame(...)
-              .filter_string('column', search_string='pattern', complement=False)
-              ...)  # chain on more data preprocessing.
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": range(3, 6), "b": ["bear", "peel", "sail"]})
+        >>> df
+           a     b
+        0  3  bear
+        1  4  peel
+        2  5  sail
+        >>> df.filter_string(column_name="b", search_string="ee")
+           a     b
+        1  4  peel
 
-    This stands in contrast to the in-place syntax that is usually used:
-
-    ```python
-        df = pd.DataFrame(...)
-        df = df[df['column'].str.contains('pattern')]]
-    ```
-
-    As can be seen here, the API design allows for a more seamless flow in
-    expressing the filtering operations.
-
-    Functional usage syntax:
-
-    ```python
-        df = filter_string(df,
-                           column_name='column',
-                           search_string='pattern',
-                           complement=False)
-    ```
-
-    Method chaining syntax:
-
-    ```python
-        df = (pd.DataFrame(...)
-
-              .filter_string(column_name='column',
-                             search_string='pattern',
-                             complement=False)
-              ...)
-    ```
+    `search_string` is also permitted to be any valid regex pattern.
 
     :param df: A pandas DataFrame.
     :param column_name: The column to filter. The column should contain strings.
     :param search_string: A regex pattern or a (sub-)string to search.
-    :param complement: Whether to return the complement of the filter or not.
+    :param complement: Whether to return the complement of the filter or not. If
+        set to True, then the rows for which the string search fails are retained
+        instead.
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501
     criteria = df[column_name].str.contains(search_string)
@@ -81,10 +61,11 @@ def filter_string(
 
 @pf.register_dataframe_method
 def filter_on(
-    df: pd.DataFrame, criteria: str, complement: bool = False
+    df: pd.DataFrame,
+    criteria: str,
+    complement: bool = False,
 ) -> pd.DataFrame:
-    """
-    Return a dataframe filtered on a particular criteria.
+    """Return a dataframe filtered on a particular criteria.
 
     This method does not mutate the original DataFrame.
 
@@ -93,37 +74,27 @@ def filter_on(
     dataframe. The intent is that `filter_on` as a verb better matches the
     intent of a pandas user than the verb `query`.
 
-    Let's say we wanted to filter students based on whether they failed an exam
-    or not, which is defined as their score (in the "score" column) being less
-    than 50.
-
+    This is intended to be the method-chaining equivalent of the following:
     ```python
-        df = (pd.DataFrame(...)
-              .filter_on('score < 50', complement=False)
-              ...)  # chain on more data preprocessing.
+    df = df[df["score"] < 3]
     ```
 
-    This stands in contrast to the in-place syntax that is usually used:
+    Example: Filter students who failed an exam (scored less than 50).
 
-    ```python
-        df = pd.DataFrame(...)
-        df = df[df['score'] < 3]
-    ```
-
-    As with the `filter_string` function, a more seamless flow can be expressed
-    in the code.
-
-    Functional usage syntax:
-
-    ```python
-        df = filter_on(df,
-                       'score < 50',
-                       complement=False)
-    ```
-
-    Method chaining syntax:
-              .filter_on('score < 50', complement=False))
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "student_id": ["S1", "S2", "S3"],
+        ...     "score": [40, 60, 85],
+        ... })
+        >>> df
+           student_id  score
+        0          S1     40
+        1          S2     60
+        2          S3     85
+        >>> df.filter_on("score < 50", complement=False)
+          student_id  score
+        0         S1     40
 
     Credit to Brant Peterson for the name.
 
@@ -131,6 +102,8 @@ def filter_on(
     :param criteria: A filtering criteria that returns an array or Series of
         booleans, on which pandas can filter on.
     :param complement: Whether to return the complement of the filter or not.
+        If set to True, then the rows for which the criteria is False are
+        retained instead.
     :returns: A filtered pandas DataFrame.
     """
     if complement:
@@ -151,8 +124,7 @@ def filter_date(
     column_date_options: Optional[Dict] = None,
     format: Optional[str] = None,  # skipcq: PYL-W0622
 ) -> pd.DataFrame:
-    """
-    Filter a date-based column based on certain criteria.
+    """Filter a date-based column based on certain criteria.
 
     This method does not mutate the original DataFrame.
 
@@ -160,9 +132,31 @@ def filter_date(
     the pandas `to_datetime` function that is able to parse dates well.
 
     Additional options to parse the date type of your column may be found at
-    the official pandas [documentation][datetime]
+    the official pandas [documentation][datetime].
 
     [datetime]: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html
+
+    Example:
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "a": range(5, 10),
+        ...     "dt": ["2021-11-12", "2021-12-15", "2022-01-03", "2022-01-09"],
+        ... })
+        >>> df
+           a          dt
+        0  5  2021-11-12
+        1  6  2021-12-15
+        2  7  2022-01-03
+        3  8  2022-01-09
+        >>> df.filter_date("dt", start_date="2021-12-01", end_date="2022-01-05")
+           a         dt
+        1  6 2021-12-15
+        2  7 2022-01-03
+        >>> df.filter_date("dt", years=[2021], months=[12])
+           a         dt
+        1  6 2021-12-15
 
     !!!note
 
@@ -181,13 +175,13 @@ def filter_date(
     :param years: The years to use to filter the DataFrame.
     :param months: The months to use to filter the DataFrame.
     :param days: The days to use to filter the DataFrame.
-    :param column_date_options: 'Special options to use when parsing the date
+    :param column_date_options: Special options to use when parsing the date
         column in the original DataFrame. The options may be found at the
-        official Pandas documentation.'
-    :param format: 'If you're using a format for `start_date` or `end_date`
+        official Pandas documentation.
+    :param format: If you're using a format for `start_date` or `end_date`
         that is not recognized natively by pandas' `to_datetime` function, you
         may supply the format yourself. Python date and time formats may be
-        found at [link](http://strftime.org/).
+        found [here](http://strftime.org/).
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501
 
@@ -238,47 +232,50 @@ def filter_column_isin(
     iterable: Iterable,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """
-    Filter a dataframe for values in a column that exist in another iterable.
+    """Filter a dataframe for values in a column that exist in the given iterable.
 
     This method does not mutate the original DataFrame.
 
     Assumes exact matching; fuzzy matching not implemented.
 
-    The below example syntax will filter the DataFrame such that we only get
-    rows for which the `names` are exactly `James` and `John`.
+    Example: Filter the dataframe to retain rows for which `names`
+        are exactly `James` or `John`.
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"names": ["Jane", "Jeremy", "John"], "foo": list("xyz")})
+        >>> df
+            names foo
+        0    Jane   x
+        1  Jeremy   y
+        2    John   z
+        >>> df.filter_column_isin(column_name="names", iterable=["James", "John"])
+           names foo
+        2   John   z
+
+    This is the method-chaining alternative to:
 
     ```python
-        df = (
-            pd.DataFrame(...)
-            .clean_names()
-            .filter_column_isin(column_name="names", iterable=["James", "John"]
-            )
-        )
+    df = df[df["names"].isin(["James", "John"])]
     ```
 
-    This is the method chaining alternative to:
+    If `complement=True`, then we will only get rows for which the names
+    are neither `James` nor `John`.
 
-    ```python
-        df = df[df['names'].isin(['James', 'John'])]
-    ```
-
-    If `complement` is `True`, then we will only get rows for which the names
-    are not `James` or `John`.
-
-    :param df: A pandas DataFrame
+    :param df: A pandas DataFrame.
     :param column_name: The column on which to filter.
     :param iterable: An iterable. Could be a list, tuple, another pandas
         Series.
     :param complement: Whether to return the complement of the selection or
         not.
     :returns: A filtered pandas DataFrame.
-    :raises ValueError: if `iterable` does not have a length of `1`
+    :raises ValueError: If `iterable` does not have a length of `1`
         or greater.
-    """
+    """  # noqa: E501
     if len(iterable) == 0:
         raise ValueError(
-            "`iterable` kwarg must be given an iterable of length 1 or greater"
+            "`iterable` kwarg must be given an iterable of length 1 "
+            "or greater."
         )
     criteria = df[column_name].isin(iterable)
 

@@ -105,5 +105,4 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     check("cmd", cmd, [str])
     outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     outcome = outcome.stdout
-    df = pd.read_csv(StringIO(outcome), **kwargs)
-    return df
+    return pd.read_csv(StringIO(outcome), **kwargs)

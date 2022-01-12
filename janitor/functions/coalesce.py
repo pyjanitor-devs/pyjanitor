@@ -80,7 +80,7 @@ def coalesce(
 
     if len(column_names) < 2:
         raise ValueError(
-            "The number of columns to coalesce " "should be a minimum of 2."
+            "The number of columns to coalesce should be a minimum of 2."
         )
 
     column_names = _select_column_names([*column_names], df)

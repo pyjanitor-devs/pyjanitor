@@ -88,7 +88,7 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
 
     ```python
     import janitor as jn
-    df = jn.io.read_commandline("cat data.csv | grep .SEA1AA")
+    df = jn.read_commandline("cat data.csv | grep .SEA1AA")
 
     This function assumes that your command line command will return
     an output that is parsable using pandas.read_csv and StringIO.

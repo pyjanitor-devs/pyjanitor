@@ -17,7 +17,8 @@
 		"python.linting.pylintPath": "/opt/conda/bin/pylint",
 		"python.formatting.provider": "black",
 		"python.formatting.blackArgs": [
-			"--config pyproject.toml",
+			"--config",
+			"pyproject.toml",
 		],
 		"editor.formatOnSave": true,
 		"files.insertFinalNewline": true,

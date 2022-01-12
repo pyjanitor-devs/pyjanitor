@@ -88,10 +88,10 @@ def filter_on(
         ...     "score": [40, 60, 85],
         ... })
         >>> df
-           student_id  score
-        0          S1     40
-        1          S2     60
-        2          S3     85
+          student_id  score
+        0         S1     40
+        1         S2     60
+        2         S3     85
         >>> df.filter_on("score < 50", complement=False)
           student_id  score
         0         S1     40
@@ -141,7 +141,7 @@ def filter_date(
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
-        ...     "a": range(5, 10),
+        ...     "a": range(5, 9),
         ...     "dt": ["2021-11-12", "2021-12-15", "2022-01-03", "2022-01-09"],
         ... })
         >>> df
@@ -250,8 +250,8 @@ def filter_column_isin(
         1  Jeremy   y
         2    John   z
         >>> df.filter_column_isin(column_name="names", iterable=["James", "John"])
-           names foo
-        2   John   z
+          names foo
+        2  John   z
 
     This is the method-chaining alternative to:
 

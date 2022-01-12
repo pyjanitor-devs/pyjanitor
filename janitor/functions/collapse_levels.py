@@ -40,13 +40,13 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
         3  mammal         80    Lion
         4  mammal         21  Monkey
         >>> grouped_df = df.groupby("class").agg(["mean", "median"])
-        >>> grouped_df
+        >>> grouped_df  # doctest: +NORMALIZE_WHITESPACE
                  max_speed
                       mean median
         class
         bird    267.333333  389.0
         mammal   50.500000   50.5
-        >>> grouped_df.collapse_levels(sep="_")
+        >>> grouped_df.collapse_levels(sep="_")  # doctest: +NORMALIZE_WHITESPACE
                 max_speed_mean  max_speed_median
         class
         bird        267.333333             389.0
@@ -65,7 +65,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param sep: String separator used to join the column level names.
     :returns: A pandas DataFrame with single-level column index.
-    """
+    """  # noqa: E501
     check("sep", sep, [str])
 
     # if already single-level, just return the DataFrame

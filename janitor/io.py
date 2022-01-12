@@ -1,11 +1,13 @@
 import os
+import subprocess
 from glob import glob
+from io import StringIO
 from typing import Iterable, Union
 
 import pandas as pd
 
 from .errors import JanitorError
-from .utils import deprecated_alias
+from .utils import deprecated_alias, check
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -63,9 +65,48 @@ def read_csvs(
                     "Files cannot be concatenated"
                 )
         return pd.concat(
-            list(dfs_dict.values()),  # noqa: PD011
+            list(dfs_dict.values()),
             ignore_index=True,
-            sort=False,
+            sort=False,  # noqa: PD011
         )
     else:
         return dfs_dict
+
+
+def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
+    """
+    Read a CSV file based on a command-line command.
+
+    For example, you may wish to run the following command on `sep-quarter.csv`
+    before reading it into a pandas DataFrame:
+
+    ```bash
+    cat sep-quarter.csv | grep .SEA1AA
+    ```
+
+    In this case, you can use the following Python code to load the dataframe:
+
+    ```python
+    import janitor as jn
+    df = jn.io.read_commandline("cat data.csv | grep .SEA1AA")
+
+    This function assumes that your command line command will return
+    an output that is parsable using pandas.read_csv and StringIO.
+    We default to using pd.read_csv underneath the hood.
+    Keyword arguments are passed through to read_csv.
+    ```
+
+    :param cmd: Shell command to preprocess a file on disk.
+    :param kwargs: Keyword arguments that are passed through to pd.read_csv().
+    :raises JanitorError: If commandline command is malformed or invalid.
+    :returns: A pandas DataFrame parsed from the stdout of the underlying
+        shell.
+    """
+
+    check("cmd", cmd, [str])
+    outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if outcome.returncode != 0:
+        raise JanitorError(outcome.stderr)
+    else:
+        outcome = outcome.stdout
+    return pd.read_csv(StringIO(outcome), **kwargs)

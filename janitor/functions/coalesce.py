@@ -1,3 +1,4 @@
+"""Function for performing coalesce."""
 from typing import Optional, Union
 import pandas as pd
 import pandas_flavor as pf
@@ -14,26 +15,49 @@ def coalesce(
     target_column_name: Optional[str] = None,
     default_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
-    """
-    Coalesce two or more columns of data in order of column names provided.
+    """Coalesce two or more columns of data in order of column names provided.
 
-    This finds the first non-missing value at each position.
+    Given the list of column names, `coalesce` finds and returns the first
+    non-missing value from these columns, for every row in the input dataframe.
+    If all the column values are null for a particular row, then the
+    `default_value` will be filled in.
 
     This method does not mutate the original DataFrame.
 
-    Functional usage syntax:
+    Example: Using `coalesce` with 3 columns, "a", "b" and "c".
 
-    ```python
-        df = coalesce(df, 'col1', 'col2', target_column_name ='col3')
-    ```
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "a": [np.nan, 1, np.nan],
+        ...     "b": [2, 3, np.nan],
+        ...     "c": [4, np.nan, np.nan],
+        ... })
+        >>> df.coalesce("a", "b", "c", target_column_name="new_col")
+             a    b    c  new_col
+        0  NaN  2.0  4.0      2.0
+        1  1.0  3.0  NaN      1.0
+        2  NaN  NaN  NaN      NaN
 
-    Method chaining syntax:
+    Example: Providing a default value.
 
-    ```python
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).coalesce('col1', 'col2')
-    ```
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "a": [1, np.nan, np.nan],
+        ...     "b": [2, 3, np.nan],
+        ... })
+        >>> df.coalesce(
+        ...     "a", "b",
+        ...     target_column_name="new_col",
+        ...     default_value=-1,
+        ... )
+             a    b  new_col
+        0  1.0  2.0      1.0
+        1  NaN  3.0      3.0
+        2  NaN  NaN     -1.0
 
     This is more syntactic diabetes! For R users, this should look familiar to
     `dplyr`'s `coalesce` function; for Python users, the interface
@@ -56,10 +80,7 @@ def coalesce(
 
     if len(column_names) < 2:
         raise ValueError(
-            """
-            The number of columns to coalesce
-            should be a minimum of 2.
-            """
+            "The number of columns to coalesce should be a minimum of 2."
         )
 
     column_names = _select_column_names([*column_names], df)

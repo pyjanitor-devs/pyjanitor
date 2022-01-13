@@ -1,3 +1,4 @@
+"""Implementation of the `sort_naturally` function."""
 import pandas_flavor as pf
 import pandas as pd
 from natsort import index_natsorted
@@ -39,32 +40,33 @@ def sort_naturally(
     after the column name to sort by is provided.
     They are passed through to the `natsorted` function.
 
-    Functional usage syntax:
+    Example:
 
-    ```python
-        import pandas as pd
-        import janitor as jn
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "Well": ["A21", "A3", "A21", "B2", "B51", "B12"],
+        ...         "Value": [1, 2, 13, 3, 4, 7],
+        ...     }
+        ... )
+        >>> df
+          Well  Value
+        0  A21      1
+        1   A3      2
+        2  A21     13
+        3   B2      3
+        4  B51      4
+        5  B12      7
+        >>> df.sort_naturally("Well")
+          Well  Value
+        1   A3      2
+        0  A21      1
+        2  A21     13
+        3   B2      3
+        5  B12      7
+        4  B51      4
 
-        df = pd.DataFrame(...)
-
-        df = jn.sort_naturally(
-            df=df,
-            column_name='alphanumeric_column',
-        )
-    ```
-
-    Method chaining usage syntax:
-
-    ```python
-        import pandas as pd
-        import janitor
-
-        df = pd.DataFrame(...)
-
-        df = df.sort_naturally(
-            column_name='alphanumeric_column',
-        )
-    ```
     :param df: A pandas DataFrame.
     :param column_name: The column on which natural sorting should take place.
     :param natsorted_kwargs: Keyword arguments to be passed

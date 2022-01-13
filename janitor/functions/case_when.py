@@ -10,10 +10,40 @@ from janitor.utils import check
 @pf.register_dataframe_method
 def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
     """
-    Convenience function for creating a column,
-    based on a condition, or multiple conditions.
+    Create a column based on a condition or multiple conditions.
 
-    It is similar to SQL and dplyr's case_when,
+    Example usage:
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": [0, 0, 1, 2, "hi"],
+        ...         "b": [0, 3, 4, 5, "bye"],
+        ...         "c": [6, 7, 8, 9, "wait"],
+        ...     }
+        ... )
+        >>> df
+            a    b     c
+        0   0    0     6
+        1   0    3     7
+        2   1    4     8
+        3   2    5     9
+        4  hi  bye  wait
+        >>> df.case_when(
+        ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a,
+        ...     (df.b == 0) & (df.a == 0), "x",
+        ...     df.c,
+        ...     column_name="value",
+        ... )
+            a    b     c value
+        0   0    0     6     x
+        1   0    3     7     0
+        2   1    4     8     8
+        3   2    5     9     9
+        4  hi  bye  wait    hi
+
+    Similar to SQL and dplyr's case_when
     with inspiration from `pydatatable` if_else function.
 
     If your scenario requires direct replacement of values,
@@ -57,40 +87,7 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         default
     ```
 
-    Functional usage syntax:
-
-    ```python
-    import pandas as pd
-    import janitor as jn
-
-    df = pd.DataFrame(...)
-    right = pd.DataFrame(...)
-
-    df = jn.case_when(
-        df,
-        condition0, result0,
-        condition1, result1,
-        ...,
-        default,
-        column_name = 'column',
-    )
-    ```
-
-    Method chaining syntax:
-
-    .. code-block:: python
-
-    ```python
-    df = df.case_when(
-        condition0, result0,
-        condition1, result1,
-        ...,
-        default,
-        column_name = 'column',
-    )
-    ```
-
-    :param df: A Pandas dataframe.
+    :param df: A pandas DataFrame.
     :param args: Variable argument of conditions and expected values.
         Takes the form
         `condition0`, `value0`, `condition1`, `value1`, ..., `default`.
@@ -104,7 +101,7 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         For a 1-D array, it should have the same length as the DataFrame.
         The `default` argument applies if none of `condition0`,
         `condition1`, ..., evaluates to `True`.
-        Value can be a scalar, a callabe, or a 1-D array. if `default` is a
+        Value can be a scalar, a callable, or a 1-D array. if `default` is a
         callable, it should evaluate to a 1-D array.
         The 1-D array should be the same length as the DataFrame.
     :param column_name: Name of column to assign results to. A new column

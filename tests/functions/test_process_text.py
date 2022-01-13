@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal
 
 @pytest.fixture
 def process_test_df():
+    "Base DataFrame"
     return pd.DataFrame(
         {"text": ["a_b_c", "c_d_e", np.nan, "f_g_h"], "numbers": range(1, 5)}
     )
@@ -13,6 +14,7 @@ def process_test_df():
 
 @pytest.fixture
 def test_returns_dataframe():
+    "Base DataFrame"
     return pd.DataFrame(
         {"text": ["a1a2", "b1", "c1"], "numbers": [1, 2, 3]},
         index=["A", "B", "C"],

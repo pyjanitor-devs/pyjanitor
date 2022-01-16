@@ -2,6 +2,7 @@ import os
 import subprocess
 from glob import glob
 from io import StringIO
+from openpyxl import load_workbook
 from typing import Iterable, Union
 
 import pandas as pd
@@ -110,3 +111,66 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     else:
         outcome = outcome.stdout
     return pd.read_csv(StringIO(outcome), **kwargs)
+
+
+def xlsx_table(
+    path: str,
+    sheetname: str,
+    table: Union[str, list, tuple] = None,
+    header: bool = True,
+) -> pd.DataFrame:
+    """
+    Returns a DataFrame of values in a table in the Excel file.
+    If the `table` argument is provided, a pandas DataFrame is returned;
+    if the `table` argument is None, or a list/tuple of names,
+    a dictionary of DataFrames is returned, where the keys of the dictionary
+    are the table names.
+
+    :param path: path to the Excel File.
+    :param sheetname: Name of the sheet
+        from which the tables are to be extracted.
+    :param table: name of a table, or list of tables in the sheet.
+    :raises ValueError: if there are not tables in the sheet.
+    :param header: If the first row should be used as column names.
+    :returns: A pandas DataFrame, or a dictionary of DataFrames.
+    """
+
+    wb = load_workbook(filename=path, read_only=False, keep_links=False)
+    ws = wb[sheetname]
+
+    contents = ws.tables
+    if not contents:
+        raise ValueError(f"There is no table in `{sheetname}` sheet.")
+    contents = contents.items()
+
+    if isinstance(table, str):
+        table = [table]
+    if table is not None:
+        check("table", table, [list, tuple])
+
+    if isinstance(table, (list, tuple)):
+        for entry in table:
+            if entry not in contents:
+                raise ValueError(
+                    f"""
+                    {entry} is not a table
+                    in the {sheetname} sheet.
+                    """
+                )
+        contents = ((key, value) for key, value in contents if key in table)
+
+    frame = {}
+    for key, value in contents:
+        content = ((cell.value for cell in row) for row in ws[value])
+        if header:
+            column_names = next(content)
+            content = zip(*content)
+            frame[key] = dict(zip(column_names, content))
+        else:
+            content = zip(*content)
+            frame[key] = {f"C{num}": val for num, val in enumerate(content)}
+
+    if len(frame) == 1:
+        _, frame = frame.popitem()
+        return pd.DataFrame(frame)
+    return {key: pd.DataFrame(value) for key, value in frame.items()}

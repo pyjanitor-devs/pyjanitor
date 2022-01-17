@@ -107,7 +107,7 @@ def filter_on(
     :returns: A filtered pandas DataFrame.
     """
     if complement:
-        return df.query("not " + criteria)
+        return df.query(f"not ({criteria})")
     return df.query(criteria)
 
 

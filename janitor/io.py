@@ -117,14 +117,16 @@ def xlsx_table(
     path: str,
     sheetname: str,
     table: Union[str, list, tuple] = None,
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, dict]:
     """
     Returns a DataFrame of values in a table in the Excel file.
     This applies to an Excel file, where the data range is explicitly
     specified as a Microsoft Excel table.
 
-    If the `table` argument is provided, a pandas DataFrame is returned;
-    if the `table` argument is None, or a list/tuple of names,
+    If there is a single table in the sheet, or a string is provided
+    as an argument to the `table` parameter, a pandas DataFrame is returned;
+    if there is more than one table in the sheet,
+    and the `table` argument is `None`, or a list/tuple of names,
     a dictionary of DataFrames is returned, where the keys of the dictionary
     are the table names.
 
@@ -132,41 +134,42 @@ def xlsx_table(
 
     ```python
 
-        filename = "excel_table.xlsx"
+    filename = "excel_table.xlsx"
 
-        # single table
-        jn.xlsx_table(filename, table = 'dCategory')
+    # single table
+    jn.xlsx_table(filename, sheetname='Tables', table = 'dCategory')
 
-            CategoryID      Category
-        0           1       Beginner
-        1           2       Advanced
-        2           3      Freestyle
-        3           4    Competition
-        4           5  Long Distance
+        CategoryID      Category
+    0           1       Beginner
+    1           2       Advanced
+    2           3      Freestyle
+    3           4    Competition
+    4           5  Long Distance
 
-        # multiple tables:
-        jn.xlsx_table(filename, table = ['dCategory', 'dSupplier'])
+    # multiple tables:
+    jn.xlsx_table(filename, sheetname = 'Tables', table = ['dCategory', 'dSupplier'])
 
-        {'dCategory':    CategoryID       Category
-                      0           1       Beginner
-                      1           2       Advanced
-                      2           3      Freestyle
-                      3           4    Competition
-                      4           5  Long Distance,
-        'dSupplier':   SupplierID             Supplier        City State                         E-mail
-                     0         GB       Gel Boomerangs     Oakland    CA          gel@gel-boomerang.com
-                     1         CO  Colorado Boomerangs    Gunnison    CO  Pollock@coloradoboomerang.com
-                     2         CC        Channel Craft    Richland    WA                    Dino@CC.com
-                     3         DB        Darnell Booms  Burlington    VT            Darnell@Darnell.com}
+    {'dCategory':    CategoryID       Category
+                    0           1       Beginner
+                    1           2       Advanced
+                    2           3      Freestyle
+                    3           4    Competition
+                    4           5  Long Distance,
+    'dSupplier':   SupplierID             Supplier        City State                         E-mail
+                    0         GB       Gel Boomerangs     Oakland    CA          gel@gel-boomerang.com
+                    1         CO  Colorado Boomerangs    Gunnison    CO  Pollock@coloradoboomerang.com
+                    2         CC        Channel Craft    Richland    WA                    Dino@CC.com
+                    3         DB        Darnell Booms  Burlington    VT            Darnell@Darnell.com}
     ```
 
-    :param path: path to the Excel File.
-    :param sheetname: Name or position of the sheet
-        from which the tables are to be extracted.
-    :param table: name of a table, or list of tables in the sheet.
+    :param path: Path to the Excel File.
+    :param sheetname: Name of the sheet from which the tables
+        are to be extracted.
+    :param table: Name of a table, or list of tables in the sheet.
     :returns: A pandas DataFrame, or a dictionary of DataFrames,
-        if there are multiple arguments for the `table` parameter.
-    :raises ValueError: if there are no tables in the sheet.
+        if there are multiple arguments for the `table` parameter,
+        or the argument to `table` is `None`.
+    :raises ValueError: If there are no tables in the sheet.
 
     """  # noqa : E501
 
@@ -183,12 +186,9 @@ def xlsx_table(
     if table is not None:
         check("table", table, [list, tuple])
         for entry in table:
-            if entry not in contents.keys():
+            if entry not in contents:
                 raise ValueError(
-                    f"""
-                    {entry} is not a table
-                    in the {sheetname} sheet.
-                    """
+                    f"{entry} is not a table in the {sheetname} sheet."
                 )
         data = (
             (key, value) for key, value in contents.items() if key in table

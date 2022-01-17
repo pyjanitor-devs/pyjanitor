@@ -1,14 +1,20 @@
-import os
 import pandas as pd
 import pytest
 
 from janitor import io
 from pandas.testing import assert_frame_equal
+from pathlib import Path
 
 
 TEST_DATA_DIR = "tests/test_data"
-filename = os.path.join(TEST_DATA_DIR, "016-MSPTDA-Excel.xlsx")
-no_headers = os.path.join(TEST_DATA_DIR, "excel_without_headers.xlsx")
+filename = Path(TEST_DATA_DIR).joinpath("016-MSPTDA-Excel.xlsx").resolve()
+no_headers = (
+    Path(
+        TEST_DATA_DIR,
+    )
+    .joinpath("excel_without_headers.xlsx")
+    .resolve()
+)
 
 
 def test_check_sheetname():

@@ -89,15 +89,16 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     ```python
     import janitor as jn
     df = jn.read_commandline("cat data.csv | grep .SEA1AA")
-
-    This function assumes that your command line command will return
-    an output that is parsable using pandas.read_csv and StringIO.
-    We default to using pd.read_csv underneath the hood.
-    Keyword arguments are passed through to read_csv.
     ```
 
+    This function assumes that your command line command will return
+    an output that is parsable using `pandas.read_csv` and StringIO.
+    We default to using `pd.read_csv` underneath the hood.
+    Keyword arguments are passed through to read_csv.
+
     :param cmd: Shell command to preprocess a file on disk.
-    :param kwargs: Keyword arguments that are passed through to pd.read_csv().
+    :param kwargs: Keyword arguments that are passed through to
+        `pd.read_csv()`.
     :raises JanitorError: If commandline command is malformed or invalid.
     :returns: A pandas DataFrame parsed from the stdout of the underlying
         shell.

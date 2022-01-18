@@ -2,13 +2,12 @@ import os
 import subprocess
 from glob import glob
 from io import StringIO
-from openpyxl import load_workbook
 from typing import Iterable, Union
 
 import pandas as pd
 
 from .errors import JanitorError
-from .utils import deprecated_alias, check
+from .utils import deprecated_alias, check, import_message
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -173,6 +172,15 @@ def xlsx_table(
 
     """  # noqa : E501
 
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        import_message(
+            submodule="io",
+            package="openpyxl",
+            conda_channel="conda-forge",
+            pip_install=True,
+        )
     wb = load_workbook(filename=path, read_only=False, keep_links=False)
     check("sheetname", sheetname, [str])
     ws = wb[sheetname]

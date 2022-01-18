@@ -7,6 +7,7 @@
 -   [INF] Simplify CI system @ericmjl
 -   [ENH] Added "read_commandline" function to janitor.io @BaritoneBeard
 -   [BUG] Fix bug with the complement parameter of `filter_on`. Issue #988. @thatlittleboy
+-   [ENH] Add `xlsx_table`, for reading tables from an Excel sheet. @samukweku
 
 ## [v0.22.0] - 2021-11-21
 

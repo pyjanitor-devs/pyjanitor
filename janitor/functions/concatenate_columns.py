@@ -11,7 +11,7 @@ from janitor.utils import deprecated_alias
 def concatenate_columns(
     df: pd.DataFrame,
     column_names: List[Hashable],
-    new_column_name,
+    new_column_name: Hashable,
     sep: str = "-",
     ignore_empty: bool = True,
 ) -> pd.DataFrame:
@@ -21,19 +21,22 @@ def concatenate_columns(
 
     This method mutates the original DataFrame.
 
-    Functional usage syntax:
+    Example: Concatenate two columns row-wise.
 
-        df = concatenate_columns(df,
-                                 column_names=['col1', 'col2'],
-                                 new_column_name='id',
-                                 sep='-')
-
-    Method chaining syntax:
-
-        df = (pd.DataFrame(...).
-              concatenate_columns(column_names=['col1', 'col2'],
-                                  new_column_name='id',
-                                  sep='-'))
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": [1, 3, 5], "b": list("xyz")}); df
+           a  b
+        0  1  x
+        1  3  y
+        2  5  z
+        >>> df.concatenate_columns(
+        ...     column_names=["a", "b"], new_column_name="m",
+        ... )
+           a  b    m
+        0  1  x  1-x
+        1  3  y  3-y
+        2  5  z  5-z
 
     :param df: A pandas DataFrame.
     :param column_names: A list of columns to concatenate together.
@@ -41,8 +44,8 @@ def concatenate_columns(
     :param sep: The separator between each column's data.
     :param ignore_empty: Ignore null values if exists.
     :returns: A pandas DataFrame with concatenated columns.
-    :raises JanitorError: if at least two columns are not provided
-        within `column_names``.
+    :raises JanitorError: If at least two columns are not provided
+        within `column_names`.
     """
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")
@@ -54,6 +57,7 @@ def concatenate_columns(
     if ignore_empty:
 
         def remove_empty_string(x):
+            """Ignore empty/null string values from the concatenated output."""
             return sep.join(x for x in x.split(sep) if x)
 
         df[new_column_name] = df[new_column_name].transform(

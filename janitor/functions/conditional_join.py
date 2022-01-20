@@ -861,7 +861,7 @@ def _multiple_conditional_join_le_lt(
         left_on, right_on, op = le_lt
         le_lt = (df[left_on], right[right_on], op)
 
-        return _range_indices(ge_gt, le_lt, rest)
+        return _indices_less_great(ge_gt, le_lt, rest)
 
     if le_lt:
         conditions = (
@@ -890,107 +890,6 @@ def _multiple_conditional_join_le_lt(
         else:
             rest = None
         return _indices_less_great(ge_gt, second, rest)
-
-
-def _range_indices(ge_gt: tuple, le_lt: tuple, rest: tuple = None):
-    """
-    Retrieve index positions for a range/between join.
-
-    Idea inspired by article:
-    https://www.vertica.com/blog/what-is-a-range-join-and-why-is-it-so-fastba-p223413/
-
-    Same as _generate_indices, but with less indirection.
-
-    Returns a tuple of (left_index, right_index)
-    """
-
-    # summary of code:
-    # get the positions where start_left is >/>= start_right
-    # then within the positions,
-    # get the positions where end_left is </<= end_right
-    # this should reduce the search space
-    left_c, right_c, op = ge_gt
-
-    strict = False
-    if op == _JoinOperator.GREATER_THAN.value:
-        strict = True
-
-    outcome = _greater_than_indices(
-        left_c, right_c, strict, len_conditions=False
-    )
-
-    if outcome is None:
-        return None
-
-    left_index, right_index, search_indices = outcome
-    end_left, end_right, right_op = le_lt
-    right_c = end_right.loc[right_index]
-    dupes = right_c.duplicated(keep="first")
-    right_c = right_c.to_numpy(copy=False)
-    # use position, not label
-    uniqs_index = np.arange(right_c.size)
-    if dupes.any():
-        uniqs_index = uniqs_index[~dupes]
-        right_c = right_c[~dupes]
-
-    left_c = end_left.loc[left_index]
-    left_c = left_c.to_numpy(copy=False)
-    pos = np.copy(search_indices)
-    counter = np.arange(left_index.size)
-    right_op = operator_map[right_op]
-
-    for value, ind in zip(right_c, uniqs_index):
-        keep_rows = right_op(left_c, value)
-        # get the index positions where left_c is </<= right_c
-        # that minimum position combined with the equivalent position
-        # from search_indices becomes our search space
-        # for the equivalent left_c index
-        if keep_rows.any():
-            pos[counter[keep_rows]] = ind
-            counter = counter[~keep_rows]
-            left_c = left_c[~keep_rows]
-        if not counter.size > 0:
-            break
-    dupes = None
-    uniqs_index = None
-
-    # no point searching within (a, b)
-    # if a == b
-    # since range(a, b) yields none
-    keep_rows = pos < search_indices
-
-    if not keep_rows.any():
-        return None
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        pos = pos[keep_rows]
-        search_indices = search_indices[keep_rows]
-
-    repeater = search_indices - pos
-    right_index = [
-        right_index[start:end] for start, end in zip(pos, search_indices)
-    ]
-
-    right_index = np.concatenate(right_index)
-    left_index = np.repeat(left_index, repeater)
-
-    left_c = end_left.loc[left_index]
-    left_c = left_c.to_numpy(copy=False)
-
-    right_c = end_right.loc[right_index]
-    right_c = right_c.to_numpy(copy=False)
-
-    mask = right_op(left_c, right_c)
-
-    if not mask.any():
-        return None
-    if not mask.all():
-        left_index = left_index[mask]
-        right_index = right_index[mask]
-    if not rest:
-        return left_index, right_index
-
-    return _generate_indices(left_index, right_index, rest)
 
 
 def _indices_less_great(first: tuple, second: tuple, rest: tuple = None):
@@ -1097,7 +996,9 @@ def _indices_less_great(first: tuple, second: tuple, rest: tuple = None):
         # no point searching within (a, b)
         # if a == b
         # since range(a, b) yields none
-        pos += 1  # shift by one to not miss that row, during slicing
+        # also, shift by one to include the bottom row,
+        # during slicing
+        pos += 1
         keep_rows = pos > search_indices
 
         if not keep_rows.any():
@@ -1113,6 +1014,8 @@ def _indices_less_great(first: tuple, second: tuple, rest: tuple = None):
             right_index[start:end] for start, end in zip(search_indices, pos)
         ]
 
+    # get indices and filter to get exact indices
+    # that meet the conditions
     right_index = np.concatenate(right_index)
     left_index = np.repeat(left_index, repeater)
 

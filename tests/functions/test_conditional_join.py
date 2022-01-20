@@ -901,8 +901,11 @@ def test_dual_ne(df, right):
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.dropna(subset=["A", "B"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric"]).assign(t=1), on="t"
+        )
         .query("A != Integers and B != Numeric")
         .reset_index(drop=True)
     )
@@ -929,8 +932,11 @@ def test_dual_ne_extension(df, right):
     filters = ["A", "Integers", "B", "Numeric"]
     df = df.assign(A=df["A"].astype("Int64"))
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.dropna(subset=["A", "B"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric"]).assign(t=1), on="t"
+        )
         .query("A != Integers and B != Numeric")
         .reset_index(drop=True)
     )
@@ -957,8 +963,11 @@ def test_dual_ne_extension_right(df, right):
     filters = ["A", "Integers", "B", "Numeric"]
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.dropna(subset=["A", "B"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric"]).assign(t=1), on="t"
+        )
         .query("A != Integers and B != Numeric")
         .reset_index(drop=True)
     )
@@ -1089,8 +1098,12 @@ def test_gt_lt_ne_conditions(df, right):
 
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.dropna(subset=["A", "B", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            on="t",
+        )
         .query("A > Integers and B < Numeric and E != Dates")
         .reset_index(drop=True)
     )
@@ -1117,8 +1130,14 @@ def test_gt_lt_ne_start(df, right):
 
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1, C="C"), on="t")
+        df.dropna(subset=["A", "B", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(
+                t=1, C="C"
+            ),
+            on="t",
+        )
         .query("A > Integers and B < Numeric and E != Dates")
         .reset_index(drop=True)
     )
@@ -1148,8 +1167,12 @@ def test_ge_le_ne_extension_array(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.dropna(subset=["A", "B", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            on="t",
+        )
         .query("A != Integers and B < Numeric and E >= Dates")
         .reset_index(drop=True)
     )
@@ -1179,8 +1202,12 @@ def test_ge_lt_ne_extension(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.dropna(subset=["A", "B", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            on="t",
+        )
         .query(
             "A < Integers and B != Numeric and E >= Dates and E != Dates_Right"
         )
@@ -1238,8 +1265,14 @@ def test_dual_ge_and_le_diff_numbers(df, right):
     r_ge, r_le = ["Integers", "Dates"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        df.dropna(subset=["A", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Dates"]).assign(t=1),
+            on="t",
+            how="inner",
+            sort=False,
+        )
         .query(f"{l_ge} > {r_ge} and {l_le} <= {r_le}")
         .reset_index(drop=True)
     )
@@ -1267,8 +1300,12 @@ def test_ge_lt_ne_extension_variant(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.dropna(subset=["A", "B", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            on="t",
+        )
         .query(
             "A != Integers and B < Numeric and E >= Dates and E != Dates_Right"
         )
@@ -1358,8 +1395,14 @@ def test_dual_ge_and_le_range_numbers(df, right):
     r_ge, r_le = ["Integers", "Dates"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        df.dropna(subset=["A", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Integers", "Dates"]).assign(t=1),
+            on="t",
+            how="inner",
+            sort=False,
+        )
         .query(f"{l_ge} >= {r_ge} and {l_le} < {r_le}")
         .reset_index(drop=True)
     )
@@ -1412,8 +1455,14 @@ def test_multiple_non_equi(df, right):
     r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        df.dropna(subset=["B", "A", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(subset=["Floats", "Integers", "Dates"]).assign(t=1),
+            on="t",
+            how="inner",
+            sort=False,
+        )
         .query(f"{l_ge} >= {r_ge} and {l_le} <= {r_le} and {l_eq} < {r_eq}")
         .reset_index(drop=True)
     )
@@ -1440,8 +1489,16 @@ def test_multiple_non_equii(df, right):
     r_eq, r_ge, r_le, ex2 = ["Floats", "Integers", "Dates", "Numeric"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t", how="inner", sort=False)
+        df.dropna(subset=["B", "A", "E"])
+        .assign(t=1)
+        .merge(
+            right.dropna(
+                subset=["Floats", "Integers", "Dates", "Numeric"]
+            ).assign(t=1),
+            on="t",
+            how="inner",
+            sort=False,
+        )
         .query(
             f"{l_ge} >= {r_ge} and {l_le} <= {r_le} and {l_eq} < {r_eq} and {ex1} > {ex2}"  # noqa: E501
         )

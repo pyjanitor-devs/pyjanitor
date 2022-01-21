@@ -1,3 +1,4 @@
+"""Implementation of select_columns"""
 import pandas_flavor as pf
 import pandas as pd
 
@@ -26,26 +27,19 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
+    Example:
 
-    Functional usage example:
-
-    ```python
-       import pandas as pd
-       import janitor as jn
-
-       df = pd.DataFrame(...)
-
-       df = jn.select_columns('a', 'b', 'col_*',
-                              invert=True)
-    ```
-
-    Method-chaining example:
-
-    ```python
-        df = (pd.DataFrame(...)
-              .select_columns('a', 'b', 'col_*',
-              invert=True))
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"col1": [1, 2], "foo": [3, 4], "col2": [5, 6]})
+        >>> df
+           col1  foo  col2
+        0     1    3     5
+        1     2    4     6
+        >>> df.select_columns("col*")
+           col1  col2
+        0     1     5
+        1     2     6
 
     :param df: A pandas DataFrame.
     :param args: Valid inputs include: an exact column name to look for,
@@ -58,7 +52,7 @@ def select_columns(
         This will result in the selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    """
+    """  # noqa: E501
 
     # applicable for any
     # list-like object (ndarray, Series, pd.Index, ...)

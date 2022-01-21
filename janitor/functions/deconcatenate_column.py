@@ -41,7 +41,8 @@ def deconcatenate_column(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"m": ["1-x", "2-y", "3-z"]}); df
+        >>> df = pd.DataFrame({"m": ["1-x", "2-y", "3-z"]})
+        >>> df
              m
         0  1-x
         1  2-y

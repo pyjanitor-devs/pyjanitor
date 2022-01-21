@@ -31,7 +31,8 @@ def select_columns(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"col1": [1, 2], "foo": [3, 4], "col2": [5, 6]}); df
+        >>> df = pd.DataFrame({"col1": [1, 2], "foo": [3, 4], "col2": [5, 6]})
+        >>> df
            col1  foo  col2
         0     1    3     5
         1     2    4     6

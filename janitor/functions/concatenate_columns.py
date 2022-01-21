@@ -25,7 +25,8 @@ def concatenate_columns(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": [1, 3, 5], "b": list("xyz")}); df
+        >>> df = pd.DataFrame({"a": [1, 3, 5], "b": list("xyz")})
+        >>> df
            a  b
         0  1  x
         1  3  y

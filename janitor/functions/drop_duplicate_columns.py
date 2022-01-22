@@ -28,12 +28,12 @@ def drop_duplicate_columns(
         ...     "a*": range(6, 9),
         ... }).clean_names(remove_special=True)
         >>> df
-        a  b  a  a
+           a  b  a  a
         0  2  3  4  6
         1  3  4  5  7
         2  4  5  6  8
         >>> df.drop_duplicate_columns(column_name="a", nth_index=1)
-        a  b  a
+           a  b  a
         0  2  3  6
         1  3  4  7
         2  4  5  8

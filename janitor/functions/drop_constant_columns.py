@@ -21,12 +21,12 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
         ... }
         >>> df = pd.DataFrame(data_dict)
         >>> df
-        a  Bell__Chart  decorated-elephant  animals     cities
+           a  Bell__Chart  decorated-elephant  animals     cities
         0  1            1                   1   rabbit  Cambridge
         1  1            2                   1  leopard   Shanghai
         2  1            3                   1     lion      Basel
         >>> df.drop_constant_columns()
-        Bell__Chart  animals     cities
+           Bell__Chart  animals     cities
         0            1   rabbit  Cambridge
         1            2  leopard   Shanghai
         2            3     lion      Basel

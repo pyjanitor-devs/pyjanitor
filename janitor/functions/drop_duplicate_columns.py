@@ -8,9 +8,9 @@ import pandas as pd
 def drop_duplicate_columns(
     df: pd.DataFrame, column_name: Hashable, nth_index: int = 0
 ) -> pd.DataFrame:
-    """Remove a duplicated column specified by column_name, its index.
+    """Remove a duplicated column specified by `column_name`.
 
-    Specifying `nth_index=0` will to remove the first column,
+    Specifying `nth_index=0` will remove the first column,
     `nth_index=1` will remove the second column,
     and so on and so forth.
 
@@ -50,12 +50,11 @@ def drop_duplicate_columns(
         if col_name == column_name
     ]
 
-    # given that a column could be duplicated,
-    # user could opt based on its order
+    # Select the column to remove based on nth_index.
     removed_col_idx = col_indexes[nth_index]
-    # get the column indexes without column that is being removed
+    # Filter out columns except for the one to be removed.
     filtered_cols = [
-        c_i for c_i, c_v in enumerate(df.columns) if c_i != removed_col_idx
+        c_i for c_i, _ in enumerate(df.columns) if c_i != removed_col_idx
     ]
 
     return df.iloc[:, filtered_cols]

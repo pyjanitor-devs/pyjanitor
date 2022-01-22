@@ -13,10 +13,10 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
         >>> import pandas as pd
         >>> import janitor
         >>> data_dict = {
-        ...     "a": [1, 1, 1] ,
-        ...     "b": [1, 2, 3] ,
-        ...     "c": [1, 1, 1] ,
-        ...     "d": ["rabbit", "leopard", "lion"] ,
+        ...     "a": [1, 1, 1],
+        ...     "b": [1, 2, 3],
+        ...     "c": [1, 1, 1],
+        ...     "d": ["rabbit", "leopard", "lion"],
         ...     "e": ["Cambridge", "Shanghai", "Basel"]
         ... }
         >>> df = pd.DataFrame(data_dict)

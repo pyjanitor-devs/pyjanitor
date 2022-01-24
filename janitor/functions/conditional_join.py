@@ -1,12 +1,9 @@
 from pandas.core.construction import extract_array
-
-# from pandas.core.reshape.merge import _MergeOperation
 from pandas.api.types import (
     is_datetime64_dtype,
     is_integer_dtype,
     is_float_dtype,
     is_string_dtype,
-    is_extension_array_dtype,
     is_categorical_dtype,
 )
 import pandas_flavor as pf
@@ -401,7 +398,7 @@ def _conditional_join_compute(
     # multiple conditions
     if eq_check:
         result = _multiple_conditional_join_eq(df, right, conditions)
-    if le_lt_check:
+    elif le_lt_check:
         result = _multiple_conditional_join_le_lt(df, right, conditions)
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
@@ -752,61 +749,29 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (df_index, right_index)
     """
-
-    eq_cond = [
-        cond
-        for cond in conditions
-        if cond[-1] == _JoinOperator.STRICTLY_EQUAL.value
-    ]
-    rest = [
-        cond
-        for cond in conditions
-        if cond[-1] != _JoinOperator.STRICTLY_EQUAL.value
-    ]
-
-    left_on, right_on, _ = zip(*eq_cond)
-
-    result = _generic_func_cond_join(
-        df,
-        right,
-        [*left_on],
-        [*right_on],
-        _JoinOperator.STRICTLY_EQUAL.value,
-        "single",
-    )
-
-    if result is None:
+    left_on, right_on, _ = zip(*conditions)
+    left_on = [*left_on]
+    right_on = [*right_on]
+    any_nulls = df.loc[:, left_on].isna().any(axis="columns")
+    if any_nulls.any(axis=None):
+        df = df.loc[~any_nulls]
+    any_nulls = right.loc[:, right_on].isna().any(axis="columns")
+    if any_nulls.any(axis=None):
+        right = right.loc[~any_nulls]
+    if df.empty | right.empty:
         return None
+    any_nulls = None
 
-    if not rest:
-        return result
+    eqs = [
+        (left_on, right_on)
+        for left_on, right_on, op in conditions
+        if op == _JoinOperator.STRICTLY_EQUAL.value
+    ]
+    left_by, right_by = zip(*eqs)
+    left_by = [*left_by]
+    right_by = [*right_by]
 
-    df_index, right_index = result
-
-    # non-equi conditions are present
-    mask = None
-    for left_on, right_on, op in rest:
-        left_c = extract_array(df[left_on], extract_numpy=True)
-        left_c = left_c[df_index]
-        right_c = extract_array(right[right_on], extract_numpy=True)
-        right_c = right_c[right_index]
-        op = operator_map[op]
-
-        if mask is None:
-            mask = op(left_c, right_c)
-        else:
-            mask &= op(left_c, right_c)
-
-    if not mask.any():
-        return None
-
-    if mask.all():
-        return df_index, right_index
-
-    if is_extension_array_dtype(mask):
-        mask = mask.to_numpy(dtype=bool, na_value=False)
-
-    return df_index[mask], right_index[mask]
+    return df, right
 
 
 def _multiple_conditional_join_le_lt(
@@ -830,6 +795,7 @@ def _multiple_conditional_join_le_lt(
     if df.empty | right.empty:
         return None
     any_nulls = None
+
     le_lt = None
     ge_gt = None
     for condition in conditions:
@@ -902,11 +868,12 @@ def _indices_less_great(first: tuple, second: tuple, rest: tuple = None):
     Returns a tuple of (left_index, right_index)
     """
 
-    # summary of code:
+    # summary of code for range join:
     # get the positions where start_left is >/>= start_right
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
+    # extend this idea for conditions that do not fall into a range join
     left_c, right_c, op = first
 
     outcome = _generic_func_cond_join(left_c, right_c, op, multiples=False)

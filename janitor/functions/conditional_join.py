@@ -402,7 +402,7 @@ def _conditional_join_compute(
         result = _multiple_conditional_join_le_lt(df, right, conditions)
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
-    # return result
+    return result
 
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
@@ -981,6 +981,7 @@ def _indices_less_great(first: tuple, second: tuple, rest: tuple = None):
             right_index[start:end] for start, end in zip(search_indices, pos)
         ]
 
+    return 1
     # get indices and filter to get exact indices
     # that meet the conditions
     right_index = np.concatenate(right_index)

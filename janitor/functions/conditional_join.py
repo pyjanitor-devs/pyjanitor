@@ -1,8 +1,8 @@
 from pandas.core.construction import extract_array
-from pandas.api.types import (
+from pandas.core.dtypes.common import (
+    is_dtype_equal,
     is_datetime64_dtype,
-    is_integer_dtype,
-    is_float_dtype,
+    is_numeric_dtype,
     is_string_dtype,
     is_categorical_dtype,
 )
@@ -280,8 +280,7 @@ def _conditional_join_type_check(
 
     permitted_types = {
         is_datetime64_dtype,
-        is_integer_dtype,
-        is_float_dtype,
+        is_numeric_dtype,
         is_string_dtype,
         is_categorical_dtype,
     }
@@ -292,28 +291,22 @@ def _conditional_join_type_check(
         raise ValueError(
             """
             conditional_join only supports
-            string, category, integer,
-            float or date dtypes.
+            string, category, numeric, or date dtypes.
             """
         )
-    cols = (left_column, right_column)
-    for func in permitted_types:
-        if all(map(func, cols)):
-            if is_categorical_dtype(left_column):
-                if (left_column.cat.ordered | right_column.cat.ordered) & (
-                    left_column.dtype != right_column.dtype
-                ):
-                    raise ValueError(
-                        "Both columns should have the same categories."
-                    )
-            break
-    else:
+
+    lk_is_cat = is_categorical_dtype(left_column)
+    rk_is_cat = is_categorical_dtype(right_column)
+    if lk_is_cat & rk_is_cat:
+        if (left_column.cat.ordered | right_column.cat.ordered) & (
+            left_column.dtype != right_column.dtype
+        ):
+            raise ValueError("Both columns should have the same categories.")
+    elif not is_dtype_equal(left_column, right_column):
         raise ValueError(
-            f"""
-             Both columns should have the same type.
-             `{left_column.name}` has {left_column.dtype} type;
-             `{right_column.name}` has {right_column.dtype} type.
-             """
+            f"Both columns should have the same type - "
+            f"`{left_column.name}` has {left_column.dtype} type;"
+            f"`{right_column.name}` has {right_column.dtype} type."
         )
 
     if (
@@ -386,6 +379,8 @@ def _conditional_join_compute(
             df[left_on], right[right_on], op, len_conditions
         )
 
+        # return result
+
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
 
@@ -402,7 +397,7 @@ def _conditional_join_compute(
         result = _multiple_conditional_join_le_lt(df, right, conditions)
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
-    return result
+    # return result
 
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
@@ -452,9 +447,9 @@ def _less_than_indices(
         right_c = right_c.sort_values(kind="stable")
 
     left_index = left_c.index.to_numpy(dtype=int, copy=False)
-    left_c = left_c.to_numpy(copy=False)
+    left_c = extract_array(left_c, extract_numpy=True)
     right_index = right_c.index.to_numpy(dtype=int, copy=False)
-    right_c = right_c.to_numpy(copy=False)
+    right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="left")
     # if any of the positions in `search_indices`
@@ -548,9 +543,9 @@ def _greater_than_indices(
         right_c = right_c.sort_values(kind="stable")
 
     left_index = left_c.index.to_numpy(dtype=int, copy=False)
-    left_c = left_c.to_numpy(copy=False)
+    left_c = extract_array(left_c, extract_numpy=True)
     right_index = right_c.index.to_numpy(dtype=int, copy=False)
-    right_c = right_c.to_numpy(copy=False)
+    right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="right")
     # if any of the positions in `search_indices`
@@ -625,6 +620,41 @@ def _not_equal_indices(
 
     dummy = np.array([], dtype=int)
 
+    # deal with nulls
+    l1_nulls = dummy
+    r1_nulls = dummy
+    l2_nulls = dummy
+    r2_nulls = dummy
+    any_left_nulls = left_c.isna()
+    any_right_nulls = right_c.isna()
+    if any_left_nulls.any():
+        l1_nulls = left_c.index[any_left_nulls.array]
+        l1_nulls = l1_nulls.to_numpy(copy=False)
+        r1_nulls = right_c.index
+        # avoid NAN duplicates
+        if any_right_nulls.any():
+            r1_nulls = r1_nulls[~any_right_nulls.array]
+        r1_nulls = r1_nulls.to_numpy(copy=False)
+        nulls_count = l1_nulls.size
+        # blow up nulls to match length of right
+        l1_nulls = np.tile(l1_nulls, r1_nulls.size)
+        # ensure length of right matches left
+        if nulls_count > 1:
+            r1_nulls = np.repeat(r1_nulls, nulls_count)
+    if any_right_nulls.any():
+        r2_nulls = right_c.index[any_right_nulls.array]
+        r2_nulls = r2_nulls.to_numpy(copy=False)
+        l2_nulls = left_c.index
+        nulls_count = r2_nulls.size
+        # blow up nulls to match length of left
+        r2_nulls = np.tile(r2_nulls, l2_nulls.size)
+        # ensure length of left matches right
+        if nulls_count > 1:
+            l2_nulls = np.repeat(l2_nulls, nulls_count)
+
+    l1_nulls = np.concatenate([l1_nulls, l2_nulls])
+    r1_nulls = np.concatenate([r1_nulls, r2_nulls])
+
     outcome = _less_than_indices(
         left_c, right_c, strict=True, len_conditions=True
     )
@@ -645,10 +675,11 @@ def _not_equal_indices(
     else:
         gt_left, gt_right = outcome
 
-    if (not lt_left.size > 0) and (not gt_left.size > 0):
+    left_c = np.concatenate([lt_left, gt_left, l1_nulls])
+    right_c = np.concatenate([lt_right, gt_right, r1_nulls])
+
+    if (not left_c.size > 0) & (not right_c.size > 0):
         return None
-    left_c = np.concatenate([lt_left, gt_left])
-    right_c = np.concatenate([lt_right, gt_right])
 
     return left_c, right_c
 
@@ -713,16 +744,16 @@ def _multiple_conditional_join_ne(
     Returns a tuple of (left_index, right_index)
     """
 
-    left_on, right_on, _ = zip(*conditions)
-    any_nulls = df.loc[:, [*left_on]].isna().any(axis="columns")
-    if any_nulls.any(axis=None):
-        df = df.loc[~any_nulls]
-    any_nulls = right.loc[:, [*right_on]].isna().any(axis="columns")
-    if any_nulls.any(axis=None):
-        right = right.loc[~any_nulls]
-    if df.empty | right.empty:
-        return None
-    any_nulls = None
+    # left_on, right_on, _ = zip(*conditions)
+    # any_nulls = df.loc[:, [*left_on]].isna().any(axis="columns")
+    # if any_nulls.any(axis=None):
+    #     df = df.loc[~any_nulls]
+    # any_nulls = right.loc[:, [*right_on]].isna().any(axis="columns")
+    # if any_nulls.any(axis=None):
+    #     right = right.loc[~any_nulls]
+    # if df.empty | right.empty:
+    #     return None
+    # any_nulls = None
 
     first, *rest = conditions
     left_on, right_on, op = first

@@ -30,16 +30,16 @@ def limit_column_characters(
         ...     "this_is_getting_out_of_hand": list("pqr"),
         ... }
         >>> df = pd.DataFrame(data_dict)
-        >>> df
+        >>> df  # doctest: +SKIP
            really_long_name  another_really_long_name another_really_longer_name this_is_getting_out_of_hand
         0                 9                         2                          x                           p
         1                 8                         4                          y                           q
         2                 7                         6                          z                           r
         >>> df.limit_column_characters(7)
            really_  another another_1 this_is
-        0        0        2         x       p
-        1        1        4         y       q
-        2        2        6         z       r
+        0        9        2         x       p
+        1        8        4         y       q
+        2        7        6         z       r
 
     :param df: A pandas DataFrame.
     :param column_length: Character length for which to truncate all columns.

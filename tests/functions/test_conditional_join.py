@@ -517,95 +517,6 @@ def test_single_condition_not_equal_datetime(df, right):
 
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_equality_string(df, right):
-    """Test output for a single condition. "=="."""
-
-    left_on, right_on = ["C", "Strings"]
-    expected = df.dropna(subset=[left_on]).merge(
-        right.dropna(subset=[right_on]), left_on=left_on, right_on=right_on
-    )
-    expected = expected.reset_index(drop=True)
-
-    expected = expected.filter([left_on, right_on])
-    actual = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
-    )
-
-    actual = actual.filter([left_on, right_on])
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.xfail(
-    reason="""sometimes, categories are coerced to objects;
-              might be a pandas version issue.
-            """
-)
-@given(df=conditional_df(), right=conditional_right())
-def test_single_condition_equality_category(df, right):
-    """Test output for a single condition. "=="."""
-
-    left_on, right_on = ["C", "Strings"]
-    df = df.assign(C=df["C"].astype("category"))
-    right = right.assign(Strings=right["Strings"].astype("category"))
-    expected = df.dropna(subset=[left_on]).merge(
-        right.dropna(subset=[right_on]), left_on=left_on, right_on=right_on
-    )
-    expected = expected.reset_index(drop=True)
-
-    expected = expected.filter([left_on, right_on])
-    actual = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
-    )
-
-    actual = actual.filter([left_on, right_on])
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.turtle
-@given(df=conditional_df(), right=conditional_right())
-def test_single_condition_equality_numeric(df, right):
-    """Test output for a single condition. "=="."""
-
-    left_on, right_on = ["A", "Integers"]
-    df = df.assign(A=df["A"].astype("Int64"))
-    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
-    df.loc[0, "A"] = pd.NA
-    right.loc[0, "Integers"] = pd.NA
-    expected = df.dropna(subset=[left_on]).merge(
-        right.dropna(subset=[right_on]), left_on=left_on, right_on=right_on
-    )
-    expected = expected.reset_index(drop=True)
-
-    expected = expected.filter([left_on, right_on])
-    actual = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
-    )
-
-    actual = actual.filter([left_on, right_on])
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.turtle
-@given(df=conditional_df(), right=conditional_right())
-def test_single_condition_equality_datetime(df, right):
-    """Test output for a single condition. "=="."""
-
-    left_on, right_on = ["E", "Dates"]
-    expected = df.dropna(subset=[left_on]).merge(
-        right.dropna(subset=[right_on]), left_on=left_on, right_on=right_on
-    )
-    expected = expected.reset_index(drop=True)
-    expected = expected.filter([left_on, right_on])
-    actual = df.conditional_join(
-        right, (left_on, right_on, "=="), how="inner", sort_by_appearance=False
-    )
-
-    actual = actual.filter([left_on, right_on])
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.turtle
-@given(df=conditional_df(), right=conditional_right())
 def test_how_left(df, right):
     """Test output when `how==left`. "<="."""
 
@@ -953,38 +864,6 @@ def test_dual_ne_extension(df, right):
     assert_frame_equal(expected, actual)
 
 
-# @settings(deadline=None)
-# @given(df=conditional_df(), right=conditional_right())
-# def test_dual_ne_extension_right(df, right):
-#     """
-#     Test output for multiple conditions. `!=`
-#     """
-
-#     filters = ["A", "Integers", "B", "Numeric"]
-#     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
-#     expected = (
-#         df#.dropna(subset=["A", "B"])
-#         .assign(t=1)
-#         .merge(
-#             right#.dropna(subset=["Integers", "Numeric"])
-#             .assign(t=1), on="t"
-#         )
-#         .query("A != Integers and B != Numeric")
-#         .reset_index(drop=True)
-#     )
-#     expected = expected.filter(filters)
-#     actual = df.conditional_join(
-#         right,
-#         ("A", "Integers", "!="),
-#         ("B", "Numeric", "!="),
-#         how="inner",
-#         sort_by_appearance=True,
-#     )
-
-#     actual = actual.filter(filters)
-#     assert_frame_equal(expected, actual)
-
-
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_dates(df, right):
@@ -1048,9 +927,8 @@ def test_dual_conditions_eq_and_ne(df, right):
     A, B, C, D = ("B", "Numeric", "E", "Dates")
     expected = (
         df.merge(right, left_on=A, right_on=B)
-        .dropna(subset=[A, B])
-        .query(f"{C} != {D}")
-        .reset_index(drop=True)
+        # .dropna(subset=[A, B])
+        .query(f"{C} != {D}").reset_index(drop=True)
     )
     expected = expected.filter([A, B, C, D])
     actual = df.conditional_join(
@@ -1073,9 +951,8 @@ def test_dual_conditions_ne_and_eq(df, right):
     A, B, C, D = ("A", "Integers", "E", "Dates")
     expected = (
         df.merge(right, left_on=C, right_on=D)
-        .dropna(subset=[C, D])
-        .query(f"{A} != {B}")
-        .reset_index(drop=True)
+        # .dropna(subset=[C, D])
+        .query(f"{A} != {B}").reset_index(drop=True)
     )
     expected = expected.filter([A, B, C, D])
     actual = df.conditional_join(
@@ -1099,10 +976,11 @@ def test_gt_lt_ne_conditions(df, right):
 
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
-        df.dropna(subset=["A", "B", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
         .merge(
-            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
+                t=1
+            ),
             on="t",
         )
         .query("A > Integers and B < Numeric and E != Dates")
@@ -1124,6 +1002,70 @@ def test_gt_lt_ne_conditions(df, right):
 
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
+def test_gt_ne_conditions(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
+        .merge(
+            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
+                t=1
+            ),
+            on="t",
+        )
+        .query("A > Integers  and E != Dates")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", ">"),
+        ("E", "Dates", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_le_ne_conditions(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
+        .merge(
+            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
+                t=1
+            ),
+            on="t",
+        )
+        .query("A <= Integers  and E != Dates")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(filters)
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", "<="),
+        ("E", "Dates", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    )
+
+    actual = actual.filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
 def test_gt_lt_ne_start(df, right):
     """
     Test output for multiple conditions.
@@ -1131,10 +1073,9 @@ def test_gt_lt_ne_start(df, right):
 
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
-        df.dropna(subset=["A", "B", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
         .merge(
-            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(
+            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
                 t=1, C="C"
             ),
             on="t",
@@ -1168,10 +1109,11 @@ def test_ge_le_ne_extension_array(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.dropna(subset=["A", "B", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
         .merge(
-            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
+                t=1
+            ),
             on="t",
         )
         .query("A != Integers and B < Numeric and E >= Dates")
@@ -1203,10 +1145,11 @@ def test_ge_lt_ne_extension(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.dropna(subset=["A", "B", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
         .merge(
-            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
+                t=1
+            ),
             on="t",
         )
         .query(
@@ -1266,10 +1209,9 @@ def test_dual_ge_and_le_diff_numbers(df, right):
     r_ge, r_le = ["Integers", "Dates"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.dropna(subset=["A", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["A", "E"])
         .merge(
-            right.dropna(subset=["Integers", "Dates"]).assign(t=1),
+            right.assign(t=1),  # .dropna(subset=["Integers", "Dates"])
             on="t",
             how="inner",
             sort=False,
@@ -1301,10 +1243,11 @@ def test_ge_lt_ne_extension_variant(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.dropna(subset=["A", "B", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
         .merge(
-            right.dropna(subset=["Integers", "Numeric", "Dates"]).assign(t=1),
+            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
+                t=1
+            ),
             on="t",
         )
         .query(
@@ -1396,10 +1339,9 @@ def test_dual_ge_and_le_range_numbers(df, right):
     r_ge, r_le = ["Integers", "Dates"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.dropna(subset=["A", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["A", "E"])
         .merge(
-            right.dropna(subset=["Integers", "Dates"]).assign(t=1),
+            right.assign(t=1),  # .dropna(subset=["Integers", "Dates"])
             on="t",
             how="inner",
             sort=False,
@@ -1456,10 +1398,11 @@ def test_multiple_non_equi(df, right):
     r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.dropna(subset=["B", "A", "E"])
-        .assign(t=1)
+        df.assign(t=1)  # .dropna(subset=["B", "A", "E"])
         .merge(
-            right.dropna(subset=["Floats", "Integers", "Dates"]).assign(t=1),
+            right.assign(  # .dropna(subset=["Floats", "Integers", "Dates"])
+                t=1
+            ),
             on="t",
             how="inner",
             sort=False,
@@ -1490,12 +1433,9 @@ def test_multiple_non_equii(df, right):
     r_eq, r_ge, r_le, ex2 = ["Floats", "Integers", "Dates", "Numeric"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
     expected = (
-        df.dropna(subset=["B", "A", "E"])
-        .assign(t=1)
+        df.assign(t=1)
         .merge(
-            right.dropna(
-                subset=["Floats", "Integers", "Dates", "Numeric"]
-            ).assign(t=1),
+            right.assign(t=1),
             on="t",
             how="inner",
             sort=False,
@@ -1522,6 +1462,76 @@ def test_multiple_non_equii(df, right):
 
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eqi(df, right):
+    """Test output for multiple conditions."""
+
+    l_eq, l_ge, l_le = ["B", "A", "E"]
+    r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)  # .dropna(subset=["B", "A", "E"])
+        .merge(
+            right.assign(  # .dropna(subset=["Floats", "Integers", "Dates"])
+                t=1
+            ),
+            on="t",
+            how="inner",
+            sort=False,
+        )
+        .query(f"{l_ge} >= {r_ge} and {l_le} > {r_le} and {l_eq} > {r_eq}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_ge, r_ge, ">="),
+        (l_le, r_le, ">"),
+        (l_eq, r_eq, ">"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    # actual = actual.droplevel(0, 1)
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq(df, right):
+    """Test output for multiple conditions."""
+
+    l_eq, l_ge, l_le = ["B", "A", "E"]
+    r_eq, r_ge, r_le = ["Floats", "Integers", "Dates"]
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.assign(t=1)  # .dropna(subset=["B", "A", "E"])
+        .merge(
+            right.assign(  # .dropna(subset=["Floats", "Integers", "Dates"])
+                t=1
+            ),
+            on="t",
+            how="inner",
+            sort=False,
+        )
+        .query(f"{l_ge} <= {r_ge} and {l_le} < {r_le} and {l_eq} < {r_eq}")
+        .reset_index(drop=True)
+    )
+    expected = expected.filter(columns)
+    actual = df.conditional_join(
+        right,
+        (l_ge, r_ge, "<="),
+        (l_le, r_le, "<"),
+        (l_eq, r_eq, "<"),
+        how="inner",
+        sort_by_appearance=True,
+    )
+    # actual = actual.droplevel(0, 1)
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""
 
@@ -1534,9 +1544,8 @@ def test_multiple_eqs(df, right):
             how="inner",
             sort=False,
         )
-        .dropna(subset=["B", "A", "Floats", "Integers"])
-        .query("E != Dates")
-        .reset_index(drop=True)
+        # .dropna(subset=["B", "A", "Floats", "Dates"])
+        .query("E != Dates").reset_index(drop=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(
@@ -1568,9 +1577,8 @@ def test_multiple_eqs_extension_array(df, right):
             how="inner",
             sort=False,
         )
-        .dropna(subset=["B", "E", "Floats", "Integers"])
-        .query("A != Integers")
-        .reset_index(drop=True)
+        # .dropna(subset=["B", "E", "Floats", "Dates"])
+        .query("A != Integers").reset_index(drop=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(
@@ -1586,39 +1594,39 @@ def test_multiple_eqs_extension_array(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None)
-@given(df=conditional_df(), right=conditional_right())
-def test_multiple_eqs_only(df, right):
-    """Test output for multiple conditions."""
+# @settings(deadline=None)
+# @given(df=conditional_df(), right=conditional_right())
+# def test_multiple_eqs_only(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    df = df.assign(A=df["A"].astype("Int64"), C=df["C"].astype("string"))
-    right = right.assign(
-        Integers=right["Integers"].astype(pd.Int64Dtype()),
-        Strings=right["Strings"].astype("string"),
-    )
-    df.loc[0, "A"] = pd.NA
-    right.loc[0, "Integers"] = pd.NA
-    expected = (
-        df.merge(
-            right,
-            left_on=["B", "A", "E"],
-            right_on=["Floats", "Integers", "Dates"],
-            how="inner",
-            sort=False,
-        )
-        .dropna(subset=columns)
-        .reset_index(drop=True)
-    )
-    expected = expected.filter(columns)
-    actual = df.conditional_join(
-        right,
-        ("E", "Dates", "=="),
-        ("B", "Floats", "=="),
-        ("A", "Integers", "=="),
-        how="inner",
-        sort_by_appearance=False,
-    )
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     df = df.assign(A=df["A"].astype("Int64"), C=df["C"].astype("string"))
+#     right = right.assign(
+#         Integers=right["Integers"].astype(pd.Int64Dtype()),
+#         Strings=right["Strings"].astype("string"),
+#     )
+#     df.loc[0, "A"] = pd.NA
+#     right.loc[0, "Integers"] = pd.NA
+#     expected = (
+#         df.merge(
+#             right,
+#             left_on=["B", "A", "E"],
+#             right_on=["Floats", "Integers", "Dates"],
+#             how="inner",
+#             sort=False,
+#         )
+#         .dropna(subset=columns)
+#         .reset_index(drop=True)
+#     )
+#     expected = expected.filter(columns)
+#     actual = df.conditional_join(
+#         right,
+#         ("E", "Dates", "=="),
+#         ("B", "Floats", "=="),
+#         ("A", "Integers", "=="),
+#         how="inner",
+#         sort_by_appearance=False,
+#     )
 
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)

@@ -5,7 +5,9 @@ from pandas.core.dtypes.common import (
     is_numeric_dtype,
     is_string_dtype,
     is_categorical_dtype,
+    is_extension_array_dtype,
 )
+from pandas.core.reshape.merge import _MergeOperation
 import pandas_flavor as pf
 import pandas as pd
 from typing import Union
@@ -370,13 +372,13 @@ def _conditional_join_compute(
     df.index = range(0, len(df))
     right.index = range(0, len(right))
 
-    len_conditions = len(conditions) == 1
+    multiple_conditions = len(conditions) > 1
 
-    if len_conditions:
+    if not multiple_conditions:
         left_on, right_on, op = conditions[0]
 
         result = _generic_func_cond_join(
-            df[left_on], right[right_on], op, len_conditions
+            df[left_on], right[right_on], op, multiple_conditions
         )
 
         # return result
@@ -413,7 +415,7 @@ def _less_than_indices(
     left_c: pd.Series,
     right_c: pd.Series,
     strict: bool,
-    len_conditions: bool,
+    multiple_conditions: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -423,7 +425,7 @@ def _less_than_indices(
     where `left_c` is less than
     (but not equal to) `right_c` are returned.
 
-    if len_conditions, a tuple of integer indexes for left_c and right_c
+    if multiple_conditions, a tuple of integer indexes for left_c and right_c
     is returned; else a tuple of the index for left_c, right_c, as well
     as the positions of left_c in right_c is returned.
     """
@@ -432,16 +434,15 @@ def _less_than_indices(
     if left_c.min() > right_c.max():
         return None
 
-    if len_conditions:
-        any_nulls = pd.isna(right_c.array)
-        if any_nulls.any():
-            right_c = right_c[~any_nulls]
-        any_nulls = pd.isna(left_c.array)
-        if any_nulls.any():
-            left_c = left_c[~any_nulls]
-        if left_c.empty | right_c.empty:
-            return None
-        any_nulls = None
+    any_nulls = pd.isna(right_c.array)
+    if any_nulls.any():
+        right_c = right_c[~any_nulls]
+    any_nulls = pd.isna(left_c.array)
+    if any_nulls.any():
+        left_c = left_c[~any_nulls]
+    if left_c.empty | right_c.empty:
+        return None
+    any_nulls = None
 
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values(kind="stable")
@@ -500,7 +501,7 @@ def _less_than_indices(
         if search_indices.size == 0:
             return None
 
-    if not len_conditions:
+    if multiple_conditions:
         return left_index, right_index, search_indices
 
     right_c = [right_index[ind:len_right] for ind in search_indices]
@@ -510,7 +511,10 @@ def _less_than_indices(
 
 
 def _greater_than_indices(
-    left_c: pd.Series, right_c: pd.Series, strict: bool, len_conditions: bool
+    left_c: pd.Series,
+    right_c: pd.Series,
+    strict: bool,
+    multiple_conditions: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -528,16 +532,15 @@ def _greater_than_indices(
     if left_c.max() < right_c.min():
         return None
 
-    if len_conditions:
-        any_nulls = pd.isna(right_c.array)
-        if any_nulls.any():
-            right_c = right_c[~any_nulls]
-        any_nulls = pd.isna(left_c.array)
-        if any_nulls.any():
-            left_c = left_c[~any_nulls]
-        if left_c.empty | right_c.empty:
-            return None
-        any_nulls = None
+    any_nulls = pd.isna(right_c.array)
+    if any_nulls.any():
+        right_c = right_c[~any_nulls]
+    any_nulls = pd.isna(left_c.array)
+    if any_nulls.any():
+        left_c = left_c[~any_nulls]
+    if left_c.empty | right_c.empty:
+        return None
+    any_nulls = None
 
     if not right_c.is_monotonic_increasing:
         right_c = right_c.sort_values(kind="stable")
@@ -593,7 +596,7 @@ def _greater_than_indices(
         if search_indices.size == 0:
             return None
 
-    if not len_conditions:
+    if multiple_conditions:
         return left_index, right_index, search_indices
 
     right_c = [right_index[:ind] for ind in search_indices]
@@ -656,7 +659,7 @@ def _not_equal_indices(
     r1_nulls = np.concatenate([r1_nulls, r2_nulls])
 
     outcome = _less_than_indices(
-        left_c, right_c, strict=True, len_conditions=True
+        left_c, right_c, strict=True, multiple_conditions=False
     )
 
     if outcome is None:
@@ -666,7 +669,7 @@ def _not_equal_indices(
         lt_left, lt_right = outcome
 
     outcome = _greater_than_indices(
-        left_c, right_c, strict=True, len_conditions=True
+        left_c, right_c, strict=True, multiple_conditions=False
     )
 
     if outcome is None:
@@ -688,7 +691,7 @@ def _generic_func_cond_join(
     left_c: pd.Series,
     right_c: pd.Series,
     op: str,
-    multiples: bool,
+    multiple_conditions: bool,
 ):
     """
     Generic function to call any of the individual functions
@@ -705,9 +708,11 @@ def _generic_func_cond_join(
         strict = True
 
     if op in less_than_join_types:
-        return _less_than_indices(left_c, right_c, strict, multiples)
+        return _less_than_indices(left_c, right_c, strict, multiple_conditions)
     elif op in greater_than_join_types:
-        return _greater_than_indices(left_c, right_c, strict, multiples)
+        return _greater_than_indices(
+            left_c, right_c, strict, multiple_conditions
+        )
     elif op == _JoinOperator.NOT_EQUAL.value:
         return _not_equal_indices(left_c, right_c)
 
@@ -719,14 +724,14 @@ def _generate_indices(
 
     for condition in conditions:
         left_c, right_c, op = condition
-        left_c = left_c.loc[left_index]
-        left_c = left_c.to_numpy(copy=False)
-        right_c = right_c.loc[right_index]
-        right_c = right_c.to_numpy(copy=False)
+        left_c = extract_array(left_c, extract_numpy=True)[left_index]
+        right_c = extract_array(right_c, extract_numpy=True)[right_index]
         op = operator_map[op]
         mask = op(left_c, right_c)
         if not mask.any():
             return None
+        if is_extension_array_dtype(mask):
+            mask = mask.to_numpy(dtype=bool, na_value=False)
         if not mask.all():
             left_index = left_index[mask]
             right_index = right_index[mask]
@@ -746,8 +751,10 @@ def _multiple_conditional_join_ne(
 
     first, *rest = conditions
     left_on, right_on, op = first
+
+    # get indices from the first condition
     result = _generic_func_cond_join(
-        df[left_on], right[right_on], op, multiples=True
+        df[left_on], right[right_on], op, multiple_conditions=False
     )
 
     if result is None:
@@ -769,29 +776,32 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (df_index, right_index)
     """
-    left_on, right_on, _ = zip(*conditions)
-    left_on = [*left_on]
-    right_on = [*right_on]
-    any_nulls = df.loc[:, left_on].isna().any(axis="columns")
-    if any_nulls.any(axis=None):
-        df = df.loc[~any_nulls]
-    any_nulls = right.loc[:, right_on].isna().any(axis="columns")
-    if any_nulls.any(axis=None):
-        right = right.loc[~any_nulls]
-    if df.empty | right.empty:
-        return None
-    any_nulls = None
 
     eqs = [
         (left_on, right_on)
         for left_on, right_on, op in conditions
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
-    left_by, right_by = zip(*eqs)
-    left_by = [*left_by]
-    right_by = [*right_by]
 
-    return df, right
+    left_on, right_on = zip(*eqs)
+    left_on = [*left_on]
+    right_on = [*right_on]
+
+    # get merge indices
+    left_index, right_index = _MergeOperation(
+        df, right, left_on=left_on, right_on=right_on, sort=False, copy=False
+    )._get_join_indexers()
+
+    if not left_index.size > 0:
+        return None
+
+    rest = (
+        (df[left_on], right[right_on], op)
+        for left_on, right_on, op in conditions
+        if op != _JoinOperator.STRICTLY_EQUAL.value
+    )
+
+    return _generate_indices(left_index, right_index, rest)
 
 
 def _multiple_conditional_join_le_lt(
@@ -831,38 +841,48 @@ def _multiple_conditional_join_le_lt(
         else:
             rest = None
 
-        return _indices_less_great(df, right, ge_gt, le_lt, rest)
+        return _range_indices(df, right, ge_gt, le_lt, rest)
 
     if le_lt:
         conditions = (
             condition for condition in conditions if condition != le_lt
         )
-        second, *rest = conditions
-        if rest:
-            rest = (
-                (df[left_on], right[right_on], op)
-                for left_on, right_on, op in rest
-            )
-        else:
-            rest = None
-        return _indices_less_great(df, right, le_lt, second, rest)
+
+        conditions = (
+            (df[left_on], right[right_on], op)
+            for left_on, right_on, op in conditions
+        )
+
+        left_on, right_on, op = le_lt
+        outcome = _generic_func_cond_join(
+            df[left_on], right[right_on], op, multiple_conditions=False
+        )
+        if outcome is None:
+            return None
+
+        return _generate_indices(*outcome, conditions)
 
     if ge_gt:
         conditions = (
             condition for condition in conditions if condition != ge_gt
         )
-        second, *rest = conditions
-        if rest:
-            rest = (
-                (df[left_on], right[right_on], op)
-                for left_on, right_on, op in rest
-            )
-        else:
-            rest = None
-        return _indices_less_great(df, right, ge_gt, second, rest)
+
+        conditions = (
+            (df[left_on], right[right_on], op)
+            for left_on, right_on, op in conditions
+        )
+
+        left_on, right_on, op = ge_gt
+        outcome = _generic_func_cond_join(
+            df[left_on], right[right_on], op, multiple_conditions=False
+        )
+        if outcome is None:
+            return None
+
+        return _generate_indices(*outcome, conditions)
 
 
-def _indices_less_great(
+def _range_indices(
     df: pd.DataFrame,
     right: pd.DataFrame,
     first: tuple,
@@ -870,7 +890,7 @@ def _indices_less_great(
     rest: tuple = None,
 ):
     """
-    Retrieve index positions for multiple less_greater joins.
+    Retrieve index positions for range/interval joins.
 
     Idea inspired by article:
     https://www.vertica.com/blog/what-is-a-range-join-and-why-is-it-so-fastba-p223413/
@@ -883,11 +903,14 @@ def _indices_less_great(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
-    # extend this idea for conditions that do not fall into a range join
     left_on, right_on, op = first
 
-    outcome = _generic_func_cond_join(
-        df[left_on], right[right_on], op, multiples=False
+    strict = False
+    if op == _JoinOperator.GREATER_THAN.value:
+        strict = True
+
+    outcome = _greater_than_indices(
+        df[left_on], right[right_on], strict, multiple_conditions=True
     )
 
     if outcome is None:
@@ -898,20 +921,34 @@ def _indices_less_great(
     right_c = right.loc[right_index, right_on]
     left_c = df.loc[left_index, left_on]
     left_c = extract_array(left_c, extract_numpy=True)
-    operator_check = op in less_than_join_types
     op = operator_map[op]
     pos = np.copy(search_indices)
     counter = np.arange(left_index.size)
+    ext_arr = is_extension_array_dtype(left_c)
 
-    if operator_check:
-        dupes = right_c.duplicated(keep="first")
-        right_c = extract_array(right_c, extract_numpy=True)
-        # use position, not label
-        uniqs_index = np.arange(right_c.size)
-        if dupes.any():
-            uniqs_index = uniqs_index[~dupes]
-            right_c = right_c[~dupes]
+    dupes = right_c.duplicated(keep="first")
+    right_c = extract_array(right_c, extract_numpy=True)
+    # use position, not label
+    uniqs_index = np.arange(right_c.size)
+    if dupes.any():
+        uniqs_index = uniqs_index[~dupes]
+        right_c = right_c[~dupes]
 
+    if ext_arr:
+        for ind in range(uniqs_index.size):
+            keep_rows = op(left_c, right_c[ind])
+            keep_rows = keep_rows.to_numpy(dtype=bool, na_value=False)
+            # get the index positions where left_c is </<= right_c
+            # that minimum position combined with the equivalent position
+            # from search_indices becomes our search space
+            # for the equivalent left_c index
+            if keep_rows.any():
+                pos[counter[keep_rows]] = uniqs_index[ind]
+                counter = counter[~keep_rows]
+                left_c = left_c[~keep_rows]
+            if not counter.size > 0:
+                break
+    else:
         for ind in range(uniqs_index.size):
             keep_rows = op(left_c, right_c[ind])
             # get the index positions where left_c is </<= right_c
@@ -924,71 +961,26 @@ def _indices_less_great(
                 left_c = left_c[~keep_rows]
             if not counter.size > 0:
                 break
-        dupes = None
-        uniqs_index = None
-        # no point searching within (a, b)
-        # if a == b
-        # since range(a, b) yields none
-        keep_rows = pos < search_indices
 
-        if not keep_rows.any():
-            return None
+    dupes = None
+    uniqs_index = None
+    # no point searching within (a, b)
+    # if a == b
+    # since range(a, b) yields none
+    keep_rows = pos < search_indices
 
-        if not keep_rows.all():
-            left_index = left_index[keep_rows]
-            pos = pos[keep_rows]
-            search_indices = search_indices[keep_rows]
+    if not keep_rows.any():
+        return None
 
-        repeater = search_indices - pos
-        right_index = [
-            right_index[start:end] for start, end in zip(pos, search_indices)
-        ]
+    if not keep_rows.all():
+        left_index = left_index[keep_rows]
+        pos = pos[keep_rows]
+        search_indices = search_indices[keep_rows]
 
-    else:  # op in less_than_join_types
-        dupes = right_c.duplicated(keep="last")
-        right_c = extract_array(right_c, extract_numpy=True)
-        # use position, not label
-        uniqs_index = np.arange(right_c.size)
-        if dupes.any():
-            uniqs_index = uniqs_index[~dupes]
-            right_c = right_c[~dupes]
-
-        right_c = right_c[::-1]
-        uniqs_index = uniqs_index[::-1]
-        for ind in range(uniqs_index.size):
-            keep_rows = op(left_c, right_c[ind])
-            # get the index positions where left_c is </<= right_c
-            # that minimum position combined with the equivalent position
-            # from search_indices becomes our search space
-            # for the equivalent left_c index
-            if keep_rows.any():
-                pos[counter[keep_rows]] = uniqs_index[ind]
-                counter = counter[~keep_rows]
-                left_c = left_c[~keep_rows]
-            if not counter.size > 0:
-                break
-        dupes = None
-        uniqs_index = None
-        # no point searching within (a, b)
-        # if a == b
-        # since range(a, b) yields none
-        # also, shift by one to include the bottom row,
-        # during slicing
-        pos += 1
-        keep_rows = pos > search_indices
-
-        if not keep_rows.any():
-            return None
-
-        if not keep_rows.all():
-            left_index = left_index[keep_rows]
-            pos = pos[keep_rows]
-            search_indices = search_indices[keep_rows]
-
-        repeater = pos - search_indices
-        right_index = [
-            right_index[start:end] for start, end in zip(search_indices, pos)
-        ]
+    repeater = search_indices - pos
+    right_index = [
+        right_index[start:end] for start, end in zip(pos, search_indices)
+    ]
 
     # get indices and filter to get exact indices
     # that meet the conditions
@@ -997,11 +989,17 @@ def _indices_less_great(
 
     # here we search for actual positions
     # where left_c is </<= right_c
-    # or left_c is >/>= right_c
+    # safe to index the arrays, since we are picking the positions
+    # which are all in the original `df` and `right`
+    # doing this allows some speed gains
+    # while still ensuring correctness
     left_c = extract_array(df[left_on], extract_numpy=True)[left_index]
     right_c = extract_array(right[right_on], extract_numpy=True)[right_index]
 
     mask = op(left_c, right_c)
+
+    if ext_arr:
+        mask = mask.to_numpy(dtype=bool, na_value=False)
 
     if not mask.any():
         return None

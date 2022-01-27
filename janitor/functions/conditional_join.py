@@ -64,39 +64,61 @@ def conditional_join(
     a single index column is returned; else, a MultiIndex column
     is returned.
 
-    Functional usage syntax:
+    Example:
 
-    ```python
-        import pandas as pd
-        import janitor as jn
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df1 = pd.DataFrame({"id": [1, 1, 1, 2, 2, 3],
+                                "value_1": [2, 5, 7, 1, 3, 4]})
 
-        df = pd.DataFrame(...)
-        right = pd.DataFrame(...)
+        >>> df2 = pd.DataFrame({"id": [1, 1, 1, 1, 2, 2, 2, 3],
+                                "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+                                "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+                              })
 
-        df = jn.conditional_join(
-                df,
-                right,
-                (col_from_df, col_from_right, join_operator),
-                (col_from_df, col_from_right, join_operator),
-                ...,
-                how = 'inner' # or left/right
-                sort_by_appearance = True # or False
-                )
-    ```
+        >>> df1
+            id  value_1
+            0   1        2
+            1   1        5
+            2   1        7
+            3   2        1
+            4   2        3
+            5   3        4
 
-    Method chaining syntax:
+        >>> df2
+            id  value_2A  value_2B
+            0   1         0         1
+            1   1         3         5
+            2   1         7         9
+            3   1        12        15
+            4   2         0         1
+            5   2         2         4
+            6   2         3         6
+            7   3         1         3
 
-    ```python
-        df.conditional_join(
-            right,
-            (col_from_df, col_from_right, join_operator),
-            (col_from_df, col_from_right, join_operator),
-            ...,
-            how = 'inner' # or left/right
-            sort_by_appearance = True # or False
+        >>> df1.conditional_join(
+                df2,
+                ("value_1", "value_2A", ">="),
+                ("value_1", "value_2B", "<=")
             )
-    ```
 
+               left         right
+                 id value_1    id value_2A value_2B
+            0     1       2     3        1        3
+            1     1       2     2        2        4
+            2     1       5     1        3        5
+            3     1       5     2        3        6
+            4     1       7     1        7        9
+            5     2       1     1        0        1
+            6     2       1     2        0        1
+            7     2       1     3        1        3
+            8     2       3     3        1        3
+            9     2       3     2        2        4
+            10    2       3     1        3        5
+            11    2       3     2        3        6
+            12    3       4     2        2        4
+            13    3       4     1        3        5
+            14    3       4     2        3        6
 
     :param df: A Pandas DataFrame.
     :param right: Named Series or DataFrame to join to.

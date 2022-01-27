@@ -501,9 +501,6 @@ def _less_than_indices(
         if search_indices.size == 0:
             return None
 
-    if multiple_conditions:
-        return left_index, right_index, search_indices
-
     right_c = [right_index[ind:len_right] for ind in search_indices]
     right_c = np.concatenate(right_c)
     left_c = np.repeat(left_index, len_right - search_indices)

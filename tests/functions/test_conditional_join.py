@@ -39,7 +39,7 @@ def test_right_df(df):
 def test_right_series(df, s):
     """Raise ValueError if `right` is not a named Series."""
     with pytest.raises(ValueError):
-        df.conditional_join(s, ("A", "non", "=="))
+        df.conditional_join(s, ("A", "non", ">="))
 
 
 @given(df=conditional_df())
@@ -185,6 +185,21 @@ def test_dtype_strings_non_equi(df, right):
     """
     with pytest.raises(ValueError):
         df.conditional_join(right, ("C", "Strings", "<"))
+
+
+@given(df=conditional_df(), right=conditional_right())
+def test_unequal_categories(df, right):
+    """
+    Raise ValueError if the dtypes are both categories
+    and do not match.
+    """
+    cat1 = pd.api.types.CategoricalDtype(right.Strings.unique(), ordered=True)
+    df = df.astype({"C": "category"})
+    right = right.astype({"Strings": cat1})
+    with pytest.raises(ValueError):
+        df.conditional_join(
+            right, ("C", "Strings", "=="), ("B", "Numeric", "<=")
+        )
 
 
 @given(df=conditional_df(), s=conditional_series())

@@ -10,7 +10,7 @@ provides a clean API for cleaning data.
 ## Quick start
 
 - Installation: `conda install -c conda-forge pyjanitor`
-- Check out the collection of [general functions](./api/functions)
+- Check out the collection of [general functions](./api/functions.md)
 
 ## Why janitor?
 
@@ -58,7 +58,7 @@ First off, here is the textual description of a data cleaning pathway:
 5. Add a new column.
 
 Let's import some libraries
-and begin with some sample data for this example :
+and begin with some sample data for this example:
 
 ```python
 # Libraries
@@ -103,7 +103,7 @@ df['Google'] = [450.0, 550.0, 800.0]
 
 # Output looks like this:
 # Out[15]:
-# SalesMonth  Amazon  Facebook  Google
+#   SalesMonth  Amazon  Facebook  Google
 # 0        Jan   180.0     400.0   450.0
 # 1        Feb   250.0     500.0   550.0
 # 3      April   500.0     675.0   800.0
@@ -112,18 +112,17 @@ df['Google'] = [450.0, 550.0, 800.0]
 Slightly more advanced users might take advantage of the functional API:
 
 ```python
-
 df = (
     pd.DataFrame(company_sales)
     .drop(columns="Company1")
-    .dropna(subset=['Company2', 'Company3'])
+    .dropna(subset=["Company2", "Company3"])
     .rename(columns={"Company2": "Amazon", "Company3": "Facebook"})
     .assign(Google=[450.0, 550.0, 800.0])
 )
 
-# Output looks like this:
+# The output is the same as before, and looks like this:
 # Out[15]:
-# SalesMonth  Amazon  Facebook  Google
+#   SalesMonth  Amazon  Facebook  Google
 # 0        Jan   180.0     400.0   450.0
 # 1        Feb   250.0     500.0   550.0
 # 3      April   500.0     675.0   800.0
@@ -134,26 +133,25 @@ With `pyjanitor`, we enable method chaining with method names
 that are *explicitly named verbs*, which describe the action taken.
 
 ```python
-
 df = (
     pd.DataFrame.from_dict(company_sales)
-    .remove_columns(['Company1'])
-    .dropna(subset=['Company2', 'Company3'])
-    .rename_column('Company2', 'Amazon')
-    .rename_column('Company3', 'Facebook')
-    .add_column('Google', [450.0, 550.0, 800.0])
+    .remove_columns(["Company1"])
+    .dropna(subset=["Company2", "Company3"])
+    .rename_column("Company2", "Amazon")
+    .rename_column("Company3", "Facebook")
+    .add_column("Google", [450.0, 550.0, 800.0])
 )
 
 # Output looks like this:
 # Out[15]:
-# SalesMonth  Amazon  Facebook  Google
+#   SalesMonth  Amazon  Facebook  Google
 # 0        Jan   180.0     400.0   450.0
 # 1        Feb   250.0     500.0   550.0
 # 3      April   500.0     675.0   800.0
 ```
 
 As such,
-pyjanitor's etymology has a two-fold relationship to "cleanliness".
+`pyjanitor`'s etymology has a two-fold relationship to "cleanliness".
 Firstly, it's about extending Pandas with convenient data cleaning routines.
 Secondly, it's about providing a cleaner, method-chaining, verb-based API
 for common pandas routines.
@@ -235,7 +233,6 @@ df = pd.DataFrame.from_dict(company_sales).clean_names().remove_empty()
 The second is the functional API.
 
 ```python
-
 from janitor import clean_names, remove_empty
 
 df = pd.DataFrame.from_dict(company_sales)
@@ -258,9 +255,7 @@ df = (
 
 ## Contributing
 
-Follow [contribution docs][contributions] for a full description of the process of contributing to `pyjanitor`.
-
-[contributions]: https://ericmjl.github.io/pyjanitor/contributing.html
+Follow the [development guide](./devguide.md) for a full description of the process of contributing to `pyjanitor`.
 
 ## Adding new functionality
 
@@ -275,14 +270,14 @@ that expresses the data processing/cleaning routine,
 such that it accepts a dataframe as the first argument,
 and returns a modified dataframe:
 
-.. code-block:: python
+```python
+import pandas_flavor as pf
 
-    import pandas_flavor as pf
-
-    @pf.register_dataframe_method
-    def my_data_cleaning_function(df, arg1, arg2, ...):
-        # Put data processing function here.
-        return df
+@pf.register_dataframe_method
+def my_data_cleaning_function(df, arg1, arg2, ...):
+    # Put data processing function here.
+    return df
+```
 
 We use [`pandas_flavor`](https://github.com/Zsailer/pandas_flavor) to register the function natively on a `pandas.DataFrame`.
 

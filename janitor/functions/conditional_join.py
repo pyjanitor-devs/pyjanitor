@@ -69,11 +69,9 @@ def conditional_join(
         >>> import pandas as pd
         >>> import janitor
         >>> df1 = pd.DataFrame({"value_1": [2, 5, 7, 1, 3, 4]})
-
         >>> df2 = pd.DataFrame({"value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
         ...                     "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
         ...                    })
-
         >>> df1
            value_1
         0        2
@@ -82,7 +80,6 @@ def conditional_join(
         3        1
         4        3
         5        4
-
         >>> df2
            value_2A  value_2B
         0         0         1
@@ -93,8 +90,6 @@ def conditional_join(
         5         2         4
         6         3         6
         7         1         3
-
-
         >>> df1.conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">="),

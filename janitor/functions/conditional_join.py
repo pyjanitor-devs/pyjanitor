@@ -1,20 +1,22 @@
+import operator
+from enum import Enum
+from typing import Union
+
+import numpy as np
+import pandas as pd
+import pandas_flavor as pf
 from pandas.core.construction import extract_array
 from pandas.core.dtypes.common import (
-    is_dtype_equal,
+    is_categorical_dtype,
     is_datetime64_dtype,
+    is_dtype_equal,
+    is_extension_array_dtype,
     is_numeric_dtype,
     is_string_dtype,
-    is_categorical_dtype,
-    is_extension_array_dtype,
 )
 from pandas.core.reshape.merge import _MergeOperation
-import pandas_flavor as pf
-import pandas as pd
-from typing import Union
-import operator
+
 from janitor.utils import check, check_column
-import numpy as np
-from enum import Enum
 
 
 @pf.register_dataframe_method
@@ -44,14 +46,15 @@ def conditional_join(
     as a variable argument of tuples, where the tuple is of
     the form `(left_on, right_on, op)`; `left_on` is the column
     label from `df`, `right_on` is the column label from `right`,
-    while `op` is the operator.
+    while `op` is the operator. For multiple conditions, the and(`&`)
+    operator is used to combine the results of the individual conditions.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
     A binary search is used to get the relevant rows for non-equi joins;
     this avoids a cartesian join, and makes the process less memory intensive.
 
-    For equi-joins, Pandas internal merge function (a hash join) is used.
+    For equi-joins, Pandas internal merge function is used.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -113,13 +116,15 @@ def conditional_join(
         14        4         3         6
 
 
-    :param df: A Pandas DataFrame.
+    :param df: A pandas DataFrame.
     :param right: Named Series or DataFrame to join to.
     :param conditions: Variable argument of tuple(s) of the form
         `(left_on, right_on, op)`, where `left_on` is the column
         label from `df`, `right_on` is the column label from `right`,
         while `op` is the operator. The operator can be any of
-        `==`, `!=`, `<=`, `<`, `>=`, `>`.
+        `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
+        the and(`&`) operator is used to combine the results
+        of the individual conditions.
     :param how: Indicates the type of join to be performed.
         It can be one of `inner`, `left`, `right`.
         Full join is not supported. Defaults to `inner`.
@@ -188,10 +193,8 @@ def _check_operator(op: str):
     sequence_of_operators = {op.value for op in _JoinOperator}
     if op not in sequence_of_operators:
         raise ValueError(
-            f"""
-             The conditional join operator
-             should be one of {", ".join(sequence_of_operators)}
-             """
+            f"The conditional join operator "
+            f"should be one of {sequence_of_operators}"
         )
 
 
@@ -257,10 +260,8 @@ def _conditional_join_preliminary_checks(
         len_condition = len(condition)
         if len_condition != 3:
             raise ValueError(
-                f"""
-                condition should have only three elements.
-                {condition} however is of length {len_condition}.
-                """
+                f"condition should have only three elements; "
+                f"{condition} however is of length {len_condition}."
             )
 
     for left_on, right_on, op in conditions:
@@ -280,7 +281,7 @@ def _conditional_join_preliminary_checks(
 
     join_types = {jointype.value for jointype in _JoinTypes}
     if how not in join_types:
-        raise ValueError(f"`how` should be one of {', '.join(join_types)}.")
+        raise ValueError(f"`how` should be one of {join_types}.")
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -396,8 +397,6 @@ def _conditional_join_compute(
             df[left_on], right[right_on], op, multiple_conditions
         )
 
-        # return result
-
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
 
@@ -414,7 +413,6 @@ def _conditional_join_compute(
         result = _multiple_conditional_join_le_lt(df, right, conditions)
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
-    # return result
 
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
@@ -430,7 +428,6 @@ def _less_than_indices(
     left_c: pd.Series,
     right_c: pd.Series,
     strict: bool,
-    multiple_conditions: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -445,6 +442,9 @@ def _less_than_indices(
     as the positions of left_c in right_c is returned.
     """
 
+    # TODO
+    # reintroduce `multiple_conditions` argument
+    # when numba is introduced in a future PR
     # no point going through all the hassle
     if left_c.min() > right_c.max():
         return None
@@ -480,9 +480,6 @@ def _less_than_indices(
         left_c = left_c[~rows_equal]
         left_index = left_index[~rows_equal]
         search_indices = search_indices[~rows_equal]
-
-    if search_indices.size == 0:
-        return None
 
     # the idea here is that if there are any equal values
     # shift to the right to the immediate next position
@@ -572,8 +569,6 @@ def _greater_than_indices(
         left_c = left_c[~rows_equal]
         left_index = left_index[~rows_equal]
         search_indices = search_indices[~rows_equal]
-    if search_indices.size == 0:
-        return None
 
     # the idea here is that if there are any equal values
     # shift downwards to the immediate next position
@@ -670,9 +665,7 @@ def _not_equal_indices(
     l1_nulls = np.concatenate([l1_nulls, l2_nulls])
     r1_nulls = np.concatenate([r1_nulls, r2_nulls])
 
-    outcome = _less_than_indices(
-        left_c, right_c, strict=True, multiple_conditions=False
-    )
+    outcome = _less_than_indices(left_c, right_c, strict=True)
 
     if outcome is None:
         lt_left = dummy
@@ -720,7 +713,7 @@ def _generic_func_cond_join(
         strict = True
 
     if op in less_than_join_types:
-        return _less_than_indices(left_c, right_c, strict, multiple_conditions)
+        return _less_than_indices(left_c, right_c, strict)
     elif op in greater_than_join_types:
         return _greater_than_indices(
             left_c, right_c, strict, multiple_conditions
@@ -732,7 +725,14 @@ def _generic_func_cond_join(
 def _generate_indices(
     left_index: np.ndarray, right_index: np.ndarray, conditions: list
 ):
-    """Return indices if more conditions exist."""
+    """
+    Run a for loop to get the final indices.
+    This iteratively goes through each condition,
+    builds a boolean array,
+    and gets indices for rows that meet the condition requirements.
+    `conditions` is a list of tuples, where a tuple is of the form:
+    `(Series from df, Series from right, operator).
+    """
 
     for condition in conditions:
         left_c, right_c, op = condition
@@ -761,6 +761,14 @@ def _multiple_conditional_join_ne(
     Returns a tuple of (left_index, right_index)
     """
 
+    # there is no optimization option here
+    # not equal typically combines less than
+    # and greater than, so a lot more rows are returned
+    # than just less than or greater than
+
+    # here we get indices for the first condition in conditions
+    # then use those indices to get the final indices,
+    # using _generate_indices
     first, *rest = conditions
     left_on, right_on, op = first
 
@@ -788,6 +796,25 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (df_index, right_index)
     """
+
+    # TODO
+    # at the moment, this is not optimized/wasteful
+    # it gets the indices, all the indices
+    # indexes the main df and right, to get all the rows
+    # before pruning down
+    # a more efficient way would be to get the rows
+    # before hitting df and right
+    # something similar to  the `_range_indices` function
+    # for less than and greater than
+    # will using a recursive binary search be better?
+    # if using a binary search
+    # should tehre be further restrictions to only
+    # numeric and date data types, effectively excluding
+    # strings and categoricals (maybe categoricals can stay)
+    # since strings are significantly slower in a binary search
+    # than integers
+    # one possible option is to use the `ord` builtin to convert
+    # strings to numbers - will that be efficient?
 
     eqs = [
         (left_on, right_on)
@@ -827,6 +854,38 @@ def _multiple_conditional_join_le_lt(
     Returns a tuple of (df_index, right_index)
     """
 
+    # there is an opportunity for optimization for range joins
+    # which is usually `lower_value < value < upper_value`
+    # or `lower_value < a` and `b < upper_value`
+    # intervalindex is not used here, as there are scenarios
+    # where there will be overlapping intervals;
+    # intervalindex does not offer an efficeint way to get
+    # the indices for overlaps
+    # also, intervalindex covers only the first option
+    # i.e => `lower_value < value < upper_value`
+    # it does not extend to range joins for different columns
+    # i.e => `lower_value < a` and `b < upper_value`
+    # the option used for range joins is a simple form
+    # dependent on sorting and extensible to overlaps
+    # as well as the second option:
+    # i.e =>`lower_value < a` and `b < upper_value`
+    # range joins are also the more common types of non-equi joins
+    # the other joins do not have an optimisation opportunity
+    # as far as I know, so a blowup of all the rows
+    # is unavoidable.
+    # future PR would use numba to improve performance
+    # still doesnt help that an optimisation path is not available
+    # that I am aware of
+
+    # first step is to get two conditions, if possible
+    # wehre one has a less than operator
+    # and the other has a greater than operator
+    # get the indices from that
+    # and then build the remaining indices,
+    # using _generate_indices function
+    # the aim of this for loop is to see if there is
+    # the possiblity of a range join, and if there is
+    # use the optimised path
     le_lt = None
     ge_gt = None
     for condition in conditions:
@@ -835,10 +894,14 @@ def _multiple_conditional_join_le_lt(
             le_lt = condition
         elif op in greater_than_join_types:
             ge_gt = condition
+        # we've gotten our two conditions
+        # so end the for loop
         if le_lt and ge_gt:
             break
 
+    # optimised path
     if le_lt and ge_gt:
+        # capture the remaining conditions here
         rest = [
             condition
             for condition in conditions
@@ -855,6 +918,8 @@ def _multiple_conditional_join_le_lt(
 
         return _range_indices(df, right, ge_gt, le_lt, rest)
 
+    # no optimised path
+    # blow up the rows and prune
     if le_lt:
         conditions = (
             condition for condition in conditions if condition != le_lt
@@ -874,6 +939,8 @@ def _multiple_conditional_join_le_lt(
 
         return _generate_indices(*outcome, conditions)
 
+    # no optimised path
+    # blow up the rows and prune
     if ge_gt:
         conditions = (
             condition for condition in conditions if condition != ge_gt
@@ -995,7 +1062,7 @@ def _range_indices(
     ]
 
     # get indices and filter to get exact indices
-    # that meet the conditions
+    # that meet the condition
     right_index = np.concatenate(right_index)
     left_index = np.repeat(left_index, repeater)
 
@@ -1013,8 +1080,6 @@ def _range_indices(
     if ext_arr:
         mask = mask.to_numpy(dtype=bool, na_value=False)
 
-    if not mask.any():
-        return None
     if not mask.all():
         left_index = left_index[mask]
         right_index = right_index[mask]

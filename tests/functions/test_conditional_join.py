@@ -188,6 +188,15 @@ def test_dtype_strings_non_equi(df, right):
 
 
 @given(df=conditional_df(), right=conditional_right())
+def test_equi_only(df, right):
+    """
+    Raise ValueError if only an equi-join is present.
+    """
+    with pytest.raises(ValueError):
+        df.conditional_join(right, ("C", "Strings", "=="))
+
+
+@given(df=conditional_df(), right=conditional_right())
 def test_unequal_categories(df, right):
     """
     Raise ValueError if the dtypes are both categories

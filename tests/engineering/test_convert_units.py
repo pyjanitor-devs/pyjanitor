@@ -86,7 +86,7 @@ def test_area_conversion(dataframe):
     df = dataframe.convert_units(
         "a", existing_units="cm**2", to_units="m**2", dest_column_name="a_m2"
     )
-    assert df["a"].sum() == pytest.approx(df["a_m2"].sum() * (100.0 ** 2))
+    assert df["a"].sum() == pytest.approx(df["a_m2"].sum() * (100.0**2))
 
 
 @pytest.mark.engineering
@@ -94,4 +94,4 @@ def test_volume_conversion(dataframe):
     df = dataframe.convert_units(
         "a", existing_units="cm**3", to_units="m**3", dest_column_name="a_m3"
     )
-    assert df["a"].sum() == pytest.approx(df["a_m3"].sum() * (100.0 ** 3))
+    assert df["a"].sum() == pytest.approx(df["a_m3"].sum() * (100.0**3))

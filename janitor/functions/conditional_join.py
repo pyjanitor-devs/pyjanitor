@@ -193,7 +193,7 @@ def _check_operator(op: str):
     sequence_of_operators = {op.value for op in _JoinOperator}
     if op not in sequence_of_operators:
         raise ValueError(
-            f"The conditional join operator "
+            "The conditional join operator "
             f"should be one of {sequence_of_operators}"
         )
 
@@ -219,10 +219,7 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(df.columns, pd.MultiIndex):
         raise ValueError(
-            """
-            MultiIndex columns are not
-            supported for conditional_join.
-            """
+            "MultiIndex columns are not " "supported for conditional_join."
         )
 
     check("`right`", right, [pd.DataFrame, pd.Series])
@@ -233,34 +230,24 @@ def _conditional_join_preliminary_checks(
     if isinstance(right, pd.Series):
         if not right.name:
             raise ValueError(
-                """
-                Unnamed Series are not supported
-                for conditional_join.
-                """
+                "Unnamed Series are not supported " "for conditional_join."
             )
         right = right.to_frame()
 
     if isinstance(right.columns, pd.MultiIndex):
         raise ValueError(
-            """
-            MultiIndex columns are not supported
-            for conditional joins.
-            """
+            "MultiIndex columns are not supported " "for conditional joins."
         )
 
     if not conditions:
-        raise ValueError(
-            """
-            Kindly provide at least one join condition.
-            """
-        )
+        raise ValueError("Kindly provide at least one join condition.")
 
     for condition in conditions:
         check("condition", condition, [tuple])
         len_condition = len(condition)
         if len_condition != 3:
             raise ValueError(
-                f"condition should have only three elements; "
+                "condition should have only three elements; "
                 f"{condition} however is of length {len_condition}."
             )
 
@@ -275,7 +262,7 @@ def _conditional_join_preliminary_checks(
     if all(
         (op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)
     ):
-        raise ValueError("""Equality only joins are not supported.""")
+        raise ValueError("Equality only joins are not supported.")
 
     check("how", how, [str])
 
@@ -291,10 +278,8 @@ def _conditional_join_preliminary_checks(
 def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series, op: str
 ) -> None:
-    """
-    Raise error if column type is not
-    any of numeric or datetime or string.
-    """
+    "Raise error if column type is not"
+    "any of numeric or datetime or string."
 
     permitted_types = {
         is_datetime64_dtype,
@@ -307,10 +292,8 @@ def _conditional_join_type_check(
             break
     else:
         raise ValueError(
-            """
-            conditional_join only supports
-            string, category, numeric, or date dtypes.
-            """
+            "conditional_join only supports "
+            "string, category, numeric, or date dtypes."
         )
 
     lk_is_cat = is_categorical_dtype(left_column)
@@ -332,10 +315,7 @@ def _conditional_join_type_check(
         and op != _JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
-            """
-            For string columns,
-            only the `==` operator is supported.
-            """
+            "For string columns, " "only the `==` operator is supported."
         )
 
     if (
@@ -343,10 +323,7 @@ def _conditional_join_type_check(
         and op != _JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
-            """
-            For categorical columns,
-            only the `==` operator is supported.
-            """
+            "For categorical columns, " "only the `==` operator is supported."
         )
 
     return None
@@ -445,6 +422,7 @@ def _less_than_indices(
     # TODO
     # reintroduce `multiple_conditions` argument
     # when numba is introduced in a future PR
+
     # no point going through all the hassle
     if left_c.min() > right_c.max():
         return None

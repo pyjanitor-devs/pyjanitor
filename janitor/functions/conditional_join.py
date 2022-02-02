@@ -315,7 +315,7 @@ def _conditional_join_type_check(
         and op != _JoinOperator.STRICTLY_EQUAL.value
     ):
         raise ValueError(
-            "For string columns, " "only the `==` operator is supported."
+            "For string columns, only the `==` operator is supported."
         )
 
     if (

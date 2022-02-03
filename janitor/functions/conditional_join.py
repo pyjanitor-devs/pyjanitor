@@ -236,7 +236,7 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(right.columns, pd.MultiIndex):
         raise ValueError(
-            "MultiIndex columns are not supported " "for conditional joins."
+            "MultiIndex columns are not supported for conditional joins."
         )
 
     if not conditions:

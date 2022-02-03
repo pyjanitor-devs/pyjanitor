@@ -709,7 +709,7 @@ def _generate_indices(
     builds a boolean array,
     and gets indices for rows that meet the condition requirements.
     `conditions` is a list of tuples, where a tuple is of the form:
-    `(Series from df, Series from right, operator).
+    `(Series from df, Series from right, operator)`.
     """
 
     for condition in conditions:

@@ -230,7 +230,7 @@ def _conditional_join_preliminary_checks(
     if isinstance(right, pd.Series):
         if not right.name:
             raise ValueError(
-                "Unnamed Series are not supported " "for conditional_join."
+                "Unnamed Series are not supported for conditional_join."
             )
         right = right.to_frame()
 

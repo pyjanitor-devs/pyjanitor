@@ -219,7 +219,7 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(df.columns, pd.MultiIndex):
         raise ValueError(
-            "MultiIndex columns are not " "supported for conditional_join."
+            "MultiIndex columns are not supported for conditional_join."
         )
 
     check("`right`", right, [pd.DataFrame, pd.Series])

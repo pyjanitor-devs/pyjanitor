@@ -837,7 +837,7 @@ def _multiple_conditional_join_le_lt(
     # or `lower_value < a` and `b < upper_value`
     # intervalindex is not used here, as there are scenarios
     # where there will be overlapping intervals;
-    # intervalindex does not offer an efficeint way to get
+    # intervalindex does not offer an efficient way to get
     # the indices for overlaps
     # also, intervalindex covers only the first option
     # i.e => `lower_value < value < upper_value`

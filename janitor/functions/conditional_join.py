@@ -856,7 +856,7 @@ def _multiple_conditional_join_le_lt(
     # that I am aware of
 
     # first step is to get two conditions, if possible
-    # wehre one has a less than operator
+    # where one has a less than operator
     # and the other has a greater than operator
     # get the indices from that
     # and then build the remaining indices,

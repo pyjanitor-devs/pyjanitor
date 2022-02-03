@@ -219,7 +219,7 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(df.columns, pd.MultiIndex):
         raise ValueError(
-            "MultiIndex columns are not " "supported for conditional_join."
+            "MultiIndex columns are not supported for conditional_join."
         )
 
     check("`right`", right, [pd.DataFrame, pd.Series])
@@ -230,13 +230,13 @@ def _conditional_join_preliminary_checks(
     if isinstance(right, pd.Series):
         if not right.name:
             raise ValueError(
-                "Unnamed Series are not supported " "for conditional_join."
+                "Unnamed Series are not supported for conditional_join."
             )
         right = right.to_frame()
 
     if isinstance(right.columns, pd.MultiIndex):
         raise ValueError(
-            "MultiIndex columns are not supported " "for conditional joins."
+            "MultiIndex columns are not supported for conditional joins."
         )
 
     if not conditions:
@@ -278,8 +278,9 @@ def _conditional_join_preliminary_checks(
 def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series, op: str
 ) -> None:
-    "Raise error if column type is not"
-    "any of numeric or datetime or string."
+    """
+    Raise error if column type is not any of numeric or datetime or string.
+    """
 
     permitted_types = {
         is_datetime64_dtype,
@@ -710,7 +711,7 @@ def _generate_indices(
     builds a boolean array,
     and gets indices for rows that meet the condition requirements.
     `conditions` is a list of tuples, where a tuple is of the form:
-    `(Series from df, Series from right, operator).
+    `(Series from df, Series from right, operator)`.
     """
 
     for condition in conditions:
@@ -838,7 +839,7 @@ def _multiple_conditional_join_le_lt(
     # or `lower_value < a` and `b < upper_value`
     # intervalindex is not used here, as there are scenarios
     # where there will be overlapping intervals;
-    # intervalindex does not offer an efficeint way to get
+    # intervalindex does not offer an efficient way to get
     # the indices for overlaps
     # also, intervalindex covers only the first option
     # i.e => `lower_value < value < upper_value`
@@ -857,7 +858,7 @@ def _multiple_conditional_join_le_lt(
     # that I am aware of
 
     # first step is to get two conditions, if possible
-    # wehre one has a less than operator
+    # where one has a less than operator
     # and the other has a greater than operator
     # get the indices from that
     # and then build the remaining indices,

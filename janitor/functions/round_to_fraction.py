@@ -45,14 +45,19 @@ def round_to_fraction(
 
     :param df: A pandas DataFrame.
     :param column_name: Name of column to round to fraction.
-    :param denominator: The denominator of the fraction for rounding.
+    :param denominator: The denominator of the fraction for rounding. Must be
+        a positive number.
     :param digits: The number of digits for rounding after rounding to the
         fraction. Default is np.inf (i.e. no subsequent rounding).
     :returns: A pandas DataFrame with a column's values rounded.
+    :raises ValueError: If `denominator` is not a positive number.
     """
     check_column(df, column_name)
     check("denominator", denominator, [float, int])
     check("digits", digits, [float, int])
+
+    if denominator <= 0:
+        raise ValueError("denominator is expected to be a positive number.")
 
     df[column_name] = round(df[column_name] * denominator, 0) / denominator
     if not np.isinf(digits):

@@ -4,15 +4,15 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import check, deprecated_alias
+from janitor.utils import check, check_column, deprecated_alias
 
 
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def round_to_fraction(
     df: pd.DataFrame,
-    column_name: Hashable = None,
-    denominator: float = None,
+    column_name: Hashable,
+    denominator: float,
     digits: float = np.inf,
 ) -> pd.DataFrame:
     """Round all values in a column to a fraction.
@@ -50,11 +50,9 @@ def round_to_fraction(
         fraction. Default is np.inf (i.e. no subsequent rounding).
     :returns: A pandas DataFrame with a column's values rounded.
     """
-    if denominator:
-        check("denominator", denominator, [float, int])
-
-    if digits:
-        check("digits", digits, [float, int])
+    check_column(df, column_name)
+    check("denominator", denominator, [float, int])
+    check("digits", digits, [float, int])
 
     df[column_name] = round(df[column_name] * denominator, 0) / denominator
     if not np.isinf(digits):

@@ -9,7 +9,7 @@ from janitor.utils import check
 @pf.register_dataframe_method
 def row_to_names(
     df: pd.DataFrame,
-    row_number: int = None,
+    row_number: int = 0,
     remove_row: bool = False,
     remove_rows_above: bool = False,
     reset_index: bool = False,
@@ -60,7 +60,7 @@ def row_to_names(
 
     :param df: A pandas DataFrame.
     :param row_number: Position of the row containing the variable names.
-        Note that indexing starts from 0.
+        Note that indexing starts from 0. Defaults to 0 (first row).
     :param remove_row: Whether the row should be removed from the DataFrame.
         Defaults to False.
     :param remove_rows_above: Whether the rows above the selected row should

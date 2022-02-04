@@ -1,3 +1,4 @@
+"""Implementation of deconcatenating columns."""
 from typing import Hashable, List, Optional, Tuple, Union
 import pandas_flavor as pf
 import pandas as pd
@@ -19,27 +20,44 @@ def deconcatenate_column(
     """De-concatenates a single column into multiple columns.
 
     The column to de-concatenate can be either a collection (list, tuple, ...)
-    which can be separated out with `pd.Series.tolist()``,
-    or a string to slice based on `sep``.
+    which can be separated out with `pd.Series.tolist()`,
+    or a string to slice based on `sep`.
 
     To determine this behaviour automatically,
     the first element in the column specified is inspected.
 
     If it is a string, then `sep` must be specified.
     Else, the function assumes that it is an iterable type
-    (e.g. `list` or `tuple``),
+    (e.g. `list` or `tuple`),
     and will attempt to deconcatenate by splitting the list.
 
     Given a column with string values, this is the inverse of the
-    `concatenate_columns` function.
+    [`concatenate_columns`][janitor.functions.concatenate_columns.concatenate_columns]
+    function.
 
     Used to quickly split columns out of a single column.
 
-    The keyword argument `preserve_position``
+    Example:
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"m": ["1-x", "2-y", "3-z"]})
+        >>> df
+             m
+        0  1-x
+        1  2-y
+        2  3-z
+        >>> df.deconcatenate_column("m", sep="-", autoname="col")
+             m col1 col2
+        0  1-x    1    x
+        1  2-y    2    y
+        2  3-z    3    z
+
+    The keyword argument `preserve_position`
     takes `True` or `False` boolean
-    that controls whether the `new_column_names``
+    that controls whether the `new_column_names`
     will take the original position
-    of the to-be-deconcatenated `column_name``:
+    of the to-be-deconcatenated `column_name`:
 
     - When `preserve_position=False` (default), `df.columns` change from
       `[..., column_name, ...]` to `[..., column_name, ..., new_column_names]`.
@@ -54,30 +72,13 @@ def deconcatenate_column(
     The keyword argument `autoname` accepts a base string
     and then automatically creates numbered column names
     based off the base string.
-    For example, if `col` is passed in
-    as the argument to `autoname``,
-    and 4 columns are created,
-    then the resulting columns will be named
-    `col1, col2, col3, col4``.
+    For example, if `col` is passed in as the argument to `autoname`,
+    and 4 columns are created, then the resulting columns will be named
+    `col1, col2, col3, col4`.
     Numbering is always 1-indexed, not 0-indexed,
     in order to make the column names human-friendly.
 
     This method does not mutate the original DataFrame.
-
-    Functional usage syntax:
-
-        df = deconcatenate_column(
-                df, column_name='id', new_column_names=['col1', 'col2'],
-                sep='-', preserve_position=True
-        )
-
-    Method chaining syntax:
-
-        df = (pd.DataFrame(...).
-                deconcatenate_column(
-                    column_name='id', new_column_names=['col1', 'col2'],
-                    sep='-', preserve_position=True
-                ))
 
     :param df: A pandas DataFrame.
     :param column_name: The column to split.
@@ -86,17 +87,17 @@ def deconcatenate_column(
     :param autoname: A base name for automatically naming the new columns.
         Takes precedence over `new_column_names` if both are provided.
     :param preserve_position: Boolean for whether or not to preserve original
-        position of the column upon de-concatenation, default to False
+        position of the column upon de-concatenation.
     :returns: A pandas DataFrame with a deconcatenated column.
-    :raises ValueError: if `column_name` is not present in the
+    :raises ValueError: If `column_name` is not present in the
         DataFrame.
-    :raises ValueError: if `sep` is not provided and the column values
-        are of type `str``.
-    :raises ValueError: if either `new_column_names` or `autoname``
+    :raises ValueError: If `sep` is not provided and the column values
+        are of type `str`.
+    :raises ValueError: If either `new_column_names` or `autoname`
         is not supplied.
-    :raises JanitorError: if incorrect number of names is provided
-        within `new_column_names``.
-    """
+    :raises JanitorError: If incorrect number of names is provided
+        within `new_column_names`.
+    """  # noqa: E501
 
     if column_name not in df.columns:
         raise ValueError(f"column name {column_name} not present in DataFrame")
@@ -125,7 +126,7 @@ def deconcatenate_column(
 
     if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
-            f"you need to provide {len(df_deconcat.shape[1])} names "
+            f"You need to provide {len(df_deconcat.shape[1])} names "
             "to `new_column_names`"
         )
 

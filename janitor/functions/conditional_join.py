@@ -993,33 +993,23 @@ def _range_indices(
         uniqs_index = uniqs_index[~dupes]
         right_c = right_c[~dupes]
 
-    if ext_arr:
-        for ind in range(uniqs_index.size):
-            keep_rows = op(left_c, right_c[ind])
-            keep_rows = keep_rows.to_numpy(dtype=bool, na_value=False)
-            # get the index positions where left_c is </<= right_c
-            # that minimum position combined with the equivalent position
-            # from search_indices becomes our search space
-            # for the equivalent left_c index
-            if keep_rows.any():
-                pos[counter[keep_rows]] = uniqs_index[ind]
-                counter = counter[~keep_rows]
-                left_c = left_c[~keep_rows]
-            if not counter.size > 0:
-                break
-    else:
-        for ind in range(uniqs_index.size):
-            keep_rows = op(left_c, right_c[ind])
-            # get the index positions where left_c is </<= right_c
-            # that minimum position combined with the equivalent position
-            # from search_indices becomes our search space
-            # for the equivalent left_c index
-            if keep_rows.any():
-                pos[counter[keep_rows]] = uniqs_index[ind]
-                counter = counter[~keep_rows]
-                left_c = left_c[~keep_rows]
-            if not counter.size > 0:
-                break
+    for ind in range(uniqs_index.size):
+        if counter.size == 0:
+            break
+        keep_rows = op(left_c, right_c[ind])
+        if ext_arr:
+            keep_rows = keep_rows.to_numpy(
+                dtype=bool, na_value=False, copy=False
+            )
+        if not keep_rows.any():
+            continue
+        # get the index positions where left_c is </<= right_c
+        # that minimum position combined with the equivalent position
+        # from search_indices becomes our search space
+        # for the equivalent left_c index
+        pos[counter[keep_rows]] = uniqs_index[ind]
+        counter = counter[~keep_rows]
+        left_c = left_c[~keep_rows]
 
     dupes = None
     uniqs_index = None

@@ -1,3 +1,4 @@
+"""Implementation of `round_to_fraction`"""
 from typing import Hashable
 
 import numpy as np
@@ -14,8 +15,7 @@ def round_to_fraction(
     denominator: float = None,
     digits: float = np.inf,
 ) -> pd.DataFrame:
-    """
-    Round all values in a column to a fraction.
+    """Round all values in a column to a fraction.
 
     This method mutates the original DataFrame.
 
@@ -23,18 +23,31 @@ def round_to_fraction(
 
     Also, optionally round to a specified number of digits.
 
-    Method-chaining usage:
+    Example: Round numeric column to the nearest 1/4 value.
 
-    ```python
-    # Round to two decimal places
-    df = pd.DataFrame(...).round_to_fraction('a', 2)
-    ```
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "a1": [1.263, 2.499, np.nan],
+        ...     "a2": ["x", "y", "z"],
+        ... })
+        >>> df
+              a1 a2
+        0  1.263  x
+        1  2.499  y
+        2    NaN  z
+        >>> df.round_to_fraction("a1", denominator=4)
+             a1 a2
+        0  1.25  x
+        1  2.50  y
+        2   NaN  z
 
     :param df: A pandas DataFrame.
     :param column_name: Name of column to round to fraction.
-    :param denominator: The denominator of the fraction for rounding
+    :param denominator: The denominator of the fraction for rounding.
     :param digits: The number of digits for rounding after rounding to the
-        fraction. Default is np.inf (i.e. no subsequent rounding)
+        fraction. Default is np.inf (i.e. no subsequent rounding).
     :returns: A pandas DataFrame with a column's values rounded.
     """
     if denominator:

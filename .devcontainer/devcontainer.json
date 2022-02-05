@@ -11,7 +11,7 @@
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"terminal.integrated.defaultProfile.linux": "bash",
-		"python.pythonPath": "/opt/conda/bin/python",
+		"python.defaultInterpreterPath": "/opt/conda/bin/python",
 		"python.linting.enabled": true,
 		"python.linting.pylintEnabled": true,
 		"python.linting.pylintPath": "/opt/conda/bin/pylint",

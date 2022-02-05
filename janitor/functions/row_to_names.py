@@ -46,7 +46,7 @@ def row_to_names(
         >>> df = pd.DataFrame({
         ...     "a": ["bla1", "nums", 6, 9],
         ...     "b": ["bla2", "chars", "x", "y"],
-        >>> })
+        ... })
         >>> df
               a      b
         0  bla1   bla2

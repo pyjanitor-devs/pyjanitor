@@ -1,9 +1,3 @@
-import numpy as np
-import pandas as pd
-import pytest
-
-from janitor.functions import sort_column_value_order
-
 """
 Below, company_sales and company_sales_2 are both dfs.
 
@@ -23,6 +17,12 @@ Test 3 asserts that company_sales_2 and
     will become equivilent, meaning
     the columns have been successfully ordered.
 """
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from janitor.functions import sort_column_value_order
 
 
 def test_sort_column_value_order():

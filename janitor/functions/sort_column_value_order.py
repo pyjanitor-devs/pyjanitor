@@ -1,3 +1,4 @@
+"""Implementation of the `sort_column_value_order` function."""
 import pandas_flavor as pf
 import pandas as pd
 
@@ -10,35 +11,35 @@ def sort_column_value_order(
     This function adds precedence to certain values in a specified column, then
     sorts based on that column and any other specified columns.
 
-    Functional usage syntax:
+    Example:
 
-    ```python
-
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame(...)
-
-        jn.sort_column_value_order(
-            column,
-            column_value_order = {col1: number, ...}
-            columns
-        )
-    ```
-
-    Method chaining usage syntax:
-
-    ```python
-
-        import pandas as pd
-        import janitor
-
-        df.sort_column_value_order(
-            column,
-            column_value_order = {col1: number, ...}
-            columns
-        )
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> import numpy as np
+        >>> company_sales = {
+        ...     "SalesMonth": ["Jan", "Feb", "Feb", "Mar", "April"],
+        ...     "Company1": [150.0, 200.0, 200.0, 300.0, 400.0],
+        ...     "Company2": [180.0, 250.0, 250.0, np.nan, 500.0],
+        ...     "Company3": [400.0, 500.0, 500.0, 600.0, 675.0],
+        ... }
+        >>> df = pd.DataFrame.from_dict(company_sales)
+        >>> df
+          SalesMonth  Company1  Company2  Company3
+        0        Jan     150.0     180.0     400.0
+        1        Feb     200.0     250.0     500.0
+        2        Feb     200.0     250.0     500.0
+        3        Mar     300.0       NaN     600.0
+        4      April     400.0     500.0     675.0
+        >>> df.sort_column_value_order(
+        ...     "SalesMonth",
+        ...     {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
+        ... )
+          SalesMonth  Company1  Company2  Company3
+        4      April     400.0     500.0     675.0
+        3        Mar     300.0       NaN     600.0
+        1        Feb     200.0     250.0     500.0
+        2        Feb     200.0     250.0     500.0
+        0        Jan     150.0     180.0     400.0
 
     :param df: This is our DataFrame that we are manipulating
     :param column: This is a column name as a string we are using to specify
@@ -50,6 +51,7 @@ def sort_column_value_order(
         Dataframe, or if column_value_order dictionary is empty.
     :return: This function returns a Pandas DataFrame
     """
+    df = df.copy()
     if len(column_value_order) > 0:
         if column in df.columns:
             df["cond_order"] = df[column].replace(column_value_order)

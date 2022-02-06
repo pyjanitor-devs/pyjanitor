@@ -63,7 +63,7 @@ def sort_column_value_order(
 
     sort_by = ["cond_order"]
     if columns is not None:
-        sort_by = columns + ["cond_order"]
+        sort_by = ["cond_order"] + columns
 
     df = df.sort_values(sort_by).remove_columns("cond_order")
     return df

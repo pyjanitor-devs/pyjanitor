@@ -45,43 +45,74 @@ def pivot_longer(
 
     Functional usage syntax:
 
-    ```python
-    import pandas as pd
-    import janitor as jn
+    Example:
 
-    df = pd.DataFrame(...)
-    df = jn.pivot_longer(
-        df = df,
-        index = [column1, column2, ...],
-        column_names = [column3, column4, ...],
-        names_to = new_column_name,
-        names_sep = string/regular expression,
-        names_pattern = string/regular expression,
-        values_to= new_column_name,
-        column_level = None/int/str,
-        sort_by_appearance = True/False,
-        ignore_index = True/False,
-    )
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...        {'Sepal.Length': [5.1, 5.9],
+        ...         'Sepal.Width': [3.5, 3.0],
+        ...         'Petal.Length': [1.4, 5.1],
+        ...         'Petal.Width': [0.2, 1.8],
+        ...         'Species': ['setosa', 'virginica']}
+        ...         )
+        >>> df
+               Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
+            0           5.1          3.5           1.4          0.2     setosa
+            1           5.9          3.0           5.1          1.8  virginica
 
-    Method chaining syntax:
+    Split into parts:
 
-    ```python
-    df = (
-        pd.DataFrame(...)
-        .pivot_longer(
-            index = [column1, column2, ...],
-            column_names = [column3, column4, ...],
-            names_to = new_column_name,
-            names_sep = string/regular expression,
-            names_pattern = string/regular expression,
-            values_to = new_column_name,
-            column_level = None/int/str,
-            sort_by_appearance = True/False,
-            ignore_index = True/False,
-        )
-    )
-    ```
+        >>> df.pivot_longer(
+        ...    index = 'Species',
+        ...    names_to = ('part', 'dimension'),
+        ...    names_sep = '.',
+        ...    sort_by_appearance = True
+        ...     )
+             Species   part dimension  value
+        0     setosa  Sepal    Length    5.1
+        1     setosa  Sepal     Width    3.5
+        2     setosa  Petal    Length    1.4
+        3     setosa  Petal     Width    0.2
+        4  virginica  Sepal    Length    5.9
+        5  virginica  Sepal     Width    3.0
+        6  virginica  Petal    Length    5.1
+        7  virginica  Petal     Width    1.8
+
+    Retain parts of the column names as headers:
+
+        >>> df.pivot_longer(
+        ...    index = 'Species',
+        ...    names_to = ('part', '.value'),
+        ...    names_sep = '.',
+        ...    sort_by_appearance = True
+        ...     )
+
+             Species   part  Length  Width
+        0     setosa  Sepal     5.1    3.5
+        1     setosa  Petal     1.4    0.2
+        2  virginica  Sepal     5.9    3.0
+        3  virginica  Petal     5.1    1.8
+
+    Transform based on regex:
+
+        >>> df = pd.DataFrame(
+        ...         {'id': [1], 'new_sp_m5564': [2],
+        ...          'newrel_f65': [3]})
+        >>> df
+           id  new_sp_m5564  newrel_f65
+        0   1             2           3
+        >>> df.pivot_longer(
+        ...    index = 'id',
+        ...    names_to = ('diagnosis', 'gender', 'age'),
+        ...    names_pattern = "new_?(.+)_(.)(\\d+)"
+        ...     )
+
+           id diagnosis gender   age  value
+        0   1        sp      m  5564      2
+        1   1       rel      f    65      3
+
+
 
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.

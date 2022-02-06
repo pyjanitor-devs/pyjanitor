@@ -57,9 +57,9 @@ def pivot_longer(
         ...         'Species': ['setosa', 'virginica']}
         ...         )
         >>> df
-               Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
-            0           5.1          3.5           1.4          0.2     setosa
-            1           5.9          3.0           5.1          1.8  virginica
+           Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
+        0           5.1          3.5           1.4          0.2     setosa
+        1           5.9          3.0           5.1          1.8  virginica
 
     Split into parts:
 
@@ -87,7 +87,6 @@ def pivot_longer(
         ...    names_sep = '.',
         ...    sort_by_appearance = True
         ...     )
-
              Species   part  Length  Width
         0     setosa  Sepal     5.1    3.5
         1     setosa  Petal     1.4    0.2
@@ -107,7 +106,6 @@ def pivot_longer(
         ...    names_to = ('diagnosis', 'gender', 'age'),
         ...    names_pattern = r"new_?(.+)_(.)(\\d+)"
         ...     )
-
            id diagnosis gender   age  value
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
@@ -247,7 +245,7 @@ def pivot_wider(
         ...       {'dep': 5.5, 'step': 2, 'a': 25, 'b': 37},
         ...       {'dep': 6.1, 'step': 1, 'a': 22, 'b': 19},
         ...       {'dep': 6.1, 'step': 2, 'a': 18, 'b': 29}]
-        ...    df = pd.DataFrame(df)
+        >>> df = pd.DataFrame(df)
         >>> df
            dep  step   a   b
         0  5.5     1  20  30
@@ -283,9 +281,9 @@ def pivot_wider(
         ...    names_from = "step",
         ...    names_sep = ""
         ...    )
-           dep   a1   a2   b1   b2
-        0  5.5   20   25   30   37
-        1  6.1   22   18   19   29
+           dep  a1  a2  b1  b2
+        0  5.5  20  25  30  37
+        1  6.1  22  18  19  29
 
     Modify columns with `names_glue`:
 

@@ -2,7 +2,7 @@
 import pandas_flavor as pf
 import pandas as pd
 from janitor.utils import check_column
-from .remove_columns import remove_columns
+from .remove_columns import remove_columns  # noqa: F401
 
 
 @pf.register_dataframe_method

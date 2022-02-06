@@ -1,11 +1,13 @@
 """Implementation of the `sort_column_value_order` function."""
 import pandas_flavor as pf
 import pandas as pd
+from janitor.utils import check_column
+from .remove_columns import remove_columns
 
 
 @pf.register_dataframe_method
 def sort_column_value_order(
-    df: pd.DataFrame, column: str, column_value_order: dict, columns=None
+    df: pd.DataFrame, column: str, column_value_order: dict, columns=[]
 ) -> pd.DataFrame:
     """
     This function adds precedence to certain values in a specified column, then
@@ -49,20 +51,13 @@ def sort_column_value_order(
     :param columns: This is a list of additional columns that we can sort by
     :raises ValueError: raises error if chosen Column Name is not in
         Dataframe, or if column_value_order dictionary is empty.
-    :return: This function returns a Pandas DataFrame
+    :return: A sorted pandas DataFrame.
     """
-    df = df.copy()
+    check_column(df, column, present=True)
     if len(column_value_order) > 0:
-        if column in df.columns:
-            df["cond_order"] = df[column].replace(column_value_order)
-            if columns is None:
-                new_df = df.sort_values("cond_order")
-                del new_df["cond_order"]
-            else:
-                new_df = df.sort_values(columns + ["cond_order"])
-                del new_df["cond_order"]
-            return new_df
-        else:
-            raise ValueError("Column Name not in DataFrame")
+        df = df.assign(cond_order=df[column].replace(column_value_order))
+        sort_by = columns + ["cond_order"]
+        df = df.sort_values(sort_by).remove_columns("cond_order")
+        return df
     else:
         raise ValueError("column_value_order dictionary cannot be empty")

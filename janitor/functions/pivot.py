@@ -95,9 +95,7 @@ def pivot_longer(
 
     Split the column labels based on regex:
 
-        >>> df = pd.DataFrame(
-        ...         {'id': [1], 'new_sp_m5564': [2],
-        ...          'newrel_f65': [3]})
+        >>> df = pd.DataFrame({"id": [1], "new_sp_m5564": [2], "newrel_f65": [3]})
         >>> df
            id  new_sp_m5564  newrel_f65
         0   1             2           3
@@ -160,7 +158,7 @@ def pivot_longer(
         is retained and the index labels will be repeated as necessary.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
-    """
+    """  # noqa: E501
 
     # this code builds on the wonderful work of @benjaminjack’s PR
     # https://github.com/benjaminjack/pyjanitor/commit/e3df817903c20dd21634461c8a92aec137963ed0

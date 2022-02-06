@@ -266,10 +266,10 @@ def pivot_wider(
     Change the order of the column labels:
 
         >>> df.pivot_wider(
-        ...    index = "dep",
-        ...    names_from = "step",
-        ...    levels_order = ['step', None]
-        ...    )
+        ...     index = "dep",
+        ...     names_from = "step",
+        ...     levels_order = ["step", None],
+        ... )
            dep  1_a  2_a  1_b  2_b
         0  5.5   20   25   30   37
         1  6.1   22   18   19   29

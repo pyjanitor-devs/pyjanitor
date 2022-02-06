@@ -82,11 +82,11 @@ def pivot_longer(
     Retain parts of the column names as headers:
 
         >>> df.pivot_longer(
-        ...    index = 'Species',
-        ...    names_to = ('part', '.value'),
-        ...    names_sep = '.',
-        ...    sort_by_appearance = True
-        ...     )
+        ...     index = 'Species',
+        ...     names_to = ('part', '.value'),
+        ...     names_sep = '.',
+        ...     sort_by_appearance = True,
+        ... )
              Species   part  Length  Width
         0     setosa  Sepal     5.1    3.5
         1     setosa  Petal     1.4    0.2

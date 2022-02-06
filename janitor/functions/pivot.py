@@ -277,10 +277,10 @@ def pivot_wider(
     Modify columns with `names_sep`:
 
         >>> df.pivot_wider(
-        ...    index = "dep",
-        ...    names_from = "step",
-        ...    names_sep = ""
-        ...    )
+        ...     index = "dep",
+        ...     names_from = "step",
+        ...     names_sep = "",
+        ... )
            dep  a1  a2  b1  b2
         0  5.5  20  25  30  37
         1  6.1  22  18  19  29

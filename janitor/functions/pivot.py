@@ -61,7 +61,7 @@ def pivot_longer(
         0           5.1          3.5           1.4          0.2     setosa
         1           5.9          3.0           5.1          1.8  virginica
 
-    Split into parts:
+    Split the column labels into parts:
 
         >>> df.pivot_longer(
         ...    index = 'Species',
@@ -93,7 +93,7 @@ def pivot_longer(
         2  virginica  Sepal     5.9    3.0
         3  virginica  Petal     5.1    1.8
 
-    Transform based on regex:
+    Split the column labels based on regex:
 
         >>> df = pd.DataFrame(
         ...         {'id': [1], 'new_sp_m5564': [2],

@@ -265,7 +265,7 @@ def pivot_wider(
         0  5.5   20   25   30   37
         1  6.1   22   18   19   29
 
-    Change order of columns:
+    Change the order of the columns:
 
         >>> df.pivot_wider(
         ...    index = "dep",
@@ -276,11 +276,12 @@ def pivot_wider(
         0  5.5   20   25   30   37
         1  6.1   22   18   19   29
 
-    Change `names_sep`:
+    Modify columns with `names_sep`:
 
         >>> df.pivot_wider(
         ...    index = "dep",
         ...    names_from = "step",
+        ...    names_sep = ""
         ...    )
            dep   a1   a2   b1   b2
         0  5.5   20   25   30   37
@@ -314,7 +315,7 @@ def pivot_wider(
         the new DataFrame's values.
         The `janitor.select_columns` syntax is supported here,
         allowing for flexible and dynamic column selection.
-        If ``values_from`` is not specified,  all remaining columns
+        If `values_from` is not specified,  all remaining columns
         will be used.
     :param levels_order: Applicable if there are multiple `names_from`
         and/or `values_from`. Reorders the levels. Accepts a list of strings.

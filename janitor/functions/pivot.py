@@ -102,10 +102,10 @@ def pivot_longer(
            id  new_sp_m5564  newrel_f65
         0   1             2           3
         >>> df.pivot_longer(
-        ...    index = 'id',
-        ...    names_to = ('diagnosis', 'gender', 'age'),
-        ...    names_pattern = r"new_?(.+)_(.)(\\d+)"
-        ...     )
+        ...     index = 'id',
+        ...     names_to = ('diagnosis', 'gender', 'age'),
+        ...     names_pattern = r"new_?(.+)_(.)(\\d+)",
+        ... )
            id diagnosis gender   age  value
         0   1        sp      m  5564      2
         1   1       rel      f    65      3

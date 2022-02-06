@@ -288,11 +288,11 @@ def pivot_wider(
     Modify columns with `names_glue`:
 
         >>> df.pivot_wider(
-        ...    index = "dep",
-        ...    names_from = "step",
-        ...    names_sep = None,
-        ...    names_glue = lambda col: f"{col[0]}_step{col[1]}"
-        ...    )
+        ...     index = "dep",
+        ...     names_from = "step",
+        ...     names_sep = None,
+        ...     names_glue = lambda col: f"{col[0]}_step{col[1]}",
+        ... )
            dep  a_step1  a_step2  b_step1  b_step2
         0  5.5       20       25       30       37
         1  6.1       22       18       19       29

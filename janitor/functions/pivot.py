@@ -299,39 +299,6 @@ def pivot_wider(
         1  6.1       22       18       19       29
 
 
-    Retain parts of the column names as headers:
-
-        >>> df.pivot_longer(
-        ...    index = 'Species',
-        ...    names_to = ('part', '.value'),
-        ...    names_sep = '.',
-        ...    sort_by_appearance = True
-        ...     )
-
-             Species   part  Length  Width
-        0     setosa  Sepal     5.1    3.5
-        1     setosa  Petal     1.4    0.2
-        2  virginica  Sepal     5.9    3.0
-        3  virginica  Petal     5.1    1.8
-
-    Convert to long form based on regex:
-
-        >>> df = pd.DataFrame(
-        ...         {'id': [1], 'new_sp_m5564': [2],
-        ...          'newrel_f65': [3]})
-        >>> df
-           id  new_sp_m5564  newrel_f65
-        0   1             2           3
-        >>> df.pivot_longer(
-        ...    index = 'id',
-        ...    names_to = ('diagnosis', 'gender', 'age'),
-        ...    names_pattern = r"new_?(.+)_(.)(\\d+)"
-        ...     )
-
-           id diagnosis gender   age  value
-        0   1        sp      m  5564      2
-        1   1       rel      f    65      3
-
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         It should be either a single column name, or a list of column names.

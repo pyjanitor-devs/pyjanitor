@@ -253,7 +253,7 @@ def pivot_wider(
         2  6.1     1  22  19
         3  6.1     2  18  29
 
-    pivot and flatten columns:
+    Pivot and flatten columns:
 
         >>> df.pivot_wider(
         ...    index = "dep",

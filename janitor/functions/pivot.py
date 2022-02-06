@@ -43,8 +43,6 @@ def pivot_longer(
     row axis.
 
 
-    Functional usage syntax:
-
     Example:
 
         >>> import pandas as pd
@@ -237,7 +235,6 @@ def pivot_wider(
     If flattened, the values from `values_from` are usually
     at the start of each label in the columns.
 
-    Functional usage syntax:
 
     Example:
 

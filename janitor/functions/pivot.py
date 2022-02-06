@@ -54,8 +54,8 @@ def pivot_longer(
         ...         'Sepal.Width': [3.5, 3.0],
         ...         'Petal.Length': [1.4, 5.1],
         ...         'Petal.Width': [0.2, 1.8],
-        ...         'Species': ['setosa', 'virginica']}
-        ...         )
+        ...         'Species': ['setosa', 'virginica']
+        ...         })
         >>> df
            Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
         0           5.1          3.5           1.4          0.2     setosa

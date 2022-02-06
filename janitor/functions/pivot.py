@@ -42,57 +42,83 @@ def pivot_longer(
     All measured variables are *unpivoted* (and typically duplicated) along the
     row axis.
 
+    Column selection in `index` and `column_names` is possible using the
+    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
 
-    Functional usage syntax:
+    Example:
 
-    ```python
-    import pandas as pd
-    import janitor as jn
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "Sepal.Length": [5.1, 5.9],
+        ...         "Sepal.Width": [3.5, 3.0],
+        ...         "Petal.Length": [1.4, 5.1],
+        ...         "Petal.Width": [0.2, 1.8],
+        ...         "Species": ["setosa", "virginica"],
+        ...     }
+        ... )
+        >>> df
+           Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
+        0           5.1          3.5           1.4          0.2     setosa
+        1           5.9          3.0           5.1          1.8  virginica
 
-    df = pd.DataFrame(...)
-    df = jn.pivot_longer(
-        df = df,
-        index = [column1, column2, ...],
-        column_names = [column3, column4, ...],
-        names_to = new_column_name,
-        names_sep = string/regular expression,
-        names_pattern = string/regular expression,
-        values_to= new_column_name,
-        column_level = None/int/str,
-        sort_by_appearance = True/False,
-        ignore_index = True/False,
-    )
-    ```
+    Split the column labels into parts:
 
-    Method chaining syntax:
+        >>> df.pivot_longer(
+        ...     index = 'Species',
+        ...     names_to = ('part', 'dimension'),
+        ...     names_sep = '.',
+        ...     sort_by_appearance = True,
+        ... )
+             Species   part dimension  value
+        0     setosa  Sepal    Length    5.1
+        1     setosa  Sepal     Width    3.5
+        2     setosa  Petal    Length    1.4
+        3     setosa  Petal     Width    0.2
+        4  virginica  Sepal    Length    5.9
+        5  virginica  Sepal     Width    3.0
+        6  virginica  Petal    Length    5.1
+        7  virginica  Petal     Width    1.8
 
-    ```python
-    df = (
-        pd.DataFrame(...)
-        .pivot_longer(
-            index = [column1, column2, ...],
-            column_names = [column3, column4, ...],
-            names_to = new_column_name,
-            names_sep = string/regular expression,
-            names_pattern = string/regular expression,
-            values_to = new_column_name,
-            column_level = None/int/str,
-            sort_by_appearance = True/False,
-            ignore_index = True/False,
-        )
-    )
-    ```
+    Retain parts of the column names as headers:
+
+        >>> df.pivot_longer(
+        ...     index = 'Species',
+        ...     names_to = ('part', '.value'),
+        ...     names_sep = '.',
+        ...     sort_by_appearance = True,
+        ... )
+             Species   part  Length  Width
+        0     setosa  Sepal     5.1    3.5
+        1     setosa  Petal     1.4    0.2
+        2  virginica  Sepal     5.9    3.0
+        3  virginica  Petal     5.1    1.8
+
+    Split the column labels based on regex:
+
+        >>> df = pd.DataFrame({"id": [1], "new_sp_m5564": [2], "newrel_f65": [3]})
+        >>> df
+           id  new_sp_m5564  newrel_f65
+        0   1             2           3
+        >>> df.pivot_longer(
+        ...     index = 'id',
+        ...     names_to = ('diagnosis', 'gender', 'age'),
+        ...     names_pattern = r"new_?(.+)_(.)(\\d+)",
+        ... )
+           id diagnosis gender   age  value
+        0   1        sp      m  5564      2
+        1   1       rel      f    65      3
+
+
 
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list/tuple of
-        column names. The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
+        column names.
         `index` should be a list of tuples if the columns are a MultiIndex.
     :param column_names: Name(s) of columns to unpivot. Should be either
         a single column name or a list/tuple of column names.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
         `column_names` should be a list of tuples
         if the columns are a MultiIndex.
     :param names_to: Name of new column as a string that will contain
@@ -130,7 +156,7 @@ def pivot_longer(
         is retained and the index labels will be repeated as necessary.
     :returns: A pandas DataFrame that has been unpivoted from wide to long
         format.
-    """
+    """  # noqa: E501
 
     # this code builds on the wonderful work of @benjaminjack’s PR
     # https://github.com/benjaminjack/pyjanitor/commit/e3df817903c20dd21634461c8a92aec137963ed0
@@ -190,13 +216,15 @@ def pivot_wider(
     Reshapes data from *long* to *wide* form.
 
     The number of columns are increased, while decreasing
-    the number of rows. It is the inverse of the `pivot_longer`
+    the number of rows. It is the inverse of the
+    [`pivot_longer`][janitor.functions.pivot.pivot_longer]
     method, and is a wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.
 
     Column selection in `index`, `names_from` and `values_from`
-    is possible using the `janitor.select_columns` syntax.
+    is possible using the
+    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
 
     A ValueError is raised if the combination
     of the `index` and `names_from` is not unique.
@@ -206,60 +234,78 @@ def pivot_wider(
     If flattened, the values from `values_from` are usually
     at the start of each label in the columns.
 
-    Functional usage syntax:
 
-    ```python
-        import pandas as pd
-        import janitor as jn
+    Example:
 
-        df = pd.DataFrame(...)
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = [{'dep': 5.5, 'step': 1, 'a': 20, 'b': 30},
+        ...       {'dep': 5.5, 'step': 2, 'a': 25, 'b': 37},
+        ...       {'dep': 6.1, 'step': 1, 'a': 22, 'b': 19},
+        ...       {'dep': 6.1, 'step': 2, 'a': 18, 'b': 29}]
+        >>> df = pd.DataFrame(df)
+        >>> df
+           dep  step   a   b
+        0  5.5     1  20  30
+        1  5.5     2  25  37
+        2  6.1     1  22  19
+        3  6.1     2  18  29
 
-        df = jn.pivot_wider(
-            df = df,
-            index = [column1, column2, ...],
-            names_from = [column3, column4, ...],
-            value_from = [column5, column6, ...],
-            levels_order = None/list,
-            flatten_levels = True/False,
-            names_sep='_',
-            names_glue= Callable
+    Pivot and flatten columns:
 
-        )
-    ```
+        >>> df.pivot_wider(
+        ...     index = "dep",
+        ...     names_from = "step",
+        ... )
+           dep  a_1  a_2  b_1  b_2
+        0  5.5   20   25   30   37
+        1  6.1   22   18   19   29
 
-    Method chaining syntax:
+    Change the order of the column labels:
 
-    ```python
-        df = (
-            pd.DataFrame(...)
-            .pivot_wider(
-                index = [column1, column2, ...],
-                names_from = [column3, column4, ...],
-                value_from = [column5, column6, ...],
-                levels_order = None/list,
-                flatten_levels = True/False,
-                names_sep='_',
-                names_glue= Callable
-                )
-        )
-    ```
+        >>> df.pivot_wider(
+        ...     index = "dep",
+        ...     names_from = "step",
+        ...     levels_order = ["step", None],
+        ... )
+           dep  1_a  2_a  1_b  2_b
+        0  5.5   20   25   30   37
+        1  6.1   22   18   19   29
+
+    Modify columns with `names_sep`:
+
+        >>> df.pivot_wider(
+        ...     index = "dep",
+        ...     names_from = "step",
+        ...     names_sep = "",
+        ... )
+           dep  a1  a2  b1  b2
+        0  5.5  20  25  30  37
+        1  6.1  22  18  19  29
+
+    Modify columns with `names_glue`:
+
+        >>> df.pivot_wider(
+        ...     index = "dep",
+        ...     names_from = "step",
+        ...     names_sep = None,
+        ...     names_glue = lambda col: f"{col[0]}_step{col[1]}",
+        ... )
+           dep  a_step1  a_step2  b_step1  b_step2
+        0  5.5       20       25       30       37
+        1  6.1       22       18       19       29
+
 
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         It should be either a single column name, or a list of column names.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
         If `index` is not provided, the DataFrame's index is used.
     :param names_from: Name(s) of column(s) to use to make the new
         DataFrame's columns. Should be either a single column name,
         or a list of column names.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
     :param values_from: Name(s) of column(s) that will be used for populating
         the new DataFrame's values.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
-        If ``values_from`` is not specified,  all remaining columns
+        If `values_from` is not specified,  all remaining columns
         will be used.
     :param levels_order: Applicable if there are multiple `names_from`
         and/or `values_from`. Reorders the levels. Accepts a list of strings.

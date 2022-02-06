@@ -64,11 +64,11 @@ def pivot_longer(
     Split the column labels into parts:
 
         >>> df.pivot_longer(
-        ...    index = 'Species',
-        ...    names_to = ('part', 'dimension'),
-        ...    names_sep = '.',
-        ...    sort_by_appearance = True
-        ...     )
+        ...     index = 'Species',
+        ...     names_to = ('part', 'dimension'),
+        ...     names_sep = '.',
+        ...     sort_by_appearance = True,
+        ... )
              Species   part dimension  value
         0     setosa  Sepal    Length    5.1
         1     setosa  Sepal     Width    3.5

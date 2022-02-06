@@ -219,7 +219,7 @@ def pivot_wider(
 
     The number of columns are increased, while decreasing
     the number of rows. It is the inverse of the
-    [`pivot_longer`][janitor.functions.pivot_longer.pivot_longer]
+    [`pivot_longer`][janitor.functions.pivot.pivot_longer]
     method, and is a wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.
@@ -336,7 +336,7 @@ def pivot_wider(
     df = df.copy()
 
     return _computations_pivot_wider(
-        df.copy(),
+        df,
         index,
         names_from,
         values_from,

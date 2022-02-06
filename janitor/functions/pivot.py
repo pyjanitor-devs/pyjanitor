@@ -333,6 +333,8 @@ def pivot_wider(
         form.
     """
 
+    df = df.copy()
+
     return _computations_pivot_wider(
         df.copy(),
         index,

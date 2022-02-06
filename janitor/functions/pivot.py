@@ -115,13 +115,14 @@ def pivot_longer(
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list/tuple of
-        column names. The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
+        column names.
+        The [`select_columns`][janitor.functions.select_columns.select_columns]
+        is supported here, allowing for flexible and dynamic column selection.
         `index` should be a list of tuples if the columns are a MultiIndex.
     :param column_names: Name(s) of columns to unpivot. Should be either
         a single column name or a list/tuple of column names.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
+        The [`select_columns`][janitor.functions.select_columns.select_columns]
+        is supported here, allowing for flexible and dynamic column selection.
         `column_names` should be a list of tuples
         if the columns are a MultiIndex.
     :param names_to: Name of new column as a string that will contain
@@ -225,7 +226,8 @@ def pivot_wider(
     This method does not mutate the original DataFrame.
 
     Column selection in `index`, `names_from` and `values_from`
-    is possible using the `janitor.select_columns` syntax.
+    is possible using the
+    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
 
     A ValueError is raised if the combination
     of the `index` and `names_from` is not unique.
@@ -301,18 +303,18 @@ def pivot_wider(
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         It should be either a single column name, or a list of column names.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
+        The [`select_columns`][janitor.functions.select_columns.select_columns]
+        is supported here, allowing for flexible and dynamic column selection.
         If `index` is not provided, the DataFrame's index is used.
     :param names_from: Name(s) of column(s) to use to make the new
         DataFrame's columns. Should be either a single column name,
         or a list of column names.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
+        The [`select_columns`][janitor.functions.select_columns.select_columns]
+        is supported here, allowing for flexible and dynamic column selection.
     :param values_from: Name(s) of column(s) that will be used for populating
         the new DataFrame's values.
-        The `janitor.select_columns` syntax is supported here,
-        allowing for flexible and dynamic column selection.
+        The [`select_columns`][janitor.functions.select_columns.select_columns]
+        is supported here, allowing for flexible and dynamic column selection.
         If `values_from` is not specified,  all remaining columns
         will be used.
     :param levels_order: Applicable if there are multiple `names_from`

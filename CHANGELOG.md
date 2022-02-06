@@ -9,6 +9,7 @@
 -   [BUG] Fix bug with the complement parameter of `filter_on`. Issue #988. @thatlittleboy
 -   [ENH] Add `xlsx_table`, for reading tables from an Excel sheet. @samukweku
 -   [ENH] minor improvements for conditional_join; equality only joins are no longer supported; there has to be at least one non-equi join present. @samukweku
+-   [BUG] `sort_column_value_order` no longer mutates original dataframe.
 
 ## [v0.22.0] - 2021-11-21
 

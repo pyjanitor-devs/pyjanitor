@@ -1,9 +1,3 @@
-import numpy as np
-import pandas as pd
-import pytest
-
-from janitor.functions import sort_column_value_order
-
 """
 Below, company_sales and company_sales_2 are both dfs.
 
@@ -24,21 +18,34 @@ Test 3 asserts that company_sales_2 and
     the columns have been successfully ordered.
 """
 
+import numpy as np
+import pandas as pd
+import pytest
 
-def test_sort_column_value_order():
+from janitor.functions import sort_column_value_order
+
+
+@pytest.fixture
+def company_sales_df():
+    """Fixture for tests below."""
     company_sales = {
         "SalesMonth": ["Jan", "Feb", "Feb", "Mar", "April"],
-        "Company1": [150.0, 200.0, 200.0, 300.0, 400.0],
-        "Company2": [180.0, 250.0, 250.0, np.nan, 500.0],
+        "Company1": [150.0, 260.0, 230.0, 300.0, 400.0],
+        "Company2": [500.0, 210.0, 250.0, np.nan, 80.0],
         "Company3": [400.0, 500.0, 500.0, 600.0, 675.0],
     }
     df = pd.DataFrame.from_dict(company_sales)
-    df = df.set_index("Company1")
+    return df
+
+
+def test_sort_column_value_order(company_sales_df):
+    """Main test for sort_column_value_order."""
+    df = company_sales_df.set_index("Company1")
     company_sales_2 = {
-        "SalesMonth": ["April", "Mar", "Feb", "Feb", "Jan"],
-        "Company1": [400.0, 300.0, 200.0, 200.0, 150.0],
-        "Company2": [500.0, np.nan, 250.0, 250.0, 180.0],
-        "Company3": [675.0, 600.0, 500.0, 500.0, 400.0],
+        "SalesMonth": reversed(["Jan", "Feb", "Feb", "Mar", "April"]),
+        "Company1": reversed([150.0, 230.0, 260.0, 300.0, 400.0]),
+        "Company2": reversed([500.0, 250.0, 210.0, np.nan, 80.0]),
+        "Company3": reversed([400.0, 500.0, 500.0, 600.0, 675.0]),
     }
     df2 = pd.DataFrame.from_dict(company_sales_2)
     df2 = df2.set_index("Company1")
@@ -53,7 +60,33 @@ def test_sort_column_value_order():
             )
         )
     assert df2.equals(
-        sort_column_value_order(
-            df, "SalesMonth", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
+        df.sort_column_value_order(
+            "SalesMonth", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
         )
+    )
+
+
+def test_sort_column_value_order_without_column_value_order(company_sales_df):
+    """
+    Test that sort_column_value_order raises a ValueError.
+
+    In this case, it should raise ValueError
+    when `column_value_order` is empty.
+    """
+    with pytest.raises(ValueError):
+        company_sales_df.sort_column_value_order("SalesMonth", {})
+
+
+def test_sort_column_value_order_with_columns(company_sales_df):
+    """Execution test for sort_column_value_order
+
+    Used to test the case when columns is also specified.
+
+    TODO: This test needs to be improved
+    to be more than just an execution test.
+    """
+    _ = company_sales_df.set_index("Company1").sort_column_value_order(
+        "SalesMonth",
+        {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4},
+        columns=["Company2"],
     )

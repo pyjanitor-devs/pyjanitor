@@ -218,7 +218,8 @@ def pivot_wider(
     Reshapes data from *long* to *wide* form.
 
     The number of columns are increased, while decreasing
-    the number of rows. It is the inverse of the `pivot_longer`
+    the number of rows. It is the inverse of the
+    [`pivot_longer`][janitor.functions.pivot_longer.pivot_longer]
     method, and is a wrapper around `pd.DataFrame.pivot` method.
 
     This method does not mutate the original DataFrame.

@@ -105,7 +105,7 @@ def pivot_longer(
         >>> df.pivot_longer(
         ...    index = 'id',
         ...    names_to = ('diagnosis', 'gender', 'age'),
-        ...    names_pattern = "new_?(.+)_(.)(\\d+)"
+        ...    names_pattern = r"new_?(.+)_(.)(\\d+)"
         ...     )
 
            id diagnosis gender   age  value

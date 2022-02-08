@@ -31,7 +31,6 @@ def complete(
     Example:
 
         >>> import pandas as pd
-        >>> import numpy as np
         >>> import janitor
         >>> df = pd.DataFrame(
         ...     {

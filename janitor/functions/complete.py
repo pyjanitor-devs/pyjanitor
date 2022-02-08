@@ -85,7 +85,7 @@ def complete(
         10  2004      Agarum        8.0
         11  2004  Saccharina        2.0
 
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param *columns: This refers to the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs

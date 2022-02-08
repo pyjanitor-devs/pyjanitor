@@ -42,7 +42,7 @@ def expand_grid(
 
     The MultiIndexed DataFrame can be flattened using pyjanitor's
     [`collapse_levels`][janitor.functions.collapse_levels.collapse_levels]
-    method; the user can also decide to drop any of the levels, via Pandas'
+    method; the user can also decide to drop any of the levels, via pandas'
     `droplevel` method.
 
     Example:

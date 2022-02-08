@@ -61,7 +61,7 @@ def process_text(
         2  NaN     3
 
     :param df: A pandas DataFrame.
-    :param column_name: string column to be operated on.
+    :param column_name: String column to be operated on.
     :param string_function: pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
     :returns: A pandas DataFrame with modified column.

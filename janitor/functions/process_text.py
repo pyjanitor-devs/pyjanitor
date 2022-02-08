@@ -65,8 +65,8 @@ def process_text(
     :param string_function: pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
     :returns: A pandas DataFrame with modified column.
-    :raises KeyError: if `string_function` is not a Pandas string method.
-    :raises ValueError: if the text function returns a DataFrame, instead of a Series.
+    :raises KeyError: If `string_function` is not a Pandas string method.
+    :raises ValueError: If the text function returns a DataFrame, instead of a Series.
     """  # noqa: E501
 
     check("column_name", column_name, [str])

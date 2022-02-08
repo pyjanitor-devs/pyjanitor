@@ -11,7 +11,7 @@ def process_text(
     df: pd.DataFrame,
     column_name: str,
     string_function: str,
-    **kwargs: str,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Apply a Pandas string method to an existing column.
@@ -86,10 +86,8 @@ def process_text(
 
     if isinstance(result, pd.DataFrame):
         raise ValueError(
-            """
-            The outcome of the processed text is a DataFrame,
-            which is not supported in `process_text`.
-            """
+            "The outcome of the processed text is a DataFrame, "
+            "which is not supported in `process_text`."
         )
 
     return df.assign(**{column_name: result})

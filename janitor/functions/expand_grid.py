@@ -99,12 +99,10 @@ def expand_grid(
 
         if not df_key:
             raise KeyError(
-                """
-                Using `expand_grid` as part of a
-                DataFrame method chain requires that
-                a string argument be provided for
-                the `df_key` parameter.
-                """
+                "Using `expand_grid` as part of a "
+                "DataFrame method chain requires that "
+                "a string argument be provided for "
+                "the `df_key` parameter. "
             )
 
         check("df_key", df_key, [str])

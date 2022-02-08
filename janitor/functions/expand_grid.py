@@ -51,7 +51,6 @@ def expand_grid(
         >>> import janitor as jn
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
         >>> data = {"z": [1, 2, 3]}
-        >>> data = {"x": [1, 2, 3], "y": [1, 2]}
         >>> df.expand_grid(df_key="df", others=data)
           df     z
            x  y  0
@@ -64,6 +63,7 @@ def expand_grid(
 
     Expand_grid works with non-pandas objects:
 
+        >>> data = {"x": [1, 2, 3], "y": [1, 2]}
         >>> jn.expand_grid(others=data)
            x  y
            0  0
@@ -72,29 +72,7 @@ def expand_grid(
         2  2  1
         3  2  2
         4  3  1
-
-    Cartesian product of multiple dataframes:
-
-        >>> df1 = pd.DataFrame({"x": range(1, 3), "y": [2, 1]})
-        >>> df2 = pd.DataFrame({"x": [1, 2, 3], "y": [3, 2, 1]})
-        >>> df3 = pd.DataFrame({"x": [2, 3], "y": ["a", "b"]})
-        >>> data = {"df1": df1, "df2": df2, "df3": df3}
-        >>> jn.expand_grid(others=data)
-           df1    df2    df3
-             x  y   x  y   x  y
-        0    1  2   1  3   2  a
-        1    1  2   1  3   3  b
-        2    1  2   2  2   2  a
-        3    1  2   2  2   3  b
-        4    1  2   3  1   2  a
-        5    1  2   3  1   3  b
-        6    2  1   1  3   2  a
-        7    2  1   1  3   3  b
-        8    2  1   2  2   2  a
-        9    2  1   2  2   3  b
-        10   2  1   3  1   2  a
-        11   2  1   3  1   3  b
-
+        5  3  2
 
     :param df: A pandas DataFrame.
     :param df_key: name of key for the dataframe.

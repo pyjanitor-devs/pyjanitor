@@ -11,7 +11,7 @@ def process_text(
     df: pd.DataFrame,
     column_name: str,
     string_function: str,
-    **kwargs: str,
+    **kwargs,
 ) -> pd.DataFrame:
     """
     Apply a Pandas string method to an existing column.
@@ -21,52 +21,52 @@ def process_text(
     along with keyword arguments, if any, to the function.
 
     This modifies an existing column; it does not create a new column;
-    new columns can be created via pyjanitor's `transform_columns`.
+    new columns can be created via pyjanitor's
+    [`transform_columns`][janitor.functions.transform_columns.transform_columns].
 
 
-    A list of all the string methods in Pandas can be accessed [here](https://pandas.pydata.org/docs/user_guide/text.html#method-summary)
+    A list of all the string methods in Pandas can be accessed [here](https://pandas.pydata.org/docs/user_guide/text.html#method-summary).
 
 
-    Functional usage syntax:
+    Example:
 
-    ```python
-        import pandas as pd
-        import janitor as jn
+        >>> import pandas as pd
+        >>> import janitor
+        >>> import re
+        >>> df = pd.DataFrame({"text": ["Ragnar", "sammywemmy", "ginger"],
+        ... "code": [1, 2, 3]})
+        >>> df
+                 text  code
+        0      Ragnar     1
+        1  sammywemmy     2
+        2      ginger     3
+        >>> df.process_text(column_name="text", string_function="lower")
+                 text  code
+        0      ragnar     1
+        1  sammywemmy     2
+        2      ginger     3
 
-        df = pd.DataFrame(...)
-        df = jn.process_text(
-            df = df,
-            column_name,
-            string_function = "string_func_name_here",
-            kwargs
-            )
-    ```
+    For string methods with parameters, simply pass the keyword arguments:
 
-    Method-chaining usage syntax:
-
-    ```python
-
-        import pandas as pd
-        import janitor as jn
-
-        df = (
-            pd.DataFrame(...)
-            .process_text(
-                column_name,
-                string_function = "string_func_name_here",
-                kwargs
-                )
-        )
-    ```
-
+        >>> df.process_text(
+        ...     column_name="text",
+        ...     string_function="extract",
+        ...     pat=r"(ag)",
+        ...     expand=False,
+        ...     flags=re.IGNORECASE,
+        ... )
+          text  code
+        0   ag     1
+        1  NaN     2
+        2  NaN     3
 
     :param df: A pandas DataFrame.
-    :param column_name: string column to be operated on.
+    :param column_name: String column to be operated on.
     :param string_function: pandas string method to be applied.
     :param kwargs: Keyword arguments for parameters of the `string_function`.
     :returns: A pandas DataFrame with modified column.
-    :raises KeyError: if ``string_function`` is not a Pandas string method.
-    :raises ValueError: if the text function returns a DataFrame, instead of a Series.
+    :raises KeyError: If `string_function` is not a Pandas string method.
+    :raises ValueError: If the text function returns a DataFrame, instead of a Series.
     """  # noqa: E501
 
     check("column_name", column_name, [str])
@@ -86,10 +86,8 @@ def process_text(
 
     if isinstance(result, pd.DataFrame):
         raise ValueError(
-            """
-            The outcome of the processed text is a DataFrame,
-            which is not supported in `process_text`.
-            """
+            "The outcome of the processed text is a DataFrame, "
+            "which is not supported in `process_text`."
         )
 
     return df.assign(**{column_name: result})

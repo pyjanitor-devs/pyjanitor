@@ -26,7 +26,7 @@ def expand_grid(
 
 
     Data types are preserved in this function,
-    including Pandas' extension array dtypes.
+    including pandas' extension array dtypes.
 
     The output will always be a DataFrame, usually a MultiIndex,
     with the keys of the `others` dictionary serving as
@@ -36,41 +36,43 @@ def expand_grid(
     `others`, the columns are flattened, before the final
     cartesian DataFrame is generated.
 
-    If a Pandas Series/DataFrame is passed, and has a labeled index, or
+    If a pandas Series/DataFrame is passed, and has a labeled index, or
     a MultiIndex index, the index is discarded; the final DataFrame
     will have a RangeIndex.
 
     The MultiIndexed DataFrame can be flattened using pyjanitor's
-    `collapse_levels` method; the user can also decide to drop any of the
-    levels, via Pandas' `droplevel` method.
+    [`collapse_levels`][janitor.functions.collapse_levels.collapse_levels]
+    method; the user can also decide to drop any of the levels, via pandas'
+    `droplevel` method.
 
-    Functional usage syntax:
+    Example:
 
-    ```python
+        >>> import pandas as pd
+        >>> import janitor as jn
+        >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
+        >>> data = {"z": [1, 2, 3]}
+        >>> df.expand_grid(df_key="df", others=data)
+          df     z
+           x  y  0
+        0  1  2  1
+        1  1  2  2
+        2  1  2  3
+        3  2  1  1
+        4  2  1  2
+        5  2  1  3
 
-        import pandas as pd
-        import janitor as jn
+    Expand_grid works with non-pandas objects:
 
-        df = pd.DataFrame(...)
-        df = jn.expand_grid(df=df, df_key="...", others={...})
-    ```
-
-    Method-chaining usage syntax:
-
-    ```python
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame(...).expand_grid(df_key="bla",others={...})
-    ```
-
-    Usage independent of a DataFrame
-
-    ```python
-        import pandas as pd
-        from janitor import expand_grid
-
-        df = expand_grid(others = {"x":range(1,4), "y":[1,2]})
+        >>> data = {"x": [1, 2, 3], "y": [1, 2]}
+        >>> jn.expand_grid(others=data)
+           x  y
+           0  0
+        0  1  1
+        1  1  2
+        2  2  1
+        3  2  2
+        4  3  1
+        5  3  2
 
     :param df: A pandas DataFrame.
     :param df_key: name of key for the dataframe.
@@ -97,12 +99,10 @@ def expand_grid(
 
         if not df_key:
             raise KeyError(
-                """
-                Using `expand_grid` as part of a
-                DataFrame method chain requires that
-                a string argument be provided for
-                the `df_key` parameter.
-                """
+                "Using `expand_grid` as part of a "
+                "DataFrame method chain requires that "
+                "a string argument be provided for "
+                "the `df_key` parameter. "
             )
 
         check("df_key", df_key, [str])

@@ -19,7 +19,7 @@ def complete(
 ) -> pd.DataFrame:
     """
     It is modeled after tidyr's `complete` function, and is a wrapper around
-    `expand_grid` and `pd.merge`.
+    [`expand_grid`][janitor.functions.expand_grid.expand_grid] and `pd.merge`.
 
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible.
@@ -28,39 +28,64 @@ def complete(
 
     MultiIndex columns are not supported.
 
-    Functional usage syntax:
+    Example:
 
-    ```python
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "Year": [1999, 2000, 2004, 1999, 2004],
+        ...         "Taxon": [
+        ...             "Saccharina",
+        ...             "Saccharina",
+        ...             "Saccharina",
+        ...             "Agarum",
+        ...             "Agarum",
+        ...         ],
+        ...         "Abundance": [4, 5, 2, 1, 8],
+        ...     }
+        ... )
+        >>> df
+           Year       Taxon  Abundance
+        0  1999  Saccharina          4
+        1  2000  Saccharina          5
+        2  2004  Saccharina          2
+        3  1999      Agarum          1
+        4  2004      Agarum          8
 
-        import pandas as pd
-        import janitor as jn
+    Expose missing pairings of `Year` and `Taxon`:
 
-        df = pd.DataFrame(...)
+        >>> df.complete("Year", "Taxon", sort = True)
+           Year       Taxon  Abundance
+        0  1999      Agarum        1.0
+        1  1999  Saccharina        4.0
+        2  2000      Agarum        NaN
+        3  2000  Saccharina        5.0
+        4  2004      Agarum        8.0
+        5  2004  Saccharina        2.0
 
-        df = jn.complete(
-            df = df,
-            column_label,
-            (column1, column2, ...),
-            {column1: new_values, ...},
-            by = label/list_of_labels
-        )
-    ```
+    Expose missing years from 1999 to 2004 :
 
-    Method chaining syntax:
+        >>> df.complete(
+        ...     {"Year": range(df.Year.min(), df.Year.max() + 1)},
+        ...     "Taxon",
+        ...     sort=True,
+        ... )
+            Year       Taxon  Abundance
+        0   1999      Agarum        1.0
+        1   1999  Saccharina        4.0
+        2   2000      Agarum        NaN
+        3   2000  Saccharina        5.0
+        4   2001      Agarum        NaN
+        5   2001  Saccharina        NaN
+        6   2002      Agarum        NaN
+        7   2002  Saccharina        NaN
+        8   2003      Agarum        NaN
+        9   2003  Saccharina        NaN
+        10  2004      Agarum        8.0
+        11  2004  Saccharina        2.0
 
-    ```python
-
-        df = (
-            pd.DataFrame(...)
-            .complete(
-                column_label,
-                (column1, column2, ...),
-                {column1: new_values, ...},
-                by = label/list_of_labels
-            )
-    ```
-
-    :param df: A pandas dataframe.
+    :param df: A pandas DataFrame.
     :param *columns: This refers to the columns to be
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs

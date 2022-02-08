@@ -25,7 +25,7 @@ def process_text(
     [`transform_columns`][janitor.functions.transform_columns.transform_columns].
 
 
-    A list of all the string methods in Pandas can be accessed [here](https://pandas.pydata.org/docs/user_guide/text.html#method-summary)
+    A list of all the string methods in Pandas can be accessed [here](https://pandas.pydata.org/docs/user_guide/text.html#method-summary).
 
 
     Example:

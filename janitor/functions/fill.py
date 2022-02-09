@@ -145,6 +145,7 @@ def fill_empty(
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
 
+
 @dispatch(pd.DataFrame, abcIterable)
 def _fill_empty(df, column_names, value=None):
     """Fill empty function for the case that column_names is list or tuple."""

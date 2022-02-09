@@ -1,3 +1,4 @@
+from collections.abc import Iterable as abcIterable
 from enum import Enum
 from operator import methodcaller
 from typing import Hashable, Iterable, Union
@@ -144,8 +145,7 @@ def fill_empty(
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
 
-
-@dispatch(pd.DataFrame, (list, tuple))
+@dispatch(pd.DataFrame, abcIterable)
 def _fill_empty(df, column_names, value=None):
     """Fill empty function for the case that column_names is list or tuple."""
     fill_mapping = {c: value for c in column_names}

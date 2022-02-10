@@ -10,6 +10,7 @@
 -   [ENH] Add `xlsx_table`, for reading tables from an Excel sheet. @samukweku
 -   [ENH] minor improvements for conditional_join; equality only joins are no longer supported; there has to be at least one non-equi join present. @samukweku
 -   [BUG] `sort_column_value_order` no longer mutates original dataframe.
+-   [BUG] Extend `fill_empty`'s `column_names` type range. Issue #998. @Zeroto521
 
 ## [v0.22.0] - 2021-11-21
 

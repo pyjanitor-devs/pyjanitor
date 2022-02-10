@@ -22,7 +22,7 @@ def test_fill_empty_column_string(null_df):
         [0, 1, "2", "3"],  # list
         {0, 1, "2", "3"},  # set
         ({0: 0, 1: 1, "2": "2", "3": "3"}).keys(),  # dict key
-        ({0: 0, 1: 1, "2": "2", "3": "3"}).values(),  # key value
+        ({0: 0, 1: 1, "2": "2", "3": "3"}).values(),  # dict value
         pd.Index([0, 1, "2", "3"]),  # Index
     ],
 )

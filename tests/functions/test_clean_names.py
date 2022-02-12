@@ -190,32 +190,15 @@ def test_clean_names_truncate_limit(dataframe):
     assert set(df.columns) == set(expected_columns)
 
 
-"""
-The following tests ensure nonstandard characters
-and spaces have been cleaned up.
-"""
-
-
 @pytest.mark.functions
 def test_charac():
-    table_GDP = pd.read_html(
-        "https://en.wikipedia.org/wiki/Economy_of_the_United_States",
-        match="Nominal GDP",
-    )
-    df = table_GDP[0]
+    """Ensure non standard characters and spaces have been cleaned up."""
 
+    df = pd.DataFrame(
+        {
+            r"Current accountbalance(in % of GDP)": range(5),
+        }
+    )
     df = df.clean_names(strip_underscores=True, case_type="lower")
 
     assert "current_accountbalance_in_%_of_gdp" in df.columns
-
-
-@pytest.mark.functions
-def test_space():
-    table_GDP = pd.read_html(
-        "https://en.wikipedia.org/wiki/Economy_of_Russia", match="Year"
-    )
-    df = table_GDP[0]
-
-    df = df.clean_names(strip_underscores=True, case_type="lower")
-
-    assert ("in %" in df.columns) is False

@@ -3,6 +3,7 @@ import pytest
 
 @pytest.mark.functions
 def test_round_to_nearest_half(dataframe):
+    """Checks output for rounding to the nearest 1/2."""
     df = dataframe.round_to_fraction("Bell__Chart", 2)
     assert df.iloc[0, 1] == 1.0
     assert df.iloc[1, 1] == 2.5
@@ -13,3 +14,16 @@ def test_round_to_nearest_half(dataframe):
     assert df.iloc[6, 1] == 1.0
     assert df.iloc[7, 1] == 2.5
     assert df.iloc[8, 1] == 3.0
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "denominator",
+    [0, -5, -0.25],
+)
+def test_invalid_denominator_args(dataframe, denominator):
+    """Ensure ValueError's are raised if denominator value passed in
+    is invalid.
+    """
+    with pytest.raises(ValueError):
+        dataframe.round_to_fraction("Bell__Chart", denominator)

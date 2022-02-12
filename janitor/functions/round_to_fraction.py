@@ -4,15 +4,15 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import check, deprecated_alias
+from janitor.utils import check, check_column, deprecated_alias
 
 
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def round_to_fraction(
     df: pd.DataFrame,
-    column_name: Hashable = None,
-    denominator: float = None,
+    column_name: Hashable,
+    denominator: float,
     digits: float = np.inf,
 ) -> pd.DataFrame:
     """Round all values in a column to a fraction.
@@ -45,16 +45,19 @@ def round_to_fraction(
 
     :param df: A pandas DataFrame.
     :param column_name: Name of column to round to fraction.
-    :param denominator: The denominator of the fraction for rounding.
+    :param denominator: The denominator of the fraction for rounding. Must be
+        a positive number.
     :param digits: The number of digits for rounding after rounding to the
         fraction. Default is np.inf (i.e. no subsequent rounding).
     :returns: A pandas DataFrame with a column's values rounded.
+    :raises ValueError: If `denominator` is not a positive number.
     """
-    if denominator:
-        check("denominator", denominator, [float, int])
+    check_column(df, column_name)
+    check("denominator", denominator, [float, int])
+    check("digits", digits, [float, int])
 
-    if digits:
-        check("digits", digits, [float, int])
+    if denominator <= 0:
+        raise ValueError("denominator is expected to be a positive number.")
 
     df[column_name] = round(df[column_name] * denominator, 0) / denominator
     if not np.isinf(digits):

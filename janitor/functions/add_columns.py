@@ -69,7 +69,7 @@ def add_column(
         rows in the DataFrame.
     :raises ValueError: if attempting to add an iterable of values with
         a length not equal to the number of DataFrame rows.
-    :raises ValueError: if `value` has length of `0``.
+    :raises ValueError: if `value` has length of `0`.
     """
     df = df.copy()
     check("column_name", column_name, [str])

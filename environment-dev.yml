@@ -26,7 +26,6 @@ dependencies:
   - multipledispatch
   - mypy
   - natsort
-  - nbsphinx
   - nox
   - numpy
   - openpyxl
@@ -46,8 +45,6 @@ dependencies:
   - rdkit=2021.09.3
   - recommonmark
   - seaborn
-  - sphinx
-  - sphinxcontrib-fulltoc
   - twine
   - unyt
   - xarray

@@ -1,7 +1,8 @@
+"""Implementation of the `jitter` function."""
 from typing import Hashable, Iterable, Optional
+import numpy as np
 import pandas_flavor as pf
 import pandas as pd
-import numpy as np
 
 from janitor.utils import check
 
@@ -18,40 +19,24 @@ def jitter(
     """
     Adds Gaussian noise (jitter) to the values of a column.
 
-    Functional usage syntax:
+    Example:
 
-    ```python
-    import pandas as pd
-    import janitor as jn
-
-    df = pd.DataFrame(...)
-
-    df = jn.functions.jitter(
-        df=df,
-        column_name='values',
-        dest_column_name='values_jitter',
-        scale=1.0,
-        clip=None,
-        random_state=None,
-    )
-    ```
-
-    Method chaining usage example:
-
-    ```
-    import pandas as pd
-    import janitor
-
-    df = pd.DataFrame(...)
-
-    df = df.jitter(
-        column_name='values',
-        dest_column_name='values_jitter',
-        scale=1.0,
-        clip=None,
-        random_state=None,
-    )
-    ```
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": [3, 4, 5, np.nan]})
+        >>> df
+             a
+        0  3.0
+        1  4.0
+        2  5.0
+        3  NaN
+        >>> df.jitter("a", dest_column_name="a_jit", scale=1, random_state=42)
+             a     a_jit
+        0  3.0  3.496714
+        1  4.0  3.861736
+        2  5.0  5.647689
+        3  NaN       NaN
 
     A new column will be created containing the values of the original column
     with Gaussian noise added.
@@ -86,11 +71,11 @@ def jitter(
 
     :returns: A pandas DataFrame with a new column containing
         Gaussian-jittered values from another column.
-    :raises TypeError: if `column_name` is not numeric.
-    :raises ValueError: if `scale` is not a numerical value
+    :raises TypeError: If `column_name` is not numeric.
+    :raises ValueError: If `scale` is not a numerical value
         greater than `0`.
-    :raises ValueError: if `clip` is not an iterable of length `2`.
-    :raises ValueError: if `clip[0]` is not less than `clip[1]`.
+    :raises ValueError: If `clip` is not an iterable of length `2`.
+    :raises ValueError: If `clip[0]` is greater than `clip[1]`.
     """
 
     # Check types
@@ -112,7 +97,9 @@ def jitter(
             raise ValueError("`clip` must be an iterable of length 2.")
         # Ensure the values in `clip` are ordered as min, max
         if clip[1] < clip[0]:
-            raise ValueError("`clip[0]` must be less than `clip[1]`.")
+            raise ValueError(
+                "`clip[0]` must be less than or equal to `clip[1]`."
+            )
         result = np.clip(result, *clip)
     df[dest_column_name] = result
 

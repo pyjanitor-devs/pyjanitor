@@ -1,10 +1,12 @@
+"""Implementation of `impute` function"""
 from typing import Any, Hashable, Optional
+
+import numpy as np
 import pandas_flavor as pf
 import pandas as pd
 from scipy.stats import mode
 
 from janitor.utils import deprecated_alias
-import numpy as np
 
 
 @pf.register_dataframe_method
@@ -24,26 +26,6 @@ def impute(
     Underneath the hood, this function calls the `.fillna()` method available
     to every `pandas.Series` object.
 
-    Method-chaining example:
-
-    ```python
-        import numpy as np
-        import pandas as pd
-        import janitor
-
-        data = {
-            "a": [1, 2, 3],
-            "sales": np.nan,
-            "score": [np.nan, 3, 2]}
-        df = (
-            pd.DataFrame(data)
-            # Impute null values with 0
-            .impute(column_name='sales', value=0.0)
-            # Impute null values with median
-            .impute(column_name='score', statistic_column_name='median')
-        )
-    ```
-
     Either one of `value` or `statistic_column_name` should be provided.
 
     If `value` is provided, then all null values in the selected column will
@@ -61,19 +43,55 @@ def impute(
     - `minimum` (also aliased by `min`)
     - `maximum` (also aliased by `max`)
 
-    :param df: A pandas DataFrame
+    Example:
+
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "a": [1, 2, 3],
+        ...     "sales": np.nan,
+        ...     "score": [np.nan, 3, 2],
+        ... })
+        >>> df
+           a  sales  score
+        0  1    NaN    NaN
+        1  2    NaN    3.0
+        2  3    NaN    2.0
+
+    Imputing null values with 0 (using the `value` parameter):
+
+        >>> df.impute(column_name="sales", value=0.0)
+           a  sales  score
+        0  1    0.0    NaN
+        1  2    0.0    3.0
+        2  3    0.0    2.0
+
+    Imputing null values with median (using the `statistic_column_name`
+    parameter):
+
+        >>> df.impute(column_name="score", statistic_column_name="median")
+           a  sales  score
+        0  1    0.0    2.5
+        1  2    0.0    3.0
+        2  3    0.0    2.0
+
+    :param df: A pandas DataFrame.
     :param column_name: The name of the column on which to impute values.
-    :param value: (optional) The value to impute.
-    :param statistic_column_name: (optional) The column statistic to impute.
+    :param value: The value used for imputation, passed into `.fillna` method
+        of the underlying pandas Series.
+    :param statistic_column_name: The column statistic to impute.
     :returns: An imputed pandas DataFrame.
-    :raises ValueError: if both `value` and `statistic` are provided.
-    :raises KeyError: if `statistic` is not one of `mean`, `average`
-        `median`, `mode`, `minimum`, `min`, `maximum`, or `max`.
+    :raises ValueError: If both `value` and `statistic_column_name` are
+        provided.
+    :raises KeyError: If `statistic_column_name` is not one of `mean`,
+        `average`, `median`, `mode`, `minimum`, `min`, `maximum`, or `max`.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if value is not None and statistic_column_name is not None:
         raise ValueError(
-            "Only one of `value` or `statistic` should be provided"
+            "Only one of `value` or `statistic_column_name` should be "
+            "provided."
         )
 
     # If statistic is provided, then we compute the relevant summary statistic
@@ -90,8 +108,10 @@ def impute(
     }
     if statistic_column_name is not None:
         # Check that the statistic keyword argument is one of the approved.
-        if statistic_column_name not in funcs.keys():
-            raise KeyError(f"`statistic` must be one of {funcs.keys()}")
+        if statistic_column_name not in funcs:
+            raise KeyError(
+                f"`statistic_column_name` must be one of {funcs.keys()}."
+            )
 
         value = funcs[statistic_column_name](
             df[column_name].dropna().to_numpy()

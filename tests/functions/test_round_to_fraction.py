@@ -17,6 +17,15 @@ def test_round_to_nearest_half(dataframe):
 
 
 @pytest.mark.functions
+def test_round_digits(dataframe):
+    """Checks rounding to the specified number of digits."""
+    df = dataframe.round_to_fraction("Bell__Chart", 7, digits=3)
+    assert df.iloc[0, 1] == 1.286
+    assert df.iloc[1, 1] == 2.429
+    assert df.iloc[2, 1] == 3.286
+
+
+@pytest.mark.functions
 @pytest.mark.parametrize(
     "denominator",
     [0, -5, -0.25],

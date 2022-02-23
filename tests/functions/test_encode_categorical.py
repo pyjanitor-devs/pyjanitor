@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import datetime
 import pytest
 from hypothesis import given
 from pandas.testing import assert_frame_equal
@@ -98,179 +99,139 @@ def test_check_presence_column_names_in_kwargs(df):
     do not exist in the dataframe.
     """
     with pytest.raises(ValueError):
-        df.encode_categorical(col_1=(None, "sort"))
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_check_type_tuple_in_kwargs(df):
-    """
-    Raise TypeError if the categories, order pairing
-    in `kwargs` is not a tuple.
-    """
-    with pytest.raises(TypeError):
-        df.encode_categorical(a=[None, "sort"])
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_tuple_length_in_kwargs(df):
-    """
-    Raise ValueError if the length of the tuple
-    in kwargs is not equal to 2.
-    """
-    with pytest.raises(ValueError):
-        df.encode_categorical(a=(None, None, 2))
+        df.encode_categorical(col_1=None)
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_categories_type_in_kwargs(df):
     """
-    Raise TypeError if the wrong argument is supplied to
-    the `categories` parameter in kwargs.
+    Raise TypeError if the value provided is not array-like or a string.
     """
     with pytest.raises(TypeError):
-        df.encode_categorical(a=("category", None))
+        df.encode_categorical(a=datetime.datetime(2017, 1, 1))
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_categories_ndim_array_gt_1_in_kwargs(df):
     """
-    Raise ValueError if the argument supplied to
-    the `categories` parameter in kwargs is not
-    1-D array-like.
+    Raise ValueError if categories is provided, but is not a 1D array.
     """
     arrays = [[1, 1, 2, 2], ["red", "blue", "red", "blue"]]
     with pytest.raises(ValueError):
-        df.encode_categorical(a=(arrays, None))
+        df.encode_categorical(a=arrays)
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_categories_ndim_MultiIndex_gt_1_in_kwargs(df):
     """
-    Raise ValueError if the argument supplied to
-    the `categories` parameter in kwargs is not
-    1-D array-like.
+    Raise ValueError if categories is provided, but is not a 1D array.
     """
     arrays = [[1, 1, 2, 2], ["red", "blue", "red", "blue"]]
     arrays = pd.MultiIndex.from_arrays(arrays, names=("number", "color"))
     with pytest.raises(ValueError):
-        df.encode_categorical(a=(arrays, None))
+        df.encode_categorical(a=arrays)
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_categories_ndim_DataFrame_gt_1_in_kwargs(df):
     """
-    Raise ValueError if the argument supplied to
-    the `categories` parameter in kwargs is not
-    1-D array-like.
+    Raise ValueError if categories is provided, but is not a 1D array.
     """
     arrays = {"name": [1, 1, 2, 2], "number": ["red", "blue", "red", "blue"]}
     arrays = pd.DataFrame(arrays)
     with pytest.raises(ValueError):
-        df.encode_categorical(a=(arrays, None))
+        df.encode_categorical(a=arrays)
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_categories_null_in_categories(df):
     """
-    Raise ValueError if there are nulls in the `categories`.
+    Raise ValueError if categories is provided, but has nulls.
     """
     with pytest.raises(ValueError):
-        df.encode_categorical(a=([None, 2, 3], None))
+        df.encode_categorical(a=[None, 2, 3])
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_non_unique_cat(df):
-    """Raise ValueError if `categories` is not unique."""
+    """Raise ValueError if categories is provided, but is not unique."""
     with pytest.raises(ValueError):
-        df.encode_categorical(a=([1, 2, 3, 3], "sort"))
+        df.encode_categorical(a=[1, 2, 3, 3])
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_empty_cat(df):
-    """Raise ValueError if `categories` is empty."""
+    """Raise ValueError if empty categories is provided."""
     with pytest.raises(ValueError):
-        df.encode_categorical(a=([], "sort"))
+        df.encode_categorical(a=[])
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_empty_col(df):
     """
-    Raise ValueError if `categories`,
-    and the relevant column is empty, or all nulls.
+    Raise ValueError if categories is provided,
+    but the relevant column is all nulls.
     """
     with pytest.raises(ValueError):
         df["col1"] = np.nan
-        df.encode_categorical(col1=([1, 2, 3], "sort"))
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_empty_col_2(df):
-    """
-    Raise ValueError if `categories` is None,
-    and the relevant column is empty, or all nulls.
-    """
-    with pytest.raises(ValueError):
-        df["col1"] = np.nan
-        df.encode_categorical(col1=(None, "sort"))
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_empty_col_3(df):
-    """
-    Raise ValueError if `categories` is None,
-    and the relevant column is empty, or all nulls.
-    """
-    with pytest.raises(ValueError):
-        df["col1"] = pd.Series([], dtype="object")
-        df.encode_categorical(col1=(None, "appearance"))
+        df.encode_categorical(col1=[1, 2, 3])
 
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
 def test_warnings(df):
     """
-    Test that warnings are raised if `categories` is provided, and
+    Test that warnings are raised if categories is provided, and
     the categories do not match the unique values in the column, or
-    some values in the column are missing in `categories`.
+    some values in the column are missing in the categories provided.
     """
     with pytest.warns(UserWarning):
         df.encode_categorical(
-            numbers=([4, 5, 6], None), names=(["John", "Mark", "Luke"], "sort")
+            numbers=[4, 5, 6], names=["John", "Mark", "Luke"]
         )
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_order_type_in_kwargs(df):
-    """
-    Raise TypeError if the wrong argument is supplied to
-    the `order` parameter in kwargs.
-    """
-    with pytest.raises(TypeError):
-        df.encode_categorical(a=({1, 2, 3, 3}, {"sort"}))
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_order_wrong_option_in_kwargs(df):
     """
-    Raise ValueError if the value supplied to the `order`
-    parameter in kwargs is not one of None, 'sort', or 'appearance'.
+    Raise ValueError if a string is provided, but is not
+    one of None, 'sort', or 'appearance'.
     """
     with pytest.raises(ValueError):
-        df.encode_categorical(a=({1, 2, 3, 3}, "sorted"))
+        df.encode_categorical(a="sorted")
+
+
+@pytest.mark.functions
+@given(df=df_strategy())
+def test_empty_col_sort(df):
+    """
+    Raise ValueError if a string is provided,
+    but the relevant column is all nulls.
+    """
+    with pytest.raises(ValueError):
+        df["col1"] = np.nan
+        df.encode_categorical(col1="sort")
+
+
+@pytest.mark.functions
+@given(df=df_strategy())
+def test_empty_col_appearance(df):
+    """
+    Raise ValueError if a string is provided,
+    but the relevant column is all nulls.
+    """
+    with pytest.raises(ValueError):
+        df["col1"] = np.nan
+        df.encode_categorical(col1="appearance")
 
 
 # directly comparing columns is safe -
@@ -288,9 +249,9 @@ def test_order_wrong_option_in_kwargs(df):
 @given(df=categoricaldf_strategy())
 def test_all_None(df):
     """
-    Test output where `categories` and `order` are None.
+    Test output where value is None.
     """
-    result = df.encode_categorical(names=(None, None))
+    result = df.encode_categorical(names=None)
 
     expected = df.astype({"names": "category"})
     assert expected["names"].equals(result["names"])
@@ -300,9 +261,9 @@ def test_all_None(df):
 @given(df=categoricaldf_strategy())
 def test_all_cat_None_1(df):
     """
-    Test output where `categories` is None.
+    Test output where a string is provided.
     """
-    result = df.encode_categorical(names=(None, "sort"))
+    result = df.encode_categorical(names="sort")
     categories = pd.CategoricalDtype(
         categories=df.names.factorize(sort=True)[-1], ordered=True
     )
@@ -314,9 +275,9 @@ def test_all_cat_None_1(df):
 @given(df=categoricaldf_strategy())
 def test_all_cat_None_2(df):
     """
-    Test output where `categories` is None.
+    Test output where a string is provided.
     """
-    result = df.encode_categorical(names=(None, "appearance"))
+    result = df.encode_categorical(names="appearance")
     categories = pd.CategoricalDtype(
         categories=df.names.factorize(sort=False)[-1], ordered=True
     )
@@ -328,9 +289,9 @@ def test_all_cat_None_2(df):
 @given(df=categoricaldf_strategy())
 def test_all_cat_not_None(df):
     """
-    Test output where `categories` is  not None.
+    Test output where categories is provided.
     """
-    result = df.encode_categorical(numbers=(np.array([3, 1, 2]), "appearance"))
+    result = df.encode_categorical(numbers=np.array([3, 1, 2]))
     categories = pd.CategoricalDtype(categories=[3, 1, 2], ordered=True)
     expected = df.astype({"numbers": categories})
     assert expected["numbers"].equals(result["numbers"])

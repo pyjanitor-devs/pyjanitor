@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from re import compile as regex
 from janitor.functions.utils import _select_column_names, patterns
 
 
@@ -344,7 +343,7 @@ def test_regex(df1):
     assert _select_column_names(re.compile(r"\d$"), df1) == list(
         df1.filter(regex=r"\d$").columns
     )
-    assert _select_column_names(regex(r"\d$"), df1) == list(
+    assert _select_column_names(re.compile(r"\d$"), df1) == list(
         df1.filter(regex=r"\d$").columns
     )
 

@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from re import compile as patterns
+import re
 
 
 @pytest.fixture
@@ -437,7 +437,7 @@ def test_pivot_index_patterns_only_sort_by_appearance(
     and `sort_by_appearance` is `True`.
     """
     result = df_checks.pivot_longer(
-        index=patterns(r"[^\d+]"),
+        index=re.compile(r"[^\d+]"),
         names_to="year",
         values_to="num_nests",
         sort_by_appearance=True,
@@ -463,7 +463,7 @@ def test_pivot_no_index_no_columns():
 def test_pivot_columns_patterns_only(df_checks, df_checks_output):
     """Test output if the `patterns` function is passed to `column_names`."""
     result = df_checks.pivot_longer(
-        column_names=patterns(r"\d+"),
+        column_names=re.compile(r"\d+"),
         names_to="year",
         values_to="num_nests",
         sort_by_appearance=True,
@@ -1166,7 +1166,7 @@ paired_columns_pattern = [
                 },
             ]
         ),
-        patterns("^(?!(date|val))"),
+        re.compile("^(?!(date|val))"),
         (".value", "value"),
         r"([a-z]+)(\d)",
         True,
@@ -1944,7 +1944,7 @@ single_column_names_pattern = [
             ]
         ),
         "species",
-        patterns("_"),
+        re.compile("_"),
         "part",
         r"(.*)[_].*",
         True,

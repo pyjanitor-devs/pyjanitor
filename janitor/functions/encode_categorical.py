@@ -24,13 +24,15 @@ def encode_categorical(
 
     Note: In versions < 0.20.11, this method mutates the original DataFrame.
 
-    If `categories` is `None` in the `kwargs` tuple, then the
-    values for `categories` are inferred from the column;
-    if `order` is `None`, then the values for `categories` are applied unordered.
+    Simply pass a string, or an iterable of column names to `column_names`;
+    alternatively, you can pass kwargs, where the keys are the column names
+    and the values can either be None, or a string(either `sort` or `appearance`),
+    or a 1D array-like object.
 
     `column_names` and `kwargs` parameters cannot be used at the same time.
 
     Example: Using `column_names`
+
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -57,7 +59,9 @@ def encode_categorical(
         Index(['a', 'b', 'c'], dtype='object')
         >>> enc_df["foo"].cat.ordered
         False
+
     Example: Using `kwargs` to specify an ordered categorical.
+
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -163,9 +167,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     This function raises errors if columns in `kwargs` are
     absent in the the dataframe's columns.
     It also raises errors if the value in `kwargs`
-    is not a string (one of `appearance` or `sort`), or a 1D array.
-    Error is raised if the value in `kwargs` is array-like but
-    is not a 1-D array-like object.
+    is not a string (`appearance` or `sort`), or a 1D array.
 
     This function is executed before proceeding to the computation phase.
 
@@ -174,7 +176,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     :param df: The pandas DataFrame object.
     :param kwargs: A pairing of column name and value.
     :returns: A dictionary.
-    :raises ValueError: if `categories` is not a 1-D array, or a string.
+    :raises ValueError: if `value` is not a 1-D array, or a string.
     """
 
     # column checks
@@ -251,7 +253,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             category_order_types = {ent.value for ent in _CategoryOrder}
             if value.lower() not in category_order_types:
                 raise ValueError(
-                    "argument should be one of " "`appearance` or `sort`."
+                    "argument should be one of `appearance` or `sort`."
                 )
 
         categories_dict[column_name] = value

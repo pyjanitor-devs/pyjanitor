@@ -12,7 +12,7 @@
 -   [BUG] `sort_column_value_order` no longer mutates original dataframe.
 -   [BUG] Extend `fill_empty`'s `column_names` type range. Issue #998. @Zeroto521
 -   [BUG] Removed/updated error-inducing default arguments in `row_to_names` (#1004) and `round_to_fraction` (#1005). @thatlittleboy
-
+-   [ENH] changes to kwargs in `encode_categorical`, where the values can either be a string or a 1D array. #1021 @samukweku
 ## [v0.22.0] - 2021-11-21
 
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku

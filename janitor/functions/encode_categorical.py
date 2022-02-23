@@ -82,14 +82,15 @@ def encode_categorical(
 
 
 
-    :param df: The pandas DataFrame object.
+    :param df: A pandas DataFrame object.
     :param column_names: A column name or an iterable (list or tuple)
         of column names.
-    :param kwargs: A pairing of column name to a tuple of (`categories`, `order`).
+    :param kwargs: A mapping from column name to either `None`,
+        a string(either `sort` or `appearance`), or a 1-D array.
         This is useful in creating categorical columns that are ordered, or
         if the user needs to explicitly specify the categories.
     :returns: A pandas DataFrame.
-    :raises ValueError: if both ``column_names`` and ``kwargs`` are provided.
+    :raises ValueError: if both `column_names` and `kwargs` are provided.
     """  # noqa: E501
 
     if all((column_names, kwargs)):
@@ -121,7 +122,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     and the value is either a string, or a 1D array.
     The default for value is None and will return a categorical dtype
     with no order and categories inferred from the column.
-    A DataFrame, with catetorical columns, is returned.
+    A DataFrame, with categorical columns, is returned.
     """
 
     categories_dict = _as_categorical_checks(df, **kwargs)
@@ -174,7 +175,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     :param df: The pandas DataFrame object.
     :param kwargs: A pairing of column name and value.
     :returns: A dictionary.
-    :raises ValueError: if `value` is not a 1-D array, or a string.
+    :raises ValueError: If `value` is not a 1-D array, or a string.
     """
 
     # column checks

@@ -132,30 +132,27 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     categories_dtypes = {}
 
-    for column_name, (
-        cat,
-        order,
-    ) in categories_dict.items():
+    for column_name, value in categories_dict.items():
         error_msg = f"""
                      Kindly ensure there is at least
                      one non-null value in {column_name}.
                      """
-        if (cat is None) and (order is None):
+        if value is None:
             cat_dtype = pd.CategoricalDtype()
 
-        elif (cat is None) and (order is _CategoryOrder.SORT.value):
+        elif value == _CategoryOrder.SORT.value:
             cat = df[column_name].factorize(sort=True)[-1]
             if cat.empty:
                 raise ValueError(error_msg)
             cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
 
-        elif (cat is None) and (order is _CategoryOrder.APPEARANCE.value):
+        elif value == _CategoryOrder.APPEARANCE.value:
             cat = df[column_name].factorize(sort=False)[-1]
             if cat.empty:
                 raise ValueError(error_msg)
             cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
 
-        elif cat is not None:  # order is irrelevant if cat is provided
+        else:
             cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
 
         categories_dtypes[column_name] = cat_dtype
@@ -195,35 +192,21 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
     for column_name, value in kwargs.items():
         # type check
-        check("Pair of `categories` and `order`", value, [tuple])
+        if value and not (is_list_like(value) | isinstance(value, str)):
+            raise TypeError(f"{value} should be list-like or a string.")
+        if is_list_like(value):
 
-        len_value = len(value)
-
-        if len_value != 2:
-            raise ValueError(
-                f"""
-                The tuple of (categories, order) for {column_name}
-                should be length 2; the tuple provided is
-                length {len_value}.
-                """
-            )
-
-        cat, order = value
-        if cat is not None:
-            if not is_list_like(cat):
-                raise TypeError(f"{cat} should be list-like.")
-
-            if not hasattr(cat, "shape"):
-                checker = pd.Index([*cat])
+            if not hasattr(value, "shape"):
+                checker = pd.Index([*value])
             else:
-                checker = cat
+                checker = value
 
             arr_ndim = checker.ndim
             if (arr_ndim != 1) or isinstance(checker, pd.MultiIndex):
                 raise ValueError(
                     f"""
-                    {cat} is not a 1-D array.
-                    Kindly provide a 1-D array-like object to `categories`.
+                    {value} is not a 1-D array.
+                    Kindly provide a 1-D array-like object.
                     """
                 )
 
@@ -232,14 +215,14 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
             if checker.hasnans:
                 raise ValueError(
-                    "Kindly ensure there are no nulls in `categories`."
+                    "Kindly ensure there are no nulls in the array provided."
                 )
 
             if not checker.is_unique:
                 raise ValueError(
                     """
                     Kindly provide unique,
-                    non-null values for `categories`.
+                    non-null values for the array provided.
                     """
                 )
 
@@ -247,7 +230,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
                 raise ValueError(
                     """
                     Kindly ensure there is at least
-                    one non-null value in `categories`.
+                    one non-null value in the array provided.
                     """
                 )
 
@@ -256,20 +239,20 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             if uniques.empty:
                 raise ValueError(
                     f"""
-                     Kindly ensure there is at least
-                     one non-null value in {column_name}.
-                     """
+                        Kindly ensure there is at least
+                        one non-null value in {column_name}.
+                        """
                 )
 
             missing = uniques.difference(checker, sort=False)
             if not missing.empty and (uniques.size > missing.size):
                 warnings.warn(
                     f"""
-                     Values {tuple(missing)} are missing from
-                     the provided categories {cat}
-                     for {column_name}; this may create nulls
-                     in the new categorical column.
-                     """,
+                        Values {tuple(missing)} are missing from
+                        the provided categories {value}
+                        for {column_name}; this may create nulls
+                        in the new categorical column.
+                        """,
                     UserWarning,
                     stacklevel=2,
                 )
@@ -277,24 +260,22 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             elif uniques.equals(missing):
                 warnings.warn(
                     f"""
-                     None of the values in {column_name} are in
-                     {cat};
-                     this might create nulls for all values
-                     in the new categorical column.
-                     """,
+                        None of the values in {column_name} are in
+                        {value};
+                        this might create nulls for all values
+                        in the new categorical column.
+                        """,
                     UserWarning,
                     stacklevel=2,
                 )
 
-        if order is not None:
-            check("order", order, [str])
-
+        else:
             category_order_types = [ent.value for ent in _CategoryOrder]
-            if order.lower() not in category_order_types:
+            if value.lower() not in category_order_types:
                 raise ValueError(
                     """
                     `order` argument should be one of
-                    "appearance", "sort" or `None`.
+                    "appearance" or "sort"`.
                     """
                 )
 

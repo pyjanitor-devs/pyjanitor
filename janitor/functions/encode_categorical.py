@@ -22,7 +22,7 @@ def encode_categorical(
 
     This method does not mutate the original DataFrame.
 
-    Simply pass a string, or an iterable of column names to `column_names`;
+     Simply pass a string, or a sequence of column names to `column_names`;
     alternatively, you can pass kwargs, where the keys are the column names
     and the values can either be None, or a string(either `sort` or `appearance`),
     or a 1-D array-like object.

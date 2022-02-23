@@ -164,7 +164,7 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     """
     This function raises errors if columns in `kwargs` are
-    absent in the the dataframe's columns.
+    absent from the dataframe's columns.
     It also raises errors if the value in `kwargs`
     is not a string (`appearance` or `sort`), or a 1D array.
 

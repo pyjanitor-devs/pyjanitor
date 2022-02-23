@@ -120,6 +120,10 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     it can be used to select columns in the index or columns_names
     arguments of `pivot_longer` function.
 
+    **Warning**:
+
+        This function is deprecated. Kindly use `re.compile` instead.
+
     :param regex_pattern: string to be converted to compiled regular
         expression.
     :returns: A compile regular expression from provided

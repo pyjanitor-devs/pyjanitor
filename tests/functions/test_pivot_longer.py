@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from janitor import patterns
+from re import compile as patterns
 
 
 @pytest.fixture

@@ -126,9 +126,9 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
         `regex_pattern`.
     """
     warnings.warn(
-        "`patterns` will be deprecated in a 1.x release. "
-        "Kindly import `re` instead."
-        "Example : import re.compile as patterns"
+        "This function is deprecated. Kindly use `re.compile` instead.",
+        DeprecationWarning,
+        stacklevel=2,
     )
     check("regular expression", regex_pattern, [str, Pattern])
 

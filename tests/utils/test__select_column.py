@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from janitor import patterns
+from re import compile as patterns
 from janitor.functions.utils import _select_column_names
 
 

@@ -1,6 +1,7 @@
 """Utility functions for all of the functions submodule."""
 from itertools import chain
 import fnmatch
+import warnings
 
 from collections.abc import Callable as dispatch_callable
 import re
@@ -119,11 +120,20 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     it can be used to select columns in the index or columns_names
     arguments of `pivot_longer` function.
 
+    **Warning**:
+
+        This function is deprecated. Kindly use `re.compile` instead.
+
     :param regex_pattern: string to be converted to compiled regular
         expression.
     :returns: A compile regular expression from provided
         `regex_pattern`.
     """
+    warnings.warn(
+        "This function is deprecated. Kindly use `re.compile` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     check("regular expression", regex_pattern, [str, Pattern])
 
     return re.compile(regex_pattern)
@@ -262,18 +272,16 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to list type.
     It can take any of slice, str, callable, re.Pattern types,
     or a combination of these types.
-    A tuple of column names is returned.
+    A list of column names is returned.
     """
 
     # takes care of boolean entries
     if all(map(pd.api.types.is_bool, columns_to_select)):
         if len(columns_to_select) != len(df.columns):
             raise ValueError(
-                """
-                The length of the list of booleans
-                does not match the number of columns
-                in the dataframe.
-                """
+                "The length of the list of booleans "
+                "does not match the number of columns "
+                "in the dataframe."
             )
 
         return [*df.columns[columns_to_select]]
@@ -310,17 +318,14 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     specifically, the `*`.
     A list of column names is returned.
     """
-    filtered_columns = None
-    df_columns = df.columns
+
     if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
-        filtered_columns = fnmatch.filter(df_columns, columns_to_select)
-    elif columns_to_select in df_columns:
-        filtered_columns = [columns_to_select]
-        return filtered_columns
-    if not filtered_columns:
-        raise KeyError(f"No match was returned for '{columns_to_select}'")
-    df_columns = None
-    return filtered_columns
+        filtered_columns = fnmatch.filter(df.columns, columns_to_select)
+        if filtered_columns:
+            return filtered_columns
+    elif columns_to_select in df.columns:
+        return [columns_to_select]
+    raise KeyError(f"No match was returned for '{columns_to_select}'")
 
 
 @_select_column_names.register(slice)  # noqa: F811
@@ -345,11 +350,9 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
     if not df_columns.is_unique:
         raise ValueError(
-            """
-            The column labels are not unique.
-            Kindly ensure the labels are unique
-            to ensure the correct output.
-            """
+            "The column labels are not unique. "
+            "Kindly ensure the labels are unique "
+            "to ensure the correct output."
         )
 
     start, stop, step = (
@@ -362,40 +365,30 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     step_check = any((step is None, isinstance(step, int)))
     if not start_check:
         raise ValueError(
-            """
-            The start value for the slice
-            must either be a string or `None`.
-            """
+            "The start value for the slice "
+            "must either be a string or `None`."
         )
     if not stop_check:
         raise ValueError(
-            """
-            The stop value for the slice
-            must either be a string or `None`.
-            """
+            "The stop value for the slice "
+            "must either be a string or `None`."
         )
     if not step_check:
         raise ValueError(
-            """
-            The step value for the slice
-            must either be an integer or `None`.
-            """
+            "The step value for the slice "
+            "must either be an integer or `None`."
         )
     start_check = any((start is None, start in df_columns))
     stop_check = any((stop is None, stop in df_columns))
     if not start_check:
         raise ValueError(
-            """
-            The start value for the slice must either be `None`
-            or exist in the dataframe's columns.
-            """
+            "The start value for the slice must either be `None` "
+            "or exist in the dataframe's columns."
         )
     if not stop_check:
         raise ValueError(
-            """
-            The stop value for the slice must either be `None`
-            or exist in the dataframe's columns.
-            """
+            "The stop value for the slice must either be `None` "
+            "or exist in the dataframe's columns."
         )
 
     if start is None:
@@ -435,10 +428,6 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     filtered_columns = df.agg(columns_to_select)
 
     if not filtered_columns.any():
-        raise ValueError(
-            """
-            No match was returned for the provided callable.
-            """
-        )
+        raise ValueError("No match was returned for the provided callable.")
 
     return [*df.columns[filtered_columns]]

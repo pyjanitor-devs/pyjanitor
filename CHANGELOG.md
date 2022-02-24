@@ -13,6 +13,7 @@
 -   [BUG] Extend `fill_empty`'s `column_names` type range. Issue #998. @Zeroto521
 -   [BUG] Removed/updated error-inducing default arguments in `row_to_names` (#1004) and `round_to_fraction` (#1005). @thatlittleboy
 -   [ENH] `patterns` deprecated in favour of importing `re.compile`. #1007 @samukweku
+-   [ENH] Add `fill_value` and `explicit` parameters to the `complete` function. #1019 @samukweku
 
 ## [v0.22.0] - 2021-11-21
 

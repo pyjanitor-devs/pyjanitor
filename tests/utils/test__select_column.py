@@ -343,9 +343,6 @@ def test_regex(df1):
     assert _select_column_names(re.compile(r"\d$"), df1) == list(
         df1.filter(regex=r"\d$").columns
     )
-    assert _select_column_names(re.compile(r"\d$"), df1) == list(
-        df1.filter(regex=r"\d$").columns
-    )
 
 
 def test_tuple(df_tuple):

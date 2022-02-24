@@ -95,7 +95,7 @@ def encode_categorical(
 
     if all((column_names, kwargs)):
         raise ValueError(
-            "Only one of `column_names` or `kwargs` " "can be provided."
+            "Only one of `column_names` or `kwargs` can be provided."
         )
     # column_names deal with only category dtype (unordered)
     # kwargs takes care of scenarios where user wants an ordered category

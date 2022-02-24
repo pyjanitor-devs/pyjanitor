@@ -112,13 +112,11 @@ def encode_categorical(
     # or user supplies specific categories to create the categorical
     if column_names is not None:
         check("column_names", column_names, [list, tuple, Hashable])
-        if isinstance(column_names, (list, tuple)):
-            check_column(df, column_names)
-            dtypes = {col: "category" for col in column_names}
-            return df.astype(dtypes)
         if isinstance(column_names, Hashable):
-            check_column(df, [column_names])
-            return df.astype({column_names: "category"})
+            column_names = [column_names]
+        check_column(df, column_names)
+        dtypes = {col: "category" for col in column_names}
+        return df.astype(dtypes)
 
     return _computations_as_categorical(df, **kwargs)
 

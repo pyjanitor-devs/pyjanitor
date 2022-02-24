@@ -5,8 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from janitor import patterns
-from janitor.functions.utils import _select_column_names
+from janitor.functions.utils import _select_column_names, patterns
 
 
 @pytest.fixture
@@ -158,6 +157,15 @@ def test_slice_presence(df):
         _select_column_names(slice("id", "M_end_date"), df)
 
 
+def test_slice_unique():
+    """
+    Raise ValueError if the columns are not unique.
+    """
+    not_unique = pd.DataFrame([], columns=["code", "code", "code1", "code2"])
+    with pytest.raises(ValueError):
+        _select_column_names(slice("code", "code2"), not_unique)
+
+
 def test_callable(df):
     """
     Check that error is raised if `columns_to_select` is a
@@ -166,6 +174,16 @@ def test_callable(df):
     """
     with pytest.raises(TypeError):
         _select_column_names(object, df)
+
+
+def test_patterns_warning(df1):
+    """
+    Check that warning is raised if `janitor.patterns` is used.
+    """
+    with pytest.warns(DeprecationWarning):
+        assert _select_column_names(patterns(r"\d$"), df1) == list(
+            df1.filter(regex=r"\d$").columns
+        )
 
 
 @pytest.mark.xfail(reason="Indexing in Pandas is possible with a Series.")
@@ -241,6 +259,11 @@ def test_slice(df1):
         _select_column_names(slice(None, None, 2), df1)
         == df1.loc[:, slice(None, None, 2)].columns.tolist()
     )
+    assert _select_column_names(slice("code2", "code"), df1) == [
+        "code2",
+        "code1",
+        "code",
+    ]
 
 
 def test_callable_data_type(df1):
@@ -318,9 +341,6 @@ def test_callable_computations(df1):
 def test_regex(df1):
     """Test _select_column_names function on regular expressions."""
     assert _select_column_names(re.compile(r"\d$"), df1) == list(
-        df1.filter(regex=r"\d$").columns
-    )
-    assert _select_column_names(patterns(r"\d$"), df1) == list(
         df1.filter(regex=r"\d$").columns
     )
 

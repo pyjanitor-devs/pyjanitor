@@ -246,7 +246,7 @@ def _computations_complete(
     # and merge back to the main dataframe
 
     # to get a name that does not exist in the columns
-    indicator = "".join(column_checker)
+    indicator = "".join(df.columns)
     trimmed = df.loc(axis=1)[column_checker]
     uniques = uniques.merge(
         trimmed, how="left", sort=False, copy=False, indicator=indicator

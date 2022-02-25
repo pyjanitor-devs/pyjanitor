@@ -21,12 +21,11 @@ def complete(
 ) -> pd.DataFrame:
     """
     It is modeled after tidyr's `complete` function, and is a wrapper around
-    [`expand_grid`][janitor.functions.expand_grid.expand_grid] and `pd.merge`.
+    [`expand_grid`][janitor.functions.expand_grid.expand_grid], `pd.merge`
+    and `pd.fillna`.
 
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible.
-
-    It can also handle duplicated data.
 
     MultiIndex columns are not supported.
 
@@ -114,10 +113,10 @@ def complete(
 def _computations_complete(
     df: pd.DataFrame,
     columns: List[Union[List, Tuple, Dict, str]],
-    sort: bool = False,
-    by: Optional[Union[list, str]] = None,
-    fill_value: Optional[Union[Dict, Any]] = None,
-    explicit: bool = True,
+    sort: bool,
+    by: Optional[Union[list, str]],
+    fill_value: Optional[Union[Dict, Any]],
+    explicit: bool,
 ) -> pd.DataFrame:
     """
     This function computes the final output for the `complete` function.
@@ -183,17 +182,18 @@ def _computations_complete(
         for col, value in fill_value.items()
         if col not in column_checker
     }
-    if not fill_value:
+    if not fill_value:  # there is nothing to fill
         return df.merge(
             uniques, on=column_checker, how="outer", sort=sort, copy=False
         )
+
     # when explicit is False
     # filter out rows from `unique` that already exist in the parent dataframe
     # fill the null values in the trimmed `unique`
     # and merge back to the main dataframe
-    indicator = "".join(
-        column_checker
-    )  # to get a name that does not exist in the columns
+
+    # to get a name that does not exist in the columns
+    indicator = "".join(column_checker)
     trimmed = df.loc(axis=1)[column_checker]
     uniques = uniques.merge(
         trimmed, how="left", sort=False, copy=False, indicator=indicator
@@ -252,9 +252,7 @@ def _complete_column(column, df):
     A Pandas Series/DataFrame with no duplicates,
     or a list of unique Pandas Series is returned.
     """
-    raise TypeError(
-        """This type is not supported in the `complete` function."""
-    )
+    raise TypeError("This type is not supported in the `complete` function.")
 
 
 @_complete_column.register(str)  # noqa: F811
@@ -309,20 +307,14 @@ def _sub_complete_column(column, df):  # noqa: F811
     for key, value in column.items():
         arr = apply_if_callable(value, df[key])
         if not is_list_like(arr):
-            raise ValueError(
-                f"""
-                value for {key} should be a 1-D array.
-                """
-            )
+            raise ValueError(f"value for {key} should be a 1-D array.")
         if not hasattr(arr, "shape"):
             arr = pd.Series([*arr], name=key)
 
         if not arr.size > 0:
             raise ValueError(
-                f"""
-                Kindly ensure the provided array for {key}
-                has at least one value.
-                """
+                f"Kindly ensure the provided array for {key} "
+                "has at least one value."
             )
 
         if isinstance(arr, pd.Index):
@@ -331,11 +323,7 @@ def _sub_complete_column(column, df):  # noqa: F811
             arr_ndim = arr.ndim
 
         if arr_ndim != 1:
-            raise ValueError(
-                f"""
-                Kindly provide a 1-D array for {key}.
-                """
-            )
+            raise ValueError(f"Kindly provide a 1-D array for {key}.")
 
         if not isinstance(arr, pd.Series):
             arr = pd.Series(arr)
@@ -372,11 +360,7 @@ def _data_checks_complete(
     # TODO: get `complete` to work on MultiIndex columns,
     # if there is sufficient interest with use cases
     if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError(
-            """
-            `complete` does not support MultiIndex columns.
-            """
-        )
+        raise ValueError("`complete` does not support MultiIndex columns.")
 
     columns = [
         [*grouping] if isinstance(grouping, tuple) else grouping
@@ -396,9 +380,7 @@ def _data_checks_complete(
     column_checker_no_duplicates = set()
     for column in column_checker:
         if column in column_checker_no_duplicates:
-            raise ValueError(
-                f"""{column} column should be in only one group."""
-            )
+            raise ValueError(f"{column} column should be in only one group.")
         column_checker_no_duplicates.add(column)  # noqa: PD005
 
     check_column(df, column_checker)

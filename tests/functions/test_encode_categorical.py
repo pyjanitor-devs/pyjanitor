@@ -11,6 +11,18 @@ from janitor.testing_utils.strategies import (
 )
 
 
+@pytest.fixture
+def df_checks():
+    """pytest fixture"""
+    return pd.DataFrame(
+        [
+            {"region": "Pacific", "2007": 1039, "2009": 2587},
+            {"region": "Southwest", "2007": 51, "2009": 176},
+            {"region": "Rocky Mountains and Plains", "2007": 200, "2009": 338},
+        ]
+    )
+
+
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
 def test_encode_categorical(df):
@@ -78,73 +90,59 @@ def test_encode_categorical_multiple_column_names(df):
     )
 
 
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_both_column_names_kwargs(df):
+def test_both_column_names_kwargs(df_checks):
     """
     Raise Error if both `column_names`
     and kwargs are provided.
     """
     with pytest.raises(ValueError):
-        df.encode_categorical(
-            column_names=["a", "cities"], Bell__Chart=(None, "sort")
-        )
+        df_checks.encode_categorical(column_names="region", region="sort")
 
 
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_check_presence_column_names_in_kwargs(df):
+def test_check_presence_column_names_in_kwargs(df_checks):
     """
     Raise ValueError if column names in `kwargs`
     do not exist in the dataframe.
     """
     with pytest.raises(ValueError):
-        df.encode_categorical(col_1=None)
+        df_checks.encode_categorical(regon=None)
 
 
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_categories_type_in_kwargs(df):
+def test_categories_type_in_kwargs(df_checks):
     """
     Raise TypeError if the value provided is not array-like or a string.
     """
     with pytest.raises(TypeError):
-        df.encode_categorical(a=datetime.datetime(2017, 1, 1))
+        df_checks.encode_categorical(region=datetime.datetime(2017, 1, 1))
 
 
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_categories_ndim_array_gt_1_in_kwargs(df):
+def test_categories_ndim_array_gt_1_in_kwargs(df_checks):
     """
     Raise ValueError if categories is provided, but is not a 1D array.
     """
     arrays = [[1, 1, 2, 2], ["red", "blue", "red", "blue"]]
     with pytest.raises(ValueError):
-        df.encode_categorical(a=arrays)
+        df_checks.encode_categorical(region=arrays)
 
 
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_categories_ndim_MultiIndex_gt_1_in_kwargs(df):
+def test_categories_ndim_MultiIndex_gt_1_in_kwargs(df_checks):
     """
     Raise ValueError if categories is provided, but is not a 1D array.
     """
     arrays = [[1, 1, 2, 2], ["red", "blue", "red", "blue"]]
     arrays = pd.MultiIndex.from_arrays(arrays, names=("number", "color"))
     with pytest.raises(ValueError):
-        df.encode_categorical(a=arrays)
+        df_checks.encode_categorical(region=arrays)
 
 
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_categories_ndim_DataFrame_gt_1_in_kwargs(df):
+def test_categories_ndim_DataFrame_gt_1_in_kwargs(df_checks):
     """
     Raise ValueError if categories is provided, but is not a 1D array.
     """
     arrays = {"name": [1, 1, 2, 2], "number": ["red", "blue", "red", "blue"]}
     arrays = pd.DataFrame(arrays)
     with pytest.raises(ValueError):
-        df.encode_categorical(a=arrays)
+        df_checks.encode_categorical(region=arrays)
 
 
 @pytest.mark.functions

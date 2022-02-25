@@ -27,6 +27,16 @@ def encode_categorical(
     and the values can either be None, `sort`, `appearance`
     or a 1-D array-like object.
 
+    - None: column is cast to an unordered categorical.
+    - `sort`: column is cast to an ordered categorical,
+              with the order defined by the sort-order of the categories.
+    - `appearance`: column is cast to an ordered categorical,
+                    with the order defined by the order of appearance
+                    in the original column.
+    - 1d-array-like object: column is cast to an ordered categorical,
+                            with the categories and order as specified
+                            in the input array.
+
     `column_names` and `kwargs` parameters cannot be used at the same time.
 
     Example: Using `column_names`
@@ -86,8 +96,8 @@ def encode_categorical(
     :param column_names: A column name or an iterable (list or tuple)
         of column names.
     :param kwargs: A mapping from column name to either `None`,
-        a string(either `sort` or `appearance`), or a 1-D array.
-        This is useful in creating categorical columns that are ordered, or
+        `sort` or `appearance`, or a 1-D array. This is useful
+        in creating categorical columns that are ordered, or
         if the user needs to explicitly specify the categories.
     :returns: A pandas DataFrame.
     :raises ValueError: if both `column_names` and `kwargs` are provided.
@@ -128,32 +138,23 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     categories_dict = _as_categorical_checks(df, **kwargs)
 
     categories_dtypes = {}
-    error_msg = (
-        "Kindly ensure there is at least one non-null value in {column_name}."
-    )
 
     for column_name, value in categories_dict.items():
         if value is None:
             cat_dtype = pd.CategoricalDtype()
-
         elif isinstance(value, str):
             if value == _CategoryOrder.SORT.value:
-                cat_dtype = df[column_name].factorize(sort=True)[-1]
-                if cat_dtype.empty:
-                    raise ValueError(error_msg.format(column_name=column_name))
-                cat_dtype = pd.CategoricalDtype(
-                    categories=cat_dtype, ordered=True
-                )
-
+                _, cat_dtype = df[column_name].factorize(sort=True)
             else:
-                cat_dtype = df[column_name].factorize(sort=False)[-1]
-                if cat_dtype.empty:
-                    raise ValueError(error_msg.format(column_name=column_name))
-                cat_dtype = pd.CategoricalDtype(
-                    categories=cat_dtype, ordered=True
+                _, cat_dtype = df[column_name].factorize(sort=False)
+            if cat_dtype.empty:
+                raise ValueError(
+                    "Kindly ensure there is at least "
+                    f"one non-null value in {column_name}."
                 )
+            cat_dtype = pd.CategoricalDtype(categories=cat_dtype, ordered=True)
 
-        else:
+        else:  # 1-D array
             cat_dtype = pd.CategoricalDtype(categories=value, ordered=True)
 
         categories_dtypes[column_name] = cat_dtype
@@ -175,7 +176,9 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     :param df: The pandas DataFrame object.
     :param kwargs: A pairing of column name and value.
     :returns: A dictionary.
-    :raises ValueError: If `value` is not a 1-D array, or a string.
+    :raises TypeError: If `value` is not a 1-D array, or a string.
+    :raises ValueError: If `value` is a 1-D array, and contains nulls,
+        or is non-unique.
     """
 
     # column checks

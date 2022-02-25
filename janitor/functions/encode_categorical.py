@@ -24,7 +24,7 @@ def encode_categorical(
 
     Simply pass a string, or a sequence of column names to `column_names`;
     alternatively, you can pass kwargs, where the keys are the column names
-    and the values can either be None, or a string(either `sort` or `appearance`),
+    and the values can either be None, `sort`, `appearance`
     or a 1-D array-like object.
 
     `column_names` and `kwargs` parameters cannot be used at the same time.

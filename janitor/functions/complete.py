@@ -85,6 +85,58 @@ def complete(
         10  2004      Agarum        8.0
         11  2004  Saccharina        2.0
 
+    Fill missing values:
+
+        >>> df = pd.DataFrame(
+        ...     dict(
+        ...         group=(1, 2, 1, 2),
+        ...         item_id=(1, 2, 2, 3),
+        ...         item_name=("a", "a", "b", "b"),
+        ...         value1=(1, np.nan, 3, 4),
+        ...         value2=range(4, 8),
+        ...     )
+        ... )
+        >>> df
+           group  item_id item_name  value1  value2
+        0      1        1         a     1.0       4
+        1      2        2         a     NaN       5
+        2      1        2         b     3.0       6
+        3      2        3         b     4.0       7
+        >>> df.complete(
+        ...     "group",
+        ...     ("item_id", "item_name"),
+        ...     fill_value={"value1": 0, "value2": 99},
+        ... )
+           group  item_id item_name  value1  value2
+        0      1        1         a       1       4
+        1      1        2         a       0      99
+        2      1        2         b       3       6
+        3      1        3         b       0      99
+        4      2        1         a       0      99
+        5      2        2         a       0       5
+        6      2        2         b       0      99
+        7      2        3         b       4       7
+
+    Limit the fill to only implicit missing values
+    by setting explicit to `False`:
+
+        >>> df.complete(
+        ...     "group",
+        ...     ("item_id", "item_name"),
+        ...     fill_value={"value1": 0, "value2": 99},
+        ...     explicit=False,
+        ... )
+           group  item_id item_name  value1  value2
+        0      1        1         a     1.0       4
+        1      1        2         a     0.0      99
+        2      1        2         b     3.0       6
+        3      1        3         b     0.0      99
+        4      2        1         a     0.0      99
+        5      2        2         a     NaN       5
+        6      2        2         b     0.0      99
+        7      2        3         b     4.0       7
+
+
     :param df: A pandas DataFrame.
     :param *columns: This refers to the columns to be
         completed. It could be column labels (string type),

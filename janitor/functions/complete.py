@@ -14,7 +14,7 @@ from janitor.functions.utils import _computations_expand_grid
 def complete(
     df: pd.DataFrame,
     *columns,
-    sort: bool = True,
+    sort: bool = False,
     by: Optional[Union[list, str]] = None,
     fill_value: Optional[Union[Dict, Any]] = None,
     explicit: bool = True,
@@ -57,7 +57,7 @@ def complete(
 
     Expose missing pairings of `Year` and `Taxon`:
 
-        >>> df.complete("Year", "Taxon")
+        >>> df.complete("Year", "Taxon", sort=True)
            Year       Taxon  Abundance
         0  1999      Agarum        1.0
         1  1999  Saccharina        4.0
@@ -71,6 +71,7 @@ def complete(
         >>> df.complete(
         ...     {"Year": range(df.Year.min(), df.Year.max() + 1)},
         ...     "Taxon",
+        ...     sort=True
         ... )
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
@@ -107,6 +108,7 @@ def complete(
         ...     "group",
         ...     ("item_id", "item_name"),
         ...     fill_value={"value1": 0, "value2": 99},
+        ...     sort=True
         ... )
            group  item_id item_name  value1  value2
         0      1        1         a       1       4
@@ -126,6 +128,7 @@ def complete(
         ...     ("item_id", "item_name"),
         ...     fill_value={"value1": 0, "value2": 99},
         ...     explicit=False,
+        ...     sort=True
         ... )
            group  item_id item_name  value1  value2
         0      1        1         a     1.0       4
@@ -143,7 +146,7 @@ def complete(
         completed. It could be column labels (string type),
         a list/tuple of column labels, or a dictionary that pairs
         column labels with new values.
-    :param sort: Sort DataFrame based on *columns. Default is `True`.
+    :param sort: Sort DataFrame based on *columns. Default is `False`.
     :param by: label or list of labels to group by.
         The explicit missing rows are returned per group.
     :param fill_value: Scalar value to use instead of NaN
@@ -151,7 +154,8 @@ def complete(
         to a scalar value is also accepted.
     :param explicit: Determines if only implicitly missing values
         should be filled (`False`), or all nulls existing in the dataframe
-        (`True`). Default is `True`.
+        (`True`). Default is `True`. `explicit` is applicable only
+        if `fill_value` is not `None`.
     :returns: A pandas DataFrame with explicit missing rows, if any.
     """
 
@@ -178,7 +182,6 @@ def _computations_complete(
 
     A DataFrame, with rows of missing values, if any, is returned.
     """
-
     (
         columns,
         column_checker,
@@ -214,7 +217,6 @@ def _computations_complete(
         uniques = uniques.apply(_generic_complete, columns, all_strings)
         uniques = uniques.droplevel(-1)
         column_checker = by + column_checker
-
     if fill_value is None:
         return df.merge(
             uniques, on=column_checker, how="outer", sort=sort, copy=False
@@ -223,6 +225,7 @@ def _computations_complete(
     if is_scalar(fill_value):
         # faster when fillna operates on a Series basis
         fill_value = {col: fill_value for col in df}
+
     if explicit:
         return df.merge(
             uniques, on=column_checker, how="outer", sort=sort, copy=False

@@ -370,13 +370,14 @@ def test_complete_multiple_groupings():
         ("meta", "domain1"),
         ("project_id", "question_count"),
         fill_value={"tag_count": 0},
+        sort=True,
     )
     assert_frame_equal(result, output3)
 
 
 def test_fill_value_scalar(taxonomy_df):
     """Test output if the fill_value is a scalar."""
-    result = taxonomy_df.complete("Year", "Taxon", fill_value=0)
+    result = taxonomy_df.complete("Year", "Taxon", fill_value=0, sort=True)
     expected = pd.DataFrame(
         [
             {"Year": 1999, "Taxon": "Agarum", "Abundance": 1},
@@ -485,7 +486,11 @@ def test_complete_groupby():
 def test_explicit_scalar(fill_df):
     """Test output if fill_value is a scalar, and explicit is False."""
     result = fill_df.complete(
-        "group", ("item_id", "item_name"), fill_value=0, explicit=False
+        "group",
+        ("item_id", "item_name"),
+        fill_value=0,
+        explicit=False,
+        sort=True,
     )
     expected = pd.DataFrame(
         [
@@ -559,6 +564,7 @@ def test_explicit_dict(fill_df):
         ("item_id", "item_name"),
         fill_value={"value1": 0, "value2": 99},
         explicit=False,
+        sort=True,
     )
     expected = pd.DataFrame(
         [
@@ -632,7 +638,11 @@ def test_explicit_(fill_df):
     """
     trimmed = fill_df.select_columns("value*", invert=True)
     result = trimmed.complete(
-        "group", ("item_id", "item_name"), fill_value=0, explicit=False
+        "group",
+        ("item_id", "item_name"),
+        fill_value=0,
+        explicit=False,
+        sort=True,
     )
     expected = pd.DataFrame(
         [

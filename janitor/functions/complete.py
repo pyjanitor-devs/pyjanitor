@@ -33,6 +33,7 @@ def complete(
 
         >>> import pandas as pd
         >>> import janitor
+        >>> import numpy as np
         >>> df = pd.DataFrame(
         ...     {
         ...         "Year": [1999, 2000, 2004, 1999, 2004],

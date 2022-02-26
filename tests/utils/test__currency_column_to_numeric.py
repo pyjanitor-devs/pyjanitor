@@ -1,4 +1,4 @@
-"""Tests for `currency_column_to_numeric` function."""
+"""Tests for `_currency_column_to_numeric` internal function."""
 import pytest
 
 from janitor.functions.currency_column_to_numeric import (

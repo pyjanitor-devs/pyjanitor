@@ -22,7 +22,7 @@ def complete(
     """
     It is modeled after tidyr's `complete` function, and is a wrapper around
     [`expand_grid`][janitor.functions.expand_grid.expand_grid], `pd.merge`
-    and `pd.fillna`. In a way, it is the inverse of `pd.fillna`, as it exposes
+    and `pd.fillna`. In a way, it is the inverse of `pd.dropna`, as it exposes
     implicitly missing rows.
 
     Combinations of column names or a list/tuple of column names, or even a

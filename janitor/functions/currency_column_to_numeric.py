@@ -150,9 +150,9 @@ def _clean_accounting_column(x: str) -> float:
 def _currency_column_to_numeric(
     x: str,
     cast_non_numeric: Optional[dict] = None,
-) -> str:
+) -> Union[int, float, str]:
     """
-    Perform logic for changing cell values from a currency string to a float
+    Perform logic for changing cell values.
 
     This is a private function intended to be used only in
     `currency_column_to_numeric`.
@@ -164,7 +164,6 @@ def _currency_column_to_numeric(
     :param cast_non_numeric: A dict of how to coerce certain strings to numeric
         type. For example, if there are values of 'REORDER' in the DataFrame,
         `{'REORDER': 0}` will cast all instances of 'REORDER' to 0.
-    :returns:
     """
     acceptable_currency_characters = {
         "-",

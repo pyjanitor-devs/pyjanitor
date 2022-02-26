@@ -58,6 +58,17 @@ def test_default_cleaning_style(currency_df):
 
 
 @pytest.mark.functions
+def test_wrong_type_of_cast_non_numeric_values(currency_df):
+    """Checks that a TypeError is raised when the values provided in the
+    `cast_non_numeric` dict is not one of acceptable (int/float) type."""
+    with pytest.raises(TypeError):
+        _ = currency_df.currency_column_to_numeric(
+            "d_col",
+            cast_non_numeric={"foo": "zzzzz"},
+        )
+
+
+@pytest.mark.functions
 def test_default_cleaning_style_with_cast(currency_df):
     """Checks that the cast_non_numeric parameter is correctly applied
     with the default cleaning style."""

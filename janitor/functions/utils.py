@@ -12,7 +12,6 @@ from janitor.utils import check, _expand_grid
 from pandas.api.types import (
     union_categoricals,
     is_scalar,
-    is_extension_array_dtype,
     is_list_like,
 )
 import numpy as np
@@ -162,16 +161,17 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     for key in others:
         check("key", key, [Hashable])
+        if not is_scalar(key):
+            raise ValueError(
+                f"{key} is not a scalar value. "
+                "Kindly provide a scalar value as key."
+            )
 
     grid = {}
 
     for key, value in others.items():
         if is_scalar(value):
-            value = pd.DataFrame([value])
-        elif (not isinstance(value, pd.Series)) and is_extension_array_dtype(
-            value
-        ):
-            value = pd.DataFrame(value)
+            value = np.asarray([value])
         elif is_list_like(value) and (not hasattr(value, "shape")):
             value = np.asarray([*value])
 
@@ -190,13 +190,18 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     grid_index = map(np.ravel, grid_index)
     grid = zip(grid.items(), grid_index)
     grid = ((*left, right) for left, right in grid)
-    grid = {
-        key: _expand_grid(value, grid_index) for key, value, grid_index in grid
-    }
+    grid = (
+        _expand_grid(value, grid_index, key) for key, value, grid_index in grid
+    )
+    grid, columns = zip(*grid)
+    grid = chain.from_iterable(grid)
+    grid = dict(enumerate(grid))
+    grid = pd.DataFrame(grid)
+    columns = chain.from_iterable(columns)
+    columns = pd.MultiIndex.from_tuples(columns)
+    grid.columns = columns
 
-    # creates a MultiIndex with the keys
-    # since grid is a dictionary
-    return pd.concat(grid, axis="columns", sort=False, copy=False)
+    return grid
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

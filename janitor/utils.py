@@ -14,6 +14,8 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from pandas.core.construction import extract_array
+from itertools import product
 
 
 def check(varname: str, value, expected_types: list):
@@ -50,7 +52,7 @@ def check(varname: str, value, expected_types: list):
 
 
 @functools.singledispatch
-def _expand_grid(value, grid_index):
+def _expand_grid(value, grid_index, key):
     """
     Base function for dispatch of `_expand_grid`.
     """
@@ -64,14 +66,13 @@ def _expand_grid(value, grid_index):
 
 
 @_expand_grid.register(np.ndarray)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the numpy array based on `grid_index`.
 
     Returns Series if 1-D array,
     or DataFrame if 2-D array.
     """
-
     if not (value.size > 0):
         raise ValueError("""array cannot be empty.""")
 
@@ -85,11 +86,14 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
 
     value = value[grid_index]
 
-    return pd.DataFrame(value)
+    if value.ndim == 2:
+        _, n = value.shape
+        return [arr for arr in value.T], product([key], range(n))
+    return [value], [(key, 0)]
 
 
 @_expand_grid.register(pd.Series)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the Series based on `grid_index`.
 
@@ -98,14 +102,12 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
     if value.empty:
         raise ValueError("""Series cannot be empty.""")
 
-    value = value.iloc[grid_index]
-    value.index = pd.RangeIndex(start=0, stop=len(value))
-
-    return value.to_frame()
+    name = [(key, value.name)]
+    return [extract_array(value, extract_numpy=True)[grid_index]], name
 
 
 @_expand_grid.register(pd.DataFrame)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the DataFrame based on `grid_index`.
 
@@ -114,16 +116,18 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
     if value.empty:
         raise ValueError("""DataFrame cannot be empty.""")
 
-    value = value.iloc[grid_index]
-    value.index = pd.RangeIndex(start=0, stop=len(value))
     if isinstance(value.columns, pd.MultiIndex):
         value.columns = ["_".join(map(str, ent)) for ent in value]
 
-    return value
+    names = product([key], value.columns)
+    return [
+        extract_array(val, extract_numpy=True)[grid_index]
+        for _, val in value.items()
+    ], names
 
 
 @_expand_grid.register(pd.Index)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the Index based on `grid_index`.
 
@@ -132,9 +136,17 @@ def _sub_expand_grid(value, grid_index):  # noqa: F811
     if value.empty:
         raise ValueError("""Index cannot be empty.""")
 
-    value = value[grid_index]
-
-    return value.to_frame(index=False)
+    if isinstance(value, pd.MultiIndex):
+        names = product([key], value.names)
+        value = [
+            extract_array(value.get_level_values(n), extract_numpy=True)[
+                grid_index
+            ]
+            for n in range(value.nlevels)
+        ]
+        return value, names
+    name = [(key, value.name)]
+    return [extract_array(value, extract_numpy=True)[grid_index]], name
 
 
 def import_message(

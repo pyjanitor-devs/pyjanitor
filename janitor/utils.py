@@ -15,7 +15,6 @@ from typing import (
 import numpy as np
 import pandas as pd
 from pandas.core.construction import extract_array
-from itertools import product
 
 
 def check(varname: str, value, expected_types: list):
@@ -86,10 +85,10 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
 
     value = value[grid_index]
 
-    if value.ndim == 2:
-        _, n = value.shape
-        return [arr for arr in value.T], product([key], range(n))
-    return [value], [(key, 0)]
+    if value.ndim == 1:
+        return {(key, 0): value}
+
+    return {(key, num): arr for num, arr in enumerate(value.T)}
 
 
 @_expand_grid.register(pd.Series)
@@ -102,8 +101,12 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     if value.empty:
         raise ValueError("""Series cannot be empty.""")
 
-    name = [(key, value.name)]
-    return [extract_array(value, extract_numpy=True)[grid_index]], name
+    name = value.name
+    if not name:
+        name = 0
+    value = extract_array(value, extract_numpy=True)[grid_index]
+
+    return {(key, name): value}
 
 
 @_expand_grid.register(pd.DataFrame)
@@ -119,11 +122,10 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     if isinstance(value.columns, pd.MultiIndex):
         value.columns = ["_".join(map(str, ent)) for ent in value]
 
-    names = product([key], value.columns)
-    return [
-        extract_array(val, extract_numpy=True)[grid_index]
-        for _, val in value.items()
-    ], names
+    return {
+        (key, name): extract_array(val, extract_numpy=True)[grid_index]
+        for name, val in value.items()
+    }
 
 
 @_expand_grid.register(pd.Index)
@@ -136,17 +138,20 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     if value.empty:
         raise ValueError("""Index cannot be empty.""")
 
+    contents = {}
     if isinstance(value, pd.MultiIndex):
-        names = product([key], value.names)
-        value = [
-            extract_array(value.get_level_values(n), extract_numpy=True)[
-                grid_index
-            ]
-            for n in range(value.nlevels)
-        ]
-        return value, names
-    name = [(key, value.name)]
-    return [extract_array(value, extract_numpy=True)[grid_index]], name
+        for n in range(value.nlevels):
+            arr = value.get_level_values(n)
+            name = arr.name
+            arr = extract_array(arr, extract_numpy=True)[grid_index]
+            if not name:
+                name = n
+            contents[(key, name)] = arr
+        return contents
+    name = value.name
+    if not name:
+        name = 0
+    return {(key, name): extract_array(value, extract_numpy=True)[grid_index]}
 
 
 def import_message(

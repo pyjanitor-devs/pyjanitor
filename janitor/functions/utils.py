@@ -175,6 +175,12 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
         elif is_list_like(value) and (not hasattr(value, "shape")):
             value = np.asarray([*value])
 
+        if isinstance(value, pd.DataFrame) and not value.columns.is_unique:
+            raise ValueError(
+                "Kindly Ensure that the columns of the DataFrame "
+                f"for {key} are unique."
+            )
+
         grid[key] = value
 
     others = None
@@ -190,18 +196,10 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     grid_index = map(np.ravel, grid_index)
     grid = zip(grid.items(), grid_index)
     grid = ((*left, right) for left, right in grid)
-    grid = (
-        _expand_grid(value, grid_index, key) for key, value, grid_index in grid
-    )
-    grid, columns = zip(*grid)
-    grid = chain.from_iterable(grid)
-    grid = dict(enumerate(grid))
-    grid = pd.DataFrame(grid)
-    columns = chain.from_iterable(columns)
-    columns = pd.MultiIndex.from_tuples(columns)
-    grid.columns = columns
-
-    return grid
+    contents = {}
+    for key, value, grid_index in grid:
+        contents = {**contents, **_expand_grid(value, grid_index, key)}
+    return pd.DataFrame(contents)
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

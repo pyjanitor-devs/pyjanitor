@@ -1,10 +1,12 @@
+import warnings
+from enum import Enum
 from typing import Hashable, Iterable, Union
+
 import pandas_flavor as pf
 import pandas as pd
 from pandas.api.types import is_list_like
-import warnings
+
 from janitor.utils import check, check_column, deprecated_alias
-from enum import Enum
 
 
 @pf.register_dataframe_method
@@ -90,17 +92,15 @@ def encode_categorical(
         >>> enc_df["foo"].cat.ordered
         True
 
-
-
     :param df: A pandas DataFrame object.
     :param column_names: A column name or an iterable (list or tuple)
         of column names.
-    :param kwargs: A mapping from column name to either `None`,
-        `sort` or `appearance`, or a 1-D array. This is useful
+    :param **kwargs: A mapping from column name to either `None`,
+        `'sort'` or `'appearance'`, or a 1-D array. This is useful
         in creating categorical columns that are ordered, or
         if the user needs to explicitly specify the categories.
     :returns: A pandas DataFrame.
-    :raises ValueError: if both `column_names` and `kwargs` are provided.
+    :raises ValueError: If both `column_names` and `kwargs` are provided.
     """  # noqa: E501
 
     if all((column_names, kwargs)):
@@ -167,21 +167,20 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     This function raises errors if columns in `kwargs` are
     absent from the dataframe's columns.
     It also raises errors if the value in `kwargs`
-    is not a string (`appearance` or `sort`), or a 1D array.
+    is not a string (`'appearance'` or `'sort'`), or a 1D array.
 
     This function is executed before proceeding to the computation phase.
 
     If all checks pass, a dictionary of column names and value is returned.
 
     :param df: The pandas DataFrame object.
-    :param kwargs: A pairing of column name and value.
+    :param **kwargs: A pairing of column name and value.
     :returns: A dictionary.
     :raises TypeError: If `value` is not a 1-D array, or a string.
     :raises ValueError: If `value` is a 1-D array, and contains nulls,
         or is non-unique.
     """
 
-    # column checks
     check_column(df, kwargs)
 
     categories_dict = {}
@@ -255,7 +254,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             category_order_types = {ent.value for ent in _CategoryOrder}
             if value.lower() not in category_order_types:
                 raise ValueError(
-                    "argument should be one of `appearance` or `sort`."
+                    "argument should be one of 'appearance' or 'sort'."
                 )
 
         categories_dict[column_name] = value

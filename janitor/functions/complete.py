@@ -300,7 +300,7 @@ def _generic_complete(df: pd.DataFrame, columns: list, all_strings: bool):
 
 
 @functools.singledispatch
-def _complete_column(column, df):
+def _complete_column(column: str, df):
     """
     Args:
         column : str/list/dict
@@ -309,20 +309,6 @@ def _complete_column(column, df):
     A Pandas Series/DataFrame with no duplicates,
     or a list of unique Pandas Series is returned.
     """
-    raise TypeError("This type is not supported in the `complete` function.")
-
-
-@_complete_column.register(str)  # noqa: F811
-def _sub_complete_column(column, df):  # noqa: F811
-    """
-    Args:
-        column : str
-        df: Pandas DataFrame
-
-    Returns:
-        Pandas Series
-    """
-
     column = df[column]
 
     if not column.is_unique:

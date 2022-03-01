@@ -317,7 +317,7 @@ def test_no_index_names_from_order():
         }
     )
 
-    result = df_in.encode_categorical(gender=(None, "appearance")).pivot_wider(
+    result = df_in.encode_categorical(gender="appearance").pivot_wider(
         names_from="gender"
     )
 
@@ -404,9 +404,7 @@ def test_change_level_order():
         }
     )
 
-    result = df_in.encode_categorical(
-        variable=(None, "appearance")
-    ).pivot_wider(
+    result = df_in.encode_categorical(variable="appearance").pivot_wider(
         index=["geoid", "name"],
         names_from="variable",
         values_from=["estimate", "error"],

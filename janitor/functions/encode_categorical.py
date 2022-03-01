@@ -252,7 +252,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             category_order_types = {ent.value for ent in _CategoryOrder}
             if value.lower() not in category_order_types:
                 raise ValueError(
-                    "argument should be one of 'appearance' or 'sort'."
+                    "Argument should be one of 'appearance' or 'sort'."
                 )
 
         categories_dict[column_name] = value

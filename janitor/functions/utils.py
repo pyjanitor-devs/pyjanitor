@@ -141,13 +141,13 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Uses numPy's `mgrid` to generate indices, which is used to
+    Uses numpy's `mgrid` to generate indices, which is used to
     `explode` all the inputs in `others`.
 
     There is a performance penalty for small entries
-    (roughly about 10 items) in using this method,
-    instead of `itertools.product`; however, there are
-    significant performance benefits as the size of the data increases.
+    in using this method, instead of `itertools.product`;
+    however, there are  significant performance benefits
+    as the size of the data increases.
 
     Another benefit of this approach, in addition to the significant
     performance gains, is the preservation of data types.

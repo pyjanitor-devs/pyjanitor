@@ -24,7 +24,7 @@ def factorize_columns(
     It takes in an optional suffix and keyword arguments also.
     An empty string as suffix will override the existing column.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Example:
 
@@ -60,5 +60,5 @@ def factorize_columns(
 
     :returns: A pandas DataFrame.
     """
-    df = _factorize(df, column_names, suffix, **kwargs)
+    df = _factorize(df.copy(), column_names, suffix, **kwargs)
     return df

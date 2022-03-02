@@ -280,8 +280,7 @@ def _generic_complete(df: pd.DataFrame, columns: list, all_strings: bool):
     if all_strings:
         uniques = {col: df[col].unique() for col in columns}
         uniques = _computations_expand_grid(uniques)
-        uniques = uniques.droplevel(level=-1, axis="columns")
-        return uniques
+        return uniques.droplevel(level=-1, axis="columns")
 
     uniques = {}
     for index, column in enumerate(columns):

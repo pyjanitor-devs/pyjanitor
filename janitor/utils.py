@@ -43,11 +43,7 @@ def check(varname: str, value, expected_types: list):
             break
 
     if not is_expected_type:
-        raise TypeError(
-            "{varname} should be one of {expected_types}".format(
-                varname=varname, expected_types=expected_types
-            )
-        )
+        raise TypeError(f"{varname} should be one of {expected_types}.")
 
 
 @functools.singledispatch
@@ -57,10 +53,8 @@ def _expand_grid(value, grid_index, key):
     """
 
     raise TypeError(
-        f"""
-        {type(value).__name__} data type
-        is not supported in `expand_grid`.
-        """
+        f"{type(value).__name__} data type "
+        "is not supported in `expand_grid`."
     )
 
 
@@ -69,18 +63,14 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the numpy array based on `grid_index`.
 
-    Returns Series if 1-D array,
-    or DataFrame if 2-D array.
+    Returns a dictionary.
     """
-    if not (value.size > 0):
-        raise ValueError("""array cannot be empty.""")
 
     if value.ndim > 2:
         raise ValueError(
-            """
-            expand_grid works only
-            on 1D and 2D arrays.
-            """
+            "expand_grid works only on 1D and 2D arrays. "
+            "The provided array for {key} however "
+            f" has a dimension of {value.ndim}."
         )
 
     value = value[grid_index]
@@ -91,15 +81,26 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     return {(key, num): arr for num, arr in enumerate(value.T)}
 
 
+@_expand_grid.register(pd.arrays.PandasArray)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+    """
+    Expands the pandas array based on `grid_index`.
+
+    Returns a dictionary.
+    """
+
+    value = value[grid_index]
+
+    return {(key, 0): value}
+
+
 @_expand_grid.register(pd.Series)
 def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the Series based on `grid_index`.
 
-    Returns Series.
+    Returns a dictionary.
     """
-    if value.empty:
-        raise ValueError("""Series cannot be empty.""")
 
     name = value.name
     if not name:
@@ -114,13 +115,14 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the DataFrame based on `grid_index`.
 
-    Returns a DataFrame.
+    Returns a dictionary.
     """
-    if value.empty:
-        raise ValueError("""DataFrame cannot be empty.""")
 
+    # use set_axis here, to prevent the column change from
+    # transmitting back to the original dataframe
     if isinstance(value.columns, pd.MultiIndex):
-        value.columns = ["_".join(map(str, ent)) for ent in value]
+        columns = ["_".join(map(str, ent)) for ent in value]
+        value = value.set_axis(columns, axis="columns")
 
     return {
         (key, name): extract_array(val, extract_numpy=True)[grid_index]
@@ -133,19 +135,19 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the Index based on `grid_index`.
 
-    Returns a DataFrame (if MultiIndex), or a Series.
+    Returns a dictionary.
     """
-    if value.empty:
-        raise ValueError("""Index cannot be empty.""")
 
     contents = {}
     if isinstance(value, pd.MultiIndex):
+        num = 0
         for n in range(value.nlevels):
             arr = value.get_level_values(n)
             name = arr.name
             arr = extract_array(arr, extract_numpy=True)[grid_index]
             if not name:
-                name = n
+                name = num
+                num += 1
             contents[(key, name)] = arr
         return contents
     name = value.name

@@ -141,15 +141,13 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Combines NumPy's `mgrid`, with the `take` method in NumPy/pandas
-    to expand each input to the length of the cumulative product of
-    all inputs in `others`.
+    Uses numPy's `mgrid` to generate indices, which is used to
+    `explode` all the inputs in `others`.
 
     There is a performance penalty for small entries
-    (lenght less than 10)
-    in using this method, instead of `itertools.product`;
-    however, there are significant performance benefits
-    as the size of the data increases.
+    (roughly about 10 items) in using this method,
+    instead of `itertools.product`; however, there are
+    significant performance benefits as the size of the data increases.
 
     Another benefit of this approach, in addition to the significant
     performance gains, is the preservation of data types.
@@ -161,11 +159,6 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     for key in others:
         check("key", key, [Hashable])
-        if not is_scalar(key):
-            raise ValueError(
-                f"{key} is not a scalar value. "
-                "Kindly provide a scalar value as key."
-            )
 
     grid = {}
 
@@ -174,12 +167,8 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
             value = np.asarray([value])
         elif is_list_like(value) and (not hasattr(value, "shape")):
             value = np.asarray([*value])
-
-        if isinstance(value, pd.DataFrame) and not value.columns.is_unique:
-            raise ValueError(
-                "Kindly Ensure that the columns of the DataFrame "
-                f"for {key} are unique."
-            )
+        if value.size == 0:
+            raise ValueError(f"Kindly provide a non-empty array for {key}.")
 
         grid[key] = value
 
@@ -189,8 +178,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     # to generate cartesian indices
     # which is then paired with grid.items()
     # to blow up each individual value
-    # before finally recombining, via pd.concat,
-    # to create a dataframe.
+    # before creating the final DataFrame.
     grid_index = [slice(len(value)) for _, value in grid.items()]
     grid_index = np.mgrid[grid_index]
     grid_index = map(np.ravel, grid_index)
@@ -199,7 +187,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     contents = {}
     for key, value, grid_index in grid:
         contents = {**contents, **_expand_grid(value, grid_index, key)}
-    return pd.DataFrame(contents)
+    return pd.DataFrame(contents, copy=False)
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

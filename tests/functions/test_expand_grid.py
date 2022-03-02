@@ -182,6 +182,22 @@ def test_Index(df):
 
 
 @settings(deadline=None)
+@given(df=df_strategy())
+def test_Index_name_none(df):
+    """Test expand_grid output"""
+    A = pd.Index(df["a"].array, name=None)
+    B = df["cities"]
+    others = {"A": A, "B": B}
+    result = expand_grid(others=others)
+    A = df.loc[:, ["a"]]
+    B = df.loc[:, ["cities"]]
+    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
+    expected = expected.drop(columns="key")
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], [0, "cities"]])
+    assert_frame_equal(result, expected)
+
+
+@settings(deadline=None)
 @given(df=categoricaldf_strategy())
 def test_MultiIndex(df):
     """Test expand_grid output"""
@@ -196,6 +212,25 @@ def test_MultiIndex(df):
     expected = expected.drop(columns="key")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B", "B"], expected.columns]
+    )
+    assert_frame_equal(result, expected)
+
+
+@settings(deadline=None)
+@given(df=categoricaldf_strategy())
+def test_MultiIndex_names_none(df):
+    """Test expand_grid output"""
+    A = df["names"]
+    base = df.loc[:, ["numbers"]].assign(num=df.numbers * 4)
+    B = pd.MultiIndex.from_frame(base, names=[None, None])
+    others = {"A": A, "B": B}
+    result = expand_grid(others=others)
+    A = df.loc[:, ["names"]]
+    B = base.copy()
+    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
+    expected = expected.drop(columns="key")
+    expected.columns = pd.MultiIndex.from_arrays(
+        [["A", "B", "B"], ["names", 0, 1]]
     )
     assert_frame_equal(result, expected)
 
@@ -250,5 +285,39 @@ def test_scalar(df):
     expected = expected.drop(columns="key")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B"], expected.columns]
+    )
+    assert_frame_equal(result, expected)
+
+
+@settings(deadline=None)
+@given(df=df_strategy())
+def test_chain_df(df):
+    """Test expand_grid in a chain operation."""
+    A = df["a"]
+    B = df[["cities"]]
+    others = {"A": A}
+    result = B.expand_grid(df_key="city", others=others)
+    A = df.loc[:, ["a"]]
+    expected = B.assign(key=1).merge(A.assign(key=1), on="key")
+    expected = expected.drop(columns="key")
+    expected.columns = pd.MultiIndex.from_arrays(
+        [["city", "A"], expected.columns]
+    )
+    assert_frame_equal(result, expected)
+
+
+@settings(deadline=None)
+@given(df=df_strategy())
+def test_series_name(df):
+    """Test expand_grid where the Series has no name."""
+    A = df["a"].rename(None)
+    B = df[["cities"]]
+    others = {"A": A}
+    result = B.expand_grid(df_key="city", others=others)
+    A = df.loc[:, ["a"]]
+    expected = B.assign(key=1).merge(A.assign(key=1), on="key")
+    expected = expected.drop(columns="key")
+    expected.columns = pd.MultiIndex.from_arrays(
+        [["city", "A"], ["cities", 0]]
     )
     assert_frame_equal(result, expected)

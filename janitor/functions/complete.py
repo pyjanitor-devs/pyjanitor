@@ -253,10 +253,9 @@ def _computations_complete(
             }
             if fill_value:
                 # when explicit is False
-                # filter out rows from `unique`
-                # that already exist in the parent dataframe
-                # fill the null values in the trimmed `unique`
-                # and merge back to the main dataframe
+                # use the indicator parameter to identify rows
+                # for `left_only`, and fill the relevant columns in fill_value
+                # with the associated value.
                 boolean_filter = df.loc[:, indicator] == "left_only"
                 df = df.drop(columns=indicator)
                 # iteration used here,

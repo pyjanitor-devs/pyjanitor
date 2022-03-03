@@ -251,7 +251,7 @@ def _computations_complete(
                 for col, value in fill_value.items()
                 if col not in column_checker
             }
-            if fill_value is not None:
+            if fill_value:
                 # when explicit is False
                 # filter out rows from `unique`
                 # that already exist in the parent dataframe

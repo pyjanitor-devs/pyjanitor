@@ -281,7 +281,7 @@ def _generic_complete(
     """
     Generate cartesian product for `_computations_complete`.
 
-    Returns a Series or DataFrame, with no duplicates.
+    Returns a DataFrame, with no duplicates.
     """
     if all_strings:
         if sort:

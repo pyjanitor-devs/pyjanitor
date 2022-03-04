@@ -182,10 +182,8 @@ def test_ignore_index(test_df):
 
 def test_duplicate_names_to(test_df):
     """Raise error if `names_to` contains duplicates."""
-    with pytest.raises(ValueError):
-        test_df.pivot_longer(
-            names_to=[".value", ".value"], names_pattern="(.+)_(.+)"
-        )
+    with pytest.raises(ValueError, match="y already exists in names_to."):
+        test_df.pivot_longer(names_to=["y", "y"], names_pattern="(.+)_(.+)")
 
 
 def test_names_pattern_names_to_unequal_length(df_checks):
@@ -221,13 +219,13 @@ def test_both_names_sep_and_pattern(df_checks):
         )
 
 
-def test_names_pattern_column_MultiIndex(df_multi):
+def test_names_pattern_column_multiIndex(df_multi):
     """Raise ValueError if `names_pattern` and MultiIndex column"""
     with pytest.raises(ValueError):
         df_multi.pivot_longer(index="name", names_pattern=r"(.+)(.)")
 
 
-def test_index_tuple_MultiIndex(df_multi):
+def test_index_tuple_multiIndex(df_multi):
     """
     Raise ValueError if `index` is a tuple,
     instead of a list of tuples,
@@ -237,7 +235,7 @@ def test_index_tuple_MultiIndex(df_multi):
         df_multi.pivot_longer(index=("name", "a"))
 
 
-def test_column_names_tuple_MultiIndex(df_multi):
+def test_column_names_tuple_multiIndex(df_multi):
     """
     Raise ValueError if `column_names` is a tuple,
     instead of a list of tuples,
@@ -247,7 +245,7 @@ def test_column_names_tuple_MultiIndex(df_multi):
         df_multi.pivot_longer(column_names=("names", "aa"))
 
 
-def test_column_MultiIndex_names_sep(df_multi):
+def test_column_multiIndex_names_sep(df_multi):
     """
     Raise ValueError if the dataframe's column is a MultiIndex,
     and names_sep is present.
@@ -260,7 +258,7 @@ def test_column_MultiIndex_names_sep(df_multi):
         )
 
 
-def test_column_MultiIndex_names_pattern(df_multi):
+def test_column_multiIndex_names_pattern(df_multi):
     """
     Raise ValueError if the dataframe's column is a MultiIndex,
     and names_pattern is present.
@@ -270,6 +268,26 @@ def test_column_MultiIndex_names_pattern(df_multi):
             index=[("name", "a")],
             names_pattern=r"(.+)(.+)",
             names_to=["names", "others"],
+        )
+
+
+def test_dot_value_index():
+    """
+    Raise error if labels associated with .value
+    are in the index labels.
+    """
+    df = pd.DataFrame(
+        {
+            "ht": [1, 1, 1, 2, 2, 2, 3, 3, 3],
+            "birth": [1, 2, 3, 1, 2, 3, 1, 2, 3],
+            "ht1": [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+            "ht2": [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9],
+        }
+    )
+
+    with pytest.raises(ValueError):
+        df.pivot_longer(
+            index="ht", names_to=(".value", "num"), names_pattern="(.+)(.)"
         )
 
 
@@ -296,7 +314,7 @@ def test_values_to_exists_in_names_to(df_checks):
         df_checks.pivot_longer(values_to="year", names_to="year")
 
 
-def test_MultiIndex_column_level(df_multi):
+def test_multiIndex_column_level(df_multi):
     """Test output from MultiIndex column"""
     result = df_multi.pivot_longer(
         index="name", column_names="names", column_level=0
@@ -653,18 +671,21 @@ def test_names_pattern_list(names_pattern_list_df):
         index="ID",
         names_to=("DateRangeStart", "DateRangeEnd", "Value"),
         names_pattern=("Start$", "End$", "^Value"),
+        sort_by_appearance=True,
     )
 
-    expected_output = pd.DataFrame(
-        {
-            "ID": [1, 1, 1],
-            "DateRangeStart": ["1/1/90", "4/5/91", "5/5/95"],
-            "DateRangeEnd": ["3/1/90", "6/7/91", "6/6/96"],
-            "Value": [4.4, 6.2, 3.3],
-        }
+    actual = names_pattern_list_df.set_index("ID")
+    columns = [re.split(r"(\d)", word) for word in actual]
+    columns = [(f"{start}{end}", middle) for start, middle, end in columns]
+    actual.columns = pd.MultiIndex.from_tuples(columns)
+    actual = (
+        actual.stack()
+        .droplevel(-1)
+        .reindex(columns=("DateRangeStart", "DateRangeEnd", "Value"))
+        .reset_index()
     )
 
-    assert_frame_equal(result, expected_output)
+    assert_frame_equal(result, actual)
 
 
 multiple_values_pattern = [
@@ -1777,6 +1798,7 @@ def test_paired_columns_no_index_pattern(
     and no `index` is supplied.
     """
     result = df_in.pivot_longer(
+        column_names=["off*", "pt*"],
         names_to=names_to,
         names_pattern=names_pattern,
         sort_by_appearance=sort_by_appearance,
@@ -2339,3 +2361,74 @@ def test_names_pattern_sequence_single_unique_column():
     )
 
     assert_frame_equal(result, expected)
+
+
+def test_multiple_dot_value():
+    """Test output for multiple .value."""
+    df = pd.DataFrame(
+        {
+            "x_1_mean": [1, 2, 3, 4],
+            "x_2_mean": [1, 1, 0, 0],
+            "x_1_sd": [0, 1, 1, 1],
+            "x_2_sd": [0.739, 0.219, 1.46, 0.918],
+            "y_1_mean": [1, 2, 3, 4],
+            "y_2_mean": [1, 1, 0, 0],
+            "y_1_sd": [0, 1, 1, 1],
+            "y_2_sd": [-0.525, 0.623, -0.705, 0.662],
+            "unit": [1, 2, 3, 4],
+        }
+    )
+
+    result = df.pivot_longer(
+        index="unit",
+        names_to=(".value", "time", ".value"),
+        names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
+    ).astype({"time": int})
+
+    actual = df.set_index("unit")
+    cols = [ent.split("_") for ent in actual.columns]
+    actual.columns = [f"{start}_{end}{middle}" for start, middle, end in cols]
+    actual = (
+        pd.wide_to_long(
+            actual.reset_index(),
+            stubnames=["x_mean", "y_mean", "x_sd", "y_sd"],
+            i="unit",
+            j="time",
+        )
+        .sort_index(axis=1)
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual)
+
+
+def test_multiple_dot_value2():
+    """Test output for multiple .value."""
+    df = pd.DataFrame(
+        {
+            "x1": [4, 5, 6],
+            "x2": [5, 6, 7],
+            "y1": [7, 8, 9],
+            "y2": [10, 11, 12],
+        }
+    )
+
+    outcome = df.pivot_longer(
+        index=None, names_to=(".value", ".value"), names_pattern="(.)(.)"
+    )
+
+    assert_frame_equal(outcome, df)
+
+
+def test_multiple_dot_value3():
+    """Test output for multiple .value."""
+    df = pd.DataFrame(
+        [[1, 1, 2, 3, 4, 5, 6], [2, 7, 8, 9, 10, 11, 12]],
+        columns=["id", "ax", "ay", "az", "bx", "by", "bz"],
+    )
+
+    outcome = df.pivot_longer(
+        index="id", names_to=(".value", ".value"), names_pattern="(.)(.)"
+    )
+
+    assert_frame_equal(outcome, df)

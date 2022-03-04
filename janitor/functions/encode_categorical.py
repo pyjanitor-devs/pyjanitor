@@ -1,10 +1,12 @@
+import warnings
+from enum import Enum
 from typing import Hashable, Iterable, Union
+
 import pandas_flavor as pf
 import pandas as pd
 from pandas.api.types import is_list_like
-import warnings
+
 from janitor.utils import check, check_column, deprecated_alias
-from enum import Enum
 
 
 @pf.register_dataframe_method
@@ -22,95 +24,99 @@ def encode_categorical(
 
     This method does not mutate the original DataFrame.
 
-    Note: In versions < 0.20.11, this method mutates the original DataFrame.
+    Simply pass a string, or a sequence of column names to `column_names`;
+    alternatively, you can pass kwargs, where the keys are the column names
+    and the values can either be None, `sort`, `appearance`
+    or a 1-D array-like object.
 
-    If `categories` is `None` in the `kwargs` tuple, then the
-    values for `categories` are inferred from the column;
-    if `order` is `None`, then the values for `categories` are applied unordered.
+    - None: column is cast to an unordered categorical.
+    - `sort`: column is cast to an ordered categorical,
+              with the order defined by the sort-order of the categories.
+    - `appearance`: column is cast to an ordered categorical,
+                    with the order defined by the order of appearance
+                    in the original column.
+    - 1d-array-like object: column is cast to an ordered categorical,
+                            with the categories and order as specified
+                            in the input array.
 
     `column_names` and `kwargs` parameters cannot be used at the same time.
 
-    Functional usage syntax:
+    Example: Using `column_names`
 
-    ```python
-        import pandas as pd
-        import janitor as jn
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "foo": ["b", "b", "a", "c", "b"],
+        ...     "bar": range(4, 9),
+        ... })
+        >>> df
+          foo  bar
+        0   b    4
+        1   b    5
+        2   a    6
+        3   c    7
+        4   b    8
+        >>> df.dtypes
+        foo    object
+        bar     int64
+        dtype: object
+        >>> enc_df = df.encode_categorical(column_names="foo")
+        >>> enc_df.dtypes
+        foo    category
+        bar       int64
+        dtype: object
+        >>> enc_df["foo"].cat.categories
+        Index(['a', 'b', 'c'], dtype='object')
+        >>> enc_df["foo"].cat.ordered
+        False
 
-    - With `column_names`
+    Example: Using `kwargs` to specify an ordered categorical.
 
-    ```python
-        categorical_cols = ['col1', 'col2', 'col4']
-        df = jn.encode_categorical(
-                    df,
-                    columns = categorical_cols)  # one way
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "foo": ["b", "b", "a", "c", "b"],
+        ...     "bar": range(4, 9),
+        ... })
+        >>> df.dtypes
+        foo    object
+        bar     int64
+        dtype: object
+        >>> enc_df = df.encode_categorical(foo="appearance")
+        >>> enc_df.dtypes
+        foo    category
+        bar       int64
+        dtype: object
+        >>> enc_df["foo"].cat.categories
+        Index(['b', 'a', 'c'], dtype='object')
+        >>> enc_df["foo"].cat.ordered
+        True
 
-    - With `kwargs`
-
-    ```python
-        df = jn.encode_categorical(
-                    df,
-                    col1 = (categories, order),
-                    col2 = (categories = [values],
-                    order="sort"  # or "appearance" or None
-
-                )
-    ```
-
-    Method chaining syntax:
-
-    - With `column_names`
-
-    ```python
-        categorical_cols = ['col1', 'col2', 'col4']
-        df = (pd.DataFrame(...)
-                .encode_categorical(columns=categorical_cols)
-            )
-    ```
-
-    - With `kwargs`
-
-    ```python
-        df = (
-            pd.DataFrame(...)
-            .encode_categorical(
-                col1 = (categories, order),
-                col2 = (categories = [values]/None,
-                        order="sort"  # or "appearance" or None
-                        )
-        )
-    ```
-
-    :param df: The pandas DataFrame object.
+    :param df: A pandas DataFrame object.
     :param column_names: A column name or an iterable (list or tuple)
         of column names.
-    :param kwargs: A pairing of column name to a tuple of (`categories`, `order`).
-        This is useful in creating categorical columns that are ordered, or
+    :param **kwargs: A mapping from column name to either `None`,
+        `'sort'` or `'appearance'`, or a 1-D array. This is useful
+        in creating categorical columns that are ordered, or
         if the user needs to explicitly specify the categories.
     :returns: A pandas DataFrame.
-    :raises ValueError: if both ``column_names`` and ``kwargs`` are provided.
+    :raises ValueError: If both `column_names` and `kwargs` are provided.
     """  # noqa: E501
 
     if all((column_names, kwargs)):
         raise ValueError(
-            """
-            Only one of `column_names` or `kwargs`
-            can be provided.
-            """
+            "Only one of `column_names` or `kwargs` can be provided."
         )
     # column_names deal with only category dtype (unordered)
     # kwargs takes care of scenarios where user wants an ordered category
     # or user supplies specific categories to create the categorical
     if column_names is not None:
         check("column_names", column_names, [list, tuple, Hashable])
-        if isinstance(column_names, (list, tuple)):
-            check_column(df, column_names)
-            dtypes = {col: "category" for col in column_names}
-            return df.astype(dtypes)
         if isinstance(column_names, Hashable):
-            check_column(df, [column_names])
-            return df.astype({column_names: "category"})
+            column_names = [column_names]
+        check_column(df, column_names)
+        dtypes = {col: "category" for col in column_names}
+        return df.astype(dtypes)
 
     return _computations_as_categorical(df, **kwargs)
 
@@ -121,42 +127,33 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     categorical columns are created with an order,
     or specific values supplied for the categories.
     It uses a kwarg, where the key is the column name,
-    and the value is a tuple of categories, order.
-    The defaults for the tuple are (None, None)
-    and will return a categorical dtype
+    and the value is either a string, or a 1D array.
+    The default for value is None and will return a categorical dtype
     with no order and categories inferred from the column.
-    A DataFrame, with catetorical columns, is returned.
+    A DataFrame, with categorical columns, is returned.
     """
 
     categories_dict = _as_categorical_checks(df, **kwargs)
 
     categories_dtypes = {}
 
-    for column_name, (
-        cat,
-        order,
-    ) in categories_dict.items():
-        error_msg = f"""
-                     Kindly ensure there is at least
-                     one non-null value in {column_name}.
-                     """
-        if (cat is None) and (order is None):
+    for column_name, value in categories_dict.items():
+        if value is None:
             cat_dtype = pd.CategoricalDtype()
+        elif isinstance(value, str):
+            if value == _CategoryOrder.SORT.value:
+                _, cat_dtype = df[column_name].factorize(sort=True)
+            else:
+                _, cat_dtype = df[column_name].factorize(sort=False)
+            if cat_dtype.empty:
+                raise ValueError(
+                    "Kindly ensure there is at least "
+                    f"one non-null value in {column_name}."
+                )
+            cat_dtype = pd.CategoricalDtype(categories=cat_dtype, ordered=True)
 
-        elif (cat is None) and (order is _CategoryOrder.SORT.value):
-            cat = df[column_name].factorize(sort=True)[-1]
-            if cat.empty:
-                raise ValueError(error_msg)
-            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
-
-        elif (cat is None) and (order is _CategoryOrder.APPEARANCE.value):
-            cat = df[column_name].factorize(sort=False)[-1]
-            if cat.empty:
-                raise ValueError(error_msg)
-            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
-
-        elif cat is not None:  # order is irrelevant if cat is provided
-            cat_dtype = pd.CategoricalDtype(categories=cat, ordered=True)
+        else:  # 1-D array
+            cat_dtype = pd.CategoricalDtype(categories=value, ordered=True)
 
         categories_dtypes[column_name] = cat_dtype
 
@@ -166,136 +163,96 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
     """
     This function raises errors if columns in `kwargs` are
-    absent in the the dataframe's columns.
-    It also raises errors if the tuple in `kwargs`
-    has a length greater than 2, or the `order` value,
-    if not None, is not one of `appearance` or `sort`.
-    Error is raised if the `categories` in the tuple in `kwargs`
-    is not a 1-D array-like object.
+    absent from the dataframe's columns.
+    It also raises errors if the value in `kwargs`
+    is not a string (`'appearance'` or `'sort'`), or a 1D array.
 
     This function is executed before proceeding to the computation phase.
 
-    If all checks pass, a dictionary of column names and tuple
-    of (categories, order) is returned.
+    If all checks pass, a dictionary of column names and value is returned.
 
     :param df: The pandas DataFrame object.
-    :param kwargs: A pairing of column name
-        to a tuple of (`categories`, `order`).
+    :param **kwargs: A pairing of column name and value.
     :returns: A dictionary.
-    :raises TypeError: if the value in ``kwargs`` is not a tuple.
-    :raises ValueError: if ``categories`` is not a 1-D array.
-    :raises ValueError: if ``order`` is not one of
-        `sort`, `appearance`, or `None`.
+    :raises TypeError: If `value` is not a 1-D array, or a string.
+    :raises ValueError: If `value` is a 1-D array, and contains nulls,
+        or is non-unique.
     """
 
-    # column checks
     check_column(df, kwargs)
 
     categories_dict = {}
 
     for column_name, value in kwargs.items():
         # type check
-        check("Pair of `categories` and `order`", value, [tuple])
+        if (value is not None) and not (
+            is_list_like(value) or isinstance(value, str)
+        ):
+            raise TypeError(f"{value} should be list-like or a string.")
+        if is_list_like(value):
+            if not hasattr(value, "shape"):
+                value = pd.Index([*value])
 
-        len_value = len(value)
-
-        if len_value != 2:
-            raise ValueError(
-                f"""
-                The tuple of (categories, order) for {column_name}
-                should be length 2; the tuple provided is
-                length {len_value}.
-                """
-            )
-
-        cat, order = value
-        if cat is not None:
-            if not is_list_like(cat):
-                raise TypeError(f"{cat} should be list-like.")
-
-            if not hasattr(cat, "shape"):
-                checker = pd.Index([*cat])
-            else:
-                checker = cat
-
-            arr_ndim = checker.ndim
-            if (arr_ndim != 1) or isinstance(checker, pd.MultiIndex):
+            arr_ndim = value.ndim
+            if (arr_ndim != 1) or isinstance(value, pd.MultiIndex):
                 raise ValueError(
-                    f"""
-                    {cat} is not a 1-D array.
-                    Kindly provide a 1-D array-like object to `categories`.
-                    """
+                    f"{value} is not a 1-D array. "
+                    "Kindly provide a 1-D array-like object."
                 )
 
-            if not isinstance(checker, (pd.Series, pd.Index)):
-                checker = pd.Index(checker)
+            if not isinstance(value, (pd.Series, pd.Index)):
+                value = pd.Index(value)
 
-            if checker.hasnans:
+            if value.hasnans:
                 raise ValueError(
-                    "Kindly ensure there are no nulls in `categories`."
+                    "Kindly ensure there are no nulls in the array provided."
                 )
 
-            if not checker.is_unique:
+            if not value.is_unique:
                 raise ValueError(
-                    """
-                    Kindly provide unique,
-                    non-null values for `categories`.
-                    """
+                    "Kindly provide unique, "
+                    "non-null values for the array provided."
                 )
 
-            if checker.empty:
+            if value.empty:
                 raise ValueError(
-                    """
-                    Kindly ensure there is at least
-                    one non-null value in `categories`.
-                    """
+                    "Kindly ensure there is at least "
+                    "one non-null value in the array provided."
                 )
 
             # uniques, without nulls
             uniques = df[column_name].factorize(sort=False)[-1]
             if uniques.empty:
                 raise ValueError(
-                    f"""
-                     Kindly ensure there is at least
-                     one non-null value in {column_name}.
-                     """
+                    "Kindly ensure there is at least "
+                    f"one non-null value in {column_name}."
                 )
 
-            missing = uniques.difference(checker, sort=False)
+            missing = uniques.difference(value, sort=False)
             if not missing.empty and (uniques.size > missing.size):
                 warnings.warn(
-                    f"""
-                     Values {tuple(missing)} are missing from
-                     the provided categories {cat}
-                     for {column_name}; this may create nulls
-                     in the new categorical column.
-                     """,
+                    f"Values {tuple(missing)} are missing from "
+                    f"the provided categories {value} "
+                    f"for {column_name}; this may create nulls "
+                    "in the new categorical column.",
                     UserWarning,
                     stacklevel=2,
                 )
 
             elif uniques.equals(missing):
                 warnings.warn(
-                    f"""
-                     None of the values in {column_name} are in
-                     {cat};
-                     this might create nulls for all values
-                     in the new categorical column.
-                     """,
+                    f"None of the values in {column_name} are in "
+                    f"{value}; this might create nulls for all values "
+                    f"in the new categorical column.",
                     UserWarning,
                     stacklevel=2,
                 )
 
-        if order is not None:
-            check("order", order, [str])
-
-            category_order_types = [ent.value for ent in _CategoryOrder]
-            if order.lower() not in category_order_types:
+        elif isinstance(value, str):
+            category_order_types = {ent.value for ent in _CategoryOrder}
+            if value.lower() not in category_order_types:
                 raise ValueError(
-                    """
-                    `order` argument should be one of
-                    "appearance", "sort" or `None`.
-                    """
+                    "Argument should be one of 'appearance' or 'sort'."
                 )
 
         categories_dict[column_name] = value

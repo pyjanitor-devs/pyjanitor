@@ -630,8 +630,6 @@ def _pivot_longer_dot_value(
     # in the concatenation phase
     # basically push .value to the end,
     # so we can easily do a .loc, to keep .value columns as headers
-    mapping = mapping.encode_categorical(**{".value": "appearance"})
-    return mapping
     other = [entry for entry in names_to if entry != ".value"]
     last = mapping.columns[-1]
     if other and (last != ".value"):
@@ -659,6 +657,7 @@ def _pivot_longer_dot_value(
     # avoid lexsort performance warning
     if not df.columns.is_monotonic_increasing:
         df = df.sort_index(axis="columns")
+
     len_index = len(df)
 
     if len(df.columns.names) == 1:

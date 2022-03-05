@@ -69,8 +69,8 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     if value.ndim > 2:
         raise ValueError(
             "expand_grid works only on 1D and 2D arrays. "
-            "The provided array for {key} however "
-            f" has a dimension of {value.ndim}."
+            f"The provided array for {key} however "
+            f"has a dimension of {value.ndim}."
         )
 
     value = value[grid_index]

@@ -181,8 +181,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     # before creating the final DataFrame.
     grid = grid.items()
     grid_index = [slice(len(value)) for _, value in grid]
-    grid_index = np.mgrid[grid_index]
-    grid_index = map(np.ravel, grid_index)
+    grid_index = map(np.ravel, np.mgrid[grid_index])
     grid = zip(grid, grid_index)
     grid = ((*left, right) for left, right in grid)
     contents = {}

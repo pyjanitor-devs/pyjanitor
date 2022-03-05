@@ -687,8 +687,9 @@ def _pivot_longer_dot_value(
         else:
             mapping = pd.MultiIndex.from_frame(mapping)
     else:
-        cumcount = mapping.groupby(names_to, sort=False).cumcount()
-        mapping = [cumcount] + [series for _, series in mapping.items()]
+        mapping = [mapping.groupby(names_to, sort=False).cumcount()] + [
+            series for _, series in mapping.items()
+        ]
         mapping = pd.MultiIndex.from_arrays(mapping)
     df.columns = mapping
 
@@ -718,6 +719,8 @@ def _pivot_longer_dot_value(
         if num_levels > 1:
             new_order = np.roll(np.arange(num_levels), len(index) + 1)
             df = df.reorder_levels(new_order, axis="index")
+            # if names_to contains variables other than `.value`
+            # restore them back to the dataframe as columns
             if other:
                 index.extend(other)
         df = df.reset_index(level=index)

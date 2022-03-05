@@ -15,6 +15,7 @@
 -   [ENH] `patterns` deprecated in favour of importing `re.compile`. #1007 @samukweku
 -   [ENH] Changes to kwargs in `encode_categorical`, where the values can either be a string or a 1D array. #1021 @samukweku
 -   [ENH] Add `fill_value` and `explicit` parameters to the `complete` function. #1019 @samukweku
+-   [ENH] Multiple `.value` is now supported in `pivot_longer`. #1034 @samukweku
 
 ## [v0.22.0] - 2021-11-21
 

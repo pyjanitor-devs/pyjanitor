@@ -109,6 +109,31 @@ def pivot_longer(
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
+    Use multiple `.value` to reshape dataframe:
+
+        >>> df = pd.DataFrame(
+        ...     [
+        ...         {
+        ...             "x_1_mean": 1,
+        ...             "x_2_mean": 1,
+        ...             "y_1_mean": 1,
+        ...             "y_2_mean": 1,
+        ...             "unit": 1,
+        ...         }
+        ...     ]
+        ... )
+        >>> df
+           x_1_mean  x_2_mean  y_1_mean  y_2_mean  unit
+        0         1         1         1         1     1
+        >>> df.pivot_longer(
+        ...     index="unit",
+        ...     names_to=(".value", "time", ".value"),
+        ...     names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
+        ... )
+           unit time  x_mean  y_mean
+        0     1    1       1       1
+        1     1    2       1       1
+
 
 
     :param df: A pandas DataFrame.
@@ -646,6 +671,10 @@ def _pivot_longer_dot_value(
     # useful if order of columns change during sorting
     # for a MultiIndex
     _value = mapping[".value"].unique()
+    if sort_by_appearance & (len(mapping.columns) > 1):
+        mapping = mapping.encode_categorical(
+            **{col: "appearance" for col in names_to}
+        )
     # having unique columns ensure the data can be recombined
     # successfully via pd.concat; if the columns are not unique,
     # a counter is created with cumcount to ensure uniqueness.
@@ -658,7 +687,7 @@ def _pivot_longer_dot_value(
         else:
             mapping = pd.MultiIndex.from_frame(mapping)
     else:
-        cumcount = mapping.groupby(names_to).cumcount()
+        cumcount = mapping.groupby(names_to, sort=False).cumcount()
         mapping = [cumcount] + [series for _, series in mapping.items()]
         mapping = pd.MultiIndex.from_arrays(mapping)
     df.columns = mapping

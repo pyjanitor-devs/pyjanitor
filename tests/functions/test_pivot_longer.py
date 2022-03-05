@@ -615,6 +615,35 @@ def test_not_dot_value_pattern(not_dot_value):
     assert_frame_equal(result, actual)
 
 
+def test_not_dot_value_sep_single_column(not_dot_value):
+    """
+    Test output when names_sep and no dot_value
+    for a single column.
+    """
+
+    A = not_dot_value.loc[:, ["country", "vault_2012"]]
+    result = A.pivot_longer(
+        "country",
+        names_to=("event", "year"),
+        names_sep="_",
+        values_to="score",
+    )
+    result = result.sort_values(
+        ["country", "event", "year"], ignore_index=True
+    )
+    actual = A.set_index("country")
+    actual.columns = actual.columns.str.split("_", expand=True)
+    actual.columns.names = ["event", "year"]
+    actual = (
+        actual.stack(["event", "year"])
+        .rename("score")
+        .sort_index()
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual)
+
+
 def test_multiple_dot_value():
     """Test output for multiple .value."""
     df = pd.DataFrame(
@@ -715,9 +744,9 @@ def test_names_pattern_single_column_not_dot_value(single_val):
     Test output if names_to is not '.value'.
     """
     df = single_val[["x1"]]
-    result = df.pivot_longer(names_to="x1", names_pattern="(.+)")
+    result = df.pivot_longer(names_to="yA", names_pattern="(.+)")
 
-    assert_frame_equal(result, df)
+    assert_frame_equal(result, df.melt(var_name="yA"))
 
 
 def test_names_pattern_single_column_not_dot_value1(single_val):
@@ -725,9 +754,19 @@ def test_names_pattern_single_column_not_dot_value1(single_val):
     Test output if names_to is not '.value'.
     """
     df = single_val[["id", "x1"]]
-    result = df.pivot_longer(index="id", names_to="x1", names_pattern="(.+)")
+    result = df.pivot_longer(index="id", names_to="yA", names_pattern="(.+)")
 
-    assert_frame_equal(result, df)
+    assert_frame_equal(result, df.melt("id", var_name="yA"))
+
+
+def test_names_pattern_seq_single_column(single_val):
+    """
+    Test output if names_pattern is a list.
+    """
+    df = single_val[["id", "x1"]]
+    result = df.pivot_longer(index="id", names_to="yA", names_pattern=["(.+)"])
+
+    assert_frame_equal(result, df.rename(columns={"x1": "yA"}))
 
 
 def test_names_pattern_nulls_in_data():

@@ -128,7 +128,7 @@ def pivot_longer(
         >>> df.pivot_longer(
         ...     index="unit",
         ...     names_to=(".value", "time", ".value"),
-        ...     names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
+        ...     names_pattern=r"(x|y)_([0-9])(_mean)",
         ... )
            unit time  x_mean  y_mean
         0     1    1       1       1
@@ -601,8 +601,8 @@ def _pivot_longer_not_dot_value(
     """
 
     len_index = len(df)
-    if len(df.columns) > 1:
-        df = df.melt(ignore_index=False, value_name=values_to)
+
+    df = df.melt(ignore_index=False, value_name=values_to)
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
@@ -693,21 +693,20 @@ def _pivot_longer_dot_value(
         mapping = pd.MultiIndex.from_arrays(mapping)
     df.columns = mapping
 
-    # improve performance for MultiIndex selection
-    # during the list comprehension ---> [df.loc[:, n] for n in others]
-    # and avoid lexsort performance warning
-    if not df.columns.is_monotonic_increasing:
-        df = df.sort_index(axis="columns")
-
     len_index = len(df)
 
     if len(df.columns.names) > 1:
+        # improve performance for MultiIndex selection
+        # during the list comprehension ---> [df.loc[:, n] for n in others]
+        # and avoid lexsort performance warning
+        if not df.columns.is_monotonic_increasing:
+            df = df.sort_index(axis="columns")
         others = df.columns.droplevel(".value").unique()
         df = [df.loc[:, n] for n in others]
         df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
-    # intercept and reorder column if needed
-    if not df.columns.equals(_value):
-        df = df.reindex(columns=_value)
+        # intercept and reorder column if needed
+        if not df.columns.equals(_value):
+            df = df.reindex(columns=_value)
     if index:
         num_levels = df.index.nlevels
         # need to order the dataframe's index
@@ -779,26 +778,30 @@ def _pivot_longer_names_pattern_sequence(
     matches = pd.notna(mapping)
 
     df = df.loc[:, matches]
-    mapping = pd.Series(mapping[matches])
-    # get positions of columns,
-    # to ensure interleaving is possible
-    # so if we have a dataframe like below:
-    #        id  x1  x2  y1  y2
-    #    0   1   4   5   7  10
-    #    1   2   5   6   8  11
-    #    2   3   6   7   9  12
-    # then x1 will pair with y1, and x2 will pair with y2
-    # if the dataframe column positions were alternated, like below:
-    #        id  x2  x1  y1  y2
-    #    0   1   5   4   7  10
-    #    1   2   6   5   8  11
-    #    2   3   7   6   9  12
-    # then x2 will pair with y1 and x1 will pair with y2
-    # it is simply a first come first serve approach
-    positions = mapping.groupby(mapping, sort=False).cumcount()
-    df.columns = [positions, mapping]
-    df = [df.loc[:, num] for num in positions.unique()]
-    df = pd.concat(df, axis="index", sort=False, copy=False)
+    mapping = mapping[matches]
+    if len(mapping) == 1:
+        df.columns = mapping
+    else:
+        mapping = pd.Series(mapping)
+        # get positions of columns,
+        # to ensure interleaving is possible
+        # so if we have a dataframe like below:
+        #        id  x1  x2  y1  y2
+        #    0   1   4   5   7  10
+        #    1   2   5   6   8  11
+        #    2   3   6   7   9  12
+        # then x1 will pair with y1, and x2 will pair with y2
+        # if the dataframe column positions were alternated, like below:
+        #        id  x2  x1  y1  y2
+        #    0   1   5   4   7  10
+        #    1   2   6   5   8  11
+        #    2   3   7   6   9  12
+        # then x2 will pair with y1 and x1 will pair with y2
+        # it is simply a first come first serve approach
+        positions = mapping.groupby(mapping, sort=False).cumcount()
+        df.columns = [positions, mapping]
+        df = [df.loc[:, num] for num in positions.unique()]
+        df = pd.concat(df, axis="index", sort=False, copy=False)
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)

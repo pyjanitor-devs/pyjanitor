@@ -574,8 +574,10 @@ def _pivot_longer_not_dot_value(
 
     Returns a DataFrame.
     """
+
     len_index = len(df)
-    df = df.melt(ignore_index=False, value_name=values_to)
+    if len(df.columns) > 1:
+        df = df.melt(ignore_index=False, value_name=values_to)
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
@@ -585,6 +587,9 @@ def _pivot_longer_not_dot_value(
 
     if ignore_index:
         df.index = range(len(df))
+
+    if df.columns.names:
+        df.columns.names = [None]
 
     return df
 
@@ -627,7 +632,6 @@ def _pivot_longer_dot_value(
                 "as column labels assigned to the dataframe's "
                 "index parameter. Kindly use a unique name."
             )
-
     # reorder allows for easy column selection later
     # in the concatenation phase
     # basically push .value to the end,
@@ -639,16 +643,18 @@ def _pivot_longer_dot_value(
             source=".value", target=last, position="after", axis=1
         )
 
+    # useful if order of columns change during sorting
+    # for a MultiIndex
+    _value = mapping[".value"].unique()
     # having unique columns ensure the data can be recombined
     # successfully via pd.concat; if the columns are not unique,
     # a counter is created with cumcount to ensure uniqueness.
     # This is dropped later on, and is not part of the final
     # dataframe.
     mapping_is_unique = not mapping.duplicated().any(axis=None).item()
-
     if mapping_is_unique:
         if len(mapping.columns) == 1:
-            mapping = mapping.squeeze()
+            mapping = mapping.iloc[:, 0]
         else:
             mapping = pd.MultiIndex.from_frame(mapping)
     else:
@@ -656,39 +662,41 @@ def _pivot_longer_dot_value(
         mapping = [cumcount] + [series for _, series in mapping.items()]
         mapping = pd.MultiIndex.from_arrays(mapping)
     df.columns = mapping
-    # avoid lexsort performance warning
+
+    # improve performance for MultiIndex selection
+    # during the list comprehension ---> [df.loc[:, n] for n in others]
+    # and avoid lexsort performance warning
     if not df.columns.is_monotonic_increasing:
         df = df.sort_index(axis="columns")
 
     len_index = len(df)
 
-    if len(df.columns.names) == 1:
-        df.columns.names = [None]
-        if index:
-            df = df.reset_index(level=index)
-        if ignore_index:
-            df.index = range(len(df))
-        return df
-
-    others = df.columns.droplevel(".value").unique()
-    df = [df.loc[:, n] for n in others]
-    df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
-
+    if len(df.columns.names) > 1:
+        others = df.columns.droplevel(".value").unique()
+        df = [df.loc[:, n] for n in others]
+        df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
+    # intercept and reorder column if needed
+    if not df.columns.equals(_value):
+        df = df.reindex(columns=_value)
     if index:
+        num_levels = df.index.nlevels
         # need to order the dataframe's index
         # so that when resetting,
         # the index appears before the other columns
         # this is relevant only if `index` is True
         # using numbers here, in case there are multiple Nones
         # in the index names
-        new_order = np.roll(np.arange(df.index.nlevels), len(index) + 1)
-        df = df.reorder_levels(new_order, axis="index")
-        if other:
-            index.extend(other)
+        if num_levels > 1:
+            new_order = np.roll(np.arange(num_levels), len(index) + 1)
+            df = df.reorder_levels(new_order, axis="index")
+            if other:
+                index.extend(other)
         df = df.reset_index(level=index)
     else:
-        df = df.reset_index(level=other)
-
+        # if names_to contains variables other than `.value`
+        # restore them back to the dataframe as columns
+        if other:
+            df = df.reset_index(level=other)
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df, len_index)
 
@@ -785,7 +793,6 @@ def _pivot_longer_names_pattern_str(
     This takes care of pivoting scenarios where
     names_pattern is provided, and is a string/regex.
     """
-
     mapping = df.columns.str.extract(names_pattern, expand=True)
 
     nulls_found = mapping.isna()
@@ -807,10 +814,9 @@ def _pivot_longer_names_pattern_str(
         )
 
     mapping.columns = names_to
-
     if ".value" not in names_to:
         if len(names_to) == 1:
-            df.columns = mapping.squeeze()
+            df.columns = mapping.iloc[:, 0]
         else:
             df.columns = pd.MultiIndex.from_frame(mapping)
         return _pivot_longer_not_dot_value(

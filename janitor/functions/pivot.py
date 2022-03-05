@@ -567,9 +567,10 @@ def _pivot_longer_not_dot_value(
     ignore_index: bool,
     values_to: str,
 ) -> pd.DataFrame:
-    """Pivots the dataframe into the final form,
+    """
+    Pivots the dataframe into the final form,
     for scenarios where names_pattern is a string/regex,
-    or names_sep is provided, and `.value` is not in names_to.
+    or names_sep is provided, and .value is not in names_to.
 
     Returns a DataFrame.
     """
@@ -596,9 +597,10 @@ def _pivot_longer_dot_value(
     names_to: list,
     mapping: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Pivots the dataframe into the final form,
+    """
+    Pivots the dataframe into the final form,
     for scenarios where names_pattern is a string/regex,
-    or names_sep is provided, and `.value` is in names_to.
+    or names_sep is provided, and .value is in names_to.
 
     Returns a DataFrame.
     """
@@ -622,7 +624,7 @@ def _pivot_longer_dot_value(
         if exclude:
             raise ValueError(
                 f"Labels {*exclude, } already exist "
-                "in column labels assigned to the dataframe's "
+                "as column labels assigned to the dataframe's "
                 "index parameter. Kindly use a unique name."
             )
 

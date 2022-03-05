@@ -1,13 +1,13 @@
-from typing import Callable, List, Optional, Pattern, Tuple, Union
-import pandas_flavor as pf
-import pandas as pd
-
-from pandas.api.types import is_list_like, is_string_dtype, is_re_compilable
-
-from janitor.utils import check
-from janitor.functions.utils import _select_column_names
 import re
+from typing import Callable, List, Optional, Pattern, Tuple, Union
+
 import numpy as np
+import pandas as pd
+import pandas_flavor as pf
+from pandas.api.types import is_list_like, is_re_compilable, is_string_dtype
+
+from janitor.functions.utils import _select_column_names
+from janitor.utils import check
 
 
 @pf.register_dataframe_method

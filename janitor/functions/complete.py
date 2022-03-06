@@ -339,7 +339,7 @@ def _complete_column(column: str, df, sort):
     if dupes.any():
         column = column[~dupes]
 
-    if sort and (column.is_monotonic_increasing is False):
+    if sort and not column.is_monotonic_increasing:
         column = column.sort_values()
 
     return column

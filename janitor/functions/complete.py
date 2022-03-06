@@ -409,7 +409,7 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
         if dupes.any():
             arr = arr[~dupes]
 
-        if sort and (arr.is_monotonic_increasing is False):
+        if sort and not arr.is_monotonic_increasing:
             arr = arr.sort_values()
 
         arr.name = key

@@ -363,8 +363,8 @@ def _conditional_join_compute(
         elif op in less_than_join_types.union(greater_than_join_types):
             le_lt_check = True
 
-    df.index = range(0, len(df))
-    right.index = range(0, len(right))
+    df.index = range(len(df))
+    right.index = range(len(right))
 
     multiple_conditions = len(conditions) > 1
 
@@ -378,10 +378,8 @@ def _conditional_join_compute(
         if result is None:
             return _create_conditional_join_empty_frame(df, right, how)
 
-        left_c, right_c = result
-
         return _create_conditional_join_frame(
-            df, right, left_c, right_c, how, sort_by_appearance
+            df, right, *result, how, sort_by_appearance
         )
 
     # multiple conditions
@@ -395,10 +393,8 @@ def _conditional_join_compute(
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
 
-    left_c, right_c = result
-
     return _create_conditional_join_frame(
-        df, right, left_c, right_c, how, sort_by_appearance
+        df, right, *result, how, sort_by_appearance
     )
 
 
@@ -411,13 +407,11 @@ def _less_than_indices(
     Use binary search to get indices where left_c
     is less than or equal to right_c.
 
-    If strict is True,then only indices
+    If strict is True, then only indices
     where `left_c` is less than
     (but not equal to) `right_c` are returned.
 
-    if multiple_conditions, a tuple of integer indexes for left_c and right_c
-    is returned; else a tuple of the index for left_c, right_c, as well
-    as the positions of left_c in right_c is returned.
+    A tuple of integer indexes for left_c and right_c is returned.
     """
 
     # TODO
@@ -428,14 +422,16 @@ def _less_than_indices(
     if left_c.min() > right_c.max():
         return None
 
-    any_nulls = pd.isna(right_c.array)
+    any_nulls = pd.isna(right_c)
     if any_nulls.any():
         right_c = right_c[~any_nulls]
-    any_nulls = pd.isna(left_c.array)
+        if right_c.empty:
+            return None
+    any_nulls = pd.isna(left_c)
     if any_nulls.any():
         left_c = left_c[~any_nulls]
-    if left_c.empty | right_c.empty:
-        return None
+        if left_c.empty:
+            return None
     any_nulls = None
 
     if not right_c.is_monotonic_increasing:
@@ -508,11 +504,11 @@ def _greater_than_indices(
     Use binary search to get indices where left_c
     is greater than or equal to right_c.
 
-    If strict is True,then only indices
+    If strict is True, then only indices
     where `left_c` is greater than
     (but not equal to) `right_c` are returned.
 
-    if multiple_conditions, a tuple of integer indexes
+    if multiple_conditions is False, a tuple of integer indexes
     for left_c and right_c is returned;
     else a tuple of the index for left_c, right_c, as well
     as the positions of left_c in right_c is returned."""
@@ -521,14 +517,16 @@ def _greater_than_indices(
     if left_c.max() < right_c.min():
         return None
 
-    any_nulls = pd.isna(right_c.array)
+    any_nulls = pd.isna(right_c)
     if any_nulls.any():
         right_c = right_c[~any_nulls]
-    any_nulls = pd.isna(left_c.array)
+        if right_c.empty:
+            return None
+    any_nulls = pd.isna(left_c)
     if any_nulls.any():
         left_c = left_c[~any_nulls]
-    if left_c.empty | right_c.empty:
-        return None
+        if left_c.empty:
+            return None
     any_nulls = None
 
     if not right_c.is_monotonic_increasing:
@@ -853,8 +851,8 @@ def _multiple_conditional_join_le_lt(
     # the other joins do not have an optimisation opportunity
     # as far as I know, so a blowup of all the rows
     # is unavoidable.
-    # future PR would use numba to improve performance
-    # still doesnt help that an optimisation path is not available
+    # future PR could use numba to improve performance, although it
+    # still doesn't help that an optimisation path is not available
     # that I am aware of
 
     # first step is to get two conditions, if possible
@@ -1076,7 +1074,7 @@ def _create_conditional_join_empty_frame(
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
-        return pd.DataFrame(df)
+        return pd.DataFrame(df, copy=False)
 
     if how == _JoinTypes.LEFT.value:
         right = right.dtypes.to_dict()
@@ -1132,7 +1130,7 @@ def _create_conditional_join_frame(
             key: extract_array(value, extract_numpy=True)[right_index]
             for key, value in right.items()
         }
-        return pd.DataFrame({**df, **right})
+        return pd.DataFrame({**df, **right}, copy=False)
 
     if how == _JoinTypes.LEFT.value:
         right = right.loc[right_index]

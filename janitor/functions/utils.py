@@ -167,7 +167,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
             value = np.asarray([value])
         elif is_list_like(value) and (not hasattr(value, "shape")):
             value = np.asarray([*value])
-        if value.size == 0:
+        if not value.size:
             raise ValueError(f"Kindly provide a non-empty array for {key}.")
 
         grid[key] = value

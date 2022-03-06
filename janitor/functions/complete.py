@@ -221,7 +221,7 @@ def _computations_complete(
 
     columns = df.columns
     indicator = False
-    if (fill_value is not None) and (explicit is False):
+    if fill_value is not None and not explicit:
         # to get a name that does not exist in the columns
         indicator = "".join(columns)
     df = pd.merge(

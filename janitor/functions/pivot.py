@@ -766,7 +766,7 @@ def _pivot_longer_names_pattern_sequence(
     # within each match, check the individual matches
     # and raise an error if any is False
     for position, boolean in enumerate(matches):
-        if boolean.item() is False:
+        if not boolean.item():
             raise ValueError(
                 "No match was returned for the regex "
                 f"at position {position} -> {names_pattern[position]}."
@@ -1101,11 +1101,11 @@ def _computations_pivot_wider(
 
     # an empty df is likely because
     # there is no `values_from`
-    if any((df.empty, flatten_levels is False)):
+    if any((df.empty, not flatten_levels)):
         return df
 
     # ensure all entries in names_from are strings
-    if (names_from_all_strings is False) or (column_dtype is False):
+    if (not names_from_all_strings) or (not column_dtype):
         if isinstance(df.columns, pd.MultiIndex):
             new_columns = [tuple(map(str, ent)) for ent in df]
             df.columns = pd.MultiIndex.from_tuples(new_columns)

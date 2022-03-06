@@ -324,6 +324,7 @@ def _complete_column(column: str, df, sort):
     Args:
         column : str/list/dict
         df: Pandas DataFrame
+        sort: whether or not to sort the Series.
 
     A Pandas Series/DataFrame with no duplicates,
     or a dictionary of unique Pandas Series is returned.
@@ -351,6 +352,7 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
     Args:
         column : list
         df: Pandas DataFrame
+        sort: whether or not to sort the DataFrame.
 
     Returns:
         Pandas DataFrame
@@ -374,6 +376,7 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
     Args:
         column : dictionary
         df: Pandas DataFrame
+        sort: whether or not to sort the Series.
 
     Returns:
         A dictionary of unique pandas Series.

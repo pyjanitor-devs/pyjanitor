@@ -221,7 +221,7 @@ def _computations_complete(
 
     columns = df.columns
     indicator = False
-    if (fill_value is not None) and (explicit is False):
+    if fill_value is not None and not explicit:
         # to get a name that does not exist in the columns
         indicator = "".join(columns)
     df = pd.merge(
@@ -340,7 +340,7 @@ def _complete_column(column: str, df, sort):
     if dupes.any():
         column = column[~dupes]
 
-    if sort and (column.is_monotonic_increasing is False):
+    if sort and not column.is_monotonic_increasing:
         column = column.sort_values()
 
     return column
@@ -412,7 +412,7 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
         if dupes.any():
             arr = arr[~dupes]
 
-        if sort and (arr.is_monotonic_increasing is False):
+        if sort and not arr.is_monotonic_increasing:
             arr = arr.sort_values()
 
         arr.name = key

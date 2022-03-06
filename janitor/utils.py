@@ -69,8 +69,8 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     if value.ndim > 2:
         raise ValueError(
             "expand_grid works only on 1D and 2D arrays. "
-            "The provided array for {key} however "
-            f" has a dimension of {value.ndim}."
+            f"The provided array for {key} however "
+            f"has a dimension of {value.ndim}."
         )
 
     value = value[grid_index]
@@ -130,6 +130,27 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     }
 
 
+@_expand_grid.register(pd.MultiIndex)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+    """
+    Expands the MultiIndex based on `grid_index`.
+
+    Returns a dictionary.
+    """
+
+    contents = {}
+    num = 0
+    for n in range(value.nlevels):
+        arr = value.get_level_values(n)
+        name = arr.name
+        arr = extract_array(arr, extract_numpy=True)[grid_index]
+        if not name:
+            name = num
+            num += 1
+        contents[(key, name)] = arr
+    return contents
+
+
 @_expand_grid.register(pd.Index)
 def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
@@ -137,19 +158,6 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
 
     Returns a dictionary.
     """
-
-    contents = {}
-    if isinstance(value, pd.MultiIndex):
-        num = 0
-        for n in range(value.nlevels):
-            arr = value.get_level_values(n)
-            name = arr.name
-            arr = extract_array(arr, extract_numpy=True)[grid_index]
-            if not name:
-                name = num
-                num += 1
-            contents[(key, name)] = arr
-        return contents
     name = value.name
     if not name:
         name = 0

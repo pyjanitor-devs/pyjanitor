@@ -167,7 +167,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
             value = np.asarray([value])
         elif is_list_like(value) and (not hasattr(value, "shape")):
             value = np.asarray([*value])
-        if value.size == 0:
+        if not value.size:
             raise ValueError(f"Kindly provide a non-empty array for {key}.")
 
         grid[key] = value
@@ -179,10 +179,10 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     # which is then paired with grid.items()
     # to blow up each individual value
     # before creating the final DataFrame.
-    grid_index = [slice(len(value)) for _, value in grid.items()]
-    grid_index = np.mgrid[grid_index]
-    grid_index = map(np.ravel, grid_index)
-    grid = zip(grid.items(), grid_index)
+    grid = grid.items()
+    grid_index = [slice(len(value)) for _, value in grid]
+    grid_index = map(np.ravel, np.mgrid[grid_index])
+    grid = zip(grid, grid_index)
     grid = ((*left, right) for left, right in grid)
     contents = {}
     for key, value, grid_index in grid:

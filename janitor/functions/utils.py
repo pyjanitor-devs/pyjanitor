@@ -146,7 +146,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     There is a performance penalty for small entries
     in using this method, instead of `itertools.product`;
-    however, there are  significant performance benefits
+    however, there are significant performance benefits
     as the size of the data increases.
 
     Another benefit of this approach, in addition to the significant

@@ -12,7 +12,6 @@ from janitor.utils import check, _expand_grid
 from pandas.api.types import (
     union_categoricals,
     is_scalar,
-    is_extension_array_dtype,
     is_list_like,
 )
 import numpy as np
@@ -142,12 +141,10 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
 def _computations_expand_grid(others: dict) -> pd.DataFrame:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Combines NumPy's `mgrid`, with the `take` method in NumPy/pandas
-    to expand each input to the length of the cumulative product of
-    all inputs in `others`.
+    Uses numpy's `mgrid` to generate indices, which is used to
+    `explode` all the inputs in `others`.
 
     There is a performance penalty for small entries
-    (lenght less than 10)
     in using this method, instead of `itertools.product`;
     however, there are significant performance benefits
     as the size of the data increases.
@@ -167,13 +164,11 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
 
     for key, value in others.items():
         if is_scalar(value):
-            value = pd.DataFrame([value])
-        elif (not isinstance(value, pd.Series)) and is_extension_array_dtype(
-            value
-        ):
-            value = pd.DataFrame(value)
+            value = np.asarray([value])
         elif is_list_like(value) and (not hasattr(value, "shape")):
             value = np.asarray([*value])
+        if not value.size:
+            raise ValueError(f"Kindly provide a non-empty array for {key}.")
 
         grid[key] = value
 
@@ -183,20 +178,16 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     # to generate cartesian indices
     # which is then paired with grid.items()
     # to blow up each individual value
-    # before finally recombining, via pd.concat,
-    # to create a dataframe.
-    grid_index = [slice(len(value)) for _, value in grid.items()]
-    grid_index = np.mgrid[grid_index]
-    grid_index = map(np.ravel, grid_index)
-    grid = zip(grid.items(), grid_index)
+    # before creating the final DataFrame.
+    grid = grid.items()
+    grid_index = [slice(len(value)) for _, value in grid]
+    grid_index = map(np.ravel, np.mgrid[grid_index])
+    grid = zip(grid, grid_index)
     grid = ((*left, right) for left, right in grid)
-    grid = {
-        key: _expand_grid(value, grid_index) for key, value, grid_index in grid
-    }
-
-    # creates a MultiIndex with the keys
-    # since grid is a dictionary
-    return pd.concat(grid, axis="columns", sort=False, copy=False)
+    contents = {}
+    for key, value, grid_index in grid:
+        contents = {**contents, **_expand_grid(value, grid_index, key)}
+    return pd.DataFrame(contents, copy=False)
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

@@ -19,7 +19,7 @@ dependencies:
   - jupyterlab
   - lxml
   - make
-  - mkdocs
+  - mkdocs<0.18.0
   - mkdocs-material
   - mkdocstrings
   - missingno

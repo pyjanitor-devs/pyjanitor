@@ -19,9 +19,9 @@ dependencies:
   - jupyterlab
   - lxml
   - make
-  - mkdocs<0.18.0
+  - mkdocs
   - mkdocs-material
-  - mkdocstrings
+  - mkdocstrings<0.18.0
   - missingno
   - multipledispatch
   - mypy

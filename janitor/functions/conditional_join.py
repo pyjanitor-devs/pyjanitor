@@ -485,7 +485,7 @@ def _less_than_indices(
             left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
-        if search_indices.size == 0:
+        if not search_indices.size:
             return None
 
     right_c = [right_index[ind:len_right] for ind in search_indices]
@@ -578,7 +578,7 @@ def _greater_than_indices(
             left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
-        if search_indices.size == 0:
+        if not search_indices.size:
             return None
 
     if multiple_conditions:
@@ -810,7 +810,7 @@ def _multiple_conditional_join_eq(
         df, right, left_on=left_on, right_on=right_on, sort=False, copy=False
     )._get_join_indexers()
 
-    if not left_index.size > 0:
+    if not left_index.size:
         return None
 
     rest = (
@@ -993,7 +993,7 @@ def _range_indices(
         right_c = right_c[~dupes]
 
     for ind in range(uniqs_index.size):
-        if counter.size == 0:
+        if not counter.size:
             break
         keep_rows = op(left_c, right_c[ind])
         if ext_arr:

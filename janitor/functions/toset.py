@@ -1,3 +1,4 @@
+"""Implementation of the `toset` function."""
 from typing import Set
 import pandas_flavor as pf
 import pandas as pd
@@ -11,25 +12,20 @@ def toset(series: pd.Series) -> Set:
     (for str, int, float) or a pandas scalar
     (for Timestamp/Timedelta/Interval/Period)
 
-    Functional usage syntax:
+    Example:
 
-
-
-        import pandas as pd
-        import janitor as jn
-
-        series = pd.Series(...)
-        s = jn.functions.toset(series=series)
-
-    Method chaining usage example:
-
-
-
-        import pandas as pd
-        import janitor
-
-        series = pd.Series(...)
-        s = series.toset()
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([1, 2, 3, 5, 5], index=["a", "b", "c", "d", "e"])
+        >>> s
+        a    1
+        b    2
+        c    3
+        d    5
+        e    5
+        dtype: int64
+        >>> s.toset()
+        {1, 2, 3, 5}
 
     :param series: A pandas series.
     :returns: A set of values.

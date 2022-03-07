@@ -801,6 +801,7 @@ def _multiple_conditional_join_eq(
     ]
 
     left_on, right_on = zip(*eqs)
+
     left_on = [*left_on]
     right_on = [*right_on]
 
@@ -1085,7 +1086,7 @@ def _create_conditional_join_empty_frame(
         right = {
             key: pd.Series([], dtype=value) for key, value in right.items()
         }
-        right = pd.DataFrame(right)
+        right = pd.DataFrame(right, copy=False)
         return df.join(right, how=how, sort=False)
 
     if how == _JoinTypes.RIGHT.value:
@@ -1095,7 +1096,7 @@ def _create_conditional_join_empty_frame(
             for key, dtype in df.items()
         }
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
-        df = pd.DataFrame(df)
+        df = pd.DataFrame(df, copy=False)
         return df.join(right, how=how, sort=False)
 
 

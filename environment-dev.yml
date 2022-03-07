@@ -21,7 +21,7 @@ dependencies:
   - make
   - mkdocs
   - mkdocs-material
-  - mkdocstrings
+  - mkdocstrings<0.18.0
   - missingno
   - multipledispatch
   - mypy

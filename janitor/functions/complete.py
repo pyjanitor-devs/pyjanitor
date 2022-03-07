@@ -262,6 +262,9 @@ def _computations_complete(
                 # instead of assign (which is also a for loop),
                 # to cater for scenarios where the column_name is not a string
                 # assign only works with keys that are strings
+                # Also, the output wil be floats (for numeric types),
+                # even if all the columns could be integers
+                # user can always convert to int if required
                 for column_name, value in fill_value.items():
                     # for categorical dtypes, set the categories first
                     if is_categorical_dtype(df[column_name]):

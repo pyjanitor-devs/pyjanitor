@@ -675,7 +675,7 @@ def _generic_func_cond_join(
     right_c: pd.Series,
     op: str,
     multiple_conditions: bool,
-):
+) -> tuple:
     """
     Generic function to call any of the individual functions
     (_less_than_indices, _greater_than_indices,
@@ -702,7 +702,7 @@ def _generic_func_cond_join(
 
 def _generate_indices(
     left_index: np.ndarray, right_index: np.ndarray, conditions: list
-):
+) -> tuple:
     """
     Run a for loop to get the final indices.
     This iteratively goes through each condition,
@@ -1103,8 +1103,8 @@ def _create_conditional_join_empty_frame(
 def _create_conditional_join_frame(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    left_index: pd.Index,
-    right_index: pd.Index,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
     how: str,
     sort_by_appearance: bool,
 ):
@@ -1133,12 +1133,34 @@ def _create_conditional_join_frame(
         }
         return pd.DataFrame({**df, **right}, copy=False)
 
+    # dirty tests show slight speed gain when copy=False
+    # which is achievable only within pd.merge
     if how == _JoinTypes.LEFT.value:
         right = right.loc[right_index]
         right.index = left_index
-        return df.join(right, how=how, sort=False).reset_index(drop=True)
+        df = pd.merge(
+            df,
+            right,
+            left_index=True,
+            right_index=True,
+            how=how,
+            copy=False,
+            sort=False,
+        )
+        df.index = range(len(df))
+        return df
 
     if how == _JoinTypes.RIGHT.value:
         df = df.loc[left_index]
         df.index = right_index
-        return df.join(right, how=how, sort=False).reset_index(drop=True)
+        df = pd.merge(
+            df,
+            right,
+            left_index=True,
+            right_index=True,
+            how=how,
+            copy=False,
+            sort=False,
+        )
+        df.index = range(len(df))
+        return df

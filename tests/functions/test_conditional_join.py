@@ -346,6 +346,73 @@ def test_single_condition_less_than_equal(df, right):
 
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
+def test_single_condition_le_keep_first(df, right):
+    """Test output for a single condition. "<=". DateTimes"""
+
+    left_on, right_on = ["E", "Dates"]
+    df = df.dropna(subset=[left_on])
+    right = right.dropna(subset=[right_on])
+    expected = pd.merge_asof(
+        df.sort_values(left_on),
+        right.sort_values(right_on),
+        left_on=left_on,
+        right_on=right_on,
+        allow_exact_matches=True,
+        direction="forward",
+    )
+
+    expected = expected.filter([left_on, right_on])
+    expected.index = pd.RangeIndex(len(expected))
+    actual = df.conditional_join(
+        right,
+        (left_on, right_on, "<="),
+        keep="first",
+        how="left",
+    )
+
+    actual = actual.filter([left_on, right_on]).sort_values(
+        [left_on, right_on], ignore_index=True
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_lt_keep_first(df, right):
+    """
+    Test output for a single condition and keep first match.
+    "<". DateTimes
+    """
+
+    left_on, right_on = ["E", "Dates"]
+    df = df.dropna(subset=[left_on])
+    right = right.dropna(subset=[right_on])
+    expected = pd.merge_asof(
+        df.sort_values(left_on),
+        right.sort_values(right_on),
+        left_on=left_on,
+        right_on=right_on,
+        allow_exact_matches=False,
+        direction="forward",
+    )
+
+    expected = expected.filter([left_on, right_on])
+    expected.index = pd.RangeIndex(len(expected))
+    actual = df.conditional_join(
+        right,
+        (left_on, right_on, "<"),
+        keep="first",
+        how="left",
+    )
+
+    actual = actual.filter([left_on, right_on]).sort_values(
+        [left_on, right_on], ignore_index=True
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_date(df, right):
     """Test output for a single condition. "<". Dates"""
 
@@ -409,6 +476,38 @@ def test_single_condition_greater_than_ints(df, right):
 
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
+def test_single_condition_gt_keep_first(df, right):
+    """Test output for a single condition and keep first match. ">"."""
+
+    left_on, right_on = ["A", "Integers"]
+    df = df.dropna(subset=[left_on])
+    right = right.dropna(subset=[right_on])
+    expected = pd.merge_asof(
+        df.sort_values(left_on),
+        right.sort_values(right_on),
+        left_on=left_on,
+        right_on=right_on,
+        allow_exact_matches=False,
+        direction="backward",
+    )
+
+    expected = expected.filter([left_on, right_on])
+    expected.index = pd.RangeIndex(len(expected))
+    actual = df.conditional_join(
+        right,
+        (left_on, right_on, ">"),
+        keep="first",
+        how="left",
+    )
+
+    actual = actual.filter([left_on, right_on]).sort_values(
+        [left_on, right_on], ignore_index=True
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_floats_floats(df, right):
     """Test output for a single condition. ">"."""
 
@@ -430,8 +529,40 @@ def test_single_condition_greater_than_floats_floats(df, right):
 
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
+def test_single_condition_ge_keep_first(df, right):
+    """Test output for a single condition, and keep first match. ">"."""
+
+    left_on, right_on = ["B", "Numeric"]
+    df = df.dropna(subset=[left_on])
+    right = right.dropna(subset=[right_on])
+    expected = pd.merge_asof(
+        df.sort_values(left_on),
+        right.sort_values(right_on),
+        left_on=left_on,
+        right_on=right_on,
+        allow_exact_matches=True,
+        direction="backward",
+    )
+
+    expected = expected.filter([left_on, right_on])
+    expected.index = pd.RangeIndex(len(expected))
+    actual = df.conditional_join(
+        right,
+        (left_on, right_on, ">="),
+        keep="first",
+        how="left",
+    )
+
+    actual = actual.filter([left_on, right_on]).sort_values(
+        [left_on, right_on], ignore_index=True
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_ints_extension_array(df, right):
-    """Test output for a single condition. ">="."""
+    """Test output for a single condition. ">"."""
 
     left_on, right_on = ["A", "Integers"]
     df = df.assign(A=df["A"].astype("Int64"))
@@ -445,6 +576,64 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
     expected = expected.filter([left_on, right_on])
     actual = df.conditional_join(
         right, (left_on, right_on, ">"), how="inner", sort_by_appearance=True
+    )
+
+    actual = actual.filter([left_on, right_on])
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_gt_ints_last(df, right):
+    """Test output for a single condition, and keep = last. ">"."""
+
+    left_on, right_on = ["A", "Integers"]
+    df = df.sort_values(left_on, ascending=False)
+    right = right.sort_values(right_on, ascending=False)
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} > {right_on}")
+        .groupby(left_on)[right_on]
+        .nth(-1)
+    )
+
+    expected = df.merge(expected, on=left_on, how="inner").filter(
+        [left_on, right_on]
+    )
+    expected.index = range(len(expected))
+
+    actual = df.conditional_join(
+        right, (left_on, right_on, ">"), how="inner", keep="last"
+    )
+
+    actual = actual.filter([left_on, right_on])
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_lt_ints_last(df, right):
+    """Test output for a single condition, and keep = last. <"."""
+
+    left_on, right_on = ["A", "Integers"]
+    df = df.sort_values(left_on, ascending=True)
+    right = right.sort_values(right_on, ascending=True)
+    expected = (
+        df.assign(t=1)
+        .merge(right.assign(t=1), on="t")
+        .query(f"{left_on} <= {right_on}")
+        .groupby(left_on)[right_on]
+        .nth(-1)
+    )
+
+    expected = df.merge(expected, on=left_on, how="inner").filter(
+        [left_on, right_on]
+    )
+    expected.index = range(len(expected))
+
+    actual = df.conditional_join(
+        right, (left_on, right_on, "<="), how="inner", keep="last"
     )
 
     actual = actual.filter([left_on, right_on])
@@ -536,6 +725,96 @@ def test_single_condition_not_equal_datetime(df, right):
     )
 
     actual = actual.filter([left_on, right_on])
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_ne_dates_first(df, right):
+    """Test output for a single condition, and keep = first. "!="."""
+
+    left_on, right_on = ["E", "Dates"]
+    expected_1 = pd.merge_asof(
+        df.sort_values(left_on),
+        right.sort_values(right_on),
+        left_on=left_on,
+        right_on=right_on,
+        allow_exact_matches=False,
+        direction="forward",
+    )
+
+    expected_2 = pd.merge_asof(
+        df.sort_values(left_on),
+        right.sort_values(right_on),
+        left_on=left_on,
+        right_on=right_on,
+        allow_exact_matches=False,
+        direction="backward",
+    )
+
+    expected = (
+        pd.concat([expected_1, expected_2])
+        .dropna(subset=[right_on])
+        .drop_duplicates(keep="first", subset=[left_on], ignore_index=True)
+    )
+    expected = (
+        df[[left_on]]
+        .merge(expected.filter([left_on, right_on]), how="inner", on=left_on)
+        .sort_values([left_on, right_on], ignore_index=True)
+    )
+    expected.index = range(len(expected))
+
+    actual = df.conditional_join(
+        right, (left_on, right_on, "!="), how="inner", keep="first"
+    )
+
+    actual = actual.filter([left_on, right_on]).sort_values(
+        [left_on, right_on], ignore_index=True
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_ne_ints_last(df, right):
+    """Test output for a single condition, and keep = last. "!="."""
+
+    left_on, right_on = ["A", "Integers"]
+    A = df.sort_values(left_on, ascending=True)
+    B = right.sort_values(right_on, ascending=True)
+    expected_1 = (
+        A.assign(t=1)
+        .merge(B.assign(t=1), on="t")
+        .query(f"{left_on} < {right_on}")
+        .groupby(left_on)[right_on]
+        .nth(-1)
+    )
+
+    A = df.sort_values(left_on, ascending=False)
+    B = right.sort_values(right_on, ascending=False)
+    expected_2 = (
+        A.assign(t=1)
+        .merge(B.assign(t=1), on="t")
+        .query(f"{left_on} > {right_on}")
+        .groupby(left_on)[right_on]
+        .nth(-1)
+    )
+
+    expected = pd.concat([expected_1, expected_2]).groupby(left_on).nth(0)
+    expected = (
+        df[[left_on]]
+        .merge(expected, on=left_on, how="inner")
+        .sort_values([left_on, right_on], ignore_index=True)
+    )
+    expected.index = range(len(expected))
+
+    actual = df.conditional_join(
+        right, (left_on, right_on, "!="), how="inner", keep="last"
+    )
+
+    actual = actual.filter([left_on, right_on]).sort_values(
+        [left_on, right_on], ignore_index=True
+    )
     assert_frame_equal(expected, actual)
 
 

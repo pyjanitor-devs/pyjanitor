@@ -128,8 +128,11 @@ def conditional_join(
     :param how: Indicates the type of join to be performed.
         It can be one of `inner`, `left`, `right`.
         Full join is not supported. Defaults to `inner`.
-    :param sort_by_appearance: Default is `False`. If True,
-        values from `right` that meet the join condition will be returned
+    :param sort_by_appearance: Default is `False`.
+        This is useful for strictly non-equi joins,
+        where the user wants the original order maintained.
+        If True, values from `df` and `right`
+        that meet the join condition will be returned
         in the final dataframe in the same order
         that they were before the join.
     :returns: A pandas DataFrame of the two merged Pandas objects.
@@ -428,13 +431,15 @@ def _less_than_indices(
     if left_c.min() > right_c.max():
         return None
 
-    any_nulls = pd.isna(right_c.array)
+    any_nulls = pd.isna(right_c)
     if any_nulls.any():
         right_c = right_c[~any_nulls]
-    any_nulls = pd.isna(left_c.array)
+    if right_c.empty:
+        return None
+    any_nulls = pd.isna(left_c)
     if any_nulls.any():
         left_c = left_c[~any_nulls]
-    if left_c.empty | right_c.empty:
+    if left_c.empty:
         return None
     any_nulls = None
 
@@ -489,7 +494,7 @@ def _less_than_indices(
             left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
-        if search_indices.size == 0:
+        if not search_indices.size:
             return None
 
     right_c = [right_index[ind:len_right] for ind in search_indices]
@@ -521,13 +526,15 @@ def _greater_than_indices(
     if left_c.max() < right_c.min():
         return None
 
-    any_nulls = pd.isna(right_c.array)
+    any_nulls = pd.isna(right_c)
     if any_nulls.any():
         right_c = right_c[~any_nulls]
-    any_nulls = pd.isna(left_c.array)
+    if right_c.empty:
+        return None
+    any_nulls = pd.isna(left_c)
     if any_nulls.any():
         left_c = left_c[~any_nulls]
-    if left_c.empty | right_c.empty:
+    if left_c.empty:
         return None
     any_nulls = None
 
@@ -580,7 +587,7 @@ def _greater_than_indices(
             left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
-        if search_indices.size == 0:
+        if not search_indices.size:
             return None
 
     if multiple_conditions:
@@ -666,7 +673,7 @@ def _not_equal_indices(
     left_c = np.concatenate([lt_left, gt_left, l1_nulls])
     right_c = np.concatenate([lt_right, gt_right, r1_nulls])
 
-    if (not left_c.size > 0) & (not right_c.size > 0):
+    if (not left_c.size) & (not right_c.size):
         return None
 
     return left_c, right_c
@@ -778,23 +785,14 @@ def _multiple_conditional_join_eq(
     """
 
     # TODO
-    # at the moment, this is not optimized/wasteful
-    # it gets the indices, all the indices
+    # this could be better optimized/less wasteful
+    # At the moment, it gets the indices, all the indices
     # indexes the main df and right, to get all the rows
     # before pruning down
-    # a more efficient way would be to get the rows
+    # a more efficient way would be to get the pruned rows
     # before hitting df and right
     # something similar to  the `_range_indices` function
     # for less than and greater than
-    # will using a recursive binary search be better?
-    # if using a binary search
-    # should tehre be further restrictions to only
-    # numeric and date data types, effectively excluding
-    # strings and categoricals (maybe categoricals can stay)
-    # since strings are significantly slower in a binary search
-    # than integers
-    # one possible option is to use the `ord` builtin to convert
-    # strings to numbers - will that be efficient?
 
     eqs = [
         (left_on, right_on)
@@ -1076,7 +1074,7 @@ def _create_conditional_join_empty_frame(
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
-        return pd.DataFrame(df)
+        return pd.DataFrame(df, copy=False)
 
     if how == _JoinTypes.LEFT.value:
         right = right.dtypes.to_dict()
@@ -1087,18 +1085,27 @@ def _create_conditional_join_empty_frame(
         right = {
             key: pd.Series([], dtype=value) for key, value in right.items()
         }
-        right = pd.DataFrame(right)
-        return df.join(right, how=how, sort=False)
+        right = pd.DataFrame(right, copy=False)
 
-    if how == _JoinTypes.RIGHT.value:
+    else:  # how == 'right'
         df = df.dtypes.to_dict()
         df = {
             key: float if dtype.kind == "i" else dtype
             for key, dtype in df.items()
         }
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
-        df = pd.DataFrame(df)
-        return df.join(right, how=how, sort=False)
+        df = pd.DataFrame(df, copy=False)
+    df = pd.merge(
+        df,
+        right,
+        left_index=True,
+        right_index=True,
+        how=how,
+        copy=False,
+        sort=False,
+    )
+    df.index = range(len(df))
+    return df
 
 
 def _create_conditional_join_frame(
@@ -1113,7 +1120,7 @@ def _create_conditional_join_frame(
     Create final dataframe for conditional join,
     if there are matches.
     """
-    if sort_by_appearance:
+    if sort_by_appearance:  # useful for strictly non-equi joins
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
         left_index = left_index[sorter]
@@ -1132,14 +1139,22 @@ def _create_conditional_join_frame(
             key: extract_array(value, extract_numpy=True)[right_index]
             for key, value in right.items()
         }
-        return pd.DataFrame({**df, **right})
+        return pd.DataFrame({**df, **right}, copy=False)
 
     if how == _JoinTypes.LEFT.value:
         right = right.loc[right_index]
         right.index = left_index
-        return df.join(right, how=how, sort=False).reset_index(drop=True)
-
-    if how == _JoinTypes.RIGHT.value:
+    else:  # how == 'right'
         df = df.loc[left_index]
         df.index = right_index
-        return df.join(right, how=how, sort=False).reset_index(drop=True)
+    df = pd.merge(
+        df,
+        right,
+        left_index=True,
+        right_index=True,
+        how=how,
+        copy=False,
+        sort=False,
+    )
+    df.index = range(len(df))
+    return df

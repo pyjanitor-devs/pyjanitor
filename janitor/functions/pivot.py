@@ -114,25 +114,25 @@ def pivot_longer(
         >>> df = pd.DataFrame(
         ...     [
         ...         {
-        ...             "x_1_mean": 1,
-        ...             "x_2_mean": 1,
-        ...             "y_1_mean": 1,
-        ...             "y_2_mean": 1,
-        ...             "unit": 1,
+        ...             "x_1_mean": 10,
+        ...             "x_2_mean": 20,
+        ...             "y_1_mean": 30,
+        ...             "y_2_mean": 40,
+        ...             "unit": 50,
         ...         }
         ...     ]
         ... )
         >>> df
            x_1_mean  x_2_mean  y_1_mean  y_2_mean  unit
-        0         1         1         1         1     1
+        0        10        20        30        40    50
         >>> df.pivot_longer(
         ...     index="unit",
         ...     names_to=(".value", "time", ".value"),
         ...     names_pattern=r"(x|y)_([0-9])(_mean)",
         ... )
            unit time  x_mean  y_mean
-        0     1    1       1       1
-        1     1    2       1       1
+        0    50    1      10      30
+        1    50    2      20      40
 
 
 
@@ -152,6 +152,12 @@ def pivot_longer(
         names, if `name_sep` or `names_pattern` is provided.
         If `.value` is in `names_to`, new column names will be extracted
         from part of the existing column names and overrides`values_to`.
+    :param values_to: Name of new column as a string that will contain what
+        were previously the values of the columns in `column_names`.
+    :param column_level: If columns are a MultiIndex, then use this level to
+        unpivot the DataFrame. Provided for compatibility with pandas' melt,
+        and applies only if neither `names_sep` nor `names_pattern` is
+        provided.
     :param names_sep: Determines how the column name is broken up, if
         `names_to` contains multiple values. It takes the same
         specification as pandas' `str.split` method, and can be a string
@@ -166,12 +172,6 @@ def pivot_longer(
         `names_to` must also be a list/tuple and the lengths of both
         arguments must match.
         `names_pattern` does not work with MultiIndex columns.
-    :param values_to: Name of new column as a string that will contain what
-        were previously the values of the columns in `column_names`.
-    :param column_level: If columns are a MultiIndex, then use this level to
-        unpivot the DataFrame. Provided for compatibility with pandas' melt,
-        and applies only if neither `names_sep` nor `names_pattern` is
-        provided.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         the final look of the DataFrame. If `True`, the unpivoted DataFrame
         will be stacked in order of first appearance.
@@ -526,8 +526,6 @@ def _sort_by_appearance_for_melt(
 
     A dataframe that is sorted by appearance is returned.
     """
-
-    index_sorter = None
 
     # explanation here to help future me :)
 

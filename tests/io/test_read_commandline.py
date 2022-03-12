@@ -35,7 +35,7 @@ def test_read_commandline_bad_cmd(dataframe):
     Test 1 raises a TypeError if read_commandline
         is given an input that is not a string.
 
-    Test 2 raises a CalledProcessError/JanitorError if
+    Test 2 raises a CalledProcessError if
         read_commandline is given a string
         which is not a valid bash command.
 

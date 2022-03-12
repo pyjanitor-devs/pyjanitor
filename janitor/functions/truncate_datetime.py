@@ -5,7 +5,8 @@ import datetime as dt
 
 @pf.register_dataframe_method
 def truncate_datetime_dataframe(
-    df: pd.DataFrame, datepart: str
+    df: pd.DataFrame,
+    datepart: str,
 ) -> pd.DataFrame:
     """
     Truncate times down to a user-specified precision of
@@ -15,16 +16,16 @@ def truncate_datetime_dataframe(
     Calling on existing df will not alter the contents
     of said df.
 
-    Note: Truncating down to a Month or Day will yields 0s,
+    Note: Truncating down to a Month or Day will yield 0s,
     as there is no 0 month or 0 day in most datetime systems.
 
-    :param df: The dataframe on which to truncate datetime.
+    :param df: The pandas DataFrame on which to truncate datetime.
     :param datepart: Truncation precision, YEAR, MONTH, DAY,
         HOUR, MINUTE, SECOND. (String is automagically
         capitalized)
 
-    :returns: a truncated datetime object to
-        the precision specified by datepart.
+    :returns: A pandas DataFrame with all valid datetimes truncated down
+        to the specified precision.
     """
     for i in df.columns:
         for j in df.index:
@@ -40,12 +41,15 @@ def truncate_datetime_dataframe(
     return df
 
 
-def _truncate_datetime(datepart: str, timestamp: dt.datetime):
+def _truncate_datetime(datepart: str, timestamp: dt.datetime) -> dt.datetime:
     """
+
     :param datepart: Truncation precision, YEAR, MONTH, DAY,
         HOUR, MINUTE, SECOND. (String is automagically
         capitalized)
-    :param timestamp: expecting a datetime from python datetime class (dt)
+    :param timestamp: Expecting a datetime from python datetime class (dt)
+    :returns: A truncated datetime object to the precision specified by
+        datepart.
     """
     recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND]
     datepart = datepart.upper()
@@ -73,7 +77,7 @@ def _truncate_datetime(datepart: str, timestamp: dt.datetime):
         )
         raise KeyError(msg)
 
-    for i in range(ENUM.get(datepart) + 1):
+    for i in range(ENUM[datepart] + 1):
         recurrence[i] = ENUM.get(i)
 
     return dt.datetime(

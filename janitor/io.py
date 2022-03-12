@@ -105,12 +105,12 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     """
 
     check("cmd", cmd, [str])
-    outcome = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    outcome = subprocess.run(
+        cmd, shell=True, capture_output=True, text=True, check=True
+    )
     if outcome.returncode != 0:
         raise JanitorError(outcome.stderr)
-    else:
-        outcome = outcome.stdout
-    return pd.read_csv(StringIO(outcome), **kwargs)
+    return pd.read_csv(StringIO(outcome.stdout), **kwargs)
 
 
 def xlsx_table(

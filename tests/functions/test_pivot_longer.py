@@ -143,7 +143,7 @@ def test_name_sep_wrong_type(df_checks):
 
 
 def test_name_sep_no_names_to(df_checks):
-    """Raise ValuError if names_sep and names_to is None."""
+    """Raise ValueError if names_sep and names_to is None."""
     with pytest.raises(ValueError):
         df_checks.pivot_longer(names_to=None, names_sep="_")
 

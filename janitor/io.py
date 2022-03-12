@@ -219,3 +219,141 @@ def xlsx_table(
         _, frame = frame.popitem()
         return pd.DataFrame(frame)
     return {key: pd.DataFrame(value) for key, value in frame.items()}
+
+
+def xlsx_cells(
+    path: str,
+    sheetname: str,
+    start_range: str = None,
+    end_range: str = None,
+    fill_type: bool = False,
+    fg_color: bool = False,
+    bg_color: bool = False,
+    font_name: bool = False,
+    font_size: bool = False,
+    font_bold: bool = False,
+    font_italic: bool = False,
+    font_vertAlign: bool = False,
+    font_underline: bool = False,
+    font_strike: bool = False,
+    font_color: bool = False,
+    font_outline: bool = False,
+    font_shadow: bool = False,
+    font_condense: bool = False,
+    font_extend: bool = False,
+    font_charset: bool = False,
+    font_family: bool = False,
+    left_border_style: bool = False,
+    right_border_style: bool = False,
+    top_border_style: bool = False,
+    bottom_border_style: bool = False,
+    diagonal_border_style: bool = False,
+    horizontal_alignment: bool = False,
+    vertical_alignment: bool = False,
+    text_rotation: bool = False,
+    wrap_text: bool = False,
+    shrink_to_fit: bool = False,
+    indent: bool = False,
+    locked: bool = False,
+    hidden: bool = False,
+    comments: bool = False,
+) -> pd.DataFrame:
+    """
+
+    :param path: Path to the Excel File.
+    :param sheetname: Name of the sheet from which the cells
+        are to be extracted.
+    :param start_range: start coordinates of the Excel sheet. This is useful
+        if the user is only interested in a subsection of the sheet.
+    :param end_range: end coordinates of the Excel sheet. This is useful
+        if the user is only interested in a subsection of the sheet.
+    :param fill_type: fill type of the cell.
+    :param fg_color: foreground color of the cell.
+    :param bg_color: background color of the cell.
+    :param font_name: name of the cell font.
+    :param font_size: size of the cell font.
+    :param font_bold: is the cell's font bold?
+    :param font_italic: is the cell's font italicized?
+    :param font_vertAlign: if the font is vertically aligned.
+    :param font_underline: if the cell has an underline.
+    :param font_strike: if the cell has a strikethrough.
+    :param font_color: color of the cell's font.
+    :param font_outline: outline of the cell.
+    :param font_shadow: shadow of the cell.
+    :param font_condense: cell font characteristics.
+    :param font_extend: cell font characteristics.
+    :param font_charset: cell font charset.
+    :param font_family: family to which the cell font belongs.
+    :param left_border_style: cell border style.
+    :param right_border_style: cell border style.
+    :param top_border_style: cell border style.
+    :param bottom_border_style: cell border style.
+    :param diagonal_border_style: cell border style.
+    :param horizontal_alignment: cell alignment.
+    :param vertical_alignment: cell alignment.
+    :param text_rotation: text position.
+    :param wrap_text: cell wrap_text argument.
+    :param shrink_to_fit: cell shrink to fit argument.
+    :param indent: cell indented?
+    :param locked: locked cell?
+    :param hidden: hidden cell?
+    :param comments: are comments in the cell?
+    :returns: A pandas DataFrame.
+    :raises ValueError: if start_range is None.
+
+    """  # noqa : E501
+
+    try:
+        from openpyxl import load_workbook
+        from openpyxl.cell.read_only import EmptyCell
+        from openpyxl.workbook.workbook import Workbook
+    except ImportError:
+        import_message(
+            submodule="io",
+            package="openpyxl",
+            conda_channel="conda-forge",
+            pip_install=True,
+        )
+    from collections import defaultdict
+    from itertools import chain
+
+    if isinstance(path, Workbook):
+        ws = path[sheetname]
+    else:
+        # for efficiency, read_only is set to False
+        # if comments is True, read_only has to be True,
+        # as lazy loading is not enabled for comments
+        wb = load_workbook(filename=path, read_only=comments, keep_links=False)
+        ws = wb[sheetname]
+        # start_range and end_range applies if the user is interested in
+        # only a subset of the ExcelFile and knows the coordinates
+        if (start_range is None) and end_range:
+            raise ValueError("Kindly provide a value for start_range.")
+        if (end_range is None) and start_range:
+            raise ValueError("Kindly provide a value for end_range.")
+        if start_range:
+            check("start_range", start_range, [str])
+            check("end_range", end_range, [str])
+            ws = ws[start_range:end_range]
+        ws = chain.from_iterable(ws)
+        frame = defaultdict(list)
+        for cell in ws:
+            # default values
+            cell_arguments = (
+                "value",
+                "internal_value",
+                "coordinate",
+                "row",
+                "column",
+                "data_type",
+                "is_date",
+                "number_format",
+            )
+            for entry in cell_arguments:
+                if isinstance(cell, EmptyCell):
+                    value = None
+                else:
+                    value = getattr(cell, entry)
+                frame[entry].append(value)
+
+    return

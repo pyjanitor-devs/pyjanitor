@@ -224,8 +224,8 @@ def xlsx_table(
 def xlsx_cells(
     path: str,
     sheetname: str,
-    start_range: str = None,
-    end_range: str = None,
+    start_point: str = None,
+    end_point: str = None,
     fill_type: bool = False,
     fg_color: bool = False,
     bg_color: bool = False,
@@ -263,9 +263,9 @@ def xlsx_cells(
     :param path: Path to the Excel File.
     :param sheetname: Name of the sheet from which the cells
         are to be extracted.
-    :param start_range: start coordinates of the Excel sheet. This is useful
+    :param start_point: start coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
-    :param end_range: end coordinates of the Excel sheet. This is useful
+    :param end_point: end coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
     :param fill_type: fill type of the cell.
     :param fg_color: foreground color of the cell.
@@ -299,13 +299,12 @@ def xlsx_cells(
     :param hidden: hidden cell?
     :param comments: are comments in the cell?
     :returns: A pandas DataFrame.
-    :raises ValueError: if start_range is None.
-
     """  # noqa : E501
 
     try:
         from openpyxl import load_workbook
-        from openpyxl.cell.read_only import EmptyCell
+
+        # from openpyxl.cell.read_only import EmptyCell
         from openpyxl.workbook.workbook import Workbook
     except ImportError:
         import_message(
@@ -327,14 +326,10 @@ def xlsx_cells(
         ws = wb[sheetname]
         # start_range and end_range applies if the user is interested in
         # only a subset of the ExcelFile and knows the coordinates
-        if (start_range is None) and end_range:
-            raise ValueError("Kindly provide a value for start_range.")
-        if (end_range is None) and start_range:
-            raise ValueError("Kindly provide a value for end_range.")
-        if start_range:
-            check("start_range", start_range, [str])
-            check("end_range", end_range, [str])
-            ws = ws[start_range:end_range]
+        if start_point or end_point:
+            check("start_point", start_point, [str])
+            check("end_point", end_point, [str])
+            ws = ws[start_point:end_point]
         ws = chain.from_iterable(ws)
         frame = defaultdict(list)
         for cell in ws:
@@ -350,10 +345,7 @@ def xlsx_cells(
                 "number_format",
             )
             for entry in cell_arguments:
-                if isinstance(cell, EmptyCell):
-                    value = None
-                else:
-                    value = getattr(cell, entry)
+                value = getattr(cell, entry, None)
                 frame[entry].append(value)
 
-    return
+    return pd.DataFrame(frame)

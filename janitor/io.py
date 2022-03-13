@@ -224,8 +224,15 @@ def xlsx_table(
 def xlsx_cells(
     path: str,
     sheetname: str,
-    start_point: str = None,
-    end_point: str = None,
+    start_point: Union[str, int] = None,
+    end_point: Union[str, int] = None,
+    internal_value: bool = False,
+    coordinate: bool = False,
+    row: bool = False,
+    column: bool = False,
+    data_type: bool = False,
+    is_date: bool = False,
+    number_format: bool = False,
     fill_type: bool = False,
     fg_color: bool = False,
     bg_color: bool = False,
@@ -233,7 +240,7 @@ def xlsx_cells(
     font_size: bool = False,
     font_bold: bool = False,
     font_italic: bool = False,
-    font_vertAlign: bool = False,
+    font_vertalign: bool = False,
     font_underline: bool = False,
     font_strike: bool = False,
     font_color: bool = False,
@@ -260,13 +267,20 @@ def xlsx_cells(
 ) -> pd.DataFrame:
     """
 
-    :param path: Path to the Excel File.
+    :param path: Path to the Excel File. Can also be an openpyxl Workbook.
     :param sheetname: Name of the sheet from which the cells
         are to be extracted.
     :param start_point: start coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
     :param end_point: end coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
+    :param internal_value: internal value in cell.
+    :param coordinate: The cell's position.
+    :param row: Row position of the cell.
+    :param column: Column position of the cell.
+    :param data_type: Data type of the cell.
+    :param is_date: Checks if the cell is a date.
+    :param number_format: Number format, if the cell is a number.
     :param fill_type: fill type of the cell.
     :param fg_color: foreground color of the cell.
     :param bg_color: background color of the cell.
@@ -274,7 +288,7 @@ def xlsx_cells(
     :param font_size: size of the cell font.
     :param font_bold: is the cell's font bold?
     :param font_italic: is the cell's font italicized?
-    :param font_vertAlign: if the font is vertically aligned.
+    :param font_vertalign: superscript or subscript?.
     :param font_underline: if the cell has an underline.
     :param font_strike: if the cell has a strikethrough.
     :param font_color: color of the cell's font.
@@ -314,7 +328,7 @@ def xlsx_cells(
             pip_install=True,
         )
     from collections import defaultdict
-    from itertools import chain
+    from itertools import chain, compress
 
     if isinstance(path, Workbook):
         ws = path[sheetname]
@@ -324,18 +338,32 @@ def xlsx_cells(
         # as lazy loading is not enabled for comments
         wb = load_workbook(filename=path, read_only=comments, keep_links=False)
         ws = wb[sheetname]
-        # start_range and end_range applies if the user is interested in
-        # only a subset of the ExcelFile and knows the coordinates
-        if start_point or end_point:
-            check("start_point", start_point, [str])
-            check("end_point", end_point, [str])
-            ws = ws[start_point:end_point]
-        ws = chain.from_iterable(ws)
-        frame = defaultdict(list)
-        for cell in ws:
-            # default values
-            cell_arguments = (
-                "value",
+    # start_range and end_range applies if the user is interested in
+    # only a subset of the Excel File and knows the coordinates
+    if start_point or end_point:
+        check("start_point", start_point, [str, int])
+        check("end_point", end_point, [str, int])
+        ws = ws[start_point:end_point]
+    ws = chain.from_iterable(ws)
+    frame = defaultdict(list)
+    for cell in ws:
+        # default values
+        value = getattr(cell, "value", None)
+        frame["value"].append(value)
+
+        ########### position and data type ####################   # noqa : E266
+        cell_arguments = (
+            internal_value,
+            coordinate,
+            row,
+            column,
+            data_type,
+            is_date,
+            number_format,
+        )
+
+        if any(cell_arguments):
+            names = (
                 "internal_value",
                 "coordinate",
                 "row",
@@ -344,8 +372,57 @@ def xlsx_cells(
                 "is_date",
                 "number_format",
             )
+            cell_arguments = compress(names, cell_arguments)
+
             for entry in cell_arguments:
                 value = getattr(cell, entry, None)
                 frame[entry].append(value)
 
-    return pd.DataFrame(frame)
+        ########### font info ####################   # noqa : E266
+        cell_arguments = (
+            font_name,
+            font_size,
+            font_bold,
+            font_italic,
+            font_vertalign,
+            font_underline,
+            font_strike,
+            font_color,
+            font_outline,
+            font_shadow,
+            font_condense,
+            font_extend,
+            font_charset,
+            font_family,
+        )
+
+        if any(cell_arguments):
+            names = [
+                "name",
+                "size",
+                "bold",
+                "italic",
+                "vertAlign",
+                "underline",
+                "strike",
+                "color",
+                "outline",
+                "shadow",
+                "condense",
+                "extend",
+                "charset",
+                "family",
+            ]
+            cell_arguments = compress(names, cell_arguments)
+
+            for entry in cell_arguments:
+                cell_format = getattr(cell, "font", None)
+                if cell_format is None:
+                    value = None
+                else:
+                    value = getattr(cell_format, entry, None)
+                if (value is not None) and (entry == "color"):
+                    value = value.rgb
+                frame[f"font_{entry.lower()}"].append(value)
+
+    return pd.DataFrame(frame, copy=False)

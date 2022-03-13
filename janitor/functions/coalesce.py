@@ -17,14 +17,18 @@ def coalesce(
 ) -> pd.DataFrame:
     """Coalesce two or more columns of data in order of column names provided.
 
-    Given the list of column names, `coalesce` finds and returns the first
-    non-missing value from these columns, for every row in the input dataframe.
-    If all the column values are null for a particular row, then the
-    `default_value` will be filled in.
+    Given the variable arguments of column names,
+    `coalesce` finds and returns the first non-missing value
+    from these columns, for every row in the input dataframe.
+    If all the column values are null for a particular row,
+    then the `default_value` will be filled in.
+
+    If `target_column_name` is not provided,
+    then the first column is coalesced.
 
     This method does not mutate the original DataFrame.
 
-    Example: Using `coalesce` with 3 columns, "a", "b" and "c".
+    Example: Use `coalesce` with 3 columns, "a", "b" and "c".
 
         >>> import pandas as pd
         >>> import numpy as np
@@ -34,13 +38,21 @@ def coalesce(
         ...     "b": [2, 3, np.nan],
         ...     "c": [4, np.nan, np.nan],
         ... })
+        >>> df.coalesce("a", "b", "c")
+             a    b    c
+        0  2.0  2.0  4.0
+        1  1.0  3.0  NaN
+        2  NaN  NaN  NaN
+
+    Example: Provide a target_column_name.
+
         >>> df.coalesce("a", "b", "c", target_column_name="new_col")
              a    b    c  new_col
         0  NaN  2.0  4.0      2.0
         1  1.0  3.0  NaN      1.0
         2  NaN  NaN  NaN      NaN
 
-    Example: Providing a default value.
+    Example: Provide a default value.
 
         >>> import pandas as pd
         >>> import numpy as np
@@ -93,14 +105,13 @@ def coalesce(
 
     if target_column_name is None:
         target_column_name = column_names[0]
-    # bfill/ffill combo is faster than combine_first
-    outcome = (
-        df.filter(column_names)
-        .bfill(axis="columns")
-        .ffill(axis="columns")
-        .iloc[:, 0]
-    )
+
+    outcome = df.filter(column_names).bfill(axis="columns").iloc[:, 0]
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
 
-    return df.assign(**{target_column_name: outcome})
+    # to allow for non-strings ... GH #1016
+    df = df.copy()
+    df[target_column_name] = outcome
+
+    return df

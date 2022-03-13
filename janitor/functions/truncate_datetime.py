@@ -1,7 +1,9 @@
 """Implementation of the `truncate_datetime` family of functions."""
 import datetime as dt
+
 import pandas_flavor as pf
 import pandas as pd
+from pandas.api.types import is_datetime64_any_dtype
 
 
 @pf.register_dataframe_method
@@ -9,13 +11,8 @@ def truncate_datetime_dataframe(
     df: pd.DataFrame,
     datepart: str,
 ) -> pd.DataFrame:
-    """
-    Truncate times down to a user-specified precision of
+    """Truncate times down to a user-specified precision of
     year, month, day, hour, minute, or second.
-
-    Call on datetime object to truncate it.
-    Calling on existing df will not alter the contents
-    of said df.
 
     This method does not mutate the original DataFrame.
 
@@ -25,18 +22,18 @@ def truncate_datetime_dataframe(
         >>> import janitor
         >>> df = pd.DataFrame({
         ...     "foo": ["xxxx", "yyyy", "zzzz"],
-        ...     "dt": pd.date_range("2020-03-11", periods=3),
+        ...     "dt": pd.date_range("2020-03-11", periods=3, freq="15H"),
         ... })
         >>> df
+            foo                  dt
+        0  xxxx 2020-03-11 00:00:00
+        1  yyyy 2020-03-11 15:00:00
+        2  zzzz 2020-03-12 06:00:00
+        >>> df.truncate_datetime_dataframe("day")
             foo         dt
         0  xxxx 2020-03-11
-        1  yyyy 2020-03-12
-        2  zzzz 2020-03-13
-        >>> df.truncate_datetime_dataframe("month")
-            foo         dt
-        0  xxxx 2020-03-01
-        1  yyyy 2020-03-01
-        2  zzzz 2020-03-01
+        1  yyyy 2020-03-11
+        2  zzzz 2020-03-12
 
     :param df: The pandas DataFrame on which to truncate datetime.
     :param datepart: Truncation precision, YEAR, MONTH, DAY,
@@ -55,31 +52,33 @@ def truncate_datetime_dataframe(
             f"Please enter any one of {ACCEPTABLE_DATEPARTS}."
         )
 
-    df = df.copy()
+    dt_cols = [
+        column
+        for column, coltype in df.dtypes.items()
+        if is_datetime64_any_dtype(coltype)
+    ]
+    if not dt_cols:
+        # avoid copying df if no-op is expected
+        return df
 
-    for col in df.columns:
-        for row in df.index:
-            try:
-                df.loc[row, col] = _truncate_datetime(
-                    datepart, df.loc[row, col]
-                )
-            except AttributeError:
-                pass
+    df = df.copy()
+    # NOTE: use **kwargs of `applymap` instead of lambda when we upgrade to
+    #   pandas >= 1.3.0
+    df[dt_cols] = df[dt_cols].applymap(
+        lambda x: _truncate_datetime(x, datepart=datepart),
+    )
 
     return df
 
 
-def _truncate_datetime(datepart: str, timestamp: dt.datetime) -> dt.datetime:
+def _truncate_datetime(timestamp: dt.datetime, datepart: str) -> dt.datetime:
     """Truncate a given timestamp to the given datepart.
 
-    Data checks are assumed to have already been done; No further checks will
-    be performed within this internal function.
+    Truncation will only occur on valid timestamps (datetime-like objects).
 
+    :param timestamp: Expecting a datetime from python `datetime` class (dt).
     :param datepart: Truncation precision, YEAR, MONTH, DAY,
         HOUR, MINUTE, SECOND.
-    :param timestamp: Expecting a datetime from python `datetime` class (dt).
-    :raises AttributeError: If the input timestamp is not a datetime-like
-        object.
     :returns: A truncated datetime object to the precision specified by
         datepart.
     """

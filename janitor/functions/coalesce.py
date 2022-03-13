@@ -110,8 +110,6 @@ def coalesce(
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
 
-    # to allow for non-strings ... GH #1016
-    df = df.copy()
-    df[target_column_name] = outcome
+    return df.assign(**{target_column_name: outcome})
 
-    return df
+

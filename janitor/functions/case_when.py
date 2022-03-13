@@ -106,7 +106,7 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         The 1-D array should be the same length as the DataFrame.
     :param column_name: Name of column to assign results to. A new column
         is created, if it does not already exist in the DataFrame.
-    :raises ValueError: if the condition fails to evaluate.
+    :raises ValueError: If the condition fails to evaluate.
     :returns: A pandas DataFrame.
     """
     conditions, targets, default = _case_when_checks(df, args, column_name)
@@ -125,11 +125,8 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         # https://stackoverflow.com/a/46091127/7175713
         except Exception as e:
             raise ValueError(
-                f"""
-                condition{index} and value{index}
-                failed to evaluate.
-                Original error message: {e}
-                """
+                f"condition{index} and value{index} failed to evaluate. "
+                f"Original error message: {e}"
             ) from e
 
     return df.assign(**{column_name: default})
@@ -141,17 +138,12 @@ def _case_when_checks(df: pd.DataFrame, args, column_name):
     """
     if len(args) < 3:
         raise ValueError(
-            """
-            At least three arguments are required
-            for the `args` parameter.
-            """
+            "At least three arguments are required for the `args` parameter."
         )
     if len(args) % 2 != 1:
         raise ValueError(
-            """
-            It seems the `default` argument is missing
-            from the variable `args` parameter.
-            """
+            "It seems the `default` argument is missing from the variable "
+            "`args` parameter."
         )
 
     check("column_name", column_name, [str])
@@ -193,20 +185,14 @@ def _case_when_checks(df: pd.DataFrame, args, column_name):
         arr_ndim = default.ndim
     if arr_ndim != 1:
         raise ValueError(
-            """
-            The `default` argument should either be a 1-D array,
-            a scalar, or a callable that can evaluate to
-            a 1-D array.
-            """
+            "The `default` argument should either be a 1-D array, a scalar, "
+            "or a callable that can evaluate to a 1-D array."
         )
     if not isinstance(default, pd.Series):
         default = pd.Series(default)
     if default.size != len(df):
         raise ValueError(
-            """
-            The length of the `default` argument
-            should be equal to the length
-            of the DataFrame.
-            """
+            "The length of the `default` argument should be equal to the "
+            "length of the DataFrame."
         )
     return conditions, targets, default

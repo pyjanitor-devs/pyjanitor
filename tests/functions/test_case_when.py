@@ -1,11 +1,12 @@
+import numpy as np
 import pandas as pd
 import pytest
-import numpy as np
-from pandas.testing import assert_frame_equal
 from hypothesis import assume, given
+from pandas.testing import assert_frame_equal
+
 from janitor.testing_utils.strategies import (
-    df_strategy,
     categoricaldf_strategy,
+    df_strategy,
 )
 
 
@@ -38,27 +39,33 @@ def test_case_when_1():
     assert_frame_equal(result, expected)
 
 
-@given(df=df_strategy())
-def test_len_args(df):
+def test_len_args(dataframe):
     """Raise ValueError if `args` length is less than 3."""
-    with pytest.raises(ValueError):
-        df.case_when(df.a < 10, "less_than_10", column_name="a")
+    with pytest.raises(ValueError, match="three arguments are required"):
+        dataframe.case_when(dataframe.a < 10, "less_than_10", column_name="a")
 
 
-@given(df=df_strategy())
-def test_args_even(df):
+def test_args_even(dataframe):
     """Raise ValueError if `args` length is even."""
-    with pytest.raises(ValueError):
-        df.case_when(
-            df.a < 10, "less_than_10", df.a == 5, "five", column_name="a"
+    with pytest.raises(ValueError, match="`default` argument is missing"):
+        dataframe.case_when(
+            dataframe.a < 10,
+            "less_than_10",
+            dataframe.a == 5,
+            "five",
+            column_name="a",
         )
 
 
-@given(df=df_strategy())
-def test_column_name(df):
+def test_column_name(dataframe):
     """Raise TypeError if `column_name` is not a string."""
     with pytest.raises(TypeError):
-        df.case_when(df.a < 10, "less_than_10", df.a, column_name=("a",))
+        dataframe.case_when(
+            dataframe.a < 10,
+            "less_than_10",
+            dataframe.a,
+            column_name=("a",),
+        )
 
 
 @given(df=df_strategy())
@@ -72,9 +79,18 @@ def test_default_ndim(df):
 def test_default_length(df):
     """Raise ValueError if `default` length != len(df)."""
     assume(len(df) > 10)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=(
+            "length of the `default` argument should be equal to the length of"
+            " the DataFrame"
+        ),
+    ):
         df.case_when(
-            df.a < 10, "less_than_10", df.loc[:5, "a"], column_name="a"
+            df.a < 10,
+            "less_than_10",
+            df.loc[:5, "a"],
+            column_name="a",
         )
 
 

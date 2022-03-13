@@ -36,7 +36,7 @@ def read_csvs(
     # Sanitize input
     if files_path is None:
         raise JanitorError("`None` provided for `files_path`")
-    if not len(files_path):
+    if not files_path:
         raise JanitorError("0 length `files_path` provided")
 
     # Read the csv files
@@ -52,7 +52,7 @@ def read_csvs(
             os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path
         }
     # Check if dataframes have been read
-    if not len(dfs_dict):
+    if not dfs_dict:
         raise ValueError("No CSV files to read with the given `files_path`")
     # Concatenate the dataframes if requested (default)
     col_names = list(dfs_dict.values())[0].columns  # noqa: PD011

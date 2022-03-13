@@ -111,5 +111,3 @@ def coalesce(
         outcome = outcome.fillna(default_value)
 
     return df.assign(**{target_column_name: outcome})
-
-

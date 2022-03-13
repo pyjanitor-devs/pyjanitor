@@ -182,7 +182,6 @@ def xlsx_table(
             pip_install=True,
         )
     wb = load_workbook(filename=path, read_only=False, keep_links=False)
-    check("sheetname", sheetname, [str])
     ws = wb[sheetname]
 
     contents = ws.tables

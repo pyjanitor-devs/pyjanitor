@@ -17,7 +17,7 @@
 -   [ENH] Add `fill_value` and `explicit` parameters to the `complete` function. #1019 @samukweku
 -   [ENH] Performance improvement for `expand_grid`. @samukweku
 -   [BUG] Make `factorize_columns` (PR #1028) and `truncate_datetime_dataframe` (PR #1040) functions non-mutating. @thatlittleboy
--   [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe` (PR #1040).  @thatlittleboy
+-   [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe` (PR #1040). @thatlittleboy
 
 ## [v0.22.0] - 2021-11-21
 

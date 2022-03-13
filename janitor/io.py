@@ -36,7 +36,7 @@ def read_csvs(
     # Sanitize input
     if files_path is None:
         raise JanitorError("`None` provided for `files_path`")
-    if len(files_path) == 0:
+    if not len(files_path):
         raise JanitorError("0 length `files_path` provided")
 
     # Read the csv files

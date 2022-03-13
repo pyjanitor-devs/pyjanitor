@@ -16,6 +16,7 @@
 -   [ENH] Changes to kwargs in `encode_categorical`, where the values can either be a string or a 1D array. #1021 @samukweku
 -   [ENH] Add `fill_value` and `explicit` parameters to the `complete` function. #1019 @samukweku
 -   [ENH] Performance improvement for `expand_grid`. @samukweku
+-   [ENH] Performance improvement for `conditional_join`. @samukweku
 
 ## [v0.22.0] - 2021-11-21
 

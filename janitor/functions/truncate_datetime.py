@@ -82,6 +82,9 @@ def _truncate_datetime(timestamp: dt.datetime, datepart: str) -> dt.datetime:
     :returns: A truncated datetime object to the precision specified by
         datepart.
     """
+    if pd.isna(timestamp):
+        return timestamp
+
     recurrence = [0, 1, 1, 0, 0, 0]  # [YEAR, MONTH, DAY, HOUR, MINUTE, SECOND]
     ENUM = {
         "YEAR": 0,

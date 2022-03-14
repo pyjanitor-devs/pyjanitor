@@ -233,17 +233,15 @@ def test_dtype_str(df, s):
         df.conditional_join(s, ("C", "A", "<"))
 
 
-@given(df=conditional_df(), s=conditional_series())
-def test_dtype_category_non_equi(df, s):
+def test_dtype_category_non_equi():
     """
     Raise ValueError if dtype is category,
     and op is non-equi.
     """
     with pytest.raises(ValueError):
-        s.name = "A"
-        s = s.astype("category")
-        df["C"] = df["C"].astype("category")
-        df.conditional_join(s, ("C", "A", "<"))
+        left = pd.DataFrame({"A": [1, 2, 3]}, dtype="category")
+        right = pd.DataFrame({"B": [1, 2, 3]}, dtype="category")
+        left.conditional_join(right, ("A", "B", "<"))
 
 
 @given(df=conditional_df(), s=conditional_series())

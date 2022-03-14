@@ -1,60 +1,69 @@
 from datetime import datetime
 
+import numpy as np
+import pandas as pd
 import pytest
-
-from janitor.functions.truncate_datetime import _truncate_datetime
-
-"""
-Creates 2 datetime objects, one
-    will be a valid object and the
-    other will be Nonetype.
-
-Test 1 asserts valid object is truncated
-    correctly, this is trivial on the
-    first day of every month.
-
-Test 2 asserts that the time[] value
-    is accurate to the specified precision,
-    in this case, month.
-
-Test 3 asserts the valid object truncated
-    correctly to the specified precision
-    in this case, month.
-
-Test 4 asserts that if bad data is passed
-    it will return a Nonetype, and
-    appropriate error handling will
-    take care of it.
-
-"""
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.functions
-def test__truncate_datetime():
-    """Test for _truncate_datetime."""
-    x = datetime.now()
-    x = _truncate_datetime("month", x)
+def test_truncate_datetime_dataframe_invalid_datepart():
+    """Checks if a ValueError is appropriately raised when datepart is
+    not a valid enumeration.
+    """
+    with pytest.raises(ValueError, match=r"invalid `datepart`"):
+        pd.DataFrame().truncate_datetime_dataframe("INVALID")
 
-    time = {
-        "Year": [x.year],
-        "Month": [x.month],
-        "Day": [x.day],
-        "Hour": [x.hour],
-        "Minute": [x.minute],
-        "Second": [x.second],
+
+@pytest.mark.functions
+def test_truncate_datetime_dataframe_all_parts():
+    """Test for truncate_datetime_dataframe, for all valid dateparts.
+    Also only passes if `truncate_datetime_dataframe` method is idempotent.
+    """
+    x = datetime(2022, 3, 21, 9, 1, 15, 666)
+    df = pd.DataFrame({"dt": [x], "foo": [np.nan]}, copy=False)
+
+    result = df.truncate_datetime_dataframe("second")
+    assert result.loc[0, "dt"] == datetime(2022, 3, 21, 9, 1, 15, 0)
+    result = df.truncate_datetime_dataframe("minute")
+    assert result.loc[0, "dt"] == datetime(2022, 3, 21, 9, 1)
+    result = df.truncate_datetime_dataframe("HOUR")
+    assert result.loc[0, "dt"] == datetime(2022, 3, 21, 9)
+    result = df.truncate_datetime_dataframe("Day")
+    assert result.loc[0, "dt"] == datetime(2022, 3, 21)
+    result = df.truncate_datetime_dataframe("month")
+    assert result.loc[0, "dt"] == datetime(2022, 3, 1)
+    result = df.truncate_datetime_dataframe("yeaR")
+    assert result.loc[0, "dt"] == datetime(2022, 1, 1)
+
+
+# bad data
+@pytest.mark.functions
+def test_truncate_datetime_dataframe_do_nothing():
+    """Ensure nothing changes (and no errors raised) if there are no datetime-
+    compatible columns.
+    """
+    in_data = {
+        "a": [1, 0],
+        "b": ["foo", ""],
+        "c": [np.nan, 3.0],
+        "d": [True, False],
     }
 
-    # time[] returns datetime object, needs indexing.
-    assert time["Day"][0] == 1
-    assert time["Month"][0] == datetime.now().month
-    assert time["Month"][0] == x.month
+    result = pd.DataFrame(in_data).truncate_datetime_dataframe("year")
+    expected = pd.DataFrame(in_data)
+
+    assert_frame_equal(result, expected)
 
 
-# bad data, error handling test
 @pytest.mark.functions
-def test___truncate_datetime_bad_data():
-    """Test for _truncate_datetime with bad data passed in."""
-    with pytest.raises(KeyError):
-        y = datetime.now()
-        y = _truncate_datetime("mon", y)
-        assert y is None
+def test_truncate_datetime_containing_NaT():
+    """Ensure NaT is ignored safely (no-op) and no TypeError is thrown."""
+    x = datetime(2022, 3, 21, 9, 1, 15, 666)
+    df = pd.DataFrame({"dt": [x, pd.NaT], "foo": [np.nan, 3]})
+    expected = pd.DataFrame(
+        {"dt": [x.replace(microsecond=0), pd.NaT], "foo": [np.nan, 3]}
+    )
+
+    result = df.truncate_datetime_dataframe("second")
+    assert_frame_equal(result, expected)

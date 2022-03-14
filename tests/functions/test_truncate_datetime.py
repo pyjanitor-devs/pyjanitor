@@ -58,9 +58,7 @@ def test_truncate_datetime_dataframe_do_nothing():
 
 @pytest.mark.functions
 def test_truncate_datetime_containing_NaT():
-    """If, for some odd reason, the _truncate_datetime internal function is used
-    elsewhere, ensure that an AttributeError is caught if `timestamp` is of the
-    wrong type."""
+    """Ensure NaT is ignored safely (no-op) and no TypeError is thrown."""
     x = datetime(2022, 3, 21, 9, 1, 15, 666)
     df = pd.DataFrame({"dt": [x, pd.NaT], "foo": [np.nan, 3]})
     expected = pd.DataFrame(

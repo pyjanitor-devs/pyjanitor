@@ -128,8 +128,11 @@ def add_columns(
 
     This method does not mutate the original DataFrame.
 
-    Method to augment `add_column` with ability to add multiple columns in
-    one go. This replaces the need for multiple `add_column` calls.
+    Method to augment
+    [`add_column`][janitor.functions.add_columns.add_column]
+    with ability to add multiple columns in
+    one go. This replaces the need for multiple
+    [`add_column`][janitor.functions.add_columns.add_column] calls.
 
     Usage is through supplying kwargs where the key is the col name and the
     values correspond to the values of the new DataFrame column.
@@ -151,7 +154,7 @@ def add_columns(
     :param fill_remaining: If value is a tuple or list that is smaller than
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame. (Passed to `add_column`)
-    :param kwargs: column, value pairs which are looped through in
+    :param **kwargs: Column, value pairs which are looped through in
         `add_column` calls.
     :returns: A pandas DataFrame with added columns.
     """

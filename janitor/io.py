@@ -222,7 +222,7 @@ def xlsx_table(
 
 def xlsx_cells(
     path: str,
-    sheetname: str,
+    sheetname: Union[str, list, tuple] = None,
     start_point: Union[str, int] = None,
     end_point: Union[str, int] = None,
     internal_value: bool = False,

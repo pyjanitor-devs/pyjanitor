@@ -5,7 +5,6 @@ from io import StringIO
 from typing import Iterable, Union
 
 import pandas as pd
-
 from .errors import JanitorError
 from .utils import deprecated_alias, check, import_message
 
@@ -227,11 +226,11 @@ def xlsx_cells(
     end_point: Union[str, int] = None,
     read_only: bool = True,
     include_blank_cells: bool = True,
-    fill: Union[str, list, tuple] = None,
-    font: Union[str, list, tuple] = None,
-    alignment: Union[str, list, tuple] = None,
-    border: Union[str, list, tuple] = None,
-    protection: Union[str, list, tuple] = None,
+    fill: bool = False,
+    font: bool = False,
+    alignment: bool = False,
+    border: bool = False,
+    protection: bool = False,
     comments: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
@@ -250,12 +249,12 @@ def xlsx_cells(
         Some cell properties like `comments`, can only be accessed by
         setting `read_only` to `True`.
     :param include_blank_cells: Determines if empty cells should be included.
-    :param fill: Fill properties of the cell.
-    :param font: Font properties of the cell.
-    :param alignment: Alignment properties of the cell.
-    :param border: Border properties of the cell.
-    :param protection: Protection properties of the cell.
-    :param comments: Comments properties of the cell.
+    :param fill: If `True`, return fill properties of the cell.
+    :param font: If `True`, return font properties of the cell.
+    :param alignment: If `True`, return alignment properties of the cell.
+    :param border: If `True`, return border properties of the cell.
+    :param protection: If `True`, return protection properties of the cell.
+    :param comments: If `True`, return comments properties of the cell.
     :param kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
     :raises ValueError: If kwargs is provided, and one of the keys is a default column.
     :raises AttributeError: If kwargs is provided and any of the keys
@@ -283,7 +282,7 @@ def xlsx_cells(
     if path_is_workbook:
         ws = path[sheetname]
     else:
-        # for efficiency, read_only is set to True
+        # for memory efficiency, read_only is set to True
         # if comments is True, read_only has to be False,
         # as lazy loading is not enabled for comments
         if comments and read_only:
@@ -337,6 +336,7 @@ def xlsx_cells(
             for attr, _ in inspect.getmembers(_cell, not (inspect.isroutine))
             if not attr.startswith("_")
         }
+
         for key in kwargs:
             if key in defaults:
                 raise ValueError(
@@ -353,7 +353,32 @@ def xlsx_cells(
             continue
         for value in defaults:
             frame[value].append(getattr(cell, value, None))
+        for parent, cell_attribute in parameters.items():
+            if not cell_attribute:
+                continue
+            cell_attribute = object_to_dict(getattr(cell, parent, None))
+            frame[parent].append(cell_attribute)
 
     if (not path_is_workbook) and wb.read_only:
         wb.close()
     return pd.DataFrame(frame, copy=False)
+
+
+def object_to_dict(obj):
+    """
+    Recursively get the attributes
+    of a class as a dictionary.
+
+    :param obj: Object whose attributes are to be extracted.
+    :Returns: A dictionary or the object.
+    """
+    # credits : https://stackoverflow.com/a/71366813/7175713
+    data = {}
+    if getattr(obj, "__dict__", None):
+        for key, value in obj.__dict__.items():
+            try:
+                data[key] = object_to_dict(value)
+            except AttributeError:
+                data[key] = value
+        return data
+    return obj

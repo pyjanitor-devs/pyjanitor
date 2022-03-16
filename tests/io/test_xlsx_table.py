@@ -87,7 +87,7 @@ def test_tables():
         assert_frame_equal(value, actual[key])
 
 
-def test_tables_None():
+def test_tables_none():
     """Test output for multiple tables."""
     expected = io.xlsx_table(filename, "Tables")
     actual = {

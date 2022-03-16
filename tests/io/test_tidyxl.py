@@ -10,12 +10,19 @@ filename = Path(TEST_DATA_DIR).joinpath("worked-examples.xlsx").resolve()
 
 
 wb = load_workbook(filename)
+wb_c = load_workbook(filename, read_only=True)
 
 
 def test_check_sheetname():
     """Raise error if sheet name does not exist."""
     with pytest.raises(KeyError):
         io.xlsx_cells(filename, 5)
+
+
+def test_comment_read_only():
+    """Raise error if comments and read_only is True."""
+    with pytest.raises(ValueError):
+        io.xlsx_cells("excel.xlsx", "clean", comments=True)
 
 
 def test_check_filename():
@@ -42,30 +49,72 @@ def test_check_end_none():
         io.xlsx_cells(wb, "clean", start_point="A1", end_point=None)
 
 
+def test_output_kwargs_defaults():
+    """
+    Raise AttributeError if kwargs is provided
+    and the key is already part of the default attributes
+    that are returned as columns.
+    """
+    with pytest.raises(ValueError):
+        io.xlsx_cells(wb, "clean", internal_value=True)
+
+
+def test_output_kwargs_defaults_read_only_true():
+    """
+    Raise AttributeError if kwargs is provided
+    and the key is already part of the default attributes
+    that are returned as columns.
+    """
+    with pytest.raises(ValueError):
+        io.xlsx_cells(wb_c, "clean", internal_value=True)
+
+
+def test_output_wrong_kwargs():
+    """
+    Raise AttributeError if kwargs is provided
+    and the key is not a valid openpyxl cell attribute.
+    """
+    with pytest.raises(AttributeError):
+        io.xlsx_cells(filename, "clean", font_color=True)
+
+
+def test_output_wrong_kwargs_read_only_false():
+    """
+    Raise AttributeError if kwargs is provided
+    and the key is not a valid openpyxl cell attribute.
+    """
+    with pytest.raises(AttributeError):
+        io.xlsx_cells(filename, "clean", font_color=True, read_only=False)
+
+
 def test_default_values():
     """
     Test output for default values.
     """
-    output = io.xlsx_cells(wb, "clean").squeeze().tolist()
-
-    assert "Matilda" in output
+    assert "Matilda" in io.xlsx_cells(wb, "clean")["value"].tolist()
 
 
-def test_output_position_info():
+def test_default_values_blank_cells_true():
     """
-    Test output for position/data type.
+    Test output for default values if include_blank_cells.
     """
-    output = io.xlsx_cells(
-        wb, "clean", start_point="A1", end_point="B5", data_type=True
-    )["data_type"].tolist()
-
-    assert "n" in output
+    assert None in io.xlsx_cells(filename, "pivot-notes")["value"].tolist()
 
 
-def test_output_font_info():
+def test_default_values_blank_cells_false():
     """
-    Test output for font.
+    Test output for default values if include_blank_cells is False.
     """
-    output = io.xlsx_cells(wb, "clean", font_color=True)["font_color"].tolist()
+    assert (
+        None
+        not in io.xlsx_cells(
+            wb,
+            "pivot-notes",
+            include_blank_cells=False,
+            start_point="A1",
+            end_point="G7",
+        )["value"].tolist()
+    )
 
-    assert "FF000000" in output
+
+wb_c.close()

@@ -223,103 +223,53 @@ def xlsx_table(
 
 def xlsx_cells(
     path: str,
-    sheetname: str,
+    sheetname: Union[str, list, tuple] = None,
     start_point: Union[str, int] = None,
     end_point: Union[str, int] = None,
-    internal_value: bool = False,
-    coordinate: bool = False,
-    row: bool = False,
-    column: bool = False,
-    data_type: bool = False,
-    is_date: bool = False,
-    number_format: bool = False,
-    fill_type: bool = False,
-    fg_color: bool = False,
-    bg_color: bool = False,
-    font_name: bool = False,
-    font_size: bool = False,
-    font_bold: bool = False,
-    font_italic: bool = False,
-    font_vertalign: bool = False,
-    font_underline: bool = False,
-    font_strike: bool = False,
-    font_color: bool = False,
-    font_outline: bool = False,
-    font_shadow: bool = False,
-    font_condense: bool = False,
-    font_extend: bool = False,
-    font_charset: bool = False,
-    font_family: bool = False,
-    left_border_style: bool = False,
-    right_border_style: bool = False,
-    top_border_style: bool = False,
-    bottom_border_style: bool = False,
-    diagonal_border_style: bool = False,
-    horizontal_alignment: bool = False,
-    vertical_alignment: bool = False,
-    text_rotation: bool = False,
-    wrap_text: bool = False,
-    shrink_to_fit: bool = False,
-    indent: bool = False,
-    locked: bool = False,
-    hidden: bool = False,
+    read_only: bool = True,
+    include_blank_cells: bool = True,
+    fill: Union[str, list, tuple] = None,
+    font: Union[str, list, tuple] = None,
+    alignment: Union[str, list, tuple] = None,
+    border: Union[str, list, tuple] = None,
+    protection: Union[str, list, tuple] = None,
     comments: bool = False,
+    **kwargs,
 ) -> pd.DataFrame:
     """
 
     :param path: Path to the Excel File. Can also be an openpyxl Workbook.
-    :param sheetname: Name of the sheet from which the cells
-        are to be extracted.
+    :param sheetname: Name of the sheet from which the cells are to be extracted.
+        If `None`, all the sheets in the file are extracted;
+        if a string, or list or tuple, ,only the specified sheets are extracted.
     :param start_point: start coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
     :param end_point: end coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
-    :param internal_value: internal value in cell.
-    :param coordinate: The cell's position.
-    :param row: Row position of the cell.
-    :param column: Column position of the cell.
-    :param data_type: Data type of the cell.
-    :param is_date: Checks if the cell is a date.
-    :param number_format: Number format, if the cell is a number.
-    :param fill_type: fill type of the cell.
-    :param fg_color: foreground color of the cell.
-    :param bg_color: background color of the cell.
-    :param font_name: name of the cell font.
-    :param font_size: size of the cell font.
-    :param font_bold: is the cell's font bold?
-    :param font_italic: is the cell's font italicized?
-    :param font_vertalign: superscript or subscript?.
-    :param font_underline: if the cell has an underline.
-    :param font_strike: if the cell has a strikethrough.
-    :param font_color: color of the cell's font.
-    :param font_outline: outline of the cell.
-    :param font_shadow: shadow of the cell.
-    :param font_condense: cell font characteristics.
-    :param font_extend: cell font characteristics.
-    :param font_charset: cell font charset.
-    :param font_family: family to which the cell font belongs.
-    :param left_border_style: cell border style.
-    :param right_border_style: cell border style.
-    :param top_border_style: cell border style.
-    :param bottom_border_style: cell border style.
-    :param diagonal_border_style: cell border style.
-    :param horizontal_alignment: cell alignment.
-    :param vertical_alignment: cell alignment.
-    :param text_rotation: text position.
-    :param wrap_text: cell wrap_text argument.
-    :param shrink_to_fit: cell shrink to fit argument.
-    :param indent: cell indented?
-    :param locked: locked cell?
-    :param hidden: hidden cell?
-    :param comments: are comments in the cell?
+    :param read_only: Determines if the entire file is loaded in memory,
+        or streamed. For memory efficiency, read_only should be set to `False`.
+        Some cell properties like `comments`, can only be accessed by
+        setting `read_only` to `True`.
+    :param include_blank_cells: Determines if empty cells should be included.
+    :param fill: Fill properties of the cell.
+    :param font: Font properties of the cell.
+    :param alignment: Alignment properties of the cell.
+    :param border: Border properties of the cell.
+    :param protection: Protection properties of the cell.
+    :param comments: Comments properties of the cell.
+    :param kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
+    :raises ValueError: If kwargs is provided, and one of the keys is a default column.
+    :raises AttributeError: If kwargs is provided and any of the keys
+        is not a openpyxl cell attribute.
     :returns: A pandas DataFrame.
     """  # noqa : E501
 
     try:
         from openpyxl import load_workbook
-
-        # from openpyxl.cell.read_only import EmptyCell
+        from openpyxl.cell.read_only import ReadOnlyCell
+        from openpyxl.cell.cell import Cell
         from openpyxl.workbook.workbook import Workbook
+        import inspect
     except ImportError:
         import_message(
             submodule="io",
@@ -328,17 +278,24 @@ def xlsx_cells(
             pip_install=True,
         )
     from collections import defaultdict
-    from itertools import chain, compress
+    from itertools import chain
 
-    if isinstance(path, Workbook):
+    path_is_workbook = isinstance(path, Workbook)
+    if path_is_workbook:
         ws = path[sheetname]
     else:
-        # for efficiency, read_only is set to False
-        # if comments is True, read_only has to be True,
+        # for efficiency, read_only is set to True
+        # if comments is True, read_only has to be False,
         # as lazy loading is not enabled for comments
-        wb = load_workbook(filename=path, read_only=comments, keep_links=False)
+        if comments and read_only:
+            raise ValueError(
+                "To access comments, kindly set 'read_only' to False."
+            )
+        wb = load_workbook(
+            filename=path, read_only=read_only, keep_links=False
+        )
         ws = wb[sheetname]
-    # start_range and end_range applies if the user is interested in
+    # start_point and end_point applies if the user is interested in
     # only a subset of the Excel File and knows the coordinates
     if start_point or end_point:
         check("start_point", start_point, [str, int])
@@ -346,83 +303,58 @@ def xlsx_cells(
         ws = ws[start_point:end_point]
     ws = chain.from_iterable(ws)
     frame = defaultdict(list)
+    defaults = (
+        "value",
+        "internal_value",
+        "coordinate",
+        "row",
+        "column",
+        "data_type",
+        "is_date",
+        "number_format",
+    )
+    parameters = {
+        "fill": fill,
+        "font": font,
+        "alignment": alignment,
+        "border": border,
+        "protection": protection,
+        "comments": comments,
+    }
+    if kwargs:
+        if path_is_workbook:
+            if path.read_only:
+                _cell = ReadOnlyCell
+            else:
+                _cell = Cell
+        else:
+            if read_only:
+                _cell = ReadOnlyCell
+            else:
+                _cell = Cell
+
+        attrs = {
+            attr
+            for attr, _ in inspect.getmembers(_cell, not (inspect.isroutine))
+            if not attr.startswith("_")
+        }
+        for key in kwargs:
+            if key in defaults:
+                raise ValueError(
+                    f"{key} is part of the default attributes "
+                    "returned as a column."
+                )
+            elif key not in attrs:
+                raise AttributeError(
+                    f"{key} is not a recognized attribute of {_cell}."
+                )
+        parameters.update(kwargs)
     for cell in ws:
-        # default values
-        value = getattr(cell, "value", None)
-        frame["value"].append(value)
+        if (cell.value is None) and (not include_blank_cells):
+            continue
+        for value in defaults:
+            frame[value].append(getattr(cell, value, None))
 
-        ########### position and data type ####################   # noqa : E266
-        cell_arguments = (
-            internal_value,
-            coordinate,
-            row,
-            column,
-            data_type,
-            is_date,
-            number_format,
-        )
-
-        if any(cell_arguments):
-            names = (
-                "internal_value",
-                "coordinate",
-                "row",
-                "column",
-                "data_type",
-                "is_date",
-                "number_format",
-            )
-            cell_arguments = compress(names, cell_arguments)
-
-            for entry in cell_arguments:
-                value = getattr(cell, entry, None)
-                frame[entry].append(value)
-
-        ########### font info ####################   # noqa : E266
-        cell_arguments = (
-            font_name,
-            font_size,
-            font_bold,
-            font_italic,
-            font_vertalign,
-            font_underline,
-            font_strike,
-            font_color,
-            font_outline,
-            font_shadow,
-            font_condense,
-            font_extend,
-            font_charset,
-            font_family,
-        )
-
-        if any(cell_arguments):
-            names = [
-                "name",
-                "size",
-                "bold",
-                "italic",
-                "vertAlign",
-                "underline",
-                "strike",
-                "color",
-                "outline",
-                "shadow",
-                "condense",
-                "extend",
-                "charset",
-                "family",
-            ]
-            cell_arguments = compress(names, cell_arguments)
-
-            for entry in cell_arguments:
-                cell_format = getattr(cell, "font", None)
-                if cell_format is None:
-                    value = None
-                else:
-                    value = getattr(cell_format, entry, None)
-                if (value is not None) and (entry == "color"):
-                    value = value.rgb
-                frame[f"font_{entry.lower()}"].append(value)
-
+    if (not path_is_workbook) and wb.read_only:
+        wb.close()
     return pd.DataFrame(frame, copy=False)

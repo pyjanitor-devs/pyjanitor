@@ -18,8 +18,8 @@ no_headers = (
 
 
 def test_check_sheetname():
-    """Test sheetname is a string."""
-    with pytest.raises(TypeError):
+    """Raise KeyError if sheetname does not exist."""
+    with pytest.raises(KeyError):
         io.xlsx_table(filename, 1, None)
 
 

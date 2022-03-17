@@ -1,7 +1,7 @@
-sphinx
-nbsphinx>=0.4.2
-sphinxcontrib-fulltoc==1.2.0
-ipython
+mkdocs
+mkdocs-material
+mkdocstrings<0.18
+ipython>7.31.1
 -r biology.in
 -r chemistry.in
 -r engineering.in

@@ -3,6 +3,7 @@ import pytest
 from janitor import io
 from pathlib import Path
 from openpyxl import load_workbook
+from pandas.testing import assert_series_equal
 
 
 TEST_DATA_DIR = "tests/test_data"
@@ -20,9 +21,9 @@ def test_check_sheetname():
 
 
 def test_comment_read_only():
-    """Raise error if comments and read_only is True."""
+    """Raise error if comment and read_only is True."""
     with pytest.raises(ValueError):
-        io.xlsx_cells("excel.xlsx", "clean", comments=True)
+        io.xlsx_cells(filename, "clean", comment=True)
 
 
 def test_check_filename():
@@ -115,6 +116,28 @@ def test_default_values_blank_cells_false():
             end_point="G7",
         )["value"].tolist()
     )
+
+
+def test_output_parameters():
+    """Test output for existing parameters."""
+    result = (
+        io.xlsx_cells(filename, "pivot-notes", font=True)["font"]
+        .str.get("name")
+        .tolist()
+    )
+    assert "Calibri" in result
+
+
+def test_output_kwargs():
+    """Test output for extra attributes via kwargs."""
+    result = io.xlsx_cells(wb, "pivot-notes", col_idx=True)
+    assert_series_equal(result["column"], result["col_idx"].rename("column"))
+
+
+def test_output_kwargs_type():
+    """Test output for parameters if value is not boolean."""
+    with pytest.raises(TypeError):
+        io.xlsx_cells(wb, "pivot-notes", col_idx="True")
 
 
 wb_c.close()

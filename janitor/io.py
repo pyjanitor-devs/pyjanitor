@@ -231,7 +231,7 @@ def xlsx_cells(
     alignment: bool = False,
     border: bool = False,
     protection: bool = False,
-    comments: bool = False,
+    comment: bool = False,
     **kwargs,
 ) -> pd.DataFrame:
     """
@@ -254,7 +254,7 @@ def xlsx_cells(
     :param alignment: If `True`, return alignment properties of the cell.
     :param border: If `True`, return border properties of the cell.
     :param protection: If `True`, return protection properties of the cell.
-    :param comments: If `True`, return comments properties of the cell.
+    :param comment: If `True`, return comments properties of the cell.
     :param kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
     :raises ValueError: If kwargs is provided, and one of the keys is a default column.
     :raises AttributeError: If kwargs is provided and any of the keys
@@ -285,7 +285,7 @@ def xlsx_cells(
         # for memory efficiency, read_only is set to True
         # if comments is True, read_only has to be False,
         # as lazy loading is not enabled for comments
-        if comments and read_only:
+        if comment and read_only:
             raise ValueError(
                 "To access comments, kindly set 'read_only' to False."
             )
@@ -317,7 +317,7 @@ def xlsx_cells(
         "alignment": alignment,
         "border": border,
         "protection": protection,
-        "comments": comments,
+        "comment": comment,
     }
     if kwargs:
         if path_is_workbook:
@@ -353,11 +353,12 @@ def xlsx_cells(
             continue
         for value in defaults:
             frame[value].append(getattr(cell, value, None))
-        for parent, cell_attribute in parameters.items():
-            if not cell_attribute:
+        for parent, boolean_value in parameters.items():
+            check(f"The value for {parent}", boolean_value, [bool])
+            if not boolean_value:
                 continue
-            cell_attribute = object_to_dict(getattr(cell, parent, None))
-            frame[parent].append(cell_attribute)
+            boolean_value = object_to_dict(getattr(cell, parent, None))
+            frame[parent].append(boolean_value)
 
     if (not path_is_workbook) and wb.read_only:
         wb.close()
@@ -372,13 +373,10 @@ def object_to_dict(obj):
     :param obj: Object whose attributes are to be extracted.
     :Returns: A dictionary or the object.
     """
-    # credits : https://stackoverflow.com/a/71366813/7175713
+    # https://stackoverflow.com/a/71366813/7175713
     data = {}
     if getattr(obj, "__dict__", None):
         for key, value in obj.__dict__.items():
-            try:
-                data[key] = object_to_dict(value)
-            except AttributeError:
-                data[key] = value
+            data[key] = object_to_dict(value)
         return data
     return obj

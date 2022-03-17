@@ -5,8 +5,12 @@ from io import StringIO
 from typing import Iterable, Union
 
 import pandas as pd
+import inspect
+
 from .errors import JanitorError
 from .utils import deprecated_alias, check, import_message
+from collections import defaultdict
+from itertools import chain
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -221,7 +225,7 @@ def xlsx_table(
 
 def xlsx_cells(
     path: str,
-    sheetname: Union[str, list, tuple] = None,
+    sheetnames: Union[str, list, tuple] = None,
     start_point: Union[str, int] = None,
     end_point: Union[str, int] = None,
     read_only: bool = True,
@@ -233,33 +237,45 @@ def xlsx_cells(
     protection: bool = False,
     comment: bool = False,
     **kwargs,
-) -> pd.DataFrame:
+) -> Union[dict, pd.DataFrame]:
     """
+    Imports data from spreadsheets without coercing it into a rectangle.
+    Each cell is represented by a row in a dataframe, and includes the
+    cell's coordinates, the value, row and column position.
+    The cell formatting (fill, font, border, etc) can also be accessed;
+    usually this is returned as a dictionary in the cell, and the specific
+    cell format attribute can be accessed using `pd.Series.str.get`.
 
     :param path: Path to the Excel File. Can also be an openpyxl Workbook.
-    :param sheetname: Name of the sheet from which the cells are to be extracted.
+    :param sheetnames: Names of the sheets from which the cells are to be extracted.
         If `None`, all the sheets in the file are extracted;
-        if a string, or list or tuple, ,only the specified sheets are extracted.
+        if it is a string, or list or tuple, only the specified sheets are extracted.
     :param start_point: start coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
     :param end_point: end coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
     :param read_only: Determines if the entire file is loaded in memory,
-        or streamed. For memory efficiency, read_only should be set to `False`.
-        Some cell properties like `comments`, can only be accessed by
-        setting `read_only` to `True`.
-    :param include_blank_cells: Determines if empty cells should be included.
+        or streamed. For memory efficiency, read_only should be set to `True`.
+        Some cell properties like `comment`, can only be accessed by
+        setting `read_only` to `False`.
+    :param include_blank_cells: Determines if cells without a value should be included.
     :param fill: If `True`, return fill properties of the cell.
+        It is usually returned as a dictionary.
     :param font: If `True`, return font properties of the cell.
+        It is usually returned as a dictionary.
     :param alignment: If `True`, return alignment properties of the cell.
+        It is usually returned as a dictionary.
     :param border: If `True`, return border properties of the cell.
+        It is usually returned as a dictionary.
     :param protection: If `True`, return protection properties of the cell.
-    :param comment: If `True`, return comments properties of the cell.
+        It is usually returned as a dictionary.
+    :param comment: If `True`, return comment properties of the cell.
+        It is usually returned as a dictionary.
     :param kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
     :raises ValueError: If kwargs is provided, and one of the keys is a default column.
     :raises AttributeError: If kwargs is provided and any of the keys
         is not a openpyxl cell attribute.
-    :returns: A pandas DataFrame.
+    :returns: A pandas DataFrame, or a dictionary of DataFrames.
     """  # noqa : E501
 
     try:
@@ -267,7 +283,6 @@ def xlsx_cells(
         from openpyxl.cell.read_only import ReadOnlyCell
         from openpyxl.cell.cell import Cell
         from openpyxl.workbook.workbook import Workbook
-        import inspect
     except ImportError:
         import_message(
             submodule="io",
@@ -275,12 +290,10 @@ def xlsx_cells(
             conda_channel="conda-forge",
             pip_install=True,
         )
-    from collections import defaultdict
-    from itertools import chain
 
     path_is_workbook = isinstance(path, Workbook)
     if path_is_workbook:
-        ws = path[sheetname]
+        wb = path
     else:
         # for memory efficiency, read_only is set to True
         # if comments is True, read_only has to be False,
@@ -292,15 +305,12 @@ def xlsx_cells(
         wb = load_workbook(
             filename=path, read_only=read_only, keep_links=False
         )
-        ws = wb[sheetname]
     # start_point and end_point applies if the user is interested in
     # only a subset of the Excel File and knows the coordinates
     if start_point or end_point:
         check("start_point", start_point, [str, int])
         check("end_point", end_point, [str, int])
-        ws = ws[start_point:end_point]
-    ws = chain.from_iterable(ws)
-    frame = defaultdict(list)
+
     defaults = (
         "value",
         "internal_value",
@@ -311,6 +321,7 @@ def xlsx_cells(
         "is_date",
         "number_format",
     )
+
     parameters = {
         "fill": fill,
         "font": font,
@@ -319,6 +330,7 @@ def xlsx_cells(
         "protection": protection,
         "comment": comment,
     }
+
     if kwargs:
         if path_is_workbook:
             if path.read_only:
@@ -348,6 +360,84 @@ def xlsx_cells(
                     f"{key} is not a recognized attribute of {_cell}."
                 )
         parameters.update(kwargs)
+
+    if sheetnames is not None:
+        check("sheetnames", sheetnames, [str, list, tuple])
+    if isinstance(sheetnames, str):
+        out = _xlsx_cells(
+            wb,
+            sheetnames,
+            defaults,
+            parameters,
+            start_point,
+            end_point,
+            include_blank_cells,
+        )
+    elif sheetnames is None:
+        out = {
+            sheetname: _xlsx_cells(
+                wb,
+                sheetname,
+                defaults,
+                parameters,
+                start_point,
+                end_point,
+                include_blank_cells,
+            )
+            for sheetname in wb.sheetnames
+        }
+    else:
+        out = {
+            sheetname: _xlsx_cells(
+                wb,
+                sheetname,
+                defaults,
+                parameters,
+                start_point,
+                end_point,
+                include_blank_cells,
+            )
+            for sheetname in sheetnames
+        }
+
+    if (not path_is_workbook) and wb.read_only:
+        wb.close()
+
+    return out
+
+
+def _xlsx_cells(
+    wb,
+    sheetname,
+    defaults,
+    parameters,
+    start_point,
+    end_point,
+    include_blank_cells,
+):
+    """
+    Function to process a single sheet.
+    Returns a DataFrame.
+
+    :param wb: Openpyxl Workbook.
+    :param sheetname: Name of the sheet
+        from which the cells are to be extracted.
+    :param parameters: Dictionary of cell attributes to be retrieved.
+    :param defaults: List of default cell attributes
+        that will always be returned as columns.
+    :param start_point: start coordinates of the Excel sheet.
+    :param end_point: end coordinates of the Excel sheet.
+    :param include_blank_cells: Determines if empty cells should be included.
+    :param path_is_workbook: True/False.
+    :returns : A pandas DataFrame
+    """
+    ws = wb[sheetname]
+
+    if start_point:
+        ws = ws[start_point:end_point]
+    ws = chain.from_iterable(ws)
+    frame = defaultdict(list)
+
     for cell in ws:
         if (cell.value is None) and (not include_blank_cells):
             continue
@@ -360,8 +450,6 @@ def xlsx_cells(
             boolean_value = object_to_dict(getattr(cell, parent, None))
             frame[parent].append(boolean_value)
 
-    if (not path_is_workbook) and wb.read_only:
-        wb.close()
     return pd.DataFrame(frame, copy=False)
 
 
@@ -371,7 +459,7 @@ def object_to_dict(obj):
     of a class as a dictionary.
 
     :param obj: Object whose attributes are to be extracted.
-    :Returns: A dictionary or the object.
+    :returns: A dictionary or the object.
     """
     # https://stackoverflow.com/a/71366813/7175713
     data = {}

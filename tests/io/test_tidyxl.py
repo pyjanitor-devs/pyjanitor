@@ -14,10 +14,16 @@ wb = load_workbook(filename)
 wb_c = load_workbook(filename, read_only=True)
 
 
-def test_check_sheetname():
+def test_sheetname_type():
+    """Raise error if sheet name is the wrong type."""
+    with pytest.raises(TypeError):
+        io.xlsx_cells(filename, 5)
+
+
+def test_sheetname_presence():
     """Raise error if sheet name does not exist."""
     with pytest.raises(KeyError):
-        io.xlsx_cells(filename, 5)
+        io.xlsx_cells(filename, "5")
 
 
 def test_comment_read_only():
@@ -138,6 +144,28 @@ def test_output_kwargs_type():
     """Test output for parameters if value is not boolean."""
     with pytest.raises(TypeError):
         io.xlsx_cells(wb, "pivot-notes", col_idx="True")
+
+
+def test_output_sheetnames_sequence():
+    """Test output if sheetnames is a list."""
+    result = (
+        io.xlsx_cells(filename, sheetnames=["pivot-notes"], font=True)[
+            "pivot-notes"
+        ]["font"]
+        .str.get("name")
+        .tolist()
+    )
+    assert "Calibri" in result
+
+
+def test_output_sheetnames_None():
+    """Test output if sheetnames is None."""
+    result = (
+        io.xlsx_cells(wb, sheetnames=None, font=True)["pivot-notes"]["font"]
+        .str.get("name")
+        .tolist()
+    )
+    assert "Calibri" in result
 
 
 wb_c.close()

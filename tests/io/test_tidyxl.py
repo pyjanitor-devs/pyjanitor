@@ -158,7 +158,7 @@ def test_output_sheetnames_sequence():
     assert "Calibri" in result
 
 
-def test_output_sheetnames_None():
+def test_output_sheetnames_none():
     """Test output if sheetnames is None."""
     result = (
         io.xlsx_cells(wb, sheetnames=None, font=True)["pivot-notes"]["font"]

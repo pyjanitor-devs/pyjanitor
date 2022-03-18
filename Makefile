@@ -28,7 +28,7 @@ lint:
 
 docs:
 	@echo "Building documentation..."
-	cd docs && make html
+	mkdocs build
 
 isort:
 	@echo "Sorting imports..."
@@ -52,3 +52,8 @@ install:
 
 	@echo "Installing pre-commit hooks"
 	$(ACTIVATE) && pre-commit install
+
+compile-requirements:
+	@echo "pip-compiling requirements files..."
+	find .requirements -type f -name '*.in' | xargs -I {} sh -c\
+		'echo "compiling" {} && pip-compile {} --upgrade -q'

@@ -193,10 +193,10 @@ def xlsx_table(
             )
         ws = path[sheetname]
     else:
-        wb = load_workbook(
+        ws = load_workbook(
             filename=path, read_only=False, keep_links=False, data_only=True
         )
-        ws = wb[sheetname]
+        ws = ws[sheetname]
 
     contents = ws.tables
 
@@ -369,9 +369,7 @@ def xlsx_cells(
         )
 
     path_is_workbook = isinstance(path, Workbook)
-    if path_is_workbook:
-        wb = path
-    else:
+    if not path_is_workbook:
         # for memory efficiency, read_only is set to True
         # if comments is True, read_only has to be False,
         # as lazy loading is not enabled for comments
@@ -379,7 +377,7 @@ def xlsx_cells(
             raise ValueError(
                 "To access comments, kindly set 'read_only' to False."
             )
-        wb = load_workbook(
+        path = load_workbook(
             filename=path, read_only=read_only, keep_links=False
         )
     # start_point and end_point applies if the user is interested in
@@ -438,11 +436,11 @@ def xlsx_cells(
                 )
         parameters.update(kwargs)
 
-    if sheetnames is not None:
+    if sheetnames:
         check("sheetnames", sheetnames, [str, list, tuple])
         if isinstance(sheetnames, str):
             out = _xlsx_cells(
-                wb,
+                path,
                 sheetnames,
                 defaults,
                 parameters,
@@ -453,7 +451,7 @@ def xlsx_cells(
         else:
             out = {
                 sheetname: _xlsx_cells(
-                    wb,
+                    path,
                     sheetname,
                     defaults,
                     parameters,
@@ -466,7 +464,7 @@ def xlsx_cells(
     else:
         out = {
             sheetname: _xlsx_cells(
-                wb,
+                path,
                 sheetname,
                 defaults,
                 parameters,
@@ -474,23 +472,23 @@ def xlsx_cells(
                 end_point,
                 include_blank_cells,
             )
-            for sheetname in wb.sheetnames
+            for sheetname in path.sheetnames
         }
 
-    if (not path_is_workbook) and wb.read_only:
-        wb.close()
+    if (not path_is_workbook) and path.read_only:
+        path.close()
 
     return out
 
 
 def _xlsx_cells(
     wb,
-    sheetname,
-    defaults,
-    parameters,
-    start_point,
-    end_point,
-    include_blank_cells,
+    sheetname: str,
+    defaults: tuple,
+    parameters: dict,
+    start_point: Union[str, int],
+    end_point: Union[str, int],
+    include_blank_cells: bool,
 ):
     """
     Function to process a single sheet.
@@ -499,8 +497,8 @@ def _xlsx_cells(
     :param wb: Openpyxl Workbook.
     :param sheetname: Name of the sheet
         from which the cells are to be extracted.
+    :param defaults: Sequence of default cell attributes.
     :param parameters: Dictionary of cell attributes to be retrieved.
-    :param defaults: List of default cell attributes
         that will always be returned as columns.
     :param start_point: start coordinates of the Excel sheet.
     :param end_point: end coordinates of the Excel sheet.
@@ -533,7 +531,7 @@ def _xlsx_cells(
 def _object_to_dict(obj):
     """
     Recursively get the attributes
-    of a class as a dictionary.
+    of an object as a dictionary.
 
     :param obj: Object whose attributes are to be extracted.
     :returns: A dictionary or the object.

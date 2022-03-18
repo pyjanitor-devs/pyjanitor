@@ -134,34 +134,33 @@ def xlsx_table(
 
     Example:
 
-    ```python
-    >>> import pandas as pd
-    >>> from janitor import xlsx_table
-    >>> filename = "../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
+        >>> import pandas as pd
+        >>> from janitor import xlsx_table
+        >>> filename = "../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
 
-    # single table
-    >>> xlsx_table(filename, sheetname='Tables', table = 'dCategory')
-       CategoryID       Category
-    0           1       Beginner
-    1           2       Advanced
-    2           3      Freestyle
-    3           4    Competition
-    4           5  Long Distance
+        # single table
+        >>> xlsx_table(filename, sheetname='Tables', table = 'dCategory')
+           CategoryID       Category
+        0           1       Beginner
+        1           2       Advanced
+        2           3      Freestyle
+        3           4    Competition
+        4           5  Long Distance
 
-    # multiple tables:
-    >>> out = xlsx_table(filename, sheetname = 'Tables', table = ['dCategory', 'dSalesReps'])
-    >>> out['dCategory']
-       CategoryID       Category
-    0           1       Beginner
-    1           2       Advanced
-    2           3      Freestyle
-    3           4    Competition
-    4           5  Long Distance
-    >>> out['dSalesReps'].head(3)
-       SalesRepID             SalesRep Region
-    0           1  Sioux Radcoolinator     NW
-    1           2        Tyrone Smithe     NE
-    2           3         Chantel Zoya     SW
+        # multiple tables:
+        >>> out = xlsx_table(filename, sheetname = 'Tables', table = ['dCategory', 'dSalesReps'])
+        >>> out['dCategory']
+           CategoryID       Category
+        0           1       Beginner
+        1           2       Advanced
+        2           3      Freestyle
+        3           4    Competition
+        4           5  Long Distance
+        >>> out['dSalesReps'].head(3)
+           SalesRepID             SalesRep Region
+        0           1  Sioux Radcoolinator     NW
+        1           2        Tyrone Smithe     NE
+        2           3         Chantel Zoya     SW
 
 
     :param path: Path to the Excel File. It can also be an openpyxl Workbook.
@@ -268,7 +267,7 @@ def xlsx_cells(
     **kwargs,
 ) -> Union[dict, pd.DataFrame]:
     """
-    Imports data from spreadsheets without coercing it into a rectangle.
+    Imports data from spreadsheet without coercing it into a rectangle.
     Each cell is represented by a row in a dataframe, and includes the
     cell's coordinates, the value, row and column position.
     The cell formatting (fill, font, border, etc) can also be accessed;
@@ -277,53 +276,51 @@ def xlsx_cells(
 
     Example:
 
-    ```python
+        >>> import pandas as pd
+        >>> from janitor import xlsx_cells
+        >>> pd.set_option('display.max_columns', None)
+        >>> pd.set_option('display.expand_frame_repr', False)
+        >>> pd.set_option('max_colwidth', None)
+        >>> filename = "../pyjanitor/tests/test_data/worked-examples.xlsx"
 
-    >>> import pandas as pd
-    >>> from janitor import xlsx_cells
-    >>> pd.set_option('display.max_columns', None)
-    >>> pd.set_option('display.expand_frame_repr', False)
-    >>> pd.set_option('max_colwidth', None)
-    >>> filename = "../pyjanitor/tests/test_data/worked-examples.xlsx"
+        # Each cell is returned as a row:
+        >>> xlsx_cells(filename, sheetnames = 'highlights')
+            value internal_value coordinate  row  column data_type  is_date number_format
+        0     Age            Age         A1    1       1         s    False       General
+        1  Height         Height         B1    1       2         s    False       General
+        2       1              1         A2    2       1         n    False       General
+        3       2              2         B2    2       2         n    False       General
+        4       3              3         A3    3       1         n    False       General
+        5       4              4         B3    3       2         n    False       General
+        6       5              5         A4    4       1         n    False       General
+        7       6              6         B4    4       2         n    False       General
 
-    # Each cell is returned as a row:
-    >>> xlsx_cells(filename, sheetnames = 'highlights')
-        value internal_value coordinate  row  column data_type  is_date number_format
-    0     Age            Age         A1    1       1         s    False       General
-    1  Height         Height         B1    1       2         s    False       General
-    2       1              1         A2    2       1         n    False       General
-    3       2              2         B2    2       2         n    False       General
-    4       3              3         A3    3       1         n    False       General
-    5       4              4         B3    3       2         n    False       General
-    6       5              5         A4    4       1         n    False       General
-    7       6              6         B4    4       2         n    False       General
+        # Access cell formatting such as fill :
 
-    # Access cell formatting such as fill :
+        >>> out = xlsx_cells(filename, sheetnames = 'highlights', fill=True).select_columns('value', 'fill')
+        >>> out
+            value                                                                                                                                              fill
+        0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        1  Height     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        2       1     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        3       2     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        4       3  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+        5       4  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+        6       5     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        7       6     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
 
-    >>> out = xlsx_cells(filename, sheetnames = 'highlights', fill=True).select_columns('value', 'fill')
-    >>> out
-        value                                                                                                                                              fill
-    0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    1  Height     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    2       1     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    3       2     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    4       3  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
-    5       4  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
-    6       5     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    7       6     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        # specific cell attributes can be accessed by using Pandas' series.str.get :
 
-    # specific cell attributes can be accessed by using Pandas' series.str.get :
-
-    >>> out.fill.str.get('fgColor').str.get('rgb')
-    0    00000000
-    1    00000000
-    2    00000000
-    3    00000000
-    4    FFFFFF00
-    5    FFFFFF00
-    6    00000000
-    7    00000000
-    Name: fill, dtype: object
+        >>> out.fill.str.get('fgColor').str.get('rgb')
+        0    00000000
+        1    00000000
+        2    00000000
+        3    00000000
+        4    FFFFFF00
+        5    FFFFFF00
+        6    00000000
+        7    00000000
+        Name: fill, dtype: object
 
 
     :param path: Path to the Excel File. It can also be an openpyxl Workbook.

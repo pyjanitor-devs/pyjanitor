@@ -2,7 +2,7 @@ import os
 import subprocess
 from glob import glob
 from io import StringIO
-from typing import Iterable, Union
+from typing import Iterable, Union, NamedTuple
 
 import pandas as pd
 import inspect
@@ -135,13 +135,13 @@ def xlsx_table(
     Example:
 
     ```python
-
-    filename = "excel_table.xlsx"
+    >>> import pandas as pd
+    >>> from janitor import xlsx_table
+    >>> filename = "../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
 
     # single table
-    jn.xlsx_table(filename, sheetname='Tables', table = 'dCategory')
-
-        CategoryID      Category
+    >>> xlsx_table(filename, sheetname='Tables', table = 'dCategory')
+       CategoryID       Category
     0           1       Beginner
     1           2       Advanced
     2           3      Freestyle
@@ -149,22 +149,22 @@ def xlsx_table(
     4           5  Long Distance
 
     # multiple tables:
-    jn.xlsx_table(filename, sheetname = 'Tables', table = ['dCategory', 'dSupplier'])
+    >>> out = xlsx_table(filename, sheetname = 'Tables', table = ['dCategory', 'dSalesReps'])
+    >>> out['dCategory']
+       CategoryID       Category
+    0           1       Beginner
+    1           2       Advanced
+    2           3      Freestyle
+    3           4    Competition
+    4           5  Long Distance
+    >>> out['dSalesReps'].head(3)
+       SalesRepID             SalesRep Region
+    0           1  Sioux Radcoolinator     NW
+    1           2        Tyrone Smithe     NE
+    2           3         Chantel Zoya     SW
 
-    {'dCategory':    CategoryID       Category
-                    0           1       Beginner
-                    1           2       Advanced
-                    2           3      Freestyle
-                    3           4    Competition
-                    4           5  Long Distance,
-    'dSupplier':   SupplierID             Supplier        City State                         E-mail
-                    0         GB       Gel Boomerangs     Oakland    CA          gel@gel-boomerang.com
-                    1         CO  Colorado Boomerangs    Gunnison    CO  Pollock@coloradoboomerang.com
-                    2         CC        Channel Craft    Richland    WA                    Dino@CC.com
-                    3         DB        Darnell Booms  Burlington    VT            Darnell@Darnell.com}
-    ```
 
-    :param path: Path to the Excel File.
+    :param path: Path to the Excel File. It can also be an openpyxl Workbook.
     :param sheetname: Name of the sheet from which the tables
         are to be extracted.
     :param table: Name of a table, or list of tables in the sheet.
@@ -172,11 +172,14 @@ def xlsx_table(
         if there are multiple arguments for the `table` parameter,
         or the argument to `table` is `None`.
     :raises ValueError: If there are no tables in the sheet.
+    :raises KeyError: If the provided table does not exist in the sheet.
+
 
     """  # noqa : E501
 
     try:
         from openpyxl import load_workbook
+        from openpyxl.workbook.workbook import Workbook
     except ImportError:
         import_message(
             submodule="io",
@@ -184,43 +187,69 @@ def xlsx_table(
             conda_channel="conda-forge",
             pip_install=True,
         )
-    wb = load_workbook(filename=path, read_only=False, keep_links=False)
-    ws = wb[sheetname]
+    if isinstance(path, Workbook):
+        if path.read_only:
+            raise ValueError(
+                "Accessing the tables require 'read_only' to be False."
+            )
+        ws = path[sheetname]
+    else:
+        wb = load_workbook(
+            filename=path, read_only=False, keep_links=False, data_only=True
+        )
+        ws = wb[sheetname]
 
     contents = ws.tables
+
     if not contents:
-        raise ValueError(f"There is no table in `{sheetname}` sheet.")
+        raise ValueError(f"There is no table in '{sheetname}' sheet.")
+
+    class TableArgs(NamedTuple):
+        """
+        Named Tuple to easily index values
+        from the tables in the sheet.
+        """
+
+        table_name: str
+        ref: str
+        headerRowCount: int
 
     if isinstance(table, str):
         table = [table]
     if table is not None:
-        check("table", table, [list, tuple])
-        for entry in table:
-            if entry not in contents:
-                raise ValueError(
-                    f"{entry} is not a table in the {sheetname} sheet."
+        check("table", table, [str, list, tuple])
+        try:
+            data = []
+            for key in table:
+                outcome = TableArgs(
+                    key, contents[key].ref, contents[key].headerRowCount
                 )
-        data = (
-            (key, value) for key, value in contents.items() if key in table
-        )
+                data.append(outcome)
+        except KeyError as error:
+            raise KeyError(
+                f"Table {error} is not in the '{sheetname}' sheet."
+            ) from error
     else:
-        data = contents.items()
+        data = (
+            TableArgs(key, contents[key].ref, contents[key].headerRowCount)
+            for key in contents
+        )
 
     frame = {}
-    for key, value in data:
-        content = ((cell.value for cell in row) for row in ws[value])
-        if contents[key].headerRowCount == 1:
-            column_names = next(content)
-            content = zip(*content)
-            frame[key] = dict(zip(column_names, content))
+    for table_arg in data:
+        content = [[cell.value for cell in row] for row in ws[table_arg.ref]]
+
+        if table_arg.headerRowCount:
+            header, *content = content
         else:
-            content = zip(*content)
-            frame[key] = {f"C{num}": val for num, val in enumerate(content)}
+            header = [f"C{num}" for num in range(len(content[0]))]
+        frame[table_arg.table_name] = pd.DataFrame(
+            content, columns=header, copy=False
+        )
 
     if len(frame) == 1:
         _, frame = frame.popitem()
-        return pd.DataFrame(frame)
-    return {key: pd.DataFrame(value) for key, value in frame.items()}
+    return frame
 
 
 def xlsx_cells(
@@ -246,7 +275,58 @@ def xlsx_cells(
     usually this is returned as a dictionary in the cell, and the specific
     cell format attribute can be accessed using `pd.Series.str.get`.
 
-    :param path: Path to the Excel File. Can also be an openpyxl Workbook.
+    Example:
+
+    ```python
+
+    >>> import pandas as pd
+    >>> from janitor import xlsx_cells
+    >>> pd.set_option('display.max_columns', None)
+    >>> pd.set_option('display.expand_frame_repr', False)
+    >>> pd.set_option('max_colwidth', None)
+    >>> filename = "../pyjanitor/tests/test_data/worked-examples.xlsx"
+
+    # Each cell is returned as a row:
+    >>> xlsx_cells(filename, sheetnames = 'highlights')
+        value internal_value coordinate  row  column data_type  is_date number_format
+    0     Age            Age         A1    1       1         s    False       General
+    1  Height         Height         B1    1       2         s    False       General
+    2       1              1         A2    2       1         n    False       General
+    3       2              2         B2    2       2         n    False       General
+    4       3              3         A3    3       1         n    False       General
+    5       4              4         B3    3       2         n    False       General
+    6       5              5         A4    4       1         n    False       General
+    7       6              6         B4    4       2         n    False       General
+
+    # Access cell formatting such as fill :
+
+    >>> out = xlsx_cells(filename, sheetnames = 'highlights', fill=True).select_columns('value', 'fill')
+    >>> out
+        value                                                                                                                                              fill
+    0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+    1  Height     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+    2       1     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+    3       2     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+    4       3  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+    5       4  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+    6       5     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+    7       6     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+
+    # specific cell attributes can be accessed by using Pandas' series.str.get :
+
+    >>> out.fill.str.get('fgColor').str.get('rgb')
+    0    00000000
+    1    00000000
+    2    00000000
+    3    00000000
+    4    FFFFFF00
+    5    FFFFFF00
+    6    00000000
+    7    00000000
+    Name: fill, dtype: object
+
+
+    :param path: Path to the Excel File. It can also be an openpyxl Workbook.
     :param sheetnames: Names of the sheets from which the cells are to be extracted.
         If `None`, all the sheets in the file are extracted;
         if it is a string, or list or tuple, only the specified sheets are extracted.
@@ -363,29 +443,29 @@ def xlsx_cells(
 
     if sheetnames is not None:
         check("sheetnames", sheetnames, [str, list, tuple])
-    if isinstance(sheetnames, str):
-        out = _xlsx_cells(
-            wb,
-            sheetnames,
-            defaults,
-            parameters,
-            start_point,
-            end_point,
-            include_blank_cells,
-        )
-    elif sheetnames is None:
-        out = {
-            sheetname: _xlsx_cells(
+        if isinstance(sheetnames, str):
+            out = _xlsx_cells(
                 wb,
-                sheetname,
+                sheetnames,
                 defaults,
                 parameters,
                 start_point,
                 end_point,
                 include_blank_cells,
             )
-            for sheetname in wb.sheetnames
-        }
+        else:
+            out = {
+                sheetname: _xlsx_cells(
+                    wb,
+                    sheetname,
+                    defaults,
+                    parameters,
+                    start_point,
+                    end_point,
+                    include_blank_cells,
+                )
+                for sheetname in sheetnames
+            }
     else:
         out = {
             sheetname: _xlsx_cells(
@@ -397,7 +477,7 @@ def xlsx_cells(
                 end_point,
                 include_blank_cells,
             )
-            for sheetname in sheetnames
+            for sheetname in wb.sheetnames
         }
 
     if (not path_is_workbook) and wb.read_only:

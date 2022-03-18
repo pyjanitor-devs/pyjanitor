@@ -20,6 +20,7 @@
 -   [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe`, along with further performance improvements (PR #1040). @thatlittleboy
 -   [ENH] Performance improvement for `conditional_join`. @samukweku
 -   [ENH] Multiple `.value` is now supported in `pivot_longer`. #1034 @samukweku
+-   [ENH] Add `xlsx_cell` for reading a spreadsheet as a table of individual cells. #929 @samukweku.
 
 ## [v0.22.0] - 2021-11-21
 

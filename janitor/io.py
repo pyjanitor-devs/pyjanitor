@@ -524,13 +524,13 @@ def _xlsx_cells(
             check(f"The value for {parent}", boolean_value, [bool])
             if not boolean_value:
                 continue
-            boolean_value = object_to_dict(getattr(cell, parent, None))
+            boolean_value = _object_to_dict(getattr(cell, parent, None))
             frame[parent].append(boolean_value)
 
     return pd.DataFrame(frame, copy=False)
 
 
-def object_to_dict(obj):
+def _object_to_dict(obj):
     """
     Recursively get the attributes
     of a class as a dictionary.
@@ -542,6 +542,6 @@ def object_to_dict(obj):
     data = {}
     if getattr(obj, "__dict__", None):
         for key, value in obj.__dict__.items():
-            data[key] = object_to_dict(value)
+            data[key] = _object_to_dict(value)
         return data
     return obj

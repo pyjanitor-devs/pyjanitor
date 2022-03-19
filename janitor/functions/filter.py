@@ -48,10 +48,12 @@ def filter_string(
 
     :param df: A pandas DataFrame.
     :param column_name: The column to filter. The column should contain strings.
-    :param search_string: A regex pattern or a (sub-)string to search.
+    :param search_string: A regex pattern or a (sub-)string to search. It's also
+        `str.contains` parameter `pat`'s alias name.
     :param complement: Whether to return the complement of the filter or not. If
         set to True, then the rows for which the string search fails are retained
         instead.
+    :param kwargs: `str.contains`'s keyword arguements.
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501
 

@@ -491,8 +491,6 @@ def _computations_pivot_longer(
     if column_names:
         df = df.loc[:, column_names]
 
-    # df_index_names = df.index.names
-
     # check to avoid duplicate columns in the final dataframe
     # idea is that if there is no `.value`
     # then the word should not exist in the index
@@ -776,6 +774,15 @@ def _pivot_longer_names_pattern_sequence(
     names_pattern is provided, and is a list/tuple.
     """
 
+    values_to_is_a_sequence = isinstance(values_to, (list, tuple))
+    if values_to_is_a_sequence and index:
+        for word in values_to:
+            if word in index:
+                raise ValueError(
+                    f"{word} already exists as a column label "
+                    "assigned to the dataframe's index parameter. "
+                    "Kindly use a unique name."
+                )
     df_columns = df.columns
     len_index = len(df)
 
@@ -794,12 +801,12 @@ def _pivot_longer_names_pattern_sequence(
                 f"at position {position} -> {names_pattern[position]}."
             )
 
-    if isinstance(values_to, str):
-        mapping = np.select(mapping, names_to, None)
-    else:
+    if values_to_is_a_sequence:
         mapping, other = np.select(mapping, values_to, None), np.select(
             mapping, names_to, None
         )
+    else:
+        mapping = np.select(mapping, names_to, None)
 
     # only matched columns are retained
     matches = pd.notna(mapping)
@@ -832,7 +839,7 @@ def _pivot_longer_names_pattern_sequence(
         df.columns = [positions, mapping]
         df = [df.loc[:, num] for num in positions.unique()]
         df = pd.concat(df, axis="index", sort=False, copy=False)
-        if isinstance(values_to, (list, tuple)):
+        if values_to_is_a_sequence:
             # chuck the index aside, add the columns
             # then return the index.
             # This is necessary to avoid Pandas' ValueError

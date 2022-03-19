@@ -351,6 +351,22 @@ def test_dot_value_names_to_columns_intersect(df_checks):
         )
 
 
+def test_values_to_seq_index_intersect(df_checks):
+    """
+    Raise ValueError if values_to is a sequence,
+    and intersects with the index
+    """
+    with pytest.raises(
+        ValueError, match="famid already exists as a column label.+"
+    ):
+        df_checks.pivot_longer(
+            index="famid",
+            names_to=("value", "ht"),
+            names_pattern=["ht", r"\d"],
+            values_to=("famid", "foo"),
+        )
+
+
 def test_dot_value_names_to_index_intersect(df_checks):
     """
     Raise ValueError if names_sep/names_pattern,
@@ -368,7 +384,9 @@ def test_names_pattern_list_empty_any(df_checks):
     Raise ValueError if names_pattern is a list,
     and not all matches are returned.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="No match was returned for the regex.+"
+    ):
         df_checks.pivot_longer(
             index=["famid", "birth"],
             names_to=["ht"],
@@ -559,7 +577,7 @@ def test_names_pattern_str(test_df):
             sep="_",
             i="index",
             j="set",
-            suffix=".+",
+            suffix=r".+",
         )
         .reset_index("set")
         .reset_index(drop=True)

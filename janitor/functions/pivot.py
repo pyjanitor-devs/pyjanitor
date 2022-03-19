@@ -839,6 +839,11 @@ def _pivot_longer_names_pattern_sequence(
             # which occurs due to incompatible lengths.
             indexer = df.index
             df.index = range(len(df))
+            # get the grouping of names_to to the columns
+            # the values in names_to become column names
+            # while the associated column labels in df
+            # become values in the new columns, repeated
+            # as many times as the length of the original df
             for key, value in matches.groupby(other).items():
                 value = value.repeat(len_index)
                 value = pd.Series(value)

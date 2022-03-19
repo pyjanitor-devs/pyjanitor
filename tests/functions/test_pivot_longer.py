@@ -879,7 +879,7 @@ def test_names_pattern_seq_single_column(single_val):
     Test output if names_pattern is a list.
     """
     df = single_val[["id", "x1"]]
-    result = df.pivot_longer(index="id", names_to="yA", names_pattern=["(.+)"])
+    result = df.pivot_longer(index="id", names_to="yA", names_pattern=[".+"])
 
     assert_frame_equal(result, df.rename(columns={"x1": "yA"}))
 

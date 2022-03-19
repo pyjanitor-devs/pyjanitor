@@ -59,7 +59,7 @@ def filter_string(
         1  Brian.Salvi
         >>> df.filter_string(column_name="Name", search_string=".", regex=False, complement=True)
                Name
-        1  JoseChen
+        0  JoseChen
 
     `search_string` is also permitted to be any valid regex pattern.
 

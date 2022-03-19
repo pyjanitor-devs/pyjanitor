@@ -4,7 +4,7 @@ from typing import Callable, List, Optional, Pattern, Tuple, Union
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_list_like, is_re_compilable, is_string_dtype
+from pandas.api.types import is_list_like, is_string_dtype
 
 from janitor.functions.utils import _select_column_names
 from janitor.utils import check
@@ -275,18 +275,12 @@ def _data_checks_pivot_longer(
             names_to = [*names_to]
         check("names_to", names_to, [list])
 
-        unique_names_to = set()
+        uniques = set()
         for word in names_to:
-            if not isinstance(word, str):
-                raise TypeError(
-                    "All entries in the names_to argument must be strings. "
-                    f"{word} is of type {type(word).__name__}."
-                )
-
-            if (word in unique_names_to) and (word != ".value"):
+            check("entry in names_to", word, [str])
+            if (word in uniques) and (word != ".value"):
                 raise ValueError(f"{word} already exists in names_to.")
-            unique_names_to.add(word)  # noqa: PD005
-        unique_names_to = None
+            uniques.add(word)  # noqa: PD005
 
         len_names_to = len(names_to)
 
@@ -322,13 +316,7 @@ def _data_checks_pivot_longer(
 
         if isinstance(names_pattern, (list, tuple)):
             for word in names_pattern:
-                if not is_re_compilable(word):
-                    raise TypeError(
-                        f"All entries in the names_pattern argument "
-                        "must be regular expressions, "
-                        "or can be compiled into a regex. "
-                        f"`{word}` is of type {type(word).__name__}."
-                    )
+                check("entry in names_pattern", word, [str, Pattern])
 
             if len(names_pattern) != len_names_to:
                 raise ValueError(
@@ -352,11 +340,18 @@ def _data_checks_pivot_longer(
                         f"The length of values_to is {len(values_to)} "
                         f"while the number of regexes is {len(names_pattern)}."
                     )
+                uniques = set()
                 for word in values_to:
                     if word in names_to:
                         raise ValueError(
                             f"{word} in values_to already exists in names_to."
                         )
+                    check("entry in values_to", word, [str])
+                    if word in uniques:
+                        raise ValueError(
+                            f"{word} already exists in values_to."
+                        )
+                    uniques.add(word)
 
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
@@ -535,7 +530,13 @@ def _computations_pivot_longer(
         )
 
     return _pivot_longer_names_pattern_sequence(
-        df, index, names_to, names_pattern, sort_by_appearance, ignore_index
+        df,
+        index,
+        names_to,
+        names_pattern,
+        sort_by_appearance,
+        values_to,
+        ignore_index,
     )
 
 
@@ -726,7 +727,7 @@ def _pivot_longer_dot_value(
         df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
         # intercept and reorder column if needed
         if not df.columns.equals(_value):
-            df = df.reindex(columns=_value)
+            df = df.loc[:, _value]
     if index:
         num_levels = df.index.nlevels
         # need to order the dataframe's index
@@ -767,6 +768,7 @@ def _pivot_longer_names_pattern_sequence(
     names_to: list,
     names_pattern: Union[list, tuple],
     sort_by_appearance: bool,
+    values_to: Union[str, list, tuple],
     ignore_index: bool,
 ) -> pd.DataFrame:
     """
@@ -792,14 +794,21 @@ def _pivot_longer_names_pattern_sequence(
                 f"at position {position} -> {names_pattern[position]}."
             )
 
-    mapping = np.select(mapping, names_to, None)
+    if isinstance(values_to, str):
+        mapping = np.select(mapping, names_to, None)
+    else:
+        mapping, other = np.select(mapping, values_to, None), np.select(
+            mapping, names_to, None
+        )
 
     # only matched columns are retained
     matches = pd.notna(mapping)
 
     df = df.loc[:, matches]
     mapping = mapping[matches]
-    if len(mapping) == 1:
+    matches = df.columns
+
+    if isinstance(values_to, str) and (len(mapping) == 1):
         df.columns = mapping
     else:
         mapping = pd.Series(mapping)
@@ -818,10 +827,27 @@ def _pivot_longer_names_pattern_sequence(
         #    2   3   7   6   9  12
         # then x2 will pair with y1 and x1 will pair with y2
         # it is simply a first come first serve approach
+        # the same idea applies if values_to is a list/tuple
         positions = mapping.groupby(mapping, sort=False).cumcount()
         df.columns = [positions, mapping]
         df = [df.loc[:, num] for num in positions.unique()]
         df = pd.concat(df, axis="index", sort=False, copy=False)
+        if isinstance(values_to, (list, tuple)):
+            # chuck the index aside, add the columns
+            # then return the index.
+            # This is necessary to avoid Pandas' ValueError
+            # which occurs due to incompatible lengths.
+            indexer = df.index
+            df.index = range(len(df))
+            for key, value in matches.groupby(other).items():
+                value = value.repeat(len_index)
+                value = pd.Series(value)
+                df[key] = value
+            df.index = indexer
+            names_to = [
+                label for arg in zip(names_to, values_to) for label in arg
+            ]
+            df = df.loc[:, names_to]
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)

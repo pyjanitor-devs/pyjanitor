@@ -60,7 +60,7 @@ def test_subtype_names_to(df_checks):
     and the wrong type is provided for entries
     in names_to.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="entry in names_to.+"):
         df_checks.pivot_longer(names_to=[("famid",)])
 
 
@@ -115,11 +115,7 @@ def test_names_pattern_wrong_subtype(df_checks):
     Raise TypeError if names_pattern is a list/tuple
     and wrong subtype is supplied.
     """
-    with pytest.raises(
-        TypeError,
-        match="All entries in the names_pattern argument "
-        "must be regular expressions.+",
-    ):
+    with pytest.raises(TypeError, match="entry in names_pattern.+"):
         df_checks.pivot_longer(
             names_to=["ht", "num"], names_pattern=[1, "\\d"]
         )
@@ -214,6 +210,26 @@ def test_values_to_names_seq_names_to(df_checks):
     ):
         df_checks.pivot_longer(
             values_to=["salvo"], names_pattern=["ht"], names_to="salvo"
+        )
+
+
+def test_sub_values_to(df_checks):
+    """Raise error if values_to is a sequence, and contains non strings."""
+    with pytest.raises(TypeError, match="entry in values_to.+"):
+        df_checks.pivot_longer(
+            names_to=["x", "y"],
+            names_pattern=[r"ht", r"\d"],
+            values_to=[1, "salvo"],
+        )
+
+
+def test_duplicate_values_to(df_checks):
+    """Raise error if values_to is a sequence, and contains duplicates."""
+    with pytest.raises(ValueError, match="salvo already exists in values_to."):
+        df_checks.pivot_longer(
+            names_to=["x", "y"],
+            names_pattern=[r"ht", r"\d"],
+            values_to=["salvo", "salvo"],
         )
 
 
@@ -873,3 +889,46 @@ def test_names_pattern_nulls_in_data():
     )
 
     assert_frame_equal(result, actual)
+
+
+def test_output_values_to_seq():
+    """Test output when values_to is a list/tuple."""
+    df = pd.DataFrame(
+        {
+            "City": ["Houston", "Austin", "Hoover"],
+            "State": ["Texas", "Texas", "Alabama"],
+            "Name": ["Aria", "Penelope", "Niko"],
+            "Mango": [4, 10, 90],
+            "Orange": [10, 8, 14],
+            "Watermelon": [40, 99, 43],
+            "Gin": [16, 200, 34],
+            "Vodka": [20, 33, 18],
+        },
+        columns=[
+            "City",
+            "State",
+            "Name",
+            "Mango",
+            "Orange",
+            "Watermelon",
+            "Gin",
+            "Vodka",
+        ],
+    )
+
+    actual = df.melt(
+        ["City", "State"],
+        value_vars=["Mango", "Orange", "Watermelon"],
+        var_name="Fruit",
+        value_name="Pounds",
+    )
+
+    expected = df.pivot_longer(
+        index=["City", "State"],
+        column_names=slice("Mango", "Watermelon"),
+        names_to=("Fruit"),
+        values_to=("Pounds",),
+        names_pattern=[r"M|O|W"],
+    )
+
+    assert_frame_equal(expected, actual)

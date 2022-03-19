@@ -75,7 +75,10 @@ def test_both_names_sep_and_pattern(df_checks):
     Raise ValueError if both names_sep
     and names_pattern is provided.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Only one of names_pattern or names_sep should be provided.",
+    ):
         df_checks.pivot_longer(
             names_to=["rar", "bar"], names_sep="-", names_pattern="(.+)(.)"
         )
@@ -83,7 +86,7 @@ def test_both_names_sep_and_pattern(df_checks):
 
 def test_name_pattern_wrong_type(df_checks):
     """Raise TypeError if the wrong type provided for names_pattern."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="names_pattern should be one of.+"):
         df_checks.pivot_longer(names_to=["rar", "bar"], names_pattern=2007)
 
 
@@ -99,7 +102,11 @@ def test_name_pattern_groups_len(df_checks):
     and the number of groups
     differs from the length of names_to.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The length of names_to does not match "
+        "the number of groups in names_pattern.+",
+    ):
         df_checks.pivot_longer(names_to=".value", names_pattern="(.+)(.)")
 
 
@@ -108,7 +115,11 @@ def test_names_pattern_wrong_subtype(df_checks):
     Raise TypeError if names_pattern is a list/tuple
     and wrong subtype is supplied.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises(
+        TypeError,
+        match="All entries in the names_pattern argument "
+        "must be regular expressions.+",
+    ):
         df_checks.pivot_longer(
             names_to=["ht", "num"], names_pattern=[1, "\\d"]
         )
@@ -119,7 +130,11 @@ def test_names_pattern_names_to_unequal_length(df_checks):
     Raise ValueError if names_pattern is a list/tuple
     and wrong number of items in names_to.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The length of names_to does not match "
+        "the number of regexes in names_pattern.+",
+    ):
         df_checks.pivot_longer(
             names_to=["variable"], names_pattern=["^ht", ".+i.+"]
         )
@@ -130,7 +145,11 @@ def test_names_pattern_names_to_dot_value(df_checks):
     Raise Error if names_pattern is a list/tuple and
     .value in names_to.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=".value is not accepted in names_to "
+        "if names_pattern is a list/tuple.",
+    ):
         df_checks.pivot_longer(
             names_to=["variable", ".value"], names_pattern=["^ht", ".+i.+"]
         )
@@ -138,7 +157,7 @@ def test_names_pattern_names_to_dot_value(df_checks):
 
 def test_name_sep_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for names_sep."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="names_sep should be one of.+"):
         df_checks.pivot_longer(names_to=[".value", "num"], names_sep=["_"])
 
 
@@ -150,8 +169,52 @@ def test_name_sep_no_names_to(df_checks):
 
 def test_values_to_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for `values_to`."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="values_to should be one of.+"):
+        df_checks.pivot_longer(values_to={"salvo"})
+
+
+def test_values_to_wrong_type_names_pattern(df_checks):
+    """
+    Raise TypeError if `values_to` is a list,
+    and names_pattern is not.
+    """
+    with pytest.raises(
+        TypeError,
+        match="values_to can be a list/tuple only "
+        "if names_pattern is a list/tuple.",
+    ):
         df_checks.pivot_longer(values_to=["salvo"])
+
+
+def test_values_to_names_pattern_unequal_length(df_checks):
+    """
+    Raise ValueError if `values_to` is a list,
+    and the length of names_pattern
+    does not match the length of values_to.
+    """
+    with pytest.raises(
+        ValueError,
+        match="The length of values_to does not match "
+        "the number of regexes in names_pattern.+",
+    ):
+        df_checks.pivot_longer(
+            values_to=["salvo"],
+            names_pattern=["ht", r"\d"],
+            names_to=["foo", "bar"],
+        )
+
+
+def test_values_to_names_seq_names_to(df_checks):
+    """
+    Raise ValueError if `values_to` is a list,
+    and intersects with names_to.
+    """
+    with pytest.raises(
+        ValueError, match="salvo in values_to already exists in names_to."
+    ):
+        df_checks.pivot_longer(
+            values_to=["salvo"], names_pattern=["ht"], names_to="salvo"
+        )
 
 
 def test_values_to_exists_in_columns(df_checks):

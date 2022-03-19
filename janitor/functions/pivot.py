@@ -290,6 +290,15 @@ def _data_checks_pivot_longer(
 
         len_names_to = len(names_to)
 
+    check("values_to", values_to, [str, list, tuple])
+    if isinstance(values_to, (list, tuple)) and (
+        not isinstance(names_pattern, (list, tuple))
+    ):
+        raise TypeError(
+            "values_to can be a list/tuple only "
+            "if names_pattern is a list/tuple."
+        )
+
     if names_sep and names_pattern:
         raise ValueError(
             "Only one of names_pattern or names_sep should be provided."
@@ -335,12 +344,25 @@ def _data_checks_pivot_longer(
                     "if names_pattern is a list/tuple."
                 )
 
+            if isinstance(values_to, (list, tuple)):
+                if len(values_to) != len(names_pattern):
+                    raise ValueError(
+                        f"The length of values_to does not match "
+                        "the number of regexes in names_pattern. "
+                        f"The length of values_to is {len(values_to)} "
+                        f"while the number of regexes is {len(names_pattern)}."
+                    )
+                for word in values_to:
+                    if word in names_to:
+                        raise ValueError(
+                            f"{word} in values_to already exists in names_to."
+                        )
+
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
         if names_to is None:
             raise ValueError("Kindly provide values for names_to.")
 
-    check("values_to", values_to, [str])
     df_columns = df.columns
 
     dot_value = (names_to is not None) and (
@@ -648,13 +670,13 @@ def _pivot_longer_dot_value(
                 "Kindly use a unique name."
             )
     if index:
-        exclude = set(index).intersection(exclude)
-        if exclude:
-            raise ValueError(
-                f"Labels {*exclude, } already exist "
-                "as column labels assigned to the dataframe's "
-                "index parameter. Kindly use a unique name."
-            )
+        for word in index:
+            if word in exclude:
+                raise ValueError(
+                    f"{word}  already exists as a column label "
+                    "assigned to the dataframe's index parameter. "
+                    "Kindly use a unique name."
+                )
     # reorder allows for easy column selection later
     # in the concatenation phase
     # basically push .value to the end,
@@ -857,7 +879,6 @@ def _pivot_longer_names_pattern_str(
         )
 
     # .value
-
     return _pivot_longer_dot_value(
         df, index, sort_by_appearance, ignore_index, names_to, mapping
     )

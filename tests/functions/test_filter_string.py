@@ -29,3 +29,13 @@ def test_filter_string_case(dataframe):
     )
 
     assert len(df) == 6
+
+
+def test_filter_string_regex(dataframe):
+    df = dataframe.filter_string(
+        column_name="Bell__Chart",
+        search_string=".",
+        regex=False,
+    )
+
+    assert len(df) == 0

@@ -838,6 +838,9 @@ def _pivot_longer_names_pattern_sequence(
         # it is simply a first come first serve approach
         # the same idea applies if values_to is a list/tuple
         positions = mapping.groupby(mapping, sort=False).cumcount()
+        # positions ensure uniqueness, and we take advantage of this
+        # in creating sub dataframes that are then combined back into
+        # one
         df.columns = [positions, mapping]
         df = [df.loc[:, num] for num in positions.unique()]
         df = pd.concat(df, axis="index", sort=False, copy=False)

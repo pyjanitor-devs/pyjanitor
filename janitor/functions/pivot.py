@@ -629,7 +629,7 @@ def _pivot_longer_not_dot_value(
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
 
     if index:
-        df = df.reset_index(index)
+        df = df.reset_index(level=index)
 
     if ignore_index:
         df.index = range(len(df))
@@ -858,7 +858,7 @@ def _pivot_longer_names_pattern_sequence(
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
 
     if index:
-        df = df.reset_index(index)
+        df = df.reset_index(level=index)
 
     if ignore_index:
         df.index = range(len(df))

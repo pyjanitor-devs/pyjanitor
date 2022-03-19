@@ -342,11 +342,12 @@ def _data_checks_pivot_longer(
                     )
                 uniques = set()
                 for word in values_to:
+                    check("entry in values_to", word, [str])
                     if word in names_to:
                         raise ValueError(
                             f"{word} in values_to already exists in names_to."
                         )
-                    check("entry in values_to", word, [str])
+
                     if word in uniques:
                         raise ValueError(
                             f"{word} already exists in values_to."
@@ -672,7 +673,8 @@ def _pivot_longer_dot_value(
         for word in index:
             if word in exclude:
                 raise ValueError(
-                    f"{word}  already exists as a column label "
+                    f"{word}  associated with .value "
+                    "already exists as a column label "
                     "assigned to the dataframe's index parameter. "
                     "Kindly use a unique name."
                 )
@@ -779,7 +781,7 @@ def _pivot_longer_names_pattern_sequence(
         for word in values_to:
             if word in index:
                 raise ValueError(
-                    f"{word} already exists as a column label "
+                    f"{word} in values_to already exists as a column label "
                     "assigned to the dataframe's index parameter. "
                     "Kindly use a unique name."
                 )
@@ -853,13 +855,13 @@ def _pivot_longer_names_pattern_sequence(
             # as many times as the length of the original df
             for key, value in matches.groupby(other).items():
                 value = value.repeat(len_index)
-                value = pd.Series(value)
-                df[key] = value
+                df[key] = pd.Series(value)
             df.index = indexer
             names_to = [
                 label for arg in zip(names_to, values_to) for label in arg
             ]
             df = df.loc[:, names_to]
+            indexer = None
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)

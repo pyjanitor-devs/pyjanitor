@@ -357,7 +357,8 @@ def test_values_to_seq_index_intersect(df_checks):
     and intersects with the index
     """
     with pytest.raises(
-        ValueError, match="famid already exists as a column label.+"
+        ValueError,
+        match="famid in values_to already exists as a column label.+",
     ):
         df_checks.pivot_longer(
             index="famid",

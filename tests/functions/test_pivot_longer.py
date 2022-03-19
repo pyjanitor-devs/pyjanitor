@@ -687,6 +687,23 @@ def test_not_dot_value_sep(not_dot_value):
     assert_frame_equal(result, actual)
 
 
+def test_not_dot_value_sep2(not_dot_value):
+    """Test output when names_sep and no dot_value"""
+
+    result = not_dot_value.pivot_longer(
+        "country",
+        names_to="event",
+        names_sep="/",
+        values_to="score",
+    )
+
+    actual = not_dot_value.melt(
+        "country", var_name="event", value_name="score"
+    )
+
+    assert_frame_equal(result, actual)
+
+
 def test_not_dot_value_pattern(not_dot_value):
     """Test output when names_pattern is a string and no dot_value"""
 

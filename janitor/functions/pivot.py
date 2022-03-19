@@ -506,7 +506,7 @@ def _computations_pivot_longer(
                     "Kindly use a unique name."
                 )
 
-    if names_sep:
+    if names_sep is not None:
         return _pivot_longer_names_sep(
             df,
             index,
@@ -775,7 +775,6 @@ def _pivot_longer_names_pattern_sequence(
     This takes care of pivoting scenarios where
     names_pattern is provided, and is a list/tuple.
     """
-
     values_to_is_a_sequence = isinstance(values_to, (list, tuple))
     if values_to_is_a_sequence and index:
         for word in values_to:
@@ -957,7 +956,10 @@ def _pivot_longer_names_sep(
     mapping.columns = names_to
 
     if ".value" not in names_to:
-        df.columns = pd.MultiIndex.from_frame(mapping)
+        if len(names_to) == 1:
+            df.columns = mapping.iloc[:, 0]
+        else:
+            df.columns = pd.MultiIndex.from_frame(mapping)
         return _pivot_longer_not_dot_value(
             df, index, sort_by_appearance, ignore_index, values_to
         )

@@ -28,4 +28,4 @@ def test_filter_string_case(dataframe):
         case=False,
     )
 
-    assert len(df) == 3
+    assert len(df) == 6

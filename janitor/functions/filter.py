@@ -57,7 +57,7 @@ def filter_string(
                   Name
         0     JoseChen
         1  Brian.Salvi
-        >>> df.filter_string(column_name="Name", search_string=".", regex=False, complement=False)
+        >>> df.filter_string(column_name="Name", search_string=".", regex=False, complement=True)
                Name
         1  JoseChen
 

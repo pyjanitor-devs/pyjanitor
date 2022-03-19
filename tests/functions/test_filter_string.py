@@ -32,14 +32,10 @@ def test_filter_string_case(dataframe):
 
 
 def test_filter_string_regex(dataframe):
-    df = (
-        dataframe
-        .change_type("Bell__Chart", str)
-        .filter_string(
-            column_name="Bell__Chart",
-            search_string="1.",
-            regex=False,
-        )
+    df = dataframe.change_type("Bell__Chart", str).filter_string(
+        column_name="Bell__Chart",
+        search_string="1.",
+        regex=False,
     )
 
     assert len(df) == 3

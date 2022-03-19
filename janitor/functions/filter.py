@@ -48,7 +48,7 @@ def filter_string(
         1  4  peeL
         2  5  sail
 
-    Example: Filter names don't contian `'.'` (disable regex mode).
+    Example: Filter names does not contain `'.'` (disable regex mode).
 
         >>> import pandas as pd
         >>> import janitor

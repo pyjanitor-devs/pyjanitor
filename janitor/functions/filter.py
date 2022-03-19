@@ -34,15 +34,32 @@ def filter_string(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": range(3, 6), "b": ["bear", "peel", "sail"]})
+        >>> df = pd.DataFrame({"a": range(3, 6), "b": ["bear", "peeL", "sail"]})
         >>> df
            a     b
         0  3  bear
-        1  4  peel
+        1  4  peeL
         2  5  sail
         >>> df.filter_string(column_name="b", search_string="ee")
            a     b
-        1  4  peel
+        1  4  peeL
+        >>> df.filter_string(column_name="b", search_string="L", case=False)
+           a     b
+        1  4  peeL
+        2  5  sail
+
+    Example: Filter names don't contian `'.'` (disable regex mode).
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.Series(["JoseChen", "Brian.Salvi"], name="Name").to_frame()
+        >>> df
+                  Name
+        0     JoseChen
+        1  Brian.Salvi
+        >>> df.filter_string(column_name="Name", search_string=".", regex=False, complement=False)
+               Name
+        1  JoseChen
 
     `search_string` is also permitted to be any valid regex pattern.
 

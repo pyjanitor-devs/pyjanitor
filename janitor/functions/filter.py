@@ -16,6 +16,7 @@ def filter_string(
     column_name: Hashable,
     search_string: str,
     complement: bool = False,
+    **kwargs,
 ) -> pd.DataFrame:
     """Filter a string-based column according to whether it contains a substring.
 
@@ -53,9 +54,11 @@ def filter_string(
         instead.
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501
-    criteria = df[column_name].str.contains(search_string)
+
+    criteria = df[column_name].str.contains(search_string, **kwargs)
     if complement:
         return df[~criteria]
+
     return df[criteria]
 
 

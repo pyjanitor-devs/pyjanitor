@@ -16,13 +16,15 @@ def filter_string(
     column_name: Hashable,
     search_string: str,
     complement: bool = False,
-    **kwargs,
+    case: bool = True,
+    flags: int = 0,
+    na=None,
+    regex: bool = True,
 ) -> pd.DataFrame:
     """Filter a string-based column according to whether it contains a substring.
 
-    This is super sugary syntax that builds on top of
-    `pandas.Series.str.contains`. It is meant to be the method-chaining
-    equivalent of the following:
+    This is super sugary syntax that builds on top of `pandas.Series.str.contains`.
+    It is meant to be the method-chaining equivalent of the following:
 
     ```python
     df = df[df[column_name].str.contains(search_string)]]
@@ -61,8 +63,6 @@ def filter_string(
                Name
         0  JoseChen
 
-    `search_string` is also permitted to be any valid regex pattern.
-
     :param df: A pandas DataFrame.
     :param column_name: The column to filter. The column should contain strings.
     :param search_string: A regex pattern or a (sub-)string to search. It's also
@@ -70,11 +70,24 @@ def filter_string(
     :param complement: Whether to return the complement of the filter or not. If
         set to True, then the rows for which the string search fails are retained
         instead.
-    :param kwargs: `str.contains`'s keyword arguements.
+    :param case: If True, case sensitive.
+    :param flags: Flags to pass through to the re module, e.g. re.IGNORECASE.
+    :param na: Fill value for missing values. The default depends on dtype of
+        the array. For object-dtype, `numpy.nan` is used. For `StringDtype`,
+        `pandas.NA` is used.
+    :param regex: If True, assumes the pat is a regular expression. If False,
+        treats the `search_string` as a literal string.
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501
 
-    criteria = df[column_name].str.contains(search_string, **kwargs)
+    criteria = df[column_name].str.contains(
+        pat=search_string,
+        case=case,
+        flags=flags,
+        na=na,
+        regex=regex,
+    )
+
     if complement:
         return df[~criteria]
 

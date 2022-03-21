@@ -277,7 +277,7 @@ def _data_checks_pivot_longer(
 
         uniques = set()
         for word in names_to:
-            check("entry in names_to", word, [str])
+            check(f"{word} in names_to", word, [str])
             if (word in uniques) and (word != ".value"):
                 raise ValueError(f"{word} already exists in names_to.")
             uniques.add(word)  # noqa: PD005
@@ -316,7 +316,7 @@ def _data_checks_pivot_longer(
 
         if isinstance(names_pattern, (list, tuple)):
             for word in names_pattern:
-                check("entry in names_pattern", word, [str, Pattern])
+                check(f"{word} in names_pattern", word, [str, Pattern])
 
             if len(names_pattern) != len_names_to:
                 raise ValueError(
@@ -342,7 +342,7 @@ def _data_checks_pivot_longer(
                     )
                 uniques = set()
                 for word in values_to:
-                    check("entry in values_to", word, [str])
+                    check(f"{word} in values_to", word, [str])
                     if word in names_to:
                         raise ValueError(
                             f"{word} in values_to already exists in names_to."

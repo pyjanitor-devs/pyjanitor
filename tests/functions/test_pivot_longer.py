@@ -60,8 +60,8 @@ def test_subtype_names_to(df_checks):
     and the wrong type is provided for entries
     in names_to.
     """
-    with pytest.raises(TypeError, match="entry in names_to.+"):
-        df_checks.pivot_longer(names_to=[("famid",)])
+    with pytest.raises(TypeError, match="1 in names_to.+"):
+        df_checks.pivot_longer(names_to=[1])
 
 
 def test_duplicate_names_to(df_checks):
@@ -115,7 +115,7 @@ def test_names_pattern_wrong_subtype(df_checks):
     Raise TypeError if names_pattern is a list/tuple
     and wrong subtype is supplied.
     """
-    with pytest.raises(TypeError, match="entry in names_pattern.+"):
+    with pytest.raises(TypeError, match="1 in names_pattern.+"):
         df_checks.pivot_longer(
             names_to=["ht", "num"], names_pattern=[1, "\\d"]
         )
@@ -215,7 +215,7 @@ def test_values_to_names_seq_names_to(df_checks):
 
 def test_sub_values_to(df_checks):
     """Raise error if values_to is a sequence, and contains non strings."""
-    with pytest.raises(TypeError, match="entry in values_to.+"):
+    with pytest.raises(TypeError, match="1 in values_to.+"):
         df_checks.pivot_longer(
             names_to=["x", "y"],
             names_pattern=[r"ht", r"\d"],

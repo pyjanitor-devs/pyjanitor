@@ -816,7 +816,7 @@ def _pivot_longer_names_pattern_sequence(
     mapping = mapping[matches]
     if values_to_is_a_sequence:
         other = other[matches]
-    matches = df.columns
+        matches = df.columns
 
     if isinstance(values_to, str) and (len(mapping) == 1):
         df.columns = mapping

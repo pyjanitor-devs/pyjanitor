@@ -364,7 +364,7 @@ def _data_checks_pivot_longer(
     dot_value = (names_to is not None) and (
         (".value" in names_to) or (isinstance(names_pattern, (list, tuple)))
     )
-    if (values_to in df_columns) and (not dot_value):
+    if (not dot_value) and (values_to in df_columns):
         # copied from pandas' melt source code
         # with a minor tweak
         raise ValueError(
@@ -814,6 +814,8 @@ def _pivot_longer_names_pattern_sequence(
 
     df = df.loc[:, matches]
     mapping = mapping[matches]
+    if values_to_is_a_sequence:
+        other = other[matches]
     matches = df.columns
 
     if isinstance(values_to, str) and (len(mapping) == 1):

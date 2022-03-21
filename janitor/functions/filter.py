@@ -70,7 +70,7 @@ def filter_string(
     :param complement: Whether to return the complement of the filter or not. If
         set to True, then the rows for which the string search fails are retained
         instead.
-    :param kwargs: `str.contains`'s keyword arguements.
+    :param kwargs: `str.contains`'s keyword arguments.
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501
 

@@ -1,6 +1,6 @@
 import re
 import warnings
-from typing import Callable, List, Optional, Pattern, Tuple, Union
+from typing import List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -1099,6 +1099,7 @@ def _computations_pivot_wider(
                     "to avoid erroneous results."
                 )
             try:
+                # there'll only be one None
                 names_from = [
                     "_value" if ent is None else ent
                     for ent in df.columns.names

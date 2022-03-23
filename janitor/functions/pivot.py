@@ -980,7 +980,6 @@ def pivot_wider(
         >>> df.pivot_wider(
         ...     index = "dep",
         ...     names_from = "step",
-        ...     names_sep = None,
         ...     names_glue = "{_value}_step{step}",
         ... )
            dep  a_step1  a_step2  b_step1  b_step2
@@ -1006,11 +1005,12 @@ def pivot_wider(
         to use as a column name. Default is `_`.
         Applicable only if `flatten_levels` is `True`.
     :param names_glue: A string to control the output of the flattened columns.
-        It offers more flexibility in renaming the flattened colunns,
+        It offers more flexibility in creating custom column names,
         and uses python's `str.format_map` under the hood.
         Simply create the string template,
         using the column labels in `names_from`,
-        and `_value` as a placeholder if there are multiple `values_from`.
+        and special `_value` as a placeholder
+        if there are multiple `values_from`.
         Applicable only if `flatten_levels` is `True`.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.

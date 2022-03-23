@@ -20,6 +20,7 @@
 -   [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe`, along with further performance improvements (PR #1040). @thatlittleboy
 -   [ENH] Performance improvement for `conditional_join`. @samukweku
 -   [ENH] Multiple `.value` is now supported in `pivot_longer`. #1034 @samukweku
+-   [ENH] `names_glue` now takes a string form, using str.format_map under the hood. `levels_order` is also deprecated. @samukweku
 
 ## [v0.22.0] - 2021-11-21
 

@@ -75,7 +75,7 @@ def filter_string(
     :param na: Fill value for missing values. The default depends on dtype of
         the array. For object-dtype, `numpy.nan` is used. For `StringDtype`,
         `pandas.NA` is used.
-    :param regex: If True, assumes the pat is a regular expression. If False,
+    :param regex: If True, assumes `search_string` is a regular expression. If False,
         treats the `search_string` as a literal string.
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501

@@ -1,4 +1,5 @@
 import re
+import warnings
 from typing import Callable, List, Optional, Pattern, Tuple, Union
 
 import numpy as np
@@ -910,7 +911,6 @@ def pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
     names_glue: Callable = None,
@@ -964,17 +964,6 @@ def pivot_wider(
         0  5.5   20   25   30   37
         1  6.1   22   18   19   29
 
-    Change the order of the column labels:
-
-        >>> df.pivot_wider(
-        ...     index = "dep",
-        ...     names_from = "step",
-        ...     levels_order = ["step", None],
-        ... )
-           dep  1_a  2_a  1_b  2_b
-        0  5.5   20   25   30   37
-        1  6.1   22   18   19   29
-
     Modify columns with `names_sep`:
 
         >>> df.pivot_wider(
@@ -992,7 +981,7 @@ def pivot_wider(
         ...     index = "dep",
         ...     names_from = "step",
         ...     names_sep = None,
-        ...     names_glue = lambda col: f"{col[0]}_step{col[1]}",
+        ...     names_glue = "{_value}_step{step}",
         ... )
            dep  a_step1  a_step2  b_step1  b_step2
         0  5.5       20       25       30       37
@@ -1010,20 +999,19 @@ def pivot_wider(
         the new DataFrame's values.
         If `values_from` is not specified,  all remaining columns
         will be used.
-    :param levels_order: Applicable if there are multiple `names_from`
-        and/or `values_from`. Reorders the levels. Accepts a list of strings.
-        If there are multiple `values_from`, pass `None` to represent that
-        level.
     :param flatten_levels: Default is `True`. If `False`, the DataFrame stays
         as a MultiIndex.
     :param names_sep: If `names_from` or `values_from` contain multiple
         variables, this will be used to join the values into a single string
         to use as a column name. Default is `_`.
         Applicable only if `flatten_levels` is `True`.
-    :param names_glue: A callable to control the output
-        of the flattened columns.
+    :param names_glue: A string to control the output of the flattened columns.
+        It offers more flexibility in renaming the flattened colunns,
+        and uses python's `str.format_map` under the hood.
+        Simply create the string template,
+        using the column labels in `names_from`,
+        and `_value` as a placeholder if there are multiple `values_from`.
         Applicable only if `flatten_levels` is `True`.
-        Function should be acceptable to pandas’ `map` function.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
     """
@@ -1035,7 +1023,6 @@ def pivot_wider(
         index,
         names_from,
         values_from,
-        levels_order,
         flatten_levels,
         names_sep,
         names_glue,
@@ -1047,16 +1034,14 @@ def _computations_pivot_wider(
     index: Optional[Union[List, str]] = None,
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
-    levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
-    names_glue: Callable = None,
+    names_glue: str = None,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
 
-    It is a wrapper around `pd.pivot`. For a MultiIndex, the
-    order of the levels can be changed with `levels_order`.
+    It is a wrapper around `pd.pivot`.
     The output for multiple `names_from` and/or `values_from`
     can be controlled with `names_glue` and/or `names_sep`.
 
@@ -1068,7 +1053,6 @@ def _computations_pivot_wider(
         index,
         names_from,
         values_from,
-        levels_order,
         flatten_levels,
         names_sep,
         names_glue,
@@ -1077,7 +1061,6 @@ def _computations_pivot_wider(
         index,
         names_from,
         values_from,
-        levels_order,
         flatten_levels,
         names_sep,
         names_glue,
@@ -1094,38 +1077,69 @@ def _computations_pivot_wider(
         index=index, columns=names_from, values=values_from
     )
 
-    if levels_order and (isinstance(df.columns, pd.MultiIndex)):
-        df = df.reorder_levels(order=levels_order, axis="columns")
-
     # an empty df is likely because
     # there is no `values_from`
     if any((df.empty, not flatten_levels)):
         return df
 
-    # ensure all entries in names_from are strings
-    if (not names_from_all_strings) or (not column_dtype):
-        if isinstance(df.columns, pd.MultiIndex):
-            new_columns = [tuple(map(str, ent)) for ent in df]
-            df.columns = pd.MultiIndex.from_tuples(new_columns)
+    if isinstance(df.columns, pd.MultiIndex):
+        if (not names_from_all_strings) or (not column_dtype):
+            new_columns = [tuple(map(str, entry)) for entry in df]
         else:
+            new_columns = [entry for entry in df]
+        if names_glue is not None:
+            if "_value" in names_from:
+                warnings.warn(
+                    "For names_glue, _value is used as a placeholder "
+                    "for the values_from section. "
+                    "However, there is a '_value' in names_from; "
+                    "this might result in incorrect output. "
+                    "If possible, kindly change the column label "
+                    "from `_value` to another name, "
+                    "to avoid erroneous results."
+                )
+            try:
+                names_from = [
+                    "_value" if ent is None else ent
+                    for ent in df.columns.names
+                ]
+                new_columns = [
+                    names_glue.format_map(dict(zip(names_from, entry)))
+                    for entry in new_columns
+                ]
+            except KeyError as error:
+                raise KeyError(
+                    f"{error} is not a column label in names_from."
+                ) from error
+        else:
+            if names_sep is None:
+                names_sep = "_"
+            new_columns = [names_sep.join(entry) for entry in new_columns]
+
+        df.columns = new_columns
+    else:
+        if (not names_from_all_strings) or (not column_dtype):
             df.columns = df.columns.astype(str)
-
-    if (names_sep is not None) and (isinstance(df.columns, pd.MultiIndex)):
-        df.columns = df.columns.map(names_sep.join)
-
-    if names_glue:
-        df.columns = df.columns.map(names_glue)
+        if names_glue is not None:
+            try:
+                df.columns = [
+                    names_glue.format_map({names_from[0]: entry})
+                    for entry in df
+                ]
+            except KeyError as error:
+                raise KeyError(
+                    f"{error} is not a column label in names_from."
+                ) from error
 
     # if columns are of category type
     # this returns columns to object dtype
     # also, resetting index with category columns is not possible
     df.columns = [*df.columns]
-
     if index:
         df = df.reset_index()
 
     if df.columns.names:
-        df = df.rename_axis(columns=None)
+        df.columns.names = [None]
 
     return df
 
@@ -1135,7 +1149,6 @@ def _data_checks_pivot_wider(
     index,
     names_from,
     values_from,
-    levels_order,
     flatten_levels,
     names_sep,
     names_glue,
@@ -1170,23 +1183,19 @@ def _data_checks_pivot_wider(
         if len(values_from) == 1:
             values_from = values_from[0]
 
-    if levels_order is not None:
-        check("levesl_order", levels_order, [list])
-
     check("flatten_levels", flatten_levels, [bool])
 
     if names_sep is not None:
         check("names_sep", names_sep, [str])
 
     if names_glue is not None:
-        check("names_glue", names_glue, [callable])
+        check("names_glue", names_glue, [str])
 
     return (
         df,
         index,
         names_from,
         values_from,
-        levels_order,
         flatten_levels,
         names_sep,
         names_glue,

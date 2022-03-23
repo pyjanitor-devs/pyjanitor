@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal
 
 @pytest.fixture
 def df_checks_output():
+    """pytest fixture"""
     return pd.DataFrame(
         {
             "geoid": [1, 1, 13, 13],
@@ -44,7 +45,7 @@ def test_type_names_from(df_checks_output):
         df_checks_output.pivot_wider(index="geoid", names_from=("variable",))
 
 
-def test_names_from_None(df_checks_output):
+def test_names_from_none(df_checks_output):
     """Raise ValueError if no value is provided for `names_from`."""
     with pytest.raises(ValueError):
         df_checks_output.pivot_wider(index="geoid", names_from=None)
@@ -76,16 +77,6 @@ def test_presence_names_from2(df_checks_output):
         df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
 
 
-def test_names_sort_wrong_type(df_checks_output):
-    """Raise TypeError if the wrong type is provided for `names_sort`."""
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name",
-            names_from=["estimate", "variable"],
-            names_sort=2,
-        )
-
-
 def test_flatten_levels_wrong_type(df_checks_output):
     """Raise TypeError if the wrong type is provided for `flatten_levels`."""
     with pytest.raises(TypeError):
@@ -96,40 +87,40 @@ def test_flatten_levels_wrong_type(df_checks_output):
         )
 
 
-@pytest.mark.xfail(reason="parameter is deprecated.")
-def test_names_from_position_wrong_type(df_checks_output):
-    """
-    Raise TypeError if the wrong type
-    is provided for `names_from_position`.
-    """
-    with pytest.raises(TypeError):
+def test_names_glue_wrong_label(df_checks_output):
+    """Raise KeyError if the wrong column label is provided in `names_glue`."""
+    with pytest.raises(
+        KeyError, match="'variabl' is not a column label in names_from."
+    ):
         df_checks_output.pivot_wider(
-            index="name",
-            names_from=["estimate", "variable"],
-            names_from_position=2,
+            index=["geoid", "name"],
+            names_from="variable",
+            values_from=["estimate", "error"],
+            names_glue="{variabl}_{_value}",
         )
 
 
-@pytest.mark.xfail(reason="parameter is deprecated.")
-def test_names_from_position_wrong_value(df_checks_output):
-    """
-    Raise ValueError if `names_from_position`
-    is not "first" or "last".
-    """
-    with pytest.raises(ValueError):
+def test_names_glue_wrong_label1(df_checks_output):
+    """Raise KeyError if the wrong column label is provided in `names_glue`."""
+    with pytest.raises(
+        KeyError, match="'variabl' is not a column label in names_from."
+    ):
         df_checks_output.pivot_wider(
-            index="name",
-            names_from=["estimate", "variable"],
-            names_from_position="1st",
+            ["geoid", "name"],
+            "variable",
+            "estimate",
+            names_glue="{variabl}_estimate",
         )
 
 
-@pytest.mark.xfail(reason="parameter is deprecated.")
-def test_name_prefix_wrong_type(df_checks_output):
-    """Raise TypeError if the wrong type is provided for `names_prefix`."""
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name", names_from=["estimate", "variable"], names_prefix=1
+def test_names_glue_wrong_label2(df_checks_output):
+    """Raise KeyError if the wrong column label is provided in `names_glue`."""
+    with pytest.warns(UserWarning):
+        df_checks_output.rename(columns={"variable": "_value"}).pivot_wider(
+            index=["geoid", "name"],
+            names_from="_value",
+            values_from=["estimate", "error"],
+            names_glue="{_value}_{_value}",
         )
 
 
@@ -146,32 +137,6 @@ def test_name_glue_wrong_type(df_checks_output):
     with pytest.raises(TypeError):
         df_checks_output.pivot_wider(
             index="name", names_from=["estimate", "variable"], names_glue=1
-        )
-
-
-def test_levels_order_wrong_type(df_checks_output):
-    """Raise TypeError if the wrong type is provided for `levels_order`."""
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name", names_from=["estimate", "variable"], levels_order=1
-        )
-
-
-@pytest.mark.xfail(reason="parameter is deprecated.")
-def test_fill_value_wrong_type(df_checks_output):
-    """Raise TypeError if the wrong type is provided for `fill_value`."""
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name", names_from=["estimate", "variable"], fill_value={2}
-        )
-
-
-@pytest.mark.xfail(reason="parameter is deprecated.")
-def test_aggfunc_wrong_type(df_checks_output):
-    """Raise TypeError if the wrong type is provided for `aggfunc`."""
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index="name", names_from=["estimate", "variable"], aggfunc={2}
         )
 
 
@@ -213,7 +178,9 @@ def test_pivot_long_wide_long():
         ]
     )
 
-    result = df_in.pivot_wider(index=["a", "b"], names_from="name")
+    result = df_in.pivot_wider(
+        index=["a", "b"], names_from="name", names_sep=None
+    )
 
     result = result.pivot_longer(
         index=["a", "b"],
@@ -274,7 +241,6 @@ def test_flatten_levels_false():
     assert_frame_equal(
         result,
         expected_output,
-        # check_dtype=False,
     )
 
 
@@ -369,30 +335,17 @@ def test_names_glue():
         index="family",
         names_from="n",
         values_from="name",
-        names_glue=lambda col: f"name{col}",
+        names_glue="name{n}",
     )
     assert_frame_equal(result, df_out)
 
 
-def test_change_level_order():
+def test_change_level_order(df_checks_output):
     """
     Test output with `levels_order`,
     while maintaining order from `names_from`.
     """
-    df_in = pd.DataFrame(
-        {
-            "geoid": [1, 1, 13, 13],
-            "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
-            "variable": [
-                "pop_renter",
-                "median_rent",
-                "pop_renter",
-                "median_rent",
-            ],
-            "estimate": [1434765, 747, 3592422, 927],
-            "error": [16736, 3, 33385, 3],
-        }
-    )
+
     df_out = pd.DataFrame(
         {
             "geoid": [1, 13],
@@ -404,11 +357,34 @@ def test_change_level_order():
         }
     )
 
-    result = df_in.encode_categorical(variable="appearance").pivot_wider(
+    result = df_checks_output.encode_categorical(
+        variable="appearance"
+    ).pivot_wider(
         index=["geoid", "name"],
         names_from="variable",
         values_from=["estimate", "error"],
-        levels_order=["variable", None],
+        names_glue="{variable}_{_value}",
+    )
+    assert_frame_equal(result, df_out)
+
+
+def test_names_glue_single_column(df_checks_output):
+    """
+    Test names_glue for single column.
+    """
+
+    df_out = (
+        df_checks_output.pivot(["geoid", "name"], "variable", "estimate")
+        .add_suffix("_estimate")
+        .rename_axis(columns=None)
+        .reset_index()
+    )
+
+    result = df_checks_output.pivot_wider(
+        ["geoid", "name"],
+        "variable",
+        "estimate",
+        names_glue="{variable}_estimate",
     )
     assert_frame_equal(result, df_out)
 

@@ -101,7 +101,10 @@ def test_names_glue_wrong_label(df_checks_output):
 
 
 def test_names_glue_wrong_label1(df_checks_output):
-    """Raise KeyError if the wrong column label is provided in `names_glue`."""
+    """
+    Raise KeyError if the wrong column label is provided in `names_glue`,
+    And the columns is a single Index.
+    """
     with pytest.raises(
         KeyError, match="'variabl' is not a column label in names_from."
     ):
@@ -114,7 +117,7 @@ def test_names_glue_wrong_label1(df_checks_output):
 
 
 def test_names_glue_wrong_label2(df_checks_output):
-    """Raise KeyError if the wrong column label is provided in `names_glue`."""
+    """Raise Warning if _value is in `names_glue`."""
     with pytest.warns(UserWarning):
         df_checks_output.rename(columns={"variable": "_value"}).pivot_wider(
             index=["geoid", "name"],

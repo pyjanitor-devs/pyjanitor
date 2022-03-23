@@ -1,6 +1,6 @@
 import re
 import warnings
-from typing import Callable, List, Optional, Pattern, Tuple, Union
+from typing import List, Optional, Pattern, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -912,8 +912,8 @@ def pivot_wider(
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
     flatten_levels: Optional[bool] = True,
-    names_sep="_",
-    names_glue: Callable = None,
+    names_sep: str = "_",
+    names_glue: str = None,
 ) -> pd.DataFrame:
     """
     Reshapes data from *long* to *wide* form.
@@ -1035,7 +1035,7 @@ def _computations_pivot_wider(
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
     flatten_levels: Optional[bool] = True,
-    names_sep="_",
+    names_sep: str = "_",
     names_glue: str = None,
 ) -> pd.DataFrame:
     """
@@ -1100,6 +1100,7 @@ def _computations_pivot_wider(
                     "to avoid erroneous results."
                 )
             try:
+                # there'll only be one None
                 names_from = [
                     "_value" if ent is None else ent
                     for ent in df.columns.names

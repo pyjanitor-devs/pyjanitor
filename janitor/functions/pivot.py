@@ -912,8 +912,8 @@ def pivot_wider(
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
     flatten_levels: Optional[bool] = True,
-    names_sep="_",
-    names_glue: Callable = None,
+    names_sep:str="_",
+    names_glue: str = None,
 ) -> pd.DataFrame:
     """
     Reshapes data from *long* to *wide* form.
@@ -1035,7 +1035,7 @@ def _computations_pivot_wider(
     names_from: Optional[Union[List, str]] = None,
     values_from: Optional[Union[List, str]] = None,
     flatten_levels: Optional[bool] = True,
-    names_sep="_",
+    names_sep:str ="_",
     names_glue: str = None,
 ) -> pd.DataFrame:
     """

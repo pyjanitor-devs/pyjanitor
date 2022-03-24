@@ -29,7 +29,7 @@ def test_sheetname_presence():
 def test_comment_read_only():
     """Raise error if comment and read_only is True."""
     with pytest.raises(ValueError, match="To access comments.+"):
-        io.xlsx_cells(filename, "clean", comment=True)
+        io.xlsx_cells(filename, "clean", comment=True, read_only=True)
 
 
 def test_check_filename():

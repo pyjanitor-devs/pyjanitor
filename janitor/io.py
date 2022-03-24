@@ -301,14 +301,14 @@ def xlsx_cells(
         >>> out=xlsx_cells(filename, sheetnames="highlights", fill=True).select_columns("value", "fill")
         >>> out
             value                                                                                                                                              fill
-        0     Age     {"patternType": None, "fgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}}
-        1  Height     {"patternType": None, "fgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}}
-        2       1     {"patternType": None, "fgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}}
-        3       2     {"patternType": None, "fgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}}
-        4       3  {"patternType": "solid", "fgColor": {"rgb": "FFFFFF00", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "FFFFFF00", "type": "rgb", "tint": 0.0}}
-        5       4  {"patternType": "solid", "fgColor": {"rgb": "FFFFFF00", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "FFFFFF00", "type": "rgb", "tint": 0.0}}
-        6       5     {"patternType": None, "fgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}}
-        7       6     {"patternType": None, "fgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}, "bgColor": {"rgb": "00000000", "type": "rgb", "tint": 0.0}}
+        0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        1  Height     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        2       1     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        3       2     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        4       3  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+        5       4  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+        6       5     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        7       6     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
 
         # specific cell attributes can be accessed by using Pandas' series.str.get :
         >>> out.fill.str.get("fgColor").str.get("rgb")

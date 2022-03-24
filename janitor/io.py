@@ -466,7 +466,7 @@ def xlsx_cells(
 
 
 def _xlsx_cells(
-    wb,
+    wb: Workbook,
     sheetname: str,
     defaults: tuple,
     parameters: dict,

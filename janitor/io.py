@@ -451,8 +451,7 @@ def xlsx_cells(
 
     out = {
         sheetname: _xlsx_cells(
-            path,
-            sheetname,
+            path[sheetname],
             defaults,
             parameters,
             start_point,
@@ -472,7 +471,6 @@ def xlsx_cells(
 
 def _xlsx_cells(
     wb: Workbook,
-    sheetname: str,
     defaults: tuple,
     parameters: dict,
     start_point: Union[str, int],
@@ -480,12 +478,9 @@ def _xlsx_cells(
     include_blank_cells: bool,
 ):
     """
-    Function to process a single sheet.
-    Returns a DataFrame.
+    Function to process a single sheet. Returns a DataFrame.
 
     :param wb: Openpyxl Workbook.
-    :param sheetname: Name of the sheet
-        from which the cells are to be extracted.
     :param defaults: Sequence of default cell attributes.
     :param parameters: Dictionary of cell attributes to be retrieved.
         that will always be returned as columns.
@@ -493,16 +488,15 @@ def _xlsx_cells(
     :param end_point: end coordinates of the Excel sheet.
     :param include_blank_cells: Determines if empty cells should be included.
     :param path_is_workbook: True/False.
-    :returns : A pandas DataFrame
+    :returns : A pandas DataFrame.
     """
-    ws = wb[sheetname]
 
     if start_point:
-        ws = ws[start_point:end_point]
-    ws = chain.from_iterable(ws)
+        wb = wb[start_point:end_point]
+    wb = chain.from_iterable(wb)
     frame = defaultdict(list)
 
-    for cell in ws:
+    for cell in wb:
         if (cell.value is None) and (not include_blank_cells):
             continue
         for value in defaults:

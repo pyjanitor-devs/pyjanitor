@@ -16,25 +16,27 @@ wb_c = load_workbook(filename, read_only=True)
 
 def test_sheetname_type():
     """Raise error if sheet name is the wrong type."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="sheetnames should be one of .+"):
         io.xlsx_cells(filename, 5)
 
 
 def test_sheetname_presence():
     """Raise error if sheet name does not exist."""
-    with pytest.raises(KeyError):
-        io.xlsx_cells(filename, "5")
+    with pytest.raises(KeyError, match="Worksheet 5 .+"):
+        io.xlsx_cells(filename, [5])
 
 
 def test_comment_read_only():
     """Raise error if comment and read_only is True."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="To access comments.+"):
         io.xlsx_cells(filename, "clean", comment=True)
 
 
 def test_check_filename():
     """Raise error if file does not exist."""
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(
+        FileNotFoundError, match=r"\[Errno 2\] No such file or directory.+"
+    ):
         io.xlsx_cells("excel.xlsx", "clean")
 
 
@@ -43,7 +45,7 @@ def test_check_start_none():
     Raise error if start_point is None,
     and end_point is not None.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="start_point should be one.+"):
         io.xlsx_cells(filename, "clean", start_point=None, end_point="B5")
 
 
@@ -52,7 +54,7 @@ def test_check_end_none():
     Raise error if start_point is not None,
     and end_point is None.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="end_point should be one.+"):
         io.xlsx_cells(wb, "clean", start_point="A1", end_point=None)
 
 
@@ -62,7 +64,9 @@ def test_output_kwargs_defaults():
     and the key is already part of the default attributes
     that are returned as columns.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="internal_value is part of the default attributes.+"
+    ):
         io.xlsx_cells(wb, "clean", internal_value=True)
 
 
@@ -72,7 +76,9 @@ def test_output_kwargs_defaults_read_only_true():
     and the key is already part of the default attributes
     that are returned as columns.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="internal_value is part of the default attributes.+"
+    ):
         io.xlsx_cells(wb_c, "clean", internal_value=True)
 
 
@@ -81,7 +87,9 @@ def test_output_wrong_kwargs():
     Raise AttributeError if kwargs is provided
     and the key is not a valid openpyxl cell attribute.
     """
-    with pytest.raises(AttributeError):
+    with pytest.raises(
+        AttributeError, match="font_color is not a recognized attribute of.+"
+    ):
         io.xlsx_cells(filename, "clean", font_color=True)
 
 
@@ -90,7 +98,9 @@ def test_output_wrong_kwargs_read_only_false():
     Raise AttributeError if kwargs is provided
     and the key is not a valid openpyxl cell attribute.
     """
-    with pytest.raises(AttributeError):
+    with pytest.raises(
+        AttributeError, match="font_color is not a recognized attribute of.+"
+    ):
         io.xlsx_cells(filename, "clean", font_color=True, read_only=False)
 
 
@@ -149,9 +159,7 @@ def test_output_kwargs_type():
 def test_output_sheetnames_sequence():
     """Test output if sheetnames is a list."""
     result = (
-        io.xlsx_cells(filename, sheetnames=["pivot-notes"], font=True)[
-            "pivot-notes"
-        ]["font"]
+        io.xlsx_cells(filename, sheetnames=["pivot-notes"], font=True)["font"]
         .str.get("name")
         .tolist()
     )

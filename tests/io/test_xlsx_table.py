@@ -55,8 +55,8 @@ def test_wb_read_only():
     """
     wb = load_workbook(filename, read_only=True)
     with pytest.raises(
-        ValueError,
-        match="Accessing the tables require 'read_only' to be False.",
+        AttributeError,
+        match="Accessing the tables.+",
     ):
         io.xlsx_table(wb, "Tables")
     wb.close()

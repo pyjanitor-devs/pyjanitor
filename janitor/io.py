@@ -1,8 +1,10 @@
+from __future__ import annotations
 import os
 import subprocess
 from glob import glob
 from io import StringIO
-from typing import Iterable, Union, NamedTuple
+from typing import Iterable, Union, TYPE_CHECKING, NamedTuple
+
 
 import pandas as pd
 import inspect
@@ -115,8 +117,12 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     return pd.read_csv(StringIO(outcome.stdout), **kwargs)
 
 
+if TYPE_CHECKING:
+    from openpyxl import Workbook
+
+
 def xlsx_table(
-    path: str,
+    path: Union[str, Workbook],
     sheetname: str,
     table: Union[str, list, tuple] = None,
 ) -> Union[pd.DataFrame, dict]:
@@ -134,35 +140,33 @@ def xlsx_table(
 
     Example:
 
-    ```python
-    >>> import pandas as pd
-    >>> from janitor import xlsx_table
-    >>> filename = "../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
+        >>> import pandas as pd
+        >>> from janitor import xlsx_table
+        >>> filename="../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
 
-    # single table
-    >>> xlsx_table(filename, sheetname='Tables', table = 'dCategory')
-       CategoryID       Category
-    0           1       Beginner
-    1           2       Advanced
-    2           3      Freestyle
-    3           4    Competition
-    4           5  Long Distance
+        # single table
+        >>> xlsx_table(filename, sheetname='Tables', table='dCategory')
+           CategoryID       Category
+        0           1       Beginner
+        1           2       Advanced
+        2           3      Freestyle
+        3           4    Competition
+        4           5  Long Distance
 
-    # multiple tables:
-    >>> out = xlsx_table(filename, sheetname = 'Tables', table = ['dCategory', 'dSalesReps'])
-    >>> out['dCategory']
-       CategoryID       Category
-    0           1       Beginner
-    1           2       Advanced
-    2           3      Freestyle
-    3           4    Competition
-    4           5  Long Distance
-    >>> out['dSalesReps'].head(3)
-       SalesRepID             SalesRep Region
-    0           1  Sioux Radcoolinator     NW
-    1           2        Tyrone Smithe     NE
-    2           3         Chantel Zoya     SW
-
+        # multiple tables:
+        >>> out=xlsx_table(filename, sheetname="Tables", table=["dCategory", "dSalesReps"])
+        >>> out["dCategory"]
+           CategoryID       Category
+        0           1       Beginner
+        1           2       Advanced
+        2           3      Freestyle
+        3           4    Competition
+        4           5  Long Distance
+        >>> out["dSalesReps"].head(3)
+           SalesRepID             SalesRep Region
+        0           1  Sioux Radcoolinator     NW
+        1           2        Tyrone Smithe     NE
+        2           3         Chantel Zoya     SW
 
     :param path: Path to the Excel File. It can also be an openpyxl Workbook.
     :param sheetname: Name of the sheet from which the tables
@@ -171,6 +175,7 @@ def xlsx_table(
     :returns: A pandas DataFrame, or a dictionary of DataFrames,
         if there are multiple arguments for the `table` parameter,
         or the argument to `table` is `None`.
+    :raises AttributeError: If a workbook is provided, and is a ReadOnlyWorksheet.
     :raises ValueError: If there are no tables in the sheet.
     :raises KeyError: If the provided table does not exist in the sheet.
 
@@ -188,18 +193,19 @@ def xlsx_table(
             pip_install=True,
         )
     if isinstance(path, Workbook):
-        if path.read_only:
-            raise ValueError(
-                "Accessing the tables require 'read_only' to be False."
-            )
         ws = path[sheetname]
     else:
-        wb = load_workbook(
+        ws = load_workbook(
             filename=path, read_only=False, keep_links=False, data_only=True
         )
-        ws = wb[sheetname]
+        ws = ws[sheetname]
 
-    contents = ws.tables
+    try:
+        contents = ws.tables
+    except AttributeError as error:
+        raise AttributeError(
+            "Accessing the tables is not supported for ReadOnlyWorksheet"
+        ) from error
 
     if not contents:
         raise ValueError(f"There is no table in '{sheetname}' sheet.")
@@ -253,7 +259,7 @@ def xlsx_table(
 
 
 def xlsx_cells(
-    path: str,
+    path: Union[str, Workbook],
     sheetnames: Union[str, list, tuple] = None,
     start_point: Union[str, int] = None,
     end_point: Union[str, int] = None,
@@ -268,7 +274,7 @@ def xlsx_cells(
     **kwargs,
 ) -> Union[dict, pd.DataFrame]:
     """
-    Imports data from spreadsheets without coercing it into a rectangle.
+    Imports data from spreadsheet without coercing it into a rectangle.
     Each cell is represented by a row in a dataframe, and includes the
     cell's coordinates, the value, row and column position.
     The cell formatting (fill, font, border, etc) can also be accessed;
@@ -277,54 +283,49 @@ def xlsx_cells(
 
     Example:
 
-    ```python
+        >>> import pandas as pd
+        >>> from janitor import xlsx_cells
+        >>> pd.set_option("display.max_columns", None)
+        >>> pd.set_option("display.expand_frame_repr", False)
+        >>> pd.set_option("max_colwidth", None)
+        >>> filename = "../pyjanitor/tests/test_data/worked-examples.xlsx"
 
-    >>> import pandas as pd
-    >>> from janitor import xlsx_cells
-    >>> pd.set_option('display.max_columns', None)
-    >>> pd.set_option('display.expand_frame_repr', False)
-    >>> pd.set_option('max_colwidth', None)
-    >>> filename = "../pyjanitor/tests/test_data/worked-examples.xlsx"
+        # Each cell is returned as a row:
+        >>> xlsx_cells(filename, sheetnames="highlights")
+            value internal_value coordinate  row  column data_type  is_date number_format
+        0     Age            Age         A1    1       1         s    False       General
+        1  Height         Height         B1    1       2         s    False       General
+        2       1              1         A2    2       1         n    False       General
+        3       2              2         B2    2       2         n    False       General
+        4       3              3         A3    3       1         n    False       General
+        5       4              4         B3    3       2         n    False       General
+        6       5              5         A4    4       1         n    False       General
+        7       6              6         B4    4       2         n    False       General
 
-    # Each cell is returned as a row:
-    >>> xlsx_cells(filename, sheetnames = 'highlights')
-        value internal_value coordinate  row  column data_type  is_date number_format
-    0     Age            Age         A1    1       1         s    False       General
-    1  Height         Height         B1    1       2         s    False       General
-    2       1              1         A2    2       1         n    False       General
-    3       2              2         B2    2       2         n    False       General
-    4       3              3         A3    3       1         n    False       General
-    5       4              4         B3    3       2         n    False       General
-    6       5              5         A4    4       1         n    False       General
-    7       6              6         B4    4       2         n    False       General
+        # Access cell formatting such as fill :
+        >>> out=xlsx_cells(filename, sheetnames="highlights", fill=True).select_columns("value", "fill")
+        >>> out
+            value                                                                                                                                              fill
+        0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        1  Height     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        2       1     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        3       2     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        4       3  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+        5       4  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
+        6       5     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
+        7       6     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
 
-    # Access cell formatting such as fill :
-
-    >>> out = xlsx_cells(filename, sheetnames = 'highlights', fill=True).select_columns('value', 'fill')
-    >>> out
-        value                                                                                                                                              fill
-    0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    1  Height     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    2       1     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    3       2     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    4       3  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
-    5       4  {'patternType': 'solid', 'fgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': 'FFFFFF00', 'type': 'rgb', 'tint': 0.0}}
-    6       5     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-    7       6     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
-
-    # specific cell attributes can be accessed by using Pandas' series.str.get :
-
-    >>> out.fill.str.get('fgColor').str.get('rgb')
-    0    00000000
-    1    00000000
-    2    00000000
-    3    00000000
-    4    FFFFFF00
-    5    FFFFFF00
-    6    00000000
-    7    00000000
-    Name: fill, dtype: object
-
+        # specific cell attributes can be accessed by using Pandas' series.str.get :
+        >>> out.fill.str.get("fgColor").str.get("rgb")
+        0    00000000
+        1    00000000
+        2    00000000
+        3    00000000
+        4    FFFFFF00
+        5    FFFFFF00
+        6    00000000
+        7    00000000
+        Name: fill, dtype: object
 
     :param path: Path to the Excel File. It can also be an openpyxl Workbook.
     :param sheetnames: Names of the sheets from which the cells are to be extracted.
@@ -332,8 +333,10 @@ def xlsx_cells(
         if it is a string, or list or tuple, only the specified sheets are extracted.
     :param start_point: start coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
+        If start_point is provided, end_point must be provided as well.
     :param end_point: end coordinates of the Excel sheet. This is useful
         if the user is only interested in a subsection of the sheet.
+        If end_point is provided, start_point must be provided as well.
     :param read_only: Determines if the entire file is loaded in memory,
         or streamed. For memory efficiency, read_only should be set to `True`.
         Some cell properties like `comment`, can only be accessed by
@@ -372,9 +375,7 @@ def xlsx_cells(
         )
 
     path_is_workbook = isinstance(path, Workbook)
-    if path_is_workbook:
-        wb = path
-    else:
+    if not path_is_workbook:
         # for memory efficiency, read_only is set to True
         # if comments is True, read_only has to be False,
         # as lazy loading is not enabled for comments
@@ -382,7 +383,7 @@ def xlsx_cells(
             raise ValueError(
                 "To access comments, kindly set 'read_only' to False."
             )
-        wb = load_workbook(
+        path = load_workbook(
             filename=path, read_only=read_only, keep_links=False
         )
     # start_point and end_point applies if the user is interested in
@@ -441,59 +442,42 @@ def xlsx_cells(
                 )
         parameters.update(kwargs)
 
-    if sheetnames is not None:
-        check("sheetnames", sheetnames, [str, list, tuple])
-        if isinstance(sheetnames, str):
-            out = _xlsx_cells(
-                wb,
-                sheetnames,
-                defaults,
-                parameters,
-                start_point,
-                end_point,
-                include_blank_cells,
-            )
-        else:
-            out = {
-                sheetname: _xlsx_cells(
-                    wb,
-                    sheetname,
-                    defaults,
-                    parameters,
-                    start_point,
-                    end_point,
-                    include_blank_cells,
-                )
-                for sheetname in sheetnames
-            }
+    if not sheetnames:
+        sheetnames = path.sheetnames
+    elif isinstance(sheetnames, str):
+        sheetnames = [sheetnames]
     else:
-        out = {
-            sheetname: _xlsx_cells(
-                wb,
-                sheetname,
-                defaults,
-                parameters,
-                start_point,
-                end_point,
-                include_blank_cells,
-            )
-            for sheetname in wb.sheetnames
-        }
+        check("sheetnames", sheetnames, [str, list, tuple])
 
-    if (not path_is_workbook) and wb.read_only:
-        wb.close()
+    out = {
+        sheetname: _xlsx_cells(
+            path,
+            sheetname,
+            defaults,
+            parameters,
+            start_point,
+            end_point,
+            include_blank_cells,
+        )
+        for sheetname in sheetnames
+    }
+    if len(out) == 1:
+        _, out = out.popitem()
+
+    if (not path_is_workbook) and path.read_only:
+        path.close()
 
     return out
 
 
 def _xlsx_cells(
-    wb,
-    sheetname,
-    defaults,
-    parameters,
-    start_point,
-    end_point,
-    include_blank_cells,
+    wb: Workbook,
+    sheetname: str,
+    defaults: tuple,
+    parameters: dict,
+    start_point: Union[str, int],
+    end_point: Union[str, int],
+    include_blank_cells: bool,
 ):
     """
     Function to process a single sheet.
@@ -502,8 +486,8 @@ def _xlsx_cells(
     :param wb: Openpyxl Workbook.
     :param sheetname: Name of the sheet
         from which the cells are to be extracted.
+    :param defaults: Sequence of default cell attributes.
     :param parameters: Dictionary of cell attributes to be retrieved.
-    :param defaults: List of default cell attributes
         that will always be returned as columns.
     :param start_point: start coordinates of the Excel sheet.
     :param end_point: end coordinates of the Excel sheet.
@@ -527,16 +511,16 @@ def _xlsx_cells(
             check(f"The value for {parent}", boolean_value, [bool])
             if not boolean_value:
                 continue
-            boolean_value = object_to_dict(getattr(cell, parent, None))
+            boolean_value = _object_to_dict(getattr(cell, parent, None))
             frame[parent].append(boolean_value)
 
     return pd.DataFrame(frame, copy=False)
 
 
-def object_to_dict(obj):
+def _object_to_dict(obj):
     """
     Recursively get the attributes
-    of a class as a dictionary.
+    of an object as a dictionary.
 
     :param obj: Object whose attributes are to be extracted.
     :returns: A dictionary or the object.
@@ -545,6 +529,6 @@ def object_to_dict(obj):
     data = {}
     if getattr(obj, "__dict__", None):
         for key, value in obj.__dict__.items():
-            data[key] = object_to_dict(value)
+            data[key] = _object_to_dict(value)
         return data
     return obj

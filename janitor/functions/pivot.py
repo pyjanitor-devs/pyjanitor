@@ -33,6 +33,7 @@ def pivot_longer(
 
     It is modeled after the `pivot_longer` function in R's tidyr package, and
     offers more functionality and flexibility than `pd.wide_to_long`.
+    It also takes inspiration from R's data.table package.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other

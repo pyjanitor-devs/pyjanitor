@@ -16,7 +16,7 @@ def pivot_longer(
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
-    values_to: Optional[str] = "value",
+    values_to: Optional[Union[str, list, tuple]] = "value",
     column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,

@@ -809,6 +809,8 @@ def _multiple_conditional_join_eq(
         if op != _JoinOperator.STRICTLY_EQUAL.value
     ]
 
+    # check if there is any < or > instead
+    # TODO
     if rest[0][-1] == _JoinOperator.NOT_EQUAL.value:
         left_index, right_index = _MergeOperation(
             df,
@@ -844,7 +846,7 @@ def _multiple_conditional_join_eq(
 
     right = right.loc[right_non_eq]
     df = df.loc[left_non_eq]
-
+    # return right
     # get merge indices
     left_index, right_index = _MergeOperation(
         df,
@@ -853,15 +855,21 @@ def _multiple_conditional_join_eq(
         right_on=[*right_on],
         sort=False,
         copy=False,
+        how="inner",
     )._get_join_indexers()
 
     if not left_index.size:
         return None
 
+    # necessary to ensure indices are aligned... speed eater likely
+    sorter = np.lexsort((right_index, left_index))
+    right_index = right_index[sorter]
+    left_index = left_index[sorter]
+    sorter = None
+
     counter = pd.value_counts(left_index, sort=False)
 
     if len(counter) != len(left_non_eq):  # this indicates a reduction
-        # left_non_eq = left_non_eq[counter.index.to_numpy(copy = False)]
         search_indices = search_indices[counter.index.to_numpy(copy=False)]
 
     search_indices = search_indices.repeat(counter.to_numpy(copy=False))
@@ -873,7 +881,6 @@ def _multiple_conditional_join_eq(
     if not checks.all():
         left_index = left_index[checks]
         right_index = right_index[checks]
-    # return left_index, right_index
     if rest:
         rest = (
             (df[left_on], right[right_on], op)

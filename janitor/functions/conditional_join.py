@@ -453,6 +453,7 @@ def _less_than_indices(
     right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="left")
+
     # if any of the positions in `search_indices`
     # is equal to the length of `right_keys`
     # that means the respective position in `left_c`
@@ -751,8 +752,7 @@ def _multiple_conditional_join_ne(
     Returns a tuple of (left_index, right_index)
     """
 
-    # there is no optimization option here
-    # (that i'm aware of)
+    # currently, there is no optimization option here
     # not equal typically combines less than
     # and greater than, so a lot more rows are returned
     # than just less than or greater than
@@ -814,13 +814,13 @@ def _multiple_conditional_join_eq(
         if op != _JoinOperator.STRICTLY_EQUAL.value
     ]
 
-    ge_gt = [
+    less_or_great = [
         (left_on, right_on, op)
         for left_on, right_on, op in rest
         if op in less_than_join_types.union(greater_than_join_types)
     ]
 
-    not_ge_gt = [
+    not_less_or_great = [
         (left_on, right_on, op)
         for left_on, right_on, op in rest
         if op not in less_than_join_types.union(greater_than_join_types)
@@ -831,7 +831,7 @@ def _multiple_conditional_join_eq(
     # so no M * N, it will either be M or N, whichever is larger
     # no optimisation as yet for !=
     # as such for these conditions, just reuse the indices
-    if (not ge_gt) | (
+    if (not less_or_great) | (
         (not df.duplicated(subset=left_on).any(axis=None))
         | (not right.duplicated(subset=right_on).any(axis=None))
     ):
@@ -855,10 +855,10 @@ def _multiple_conditional_join_eq(
 
         return _generate_indices(left_index, right_index, rest)
 
-    if not_ge_gt:
-        ge_gt.extend(not_ge_gt)
+    if not_less_or_great:
+        less_or_great.extend(not_less_or_great)
 
-    (left_non_eq, right_non_eq, op_non_eq), *rest = ge_gt
+    (left_non_eq, right_non_eq, op_non_eq), *rest = less_or_great
 
     outcome = _generic_func_cond_join(
         df[left_non_eq],
@@ -887,20 +887,19 @@ def _multiple_conditional_join_eq(
     if not left_index.size:
         return None
 
-    # necessary to ensure indices are aligned
-    # sorting is expensive though
-    if not pd.Series(left_index).is_monotonic_increasing:
-        sorter = np.lexsort((right_index, left_index))
-        right_index = right_index[sorter]
-        left_index = left_index[sorter]
-        sorter = None
-
     # get the count for each match of left_index in right
     counter = pd.value_counts(left_index, sort=False)
 
     # this indicates a reduction
     if len(counter) < len(left_non_eq):
         search_indices = search_indices[counter.index.to_numpy(copy=False)]
+
+    # necessary to ensure indices are aligned
+    # sorting is expensive though
+    if not pd.Series(left_index).is_monotonic_increasing:
+        indexer = pd.unique(left_index)
+        search_indices = search_indices[indexer]
+        indexer = None
 
     search_indices = search_indices.repeat(counter.to_numpy(copy=False))
     if op_non_eq in less_than_join_types:
@@ -911,6 +910,7 @@ def _multiple_conditional_join_eq(
     if not checks.all():
         left_index = left_index[checks]
         right_index = right_index[checks]
+
     if rest:
         rest = (
             (df[left_on], right[right_on], op)

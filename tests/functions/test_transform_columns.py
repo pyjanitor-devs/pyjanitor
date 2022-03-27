@@ -1,3 +1,4 @@
+"""Tests for transform_columns."""
 import numpy as np
 import pandas as pd
 import pytest
@@ -6,8 +7,7 @@ from pandas.testing import assert_frame_equal
 
 @pytest.mark.functions
 def test_transform_columns(dataframe):
-    # replacing the data of the original column
-
+    """Checks in-place transformation of multiple columns is as expected."""
     df = (
         dataframe.add_column("another", 10)
         .add_column("column", 100)
@@ -21,8 +21,7 @@ def test_transform_columns(dataframe):
 
 @pytest.mark.functions
 def test_transform_column_with_suffix(dataframe):
-    # creating a new destination column
-
+    """Checks `suffix` creates new columns as expected."""
     df = (
         dataframe.add_column("another", 10)
         .add_column("column", 100)
@@ -37,7 +36,7 @@ def test_transform_column_with_suffix(dataframe):
 
 @pytest.mark.functions
 def test_transform_column_with_new_names(dataframe):
-    # creating a new destination column
+    """Checks `new_column_names` creates new columns as expected."""
     df = (
         dataframe.add_column("another", 10)
         .add_column("column", 100)
@@ -56,7 +55,12 @@ def test_transform_column_with_new_names(dataframe):
 
 @pytest.mark.functions
 def test_suffix_newname_validation(dataframe):
-    with pytest.raises(ValueError):
+    """Check ValueError is raised when both suffix and new_column_names are
+    provided."""
+    with pytest.raises(
+        ValueError,
+        match="Only one of `suffix` or `new_column_names` should be specified",
+    ):
         _ = (
             dataframe.add_column("another", 10)
             .add_column("column", 100)

@@ -8,6 +8,18 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 
 
 @pytest.mark.functions
+def test_transform_nonexisting_column(dataframe):
+    """Checks an error is raised when the column being transformed
+    is non-existent.
+    """
+    with pytest.raises(
+        ValueError,
+        match="_foobar_ not present",
+    ):
+        dataframe.transform_column("_foobar_", np.log10)
+
+
+@pytest.mark.functions
 @pytest.mark.parametrize("elementwise", [True, False])
 def test_transform_column(dataframe, elementwise):
     """

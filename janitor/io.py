@@ -281,6 +281,9 @@ def xlsx_cells(
     usually this is returned as a dictionary in the cell, and the specific
     cell format attribute can be accessed using `pd.Series.str.get`.
 
+    Inspiration for this comes from R's [tidyxl][link] package.
+    [link]: https://nacnudus.github.io/tidyxl/reference/tidyxl.html
+
     Example:
 
         >>> import pandas as pd

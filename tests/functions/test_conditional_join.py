@@ -1134,19 +1134,19 @@ def test_eq_ge_and_le_numbers(df, right):
     expected = (
         df.merge(right, left_on=l_eq, right_on=r_eq, how="inner", sort=False)
         .query(f"{l_ge} >= {r_ge} and {l_le} <= {r_le}")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(
         right,
         (l_eq, r_eq, "=="),
-        (l_ge, r_ge, ">="),
         (l_le, r_le, "<="),
+        (l_ge, r_ge, ">="),
         how="inner",
         sort_by_appearance=False,
     )
 
-    actual = actual.filter(columns)
+    actual = actual.filter(columns).sort_values(columns, ignore_index=True)
     assert_frame_equal(expected, actual)
 
 
@@ -1159,11 +1159,9 @@ def test_dual_ge_and_le_diff_numbers(df, right):
     r_ge, r_le = ["Integers", "Dates"]
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(
-            right.assign(t=1),
-            on="t",
-            how="inner",
+        df.merge(
+            right,
+            how="cross",
             sort=False,
         )
         .query(f"{l_ge} > {r_ge} and {l_le} <= {r_le}")
@@ -1193,11 +1191,7 @@ def test_ge_lt_ne_extension_variant(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.assign(t=1)
-        .merge(
-            right.assign(t=1),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query(
             "A != Integers and B < Numeric and E >= Dates and E != Dates_Right"
         )

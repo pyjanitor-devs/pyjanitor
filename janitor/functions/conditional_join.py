@@ -422,12 +422,11 @@ def _less_than_indices(
     where `left_c` is less than
     (but not equal to) `right_c` are returned.
 
-    A tuple of integer indexes for left_c and right_c is returned.
+    if multiple_conditions is False, a tuple of integer indexes
+    for left_c and right_c is returned;
+    else a tuple of the index for left_c, right_c, as well
+    as the positions of left_c in right_c is returned.
     """
-
-    # TODO
-    # reintroduce `multiple_conditions` argument
-    # when numba is introduced in a future PR?
 
     # no point going through all the hassle
     if left_c.min() > right_c.max():
@@ -498,6 +497,7 @@ def _less_than_indices(
 
         if not search_indices.size:
             return None
+
     if multiple_conditions:
         return left_index, right_index, search_indices
 
@@ -524,7 +524,8 @@ def _greater_than_indices(
     if multiple_conditions is False, a tuple of integer indexes
     for left_c and right_c is returned;
     else a tuple of the index for left_c, right_c, as well
-    as the positions of left_c in right_c is returned."""
+    as the positions of left_c in right_c is returned.
+    """
 
     # quick break, avoiding the hassle
     if left_c.max() < right_c.min():
@@ -751,6 +752,7 @@ def _multiple_conditional_join_ne(
     """
 
     # there is no optimization option here
+    # (that i'm aware of)
     # not equal typically combines less than
     # and greater than, so a lot more rows are returned
     # than just less than or greater than
@@ -803,22 +805,43 @@ def _multiple_conditional_join_eq(
 
     left_on, right_on = zip(*eqs)
 
+    left_on = [*left_on]
+    right_on = [*right_on]
+
     rest = [
         (left_on, right_on, op)
         for left_on, right_on, op in conditions
         if op != _JoinOperator.STRICTLY_EQUAL.value
     ]
 
-    # check if there is any < or > instead
-    # TODO
-    if rest[0][-1] == _JoinOperator.NOT_EQUAL.value:
+    ge_gt = [
+        (left_on, right_on, op)
+        for left_on, right_on, op in rest
+        if op in less_than_join_types.union(greater_than_join_types)
+    ]
+
+    not_ge_gt = [
+        (left_on, right_on, op)
+        for left_on, right_on, op in rest
+        if op not in less_than_join_types.union(greater_than_join_types)
+    ]
+
+    df_dup = not df.duplicated(subset=left_on).any(axis=None)
+    right_dup = not right.duplicated(subset=right_on).any(axis=None)
+    # if it is a one-to-one or one-to-many
+    # then the maximum number of rows will be the larger of the two dataframes
+    # so no M * N, it will either be M or N, whichever is larger
+    # no optimisation as yet for !=
+    # as such for these conditions, just reuse the indices
+    if (not ge_gt) | (df_dup | right_dup):
         left_index, right_index = _MergeOperation(
             df,
             right,
-            left_on=[*left_on],
-            right_on=[*right_on],
+            left_on=left_on,
+            right_on=right_on,
             sort=False,
             copy=False,
+            how="inner",
         )._get_join_indexers()
 
         if not left_index.size:
@@ -831,7 +854,10 @@ def _multiple_conditional_join_eq(
 
         return _generate_indices(left_index, right_index, rest)
 
-    (left_non_eq, right_non_eq, op_non_eq), *rest = rest
+    if not_ge_gt:
+        ge_gt.extend(not_ge_gt)
+
+    (left_non_eq, right_non_eq, op_non_eq), *rest = ge_gt
 
     outcome = _generic_func_cond_join(
         df[left_non_eq],
@@ -846,13 +872,12 @@ def _multiple_conditional_join_eq(
 
     right = right.loc[right_non_eq]
     df = df.loc[left_non_eq]
-    # return right
     # get merge indices
     left_index, right_index = _MergeOperation(
         df,
         right,
-        left_on=[*left_on],
-        right_on=[*right_on],
+        left_on=left_on,
+        right_on=right_on,
         sort=False,
         copy=False,
         how="inner",
@@ -861,15 +886,19 @@ def _multiple_conditional_join_eq(
     if not left_index.size:
         return None
 
-    # necessary to ensure indices are aligned... speed eater likely
-    sorter = np.lexsort((right_index, left_index))
-    right_index = right_index[sorter]
-    left_index = left_index[sorter]
-    sorter = None
+    # necessary to ensure indices are aligned
+    # sorting is expensive though
+    if not pd.Series(left_index).is_monotonic_increasing:
+        sorter = np.lexsort((right_index, left_index))
+        right_index = right_index[sorter]
+        left_index = left_index[sorter]
+        sorter = None
 
+    # get the count for each match of left_index in right
     counter = pd.value_counts(left_index, sort=False)
 
-    if len(counter) != len(left_non_eq):  # this indicates a reduction
+    # this indicates a reduction
+    if len(counter) < len(left_non_eq):
         search_indices = search_indices[counter.index.to_numpy(copy=False)]
 
     search_indices = search_indices.repeat(counter.to_numpy(copy=False))
@@ -939,11 +968,16 @@ def _multiple_conditional_join_le_lt(
     # use the optimised path
     le_lt = None
     ge_gt = None
+    # keep only the first match for le_lt or ge_gt
     for condition in conditions:
         *_, op = condition
         if op in less_than_join_types:
+            if le_lt:
+                continue
             le_lt = condition
         elif op in greater_than_join_types:
+            if ge_gt:
+                continue
             ge_gt = condition
         # we've gotten our two conditions
         # so end the for loop

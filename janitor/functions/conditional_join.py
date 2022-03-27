@@ -826,14 +826,15 @@ def _multiple_conditional_join_eq(
         if op not in less_than_join_types.union(greater_than_join_types)
     ]
 
-    df_dup = not df.duplicated(subset=left_on).any(axis=None)
-    right_dup = not right.duplicated(subset=right_on).any(axis=None)
     # if it is a one-to-one or one-to-many
     # then the maximum number of rows will be the larger of the two dataframes
     # so no M * N, it will either be M or N, whichever is larger
     # no optimisation as yet for !=
     # as such for these conditions, just reuse the indices
-    if (not ge_gt) | (df_dup | right_dup):
+    if (not ge_gt) | (
+        (not df.duplicated(subset=left_on).any(axis=None))
+        | (not right.duplicated(subset=right_on).any(axis=None))
+    ):
         left_index, right_index = _MergeOperation(
             df,
             right,

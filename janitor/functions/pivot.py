@@ -955,6 +955,7 @@ def pivot_wider(
         3  6.1     2  18  29
 
     Pivot and flatten columns:
+
         >>> df.pivot_wider(
         ...     index = "dep",
         ...     names_from = "step",
@@ -964,6 +965,7 @@ def pivot_wider(
         1  6.1   22   18   19   29
 
     Modify columns with `names_sep`:
+
         >>> df.pivot_wider(
         ...     index = "dep",
         ...     names_from = "step",
@@ -974,6 +976,7 @@ def pivot_wider(
         1  6.1  22  18  19  29
 
     Modify columns with `names_glue`:
+
         >>> df.pivot_wider(
         ...     index = "dep",
         ...     names_from = "step",

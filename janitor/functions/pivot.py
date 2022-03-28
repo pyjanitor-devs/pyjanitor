@@ -64,6 +64,7 @@ def pivot_longer(
         1           5.9          3.0           5.1          1.8  virginica
 
     Split the column labels into parts:
+
         >>> df.pivot_longer(
         ...     index = 'Species',
         ...     names_to = ('part', 'dimension'),
@@ -81,6 +82,7 @@ def pivot_longer(
         7  virginica  Petal     Width    1.8
 
     Retain parts of the column names as headers:
+
         >>> df.pivot_longer(
         ...     index = 'Species',
         ...     names_to = ('part', '.value'),
@@ -94,6 +96,7 @@ def pivot_longer(
         3  virginica  Petal     5.1    1.8
 
     Split the column labels based on regex:
+
         >>> df = pd.DataFrame({"id": [1], "new_sp_m5564": [2], "newrel_f65": [3]})
         >>> df
            id  new_sp_m5564  newrel_f65
@@ -108,6 +111,7 @@ def pivot_longer(
         1   1       rel      f    65      3
 
     Use multiple `.value` to reshape dataframe:
+
         >>> df = pd.DataFrame(
         ...     [
         ...         {
@@ -132,6 +136,7 @@ def pivot_longer(
         1    50    2      20      40
 
     Multiple values_to:
+
         >>> df = pd.DataFrame(
         ...         {
         ...             "City": ["Houston", "Austin", "Hoover"],

@@ -16,12 +16,15 @@ def filter_string(
     column_name: Hashable,
     search_string: str,
     complement: bool = False,
+    case: bool = True,
+    flags: int = 0,
+    na=None,
+    regex: bool = True,
 ) -> pd.DataFrame:
     """Filter a string-based column according to whether it contains a substring.
 
-    This is super sugary syntax that builds on top of
-    `pandas.Series.str.contains`. It is meant to be the method-chaining
-    equivalent of the following:
+    This is super sugary syntax that builds on top of `pandas.Series.str.contains`.
+    It is meant to be the method-chaining equivalent of the following:
 
     ```python
     df = df[df[column_name].str.contains(search_string)]]
@@ -33,17 +36,32 @@ def filter_string(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": range(3, 6), "b": ["bear", "peel", "sail"]})
+        >>> df = pd.DataFrame({"a": range(3, 6), "b": ["bear", "peeL", "sail"]})
         >>> df
            a     b
         0  3  bear
-        1  4  peel
+        1  4  peeL
         2  5  sail
         >>> df.filter_string(column_name="b", search_string="ee")
            a     b
-        1  4  peel
+        1  4  peeL
+        >>> df.filter_string(column_name="b", search_string="L", case=False)
+           a     b
+        1  4  peeL
+        2  5  sail
 
-    `search_string` is also permitted to be any valid regex pattern.
+    Example: Filter names does not contain `'.'` (disable regex mode).
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.Series(["JoseChen", "Brian.Salvi"], name="Name").to_frame()
+        >>> df
+                  Name
+        0     JoseChen
+        1  Brian.Salvi
+        >>> df.filter_string(column_name="Name", search_string=".", regex=False, complement=True)
+               Name
+        0  JoseChen
 
     :param df: A pandas DataFrame.
     :param column_name: The column to filter. The column should contain strings.
@@ -51,11 +69,27 @@ def filter_string(
     :param complement: Whether to return the complement of the filter or not. If
         set to True, then the rows for which the string search fails are retained
         instead.
+    :param case: If True, case sensitive.
+    :param flags: Flags to pass through to the re module, e.g. re.IGNORECASE.
+    :param na: Fill value for missing values. The default depends on dtype of
+        the array. For object-dtype, `numpy.nan` is used. For `StringDtype`,
+        `pandas.NA` is used.
+    :param regex: If True, assumes `search_string` is a regular expression. If False,
+        treats the `search_string` as a literal string.
     :returns: A filtered pandas DataFrame.
     """  # noqa: E501
-    criteria = df[column_name].str.contains(search_string)
+
+    criteria = df[column_name].str.contains(
+        pat=search_string,
+        case=case,
+        flags=flags,
+        na=na,
+        regex=regex,
+    )
+
     if complement:
         return df[~criteria]
+
     return df[criteria]
 
 

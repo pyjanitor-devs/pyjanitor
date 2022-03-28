@@ -21,6 +21,7 @@
 -   [ENH] Performance improvement for `conditional_join`. @samukweku
 -   [ENH] Multiple `.value` is now supported in `pivot_longer`. #1034 @samukweku
 -   [ENH] `names_glue` now takes a string form, using str.format_map under the hood. `levels_order` is also deprecated. @samukweku
+-   [EHN] Let `filter_string` suit parameters of `Series.str.contains` Issue #1003 and #1047. @Zeroto521
 
 ## [v0.22.0] - 2021-11-21
 

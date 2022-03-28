@@ -43,7 +43,7 @@ def test_right_series(df, s):
 
 
 @given(df=conditional_df())
-def test_df_MultiIndex(df):
+def test_df_multiindex(df):
     """Raise ValueError if `df` columns is a MultiIndex."""
 
     with pytest.raises(ValueError):
@@ -54,7 +54,7 @@ def test_df_MultiIndex(df):
 
 
 @given(df=conditional_df())
-def test_right_MultiIndex(df):
+def test_right_multiindex(df):
     """Raise ValueError if `right` columns is a MultiIndex."""
 
     with pytest.raises(ValueError):
@@ -202,9 +202,8 @@ def test_unequal_categories(df, right):
     Raise ValueError if the dtypes are both categories
     and do not match.
     """
-    cat1 = pd.api.types.CategoricalDtype(right.Strings.unique(), ordered=True)
     df = df.astype({"C": "category"})
-    right = right.astype({"Strings": cat1})
+    right = right.encode_categorical(Strings="appearance")
     with pytest.raises(ValueError):
         df.conditional_join(
             right, ("C", "Strings", "=="), ("B", "Numeric", "<=")
@@ -234,17 +233,15 @@ def test_dtype_str(df, s):
         df.conditional_join(s, ("C", "A", "<"))
 
 
-@given(df=conditional_df(), s=conditional_series())
-def test_dtype_category_non_equi(df, s):
+def test_dtype_category_non_equi():
     """
     Raise ValueError if dtype is category,
     and op is non-equi.
     """
     with pytest.raises(ValueError):
-        s.name = "A"
-        s = s.astype("category")
-        df["C"] = df["C"].astype("category")
-        df.conditional_join(s, ("C", "A", "<"))
+        left = pd.DataFrame({"A": [1, 2, 3]}, dtype="category")
+        right = pd.DataFrame({"B": [1, 2, 3]}, dtype="category")
+        left.conditional_join(right, ("A", "B", "<"))
 
 
 @given(df=conditional_df(), s=conditional_series())
@@ -265,8 +262,7 @@ def test_single_condition_less_than_floats(df, right):
 
     left_on, right_on = ["B", "Numeric"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} < {right_on}")
         .reset_index(drop=True)
     )
@@ -286,8 +282,7 @@ def test_single_condition_less_than_ints(df, right):
 
     left_on, right_on = ["A", "Integers"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1, C="2"), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} < {right_on}")
         .reset_index(drop=True)
     )
@@ -309,8 +304,7 @@ def test_single_condition_less_than_ints_extension_array(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
     left_on, right_on = ["A", "Integers"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} < {right_on}")
         .reset_index(drop=True)
     )
@@ -330,8 +324,7 @@ def test_single_condition_less_than_equal(df, right):
 
     left_on, right_on = ["E", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} <= {right_on}")
         .reset_index(drop=True)
     )
@@ -351,8 +344,7 @@ def test_single_condition_less_than_date(df, right):
 
     left_on, right_on = ["E", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} < {right_on}")
         .reset_index(drop=True)
     )
@@ -372,8 +364,7 @@ def test_single_condition_greater_than_datetime(df, right):
 
     left_on, right_on = ["E", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} > {right_on}")
         .reset_index(drop=True)
     )
@@ -393,8 +384,7 @@ def test_single_condition_greater_than_ints(df, right):
 
     left_on, right_on = ["A", "Integers"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} >= {right_on}")
         .reset_index(drop=True)
     )
@@ -414,8 +404,7 @@ def test_single_condition_greater_than_floats_floats(df, right):
 
     left_on, right_on = ["B", "Numeric"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} > {right_on}")
         .reset_index(drop=True)
     )
@@ -431,14 +420,13 @@ def test_single_condition_greater_than_floats_floats(df, right):
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_ints_extension_array(df, right):
-    """Test output for a single condition. ">="."""
+    """Test output for a single condition. ">"."""
 
     left_on, right_on = ["A", "Integers"]
-    df = df.assign(A=df["A"].astype("Int64"))
-    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+    df = df.astype({"A": "Int64"})
+    right = right.astype({"Integers": "Int64"})
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} > {right_on}")
         .reset_index(drop=True)
     )
@@ -458,9 +446,7 @@ def test_single_condition_not_equal_numeric(df, right):
 
     left_on, right_on = ["A", "Integers"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        # .dropna(subset=["A", "Integers"])
+        df.merge(right, how="cross")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -480,9 +466,7 @@ def test_single_condition_not_equal_ints_only(df, right):
 
     left_on, right_on = ["A", "Integers"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        # .dropna(subset=["A", "Integers"])
+        df.merge(right, how="cross")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -502,9 +486,7 @@ def test_single_condition_not_equal_floats_only(df, right):
 
     left_on, right_on = ["B", "Numeric"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        # .dropna(subset=["B", "Numeric"])
+        df.merge(right, how="cross")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -524,9 +506,7 @@ def test_single_condition_not_equal_datetime(df, right):
 
     left_on, right_on = ["E", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
-        # .dropna(subset=["E", "Dates"])
+        df.merge(right, how="cross")
         .query(f"{left_on} != {right_on}")
         .reset_index(drop=True)
     )
@@ -594,8 +574,7 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
 
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} < {middle} < {right_on}")
         .reset_index(drop=True)
     )
@@ -619,8 +598,7 @@ def test_dual_conditions_ge_and_le_dates(df, right):
 
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
@@ -644,8 +622,7 @@ def test_dual_conditions_le_and_ge_dates(df, right):
 
     middle, left_on, right_on = ("E", "Dates", "Dates_Right")
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
@@ -669,8 +646,7 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
 
     middle, left_on, right_on = ("B", "Numeric", "Floats")
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
@@ -694,8 +670,7 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
 
     middle, left_on, right_on = ("B", "Numeric", "Floats")
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} <= {middle} <= {right_on}")
         .reset_index(drop=True)
     )
@@ -719,8 +694,7 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
 
     middle, left_on, right_on = ("B", "Numeric", "Floats")
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query(f"{left_on} < {middle} < {right_on}")
         .reset_index(drop=True)
     )
@@ -746,8 +720,7 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
 
     first, second, third = ("Numeric", "Floats", "B")
     expected = (
-        right.assign(t=1)
-        .merge(df.assign(t=1), on="t")
+        right.merge(df, how="cross")
         .query(f"{first} > {third} and {second} < {third}")
         .reset_index(drop=True)
     )
@@ -827,20 +800,16 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
 
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
-def test_dual_ne(df, right):
+def test_dual_ne_extension(df, right):
     """
-    Test output for multiple conditions. `!=`
+    Test output for multiple conditions. Extension Arrays. `!=`
     """
 
     filters = ["A", "Integers", "B", "Numeric"]
-    df = df.assign(A=df["A"].astype("Int64"))
-    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+    df = df.astype({"A": "Int64"})
+    right = right.astype({"Integers": "Int64"})
     expected = (
-        df.assign(t=1)  # .dropna(subset=["A", "B"])
-        .merge(
-            right.assign(t=1),  # .dropna(subset=["Integers", "Numeric"])
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query("A != Integers and B != Numeric")
         .reset_index(drop=True)
     )
@@ -859,19 +828,15 @@ def test_dual_ne(df, right):
 
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
-def test_dual_ne_extension(df, right):
+def test_dual_ne(df, right):
     """
     Test output for multiple conditions. `!=`
     """
 
     filters = ["A", "Integers", "B", "Numeric"]
-    # df = df.assign(A=df["A"].astype("Int64"))
+
     expected = (
-        df.assign(t=1)  # .dropna(subset=["A", "B"])
-        .merge(
-            right.assign(t=1),  # .dropna(subset=["Integers", "Numeric"])
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query("A != Integers and B != Numeric")
         .reset_index(drop=True)
     )
@@ -897,8 +862,7 @@ def test_dual_ne_dates(df, right):
 
     filters = ["A", "Integers", "E", "Dates"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query("A != Integers and E != Dates")
         .reset_index(drop=True)
     )
@@ -924,8 +888,7 @@ def test_multiple_ne_dates(df, right):
 
     filters = ["A", "Integers", "E", "Dates", "B", "Numeric"]
     expected = (
-        df.assign(t=1)
-        .merge(right.assign(t=1), on="t")
+        df.merge(right, how="cross")
         .query("A != Integers and E != Dates and B != Numeric")
         .reset_index(drop=True)
     )
@@ -951,8 +914,8 @@ def test_dual_conditions_eq_and_ne(df, right):
     A, B, C, D = ("B", "Numeric", "E", "Dates")
     expected = (
         df.merge(right, left_on=A, right_on=B)
-        # .dropna(subset=[A, B])
-        .query(f"{C} != {D}").reset_index(drop=True)
+        .query(f"{C} != {D}")
+        .reset_index(drop=True)
     )
     expected = expected.filter([A, B, C, D])
     actual = df.conditional_join(
@@ -975,8 +938,8 @@ def test_dual_conditions_ne_and_eq(df, right):
     A, B, C, D = ("A", "Integers", "E", "Dates")
     expected = (
         df.merge(right, left_on=C, right_on=D)
-        # .dropna(subset=[C, D])
-        .query(f"{A} != {B}").reset_index(drop=True)
+        .query(f"{A} != {B}")
+        .reset_index(drop=True)
     )
     expected = expected.filter([A, B, C, D])
     actual = df.conditional_join(
@@ -1000,13 +963,7 @@ def test_gt_lt_ne_conditions(df, right):
 
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
-        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
-        .merge(
-            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
-                t=1
-            ),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query("A > Integers and B < Numeric and E != Dates")
         .reset_index(drop=True)
     )
@@ -1033,13 +990,7 @@ def test_gt_ne_conditions(df, right):
 
     filters = ["A", "Integers", "E", "Dates"]
     expected = (
-        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
-        .merge(
-            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
-                t=1
-            ),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query("A > Integers  and E != Dates")
         .reset_index(drop=True)
     )
@@ -1065,13 +1016,7 @@ def test_le_ne_conditions(df, right):
 
     filters = ["A", "Integers", "E", "Dates"]
     expected = (
-        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
-        .merge(
-            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
-                t=1
-            ),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query("A <= Integers  and E != Dates")
         .reset_index(drop=True)
     )
@@ -1097,13 +1042,7 @@ def test_gt_lt_ne_start(df, right):
 
     filters = ["A", "Integers", "B", "Numeric", "E", "Dates"]
     expected = (
-        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
-        .merge(
-            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
-                t=1, C="C"
-            ),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query("A > Integers and B < Numeric and E != Dates")
         .reset_index(drop=True)
     )
@@ -1133,13 +1072,7 @@ def test_ge_le_ne_extension_array(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.assign(t=1)  # .dropna(subset=["A", "B", "E"])
-        .merge(
-            right.assign(  # .dropna(subset=["Integers", "Numeric", "Dates"])
-                t=1
-            ),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query("A != Integers and B < Numeric and E >= Dates")
         .reset_index(drop=True)
     )
@@ -1169,11 +1102,7 @@ def test_ge_lt_ne_extension(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.assign(t=1)
-        .merge(
-            right.assign(t=1),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query(
             "A < Integers and B != Numeric and E >= Dates and E != Dates_Right"
         )
@@ -1530,7 +1459,6 @@ def test_multiple_non_eq(df, right):
         how="inner",
         sort_by_appearance=True,
     )
-    # actual = actual.droplevel(0, 1)
     actual = actual.filter(columns)
     assert_frame_equal(expected, actual)
 
@@ -1549,8 +1477,8 @@ def test_multiple_eqs(df, right):
             how="inner",
             sort=False,
         )
-        # .dropna(subset=["B", "A", "Floats", "Dates"])
-        .query("E != Dates").reset_index(drop=True)
+        .query("E != Dates")
+        .reset_index(drop=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(

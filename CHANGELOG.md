@@ -18,6 +18,9 @@
 -   [ENH] Performance improvement for `expand_grid`. @samukweku
 -   [BUG] Make `factorize_columns` (PR #1028) and `truncate_datetime_dataframe` (PR #1040) functions non-mutating. @thatlittleboy
 -   [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe`, along with further performance improvements (PR #1040). @thatlittleboy
+-   [ENH] Performance improvement for `conditional_join`. @samukweku
+-   [ENH] Multiple `.value` is now supported in `pivot_longer`. #1034 @samukweku
+-   [EHN] Let `filter_string` suit parameters of `Series.str.contains` Issue #1003 and #1047. @Zeroto521
 
 ## [v0.22.0] - 2021-11-21
 

@@ -866,6 +866,7 @@ def _multiple_conditional_join_eq(
         op_non_eq,
         multiple_conditions=True,
     )
+
     if not outcome:
         return None
 
@@ -887,20 +888,14 @@ def _multiple_conditional_join_eq(
     if not left_index.size:
         return None
 
+    # combination of the expenses makes me believe there should be a better way
+    # parking this for now
     # get the count for each match of left_index in right
+    # builds a hashtable, so some expense there
     counter = pd.value_counts(left_index, sort=False)
-
-    # this indicates a reduction
-    if len(counter) < len(left_non_eq):
-        search_indices = search_indices[counter.index.to_numpy(copy=False)]
-
     # necessary to ensure indices are aligned
-    # sorting is expensive though
-    if not pd.Series(left_index).is_monotonic_increasing:
-        indexer = pd.unique(left_index)
-        search_indices = search_indices[indexer]
-        indexer = None
-
+    search_indices = search_indices[counter.index.to_numpy(copy=False)]
+    # blow up to match right_index, another expense
     search_indices = search_indices.repeat(counter.to_numpy(copy=False))
     if op_non_eq in less_than_join_types:
         checks = right_index >= search_indices

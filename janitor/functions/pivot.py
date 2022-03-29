@@ -16,7 +16,7 @@ def pivot_longer(
     index: Optional[Union[List, Tuple, str, Pattern]] = None,
     column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
     names_to: Optional[Union[List, Tuple, str]] = None,
-    values_to: Optional[str] = "value",
+    values_to: Optional[Union[str, list, tuple]] = "value",
     column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
@@ -33,6 +33,7 @@ def pivot_longer(
 
     It is modeled after the `pivot_longer` function in R's tidyr package, and
     offers more functionality and flexibility than `pd.wide_to_long`.
+    It also takes inspiration from R's data.table package.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -134,7 +135,52 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
+    Multiple values_to:
 
+        >>> df = pd.DataFrame(
+        ...         {
+        ...             "City": ["Houston", "Austin", "Hoover"],
+        ...             "State": ["Texas", "Texas", "Alabama"],
+        ...             "Name": ["Aria", "Penelope", "Niko"],
+        ...             "Mango": [4, 10, 90],
+        ...             "Orange": [10, 8, 14],
+        ...             "Watermelon": [40, 99, 43],
+        ...             "Gin": [16, 200, 34],
+        ...             "Vodka": [20, 33, 18],
+        ...         },
+        ...         columns=[
+        ...             "City",
+        ...             "State",
+        ...             "Name",
+        ...             "Mango",
+        ...             "Orange",
+        ...             "Watermelon",
+        ...             "Gin",
+        ...             "Vodka",
+        ...         ],
+        ...     )
+        >>> df
+              City    State      Name  Mango  Orange  Watermelon  Gin  Vodka
+        0  Houston    Texas      Aria      4      10          40   16     20
+        1   Austin    Texas  Penelope     10       8          99  200     33
+        2   Hoover  Alabama      Niko     90      14          43   34     18
+        >>> df.pivot_longer(
+        ...         index=["City", "State"],
+        ...         column_names=slice("Mango", "Vodka"),
+        ...         names_to=("Fruit", "Drink"),
+        ...         values_to=("Pounds", "Ounces"),
+        ...         names_pattern=[r"M|O|W", r"G|V"],
+        ...     )
+              City    State       Fruit  Pounds  Drink  Ounces
+        0  Houston    Texas       Mango       4    Gin    16.0
+        1   Austin    Texas       Mango      10    Gin   200.0
+        2   Hoover  Alabama       Mango      90    Gin    34.0
+        3  Houston    Texas      Orange      10  Vodka    20.0
+        4   Austin    Texas      Orange       8  Vodka    33.0
+        5   Hoover  Alabama      Orange      14  Vodka    18.0
+        6  Houston    Texas  Watermelon      40    NaN     NaN
+        7   Austin    Texas  Watermelon      99    NaN     NaN
+        8   Hoover  Alabama  Watermelon      43    NaN     NaN
 
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
@@ -154,6 +200,8 @@ def pivot_longer(
         from part of the existing column names and overrides`values_to`.
     :param values_to: Name of new column as a string that will contain what
         were previously the values of the columns in `column_names`.
+        values_to can also be a list/tuple
+        and requires that names_pattern is also a list/tuple.
     :param column_level: If columns are a MultiIndex, then use this level to
         unpivot the DataFrame. Provided for compatibility with pandas' melt,
         and applies only if neither `names_sep` nor `names_pattern` is

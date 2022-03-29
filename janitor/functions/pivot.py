@@ -708,9 +708,9 @@ def _pivot_longer_dot_value(
         else:
             mapping = pd.MultiIndex.from_frame(mapping)
     else:
-        mapping = [mapping.groupby(names_to, sort=False).cumcount()] + [
-            series for _, series in mapping.items()
-        ]
+        mapping = [
+            mapping.groupby(names_to, sort=False, observed=True).cumcount()
+        ] + [series for _, series in mapping.items()]
         mapping = pd.MultiIndex.from_arrays(mapping)
     df.columns = mapping
 
@@ -838,7 +838,9 @@ def _pivot_longer_names_pattern_sequence(
         # then x2 will pair with y1 and x1 will pair with y2
         # it is simply a first come first serve approach
         # the same idea applies if values_to is a list/tuple
-        positions = mapping.groupby(mapping, sort=False).cumcount()
+        positions = mapping.groupby(
+            mapping, sort=False, observed=True
+        ).cumcount()
         # positions ensure uniqueness, and we take advantage of this
         # in creating sub dataframes that are then combined back into
         # one

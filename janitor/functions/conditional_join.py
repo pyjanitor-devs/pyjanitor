@@ -14,7 +14,8 @@ from pandas.core.dtypes.common import (
     is_numeric_dtype,
     is_string_dtype,
 )
-from pandas.core.reshape.merge import _MergeOperation
+
+# from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
 
@@ -683,6 +684,60 @@ def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     return left_c, right_c
 
 
+def _eq_indices(
+    left_c: pd.Series,
+    right_c: pd.Series,
+) -> tuple:
+    """
+    Use binary search to get indices where left_c
+    is less than or equal to right_c.
+
+    If strict is True, then only indices
+    where `left_c` is less than
+    (but not equal to) `right_c` are returned.
+
+    if multiple_conditions is False, a tuple of integer indexes
+    for left_c and right_c is returned;
+    else a tuple of the index for left_c, right_c, as well
+    as the positions of left_c in right_c is returned.
+    """
+
+    # no point going through all the hassle
+    if left_c.min() > right_c.max():
+        return None
+
+    any_nulls = pd.isna(right_c)
+    if any_nulls.any():
+        right_c = right_c[~any_nulls]
+    if right_c.empty:
+        return None
+    any_nulls = pd.isna(left_c)
+    if any_nulls.any():
+        left_c = left_c[~any_nulls]
+    if left_c.empty:
+        return None
+    any_nulls = None
+
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values(kind="stable")
+
+    left_index = left_c.index.to_numpy(dtype=int, copy=False)
+    left_c = extract_array(left_c, extract_numpy=True)
+    right_index = right_c.index.to_numpy(dtype=int, copy=False)
+    right_c = extract_array(right_c, extract_numpy=True)
+
+    lower_boundary = right_c.searchsorted(left_c, side="left")
+    upper_boundary = right_c.searchsorted(left_c, side="right")
+    keep_rows = lower_boundary < upper_boundary
+    if not keep_rows.any():
+        return None
+    if not keep_rows.all():
+        left_index = left_index[keep_rows]
+        lower_boundary = lower_boundary[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+    return left_index, right_index, lower_boundary, upper_boundary
+
+
 def _generic_func_cond_join(
     left_c: pd.Series,
     right_c: pd.Series,
@@ -805,118 +860,93 @@ def _multiple_conditional_join_eq(
 
     left_on, right_on = zip(*eqs)
 
-    left_on = [*left_on]
-    right_on = [*right_on]
+    left_on = left_on[0]
+    right_on = right_on[0]
 
-    rest = [
+    outcome = _eq_indices(df[left_on], right[right_on])
+
+    if not outcome:
+        return None
+
+    left_index, right_index, lower_boundary, upper_boundary = outcome
+
+    (left_on, right_on, op), *rest = [
         (left_on, right_on, op)
         for left_on, right_on, op in conditions
         if op != _JoinOperator.STRICTLY_EQUAL.value
     ]
 
-    less_or_great = [
-        (left_on, right_on, op)
-        for left_on, right_on, op in rest
-        if op in less_than_join_types.union(greater_than_join_types)
+    right_c = right.loc[right_index, right_on]
+    right_c = extract_array(right_c, extract_numpy=True)
+    left_c = df.loc[left_index, left_on]
+    left_c = extract_array(left_c, extract_numpy=True)
+    op = operator_map[op]
+    pos = np.copy(upper_boundary)
+    upp = np.copy(upper_boundary)
+    counter = np.arange(left_index.size)
+    ext_arr = is_extension_array_dtype(left_c)
+
+    for num in range((upper_boundary - lower_boundary).max()):
+        lower_boundary = lower_boundary + num
+        if (lower_boundary >= upp).any():
+            filter_ = lower_boundary < upp
+            left_c = left_c[filter_]
+            lower_boundary = lower_boundary[filter_]
+            upp = upp[filter_]
+        keep_rows = op(left_c, right_c[lower_boundary])
+        if ext_arr:
+            keep_rows = keep_rows.to_numpy(
+                dtype=bool, na_value=False, copy=False
+            )
+        if keep_rows.any():
+            outcome = lower_boundary[keep_rows]
+            pos[counter[keep_rows]] = outcome
+            counter = counter[~keep_rows]
+            left_c = left_c[~keep_rows]
+            upp = upp[~keep_rows]
+            lower_boundary = lower_boundary[~keep_rows]
+        if keep_rows.all():
+            break
+
+    keep_rows = pos < upper_boundary
+
+    if not keep_rows.any():
+        return None
+
+    if not keep_rows.all():
+        left_index = left_index[keep_rows]
+        pos = pos[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+
+    repeater = upper_boundary - pos
+    right_index = [
+        right_index[start:end] for start, end in zip(pos, upper_boundary)
     ]
 
-    not_less_or_great = [
-        (left_on, right_on, op)
-        for left_on, right_on, op in rest
-        if op not in less_than_join_types.union(greater_than_join_types)
-    ]
+    # get indices and filter to get exact indices
+    # that meet the condition
+    right_index = np.concatenate(right_index)
+    left_index = np.repeat(left_index, repeater)
 
-    # if it is a one-to-one or one-to-many
-    # then the maximum number of rows will be the larger of the two dataframes
-    # so no M * N, it will either be M or N, whichever is larger
-    # no optimisation as yet for !=
-    # as such for these conditions, just reuse the indices
-    if (not less_or_great) | (
-        (not df.duplicated(subset=left_on).any(axis=None))
-        | (not right.duplicated(subset=right_on).any(axis=None))
-    ):
-        left_index, right_index = _MergeOperation(
-            df,
-            right,
-            left_on=left_on,
-            right_on=right_on,
-            sort=False,
-            copy=False,
-            how="inner",
-        )._get_join_indexers()
+    left_c = extract_array(df[left_on], extract_numpy=True)[left_index]
+    right_c = extract_array(right[right_on], extract_numpy=True)[right_index]
 
-        if not left_index.size:
-            return None
+    mask = op(left_c, right_c)
 
-        rest = (
-            (df[left_on], right[right_on], op)
-            for left_on, right_on, op in rest
-        )
+    if ext_arr:
+        mask = mask.to_numpy(dtype=bool, na_value=False)
 
-        return _generate_indices(left_index, right_index, rest)
+    if not mask.all():
+        left_index = left_index[mask]
+        right_index = right_index[mask]
+    if not rest:
+        return left_index, right_index
 
-    if not_less_or_great:
-        less_or_great.extend(not_less_or_great)
-
-    (left_non_eq, right_non_eq, op_non_eq), *rest = less_or_great
-
-    outcome = _generic_func_cond_join(
-        df[left_non_eq],
-        right[right_non_eq],
-        op_non_eq,
-        multiple_conditions=True,
+    rest = (
+        (df[left_on], right[right_on], op) for left_on, right_on, op in rest
     )
 
-    if not outcome:
-        return None
-
-    left_non_eq, right_non_eq, search_indices = outcome
-
-    right = right.loc[right_non_eq]
-    df = df.loc[left_non_eq]
-    # get merge indices
-    left_index, right_index = _MergeOperation(
-        df,
-        right,
-        left_on=left_on,
-        right_on=right_on,
-        sort=False,
-        copy=False,
-        how="inner",
-    )._get_join_indexers()
-
-    if not left_index.size:
-        return None
-
-    # combination of the expenses makes me believe there should be a better way
-    # parking this for now
-    # get the count for each match of left_index in right
-    # builds a hashtable, so some expense there
-    counter = pd.value_counts(left_index, sort=False)
-    # necessary to ensure indices are aligned
-    search_indices = search_indices[counter.index.to_numpy(copy=False)]
-    # blow up to match right_index, another expense
-    search_indices = search_indices.repeat(counter.to_numpy(copy=False))
-    if op_non_eq in less_than_join_types:
-        checks = right_index >= search_indices
-    else:
-        checks = right_index < search_indices
-
-    if not checks.all():
-        left_index = left_index[checks]
-        right_index = right_index[checks]
-
-    if rest:
-        rest = (
-            (df[left_on], right[right_on], op)
-            for left_on, right_on, op in rest
-        )
-
-        outcome = _generate_indices(left_index, right_index, rest)
-        if not outcome:
-            return None
-        left_index, right_index = outcome
-    return left_non_eq[left_index], right_non_eq[right_index]
+    return _generate_indices(left_index, right_index, rest)
 
 
 def _multiple_conditional_join_le_lt(

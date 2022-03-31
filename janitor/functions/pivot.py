@@ -362,7 +362,7 @@ def _data_checks_pivot_longer(
                     f"is {num_regex_grps}."
                 )
 
-        if isinstance(names_pattern, (list, tuple)):
+        elif isinstance(names_pattern, (list, tuple)):
             for word in names_pattern:
                 check(f"{word} in names_pattern", word, [str, Pattern])
 

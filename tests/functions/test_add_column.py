@@ -11,30 +11,46 @@ from janitor.testing_utils.strategies import df_strategy
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_add_integer(df):
-    # col_name wasn't a string
+    """col_name wasn't a string"""
     with pytest.raises(TypeError):
         df.add_column(column_name=42, value=42)
 
 
 @pytest.mark.functions
-@given(df=df_strategy())
-def test_add_column_already_exists(df):
-    # column already exists
-    with pytest.raises(ValueError):
-        df.add_column("a", 42)
+def test_add_column_already_exists(dataframe):
+    """column already exists"""
+    with pytest.raises(
+        ValueError,
+        match="Attempted to add column that already exists",
+    ):
+        dataframe.add_column("a", 42)
 
 
 @pytest.mark.functions
-@given(df=df_strategy())
-def test_add_column_too_many(df):
-    # too many values for dataframe num rows:
-    with pytest.raises(ValueError):
-        df.add_column("toomany", np.ones(100))
+def test_add_column_too_many(dataframe):
+    """too many values for dataframe num rows"""
+    with pytest.raises(
+        ValueError,
+        match="`value` has more elements than number of rows",
+    ):
+        dataframe.add_column("toomany", np.ones(100))
+
+
+@pytest.mark.functions
+def test_add_column_too_few_but_no_fill_remaining(dataframe):
+    """too few values for dataframe num rows"""
+    with pytest.raises(
+        ValueError,
+        match="add iterable of values with length not equal",
+    ):
+        dataframe.add_column("toomany", np.ones(2), fill_remaining=False)
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_scalar(df):
+    """Checks `add_column` works as expected when adding a numeric scalar
+    to the column"""
     # column appears in DataFrame
     df = df.add_column("fortytwo", 42)
     assert "fortytwo" in df.columns
@@ -44,15 +60,18 @@ def test_add_column_scalar(df):
     series.name = "fortytwo"
     assert_series_equal(df["fortytwo"], series)
 
-    # scalar values are correct for strings
-    # also, verify sanity check excludes strings, which have a length:
-
 
 @pytest.mark.functions
 @given(df=df_strategy())
 def test_add_column_string(df):
+    """Checks `add_column` works as expected when adding a string scalar
+    to the column.
+
+    And ensure no errors are raised. The error checks on iterables should
+    exclude strings, which also have a length.
+    """
     df = df.add_column("fortythousand", "test string")
-    series = pd.Series(["test string"] * len(df))
+    series = pd.Series(["test string" for _ in range(len(df))])
     series.name = "fortythousand"
     assert_series_equal(df["fortythousand"], series)
 
@@ -65,9 +84,30 @@ def test_add_column_string(df):
 
 
 @pytest.mark.functions
+def test_add_column_iterator_repeat_subtraction(dataframe):
+    """Checks `add_column` works as expected when adding a pd Series
+    to the column"""
+    df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
+    assert df.city_pop.sum() == 0
+    assert df.city_pop.iloc[0] == 0
+
+
+@pytest.mark.functions
+@given(df=df_strategy())
+def test_add_column_fill_scalar(df):
+    """Checks the `fill_remaining` parameter works as expected when value
+    is a scalar."""
+    df = df.add_column("fill_in_scalar", 42, fill_remaining=True)
+    series = pd.Series([42 for _ in range(len(df))])
+    series.name = "fill_in_scalar"
+    assert_series_equal(df["fill_in_scalar"], series)
+
+
+@pytest.mark.functions
 @given(df=df_strategy(), vals=st.lists(elements=st.integers()))
-def test_add_column_fill_remaining_iterable(df, vals):
-    if len(vals) > len(df) or len(vals) == 0:
+def test_add_column_fill_remaining_iterable(df, vals: list):
+    """Checks the `fill_remaining` parameter works as expected."""
+    if len(vals) > len(df) or not vals:
         with pytest.raises(ValueError):
             df = df.add_column("fill_in_iterable", vals, fill_remaining=True)
     else:
@@ -76,24 +116,9 @@ def test_add_column_fill_remaining_iterable(df, vals):
 
 
 @pytest.mark.functions
-@given(df=df_strategy())
-def test_add_column_fill_scalar(df):
-    # fill_remaining works - value is scalar
-    vals = 42
-    df = df.add_column("fill_in_scalar", vals, fill_remaining=True)
-    series = pd.Series([42] * len(df))
-    series.name = "fill_in_scalar"
-    assert_series_equal(df["fill_in_scalar"], series)
-
-
-@pytest.mark.functions
-def test_add_column_single_value(dataframe):
-    df = dataframe.add_column("city_pop", 100)
-    assert df.city_pop.mean() == 100
-
-
-@pytest.mark.functions
 def test_add_column_iterator_repeat(dataframe):
+    """Fill remaining using a small iterator, with `fill_remaining` set to
+    True."""
     df = dataframe.add_column("city_pop", range(3), fill_remaining=True)
     assert df.city_pop.iloc[0] == 0
     assert df.city_pop.iloc[1] == 1
@@ -101,23 +126,3 @@ def test_add_column_iterator_repeat(dataframe):
     assert df.city_pop.iloc[3] == 0
     assert df.city_pop.iloc[4] == 1
     assert df.city_pop.iloc[5] == 2
-
-
-@pytest.mark.functions
-def test_add_column_raise_error(dataframe):
-    with pytest.raises(Exception):
-        dataframe.add_column("cities", 1)
-
-
-@pytest.mark.functions
-def test_add_column_iterator_repeat_subtraction(dataframe):
-    df = dataframe.add_column("city_pop", dataframe.a - dataframe.a)
-    assert df.city_pop.sum() == 0
-    assert df.city_pop.iloc[0] == 0
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-def test_add_column_checkequality(df):
-    new_df = df.add_column("fortytwo", 42)
-    assert new_df is not df

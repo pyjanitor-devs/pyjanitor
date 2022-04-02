@@ -1,5 +1,5 @@
 import re
-from typing import Callable, List, Optional, Pattern, Tuple, Union
+from typing import Callable, Optional, Pattern, Union
 
 import numpy as np
 import pandas as pd
@@ -13,13 +13,13 @@ from janitor.utils import check
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index: Optional[Union[List, Tuple, str, Pattern]] = None,
-    column_names: Optional[Union[List, Tuple, str, Pattern]] = None,
-    names_to: Optional[Union[List, Tuple, str]] = None,
+    index: Optional[Union[list, tuple, str, Pattern]] = None,
+    column_names: Optional[Union[list, tuple, str, Pattern]] = None,
+    names_to: Optional[Union[list, tuple, str]] = None,
     values_to: Optional[str] = "value",
     column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[Union[List, Tuple, str, Pattern]] = None,
+    names_pattern: Optional[Union[list, tuple, str, Pattern]] = None,
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
@@ -349,9 +349,7 @@ def _data_checks_pivot_longer(
                         )
 
                     if word in uniques:
-                        raise ValueError(
-                            f"{word} already exists in values_to."
-                        )
+                        raise ValueError(f"{word} is duplicated in values_to.")
                     uniques.add(word)
 
     if names_sep is not None:
@@ -607,7 +605,7 @@ def _sort_by_appearance_for_melt(
 
 def _pivot_longer_not_dot_value(
     df: pd.DataFrame,
-    index,
+    index: Union[list, None],
     sort_by_appearance: bool,
     ignore_index: bool,
     values_to: str,
@@ -670,14 +668,13 @@ def _pivot_longer_dot_value(
                 "Kindly use a unique name."
             )
     if index:
-        for word in index:
-            if word in exclude:
-                raise ValueError(
-                    f"{word}  associated with .value "
-                    "already exists as a column label "
-                    "assigned to the dataframe's index parameter. "
-                    "Kindly use a unique name."
-                )
+        exclude = set(index).intersection(exclude)
+        if exclude:
+            raise ValueError(
+                f"Labels {*exclude, } already exist "
+                "as column labels assigned to the dataframe's "
+                "index parameter."
+            )
     # reorder allows for easy column selection later
     # in the concatenation phase
     # basically push .value to the end,
@@ -975,9 +972,9 @@ def _pivot_longer_names_sep(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Optional[Union[List, str]] = None,
-    values_from: Optional[Union[List, str]] = None,
+    index: Optional[Union[list, str]] = None,
+    names_from: Optional[Union[list, str]] = None,
+    values_from: Optional[Union[list, str]] = None,
     levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",
@@ -1112,9 +1109,9 @@ def pivot_wider(
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[List, str]] = None,
-    names_from: Optional[Union[List, str]] = None,
-    values_from: Optional[Union[List, str]] = None,
+    index: Optional[Union[list, str]] = None,
+    names_from: Optional[Union[list, str]] = None,
+    values_from: Optional[Union[list, str]] = None,
     levels_order: Optional[list] = None,
     flatten_levels: Optional[bool] = True,
     names_sep="_",

@@ -225,7 +225,7 @@ def test_sub_values_to(df_checks):
 
 def test_duplicate_values_to(df_checks):
     """Raise error if values_to is a sequence, and contains duplicates."""
-    with pytest.raises(ValueError, match="salvo already exists in values_to."):
+    with pytest.raises(ValueError, match="salvo is duplicated in values_to."):
         df_checks.pivot_longer(
             names_to=["x", "y"],
             names_pattern=[r"ht", r"\d"],

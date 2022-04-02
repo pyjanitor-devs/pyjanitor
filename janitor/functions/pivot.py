@@ -328,7 +328,7 @@ def _data_checks_pivot_longer(
             check(f"{word} in names_to", word, [str])
             if (word in uniques) and (word != ".value"):
                 raise ValueError(f"{word} already exists in names_to.")
-            uniques.add(word)  # noqa: PD005
+            uniques.add(word)
 
         len_names_to = len(names_to)
 

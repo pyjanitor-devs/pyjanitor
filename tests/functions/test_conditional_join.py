@@ -305,7 +305,7 @@ def test_single_condition_less_than_ints_extension_array(df, right):
     left_on, right_on = ["A", "Integers"]
     expected = (
         df.merge(right, how="cross")
-        .query(f"{left_on} < {right_on}")
+        .query(f"{left_on} < {right_on}", engine="python")
         .reset_index(drop=True)
     )
     expected = expected.filter([left_on, right_on])
@@ -427,7 +427,7 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
     right = right.astype({"Integers": "Int64"})
     expected = (
         df.merge(right, how="cross")
-        .query(f"{left_on} > {right_on}")
+        .query(f"{left_on} > {right_on}", engine="python")
         .reset_index(drop=True)
     )
     expected = expected.filter([left_on, right_on])
@@ -810,7 +810,7 @@ def test_dual_ne_extension(df, right):
     right = right.astype({"Integers": "Int64"})
     expected = (
         df.merge(right, how="cross")
-        .query("A != Integers and B != Numeric")
+        .query("A != Integers and B != Numeric", engine="python")
         .reset_index(drop=True)
     )
     expected = expected.filter(filters)
@@ -1073,7 +1073,7 @@ def test_ge_le_ne_extension_array(df, right):
 
     expected = (
         df.merge(right, how="cross")
-        .query("A != Integers and B < Numeric and E >= Dates")
+        .query("A != Integers and B < Numeric and E >= Dates", engine="python")
         .reset_index(drop=True)
     )
     expected = expected.filter(filters)
@@ -1104,7 +1104,11 @@ def test_ge_lt_ne_extension(df, right):
     expected = (
         df.merge(right, how="cross")
         .query(
-            "A < Integers and B != Numeric and E >= Dates and E != Dates_Right"
+            "A < Integers and "
+            "B != Numeric and "
+            "E >= Dates and "
+            "E != Dates_Right ",
+            engine="python",
         )
         .reset_index(drop=True)
     )
@@ -1193,13 +1197,13 @@ def test_ge_lt_ne_extension_variant(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.assign(t=1)
-        .merge(
-            right.assign(t=1),
-            on="t",
-        )
+        df.merge(right, how="cross")
         .query(
-            "A != Integers and B < Numeric and E >= Dates and E != Dates_Right"
+            "A != Integers and "
+            "B < Numeric and "
+            "E >= Dates and "
+            "E != Dates_Right",
+            engine="python",
         )
         .reset_index(drop=True)
     )
@@ -1510,8 +1514,8 @@ def test_multiple_eqs_extension_array(df, right):
             how="inner",
             sort=False,
         )
-        # .dropna(subset=["B", "E", "Floats", "Dates"])
-        .query("A != Integers").reset_index(drop=True)
+        .query("A != Integers", engine="python")
+        .reset_index(drop=True)
     )
     expected = expected.filter(columns)
     actual = df.conditional_join(

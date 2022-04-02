@@ -986,7 +986,6 @@ def pivot_wider(
         0  5.5       20       25       30       37
         1  6.1       22       18       19       29
 
-
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         It should be either a single column name, or a list of column names.
@@ -1065,13 +1064,14 @@ def _computations_pivot_wider(
         names_sep,
         names_glue,
     )
-    # check dtype of `names_from` is string
-    names_from_all_strings = (
-        df.filter(names_from).agg(is_string_dtype).all().item()
-    )
+    if flatten_levels:
+        # check dtype of `names_from` is string
+        names_from_all_strings = (
+            df.filter(names_from).agg(is_string_dtype).all().item()
+        )
 
-    # check dtype of columns
-    column_dtype = is_string_dtype(df.columns)
+        # check dtype of columns
+        column_dtype = is_string_dtype(df.columns)
 
     df = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
@@ -1088,7 +1088,7 @@ def _computations_pivot_wider(
         else:
             new_columns = [entry for entry in df]
         if names_glue is not None:
-            if "_value" in names_from:
+            if ("_value" in names_from) and (None in df.columns.names):
                 warnings.warn(
                     "For names_glue, _value is used as a placeholder "
                     "for the values_from section. "

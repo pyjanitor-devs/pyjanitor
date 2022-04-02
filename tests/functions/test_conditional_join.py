@@ -1197,7 +1197,7 @@ def test_ge_lt_ne_extension_variant(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = (
-        df.merge(righthow="cross")
+        df.merge(right, how="cross")
         .query(
             "A != Integers and "
             "B < Numeric and "

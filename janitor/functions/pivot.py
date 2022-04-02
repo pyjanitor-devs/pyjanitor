@@ -721,7 +721,7 @@ def _pivot_longer_dot_value(
             raise ValueError(
                 f"Labels {*exclude, } already exist "
                 "as column labels assigned to the dataframe's "
-                "index parameter."
+                "index parameter. Kindly provide unique label(s)."
             )
     # reorder allows for easy column selection later
     # in the concatenation phase

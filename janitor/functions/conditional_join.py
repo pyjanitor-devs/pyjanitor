@@ -868,85 +868,85 @@ def _multiple_conditional_join_eq(
     if not outcome:
         return None
 
-    left_index, right_index, lower_boundary, upper_boundary = outcome
+    # left_index, right_index, lower_boundary, upper_boundary = outcome
 
-    (left_on, right_on, op), *rest = [
-        (left_on, right_on, op)
-        for left_on, right_on, op in conditions
-        if op != _JoinOperator.STRICTLY_EQUAL.value
-    ]
+    # (left_on, right_on, op), *rest = [
+    #     (left_on, right_on, op)
+    #     for left_on, right_on, op in conditions
+    #     if op != _JoinOperator.STRICTLY_EQUAL.value
+    # ]
 
-    right_c = right.loc[right_index, right_on]
-    right_c = extract_array(right_c, extract_numpy=True)
-    left_c = df.loc[left_index, left_on]
-    left_c = extract_array(left_c, extract_numpy=True)
-    op = operator_map[op]
-    pos = np.copy(upper_boundary)
-    upp = np.copy(upper_boundary)
-    counter = np.arange(left_index.size)
-    ext_arr = is_extension_array_dtype(left_c)
+    # right_c = right.loc[right_index, right_on]
+    # right_c = extract_array(right_c, extract_numpy=True)
+    # left_c = df.loc[left_index, left_on]
+    # left_c = extract_array(left_c, extract_numpy=True)
+    # op = operator_map[op]
+    # pos = np.copy(upper_boundary)
+    # upp = np.copy(upper_boundary)
+    # counter = np.arange(left_index.size)
+    # ext_arr = is_extension_array_dtype(left_c)
 
-    for num in range((upper_boundary - lower_boundary).max()):
-        lower_boundary = lower_boundary + num
-        if (lower_boundary >= upp).any():
-            filter_ = lower_boundary < upp
-            left_c = left_c[filter_]
-            lower_boundary = lower_boundary[filter_]
-            upp = upp[filter_]
-        keep_rows = op(left_c, right_c[lower_boundary])
-        if ext_arr:
-            keep_rows = keep_rows.to_numpy(
-                dtype=bool, na_value=False, copy=False
-            )
-        if keep_rows.any():
-            outcome = lower_boundary[keep_rows]
-            pos[counter[keep_rows]] = outcome
-            counter = counter[~keep_rows]
-            left_c = left_c[~keep_rows]
-            upp = upp[~keep_rows]
-            lower_boundary = lower_boundary[~keep_rows]
-        if keep_rows.all():
-            break
+    # for num in range((upper_boundary - lower_boundary).max()):
+    #     lower_boundary = lower_boundary + num
+    #     if (lower_boundary >= upp).any():
+    #         filter_ = lower_boundary < upp
+    #         left_c = left_c[filter_]
+    #         lower_boundary = lower_boundary[filter_]
+    #         upp = upp[filter_]
+    #     keep_rows = op(left_c, right_c[lower_boundary])
+    #     if ext_arr:
+    #         keep_rows = keep_rows.to_numpy(
+    #             dtype=bool, na_value=False, copy=False
+    #         )
+    #     if keep_rows.any():
+    #         outcome = lower_boundary[keep_rows]
+    #         pos[counter[keep_rows]] = outcome
+    #         counter = counter[~keep_rows]
+    #         left_c = left_c[~keep_rows]
+    #         upp = upp[~keep_rows]
+    #         lower_boundary = lower_boundary[~keep_rows]
+    #     if keep_rows.all():
+    #         break
 
-    keep_rows = pos < upper_boundary
+    # keep_rows = pos < upper_boundary
 
-    if not keep_rows.any():
-        return None
+    # if not keep_rows.any():
+    #     return None
 
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        pos = pos[keep_rows]
-        upper_boundary = upper_boundary[keep_rows]
+    # if not keep_rows.all():
+    #     left_index = left_index[keep_rows]
+    #     pos = pos[keep_rows]
+    #     upper_boundary = upper_boundary[keep_rows]
 
-    repeater = upper_boundary - pos
-    right_index = [
-        right_index[start:end] for start, end in zip(pos, upper_boundary)
-    ]
+    # repeater = upper_boundary - pos
+    # right_index = [
+    #     right_index[start:end] for start, end in zip(pos, upper_boundary)
+    # ]
 
-    # get indices and filter to get exact indices
-    # that meet the condition
-    right_index = np.concatenate(right_index)
-    left_index = np.repeat(left_index, repeater)
+    # # get indices and filter to get exact indices
+    # # that meet the condition
+    # right_index = np.concatenate(right_index)
+    # left_index = np.repeat(left_index, repeater)
 
-    left_c = extract_array(df[left_on], extract_numpy=True)[left_index]
-    right_c = extract_array(right[right_on], extract_numpy=True)[right_index]
+    # left_c = extract_array(df[left_on], extract_numpy=True)[left_index]
+    # right_c = extract_array(right[right_on], extract_numpy=True)[right_index]
 
-    mask = op(left_c, right_c)
+    # mask = op(left_c, right_c)
 
-    if ext_arr:
-        mask = mask.to_numpy(dtype=bool, na_value=False)
+    # if ext_arr:
+    #     mask = mask.to_numpy(dtype=bool, na_value=False)
 
-    if not mask.all():
-        left_index = left_index[mask]
-        right_index = right_index[mask]
-    if not rest:
-        return left_index, right_index
+    # if not mask.all():
+    #     left_index = left_index[mask]
+    #     right_index = right_index[mask]
+    # if not rest:
+    #     return left_index, right_index
 
-    rest = (
-        (df[left_on], right[right_on], op) for left_on, right_on, op in rest
-    )
+    # rest = (
+    #     (df[left_on], right[right_on], op) for left_on, right_on, op in rest
+    # )
 
-    return _generate_indices(left_index, right_index, rest)
+    # return _generate_indices(left_index, right_index, rest)
 
 
 def _multiple_conditional_join_le_lt(

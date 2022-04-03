@@ -16,6 +16,7 @@ dependencies:
   - ipykernel
   - ipython
   - isort
+  - jinja2<3.1.0 # 27 March 2022: https://github.com/pallets/jinja/issues/1631
   - jupyterlab
   - lxml
   - make

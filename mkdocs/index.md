@@ -10,7 +10,7 @@ provides a clean API for cleaning data.
 ## Quick start
 
 - Installation: `conda install -c conda-forge pyjanitor`
-- Check out the collection of [general functions](./api/functions.md)
+- Check out the collection of [general functions](https://pyjanitor-devs.github.io/pyjanitor/api/functions/)
 
 ## Why janitor?
 
@@ -255,7 +255,7 @@ df = (
 
 ## Contributing
 
-Follow the [development guide](./devguide.md) for a full description of the process of contributing to `pyjanitor`.
+Follow the [development guide](https://pyjanitor-devs.github.io/pyjanitor/devguide/) for a full description of the process of contributing to `pyjanitor`.
 
 ## Adding new functionality
 

@@ -302,18 +302,17 @@ def test_single_condition_less_than_ints_extension_array(df, right):
 
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
-    left_on, right_on = ["A", "Integers"]
+
     expected = (
         df.merge(right, how="cross")
-        .query(f"{left_on} < {right_on}")
+        .loc[lambda df: df.A < df.Integers, ["A", "Integers"]]
         .reset_index(drop=True)
     )
-    expected = expected.filter([left_on, right_on])
-    actual = df.conditional_join(
-        right, (left_on, right_on, "<"), how="inner", sort_by_appearance=True
-    )
 
-    actual = actual.filter([left_on, right_on])
+    actual = df.conditional_join(
+        right, ("A", "Integers", "<"), how="inner", sort_by_appearance=True
+    ).filter(["A", "Integers"])
+
     assert_frame_equal(expected, actual)
 
 
@@ -427,15 +426,14 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
     right = right.astype({"Integers": "Int64"})
     expected = (
         df.merge(right, how="cross")
-        .query(f"{left_on} > {right_on}")
+        .loc[lambda df: df.A > df.Integers, ["A", "Integers"]]
         .reset_index(drop=True)
     )
-    expected = expected.filter([left_on, right_on])
+
     actual = df.conditional_join(
         right, (left_on, right_on, ">"), how="inner", sort_by_appearance=True
-    )
+    ).filter(["A", "Integers"])
 
-    actual = actual.filter([left_on, right_on])
     assert_frame_equal(expected, actual)
 
 
@@ -808,21 +806,19 @@ def test_dual_ne_extension(df, right):
     filters = ["A", "Integers", "B", "Numeric"]
     df = df.astype({"A": "Int64"})
     right = right.astype({"Integers": "Int64"})
-    expected = (
-        df.merge(right, how="cross")
-        .query("A != Integers and B != Numeric")
-        .reset_index(drop=True)
-    )
-    expected = expected.filter(filters)
+    expected = df.merge(right, how="cross")
+    expected = expected.loc[
+        expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric),
+        filters,
+    ].reset_index(drop=True)
+
     actual = df.conditional_join(
         right,
         ("A", "Integers", "!="),
         ("B", "Numeric", "!="),
         how="inner",
         sort_by_appearance=True,
-    )
-
-    actual = actual.filter(filters)
+    ).filter(filters)
     assert_frame_equal(expected, actual)
 
 
@@ -835,12 +831,12 @@ def test_dual_ne(df, right):
 
     filters = ["A", "Integers", "B", "Numeric"]
 
-    expected = (
-        df.merge(right, how="cross")
-        .query("A != Integers and B != Numeric")
-        .reset_index(drop=True)
-    )
-    expected = expected.filter(filters)
+    expected = df.merge(right, how="cross")
+    expected = expected.loc[
+        expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric),
+        filters,
+    ].reset_index(drop=True)
+
     actual = df.conditional_join(
         right,
         ("A", "Integers", "!="),
@@ -1071,12 +1067,14 @@ def test_ge_le_ne_extension_array(df, right):
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
-    expected = (
-        df.merge(right, how="cross")
-        .query("A != Integers and B < Numeric and E >= Dates")
-        .reset_index(drop=True)
-    )
-    expected = expected.filter(filters)
+    expected = df.merge(right, how="cross")
+    expected = expected.loc[
+        expected.A.ne(expected.Integers)
+        & expected.B.lt(expected.Numeric)
+        & expected.E.ge(expected.Dates),
+        filters,
+    ].reset_index(drop=True)
+
     actual = df.conditional_join(
         right,
         ("E", "Dates", ">="),
@@ -1084,9 +1082,8 @@ def test_ge_le_ne_extension_array(df, right):
         ("B", "Numeric", "<"),
         how="inner",
         sort_by_appearance=True,
-    )
+    ).filter(filters)
 
-    actual = actual.filter(filters)
     assert_frame_equal(expected, actual)
 
 
@@ -1101,14 +1098,15 @@ def test_ge_lt_ne_extension(df, right):
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
-    expected = (
-        df.merge(right, how="cross")
-        .query(
-            "A < Integers and B != Numeric and E >= Dates and E != Dates_Right"
-        )
-        .reset_index(drop=True)
-    )
-    expected = expected.filter(filters)
+    expected = df.merge(right, how="cross")
+    expected = expected.loc[
+        expected.A.lt(expected.Integers)
+        & expected.B.ne(expected.Numeric)
+        & expected.E.ge(expected.Dates)
+        & expected.E.ne(expected.Dates_Right),
+        filters,
+    ].reset_index(drop=True)
+
     actual = df.conditional_join(
         right,
         ("E", "Dates", ">="),
@@ -1190,14 +1188,15 @@ def test_ge_lt_ne_extension_variant(df, right):
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
-    expected = (
-        df.merge(right, how="cross")
-        .query(
-            "A != Integers and B < Numeric and E >= Dates and E != Dates_Right"
-        )
-        .reset_index(drop=True)
-    )
-    expected = expected.filter(filters)
+    expected = df.merge(right, how="cross")
+    expected = expected.loc[
+        expected.A.ne(expected.Integers)
+        & expected.B.lt(expected.Numeric)
+        & expected.E.ge(expected.Dates)
+        & expected.E.ne(expected.Dates_Right),
+        filters,
+    ].reset_index(drop=True)
+
     actual = df.conditional_join(
         right,
         ("E", "Dates", ">="),
@@ -1206,9 +1205,7 @@ def test_ge_lt_ne_extension_variant(df, right):
         ("E", "Dates_Right", "!="),
         how="inner",
         sort_by_appearance=True,
-    )
-
-    actual = actual.filter(filters)
+    ).filter(filters)
     assert_frame_equal(expected, actual)
 
 
@@ -1496,18 +1493,17 @@ def test_multiple_eqs_extension_array(df, right):
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
-    expected = (
-        df.merge(
-            right,
-            left_on=["B", "E"],
-            right_on=["Floats", "Dates"],
-            how="inner",
-            sort=False,
-        )
-        # .dropna(subset=["B", "E", "Floats", "Dates"])
-        .query("A != Integers").reset_index(drop=True)
+    expected = df.merge(
+        right,
+        left_on=["B", "E"],
+        right_on=["Floats", "Dates"],
+        how="inner",
+        sort=False,
     )
-    expected = expected.filter(columns)
+    expected = expected.loc[
+        expected.A != expected.Integers, columns
+    ].reset_index(drop=True)
+
     actual = df.conditional_join(
         right,
         ("E", "Dates", "=="),
@@ -1515,7 +1511,5 @@ def test_multiple_eqs_extension_array(df, right):
         ("A", "Integers", "!="),
         how="inner",
         sort_by_appearance=False,
-    )
-
-    actual = actual.filter(columns)
+    ).filter(columns)
     assert_frame_equal(expected, actual)

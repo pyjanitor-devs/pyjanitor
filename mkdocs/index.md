@@ -285,7 +285,7 @@ We use [`pandas_flavor`](https://github.com/Zsailer/pandas_flavor) to register t
 ### Add a test case
 
 Secondly, we ask that you contribute a test case,
-to ensure that it works as intended.
+to ensure that the function works as intended.
 Follow the [contribution] docs for further details.
 
 [contribution]: https://pyjanitor-devs.github.io/pyjanitor/contributing.html#unit-test-guidelines

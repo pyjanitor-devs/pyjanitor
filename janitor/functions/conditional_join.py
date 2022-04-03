@@ -860,8 +860,7 @@ def _multiple_conditional_join_eq(
         rest: list,
     ) -> tuple:
         """
-        Use Pandas' merge if a string column exists in the merge columns,
-        or any of the columns is unique.
+        Use Pandas' merge if a string column exists in the merge columns.
 
         Returns a tuple of arrays if there is a match, or None.
         """
@@ -886,18 +885,23 @@ def _multiple_conditional_join_eq(
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
 
-    if any(any(map(is_string_dtype, ent)) for ent in eqs):
-        rest = (
-            (df[left_on], right[right_on], op)
-            for left_on, right_on, op in conditions
-            if op != _JoinOperator.STRICTLY_EQUAL.value
-        )
+    left_on, right_on = zip(*eqs)
 
-        left_on, right_on = zip(*eqs)
+    left_on = [*left_on]
+    right_on = [*right_on]
 
-        left_on = [*left_on]
-        right_on = [*right_on]
+    rest = (
+        (df[left_on], right[right_on], op)
+        for left_on, right_on, op in conditions
+        if op != _JoinOperator.STRICTLY_EQUAL.value
+    )
 
+    # binary search on strings/categories is slow
+    # it might be a different story when
+    # pandas StringArray is no more experimental
+    if any(map(is_string_dtype, left_on)) | any(
+        map(is_categorical_dtype, left_on)
+    ):
         return _merge(df, right, left_on, right_on, rest)
 
     # left_on = left_on[0]
@@ -950,12 +954,15 @@ def _multiple_conditional_join_eq(
     # ext_arr = is_extension_array_dtype(left_c)
 
     # for num in range((upper_boundary - lower_boundary).max()):
+    #     if not counter.size:
+    #         return None
     #     lower_boundary = lower_boundary + num
     #     if (lower_boundary >= upp).any():
     #         filter_ = lower_boundary < upp
     #         left_c = left_c[filter_]
     #         lower_boundary = lower_boundary[filter_]
     #         upp = upp[filter_]
+    #         counter = counter[filter_]
     #     keep_rows = op(left_c, right_c[lower_boundary])
     #     if ext_arr:
     #         keep_rows = keep_rows.to_numpy(

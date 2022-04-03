@@ -327,7 +327,7 @@ def _data_checks_pivot_longer(
         for word in names_to:
             check(f"{word} in names_to", word, [str])
             if (word in uniques) and (word != ".value"):
-                raise ValueError(f"{word} already exists in names_to.")
+                raise ValueError(f"{word} is duplicated in names_to.")
             uniques.add(word)
 
         len_names_to = len(names_to)
@@ -543,14 +543,14 @@ def _computations_pivot_longer(
     # then the word should not exist in the index
     # there is no need to check the columns
     # since that is what we are replacing with names_to
-    if ".value" not in names_to:
-        for word in names_to:
-            if index and (word in index):
-                raise ValueError(
-                    f"`{word}` in names_to already exists "
-                    "as a column label assigned to the dataframe's index. "
-                    "Kindly use a unique name."
-                )
+    if (".value" not in names_to) and index:
+        exclude = set(names_to).intersection(index)
+        if exclude:
+            raise ValueError(
+                f"Labels {*exclude, } in names_to already exist "
+                "as column labels assigned to the dataframe's "
+                "index parameter. Kindly provide unique label(s)."
+            )
 
     if names_sep is not None:
         return _pivot_longer_names_sep(
@@ -707,16 +707,20 @@ def _pivot_longer_dot_value(
     # check to avoid duplicate columns
     # the names assigned to `.value` should not be found in the index
     # and should not be found in the other names in names_to
-    exclude = mapping[".value"].array
-    for word in names_to:
-        if (word != ".value") and (word in exclude):
-            raise ValueError(
-                f"{word} in names_to already exists "
-                "in the new dataframe's columns. "
-                "Kindly use a unique name."
-            )
+    exclude = [
+        word
+        for word in mapping[".value"].array
+        if (word in names_to) and (word != ".value")
+    ]
+    if exclude:
+        raise ValueError(
+            f"Labels {*exclude, } in names_to already exist "
+            "in the new dataframe's columns. "
+            "Kindly provide unique label(s)."
+        )
+
     if index:
-        exclude = set(index).intersection(exclude)
+        exclude = set(index).intersection(mapping[".value"])
         if exclude:
             raise ValueError(
                 f"Labels {*exclude, } already exist "
@@ -822,13 +826,13 @@ def _pivot_longer_names_pattern_sequence(
     """
     values_to_is_a_sequence = isinstance(values_to, (list, tuple))
     if values_to_is_a_sequence and index:
-        for word in values_to:
-            if word in index:
-                raise ValueError(
-                    f"{word} in values_to already exists as a column label "
-                    "assigned to the dataframe's index parameter. "
-                    "Kindly use a unique name."
-                )
+        exclude = [word for word in values_to if word in index]
+        if exclude:
+            raise ValueError(
+                f"Labels {*exclude, } in values_to already exist as "
+                "column labels assigned to the dataframe's index parameter. "
+                "Kindly use unique labels."
+            )
     df_columns = df.columns
     len_index = len(df)
 

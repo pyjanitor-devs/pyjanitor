@@ -66,7 +66,7 @@ def test_subtype_names_to(df_checks):
 
 def test_duplicate_names_to(df_checks):
     """Raise error if names_to contains duplicates."""
-    with pytest.raises(ValueError, match="y already exists in names_to."):
+    with pytest.raises(ValueError, match="y is duplicated in names_to."):
         df_checks.pivot_longer(names_to=["y", "y"], names_pattern="(.+)(.)")
 
 
@@ -345,7 +345,10 @@ def test_dot_value_names_to_columns_intersect(df_checks):
     .value in names_to,
     and names_to intersects with the new columns
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist in the new dataframe\'s columns.+",
+    ):
         df_checks.pivot_longer(
             index="famid", names_to=(".value", "ht"), names_pattern="(.+)(.)"
         )
@@ -356,10 +359,9 @@ def test_values_to_seq_index_intersect(df_checks):
     Raise ValueError if values_to is a sequence,
     and intersects with the index
     """
-    with pytest.raises(
-        ValueError,
-        match="famid in values_to already exists as a column label.+",
-    ):
+    match = ".+values_to already exist as column labels assigned "
+    match = match + "to the dataframe's index parameter.+"
+    with pytest.raises(ValueError, match=rf"{match}"):
         df_checks.pivot_longer(
             index="famid",
             names_to=("value", "ht"),
@@ -374,7 +376,12 @@ def test_dot_value_names_to_index_intersect(df_checks):
     .value in names_to,
     and names_to intersects with the index
     """
-    with pytest.raises(ValueError):
+    match = ".+already exist as column labels assigned "
+    match = match + "to the dataframe's index parameter.+"
+    with pytest.raises(
+        ValueError,
+        match=rf"{match}",
+    ):
         df_checks.rename(columns={"famid": "ht"}).pivot_longer(
             index="ht", names_to=(".value", "num"), names_pattern="(.+)(.)"
         )

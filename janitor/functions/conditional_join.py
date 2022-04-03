@@ -15,7 +15,7 @@ from pandas.core.dtypes.common import (
     is_string_dtype,
 )
 
-# from pandas.core.reshape.merge import _MergeOperation
+from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
 
@@ -399,7 +399,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    # return result
+    return result
 
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
@@ -852,21 +852,84 @@ def _multiple_conditional_join_eq(
     # something similar to  the `_range_indices` function
     # for less than and greater than
 
+    def _merge(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_on: list,
+        right_on: list,
+        rest: list,
+    ) -> tuple:
+        """
+        Use Pandas' merge if a string column exists in the merge columns,
+        or any of the columns is unique.
+
+        Returns a tuple of arrays if there is a match, or None.
+        """
+
+        left_index, right_index = _MergeOperation(
+            df,
+            right,
+            left_on=left_on,
+            right_on=right_on,
+            sort=False,
+            copy=False,
+        )._get_join_indexers()
+
+        if not left_index.size:
+            return None
+
+        return _generate_indices(left_index, right_index, rest)
+
     eqs = [
         (left_on, right_on)
         for left_on, right_on, op in conditions
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
 
-    left_on, right_on = zip(*eqs)
+    if any(any(map(is_string_dtype, ent)) for ent in eqs):
+        rest = (
+            (df[left_on], right[right_on], op)
+            for left_on, right_on, op in conditions
+            if op != _JoinOperator.STRICTLY_EQUAL.value
+        )
 
-    left_on = left_on[0]
-    right_on = right_on[0]
+        left_on, right_on = zip(*eqs)
 
-    outcome = _eq_indices(df[left_on], right[right_on])
+        left_on = [*left_on]
+        right_on = [*right_on]
 
-    if not outcome:
-        return None
+        return _merge(df, right, left_on, right_on, rest)
+
+    # left_on = left_on[0]
+    # right_on = right_on[0]
+
+    # outcome = _eq_indices(df[left_on], right[right_on])
+
+    # if not outcome:
+    #     return None
+
+    # return outcome
+
+    # eqs = [
+    #     (left_on, right_on)
+    #     for left_on, right_on, op in conditions
+    #     if op == _JoinOperator.STRICTLY_EQUAL.value
+    # ]
+
+    # left_on, right_on = zip(*eqs)
+
+    # left_on = [*left_on]
+    # right_on = [*right_on]
+
+    # # get merge indices
+    # left_index, right_index = _MergeOperation(
+    #     df, right, left_on=left_on, right_on=right_on, sort=False, copy=False
+    # )._get_join_indexers()
+
+    # if not left_index.size:
+    #     return None
+
+    # return left_index, right_index
 
     # left_index, right_index, lower_boundary, upper_boundary = outcome
 

@@ -399,7 +399,7 @@ def _conditional_join_compute(
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
 
-    return result
+    # return result
 
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
@@ -852,18 +852,32 @@ def _multiple_conditional_join_eq(
     # something similar to  the `_range_indices` function
     # for less than and greater than
 
-    def _merge(
-        df: pd.DataFrame,
-        right: pd.DataFrame,
-        left_on: list,
-        right_on: list,
-        rest: list,
-    ) -> tuple:
-        """
-        Use Pandas' merge if a string column exists in the merge columns.
+    eq_check = None
+    for condition in conditions:
+        left_on, _, op = condition
+        if (op == _JoinOperator.STRICTLY_EQUAL.value) & (
+            is_numeric_dtype(df[left_on]) | is_datetime64_dtype(df[left_on])
+        ):
+            eq_check = condition
+            break
 
-        Returns a tuple of arrays if there is a match, or None.
-        """
+    if not eq_check:
+        eqs = [
+            (left_on, right_on)
+            for left_on, right_on, op in conditions
+            if op == _JoinOperator.STRICTLY_EQUAL.value
+        ]
+
+        left_on, right_on = zip(*eqs)
+
+        left_on = [*left_on]
+        right_on = [*right_on]
+
+        rest = (
+            (df[left_on], right[right_on], op)
+            for left_on, right_on, op in conditions
+            if op != _JoinOperator.STRICTLY_EQUAL.value
+        )
 
         left_index, right_index = _MergeOperation(
             df,
@@ -879,75 +893,96 @@ def _multiple_conditional_join_eq(
 
         return _generate_indices(left_index, right_index, rest)
 
-    eqs = [
-        (left_on, right_on)
-        for left_on, right_on, op in conditions
-        if op == _JoinOperator.STRICTLY_EQUAL.value
+    left_on, right_on, _ = eq_check
+    outcome = _eq_indices(df[left_on], right[right_on])
+    if not outcome:
+        return None
+    left_index, right_index, lower_boundary, upper_boundary = outcome
+    eq_check = [condition for condition in conditions if condition != eq_check]
+    rest = [
+        (df.loc[left_index, left_on], right.loc[right_index, right_on], op)
+        for left_on, right_on, op in eq_check
+    ]
+    rest = [
+        (
+            extract_array(left_c, extract_numpy=True),
+            extract_array(right_c, extract_numpy=True),
+            operator_map[op],
+        )
+        for left_c, right_c, op in rest
     ]
 
-    left_on, right_on = zip(*eqs)
+    pos = np.copy(upper_boundary)
+    upper = np.copy(upper_boundary)
+    counter = np.arange(left_index.size)
 
-    left_on = [*left_on]
-    right_on = [*right_on]
+    # return lower_boundary
 
-    rest = (
+    def _extension_array_check(arr):
+        """Convert boolean to numpy if it is an extension array."""
+        if is_extension_array_dtype(arr):
+            return arr.to_numpy(dtype=bool, na_value=False, copy=False)
+        return arr
+
+    for num in range((upper_boundary - lower_boundary).max()):
+        if not counter.size:
+            return None
+
+        if (lower_boundary >= upper).any():
+            keep_rows = lower_boundary < upper
+            rest = [
+                (left_c[keep_rows], right_c, op)
+                for left_c, right_c, op in rest
+            ]
+            lower_boundary = lower_boundary[keep_rows]
+            upper = upper[keep_rows]
+            counter = counter[keep_rows]
+        keep_rows = [
+            op(left_c, right_c[lower_boundary]) for left_c, right_c, op in rest
+        ]
+        keep_rows = [_extension_array_check(arr) for arr in keep_rows]
+        keep_rows = np.logical_and.reduce(keep_rows)
+        if keep_rows.any():
+            pos[counter[keep_rows]] = lower_boundary[keep_rows]
+            counter = counter[~keep_rows]
+            rest = [
+                (left_c[~keep_rows], right_c, op)
+                for left_c, right_c, op in rest
+            ]
+            upper = upper[~keep_rows]
+            lower_boundary = lower_boundary[~keep_rows]
+        if keep_rows.all():
+            break
+        lower_boundary += 1
+    # return pos, upper_boundary, left_index
+
+    keep_rows = pos < upper_boundary
+
+    if not keep_rows.any():
+        return None
+
+    if not keep_rows.all():
+        left_index = left_index[keep_rows]
+        pos = pos[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+
+    repeater = upper_boundary - pos
+    right_index = [
+        right_index[start:end] for start, end in zip(pos, upper_boundary)
+    ]
+
+    right_index = np.concatenate(right_index)
+    left_index = np.repeat(left_index, repeater)
+
+    eq_check = [
         (df[left_on], right[right_on], op)
-        for left_on, right_on, op in conditions
-        if op != _JoinOperator.STRICTLY_EQUAL.value
-    )
+        for left_on, right_on, op in eq_check
+    ]
 
-    # binary search on strings/categories is slow
-    # it might be a different story when
-    # pandas StringArray is no more experimental
-    if any(map(is_string_dtype, left_on)) | any(
-        map(is_categorical_dtype, left_on)
-    ):
-        return _merge(df, right, left_on, right_on, rest)
+    # return eq_check
 
-    # left_on = left_on[0]
-    # right_on = right_on[0]
+    return _generate_indices(left_index, right_index, eq_check)
 
-    # outcome = _eq_indices(df[left_on], right[right_on])
-
-    # if not outcome:
-    #     return None
-
-    # return outcome
-
-    # eqs = [
-    #     (left_on, right_on)
-    #     for left_on, right_on, op in conditions
-    #     if op == _JoinOperator.STRICTLY_EQUAL.value
-    # ]
-
-    # left_on, right_on = zip(*eqs)
-
-    # left_on = [*left_on]
-    # right_on = [*right_on]
-
-    # # get merge indices
-    # left_index, right_index = _MergeOperation(
-    #     df, right, left_on=left_on, right_on=right_on, sort=False, copy=False
-    # )._get_join_indexers()
-
-    # if not left_index.size:
-    #     return None
-
-    # return left_index, right_index
-
-    # left_index, right_index, lower_boundary, upper_boundary = outcome
-
-    # (left_on, right_on, op), *rest = [
-    #     (left_on, right_on, op)
-    #     for left_on, right_on, op in conditions
-    #     if op != _JoinOperator.STRICTLY_EQUAL.value
-    # ]
-
-    # right_c = right.loc[right_index, right_on]
-    # right_c = extract_array(right_c, extract_numpy=True)
-    # left_c = df.loc[left_index, left_on]
-    # left_c = extract_array(left_c, extract_numpy=True)
-    # op = operator_map[op]
     # pos = np.copy(upper_boundary)
     # upp = np.copy(upper_boundary)
     # counter = np.arange(left_index.size)

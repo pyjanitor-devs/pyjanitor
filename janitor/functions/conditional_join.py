@@ -836,30 +836,37 @@ def _multiple_conditional_join_eq(
     # for less than and greater than;
     # I'd like to believe there is a smarter/more efficient way of doing this
     # where the filter occurs within the join, and avoids a blow-up
+    # the current implementation uses
+    # a list comprehension to find first matches
+    # in a bid to reduce the blow up size ...
+    # this applies only to integers/dates
+    # and only offers advantages in scenarios
+    # where the right is duplicated
+    # for one to many joins,
+    # or one to one or strings/category, use merge
+    # as it is significantly faster than a binary search
 
-    eq_check = None
-    for condition in conditions:
-        left_on, _, op = condition
-        if (op == _JoinOperator.STRICTLY_EQUAL.value) & (
-            is_numeric_dtype(df[left_on]) | is_datetime64_dtype(df[left_on])
-        ):
-            eq_check = condition
-            break
+    eqs = [
+        (left_on, right_on)
+        for left_on, right_on, op in conditions
+        if op == _JoinOperator.STRICTLY_EQUAL.value
+    ]
 
-    # binary search on strings/category is quite slow,
-    # compared to integers/dates
-    if not eq_check:
-        eqs = [
-            (left_on, right_on)
-            for left_on, right_on, op in conditions
-            if op == _JoinOperator.STRICTLY_EQUAL.value
-        ]
+    left_on, right_on = zip(*eqs)
+    left_on = [*left_on]
+    right_on = [*right_on]
 
-        left_on, right_on = zip(*eqs)
+    not_numbers_or_date = any(
+        col
+        for col in left_on
+        if not (is_numeric_dtype(df[col]) | is_datetime64_dtype(df[col]))
+    )
 
-        left_on = [*left_on]
-        right_on = [*right_on]
-
+    if (
+        not_numbers_or_date
+        | (not right.duplicated(subset=right_on).any(axis=None))
+        | (not df.duplicated(subset=left_on).any(axis=None))
+    ):
         rest = (
             (df[left_on], right[right_on], op)
             for left_on, right_on, op in conditions
@@ -880,12 +887,12 @@ def _multiple_conditional_join_eq(
 
         return _generate_indices(left_index, right_index, rest)
 
-    left_on, right_on, _ = eq_check
+    left_on, right_on = eqs[0]
     outcome = _eq_indices(df[left_on], right[right_on])
     if not outcome:
         return None
     left_index, right_index, lower_boundary, upper_boundary = outcome
-    eq_check = [condition for condition in conditions if condition != eq_check]
+    eq_check = [condition for condition in conditions if condition != eqs[0]]
 
     if ((upper_boundary - lower_boundary) == 1).all():
         right_index = right_index[lower_boundary]
@@ -921,11 +928,12 @@ def _multiple_conditional_join_eq(
     upper = np.copy(upper_boundary)
     counter = np.arange(left_index.size)
 
-    # the list comprehension is likely a speed bump
-    # gains may be possible if it is moved into C
+    # faster within C/Rust? better implemented within Pandas itself?
 
     # the idea behind this is to shift the array by 1
     # for each iteration, until it is exhausted.
+    # get the first match and move on
+    # this way the blow up is reduced, and not a complete cartesian
     for _ in range((upper_boundary - lower_boundary).max()):
         if (lower_boundary == upper).any():
             keep_rows = lower_boundary < upper
@@ -960,7 +968,6 @@ def _multiple_conditional_join_eq(
         return None
 
     if not keep_rows.all():
-
         left_index = left_index[keep_rows]
         pos = pos[keep_rows]
         upper_boundary = upper_boundary[keep_rows]
@@ -977,8 +984,6 @@ def _multiple_conditional_join_eq(
         (df[left_on], right[right_on], op)
         for left_on, right_on, op in eq_check
     ]
-
-    # return eq_check
 
     return _generate_indices(left_index, right_index, eq_check)
 

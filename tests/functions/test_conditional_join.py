@@ -1075,15 +1075,19 @@ def test_dual_conditions_eq_and_ne(df, right):
     """Test output for equal and not equal conditions."""
 
     columns = ["B", "Numeric", "E", "Dates"]
-    expected = df.dropna(subset=["B"]).merge(
-        right.dropna(subset=["Numeric"]), left_on="B", right_on="Numeric"
+    expected = (
+        df.dropna(subset=["B"])
+        .merge(
+            right.dropna(subset=["Numeric"]), left_on="B", right_on="Numeric"
+        )
+        .loc[lambda df: df.E.ne(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
     )
-    expected = expected.loc[expected.E != expected.Dates, columns]
-    expected = expected.sort_values(columns, ignore_index=True)
 
     actual = (
-        df.conditional_join(
-            right,
+        df.dropna(subset=["B"])
+        .conditional_join(
+            right.dropna(subset=["Numeric"]),
             ("B", "Numeric", "=="),
             ("E", "Dates", "!="),
             how="inner",
@@ -1824,5 +1828,63 @@ def test_extension_array_eq():
         ]
         .reset_index(drop=True)
     )
+
+    assert_frame_equal(expected, actual)
+
+
+def test_left_empty():
+    """Test nulls for equality merge."""
+    df1 = pd.DataFrame({"A": [np.nan, np.nan], "B": [2, 3]})
+    df2 = pd.DataFrame({"A": [2.0, 2.0], "B": [3, 2]})
+    actual = (
+        df1.merge(df2, on="A", sort=False)
+        .loc[lambda df: df.B_x <= df.B_y]
+        .reset_index(drop=True)
+    )
+    actual.columns = list("ABC")
+    expected = df1.conditional_join(
+        df2, ("A", "A", "=="), ("B", "B", "<=")
+    ).drop(columns=("right", "A"))
+    expected.columns = list("ABC")
+
+    assert_frame_equal(expected, actual)
+
+
+def test_right_empty():
+    """Test nulls for equality merge."""
+    df2 = pd.DataFrame({"A": [np.nan, np.nan], "B": [2, 3]})
+    df1 = pd.DataFrame({"A": [2.0, 2.0], "B": [3, 2]})
+    actual = (
+        df1.merge(df2, on="A", sort=False)
+        .loc[lambda df: df.B_x <= df.B_y]
+        .reset_index(drop=True)
+    )
+    actual.columns = list("ABC")
+    expected = df1.conditional_join(
+        df2, ("A", "A", "=="), ("B", "B", "<=")
+    ).drop(columns=("right", "A"))
+    expected.columns = list("ABC")
+
+    assert_frame_equal(expected, actual)
+
+
+def test_no_match():
+    """
+    Test output for equality merge,
+     where binary search is triggered,
+     and there are no matches.
+    """
+    df1 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(0, 4)})
+    df2 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(4, 8)})
+    actual = (
+        df1.merge(df2, on="A", sort=False)
+        .loc[lambda df: df.B_x > df.B_y]
+        .reset_index(drop=True)
+    )
+    actual.columns = list("ABC")
+    expected = df1.conditional_join(
+        df2, ("A", "A", "=="), ("B", "B", ">")
+    ).drop(columns=("right", "A"))
+    expected.columns = list("ABC")
 
     assert_frame_equal(expected, actual)

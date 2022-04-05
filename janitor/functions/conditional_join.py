@@ -321,13 +321,13 @@ def _conditional_join_type_check(
         )
 
     if (op in less_than_join_types.union(greater_than_join_types)) & (
-        not (is_numeric_dtype(left_column) | is_datetime64_dtype(left_column))
+        (is_string_dtype(left_column) | is_categorical_dtype(left_column))
     ):
         raise ValueError(
             "non-equi joins are supported "
             "only for datetime and numeric dtypes. "
             f"{left_column.name} in condition "
-            f"({left_column.name}, {right_column.name}, op) "
+            f"({left_column.name}, {right_column.name}, {op}) "
             f"has a dtype {left_column.dtype}."
         )
 
@@ -386,15 +386,12 @@ def _conditional_join_compute(
             df, right, *result, how, sort_by_appearance
         )
 
-    # multiple conditions
     if eq_check:
         result = _multiple_conditional_join_eq(df, right, conditions)
     elif le_lt_check:
         result = _multiple_conditional_join_le_lt(df, right, conditions)
     else:
         result = _multiple_conditional_join_ne(df, right, conditions)
-
-    # return result
 
     if result is None:
         return _create_conditional_join_empty_frame(df, right, how)
@@ -695,6 +692,9 @@ def _eq_indices(
     if left_c.min() > right_c.max():
         return None
 
+    if left_c.max() < right_c.min():
+        return None
+
     any_nulls = pd.isna(right_c)
     if any_nulls.any():
         right_c = right_c[~any_nulls]
@@ -856,14 +856,14 @@ def _multiple_conditional_join_eq(
     left_on = [*left_on]
     right_on = [*right_on]
 
-    not_numbers_or_date = any(
+    strings_or_category = any(
         col
         for col in left_on
-        if not (is_numeric_dtype(df[col]) | is_datetime64_dtype(df[col]))
+        if (is_string_dtype(df[col]) | is_categorical_dtype(df[col]))
     )
 
     if (
-        not_numbers_or_date
+        strings_or_category
         | (not right.duplicated(subset=right_on).any(axis=None))
         | (not df.duplicated(subset=left_on).any(axis=None))
     ):
@@ -894,14 +894,6 @@ def _multiple_conditional_join_eq(
     left_index, right_index, lower_boundary, upper_boundary = outcome
     eq_check = [condition for condition in conditions if condition != eqs[0]]
 
-    if ((upper_boundary - lower_boundary) == 1).all():
-        right_index = right_index[lower_boundary]
-        eq_check = [
-            (df[left_on], right[right_on], op)
-            for left_on, right_on, op in eq_check
-        ]
-        return _generate_indices(left_index, right_index, eq_check)
-
     rest = [
         (df.loc[left_index, left_on], right.loc[right_index, right_on], op)
         for left_on, right_on, op in eq_check
@@ -929,12 +921,9 @@ def _multiple_conditional_join_eq(
     counter = np.arange(left_index.size)
 
     # faster within C/Rust? better implemented within Pandas itself?
-
-    # the idea behind this is to shift the array by 1
-    # for each iteration, until it is exhausted.
-    # get the first match and move on
-    # this way the blow up is reduced, and not a complete cartesian
     for _ in range((upper_boundary - lower_boundary).max()):
+        if not counter.size:
+            break
         if (lower_boundary == upper).any():
             keep_rows = lower_boundary < upper
             rest = [
@@ -949,17 +938,16 @@ def _multiple_conditional_join_eq(
         ]
         keep_rows = [_extension_array_check(arr) for arr in keep_rows]
         keep_rows = np.logical_and.reduce(keep_rows)
-        if keep_rows.any():
-            pos[counter[keep_rows]] = lower_boundary[keep_rows]
-            counter = counter[~keep_rows]
-            rest = [
-                (left_c[~keep_rows], right_c, op)
-                for left_c, right_c, op in rest
-            ]
-            upper = upper[~keep_rows]
-            lower_boundary = lower_boundary[~keep_rows]
-        if keep_rows.all():
-            break
+        if not keep_rows.any():
+            lower_boundary += 1
+            continue
+        pos[counter[keep_rows]] = lower_boundary[keep_rows]
+        counter = counter[~keep_rows]
+        rest = [
+            (left_c[~keep_rows], right_c, op) for left_c, right_c, op in rest
+        ]
+        upper = upper[~keep_rows]
+        lower_boundary = lower_boundary[~keep_rows]
         lower_boundary += 1
 
     keep_rows = pos < upper_boundary
@@ -1044,14 +1032,11 @@ def _multiple_conditional_join_le_lt(
             if ge_gt:
                 continue
             ge_gt = condition
-        # we've gotten our two conditions
-        # so end the for loop
         if le_lt and ge_gt:
             break
 
     # optimised path
     if le_lt and ge_gt:
-        # capture the remaining conditions here
         rest = [
             condition
             for condition in conditions
@@ -1327,7 +1312,7 @@ def _create_conditional_join_frame(
     if how == _JoinTypes.LEFT.value:
         right = right.loc[right_index]
         right.index = left_index
-    else:  # how == 'right'
+    else:
         df = df.loc[left_index]
         df.index = right_index
     df = pd.merge(

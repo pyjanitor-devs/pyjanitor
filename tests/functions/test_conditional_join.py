@@ -1810,23 +1810,22 @@ def test_extension_array_eq():
             "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
         }
     )
-    df2 = df2.astype({"value_2B": "Int64", "value_2A": "Int64"})
+    df2 = df2.astype({"value_2A": "Int64"})
     expected = df1.conditional_join(
         df2,
         ("id", "id", "=="),
-        ("value_1", "value_2B", "<"),
-        ("value_1", "value_2A", ">="),
-        sort_by_appearance=True,
+        ("value_1", "value_2A", ">"),
+        sort_by_appearance=False,
     )
-    expected = expected.drop(columns=("right", "id")).droplevel(
-        axis=1, level=0
+    expected = (
+        expected.drop(columns=("right", "id"))
+        .droplevel(axis=1, level=0)
+        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
     )
     actual = (
         df1.merge(df2, on="id")
-        .loc[
-            lambda df: df.value_1.ge(df.value_2A) & df.value_1.lt(df.value_2B)
-        ]
-        .reset_index(drop=True)
+        .loc[lambda df: df.value_1.gt(df.value_2A)]
+        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)

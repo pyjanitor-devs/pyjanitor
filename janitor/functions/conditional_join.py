@@ -408,7 +408,6 @@ def _less_than_indices(
     left_c: pd.Series,
     right_c: pd.Series,
     strict: bool,
-    multiple_conditions: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -494,9 +493,6 @@ def _less_than_indices(
 
         if not search_indices.size:
             return None
-
-    if multiple_conditions:
-        return left_index, right_index, search_indices
 
     right_c = [right_index[ind:len_right] for ind in search_indices]
     right_c = np.concatenate(right_c)
@@ -650,9 +646,7 @@ def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     l1_nulls = np.concatenate([l1_nulls, l2_nulls])
     r1_nulls = np.concatenate([r1_nulls, r2_nulls])
 
-    outcome = _less_than_indices(
-        left_c, right_c, strict=True, multiple_conditions=False
-    )
+    outcome = _less_than_indices(left_c, right_c, strict=True)
 
     if outcome is None:
         lt_left = dummy
@@ -754,7 +748,7 @@ def _generic_func_cond_join(
         strict = True
 
     if op in less_than_join_types:
-        return _less_than_indices(left_c, right_c, strict, multiple_conditions)
+        return _less_than_indices(left_c, right_c, strict)
     elif op in greater_than_join_types:
         return _greater_than_indices(
             left_c, right_c, strict, multiple_conditions
@@ -838,14 +832,10 @@ def _multiple_conditional_join_eq(
     Returns a tuple of (df_index, right_index)
     """
     # TODO
-    # this could be better optimized/less wasteful
-    # At the moment, it gets the indices, all the indices
-    # indexes the main df and right, to get all the rows
-    # before pruning down
-    # a more efficient way would be to get the pruned rows
-    # before hitting df and right
-    # something similar to  the `_range_indices` function
-    # for less than and greater than
+    # this uses the idea in the `_range_indices` function
+    # for less than and greater than;
+    # I'd like to believe there is a smarter/more efficient way of doing this
+    # where the filter occurs within the join, and avoids a blow-up
 
     eq_check = None
     for condition in conditions:
@@ -937,10 +927,7 @@ def _multiple_conditional_join_eq(
     # the idea behind this is to shift the array by 1
     # for each iteration, until it is exhausted.
     for _ in range((upper_boundary - lower_boundary).max()):
-        if not counter.size:
-            return None
-
-        if (lower_boundary >= upper).any():
+        if (lower_boundary == upper).any():
             keep_rows = lower_boundary < upper
             rest = [
                 (left_c[keep_rows], right_c, op)
@@ -973,6 +960,7 @@ def _multiple_conditional_join_eq(
         return None
 
     if not keep_rows.all():
+
         left_index = left_index[keep_rows]
         pos = pos[keep_rows]
         upper_boundary = upper_boundary[keep_rows]
@@ -1040,7 +1028,7 @@ def _multiple_conditional_join_le_lt(
     # use the optimised path
     le_lt = None
     ge_gt = None
-    # keep only the first match for le_lt or ge_gt
+    # keep the first match for le_lt or ge_gt
     for condition in conditions:
         *_, op = condition
         if op in less_than_join_types:

@@ -1,14 +1,13 @@
-# import numpy as np
+import numpy as np
 import pandas as pd
 import pytest
 
-# from hypothesis import given, settings
-# from pandas.testing import assert_frame_equal
-# from janitor.testing_utils.strategies import (
-#     conditional_df,
-#     conditional_right,
-#     conditional_series,
-# )
+from hypothesis import given, settings
+from pandas.testing import assert_frame_equal
+from janitor.testing_utils.strategies import (
+    conditional_df,
+    conditional_right,
+)
 
 
 @pytest.fixture
@@ -247,3 +246,1583 @@ def test_dtype_category_non_equi():
         left = pd.DataFrame({"A": [1, 2, 3]}, dtype="category")
         right = pd.DataFrame({"B": [1, 2, 3]}, dtype="category")
         left.conditional_join(right, ("A", "B", "<"))
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats(df, right):
+    """Test output for a single condition. "<"."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric"]], how="cross")
+        .loc[lambda df: df.B.lt(df.Numeric)]
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_ints(df, right):
+    """Test output for a single condition. "<"."""
+
+    expected = (
+        df[["A"]]
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A.lt(df.Integers)]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right[["Integers"]],
+            ("A", "Integers", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_ints_extension_array(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df[["A"]]
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A < df.Integers]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right[["Integers"]],
+            ("A", "Integers", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_equal(df, right):
+    """Test output for a single condition. "<=". DateTimes"""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates"]], how="cross")
+        .loc[lambda df: df.E.le(df.Dates)]
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]],
+            ("E", "Dates", "<="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_date(df, right):
+    """Test output for a single condition. "<". Dates"""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates"]], how="cross")
+        .loc[lambda df: df.E.lt(df.Dates)]
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]],
+            ("E", "Dates", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_datetime(df, right):
+    """Test output for a single condition. ">". Datetimes"""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates"]], how="cross")
+        .loc[lambda df: df.E.gt(df.Dates)]
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]],
+            ("E", "Dates", ">"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_ints(df, right):
+    """Test output for a single condition. ">="."""
+
+    expected = (
+        df[["A"]]
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A.ge(df.Integers)]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right[["Integers"]],
+            ("A", "Integers", ">="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_floats_floats(df, right):
+    """Test output for a single condition. ">"."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric"]], how="cross")
+        .loc[lambda df: df.B.gt(df.Numeric)]
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", ">"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_ints_extension_array(df, right):
+    """Test output for a single condition. ">"."""
+
+    df = df.astype({"A": "Int64"})
+    right = right.astype({"Integers": "Int64"})
+    expected = (
+        df[["A"]]
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A > df.Integers]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right[["Integers"]],
+            ("A", "Integers", ">"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_not_equal_ints(df, right):
+    """Test output for a single condition. "!="."""
+
+    expected = (
+        df[["A"]]
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A != df.Integers]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right[["Integers"]],
+            ("A", "Integers", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_not_equal_floats_only(df, right):
+    """Test output for a single condition. "!="."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric"]], how="cross")
+        .loc[lambda df: df.B != df.Numeric]
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_not_equal_datetime(df, right):
+    """Test output for a single condition. "!="."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates"]], how="cross")
+        .loc[lambda df: df.E != df.Dates]
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]],
+            ("E", "Dates", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_how_left(df, right):
+    """Test output when `how==left`. "<="."""
+
+    expected = (
+        df[["A"]]
+        .assign(index=np.arange(len(df)))
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A <= df.Integers]
+    )
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        df[["A"]]
+        .join(expected[["Integers"]], how="left", sort=False)
+        .reset_index(drop=True)
+    )
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", "<="),
+        how="left",
+        sort_by_appearance=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_how_right(df, right):
+    """Test output when `how==right`. ">"."""
+
+    expected = df.merge(
+        right.assign(index=np.arange(len(right))), how="cross"
+    ).loc[lambda df: df.E.gt(df.Dates)]
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        expected[["E"]]
+        .join(right[["Dates"]], how="right", sort=False)
+        .reset_index(drop=True)
+    )
+    actual = df[["E"]].conditional_join(
+        right[["Dates"]],
+        ("E", "Dates", ">"),
+        how="right",
+        sort_by_appearance=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_dates(df, right):
+    """Test output for interval conditions."""
+
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(
+                df.Dates, df.Dates_Right, inclusive="neither"
+            )
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            (middle, left_on, ">"),
+            (middle, right_on, "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ge_and_le_dates(df, right):
+    """Test output for interval conditions."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="both")
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">="),
+            ("E", "Dates_Right", "<="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_le_and_ge_dates(df, right):
+    """Test output for interval conditions, if "<" comes before ">"."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="both")
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates_Right", "<="),
+            ("E", "Dates", ">="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ge_and_le_dates_right_open(df, right):
+    """Test output for interval conditions."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(
+                df.Dates, df.Dates_Right, inclusive="right"
+            )
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", "<="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ge_and_le_numbers(df, right):
+    """Test output for interval conditions, for numeric dtypes."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[lambda df: df.B.between(df.Numeric, df.Floats, inclusive="both")]
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Numeric", ">="),
+            ("B", "Floats", "<="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_le_and_ge_numbers(df, right):
+    """
+    Test output for interval conditions,
+    for numeric dtypes,
+    if "<" comes before ">".
+    """
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[lambda df: df.B.between(df.Numeric, df.Floats, inclusive="both")]
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Floats", "<="),
+            ("B", "Numeric", ">="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers(df, right):
+    """Test output for interval conditions."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[
+            lambda df: df.B.between(df.Numeric, df.Floats, inclusive="neither")
+        ]
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_left_open(df, right):
+    """Test output for interval conditions."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[lambda df: df.B.between(df.Numeric, df.Floats, inclusive="left")]
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    expected = (
+        right[["Numeric", "Floats"]]
+        .merge(df[["B"]], how="cross")
+        .loc[
+            lambda df: df.B.between(df.Numeric, df.Floats, inclusive="neither")
+        ]
+        .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+    )
+
+    actual = (
+        right[["Numeric", "Floats"]]
+        .conditional_join(
+            df[["B"]],
+            ("Floats", "B", ">"),
+            ("Numeric", "B", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
+    """
+    Test output for multiple conditions, and how is `left`.
+    """
+    expected = (
+        df[["B"]]
+        .assign(index=np.arange(len(df)))
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[
+            lambda df: df.B.between(df.Numeric, df.Floats, inclusive="neither")
+        ]
+    )
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        df[["B"]]
+        .join(expected[["Numeric", "Floats"]], how="left", sort=False)
+        .reset_index(drop=True)
+    )
+
+    actual = df[["B"]].conditional_join(
+        right[["Numeric", "Floats"]],
+        ("B", "Numeric", ">"),
+        ("B", "Floats", "<"),
+        how="left",
+        sort_by_appearance=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
+    """
+    Test output for multiple conditions, and how is `right`.
+    """
+
+    expected = (
+        df[["B"]]
+        .merge(
+            right[["Numeric", "Floats"]].assign(index=np.arange(len(right))),
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.between(df.Numeric, df.Floats, inclusive="neither")
+        ]
+    )
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        expected[["B"]]
+        .join(right[["Numeric", "Floats"]], how="right", sort=False)
+        .reset_index(drop=True)
+    )
+
+    actual = df[["B"]].conditional_join(
+        right[["Numeric", "Floats"]],
+        ("B", "Numeric", ">"),
+        ("B", "Floats", "<"),
+        how="right",
+        sort_by_appearance=True,
+    )
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ne_extension(df, right):
+    """
+    Test output for multiple conditions. Extension Arrays. `!=`
+    """
+
+    filters = ["A", "Integers", "B", "Numeric"]
+    df = df.astype({"A": "Int64"})
+    right = right.astype({"Integers": "Int64"})
+    expected = df.merge(right, how="cross")
+    expected = expected.loc[
+        expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric),
+        filters,
+    ].reset_index(drop=True)
+
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", "!="),
+        ("B", "Numeric", "!="),
+        how="inner",
+        sort_by_appearance=True,
+    ).filter(filters)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ne(df, right):
+    """
+    Test output for multiple conditions. `!=`
+    """
+
+    filters = ["A", "B", "Integers", "Numeric"]
+
+    expected = df[["A", "B"]].merge(
+        right[["Integers", "Numeric"]], how="cross"
+    )
+    expected = expected.loc[
+        expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric)
+    ].sort_values(filters, ignore_index=True)
+
+    actual = (
+        df[["A", "B"]]
+        .conditional_join(
+            right[["Integers", "Numeric"]],
+            ("A", "Integers", "!="),
+            ("B", "Numeric", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ne_dates(df, right):
+    """
+    Test output for multiple conditions. `!=`
+    """
+
+    filters = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .merge(right[["Integers", "Dates"]], how="cross")
+        .loc[lambda df: df.A.ne(df.Integers) & df.E.ne(df.Dates)]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", "!="),
+            ("E", "Dates", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_ne_dates(df, right):
+    """
+    Test output for multiple conditions. `!=`
+    """
+
+    filters = ["A", "E", "B", "Integers", "Dates", "Numeric"]
+    expected = (
+        df[["A", "E", "B"]]
+        .merge(right[["Integers", "Dates", "Numeric"]], how="cross")
+        .loc[
+            lambda df: df.A.ne(df.Integers)
+            & df.E.ne(df.Dates)
+            & df.B.ne(df.Numeric)
+        ]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E", "B"]]
+        .conditional_join(
+            right[["Integers", "Dates", "Numeric"]],
+            ("A", "Integers", "!="),
+            ("E", "Dates", "!="),
+            ("B", "Numeric", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_eq_and_ne(df, right):
+    """Test output for equal and not equal conditions."""
+
+    columns = ["B", "Numeric", "E", "Dates"]
+    expected = df.dropna(subset=["B"]).merge(
+        right.dropna(subset=["Numeric"]), left_on="B", right_on="Numeric"
+    )
+    expected = expected.loc[expected.E != expected.Dates, columns]
+    expected = expected.sort_values(columns, ignore_index=True)
+
+    actual = (
+        df.conditional_join(
+            right,
+            ("B", "Numeric", "=="),
+            ("E", "Dates", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .filter(columns)
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ne_and_eq(df, right):
+    """Test output for equal and not equal conditions."""
+
+    filters = ["A", "E", "Integers", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .merge(right[["Integers", "Dates"]], left_on="E", right_on="Dates")
+        .loc[lambda df: df.A.ne(df.Integers)]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", "!="),
+            ("E", "Dates", "=="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_gt_lt_ne_conditions(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "B", "E", "Integers", "Numeric", "Dates"]
+    expected = (
+        df[["A", "B", "E"]]
+        .merge(right[["Integers", "Numeric", "Dates"]], how="cross")
+        .loc[
+            lambda df: df.A.gt(df.Integers)
+            & df.B.lt(df.Numeric)
+            & df.E.ne(df.Dates)
+        ]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "B", "E"]]
+        .conditional_join(
+            right[["Integers", "Numeric", "Dates"]],
+            ("A", "Integers", ">"),
+            ("B", "Numeric", "<"),
+            ("E", "Dates", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_gt_ne_conditions(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "E", "Integers", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .merge(right[["Integers", "Dates"]], how="cross")
+        .loc[lambda df: df.A.gt(df.Integers) & df.E.ne(df.Dates)]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", ">"),
+            ("E", "Dates", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_le_ne_conditions(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "E", "Integers", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .merge(right[["Integers", "Dates"]], how="cross")
+        .loc[lambda df: df.A.le(df.Integers) & df.E.ne(df.Dates)]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", "<="),
+            ("E", "Dates", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_gt_lt_ne_start(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "B", "E", "Integers", "Numeric", "Dates"]
+    expected = (
+        df[["A", "B", "E"]]
+        .merge(right[["Integers", "Numeric", "Dates"]], how="cross")
+        .loc[
+            lambda df: df.A.gt(df.Integers)
+            & df.B.lt(df.Numeric)
+            & df.E.ne(df.Dates)
+        ]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "B", "E"]]
+        .conditional_join(
+            right[["Integers", "Numeric", "Dates"]],
+            ("E", "Dates", "!="),
+            ("A", "Integers", ">"),
+            ("B", "Numeric", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_le_ne_extension_array(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "B", "E", "Integers", "Numeric", "Dates"]
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = df[["A", "B", "E"]].merge(
+        right[["Integers", "Numeric", "Dates"]], how="cross"
+    )
+    expected = expected.loc[
+        expected.A.ne(expected.Integers)
+        & expected.B.lt(expected.Numeric)
+        & expected.E.ge(expected.Dates),
+    ].sort_values(filters, ignore_index=True)
+
+    actual = (
+        df[["A", "B", "E"]]
+        .conditional_join(
+            right[["Integers", "Numeric", "Dates"]],
+            ("E", "Dates", ">="),
+            ("A", "Integers", "!="),
+            ("B", "Numeric", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_lt_ne_extension(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "B", "E", "Integers", "Numeric", "Dates", "Dates_Right"]
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = df[["A", "B", "E"]].merge(
+        right[["Integers", "Numeric", "Dates", "Dates_Right"]], how="cross"
+    )
+    expected = expected.loc[
+        expected.A.lt(expected.Integers)
+        & expected.B.ne(expected.Numeric)
+        & expected.E.ge(expected.Dates)
+        & expected.E.ne(expected.Dates_Right),
+    ].sort_values(filters, ignore_index=True)
+
+    actual = (
+        df[["A", "B", "E"]]
+        .conditional_join(
+            right[["Integers", "Numeric", "Dates", "Dates_Right"]],
+            ("E", "Dates", ">="),
+            ("B", "Numeric", "!="),
+            ("A", "Integers", "<"),
+            ("E", "Dates_Right", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_eq_ge_and_le_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "=="),
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_diff_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["A", "E", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[lambda df: df.A.le(df.Integers) & df.E.gt(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", "<="),
+            ("E", "Dates", ">"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_lt_ne_extension_variant(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "Integers", "B", "Numeric", "E", "Dates", "Dates_Right"]
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = df.merge(right, how="cross")
+    expected = expected.loc[
+        expected.A.ne(expected.Integers)
+        & expected.B.lt(expected.Numeric)
+        & expected.E.ge(expected.Dates)
+        & expected.E.ne(expected.Dates_Right),
+        filters,
+    ].sort_values(filters, ignore_index=True)
+
+    actual = (
+        df.conditional_join(
+            right,
+            ("E", "Dates", ">="),
+            ("B", "Numeric", "<"),
+            ("A", "Integers", "!="),
+            ("E", "Dates_Right", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .filter(filters)
+        .sort_values(filters, ignore_index=True)
+    )
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_eq_and_le_numbers_variant(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "=="),
+            how="inner",
+            sort_by_appearance=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_variant(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["B", "A"],
+            right_on=["Floats", "Integers"],
+            how="inner",
+            sort=False,
+        )
+        .loc[lambda df: df.E.ne(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("E", "Dates", "!="),
+            ("B", "Floats", "=="),
+            ("A", "Integers", "=="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["A", "E", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("A", "Integers", ">="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_eq_and_le_numbers(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "=="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_equi(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.A.ge(df.Integers)
+            & df.E.le(df.Dates)
+            & df.B.lt(df.Floats),
+            columns,
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_equii(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.A.ge(df.Integers)
+            & df.E.le(df.Dates)
+            & df.B.lt(df.Floats)
+            & df.B.gt(df.Numeric)
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates", "Numeric"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eqi(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.A.ge(df.Integers)
+            & df.E.gt(df.Dates)
+            & df.B.gt(df.Floats)
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", ">"),
+            ("B", "Floats", ">"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df[["B", "A", "E"]]
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.lt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", "<"),
+            ("E", "Dates", "<"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["B", "A"],
+            right_on=["Floats", "Integers"],
+            how="inner",
+            sort=False,
+        )
+        .loc[lambda df: df.E.ne(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("E", "Dates", "!="),
+            ("B", "Floats", "=="),
+            ("A", "Integers", "=="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_extension_array(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+    expected = df.merge(
+        right,
+        left_on=["B", "E"],
+        right_on=["Floats", "Dates"],
+        how="inner",
+        sort=False,
+    )
+    expected = expected.loc[
+        expected.A != expected.Integers, columns
+    ].sort_values(columns, ignore_index=True)
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("E", "Dates", "=="),
+            ("B", "Floats", "=="),
+            ("A", "Integers", "!="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_eq_strings(df, right):
+    """Test output for joins on strings."""
+
+    columns = ["C", "A", "Strings", "Integers"]
+    expected = df.merge(
+        right,
+        left_on="C",
+        right_on="Strings",
+        how="inner",
+        sort=False,
+    )
+    expected = expected.loc[
+        expected.A >= expected.Integers, columns
+    ].sort_values(columns, ignore_index=True)
+
+    actual = (
+        df[["C", "A"]]
+        .conditional_join(
+            right[["Strings", "Integers"]],
+            ("C", "Strings", "=="),
+            ("A", "Integers", ">="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_array_eq():
+    """Extension arrays when matching on equality."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2B": "Int64", "value_2A": "Int64"})
+    expected = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2B", "<"),
+        ("value_1", "value_2A", ">="),
+        sort_by_appearance=True,
+    )
+    expected = expected.drop(columns=("right", "id")).droplevel(
+        axis=1, level=0
+    )
+    actual = (
+        df1.merge(df2, on="id")
+        .loc[
+            lambda df: df.value_1.ge(df.value_2A) & df.value_1.lt(df.value_2B)
+        ]
+        .reset_index(drop=True)
+    )
+
+    assert_frame_equal(expected, actual)

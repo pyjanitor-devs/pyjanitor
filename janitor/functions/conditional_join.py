@@ -921,6 +921,9 @@ def _multiple_conditional_join_eq(
     counter = np.arange(left_index.size)
 
     # faster within C/Rust? better implemented within Pandas itself?
+    # the idea here is that lower_boundary moves up by 1
+    # till it gets to upper_boundary;
+    # if we get all our matches before the end of the iteration, even better
     for _ in range((upper_boundary - lower_boundary).max()):
         if not counter.size:
             break

@@ -676,16 +676,10 @@ def _eq_indices(
 ) -> tuple:
     """
     Use binary search to get indices where left_c
-    is less than or equal to right_c.
+    is equal to right_c.
 
-    If strict is True, then only indices
-    where `left_c` is less than
-    (but not equal to) `right_c` are returned.
-
-    if multiple_conditions is False, a tuple of integer indexes
-    for left_c and right_c is returned;
-    else a tuple of the index for left_c, right_c, as well
-    as the positions of left_c in right_c is returned.
+    Returns a tuple of the left_index, right_index,
+    lower_boundary and upper_boundary.
     """
 
     # no point going through all the hassle

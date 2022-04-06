@@ -685,7 +685,6 @@ def _eq_indices(
     # no point going through all the hassle
     if left_c.min() > right_c.max():
         return None
-
     if left_c.max() < right_c.min():
         return None
 

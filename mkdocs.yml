@@ -19,7 +19,9 @@ theme:
 # in which pages show up.
 nav:
   - Home: index.md
-  - Development Guide: devguide.md
+  - Development:
+      - Dev Guide: development/devguide.md
+      - Lazy Imports: development/lazy_imports.md
   - API Reference:
       - Functions: api/functions.md
       - Biology: api/biology.md

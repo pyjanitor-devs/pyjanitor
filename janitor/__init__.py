@@ -1,15 +1,20 @@
-"""Top-level janitor API lives here."""
-try:
-    import janitor.xarray  # noqa: F401
-except ImportError:
-    pass
+"""Top-level janitor API lives here.
 
+Lazy loading used here to speed up imports.
+"""
+import lazy_loader as lazy
+
+from .accessors import *  # noqa: F403, F401
 from .functions import *  # noqa: F403, F401
 from .io import *  # noqa: F403, F401
 from .math import *  # noqa: F403, F401
 from .ml import get_features_targets as _get_features_targets
 from .utils import refactored_function
-from .accessors import *  # noqa: F403, F401
+
+try:
+    jxr = lazy.load("janitor.xarray")  # noqa: F401
+except ImportError:
+    pass
 
 
 @refactored_function(

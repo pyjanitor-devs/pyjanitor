@@ -1,15 +1,20 @@
-""" Miscellaneous mathematical operators. """
+"""Miscellaneous mathematical operators.
+
+Lazy loading used here to speed up imports.
+"""
 
 import warnings
 from typing import Tuple
 
-import numpy as np
-import pandas as pd
-import pandas_flavor as pf
-from pandas.api.types import is_numeric_dtype
-from scipy.special import expit
-from scipy.special import softmax as scipy_softmax
-from scipy.stats import norm
+
+import lazy_loader as lazy
+
+scipy_special = lazy.load("scipy.special")
+ss = lazy.load("scipy.stats")
+pf = lazy.load("pandas_flavor")
+pd = lazy.load("pandas")
+np = lazy.load("numpy")
+pdtypes = lazy.load("pandas.api.types")
 
 
 @pf.register_series_method
@@ -63,7 +68,7 @@ def sigmoid(s: pd.Series) -> pd.Series:
     :param s: Input Series.
     :return: Transformed Series.
     """
-    return expit(s)
+    return scipy_special.expit(s)
 
 
 @pf.register_series_method
@@ -84,7 +89,7 @@ def softmax(s: pd.Series) -> pd.Series:
     :param s: Input Series.
     :return: Transformed Series.
     """
-    return scipy_softmax(s)
+    return scipy_special.softmax(s)
 
 
 @pf.register_series_method
@@ -128,7 +133,7 @@ def normal_cdf(s: pd.Series) -> pd.Series:
     :param s: Input Series.
     :return: Transformed Series.
     """
-    return pd.Series(norm.cdf(s), index=s.index)
+    return pd.Series(ss.norm.cdf(s), index=s.index)
 
 
 @pf.register_series_method
@@ -157,7 +162,7 @@ def probit(s: pd.Series, error: str = "warn") -> pd.Series:
             pass
     s[outside_support] = np.nan
     with np.errstate(all="ignore"):
-        out = pd.Series(norm.ppf(s), index=s.index)
+        out = pd.Series(ss.norm.ppf(s), index=s.index)
     return out
 
 
@@ -223,7 +228,7 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
     :raises TypeError: if series is not numeric.
     :raises ValueError: if series contains nulls.
     """
-    if not is_numeric_dtype(s):
+    if not pdtypes.is_numeric_dtype(s):
         raise TypeError(f"series {s.name} must be numeric!")
     if not s.isna().sum() == 0:
         raise ValueError(f"series {s.name} contains nulls. Please drop them.")

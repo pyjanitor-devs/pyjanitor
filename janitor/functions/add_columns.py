@@ -1,9 +1,11 @@
-import pandas_flavor as pf
+from typing import Any, List, Tuple, Union
 
+import lazy_loader as lazy
 from janitor.utils import check, deprecated_alias
-import pandas as pd
-from typing import Union, List, Any, Tuple
-import numpy as np
+
+pf = lazy.load("pandas_flavor")
+pd = lazy.load("pandas")
+np = lazy.load("numpy")
 
 
 @pf.register_dataframe_method

@@ -1,14 +1,14 @@
-from typing import Optional, Union, List, Tuple, Dict, Any
+"""Implementation of `complete` function."""
+import functools
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import pandas as pd
+import pandas_flavor as pf
+from janitor.functions.utils import _computations_expand_grid
+from janitor.utils import check, check_column
+from pandas.api.types import is_categorical_dtype, is_list_like, is_scalar
 from pandas.core.common import apply_if_callable
 from pandas.core.construction import extract_array
-import pandas_flavor as pf
-import pandas as pd
-import functools
-from pandas.api.types import is_list_like, is_scalar, is_categorical_dtype
-
-from janitor.utils import check, check_column
-
-from janitor.functions.utils import _computations_expand_grid
 
 
 @pf.register_dataframe_method

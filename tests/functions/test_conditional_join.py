@@ -1831,6 +1831,41 @@ def test_extension_array_eq():
     assert_frame_equal(expected, actual)
 
 
+def test_extension_array_eq_range():
+    """Extension arrays when matching on equality."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    expected = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        ("value_1", "value_2B", "<"),
+        sort_by_appearance=True,
+    )
+    expected = expected.drop(columns=("right", "id")).droplevel(
+        axis=1, level=0
+    )
+    actual = (
+        df1.merge(df2, on="id")
+        .loc[
+            lambda df: df.value_1.gt(df.value_2A) & df.value_1.lt(df.value_2B)
+        ]
+        .reset_index(drop=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
 def test_left_empty():
     """Test nulls for equality merge."""
     df1 = pd.DataFrame({"A": [np.nan, np.nan], "B": [2, 3]})

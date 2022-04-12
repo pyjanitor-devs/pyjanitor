@@ -64,14 +64,13 @@ def add_column(
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame.
     :returns: A pandas DataFrame with an added column.
-    :raises ValueError: if attempting to add a column that already exists.
-    :raises ValueError: if `value` has more elements that number of
+    :raises ValueError: If attempting to add a column that already exists.
+    :raises ValueError: If `value` has more elements that number of
         rows in the DataFrame.
-    :raises ValueError: if attempting to add an iterable of values with
+    :raises ValueError: If attempting to add an iterable of values with
         a length not equal to the number of DataFrame rows.
-    :raises ValueError: if `value` has length of `0`.
+    :raises ValueError: If `value` has length of `0`.
     """
-    df = df.copy()
     check("column_name", column_name, [str])
 
     if column_name in df.columns:
@@ -79,41 +78,39 @@ def add_column(
             f"Attempted to add column that already exists: " f"{column_name}."
         )
 
-    nrows = df.shape[0]
+    nrows = len(df)
 
     if hasattr(value, "__len__") and not isinstance(
         value, (str, bytes, bytearray)
     ):
+        len_value = len(value)
+
         # if `value` is a list, ndarray, etc.
-        if len(value) > nrows:
+        if len_value > nrows:
             raise ValueError(
                 "`value` has more elements than number of rows "
-                f"in your `DataFrame`. vals: {len(value)}, "
+                f"in your `DataFrame`. vals: {len_value}, "
                 f"df: {nrows}"
             )
-        if len(value) != nrows and not fill_remaining:
+        if len_value != nrows and not fill_remaining:
             raise ValueError(
                 "Attempted to add iterable of values with length"
                 " not equal to number of DataFrame rows"
             )
-
-        if len(value) == 0:
+        if not len_value:
             raise ValueError(
                 "`value` has to be an iterable of minimum length 1"
             )
-        len_value = len(value)
+
     elif fill_remaining:
         # relevant if a scalar val was passed, yet fill_remaining == True
         len_value = 1
         value = [value]
 
-    nrows = df.shape[0]
-
+    df = df.copy()
     if fill_remaining:
         times_to_loop = int(np.ceil(nrows / len_value))
-
         fill_values = list(value) * times_to_loop
-
         df[column_name] = fill_values[:nrows]
     else:
         df[column_name] = value
@@ -123,14 +120,19 @@ def add_column(
 
 @pf.register_dataframe_method
 def add_columns(
-    df: pd.DataFrame, fill_remaining: bool = False, **kwargs
+    df: pd.DataFrame,
+    fill_remaining: bool = False,
+    **kwargs,
 ) -> pd.DataFrame:
     """Add multiple columns to the dataframe.
 
     This method does not mutate the original DataFrame.
 
-    Method to augment `add_column` with ability to add multiple columns in
-    one go. This replaces the need for multiple `add_column` calls.
+    Method to augment
+    [`add_column`][janitor.functions.add_columns.add_column]
+    with ability to add multiple columns in
+    one go. This replaces the need for multiple
+    [`add_column`][janitor.functions.add_columns.add_column] calls.
 
     Usage is through supplying kwargs where the key is the col name and the
     values correspond to the values of the new DataFrame column.
@@ -152,7 +154,7 @@ def add_columns(
     :param fill_remaining: If value is a tuple or list that is smaller than
         the number of rows in the DataFrame, repeat the list or tuple
         (R-style) to the end of the DataFrame. (Passed to `add_column`)
-    :param kwargs: column, value pairs which are looped through in
+    :param **kwargs: Column, value pairs which are looped through in
         `add_column` calls.
     :returns: A pandas DataFrame with added columns.
     """

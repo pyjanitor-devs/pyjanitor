@@ -321,24 +321,24 @@ def test_tuple_column():
     """Test `complete` output if a tuple is provided."""
     df = pd.DataFrame(
         {
-            "group": [1, 2, 1],
-            "item_id": [1, 2, 2],
-            "item_name": ["a", "b", "b"],
-            "value1": [1, 2, 3],
-            "value2": [4, 5, 6],
+            "group": [2, 1, 1],
+            "item_id": [2, 1, 2],
+            "item_name": ["b", "a", "b"],
+            "value1": [2, 1, 3],
+            "value2": [5, 4, 6],
         }
     )
 
     result = df.complete("group", ("item_id", "item_name"), sort=True)
 
-    expected = pd.DataFrame(
-        {
-            "group": [1, 1, 2, 2],
-            "item_id": [1, 2, 1, 2],
-            "item_name": ["a", "b", "a", "b"],
-            "value1": [1.0, 3.0, np.nan, 2.0],
-            "value2": [4.0, 6.0, np.nan, 5.0],
-        }
+    columns = ["group", "item_id", "item_name"]
+    expected = (
+        df.set_index(columns)
+        .unstack("group")
+        .stack(dropna=False)
+        .reset_index()
+        .reindex(columns=df.columns)
+        .sort_values(columns, ignore_index=True)
     )
     assert_frame_equal(result, expected)
 
@@ -377,23 +377,21 @@ def test_complete_multiple_groupings():
 
 def test_fill_value_scalar(taxonomy_df):
     """Test output if the fill_value is a scalar."""
-    result = taxonomy_df.complete("Year", "Taxon", fill_value=0, sort=True)
-    expected = pd.DataFrame(
-        [
-            {"Year": 1999, "Taxon": "Agarum", "Abundance": 1},
-            {"Year": 1999, "Taxon": "Saccharina", "Abundance": 4},
-            {"Year": 2000, "Taxon": "Agarum", "Abundance": 0},
-            {"Year": 2000, "Taxon": "Saccharina", "Abundance": 5},
-            {"Year": 2004, "Taxon": "Agarum", "Abundance": 8},
-            {"Year": 2004, "Taxon": "Saccharina", "Abundance": 2},
-        ]
+    result = taxonomy_df.complete("Year", "Taxon", fill_value=0, sort=False)
+    expected = (
+        taxonomy_df.encode_categorical(Taxon="appearance")
+        .set_index(["Year", "Taxon"])
+        .unstack(fill_value=0)
+        .stack(dropna=False)
+        .reset_index()
+        .astype({"Taxon": "object"})
     )
 
     assert_frame_equal(result, expected)
 
 
 #  http://imachordata.com/2016/02/05/you-complete-me/
-def test_dict_tuple(taxonomy_df):
+def test_dict_tuple_callable(taxonomy_df):
     """
     Test output if a dictionary and a tuple/list
     are included in the `columns` parameter.
@@ -405,39 +403,45 @@ def test_dict_tuple(taxonomy_df):
         sort=True,
     )
 
-    expected = pd.DataFrame(
-        [
-            {"Year": 1999, "Taxon": "Agarum", "Abundance": 1},
-            {"Year": 1999, "Taxon": "Agarum", "Abundance": 8},
-            {"Year": 1999, "Taxon": "Saccharina", "Abundance": 2},
-            {"Year": 1999, "Taxon": "Saccharina", "Abundance": 4},
-            {"Year": 1999, "Taxon": "Saccharina", "Abundance": 5},
-            {"Year": 2000, "Taxon": "Agarum", "Abundance": 1},
-            {"Year": 2000, "Taxon": "Agarum", "Abundance": 8},
-            {"Year": 2000, "Taxon": "Saccharina", "Abundance": 2},
-            {"Year": 2000, "Taxon": "Saccharina", "Abundance": 4},
-            {"Year": 2000, "Taxon": "Saccharina", "Abundance": 5},
-            {"Year": 2001, "Taxon": "Agarum", "Abundance": 1},
-            {"Year": 2001, "Taxon": "Agarum", "Abundance": 8},
-            {"Year": 2001, "Taxon": "Saccharina", "Abundance": 2},
-            {"Year": 2001, "Taxon": "Saccharina", "Abundance": 4},
-            {"Year": 2001, "Taxon": "Saccharina", "Abundance": 5},
-            {"Year": 2002, "Taxon": "Agarum", "Abundance": 1},
-            {"Year": 2002, "Taxon": "Agarum", "Abundance": 8},
-            {"Year": 2002, "Taxon": "Saccharina", "Abundance": 2},
-            {"Year": 2002, "Taxon": "Saccharina", "Abundance": 4},
-            {"Year": 2002, "Taxon": "Saccharina", "Abundance": 5},
-            {"Year": 2003, "Taxon": "Agarum", "Abundance": 1},
-            {"Year": 2003, "Taxon": "Agarum", "Abundance": 8},
-            {"Year": 2003, "Taxon": "Saccharina", "Abundance": 2},
-            {"Year": 2003, "Taxon": "Saccharina", "Abundance": 4},
-            {"Year": 2003, "Taxon": "Saccharina", "Abundance": 5},
-            {"Year": 2004, "Taxon": "Agarum", "Abundance": 1},
-            {"Year": 2004, "Taxon": "Agarum", "Abundance": 8},
-            {"Year": 2004, "Taxon": "Saccharina", "Abundance": 2},
-            {"Year": 2004, "Taxon": "Saccharina", "Abundance": 4},
-            {"Year": 2004, "Taxon": "Saccharina", "Abundance": 5},
-        ]
+    expected = (
+        taxonomy_df.set_index(["Year", "Taxon", "Abundance"])
+        .assign(dummy=1)
+        .unstack("Year")
+        .droplevel(0, 1)
+        .reindex(columns=range(1999, 2005))
+        .stack(dropna=False)
+        .reset_index()
+        .iloc[:, :-1]
+        .reindex(columns=["Year", "Taxon", "Abundance"])
+        .sort_values(["Year", "Taxon", "Abundance"], ignore_index=True)
+    )
+
+    assert_frame_equal(result, expected)
+
+
+def test_dict_tuple(taxonomy_df):
+    """
+    Test output if a dictionary and a tuple/list
+    are included in the `columns` parameter.
+    """
+
+    result = taxonomy_df.complete(
+        {"Year": [2000, 1999, 2001, 2002, 2003, 2004]},
+        ("Taxon", "Abundance"),
+        sort=True,
+    )
+
+    expected = (
+        taxonomy_df.set_index(["Year", "Taxon", "Abundance"])
+        .assign(dummy=1)
+        .unstack("Year")
+        .droplevel(0, 1)
+        .reindex(columns=range(1999, 2005))
+        .stack(dropna=False)
+        .reset_index()
+        .iloc[:, :-1]
+        .reindex(columns=["Year", "Taxon", "Abundance"])
+        .sort_values(["Year", "Taxon", "Abundance"], ignore_index=True)
     )
 
     assert_frame_equal(result, expected)
@@ -457,28 +461,13 @@ def test_complete_groupby():
         {"year": lambda x: range(x.min(), x.max() + 1)}, by="state", sort=True
     )
 
-    expected = pd.DataFrame(
-        [
-            {"state": "CA", "year": 2010, "value": 1.0},
-            {"state": "CA", "year": 2011, "value": np.nan},
-            {"state": "CA", "year": 2012, "value": np.nan},
-            {"state": "CA", "year": 2013, "value": 3.0},
-            {"state": "HI", "year": 2010, "value": 1.0},
-            {"state": "HI", "year": 2011, "value": np.nan},
-            {"state": "HI", "year": 2012, "value": 2.0},
-            {"state": "HI", "year": 2013, "value": np.nan},
-            {"state": "HI", "year": 2014, "value": np.nan},
-            {"state": "HI", "year": 2015, "value": np.nan},
-            {"state": "HI", "year": 2016, "value": 3.0},
-            {"state": "NY", "year": 2009, "value": 2.0},
-            {"state": "NY", "year": 2010, "value": np.nan},
-            {"state": "NY", "year": 2011, "value": np.nan},
-            {"state": "NY", "year": 2012, "value": np.nan},
-            {"state": "NY", "year": 2013, "value": 5.0},
-        ]
+    expected = (
+        df.set_index("year")
+        .groupby("state")
+        .apply(lambda x: x.reindex(range(x.index.min(), x.index.max() + 1)))
+        .drop(columns="state")
+        .reset_index()
     )
-
-    expected = expected.reindex(columns=df.columns)
 
     assert_frame_equal(result, expected)
 
@@ -490,69 +479,48 @@ def test_explicit_scalar(fill_df):
         ("item_id", "item_name"),
         fill_value=0,
         explicit=False,
-        sort=True,
+    ).astype({"value2": int})
+    columns = ["group", "item_id", "item_name"]
+    expected = (
+        fill_df.set_index(columns)
+        .unstack("group", fill_value=0)
+        .stack(dropna=False)
+        .reset_index()
+        .reindex(columns=fill_df.columns)
+        .sort_values(columns, ignore_index=True)
     )
-    expected = pd.DataFrame(
-        [
-            {
-                "group": 1,
-                "item_id": 1,
-                "item_name": "a",
-                "value1": 1.0,
-                "value2": 4,
-            },
-            {
-                "group": 1,
-                "item_id": 2,
-                "item_name": "a",
-                "value1": 0.0,
-                "value2": 0,
-            },
-            {
-                "group": 1,
-                "item_id": 2,
-                "item_name": "b",
-                "value1": 3.0,
-                "value2": 6,
-            },
-            {
-                "group": 1,
-                "item_id": 3,
-                "item_name": "b",
-                "value1": 0.0,
-                "value2": 0,
-            },
-            {
-                "group": 2,
-                "item_id": 1,
-                "item_name": "a",
-                "value1": 0.0,
-                "value2": 0,
-            },
-            {
-                "group": 2,
-                "item_id": 2,
-                "item_name": "a",
-                "value1": np.nan,
-                "value2": 5,
-            },
-            {
-                "group": 2,
-                "item_id": 2,
-                "item_name": "b",
-                "value1": 0.0,
-                "value2": 0,
-            },
-            {
-                "group": 2,
-                "item_id": 3,
-                "item_name": "b",
-                "value1": 4.0,
-                "value2": 7,
-            },
-        ]
-    )
+    assert_frame_equal(result, expected)
 
+
+def test_explicit_scalar_cat(fill_df):
+    """
+    Test output if fill_value is a scalar, explicit is False,
+    and one of the columns is of category dtype.
+    """
+    fill_df = fill_df.astype({"value1": "category"})
+    result = fill_df.complete(
+        "group",
+        ("item_id", "item_name"),
+        fill_value=0,
+        explicit=False,
+    ).astype({"value2": int})
+    columns = ["group", "item_id", "item_name"]
+    fill_df["value1"] = fill_df["value1"].cat.add_categories([0])
+    expected = (
+        fill_df.set_index(columns)
+        .unstack("group", fill_value=0)
+        .stack(dropna=False)
+        .reset_index()
+        .reindex(columns=fill_df.columns)
+        .sort_values(columns, ignore_index=True)
+        .astype(
+            {
+                "value1": pd.CategoricalDtype(
+                    categories=[1.0, 3.0, 4.0, 0.0], ordered=False
+                )
+            }
+        )
+    )
     assert_frame_equal(result, expected)
 
 
@@ -565,7 +533,7 @@ def test_explicit_dict(fill_df):
         fill_value={"value1": 0, "value2": 99},
         explicit=False,
         sort=True,
-    )
+    ).astype({"value2": int})
     expected = pd.DataFrame(
         [
             {

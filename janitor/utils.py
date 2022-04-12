@@ -14,6 +14,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from pandas.core.construction import extract_array
 
 
 def check(varname: str, value, expected_types: list):
@@ -42,99 +43,125 @@ def check(varname: str, value, expected_types: list):
             break
 
     if not is_expected_type:
-        raise TypeError(
-            "{varname} should be one of {expected_types}".format(
-                varname=varname, expected_types=expected_types
-            )
-        )
+        raise TypeError(f"{varname} should be one of {expected_types}.")
 
 
 @functools.singledispatch
-def _expand_grid(value, grid_index):
+def _expand_grid(value, grid_index, key):
     """
     Base function for dispatch of `_expand_grid`.
     """
 
     raise TypeError(
-        f"""
-        {type(value).__name__} data type
-        is not supported in `expand_grid`.
-        """
+        f"{type(value).__name__} data type "
+        "is not supported in `expand_grid`."
     )
 
 
 @_expand_grid.register(np.ndarray)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the numpy array based on `grid_index`.
 
-    Returns Series if 1-D array,
-    or DataFrame if 2-D array.
+    Returns a dictionary.
     """
-
-    if not (value.size > 0):
-        raise ValueError("""array cannot be empty.""")
 
     if value.ndim > 2:
         raise ValueError(
-            """
-            expand_grid works only
-            on 1D and 2D arrays.
-            """
+            "expand_grid works only on 1D and 2D arrays. "
+            f"The provided array for {key} however "
+            f"has a dimension of {value.ndim}."
         )
 
     value = value[grid_index]
 
-    return pd.DataFrame(value)
+    if value.ndim == 1:
+        return {(key, 0): value}
+
+    return {(key, num): arr for num, arr in enumerate(value.T)}
 
 
-@_expand_grid.register(pd.Series)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
+@_expand_grid.register(pd.arrays.PandasArray)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
-    Expands the Series based on `grid_index`.
+    Expands the pandas array based on `grid_index`.
 
-    Returns Series.
+    Returns a dictionary.
     """
-    if value.empty:
-        raise ValueError("""Series cannot be empty.""")
-
-    value = value.iloc[grid_index]
-    value.index = pd.RangeIndex(start=0, stop=len(value))
-
-    return value.to_frame()
-
-
-@_expand_grid.register(pd.DataFrame)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
-    """
-    Expands the DataFrame based on `grid_index`.
-
-    Returns a DataFrame.
-    """
-    if value.empty:
-        raise ValueError("""DataFrame cannot be empty.""")
-
-    value = value.iloc[grid_index]
-    value.index = pd.RangeIndex(start=0, stop=len(value))
-    if isinstance(value.columns, pd.MultiIndex):
-        value.columns = ["_".join(map(str, ent)) for ent in value]
-
-    return value
-
-
-@_expand_grid.register(pd.Index)
-def _sub_expand_grid(value, grid_index):  # noqa: F811
-    """
-    Expands the Index based on `grid_index`.
-
-    Returns a DataFrame (if MultiIndex), or a Series.
-    """
-    if value.empty:
-        raise ValueError("""Index cannot be empty.""")
 
     value = value[grid_index]
 
-    return value.to_frame(index=False)
+    return {(key, 0): value}
+
+
+@_expand_grid.register(pd.Series)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+    """
+    Expands the Series based on `grid_index`.
+
+    Returns a dictionary.
+    """
+
+    name = value.name
+    if not name:
+        name = 0
+    value = extract_array(value, extract_numpy=True)[grid_index]
+
+    return {(key, name): value}
+
+
+@_expand_grid.register(pd.DataFrame)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+    """
+    Expands the DataFrame based on `grid_index`.
+
+    Returns a dictionary.
+    """
+
+    # use set_axis here, to prevent the column change from
+    # transmitting back to the original dataframe
+    if isinstance(value.columns, pd.MultiIndex):
+        columns = ["_".join(map(str, ent)) for ent in value]
+        value = value.set_axis(columns, axis="columns")
+
+    return {
+        (key, name): extract_array(val, extract_numpy=True)[grid_index]
+        for name, val in value.items()
+    }
+
+
+@_expand_grid.register(pd.MultiIndex)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+    """
+    Expands the MultiIndex based on `grid_index`.
+
+    Returns a dictionary.
+    """
+
+    contents = {}
+    num = 0
+    for n in range(value.nlevels):
+        arr = value.get_level_values(n)
+        name = arr.name
+        arr = extract_array(arr, extract_numpy=True)[grid_index]
+        if not name:
+            name = num
+            num += 1
+        contents[(key, name)] = arr
+    return contents
+
+
+@_expand_grid.register(pd.Index)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+    """
+    Expands the Index based on `grid_index`.
+
+    Returns a dictionary.
+    """
+    name = value.name
+    if not name:
+        name = 0
+    return {(key, name): extract_array(value, extract_numpy=True)[grid_index]}
 
 
 def import_message(

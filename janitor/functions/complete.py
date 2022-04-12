@@ -1,9 +1,10 @@
 from typing import Optional, Union, List, Tuple, Dict, Any
 from pandas.core.common import apply_if_callable
+from pandas.core.construction import extract_array
 import pandas_flavor as pf
 import pandas as pd
 import functools
-from pandas.api.types import is_list_like, is_scalar
+from pandas.api.types import is_list_like, is_scalar, is_categorical_dtype
 
 from janitor.utils import check, check_column
 
@@ -132,15 +133,14 @@ def complete(
         ...     sort=True
         ... )
            group  item_id item_name  value1  value2
-        0      1        1         a     1.0       4
-        1      1        2         a     0.0      99
-        2      1        2         b     3.0       6
-        3      1        3         b     0.0      99
-        4      2        1         a     0.0      99
-        5      2        2         a     NaN       5
-        6      2        2         b     0.0      99
-        7      2        3         b     4.0       7
-
+        0      1        1         a     1.0     4.0
+        1      1        2         a     0.0    99.0
+        2      1        2         b     3.0     6.0
+        3      1        3         b     0.0    99.0
+        4      2        1         a     0.0    99.0
+        5      2        2         a     NaN     5.0
+        6      2        2         b     0.0    99.0
+        7      2        3         b     4.0     7.0
 
     :param df: A pandas DataFrame.
     :param *columns: This refers to the columns to be
@@ -199,7 +199,7 @@ def _computations_complete(
             break
 
     # nothing to 'complete' here
-    if all_strings and len(columns) == 1:
+    if (all_strings and len(columns) == 1) or df.empty:
         return df
 
     # under the right conditions, stack/unstack can be faster
@@ -212,135 +212,174 @@ def _computations_complete(
     # trade-off for the simplicity of merge is not so bad
     # of course there could be a better way ...
     if by is None:
-        uniques = _generic_complete(df, columns, all_strings)
+        uniques = _generic_complete(df, columns, all_strings, sort)
     else:
         uniques = df.groupby(by)
-        uniques = uniques.apply(_generic_complete, columns, all_strings)
+        uniques = uniques.apply(_generic_complete, columns, all_strings, sort)
         uniques = uniques.droplevel(-1)
         column_checker = by + column_checker
-    if fill_value is None:
-        return df.merge(
-            uniques, on=column_checker, how="outer", sort=sort, copy=False
-        )
-    # if fill_value is present
-    if is_scalar(fill_value):
-        # faster when fillna operates on a Series basis
-        fill_value = {col: fill_value for col in df}
 
-    if explicit:
-        return df.merge(
-            uniques, on=column_checker, how="outer", sort=sort, copy=False
-        ).fillna(fill_value, downcast="infer")
-    # keep only columns that are not part of column_checker
-    # IOW, we are excluding columns that were not used
-    # to generate the combinations
-    fill_value = {
-        col: value
-        for col, value in fill_value.items()
-        if col not in column_checker
-    }
-    if not fill_value:  # there is nothing to fill
-        return df.merge(
-            uniques, on=column_checker, how="outer", sort=sort, copy=False
-        )
-
-    # when explicit is False
-    # filter out rows from `unique` that already exist in the parent dataframe
-    # fill the null values in the trimmed `unique`
-    # and merge back to the main dataframe
-
-    # to get a name that does not exist in the columns
-    indicator = "".join(df.columns)
-    trimmed = df.loc(axis=1)[column_checker]
-    uniques = uniques.merge(
-        trimmed, how="left", sort=False, copy=False, indicator=indicator
+    columns = df.columns
+    indicator = False
+    if fill_value is not None and not explicit:
+        # to get a name that does not exist in the columns
+        indicator = "".join(columns)
+    df = pd.merge(
+        uniques,
+        df,
+        how="outer",
+        on=column_checker,
+        copy=False,
+        sort=False,
+        indicator=indicator,
     )
-    trimmed = uniques.iloc(axis=1)[-1] == "left_only"
-    uniques = uniques.loc[trimmed, column_checker]
-    trimmed = None
-    indicator = None
-    # iteration used here, instead of assign (which is also a for loop),
-    # to cater for scenarios where the column_name is not a string
-    # assign only works with keys that are strings
-    for column_name, value in fill_value.items():
-        uniques[column_name] = value
-    df = pd.concat([df, uniques], sort=False, copy=False, axis="index")
-    if sort:
-        df = df.sort_values(column_checker)
-    df.index = range(len(df))
+
+    if fill_value is not None:
+        if is_scalar(fill_value):
+            # faster when fillna operates on a Series basis
+            fill_value = {
+                col: fill_value for col in columns if df[col].hasnans
+            }
+        if explicit:
+            df = df.fillna(fill_value, downcast="infer")
+        else:
+            # keep only columns that are not part of column_checker
+            # IOW, we are excluding columns that were not used
+            # to generate the combinations
+            fill_value = {
+                col: value
+                for col, value in fill_value.items()
+                if col not in column_checker
+            }
+            if fill_value:
+                # when explicit is False
+                # use the indicator parameter to identify rows
+                # for `left_only`, and fill the relevant columns in fill_value
+                # with the associated value.
+                boolean_filter = df.loc[:, indicator] == "left_only"
+                df = df.drop(columns=indicator)
+                # iteration used here,
+                # instead of assign (which is also a for loop),
+                # to cater for scenarios where the column_name is not a string
+                # assign only works with keys that are strings
+                # Also, the output wil be floats (for numeric types),
+                # even if all the columns could be integers
+                # user can always convert to int if required
+                for column_name, value in fill_value.items():
+                    # for categorical dtypes, set the categories first
+                    if is_categorical_dtype(df[column_name]):
+                        df[column_name] = df[column_name].cat.add_categories(
+                            [value]
+                        )
+                    df.loc[boolean_filter, column_name] = value
+
+    if not df.columns.equals(columns):
+        return df.reindex(columns=columns)
     return df
 
 
-def _generic_complete(df: pd.DataFrame, columns: list, all_strings: bool):
+def _generic_complete(
+    df: pd.DataFrame, columns: list, all_strings: bool, sort: bool
+):
     """
     Generate cartesian product for `_computations_complete`.
 
-    Returns a Series or DataFrame, with no duplicates.
+    Returns a DataFrame, with no duplicates.
     """
     if all_strings:
-        uniques = {col: df[col].unique() for col in columns}
+        if sort:
+            uniques = {}
+            for col in columns:
+                column = extract_array(df[col], extract_numpy=True)
+                _, column = pd.factorize(column, sort=sort)
+                uniques[col] = column
+        else:
+            uniques = {col: df[col].unique() for col in columns}
         uniques = _computations_expand_grid(uniques)
-        uniques = uniques.droplevel(level=-1, axis="columns")
+        uniques.columns = columns
         return uniques
 
     uniques = {}
+    df_columns = []
     for index, column in enumerate(columns):
+        if not isinstance(column, str):
+            df_columns.extend(column)
+        else:
+            df_columns.append(column)
         if isinstance(column, dict):
-            column = _complete_column(column, df)
+            column = _complete_column(column, df, sort)
             uniques = {**uniques, **column}
         else:
-            uniques[index] = _complete_column(column, df)
+            uniques[index] = _complete_column(column, df, sort)
 
     if len(uniques) == 1:
         _, uniques = uniques.popitem()
         return uniques.to_frame()
 
     uniques = _computations_expand_grid(uniques)
-    return uniques.droplevel(level=0, axis="columns")
+    uniques.columns = df_columns
+    return uniques
 
 
 @functools.singledispatch
-def _complete_column(column: str, df):
+def _complete_column(column: str, df, sort):
     """
     Args:
         column : str/list/dict
         df: Pandas DataFrame
+        sort: whether or not to sort the Series.
 
     A Pandas Series/DataFrame with no duplicates,
-    or a list of unique Pandas Series is returned.
+    or a dictionary of unique Pandas Series is returned.
     """
-    column = df[column]
+    # the cost of checking uniqueness is expensive,
+    # especially for large data
+    # dirty tests also show that drop_duplicates
+    # is faster than pd.unique for fairly large data
 
-    if not column.is_unique:
-        return column.drop_duplicates()
+    column = df[column]
+    dupes = column.duplicated()
+
+    if dupes.any():
+        column = column[~dupes]
+
+    if sort and not column.is_monotonic_increasing:
+        column = column.sort_values()
+
     return column
 
 
 @_complete_column.register(list)  # noqa: F811
-def _sub_complete_column(column, df):  # noqa: F811
+def _sub_complete_column(column, df, sort):  # noqa: F811
     """
     Args:
         column : list
         df: Pandas DataFrame
+        sort: whether or not to sort the DataFrame.
 
     Returns:
         Pandas DataFrame
     """
 
-    column = df.loc[:, column]
+    outcome = df.loc[:, column]
+    dupes = outcome.duplicated()
 
-    if column.duplicated().any(axis=None):
-        return column.drop_duplicates()
+    if dupes.any():
+        outcome = outcome.loc[~dupes]
 
-    return column
+    if sort:
+        outcome = outcome.sort_values(by=column)
+
+    return outcome
 
 
 @_complete_column.register(dict)  # noqa: F811
-def _sub_complete_column(column, df):  # noqa: F811
+def _sub_complete_column(column, df, sort):  # noqa: F811
     """
     Args:
         column : dictionary
         df: Pandas DataFrame
+        sort: whether or not to sort the Series.
 
     Returns:
         A dictionary of unique pandas Series.
@@ -371,8 +410,13 @@ def _sub_complete_column(column, df):  # noqa: F811
         if not isinstance(arr, pd.Series):
             arr = pd.Series(arr)
 
-        if not arr.is_unique:
-            arr = arr.drop_duplicates()
+        dupes = arr.duplicated()
+
+        if dupes.any():
+            arr = arr[~dupes]
+
+        if sort and not arr.is_monotonic_increasing:
+            arr = arr.sort_values()
 
         arr.name = key
 

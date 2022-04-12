@@ -54,8 +54,8 @@ def change_type(
         Python types, or a numpy datatype.
     :param ignore_exception: one of `{False, "fillna", "keep_values"}`.
     :returns: A pandas DataFrame with changed column types.
-    :raises ValueError: if unknown option provided for
-        `ignore_exception``.
+    :raises ValueError: If unknown option provided for
+        `ignore_exception`.
     """
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)

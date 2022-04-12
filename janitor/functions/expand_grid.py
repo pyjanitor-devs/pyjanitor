@@ -28,13 +28,12 @@ def expand_grid(
     Data types are preserved in this function,
     including pandas' extension array dtypes.
 
-    The output will always be a DataFrame, usually a MultiIndex,
-    with the keys of the `others` dictionary serving as
-    the top level columns.
+    The output will always be a DataFrame, usually with a MultiIndex column,
+    with the keys of the `others` dictionary serving as the top level columns.
 
-    If a DataFrame with MultiIndex columns is part of the arguments in
-    `others`, the columns are flattened, before the final
-    cartesian DataFrame is generated.
+    If a DataFrame with MultiIndex columns
+    is part of the arguments in `others`,
+    the columns are flattened, before the final DataFrame is generated.
 
     If a pandas Series/DataFrame is passed, and has a labeled index, or
     a MultiIndex index, the index is discarded; the final DataFrame

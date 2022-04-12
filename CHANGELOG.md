@@ -15,6 +15,14 @@
 -   [ENH] `patterns` deprecated in favour of importing `re.compile`. #1007 @samukweku
 -   [ENH] Changes to kwargs in `encode_categorical`, where the values can either be a string or a 1D array. #1021 @samukweku
 -   [ENH] Add `fill_value` and `explicit` parameters to the `complete` function. #1019 @samukweku
+-   [ENH] Performance improvement for `expand_grid`. @samukweku
+-   [BUG] Make `factorize_columns` (PR #1028) and `truncate_datetime_dataframe` (PR #1040) functions non-mutating. @thatlittleboy
+-   [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe`, along with further performance improvements (PR #1040). @thatlittleboy
+-   [ENH] Performance improvement for `conditional_join`. @samukweku
+-   [ENH] Multiple `.value` is now supported in `pivot_longer`. Multiple values_to is also supported, when names_pattern is a list or tuple. #1034, #1048 @samukweku
+-   [ENH] Add `xlsx_cells` for reading a spreadsheet as a table of individual cells. #929 @samukweku.
+-   [ENH] Let `filter_string` suit parameters of `Series.str.contains` Issue #1003 and #1047. @Zeroto521
+-   [ENH] `names_glue` in `pivot_wider` now takes a string form, using str.format_map under the hood. `levels_order` is also deprecated. @samukweku
 
 ## [v0.22.0] - 2021-11-21
 

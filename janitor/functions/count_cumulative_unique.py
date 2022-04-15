@@ -51,6 +51,22 @@ def count_cumulative_unique(
         4       B        8                     4
         5       b        9                     4
 
+    Example: Cumulative counts, ignoring casing.
+
+        >>> df.count_cumulative_unique(
+        ...     column_name="letters",
+        ...     dest_column_name="letters_unique_count",
+        ...     case_sensitive=False,
+        ... )
+
+          letters  numbers  letters_unique_count
+        0       a        4                     1
+        1       a        5                     1
+        2       b        6                     2
+        3       A        7                     2
+        4       B        8                     2
+        5       b        9                     2
+
     :param df: A pandas DataFrame.
     :param column_name: Name of the column containing values from which a
         running count of unique values will be created.

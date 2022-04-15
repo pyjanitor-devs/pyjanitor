@@ -58,7 +58,6 @@ def count_cumulative_unique(
         ...     dest_column_name="letters_unique_count",
         ...     case_sensitive=False,
         ... )
-
           letters  numbers  letters_unique_count
         0       a        4                     1
         1       a        5                     1

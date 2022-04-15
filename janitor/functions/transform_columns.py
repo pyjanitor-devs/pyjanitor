@@ -172,7 +172,9 @@ def transform_columns(
         to apply the transformation function elementwise (True)
         or columnwise (False).
     :param new_column_names: An explicit mapping of old column names in
-        `column_names` to new column names.
+        `column_names` to new column names. If any column specified in
+        `column_names` is not a key in this dictionary, the transformation
+        will happen in-place for that column.
     :returns: A pandas DataFrame with transformed columns.
     :raises ValueError: If both `suffix` and `new_column_names` are
         specified.
@@ -184,22 +186,21 @@ def transform_columns(
             "Only one of `suffix` or `new_column_names` should be specified."
         )
 
-    dest_column_names = dict(zip(column_names, column_names))
-
     if suffix:
         check("suffix", suffix, [str])
-        for col in column_names:
-            dest_column_names[col] = col + suffix
+        dest_column_names = {col: col + suffix for col in column_names}
     elif new_column_names:
         check("new_column_names", new_column_names, [dict])
         dest_column_names = new_column_names
+    else:
+        dest_column_names = {}
 
-    for old_col, new_col in dest_column_names.items():
+    for old_col in column_names:
         df = transform_column(
             df,
             old_col,
             function,
-            new_col,
+            dest_column_name=dest_column_names.get(old_col, old_col),
             elementwise=elementwise,
         )
 

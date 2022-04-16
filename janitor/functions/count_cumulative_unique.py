@@ -77,6 +77,7 @@ def count_cumulative_unique(
         count of unique values from another column.
     """
     check_column(df, column_name)
+    check_column(df, dest_column_name, present=False)
 
     if not case_sensitive:
         # Make it so that the the same uppercase and lowercase

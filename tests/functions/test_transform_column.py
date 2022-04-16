@@ -30,7 +30,6 @@ def test_transform_column(dataframe, elementwise):
     and on a single pandas Series.
     We use np.log10 as an example
     """
-
     df = dataframe.transform_column("a", np.log10, elementwise=elementwise)
     expected = pd.Series(np.log10([1, 2, 3] * 3))
     expected.name = "a"
@@ -40,14 +39,42 @@ def test_transform_column(dataframe, elementwise):
 @pytest.mark.functions
 def test_transform_column_with_dest(dataframe):
     """Test creating a new destination column."""
-
     expected_df = dataframe.assign(a_log10=np.log10(dataframe["a"]))
 
     df = dataframe.copy().transform_column(
-        "a", np.log10, dest_column_name="a_log10"
+        "a",
+        np.log10,
+        dest_column_name="a_log10",
     )
 
     assert_frame_equal(df, expected_df)
+
+
+@pytest.mark.functions
+def test_transform_column_dest_column_already_present(dataframe):
+    """Test behaviour when new destination column is provided and already
+    exists."""
+    # If dest_column_name already exists, throw an error
+    with pytest.raises(
+        ValueError,
+        match="pyjanitor already present in dataframe",
+    ):
+        _ = dataframe.assign(pyjanitor=1).transform_column(
+            "a",
+            np.log10,
+            dest_column_name="pyjanitor",
+        )
+
+    # unless dest_column_name is the same as column_name (the column being
+    # transformed); assume user wants an in-place transformation in this
+    # case.
+    expected_df = dataframe.copy().assign(a=np.log10(dataframe["a"]))
+    result_df = dataframe.transform_column(
+        "a",
+        np.log10,
+        dest_column_name="a",
+    )
+    assert_frame_equal(result_df, expected_df)
 
 
 @pytest.mark.functions

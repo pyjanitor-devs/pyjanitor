@@ -89,6 +89,13 @@ def transform_column(
 
     if dest_column_name is None:
         dest_column_name = column_name
+    elif dest_column_name != column_name:
+        # If `dest_column_name` is provided and equals `column_name`, then we
+        # assume that the user's intent is to perform an in-place
+        # transformation (Same behaviour as when `dest_column_name` = None).
+        # Otherwise we throw an error if `dest_column_name` already exists in
+        # df.
+        check_column(df, dest_column_name, present=False)
 
     if elementwise:
         result = df[column_name].apply(function)

@@ -255,7 +255,8 @@ df = (
 
 ## Contributing
 
-Follow the [development guide](https://pyjanitor-devs.github.io/pyjanitor/devguide/) for a full description of the process of contributing to `pyjanitor`.
+Follow the [development guide](https://pyjanitor-devs.github.io/pyjanitor/development/devguide/)
+for a full description of the process of contributing to `pyjanitor`.
 
 ## Adding new functionality
 

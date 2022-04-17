@@ -33,7 +33,7 @@ python -X importtime -c "import janitor" 2> timing.log
 Then, using the `tuna` CLI tool, we can view the timing log:
 
 ```bash
-tun timing.log
+tuna timing.log
 ```
 
 Note: You may need to install tuna using `pip install -U tuna`.

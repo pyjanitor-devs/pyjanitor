@@ -1,5 +1,7 @@
 """Implementation of count_cumulative_unique."""
 from typing import Hashable
+
+import numpy as np
 import pandas_flavor as pf
 import pandas as pd
 
@@ -72,29 +74,34 @@ def count_cumulative_unique(
     :param dest_column_name: The name of the new column containing the
         cumulative count of unique values that will be created.
     :param case_sensitive: Whether or not uppercase and lowercase letters
-        will be considered equal.
+        will be considered equal. Only valid with string-like columns.
     :returns: A pandas DataFrame with a new column containing a cumulative
         count of unique values from another column.
+    :raises TypeError: If `case_sensitive` is False when counting a non-string
+        `column_name`.
     """
     check_column(df, column_name)
     check_column(df, dest_column_name, present=False)
 
+    counter = df[column_name]
     if not case_sensitive:
-        # Make it so that the the same uppercase and lowercase
-        # letter are treated as one unique value
-        series = df[column_name].astype("string").str.lower()
-    else:
-        series = df[column_name]
+        try:
+            # Make it so that the the same uppercase and lowercase
+            # letter are treated as one unique value
+            counter = counter.str.lower()
+        except (AttributeError, TypeError) as e:
+            # AttributeError is raised by pandas when .str is used on
+            # non-string types, e.g. int.
+            # TypeError is raised by pandas when .str.lower is used on a
+            # forbidden string type, e.g. bytes.
+            raise TypeError(
+                "case_sensitive=False can only be used with a string-like "
+                f"type. Column {column_name} is {counter.dtype} type."
+            ) from e
 
-    dummy_name = "_pyjanitor_dummy_col_"
-    count_column = (
-        series.drop_duplicates()
-        .to_frame()
-        .assign(**{dummy_name: 1})[dummy_name]
-        .cumsum()
-        .reindex(df.index, copy=False)
-        .ffill()
-        .astype(int)
+    counter = (
+        counter.groupby(counter, sort=False).cumcount().to_numpy(copy=False)
     )
+    counter = np.cumsum(counter == 0)
 
-    return df.assign(**{dest_column_name: count_column})
+    return df.assign(**{dest_column_name: counter})

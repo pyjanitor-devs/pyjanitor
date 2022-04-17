@@ -37,6 +37,9 @@ tuna timing.log
 ```
 
 Note: You may need to install tuna using `pip install -U tuna`.
+`tuna`'s development repository is [on GitHub][tuna]
+
+[tuna]: https://github.com/nschloe/tuna.
 
 You'll be redirected to your browser,
 where the web UI will allow you to see

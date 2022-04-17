@@ -5,6 +5,19 @@ import pandas as pd
 from janitor.utils import check, check_column, deprecated_alias
 
 
+def _get_transform_column_result(
+    series: pd.Series,
+    function: Callable,
+    elementwise: bool,
+) -> pd.Series:
+    """Perform the actual computation for Series transformation."""
+    if elementwise:
+        result = series.apply(function)
+    else:
+        result = function(series)
+    return result
+
+
 @pf.register_dataframe_method
 @deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
 def transform_column(
@@ -97,10 +110,11 @@ def transform_column(
         # df.
         check_column(df, dest_column_name, present=False)
 
-    if elementwise:
-        result = df[column_name].apply(function)
-    else:
-        result = function(df[column_name])
+    result = _get_transform_column_result(
+        df[column_name],
+        function,
+        elementwise,
+    )
 
     df = df.assign(**{dest_column_name: result})
     return df
@@ -121,7 +135,7 @@ def transform_columns(
     This method does not mutate the original DataFrame.
 
     Super syntactic sugar!
-    Basically wraps [`transform_column`][janitor.functions.transform_columns.transform_column]
+    Essentially wraps [`transform_column`][janitor.functions.transform_columns.transform_column]
     and calls it repeatedly over all column names provided.
 
     User can optionally supply either a suffix to create a new set of columns
@@ -187,6 +201,7 @@ def transform_columns(
         specified.
     """  # noqa: E501
     check("column_names", column_names, [list, tuple])
+    check_column(df, column_names)
 
     if suffix is not None and new_column_names is not None:
         raise ValueError(
@@ -198,17 +213,21 @@ def transform_columns(
         dest_column_names = {col: col + suffix for col in column_names}
     elif new_column_names:
         check("new_column_names", new_column_names, [dict])
-        dest_column_names = new_column_names
+        dest_column_names = {
+            col: new_column_names.get(col, col) for col in column_names
+        }
     else:
-        dest_column_names = {}
+        dest_column_names = dict(zip(column_names, column_names))
 
-    for old_col in column_names:
-        df = transform_column(
-            df,
-            old_col,
+    results = {}
+    for old_col, new_col in dest_column_names.items():
+        if old_col != new_col:
+            check_column(df, new_col, present=False)
+        results[new_col] = _get_transform_column_result(
+            df[old_col],
             function,
-            dest_column_name=dest_column_names.get(old_col, old_col),
             elementwise=elementwise,
         )
 
+    df = df.assign(**results)
     return df

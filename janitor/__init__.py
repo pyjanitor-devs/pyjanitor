@@ -4,12 +4,16 @@ Lazy loading used here to speed up imports.
 """
 import lazy_loader as lazy
 
+
 from .accessors import *  # noqa: F403, F401
 from .functions import *  # noqa: F403, F401
 from .io import *  # noqa: F403, F401
 from .math import *  # noqa: F403, F401
 from .ml import get_features_targets as _get_features_targets
 from .utils import refactored_function
+
+
+_ = lazy.load("pandas_flavor")
 
 try:
     jxr = lazy.load("janitor.xarray")  # noqa: F401

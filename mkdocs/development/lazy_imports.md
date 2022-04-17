@@ -46,7 +46,7 @@ which imports are causing time delays.
 
 ## Which imports to lazily load
 
-Generally speaking, the the _external_ imports are the ones that
+Generally speaking, the _external_ imports are the ones that
 when lazily loaded, will give the maximal gain in speed.
 You can also opt to lazily load `pyjanitor` submodules,
 but we doubt they will give much advantage in speed.

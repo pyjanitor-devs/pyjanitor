@@ -12,10 +12,8 @@ def _get_transform_column_result(
 ) -> pd.Series:
     """Perform the actual computation for Series transformation."""
     if elementwise:
-        result = series.apply(function)
-    else:
-        result = function(series)
-    return result
+        return series.apply(function)
+    return function(series)
 
 
 @pf.register_dataframe_method
@@ -116,8 +114,7 @@ def transform_column(
         elementwise,
     )
 
-    df = df.assign(**{dest_column_name: result})
-    return df
+    return df.assign(**{dest_column_name: result})
 
 
 @pf.register_dataframe_method
@@ -229,5 +226,4 @@ def transform_columns(
             elementwise=elementwise,
         )
 
-    df = df.assign(**results)
-    return df
+    return df.assign(**results)

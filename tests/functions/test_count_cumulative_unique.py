@@ -70,7 +70,7 @@ def test_not_case_sensitive(dataframe):
 @pytest.mark.functions
 def test_not_case_sensitive_but_nonstring():
     """Checks TypeError is raised if case sensitive is explicitly set to
-    False but the column being counted is not string type.
+    False but the column being counted does not support `.str.lower()`.
     """
     df = pd.DataFrame(
         {

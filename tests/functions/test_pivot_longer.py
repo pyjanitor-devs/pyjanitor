@@ -239,7 +239,7 @@ def test_values_to_exists_in_columns(df_checks):
     exists in the dataframe's columns.
     """
     with pytest.raises(ValueError):
-        df_checks.pivot_longer(values_to="birth")
+        df_checks.pivot_longer(index="birth", values_to="birth")
 
 
 def test_values_to_exists_in_names_to(df_checks):
@@ -319,7 +319,10 @@ def test_names_to_index(df_checks):
     Raise ValueError if there is no names_sep/names_pattern,
     .value not in names_to and names_to intersects with index.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist as column labels.+",
+    ):
         df_checks.pivot_longer(
             names_to="famid",
             index="famid",
@@ -331,7 +334,10 @@ def test_names_sep_pattern_names_to_index(df_checks):
     Raise ValueError if names_sep/names_pattern,
     .value not in names_to and names_to intersects with index.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist as column labels.+",
+    ):
         df_checks.pivot_longer(
             names_to=["dim", "famid"],
             names_sep="_",
@@ -404,7 +410,9 @@ def test_names_pattern_list_empty_any(df_checks):
 
 def test_names_pattern_no_match(df_checks):
     """Raise error if names_pattern is a regex and returns no matches."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Column labels .+ could not be matched with any .+"
+    ):
         df_checks.pivot_longer(
             index="famid",
             names_to=[".value", "value"],
@@ -417,7 +425,9 @@ def test_names_pattern_incomplete_match(df_checks):
     Raise error if names_pattern is a regex
     and returns incomplete matches.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Column labels .+ could not be matched with any .+"
+    ):
         df_checks.pivot_longer(
             index="famid",
             names_to=[".value", "value"],

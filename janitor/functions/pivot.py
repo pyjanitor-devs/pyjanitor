@@ -271,7 +271,6 @@ def pivot_longer(
         column_names,
         names_to,
         values_to,
-        column_level,
         names_sep,
         names_pattern,
         sort_by_appearance,
@@ -530,6 +529,12 @@ def _data_checks_pivot_longer(
                 "values_to exists in the column level names. "
                 "Kindly provide a unique name for values_to."
             )
+    elif (
+        not isinstance(df.columns, pd.MultiIndex)
+        and not any((names_sep, names_pattern))
+        and (not df.columns.names[0])
+    ):
+        df.columns.names = names_to
 
     return (
         df,
@@ -551,7 +556,6 @@ def _computations_pivot_longer(
     column_names: list = None,
     names_to: list = None,
     values_to: str = "value",
-    column_level: Union[int, str] = None,
     names_sep: Union[str, Pattern] = None,
     names_pattern: Union[list, tuple, str, Pattern] = None,
     sort_by_appearance: bool = False,
@@ -561,116 +565,111 @@ def _computations_pivot_longer(
     This is where the final dataframe in long form is created.
     """
     # scenario 1
+
+    if not column_names:
+        return df
+
+    if index:
+        index = {
+            name: extract_array(df[name], extract_numpy=True) for name in index
+        }
+
+    df = df.loc[:, column_names]
+
+    len_index = len(df)
+
     if all((names_pattern is None, names_sep is None)):
 
-        len_index = len(df)
-
-        df = _base_melt(
-            df,
+        return _base_melt(
+            df=df,
             index=index,
-            column_names=column_names,
-            names_to=names_to,
+            len_index=len_index,
             values_to=values_to,
+            sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
         )
 
-        if sort_by_appearance:
-            df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-            if ignore_index:
-                df.index = range(len(df))
-
-        return df
-
-    # names_sep or names_pattern
-    if index:
-        df = df.set_index(index, append=True)
-
-    if column_names:
-        df = df.loc[:, column_names]
-
     if names_sep is not None:
         return _pivot_longer_names_sep(
-            df,
-            index,
-            names_to,
-            names_sep,
-            values_to,
-            sort_by_appearance,
-            ignore_index,
+            df=df,
+            index=index,
+            len_index=len_index,
+            names_to=names_to,
+            names_sep=names_sep,
+            values_to=values_to,
+            sort_by_appearance=sort_by_appearance,
+            ignore_index=ignore_index,
         )
 
     if isinstance(names_pattern, (str, Pattern)):
         return _pivot_longer_names_pattern_str(
-            df,
-            index,
-            names_to,
-            names_pattern,
-            values_to,
-            sort_by_appearance,
-            ignore_index,
+            df=df,
+            index=index,
+            len_index=len_index,
+            names_to=names_to,
+            names_pattern=names_pattern,
+            values_to=values_to,
+            sort_by_appearance=sort_by_appearance,
+            ignore_index=ignore_index,
         )
 
     return _pivot_longer_names_pattern_sequence(
-        df,
-        index,
-        names_to,
-        names_pattern,
-        sort_by_appearance,
-        values_to,
-        ignore_index,
+        df=df,
+        index=index,
+        names_to=names_to,
+        names_pattern=names_pattern,
+        sort_by_appearance=sort_by_appearance,
+        values_to=values_to,
+        ignore_index=ignore_index,
     )
 
 
 def _base_melt(
     df: pd.DataFrame,
-    index: Union[list, None],
-    column_names: Union[list, None],
-    names_to: Union[str, list, None],
+    index: list,
+    len_index: int,
     values_to: str,
+    sort_by_appearance: bool,
     ignore_index: bool,
 ):
 
-    if not column_names:
-        return df
-
-    len_index = len(df)
-    len_column_names = len(column_names)
+    len_column_names = len(df.columns)
     indexer = np.tile(np.arange(len_index), len_column_names)
-    if not ignore_index:
-        df_index = df.index[indexer]
-
-    out = {}
-
+    df_index = df.index[indexer]
     if index:
-        out = {
-            name: extract_array(arr, extract_numpy=True)[indexer]
-            for name, arr in df.loc[:, index].items()
-        }
-
-    df = df.loc[:, column_names]
-    if not isinstance(df.columns, pd.MultiIndex):
-        if not df.columns.names[0]:
-            df.columns.names = names_to
-
-    column_names = {
-        name: df.columns.get_level_values(name) for name in df.columns.names
+        index = {name: arr[indexer] for name, arr in index.items()}
+    else:
+        index = {}
+    # return extract_array(df.columns, extract_numpy=True).repeat(len_index)
+    out = df.columns
+    out = {
+        name: extract_array(
+            out.get_level_values(name), extract_numpy=True
+        ).repeat(len_index)
+        for name in out.names
     }
-    indexer = np.repeat(np.arange(len_column_names), len_index)
-    column_names = {
-        name: extract_array(arr, extract_numpy=True)[indexer]
-        for name, arr in column_names.items()
-    }
+
     df = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
-    values_to = {values_to: concat_compat(df)}
+    df = {values_to: concat_compat(df)}
 
-    out = {**out, **column_names, **values_to}
+    df = {**index, **out, **df}
 
-    out = pd.DataFrame(out, copy=False)
-    if not ignore_index:
-        out.index = df_index
+    df = pd.DataFrame(df, copy=False, index=df_index)
 
-    return out
+    out = None
+    indexer = None
+    df_index = None
+    index = None
+    if sort_by_appearance:
+        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+    if ignore_index:
+        df.index = range(len(df))
+
+    if df.columns.names:
+        df.columns.names = [None]
+
+    return df
 
 
 def _sort_by_appearance_for_melt(
@@ -741,7 +740,8 @@ def _sort_by_appearance_for_melt(
 
 def _pivot_longer_not_dot_value(
     df: pd.DataFrame,
-    index: Union[list, None],
+    index: list,
+    len_index: list,
     sort_by_appearance: bool,
     ignore_index: bool,
     values_to: str,
@@ -753,24 +753,14 @@ def _pivot_longer_not_dot_value(
 
     Returns a DataFrame.
     """
-
-    len_index = len(df)
-
-    df = df.melt(ignore_index=False, value_name=values_to)
-
-    if sort_by_appearance:
-        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-    if index:
-        df = df.reset_index(level=index)
-
-    if ignore_index:
-        df.index = range(len(df))
-
-    if df.columns.names:
-        df.columns.names = [None]
-
-    return df
+    return _base_melt(
+        df=df,
+        index=index,
+        len_index=len_index,
+        values_to=values_to,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
 
 
 def _pivot_longer_dot_value(
@@ -1021,6 +1011,7 @@ def _pivot_longer_names_pattern_sequence(
 def _pivot_longer_names_pattern_str(
     df: pd.DataFrame,
     index: Union[list, None],
+    len_index: int,
     names_to: list,
     names_pattern: Union[str, Pattern],
     values_to: str,
@@ -1051,7 +1042,12 @@ def _pivot_longer_names_pattern_str(
         else:
             df.columns = pd.MultiIndex.from_frame(mapping)
         return _pivot_longer_not_dot_value(
-            df, index, sort_by_appearance, ignore_index, values_to
+            df=df,
+            index=index,
+            sort_by_appearance=sort_by_appearance,
+            ignore_index=ignore_index,
+            values_to=values_to,
+            len_index=len_index,
         )
 
     # .value
@@ -1062,7 +1058,8 @@ def _pivot_longer_names_pattern_str(
 
 def _pivot_longer_names_sep(
     df: pd.DataFrame,
-    index: Union[list, None],
+    index: list,
+    len_index: int,
     names_to: list,
     names_sep: Union[str, Pattern],
     values_to: str,
@@ -1095,7 +1092,12 @@ def _pivot_longer_names_sep(
         else:
             df.columns = pd.MultiIndex.from_frame(mapping)
         return _pivot_longer_not_dot_value(
-            df, index, sort_by_appearance, ignore_index, values_to
+            df=df,
+            index=index,
+            sort_by_appearance=sort_by_appearance,
+            ignore_index=ignore_index,
+            values_to=values_to,
+            len_index=len_index,
         )
 
     # .value

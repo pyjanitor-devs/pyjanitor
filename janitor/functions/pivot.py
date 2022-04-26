@@ -1,3 +1,5 @@
+from collections import defaultdict
+from itertools import zip_longest, chain
 import re
 import warnings
 from typing import Optional, Pattern, Union
@@ -616,6 +618,7 @@ def _computations_pivot_longer(
     return _pivot_longer_names_pattern_sequence(
         df=df,
         index=index,
+        len_index=len_index,
         names_to=names_to,
         names_pattern=names_pattern,
         sort_by_appearance=sort_by_appearance,
@@ -640,23 +643,23 @@ def _base_melt(
         index = {name: arr[indexer] for name, arr in index.items()}
     else:
         index = {}
-    # return extract_array(df.columns, extract_numpy=True).repeat(len_index)
-    out = df.columns
-    out = {
+
+    outcome = df.columns
+    outcome = {
         name: extract_array(
-            out.get_level_values(name), extract_numpy=True
+            outcome.get_level_values(name), extract_numpy=True
         ).repeat(len_index)
-        for name in out.names
+        for name in outcome.names
     }
 
     df = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
     df = {values_to: concat_compat(df)}
 
-    df = {**index, **out, **df}
+    df = {**index, **outcome, **df}
 
     df = pd.DataFrame(df, copy=False, index=df_index)
 
-    out = None
+    outcome = None
     indexer = None
     df_index = None
     index = None
@@ -740,7 +743,7 @@ def _sort_by_appearance_for_melt(
 
 def _pivot_longer_not_dot_value(
     df: pd.DataFrame,
-    index: list,
+    index: Union[dict, None],
     len_index: list,
     sort_by_appearance: bool,
     ignore_index: bool,
@@ -765,7 +768,7 @@ def _pivot_longer_not_dot_value(
 
 def _pivot_longer_dot_value(
     df: pd.DataFrame,
-    index: Union[list, None],
+    index: Union[dict, None],
     sort_by_appearance: bool,
     ignore_index: bool,
     names_to: list,
@@ -891,7 +894,8 @@ def _pivot_longer_dot_value(
 
 def _pivot_longer_names_pattern_sequence(
     df: pd.DataFrame,
-    index: Union[list, None],
+    index: Union[dict, None],
+    len_index: int,
     names_to: list,
     names_pattern: Union[list, tuple],
     sort_by_appearance: bool,
@@ -904,25 +908,24 @@ def _pivot_longer_names_pattern_sequence(
     """
     values_to_is_a_sequence = isinstance(values_to, (list, tuple))
     if values_to_is_a_sequence and index:
-        exclude = [word for word in values_to if word in index]
+        exclude = set(values_to).intersection(index)
         if exclude:
             raise ValueError(
                 f"Labels {*exclude, } in values_to already exist as "
                 "column labels assigned to the dataframe's index parameter. "
                 "Kindly use unique labels."
             )
-    df_columns = df.columns
-    len_index = len(df)
+    outcome = df.columns
 
     mapping = [
-        df_columns.str.contains(regex, na=False, regex=True)
+        outcome.str.contains(regex, na=False, regex=True)
         for regex in names_pattern
     ]
 
-    matches = (arr.any() for arr in mapping)
+    outcome = (arr.any() for arr in mapping)
     # within each match, check the individual matches
     # and raise an error if any is False
-    for position, boolean in enumerate(matches):
+    for position, boolean in enumerate(outcome):
         if not boolean.item():
             raise ValueError(
                 "No match was returned for the regex "
@@ -930,77 +933,93 @@ def _pivot_longer_names_pattern_sequence(
             )
 
     if values_to_is_a_sequence:
-        mapping, other = np.select(mapping, values_to, None), np.select(
+        mapping, values = np.select(mapping, values_to, None), np.select(
             mapping, names_to, None
         )
     else:
         mapping = np.select(mapping, names_to, None)
 
     # only matched columns are retained
-    matches = pd.notna(mapping)
+    outcome = pd.notna(mapping)
 
-    df = df.loc[:, matches]
-    mapping = mapping[matches]
+    df = df.loc[:, outcome]
+    mapping = mapping[outcome]
     if values_to_is_a_sequence:
-        other = other[matches]
-        matches = df.columns
+        names_to = zip(names_to, values_to)
+        names_to = [*chain.from_iterable(names_to)]
+        if index:
+            names_to = [*index] + names_to
+        values = values[outcome]
+        arr = defaultdict(list)
+        for label, name in zip(values, df.columns):
+            arr[label].append(name)
+        values = arr.keys()
+        arr = (arr for _, arr in arr.items())
+        arr = zip(*zip_longest(*arr))
+        arr = map(np.asarray, arr)
+        values = dict(zip(values, arr))
 
-    if isinstance(values_to, str) and (len(mapping) == 1):
-        df.columns = mapping
-    else:
-        mapping = pd.Series(mapping)
-        # get positions of columns,
-        # to ensure interleaving is possible
-        # so if we have a dataframe like below:
-        #        id  x1  x2  y1  y2
-        #    0   1   4   5   7  10
-        #    1   2   5   6   8  11
-        #    2   3   6   7   9  12
-        # then x1 will pair with y1, and x2 will pair with y2
-        # if the dataframe column positions were alternated, like below:
-        #        id  x2  x1  y1  y2
-        #    0   1   5   4   7  10
-        #    1   2   6   5   8  11
-        #    2   3   7   6   9  12
-        # then x2 will pair with y1 and x1 will pair with y2
-        # it is simply a first come first serve approach
-        # the same idea applies if values_to is a list/tuple
-        positions = mapping.groupby(
-            mapping, sort=False, observed=True
-        ).cumcount()
-        # positions ensure uniqueness, and we take advantage of this
-        # in creating sub dataframes that are then combined back into
-        # one
+    mapping = pd.Series(mapping)
+    # get positions of columns,
+    # to ensure interleaving is possible
+    # so if we have a dataframe like below:
+    #        id  x1  x2  y1  y2
+    #    0   1   4   5   7  10
+    #    1   2   5   6   8  11
+    #    2   3   6   7   9  12
+    # then x1 will pair with y1, and x2 will pair with y2
+    # if the dataframe column positions were alternated, like below:
+    #        id  x2  x1  y1  y2
+    #    0   1   5   4   7  10
+    #    1   2   6   5   8  11
+    #    2   3   7   6   9  12
+    # then x2 will pair with y1 and x1 will pair with y2
+    # it is simply a first come first serve approach
+    # the same idea applies if values_to is a list/tuple
+    outcome = mapping.groupby(mapping, sort=False, observed=True)
+    positions = outcome.cumcount()
+    # positions ensure uniqueness, and we take advantage of this
+    # in creating sub dataframes that are then combined back into
+    # one
+    # df.columns = [positions, mapping]
+    group_size = outcome.size()
+    group_max = group_size.max()
+    # the number of levels should be the same;
+    # if not, build a MultiIndex and reindex
+    # to get equal numbers for each label
+    if group_size.nunique() > 1:
         df.columns = [positions, mapping]
-        df = [df.loc[:, num] for num in positions.unique()]
-        df = pd.concat(df, axis="index", sort=False, copy=False)
-        if values_to_is_a_sequence:
-            # chuck the index aside, add the columns
-            # then return the index.
-            # This is necessary to avoid Pandas' ValueError
-            # which occurs due to incompatible lengths.
-            indexer = df.index
-            df.index = range(len(df))
-            # get the grouping of names_to to the columns
-            # the values in names_to become column names
-            # while the associated column labels in df
-            # become values in the new columns, repeated
-            # as many times as the length of the original df
-            for key, value in matches.groupby(other).items():
-                value = value.repeat(len_index)
-                df[key] = pd.Series(value)
-            df.index = indexer
-            names_to = [
-                label for arg in zip(names_to, values_to) for label in arg
-            ]
-            df = df.loc[:, names_to]
-            indexer = None
+        indexer = np.arange(group_max), group_size.index
+        indexer = pd.MultiIndex.from_product(indexer)
+        df = df.reindex(columns=indexer).droplevel(axis=1, level=0)
+    else:
+        df.columns = mapping
+
+    outcome = defaultdict(list)
+    for num, name in enumerate(df.columns):
+        arr = df.iloc[:, num]
+        arr = extract_array(arr, extract_numpy=True)
+        outcome[name].append(arr)
+    outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
+    indexer = np.tile(np.arange(len_index), group_max)
+    df_index = df.index[indexer]
+    if index:
+        index = {name: arr[indexer] for name, arr in index.items()}
+    else:
+        index = {}
+    if values_to_is_a_sequence:
+        values = {name: arr.repeat(len_index) for name, arr in values.items()}
+    else:
+        values = {}
+    df = {**index, **outcome, **values}
+
+    df = pd.DataFrame(df, copy=False, index=df_index)
+
+    if values_to_is_a_sequence:
+        df = df.loc[:, names_to]
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-    if index:
-        df = df.reset_index(level=index)
 
     if ignore_index:
         df.index = range(len(df))

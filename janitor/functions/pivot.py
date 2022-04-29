@@ -14,7 +14,10 @@ from pandas.api.types import (
 from pandas.core.construction import extract_array
 from pandas.core.dtypes.concat import concat_compat
 
-from janitor.functions.utils import _select_column_names
+from janitor.functions.utils import (
+    _select_column_names,
+    _computations_expand_grid,
+)
 from janitor.utils import check
 
 
@@ -566,8 +569,13 @@ def _computations_pivot_longer(
     """
     This is where the final dataframe in long form is created.
     """
-    # scenario 1
-
+    # the core idea for the combination/reshape
+    # is that the index will be tiled, while the rest will be repeated
+    # where necessary ------->
+    # if index is [1,2,3] then tiling makes it [1,2,3,1,2,3,...]
+    # for column names, if it is [1,2,3], then repeats [1,1,1,2,2,2,3,3,3]
+    # dump down into arrays, and build a new dataframe, with copy = False
+    # since we already have made a copy of the original df
     if not column_names:
         return df
 
@@ -627,6 +635,25 @@ def _computations_pivot_longer(
     )
 
 
+def _tile_index(
+    df: pd.DataFrame, index: Union[dict, None], len_index: int, reps: int
+):
+    """
+    Expand the index of `df` based on the `reps`.
+    If `index`, expand that as well.
+
+    Returns a tuple of df_index and index.
+    """
+
+    indexer = np.tile(np.arange(len_index), reps)
+    df_index = df.index[indexer]
+    if index:
+        index = {name: arr[indexer] for name, arr in index.items()}
+    else:
+        index = {}
+    return df_index, index
+
+
 def _base_melt(
     df: pd.DataFrame,
     index: list,
@@ -636,13 +663,9 @@ def _base_melt(
     ignore_index: bool,
 ):
 
-    len_column_names = len(df.columns)
-    indexer = np.tile(np.arange(len_index), len_column_names)
-    df_index = df.index[indexer]
-    if index:
-        index = {name: arr[indexer] for name, arr in index.items()}
-    else:
-        index = {}
+    df_index, index = _tile_index(
+        df=df, index=index, len_index=len_index, reps=len(df.columns)
+    )
 
     outcome = df.columns
     outcome = {
@@ -655,24 +678,16 @@ def _base_melt(
     df = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
     df = {values_to: concat_compat(df)}
 
-    df = {**index, **outcome, **df}
-
-    df = pd.DataFrame(df, copy=False, index=df_index)
-
-    outcome = None
-    indexer = None
-    df_index = None
-    index = None
-    if sort_by_appearance:
-        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-    if ignore_index:
-        df.index = range(len(df))
-
-    if df.columns.names:
-        df.columns.names = [None]
-
-    return df
+    return _final_frame_longer(
+        df=df,
+        len_index=len_index,
+        index=index,
+        outcome=outcome,
+        values=df,
+        df_index=df_index,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
 
 
 def _sort_by_appearance_for_melt(
@@ -766,9 +781,55 @@ def _pivot_longer_not_dot_value(
     )
 
 
+def _dict_from_grouped_names(df: pd.DataFrame):
+    """
+    Create dictionary from multiple same names.
+    Applicable when collating the values for `.value`,
+    or when names_pattern is a list/tuple.
+
+    Returns a defaultdict.
+    """
+    outcome = defaultdict(list)
+    for num, name in enumerate(df.columns):
+        arr = df.iloc[:, num]
+        arr = extract_array(arr, extract_numpy=True)
+        outcome[name].append(arr)
+    return {name: concat_compat(arr) for name, arr in outcome.items()}
+
+
+def _final_frame_longer(
+    df: pd.DataFrame,
+    len_index: int,
+    index: dict,
+    outcome: dict,
+    values: dict,
+    df_index: pd.Index,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+):
+    """
+    Build final dataframe.
+    """
+    df = {**index, **outcome, **values}
+
+    df = pd.DataFrame(df, copy=False, index=df_index)
+
+    if sort_by_appearance:
+        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
+
+    if ignore_index:
+        df.index = range(len(df))
+
+    if df.columns.names:
+        df.columns.names = [None]
+
+    return df
+
+
 def _pivot_longer_dot_value(
     df: pd.DataFrame,
     index: Union[dict, None],
+    len_index: int,
     sort_by_appearance: bool,
     ignore_index: bool,
     names_to: list,
@@ -783,16 +844,18 @@ def _pivot_longer_dot_value(
     """
     # shrink to a single .value, if multiple .value
     if np.count_nonzero(mapping.columns == ".value") > 1:
-        _value = mapping.loc[:, ".value"].agg("".join, axis="columns")
-        mapping = mapping.drop(columns=".value").assign(**{".value": _value})
+        outcome = mapping.pop(".value")
+        outcome = outcome.agg("".join, axis=1)
+        mapping[".value"] = outcome
+        # mapping = mapping.drop(columns=".value").assign(**{".value": _value})
     # check to avoid duplicate columns
     # the names assigned to `.value` should not be found in the index
     # and should not be found in the other names in names_to
-    exclude = [
+    exclude = {
         word
         for word in mapping[".value"].array
         if (word in names_to) and (word != ".value")
-    ]
+    }
     if exclude:
         raise ValueError(
             f"Labels {*exclude, } in names_to already exist "
@@ -812,84 +875,106 @@ def _pivot_longer_dot_value(
     # in the concatenation phase
     # basically push .value to the end,
     # so we can easily do a .loc, to keep .value columns as headers
-    other = [entry for entry in names_to if entry != ".value"]
-    last = mapping.columns[-1]
-    if other and (last != ".value"):
-        mapping = mapping.move(
-            source=".value", target=last, position="after", axis=1
-        )
 
-    # useful if order of columns change during sorting
-    # for a MultiIndex
-    _value = mapping[".value"].unique()
-    if sort_by_appearance & (len(mapping.columns) > 1):
-        mapping = mapping.encode_categorical(
-            **{col: "appearance" for col in names_to}
-        )
-    # having unique columns ensure the data can be recombined
-    # successfully via pd.concat; if the columns are not unique,
-    # a counter is created with cumcount to ensure uniqueness.
-    # This is dropped later on, and is not part of the final
-    # dataframe.
-    mapping_is_unique = not mapping.duplicated().any(axis=None).item()
-    if mapping_is_unique:
-        if len(mapping.columns) == 1:
-            mapping = mapping.iloc[:, 0]
+    if mapping.columns[0] != ".value":
+        outcome = mapping.pop(".value")
+        mapping.insert(loc=0, column=".value", value=outcome)
+
+    if len(mapping.columns) == 1:
+        mapping = mapping.iloc[:, 0]
+        values, group_max = _headers_single_series(df=df, mapping=mapping)
+        outcome = {}
+    else:
+        other = [entry for entry in names_to if entry != ".value"]
+        columns = [*mapping.columns]
+        others = mapping.loc[:, other].drop_duplicates()
+        outcome = mapping.loc[:, ".value"].unique()
+        if not mapping.duplicated().any(axis=None):
+            df.columns = [arr for _, arr in mapping.items()]
+            indexer = {".value": outcome, "other": others}
         else:
-            mapping = pd.MultiIndex.from_frame(mapping)
+            columns.append("".join(columns))
+            cumcount = mapping.groupby(
+                [*mapping.columns], sort=False, observed=True
+            ).cumcount()
+            df.columns = [arr for _, arr in mapping.items()] + [cumcount]
+            indexer = {
+                ".value": outcome,
+                "other": others,
+                "cumcount": cumcount.unique(),
+            }
+        indexer = _computations_expand_grid(indexer)
+        indexer.columns = columns
+        df = df.reindex(columns=indexer)
+        df.columns = df.columns.get_level_values(".value")
+        values = _dict_from_grouped_names(df=df)
+        outcome = indexer.loc[indexer[".value"] == outcome[0], other]
+        group_max = len(outcome)
+        outcome = {
+            name: extract_array(arr, extract_numpy=True).repeat(len_index)
+            for name, arr in outcome.items()
+        }
+
+    df_index, index = _tile_index(
+        df=df, index=index, len_index=len_index, reps=group_max
+    )
+    return _final_frame_longer(
+        df=df,
+        len_index=len_index,
+        index=index,
+        outcome=outcome,
+        values=values,
+        df_index=df_index,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
+
+
+def _headers_single_series(df: pd.DataFrame, mapping: pd.Series):
+    """
+    Extract headers and values for a single level.
+    Applies to `.value` for a single level extract,
+    or where names_pattern is a sequence.
+
+    Returns a DataFrame.
+    """
+    # get positions of columns,
+    # to ensure interleaving is possible
+    # so if we have a dataframe like below:
+    #        id  x1  x2  y1  y2
+    #    0   1   4   5   7  10
+    #    1   2   5   6   8  11
+    #    2   3   6   7   9  12
+    # then x1 will pair with y1, and x2 will pair with y2
+    # if the dataframe column positions were alternated, like below:
+    #        id  x2  x1  y1  y2
+    #    0   1   5   4   7  10
+    #    1   2   6   5   8  11
+    #    2   3   7   6   9  12
+    # then x2 will pair with y1 and x1 will pair with y2
+    # it is simply a first come first serve approach
+    outcome = mapping.groupby(mapping, sort=False, observed=True)
+    group_size = outcome.size()
+    group_max = group_size.max()
+    # the number of levels should be the same;
+    # if not, build a MultiIndex and reindex
+    # to get equal numbers for each label
+    if group_size.nunique() > 1:
+        positions = outcome.cumcount()
+        df.columns = [mapping, positions]
+        indexer = group_size.index, np.arange(group_max)
+        indexer = pd.MultiIndex.from_product(indexer)
+        df = df.reindex(columns=indexer).droplevel(axis=1, level=1)
     else:
-        mapping = [
-            mapping.groupby(names_to, sort=False, observed=True).cumcount()
-        ] + [series for _, series in mapping.items()]
-        mapping = pd.MultiIndex.from_arrays(mapping)
-    df.columns = mapping
-
-    len_index = len(df)
-
-    if len(df.columns.names) > 1:
-        # improve performance for MultiIndex selection
-        # during the list comprehension ---> [df.loc[:, n] for n in others]
-        # and avoid lexsort performance warning
-        if not df.columns.is_monotonic_increasing:
-            df = df.sort_index(axis="columns")
-        others = df.columns.droplevel(".value").unique()
-        df = [df.loc[:, n] for n in others]
-        df = pd.concat(df, keys=others, axis="index", copy=False, sort=False)
-        # intercept and reorder column if needed
-        if not df.columns.equals(_value):
-            df = df.loc[:, _value]
-    if index:
-        num_levels = df.index.nlevels
-        # need to order the dataframe's index
-        # so that when resetting,
-        # the index appears before the other columns
-        # this is relevant only if `index` is True
-        # using numbers here, in case there are multiple Nones
-        # in the index names
-        if num_levels > 1:
-            new_order = np.roll(np.arange(num_levels), len(index) + 1)
-            df = df.reorder_levels(new_order, axis="index")
-            # if names_to contains variables other than `.value`
-            # restore them back to the dataframe as columns
-            if other:
-                index.extend(other)
-        df = df.reset_index(level=index)
-    else:
-        # if names_to contains variables other than `.value`
-        # restore them back to the dataframe as columns
-        if other:
-            df = df.reset_index(level=other)
-    if sort_by_appearance:
-        df = _sort_by_appearance_for_melt(df, len_index)
-
-    if ignore_index:
-        df.index = range(len(df))
-    else:
-        if None in mapping.names:
-            df = df.droplevel(0)
-    df.columns.names = [None]
-
-    return df
+        df.columns = mapping
+    outcome = _dict_from_grouped_names(df=df)
+    # outcome = defaultdict(list)
+    # for num, name in enumerate(df.columns):
+    #     arr = df.iloc[:, num]
+    #     arr = extract_array(arr, extract_numpy=True)
+    #     outcome[name].append(arr)
+    # outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
+    return outcome, group_max
 
 
 def _pivot_longer_names_pattern_sequence(
@@ -941,7 +1026,6 @@ def _pivot_longer_names_pattern_sequence(
 
     # only matched columns are retained
     outcome = pd.notna(mapping)
-
     df = df.loc[:, outcome]
     mapping = mapping[outcome]
     if values_to_is_a_sequence:
@@ -954,63 +1038,20 @@ def _pivot_longer_names_pattern_sequence(
         for label, name in zip(values, df.columns):
             arr[label].append(name)
         values = arr.keys()
-        arr = (arr for _, arr in arr.items())
+        arr = (entry for _, entry in arr.items())
         arr = zip(*zip_longest(*arr))
         arr = map(np.asarray, arr)
         values = dict(zip(values, arr))
-
-    mapping = pd.Series(mapping)
-    # get positions of columns,
-    # to ensure interleaving is possible
-    # so if we have a dataframe like below:
-    #        id  x1  x2  y1  y2
-    #    0   1   4   5   7  10
-    #    1   2   5   6   8  11
-    #    2   3   6   7   9  12
-    # then x1 will pair with y1, and x2 will pair with y2
-    # if the dataframe column positions were alternated, like below:
-    #        id  x2  x1  y1  y2
-    #    0   1   5   4   7  10
-    #    1   2   6   5   8  11
-    #    2   3   7   6   9  12
-    # then x2 will pair with y1 and x1 will pair with y2
-    # it is simply a first come first serve approach
-    # the same idea applies if values_to is a list/tuple
-    outcome = mapping.groupby(mapping, sort=False, observed=True)
-    positions = outcome.cumcount()
-    # positions ensure uniqueness, and we take advantage of this
-    # in creating sub dataframes that are then combined back into
-    # one
-    # df.columns = [positions, mapping]
-    group_size = outcome.size()
-    group_max = group_size.max()
-    # the number of levels should be the same;
-    # if not, build a MultiIndex and reindex
-    # to get equal numbers for each label
-    if group_size.nunique() > 1:
-        df.columns = [positions, mapping]
-        indexer = np.arange(group_max), group_size.index
-        indexer = pd.MultiIndex.from_product(indexer)
-        df = df.reindex(columns=indexer).droplevel(axis=1, level=0)
-    else:
-        df.columns = mapping
-
-    outcome = defaultdict(list)
-    for num, name in enumerate(df.columns):
-        arr = df.iloc[:, num]
-        arr = extract_array(arr, extract_numpy=True)
-        outcome[name].append(arr)
-    outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
-    indexer = np.tile(np.arange(len_index), group_max)
-    df_index = df.index[indexer]
-    if index:
-        index = {name: arr[indexer] for name, arr in index.items()}
-    else:
-        index = {}
-    if values_to_is_a_sequence:
         values = {name: arr.repeat(len_index) for name, arr in values.items()}
     else:
         values = {}
+
+    mapping = pd.Series(mapping)
+    outcome, group_max = _headers_single_series(df=df, mapping=mapping)
+    df_index, index = _tile_index(
+        df=df, index=index, len_index=len_index, reps=group_max
+    )
+
     df = {**index, **outcome, **values}
 
     df = pd.DataFrame(df, copy=False, index=df_index)
@@ -1055,6 +1096,9 @@ def _pivot_longer_names_pattern_str(
         )
 
     mapping.columns = names_to
+
+    # return mapping
+
     if ".value" not in names_to:
         if len(names_to) == 1:
             df.columns = mapping.iloc[:, 0]
@@ -1071,7 +1115,13 @@ def _pivot_longer_names_pattern_str(
 
     # .value
     return _pivot_longer_dot_value(
-        df, index, sort_by_appearance, ignore_index, names_to, mapping
+        df,
+        index,
+        len_index,
+        sort_by_appearance,
+        ignore_index,
+        names_to,
+        mapping,
     )
 
 
@@ -1121,7 +1171,13 @@ def _pivot_longer_names_sep(
 
     # .value
     return _pivot_longer_dot_value(
-        df, index, sort_by_appearance, ignore_index, names_to, mapping
+        df,
+        index,
+        len_index,
+        sort_by_appearance,
+        ignore_index,
+        names_to,
+        mapping,
     )
 
 

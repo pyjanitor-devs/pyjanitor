@@ -635,25 +635,6 @@ def _computations_pivot_longer(
     )
 
 
-def _tile_index(
-    df: pd.DataFrame, index: Union[dict, None], len_index: int, reps: int
-):
-    """
-    Expand the index of `df` based on the `reps`.
-    If `index`, expand that as well.
-
-    Returns a tuple of df_index and index.
-    """
-
-    indexer = np.tile(np.arange(len_index), reps)
-    df_index = df.index[indexer]
-    if index:
-        index = {name: arr[indexer] for name, arr in index.items()}
-    else:
-        index = {}
-    return df_index, index
-
-
 def _base_melt(
     df: pd.DataFrame,
     index: list,
@@ -663,11 +644,8 @@ def _base_melt(
     ignore_index: bool,
 ):
 
-    df_index, index = _tile_index(
-        df=df, index=index, len_index=len_index, reps=len(df.columns)
-    )
-
     outcome = df.columns
+    reps = len(outcome)
     outcome = {
         name: extract_array(
             outcome.get_level_values(name), extract_numpy=True
@@ -675,16 +653,16 @@ def _base_melt(
         for name in outcome.names
     }
 
-    df = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
-    df = {values_to: concat_compat(df)}
+    values = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
+    values = {values_to: concat_compat(values)}
 
     return _final_frame_longer(
         df=df,
         len_index=len_index,
+        reps=reps,
         index=index,
         outcome=outcome,
-        values=df,
-        df_index=df_index,
+        values=values,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -756,31 +734,6 @@ def _sort_by_appearance_for_melt(
     return df
 
 
-def _pivot_longer_not_dot_value(
-    df: pd.DataFrame,
-    index: Union[dict, None],
-    len_index: list,
-    sort_by_appearance: bool,
-    ignore_index: bool,
-    values_to: str,
-) -> pd.DataFrame:
-    """
-    Pivots the dataframe into the final form,
-    for scenarios where names_pattern is a string/regex,
-    or names_sep is provided, and .value is not in names_to.
-
-    Returns a DataFrame.
-    """
-    return _base_melt(
-        df=df,
-        index=index,
-        len_index=len_index,
-        values_to=values_to,
-        sort_by_appearance=sort_by_appearance,
-        ignore_index=ignore_index,
-    )
-
-
 def _dict_from_grouped_names(df: pd.DataFrame):
     """
     Create dictionary from multiple same names.
@@ -800,16 +753,22 @@ def _dict_from_grouped_names(df: pd.DataFrame):
 def _final_frame_longer(
     df: pd.DataFrame,
     len_index: int,
+    reps: int,
     index: dict,
     outcome: dict,
     values: dict,
-    df_index: pd.Index,
     sort_by_appearance: bool,
     ignore_index: bool,
 ):
     """
     Build final dataframe.
     """
+    indexer = np.tile(np.arange(len_index), reps)
+    df_index = df.index[indexer]
+    if index:
+        index = {name: arr[indexer] for name, arr in index.items()}
+    else:
+        index = {}
     df = {**index, **outcome, **values}
 
     df = pd.DataFrame(df, copy=False, index=df_index)
@@ -915,16 +874,13 @@ def _pivot_longer_dot_value(
             for name, arr in outcome.items()
         }
 
-    df_index, index = _tile_index(
-        df=df, index=index, len_index=len_index, reps=group_max
-    )
     return _final_frame_longer(
         df=df,
         len_index=len_index,
+        reps=group_max,
         index=index,
         outcome=outcome,
         values=values,
-        df_index=df_index,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -1048,22 +1004,20 @@ def _pivot_longer_names_pattern_sequence(
 
     mapping = pd.Series(mapping)
     outcome, group_max = _headers_single_series(df=df, mapping=mapping)
-    df_index, index = _tile_index(
-        df=df, index=index, len_index=len_index, reps=group_max
+
+    df = _final_frame_longer(
+        df=df,
+        len_index=len_index,
+        reps=group_max,
+        index=index,
+        outcome=outcome,
+        values=values,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
     )
-
-    df = {**index, **outcome, **values}
-
-    df = pd.DataFrame(df, copy=False, index=df_index)
 
     if values_to_is_a_sequence:
         df = df.loc[:, names_to]
-
-    if sort_by_appearance:
-        df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
-
-    if ignore_index:
-        df.index = range(len(df))
 
     return df
 
@@ -1104,13 +1058,13 @@ def _pivot_longer_names_pattern_str(
             df.columns = mapping.iloc[:, 0]
         else:
             df.columns = pd.MultiIndex.from_frame(mapping)
-        return _pivot_longer_not_dot_value(
+        return _base_melt(
             df=df,
             index=index,
+            len_index=len_index,
+            values_to=values_to,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
-            values_to=values_to,
-            len_index=len_index,
         )
 
     # .value
@@ -1160,13 +1114,13 @@ def _pivot_longer_names_sep(
             df.columns = mapping.iloc[:, 0]
         else:
             df.columns = pd.MultiIndex.from_frame(mapping)
-        return _pivot_longer_not_dot_value(
+        return _base_melt(
             df=df,
             index=index,
+            len_index=len_index,
+            values_to=values_to,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
-            values_to=values_to,
-            len_index=len_index,
         )
 
     # .value

@@ -880,9 +880,9 @@ def _base_melt(
     names_transform: Union[str, Callable, dict, None],
     sort_by_appearance: bool,
     ignore_index: bool,
-):
+) -> pd.DataFrame:
     """
-    Applicable where there is no `.value`.
+    Applicable where there is no `.value` in names_to.
     """
 
     columns = df.columns

@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import zip_longest, chain
 import re
 import warnings
-from typing import Optional, Pattern, Union, Callable
+from typing import Optional, Pattern, Union, Callable, Generator
 
 import numpy as np
 import pandas as pd
@@ -71,6 +71,19 @@ def pivot_longer(
         0           5.1          3.5           1.4          0.2     setosa
         1           5.9          3.0           5.1          1.8  virginica
 
+    Replicate pandas' melt:
+
+        >>> df.pivot_longer(index = 'Species')
+             Species      variable  value
+        0     setosa  Sepal.Length    5.1
+        1  virginica  Sepal.Length    5.9
+        2     setosa   Sepal.Width    3.5
+        3  virginica   Sepal.Width    3.0
+        4     setosa  Petal.Length    1.4
+        5  virginica  Petal.Length    5.1
+        6     setosa   Petal.Width    0.2
+        7  virginica   Petal.Width    1.8
+
     Split the column labels into parts:
 
         >>> df.pivot_longer(
@@ -117,6 +130,22 @@ def pivot_longer(
            id diagnosis gender   age  value
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
+
+    Convert the dtypes of specific columns with `names_transform`:
+
+        >>> result = (df
+        ...          .pivot_longer(
+        ...              index = 'id',
+        ...              names_to = ('diagnosis', 'gender', 'age'),
+        ...              names_pattern = r"new_?(.+)_(.)(\\d+)",
+        ...              names_transform = {'gender': 'category', 'age':'int'})
+        ... )
+        >>> result.dtypes
+        id           int64
+        gender    category
+        age          int64
+        value        int64
+        dtype: object
 
     Use multiple `.value` to reshape dataframe:
 
@@ -569,6 +598,7 @@ def _computations_pivot_longer(
     # for column names, if it is [1,2,3], then repeats [1,1,1,2,2,2,3,3,3]
     # dump down into arrays, and build a new dataframe, with copy = False
     # since we already have made a copy of the original df
+
     if not column_names:
         return df.rename_axis(columns=None)
 
@@ -637,7 +667,7 @@ def _pivot_longer_names_pattern_sequence(
     len_index: int,
     names_to: list,
     names_pattern: Union[list, tuple],
-    names_transform: bool,
+    names_transform: Union[str, Callable, dict],
     sort_by_appearance: bool,
     values_to: Union[str, list, tuple],
     ignore_index: bool,
@@ -936,6 +966,10 @@ def _pivot_longer_dot_value(
         values, group_max = _headers_single_series(df=df, mapping=mapping)
         outcome = {}
     else:
+        # For multiple columns, the labels in `.value`
+        # should have every value in other
+        # and in the same order
+        # reindex ensures that, after getting a MultiIndex.from_product
         other = [entry for entry in names_to if entry != ".value"]
         columns = [*mapping.columns]
         others = mapping.loc[:, other].drop_duplicates()
@@ -960,11 +994,11 @@ def _pivot_longer_dot_value(
         df.columns = df.columns.get_level_values(".value")
         values = _dict_from_grouped_names(df=df)
         outcome = indexer.loc[indexer[".value"] == outcome[0], other]
+        group_max = len(outcome)
         if names_transform:
             outcome = _names_transform(
                 names_transform, is_dataframe=True, values=outcome
             )
-        group_max = len(outcome)
         outcome = {
             name: extract_array(arr, extract_numpy=True).repeat(len_index)
             for name, arr in outcome.items()
@@ -982,13 +1016,11 @@ def _pivot_longer_dot_value(
     )
 
 
-def _headers_single_series(df: pd.DataFrame, mapping: pd.Series):
+def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
     """
     Extract headers and values for a single level.
     Applies to `.value` for a single level extract,
     or where names_pattern is a sequence.
-
-    Returns a DataFrame.
     """
     # get positions of columns,
     # to ensure interleaving is possible
@@ -1008,7 +1040,7 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series):
     outcome = mapping.groupby(mapping, sort=False, observed=True)
     group_size = outcome.size()
     group_max = group_size.max()
-    # the number of levels should be the same;
+    # the number of groups should be the same;
     # if not, build a MultiIndex and reindex
     # to get equal numbers for each label
     if group_size.nunique() > 1:
@@ -1023,13 +1055,11 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series):
     return outcome, group_max
 
 
-def _dict_from_grouped_names(df: pd.DataFrame):
+def _dict_from_grouped_names(df: pd.DataFrame) -> dict:
     """
     Create dictionary from multiple same names.
     Applicable when collating the values for `.value`,
     or when names_pattern is a list/tuple.
-
-    Returns a defaultdict.
     """
     outcome = defaultdict(list)
     for num, name in enumerate(df.columns):
@@ -1039,7 +1069,9 @@ def _dict_from_grouped_names(df: pd.DataFrame):
     return {name: concat_compat(arr) for name, arr in outcome.items()}
 
 
-def _names_transform(names_transform, is_dataframe, values):
+def _names_transform(
+    names_transform, is_dataframe, values
+) -> Union[pd.DataFrame, Generator]:
     """
     Convert column type using names_transform.
 
@@ -1052,7 +1084,9 @@ def _names_transform(names_transform, is_dataframe, values):
         return values.astype(names_transform)
     if isinstance(names_transform, dict):
         outcome = (
-            (key, arr.astype(names_transform[key])) for key, arr in values
+            (key, arr.astype(names_transform[key]))
+            for key, arr in values
+            if key in names_transform
         )
     else:
         outcome = ((key, arr.astype(names_transform)) for key, arr in values)
@@ -1134,9 +1168,9 @@ def _final_frame_longer(
     values: dict,
     sort_by_appearance: bool,
     ignore_index: bool,
-):
+) -> pd.DataFrame:
     """
-    Build final dataframe.
+    Build final dataframe for pivot_longer.
     """
     indexer = np.tile(np.arange(len_index), reps)
     df_index = df.index[indexer]

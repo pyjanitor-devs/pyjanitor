@@ -40,9 +40,8 @@ def pivot_longer(
 
     This method does not mutate the original DataFrame.
 
-    It is modeled after the `pivot_longer` function in R's tidyr package, and
-    offers more functionality and flexibility than `pd.wide_to_long`.
-    It also takes inspiration from R's data.table package.
+    It is modeled after the `pivot_longer` function in R's tidyr package,
+    and also takes inspiration from R's data.table package.
 
     This function is useful to massage a DataFrame into a format where
     one or more columns are considered measured variables, and all other
@@ -527,20 +526,6 @@ def _data_checks_pivot_longer(
                 "Kindly ensure there is no None "
                 "in the names for the column levels."
             )
-        if index:
-            exclude = set(df.columns.names).intersection(index)
-            if exclude:
-                raise ValueError(
-                    f"Labels {*exclude, } in the level names of the column "
-                    "already exist as column labels assigned "
-                    "to the dataframe's index parameter. "
-                    "Kindly provide unique label(s) for the column levels."
-                )
-        if values_to in df.columns.names:
-            raise ValueError(
-                "values_to exists in the column level names. "
-                "Kindly provide a unique name for values_to."
-            )
     elif (
         not isinstance(df.columns, pd.MultiIndex)
         and not any((names_sep, names_pattern))
@@ -585,7 +570,7 @@ def _computations_pivot_longer(
     # dump down into arrays, and build a new dataframe, with copy = False
     # since we already have made a copy of the original df
     if not column_names:
-        return df
+        return df.rename_axis(columns=None)
 
     if index:
         index = {
@@ -710,31 +695,16 @@ def _pivot_longer_names_pattern_sequence(
         values = arr.keys()
         arr = (entry for _, entry in arr.items())
         arr = zip(*zip_longest(*arr))
-        arr = map(np.asarray, arr)
+        arr = map(pd.Series, arr)
         values = zip(values, arr)
         if names_transform:
-            if isinstance(names_transform, dict):
-                values = (
-                    (
-                        key,
-                        pd.Series(arr)
-                        .astype(names_transform[key], copy=False)
-                        .array,
-                    )
-                    for key, arr in values
-                )
-            else:
-                values = (
-                    (
-                        key,
-                        pd.Series(arr)
-                        .astype(names_transform, copy=False)
-                        .array,
-                    )
-                    for key, arr in values
-                )
-
-        values = {name: arr.repeat(len_index) for name, arr in values}
+            values = _names_transform(
+                names_transform, is_dataframe=False, values=values
+            )
+        values = {
+            name: extract_array(arr, extract_numpy=True).repeat(len_index)
+            for name, arr in values
+        }
     else:
         values = {}
 
@@ -892,14 +862,9 @@ def _base_melt(
         (name, columns.get_level_values(name)) for name in columns.names
     )
     if names_transform:
-        if isinstance(names_transform, dict):
-            outcome = (
-                (key, arr.astype(names_transform[key])) for key, arr in outcome
-            )
-        else:
-            outcome = (
-                (key, arr.astype(names_transform)) for key, arr in outcome
-            )
+        outcome = _names_transform(
+            names_transform, is_dataframe=False, values=outcome
+        )
     outcome = {
         name: extract_array(arr, extract_numpy=True).repeat(len_index)
         for name, arr in outcome
@@ -996,7 +961,9 @@ def _pivot_longer_dot_value(
         values = _dict_from_grouped_names(df=df)
         outcome = indexer.loc[indexer[".value"] == outcome[0], other]
         if names_transform:
-            outcome = outcome.astype(names_transform)
+            outcome = _names_transform(
+                names_transform, is_dataframe=True, values=outcome
+            )
         group_max = len(outcome)
         outcome = {
             name: extract_array(arr, extract_numpy=True).repeat(len_index)
@@ -1070,6 +1037,26 @@ def _dict_from_grouped_names(df: pd.DataFrame):
         arr = extract_array(arr, extract_numpy=True)
         outcome[name].append(arr)
     return {name: concat_compat(arr) for name, arr in outcome.items()}
+
+
+def _names_transform(names_transform, is_dataframe, values):
+    """
+    Convert column type using names_transform.
+
+    If is_dataframe (values is a DataFrame),
+    then astype is applied directly; otherwise an iteration.
+
+    Returns either a DataFrame or a generator.
+    """
+    if is_dataframe:
+        return values.astype(names_transform)
+    if isinstance(names_transform, dict):
+        outcome = (
+            (key, arr.astype(names_transform[key])) for key, arr in values
+        )
+    else:
+        outcome = ((key, arr.astype(names_transform)) for key, arr in values)
+    return outcome
 
 
 def _sort_by_appearance_for_melt(

@@ -326,8 +326,7 @@ def _data_checks_pivot_longer(
     names_transform,
     sort_by_appearance,
     ignore_index,
-):
-
+) -> tuple:
     """
     This function raises errors if the arguments have the wrong python type,
     or if an unneeded argument is provided. It also raises errors for some

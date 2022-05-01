@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import zip_longest, chain
 import re
 import warnings
-from typing import Optional, Pattern, Union
+from typing import Optional, Pattern, Union, Callable
 
 import numpy as np
 import pandas as pd
@@ -31,6 +31,7 @@ def pivot_longer(
     column_level: Optional[Union[int, str]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[list, tuple, str, Pattern]] = None,
+    names_transform: Optional[Union[str, Callable, dict]] = None,
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
@@ -228,6 +229,9 @@ def pivot_longer(
         `names_to` must also be a list/tuple and the lengths of both
         arguments must match.
         `names_pattern` does not work with MultiIndex columns.
+    :param names_transform: Use this option to change the types of columns that
+        have been transformed to rows. Accepts a string, a callable,
+        or a dictionary that is acceptable by `pd.astype`.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         the final look of the DataFrame. If `True`, the unpivoted DataFrame
         will be stacked in order of first appearance.
@@ -249,9 +253,9 @@ def pivot_longer(
         column_names,
         names_to,
         values_to,
-        column_level,
         names_sep,
         names_pattern,
+        names_transform,
         sort_by_appearance,
         ignore_index,
     ) = _data_checks_pivot_longer(
@@ -263,6 +267,7 @@ def pivot_longer(
         column_level,
         names_sep,
         names_pattern,
+        names_transform,
         sort_by_appearance,
         ignore_index,
     )
@@ -275,6 +280,7 @@ def pivot_longer(
         values_to,
         names_sep,
         names_pattern,
+        names_transform,
         sort_by_appearance,
         ignore_index,
     )
@@ -289,6 +295,7 @@ def _data_checks_pivot_longer(
     column_level,
     names_sep,
     names_pattern,
+    names_transform,
     sort_by_appearance,
     ignore_index,
 ):
@@ -492,6 +499,9 @@ def _data_checks_pivot_longer(
                     "index parameter. Kindly provide unique label(s)."
                 )
 
+    if names_transform:
+        check("names_transform", names_transform, [str, Callable, dict])
+
     check("sort_by_appearance", sort_by_appearance, [bool])
 
     check("ignore_index", ignore_index, [bool])
@@ -544,9 +554,9 @@ def _data_checks_pivot_longer(
         column_names,
         names_to,
         values_to,
-        column_level,
         names_sep,
         names_pattern,
+        names_transform,
         sort_by_appearance,
         ignore_index,
     )
@@ -554,14 +564,15 @@ def _data_checks_pivot_longer(
 
 def _computations_pivot_longer(
     df: pd.DataFrame,
-    index: list = None,
-    column_names: list = None,
-    names_to: list = None,
-    values_to: str = "value",
-    names_sep: Union[str, Pattern] = None,
-    names_pattern: Union[list, tuple, str, Pattern] = None,
-    sort_by_appearance: bool = False,
-    ignore_index: bool = True,
+    index: Union[list, None],
+    column_names: Union[list, None],
+    names_to: Union[list, None],
+    values_to: Union[list, str, None],
+    names_sep: Union[str, Pattern],
+    names_pattern: Union[list, tuple, str, Pattern],
+    names_transform: Union[str, Callable, dict],
+    sort_by_appearance: bool,
+    ignore_index: bool,
 ) -> pd.DataFrame:
     """
     This is where the final dataframe in long form is created.
@@ -586,12 +597,12 @@ def _computations_pivot_longer(
     len_index = len(df)
 
     if all((names_pattern is None, names_sep is None)):
-
         return _base_melt(
             df=df,
             index=index,
             len_index=len_index,
             values_to=values_to,
+            names_transform=names_transform,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
         )
@@ -603,6 +614,7 @@ def _computations_pivot_longer(
             len_index=len_index,
             names_to=names_to,
             names_sep=names_sep,
+            names_transform=names_transform,
             values_to=values_to,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
@@ -615,6 +627,7 @@ def _computations_pivot_longer(
             len_index=len_index,
             names_to=names_to,
             names_pattern=names_pattern,
+            names_transform=names_transform,
             values_to=values_to,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
@@ -626,6 +639,7 @@ def _computations_pivot_longer(
         len_index=len_index,
         names_to=names_to,
         names_pattern=names_pattern,
+        names_transform=names_transform,
         sort_by_appearance=sort_by_appearance,
         values_to=values_to,
         ignore_index=ignore_index,
@@ -638,6 +652,7 @@ def _pivot_longer_names_pattern_sequence(
     len_index: int,
     names_to: list,
     names_pattern: Union[list, tuple],
+    names_transform: bool,
     sort_by_appearance: bool,
     values_to: Union[str, list, tuple],
     ignore_index: bool,
@@ -696,8 +711,30 @@ def _pivot_longer_names_pattern_sequence(
         arr = (entry for _, entry in arr.items())
         arr = zip(*zip_longest(*arr))
         arr = map(np.asarray, arr)
-        values = dict(zip(values, arr))
-        values = {name: arr.repeat(len_index) for name, arr in values.items()}
+        values = zip(values, arr)
+        if names_transform:
+            if isinstance(names_transform, dict):
+                values = (
+                    (
+                        key,
+                        pd.Series(arr)
+                        .astype(names_transform[key], copy=False)
+                        .array,
+                    )
+                    for key, arr in values
+                )
+            else:
+                values = (
+                    (
+                        key,
+                        pd.Series(arr)
+                        .astype(names_transform, copy=False)
+                        .array,
+                    )
+                    for key, arr in values
+                )
+
+        values = {name: arr.repeat(len_index) for name, arr in values}
     else:
         values = {}
 
@@ -727,6 +764,7 @@ def _pivot_longer_names_pattern_str(
     len_index: int,
     names_to: list,
     names_pattern: Union[str, Pattern],
+    names_transform: bool,
     values_to: str,
     sort_by_appearance: bool,
     ignore_index: bool,
@@ -750,8 +788,6 @@ def _pivot_longer_names_pattern_str(
 
     mapping.columns = names_to
 
-    # return mapping
-
     if ".value" not in names_to:
         if len(names_to) == 1:
             df.columns = mapping.iloc[:, 0]
@@ -762,19 +798,20 @@ def _pivot_longer_names_pattern_str(
             index=index,
             len_index=len_index,
             values_to=values_to,
+            names_transform=names_transform,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
         )
 
-    # .value
     return _pivot_longer_dot_value(
-        df,
-        index,
-        len_index,
-        sort_by_appearance,
-        ignore_index,
-        names_to,
-        mapping,
+        df=df,
+        index=index,
+        len_index=len_index,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+        names_to=names_to,
+        names_transform=names_transform,
+        mapping=mapping,
     )
 
 
@@ -785,6 +822,7 @@ def _pivot_longer_names_sep(
     names_to: list,
     names_sep: Union[str, Pattern],
     values_to: str,
+    names_transform: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
@@ -818,27 +856,29 @@ def _pivot_longer_names_sep(
             index=index,
             len_index=len_index,
             values_to=values_to,
+            names_transform=names_transform,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
         )
 
-    # .value
     return _pivot_longer_dot_value(
-        df,
-        index,
-        len_index,
-        sort_by_appearance,
-        ignore_index,
-        names_to,
-        mapping,
+        df=df,
+        index=index,
+        len_index=len_index,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+        names_to=names_to,
+        names_transform=names_transform,
+        mapping=mapping,
     )
 
 
 def _base_melt(
     df: pd.DataFrame,
-    index: list,
+    index: Union[dict, None],
     len_index: int,
     values_to: str,
+    names_transform: Union[str, Callable, dict, None],
     sort_by_appearance: bool,
     ignore_index: bool,
 ):
@@ -846,13 +886,23 @@ def _base_melt(
     Applicable where there is no `.value`.
     """
 
-    outcome = df.columns
-    reps = len(outcome)
+    columns = df.columns
+    reps = len(columns)
+    outcome = (
+        (name, columns.get_level_values(name)) for name in columns.names
+    )
+    if names_transform:
+        if isinstance(names_transform, dict):
+            outcome = (
+                (key, arr.astype(names_transform[key])) for key, arr in outcome
+            )
+        else:
+            outcome = (
+                (key, arr.astype(names_transform)) for key, arr in outcome
+            )
     outcome = {
-        name: extract_array(
-            outcome.get_level_values(name), extract_numpy=True
-        ).repeat(len_index)
-        for name in outcome.names
+        name: extract_array(arr, extract_numpy=True).repeat(len_index)
+        for name, arr in outcome
     }
 
     values = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
@@ -877,6 +927,7 @@ def _pivot_longer_dot_value(
     sort_by_appearance: bool,
     ignore_index: bool,
     names_to: list,
+    names_transform: Union[str, Callable, dict, None],
     mapping: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -886,15 +937,11 @@ def _pivot_longer_dot_value(
 
     Returns a DataFrame.
     """
-    # shrink to a single .value, if multiple .value
     if np.count_nonzero(mapping.columns == ".value") > 1:
         outcome = mapping.pop(".value")
         outcome = outcome.agg("".join, axis=1)
         mapping[".value"] = outcome
-        # mapping = mapping.drop(columns=".value").assign(**{".value": _value})
-    # check to avoid duplicate columns
-    # the names assigned to `.value` should not be found in the index
-    # and should not be found in the other names in names_to
+
     exclude = {
         word
         for word in mapping[".value"].array
@@ -915,11 +962,6 @@ def _pivot_longer_dot_value(
                 "as column labels assigned to the dataframe's "
                 "index parameter. Kindly provide unique label(s)."
             )
-    # reorder allows for easy column selection later
-    # in the concatenation phase
-    # basically push .value to the end,
-    # so we can easily do a .loc, to keep .value columns as headers
-
     if mapping.columns[0] != ".value":
         outcome = mapping.pop(".value")
         mapping.insert(loc=0, column=".value", value=outcome)
@@ -934,7 +976,7 @@ def _pivot_longer_dot_value(
         others = mapping.loc[:, other].drop_duplicates()
         outcome = mapping.loc[:, ".value"].unique()
         if not mapping.duplicated().any(axis=None):
-            df.columns = [arr for _, arr in mapping.items()]
+            df.columns = pd.MultiIndex.from_frame(mapping)
             indexer = {".value": outcome, "other": others}
         else:
             columns.append("".join(columns))
@@ -953,6 +995,8 @@ def _pivot_longer_dot_value(
         df.columns = df.columns.get_level_values(".value")
         values = _dict_from_grouped_names(df=df)
         outcome = indexer.loc[indexer[".value"] == outcome[0], other]
+        if names_transform:
+            outcome = outcome.astype(names_transform)
         group_max = len(outcome)
         outcome = {
             name: extract_array(arr, extract_numpy=True).repeat(len_index)
@@ -1098,7 +1142,7 @@ def _final_frame_longer(
     df: pd.DataFrame,
     len_index: int,
     reps: int,
-    index: dict,
+    index: Union[dict, None],
     outcome: dict,
     values: dict,
     sort_by_appearance: bool,

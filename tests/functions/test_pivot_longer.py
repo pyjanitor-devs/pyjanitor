@@ -1032,3 +1032,16 @@ def test_output_values_to_seq1(multiple_values_to):
     ).sort_values(["Fruit", "City", "State"], ignore_index=True)
 
     assert_frame_equal(expected, actual)
+
+
+def test_categorical(df_checks):
+    """Test category output for names and values."""
+
+    actual = df_checks.melt(["famid", "birth"]).astype(
+        {"variable": "category"}
+    )
+    expected = df_checks.pivot_longer(
+        ["famid", "birth"], names_transform="category"
+    )
+
+    assert_frame_equal(actual, expected, check_categorical=False)

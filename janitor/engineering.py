@@ -34,36 +34,23 @@ def convert_units(
 
     Functional usage example:
 
-    ```python
-    import pandas as pd
-    import janitor.engineering
-
-    df = pd.DataFrame(...)
-
-    df = janitor.engineering.convert_units(
-        df=df,
-        column_name='temp_F',
-        existing_units='degF',
-        to_units='degC',
-        dest_column_name='temp_C'
-    )
-    ```
-
     Method chaining usage example:
 
     ```python
-    import pandas as pd
-    import janitor.engineering
+    >>> import pandas as pd
+    >>> import janitor.engineering
+    >>> df = pd.DataFrame({"temp_F": [-40, 112]})
+    >>> df = df.convert_units(
+    ...     column_name='temp_F',
+    ...     existing_units='degF',
+    ...     to_units='degC',
+    ...     dest_column_name='temp_C'
+    ... )
+    >>> df
+       temp_F     temp_C
+    0     -40 -40.000000
+    1     112  44.444444
 
-    df = pd.DataFrame(...)
-
-    df = df.convert_units(
-        column_name='temp_F',
-        existing_units='degF',
-        to_units='degC',
-        dest_column_name='temp_C'
-    )
-    ```
 
     Unit conversion can only take place if the `existing_units` and
     `to_units` are of the same type (e.g., temperature or pressure).

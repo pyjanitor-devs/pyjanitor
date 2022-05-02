@@ -42,7 +42,7 @@ def groupby_topk(
         3   43   2   pass
         4   21   5   fail
         >>> df.groupby_topk('result', 'age', 3) # Ascending top 3
-                    age  id result
+                  age  id result
         result
         fail   4   21   5   fail
                2   22   6   fail
@@ -50,7 +50,7 @@ def groupby_topk(
                1   23   4   pass
                3   43   2   pass
         >>> df.groupby_topk('result', 'age', 2, {'ascending':False}) # Descending top 2
-                    age  id result
+                  age  id result
         result
         fail   2   22   6   fail
                4   21   5   fail

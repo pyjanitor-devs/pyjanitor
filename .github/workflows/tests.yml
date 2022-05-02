@@ -4,6 +4,9 @@ on: [pull_request]
 
 jobs:
   run-tests:
+    strategy:
+      matrix:
+        test-subset: ["slow", "not slow"]
     runs-on: ubuntu-latest
     name: Run pyjanitor test suite
 
@@ -31,7 +34,7 @@ jobs:
         run: |
           conda activate pyjanitor-dev
           python -m pip install -e .
-          make test
+          pytest -m ${{ test-subset }}
 
       # https://github.com/codecov/codecov-action
       - name: Upload code coverage

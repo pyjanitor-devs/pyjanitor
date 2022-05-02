@@ -36,16 +36,34 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     Method-chaining usage syntax:
 
-    ```python
-    import pandas as pd
-    import janitor as jn
-
-    df = pd.DataFrame(...)
-            .fill_direction(
-                column_1 = direction_1,
-                column_2 = direction_2,
-            )
-    ```
+    >>> import pandas as pd
+    >>> import janitor as jn
+    >>> df = pd.DataFrame(
+    ...    {
+    ...        'col1': [1, 2, 3, 4],
+    ...        'col2': [None, 5, 6, 7],
+    ...        'col3': [8, 9, 10, None],
+    ...        'col4': [None, None, 11, None],
+    ...        'col5': [None, 12, 13, None]
+    ...    }
+    ... )
+    >>> df
+        col1	col2	col3	col4	col5
+    0	1	    NaN	    8.0	    NaN	    NaN
+    1	2	    5.0	    9.0	    NaN	    12.0
+    2	3	    6.0	    10.0	11.0	13.0
+    3	4	    7.0	    NaN	    NaN	    NaN
+    >>> df.fill_direction(
+    ... col2 = 'up',
+    ... col3 = 'down',
+    ... col4 = 'downup',
+    ... col5 = 'updown'
+    ... )
+        col1	col2	col3	col4	col5
+    0	1	    5.0	    8.0	    11.0	12.0
+    1	2	    5.0	    9.0	    11.0	12.0
+    2	3	    6.0	    10.0	11.0	13.0
+    3	4	    7.0	    10.0	11.0	13.0
 
     :param df: A pandas DataFrame.
     :param kwargs: Key - value pairs of columns and directions.
@@ -128,11 +146,32 @@ def fill_empty(
 
     Method chaining syntax:
 
-    ```python
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).fill_empty(column_names=col1, value=0)
-    ```
+
+    >>> import pandas as pd
+    >>> import janitor
+    >>> df = pd.DataFrame(
+    ...        {
+    ...            'col1': [1, 2, 3],
+    ...            'col2': [None, 4, None ],
+    ...            'col3': [None, 5, 6]
+    ...        }
+        )
+    >>> df
+            col1	col2	col3
+    0	1	    NaN	    NaN
+    1	2	    4.0	    5.0
+    2	3	    NaN	    6.0
+    >>> df.fill_empty(column_names = 'col2', value = 0)
+            col1	col2	col3
+    0	1	    0.0	    NaN
+    1	2	    4.0	    5.0
+    2	3	    0.0	    6.0
+    >>> df.fill_empty(column_names = ['col2', 'col3'], value = 0)
+        col1	col2	col3
+    0	1	    0.0	    0.0
+    1	2	    4.0	    5.0
+    2	3	    0.0	    6.0
+
 
     :param df: A pandas DataFrame.
     :param column_names: column_names: A column name or an iterable (list

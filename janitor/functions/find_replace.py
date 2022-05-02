@@ -1,6 +1,8 @@
+"""Implementation for find_replace."""
 from typing import Dict
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 
 @pf.register_dataframe_method
@@ -17,60 +19,68 @@ def find_replace(
 
     For instance, given a DataFrame containing orders at a coffee shop:
 
-    ```python
-        df = pd.DataFrame({
-            'customer': ['Mary', 'Tom', 'Lila'],
-            'order': ['ice coffee', 'lemonade', 'regular coffee']
-        })
-
-        df
-
-            customer         order
+        >>> df = pd.DataFrame({
+        ...     "customer": ["Mary", "Tom", "Lila"],
+        ...     "order": ["ice coffee", "lemonade", "regular coffee"]
+        ... })
+        >>> df
+          customer           order
         0     Mary      ice coffee
         1      Tom        lemonade
         2     Lila  regular coffee
-    ```
 
     Our task is to replace values `ice coffee` and `regular coffee`
     of the `order` column into `latte`.
 
-    Example 1 for exact matching
+    Example 1 - exact matching (functional usage):
 
-    ```python
-        #Functional usage
-        df = find_replace(
-            df,
-            match='exact',
-            order={'ice coffee': 'latte', 'regular coffee': 'latte'},
-        )
-    ```
+        >>> df = find_replace(
+        ...     df,
+        ...     match="exact",
+        ...     order={"ice coffee": "latte", "regular coffee": "latte"},
+        ... )
+        >>> df
+          customer     order
+        0     Mary     latte
+        1      Tom  lemonade
+        2     Lila     latte
 
-    ```python
-        # Method chaining usage
-        df = df.find_replace(
-            match='exact'
-            order={'ice coffee': 'latte', 'regular coffee': 'latte'},
-        )
-    ```
+    Example 1 - exact matching (method chaining):
 
-    Example 2: Regular-expression-based matching
+        >>> df = df.find_replace(
+        ...     match="exact",
+        ...     order={"ice coffee": "latte", "regular coffee": "latte"},
+        ... )
+        >>> df
+          customer     order
+        0     Mary     latte
+        1      Tom  lemonade
+        2     Lila     latte
 
-    ```python
-        # Functional usage
-        df = find_replace(
-            df,
-            match='regex',
-            order={'coffee$': 'latte'},
-        )
-    ```
+    Example 2 - Regular-expression-based matching (functional usage):
 
-    ```python
-        # Method chaining usage
-        df = df.find_replace(
-            match='regex',
-            order={'coffee$': 'latte'},
-        )
-    ```
+        >>> df = find_replace(
+        ...     df,
+        ...     match='regex',
+        ...     order={'coffee$': 'latte'},
+        ... )
+        >>> df
+          customer     order
+        0     Mary     latte
+        1      Tom  lemonade
+        2     Lila     latte
+
+    Example 2 - Regular-expression-based matching (method chaining usage):
+
+        >>> df = df.find_replace(
+        ...     match='regex',
+        ...     order={'coffee$': 'latte'},
+        ... )
+        >>> df
+          customer     order
+        0     Mary     latte
+        1      Tom  lemonade
+        2     Lila     latte
 
     To perform a find and replace on the entire DataFrame,
     pandas' `df.replace()` function provides the appropriate functionality.

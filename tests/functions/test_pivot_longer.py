@@ -239,7 +239,7 @@ def test_values_to_exists_in_columns(df_checks):
     exists in the dataframe's columns.
     """
     with pytest.raises(ValueError):
-        df_checks.pivot_longer(values_to="birth")
+        df_checks.pivot_longer(index="birth", values_to="birth")
 
 
 def test_values_to_exists_in_names_to(df_checks):
@@ -319,7 +319,10 @@ def test_names_to_index(df_checks):
     Raise ValueError if there is no names_sep/names_pattern,
     .value not in names_to and names_to intersects with index.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist as column labels.+",
+    ):
         df_checks.pivot_longer(
             names_to="famid",
             index="famid",
@@ -331,7 +334,10 @@ def test_names_sep_pattern_names_to_index(df_checks):
     Raise ValueError if names_sep/names_pattern,
     .value not in names_to and names_to intersects with index.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist as column labels.+",
+    ):
         df_checks.pivot_longer(
             names_to=["dim", "famid"],
             names_sep="_",
@@ -404,7 +410,9 @@ def test_names_pattern_list_empty_any(df_checks):
 
 def test_names_pattern_no_match(df_checks):
     """Raise error if names_pattern is a regex and returns no matches."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Column labels .+ could not be matched with any .+"
+    ):
         df_checks.pivot_longer(
             index="famid",
             names_to=[".value", "value"],
@@ -417,7 +425,9 @@ def test_names_pattern_incomplete_match(df_checks):
     Raise error if names_pattern is a regex
     and returns incomplete matches.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Column labels .+ could not be matched with any .+"
+    ):
         df_checks.pivot_longer(
             index="famid",
             names_to=[".value", "value"],
@@ -453,7 +463,10 @@ def test_pivot_index_only(df_checks):
 def test_pivot_column_only(df_checks):
     """Test output if only column_names is passed."""
     result = df_checks.pivot_longer(
-        column_names="ht*", names_to="dim", values_to="num", ignore_index=False
+        column_names=["ht1", "ht2"],
+        names_to="dim",
+        values_to="num",
+        ignore_index=False,
     )
 
     actual = df_checks.melt(
@@ -467,7 +480,7 @@ def test_pivot_column_only(df_checks):
 
 
 def test_pivot_sort_by_appearance(df_checks):
-    """Test output if only sort_by_appearance is True."""
+    """Test output if sort_by_appearance is True."""
     result = df_checks.pivot_longer(
         column_names="ht*",
         names_to="dim",
@@ -513,7 +526,10 @@ def test_names_pat_str(df_checks):
 
 
 def test_multiindex_column_level(df_multi):
-    """Test output from MultiIndex column"""
+    """
+    Test output from MultiIndex column,
+    when column_level is provided.
+    """
     result = df_multi.pivot_longer(
         index="name", column_names="names", column_level=0
     )
@@ -521,6 +537,69 @@ def test_multiindex_column_level(df_multi):
         id_vars="name", value_vars="names", col_level=0
     )
     assert_frame_equal(result, expected_output)
+
+
+def test_multiindex(df_multi):
+    """
+    Test output from MultiIndex column,
+    where column_level is not provided,
+    and there is no names_sep/names_pattern.
+    """
+    result = df_multi.pivot_longer(index=[("name", "a")])
+    expected_output = df_multi.melt(id_vars=[("name", "a")])
+    assert_frame_equal(result, expected_output)
+
+
+def test_multiindex_names_to(df_multi):
+    """
+    Test output from MultiIndex column,
+    where column_level is not provided,
+    there is no names_sep/names_pattern,
+    and names_to is provided as a sequence.
+    """
+    result = df_multi.pivot_longer(
+        index=[("name", "a")], names_to=["variable_0", "variable_1"]
+    )
+    expected_output = df_multi.melt(id_vars=[("name", "a")])
+    assert_frame_equal(result, expected_output)
+
+
+def test_multiindex_names_to_length_mismatch(df_multi):
+    """
+    Raise error if the length of names_to does not
+    match the number of column levels.
+    """
+    with pytest.raises(ValueError):
+        df_multi.pivot_longer(
+            index=[("name", "a")],
+            names_to=["variable_0", "variable_1", "variable_2"],
+        )
+
+
+def test_multiindex_incomplete_level_names(df_multi):
+    """
+    Raise error if not all the levels have names.
+    """
+    with pytest.raises(ValueError):
+        df_multi.columns.names = [None, "a"]
+        df_multi.pivot_longer(index=[("name", "a")])
+
+
+def test_multiindex_index_level_names_intersection(df_multi):
+    """
+    Raise error if level names exist in index.
+    """
+    with pytest.raises(ValueError):
+        df_multi.columns.names = [None, "a"]
+        df_multi.pivot_longer(index=[("name", "a")])
+
+
+def test_no_column_names(df_checks):
+    """
+    Test output if all the columns
+    are assigned to the index parameter.
+    """
+    assert_frame_equal(df_checks.pivot_longer(df_checks.columns), df_checks)
 
 
 @pytest.fixture
@@ -1011,6 +1090,7 @@ def test_output_values_to_seq1(multiple_values_to):
         .sort_index(level=2)
         .reset_index(level=2, drop=True)
         .reset_index()
+        .astype({"Fruit": "category", "Drink": "category"})
     )
 
     expected = multiple_values_to.pivot_longer(
@@ -1019,6 +1099,60 @@ def test_output_values_to_seq1(multiple_values_to):
         names_to=("Fruit", "Drink"),
         values_to=("Pounds", "Ounces"),
         names_pattern=[r"M|O|W", r"G|V"],
+        names_transform={"Fruit": "category", "Drink": "category"},
     ).sort_values(["Fruit", "City", "State"], ignore_index=True)
 
     assert_frame_equal(expected, actual)
+
+
+def test_categorical(df_checks):
+    """Test category output for names_to."""
+
+    actual = df_checks.melt(["famid", "birth"]).astype(
+        {"variable": "category"}
+    )
+    expected = df_checks.pivot_longer(
+        ["famid", "birth"], names_transform="category"
+    )
+
+    assert_frame_equal(actual, expected, check_categorical=False)
+
+
+def test_names_transform_numeric():
+    """
+    Test output for names_transform on numeric sub columns
+    """
+
+    df = pd.DataFrame(
+        {
+            "treatment_1.1": [1.0, 2.0],
+            "treatment_2.1": [3.0, 4.0],
+            "result_1.2": [5.0, 6.0],
+            "result_1": [0, 9],
+            "A": ["X1", "X2"],
+        }
+    )
+
+    expected = (
+        df.pivot_longer(
+            index="A",
+            names_to=(".value", "colname"),
+            names_sep="_",
+            names_transform=float,
+        )
+        .sort_values(
+            ["A", "colname", "result", "treatment"], ignore_index=True
+        )
+        .loc[:, ["A", "colname", "result", "treatment"]]
+    )
+
+    actual = pd.wide_to_long(
+        df,
+        ["result", "treatment"],
+        i="A",
+        j="colname",
+        suffix="[0-9.]+",
+        sep="_",
+    ).reset_index()
+
+    assert_frame_equal(actual, expected)

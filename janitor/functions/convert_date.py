@@ -90,19 +90,11 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
     This method mutates the original DataFrame.
 
-    Functional usage syntax:
-
-    ```python
-        df = convert_unix_date(df, column_name='date')
-    ```
-
     Method chaining syntax:
 
-    ```python
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).convert_unix_date('date')
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(...).convert_unix_date('date')
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.

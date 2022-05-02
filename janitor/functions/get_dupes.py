@@ -17,11 +17,6 @@ def get_dupes(
 
     This method does not mutate the original DataFrame.
 
-    ```python
-    df = pd.DataFrame(...)
-    janitor.get_dupes(df)
-    ```
-
     Functional usage syntax:
 
         >>> import pandas as pd

@@ -48,11 +48,11 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     ...    }
     ... )
     >>> df
-        col1    col2    col3    col4    col5
-    0   1       NaN     8.0     NaN     NaN
-    1   2       5.0     9.0     NaN     12.0
-    2   3       6.0     10.0    11.0    13.0
-    3   4       7.0     NaN     NaN     NaN
+       col1  col2  col3  col4  col5
+    0     1   NaN   8.0   NaN   NaN
+    1     2   5.0   9.0   NaN  12.0
+    2     3   6.0  10.0  11.0  13.0
+    3     4   7.0   NaN   NaN   NaN
     >>> df.fill_direction(
     ... col2 = 'up',
     ... col3 = 'down',
@@ -157,20 +157,20 @@ def fill_empty(
     ...        }
     ...    )
     >>> df
-            col1    col2    col3
-    0       1       NaN     NaN
-    1       2       4.0     5.0
-    2       3       NaN     6.0
+       col1  col2  col3
+    0     1   NaN   NaN
+    1     2   4.0   5.0
+    2     3   NaN   6.0
     >>> df.fill_empty(column_names = 'col2', value = 0)
             col1    col2    col3
-    0       1       0.0     NaN
-    1       2       4.0     5.0
-    2       3       0.0     6.0
+    0          1     0.0     NaN
+    1          2     4.0     5.0
+    2          3     0.0     6.0
     >>> df.fill_empty(column_names = ['col2', 'col3'], value = 0)
         col1    col2    col3
-    0   1       0.0     0.0
-    1   2       4.0     5.0
-    2   3       0.0     6.0
+    0      1     0.0     0.0
+    1      2     4.0     5.0
+    2      3     0.0     6.0
 
 
     :param df: A pandas DataFrame.

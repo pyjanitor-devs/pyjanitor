@@ -48,21 +48,21 @@ def get_dupes(
         ...     "quantity": [100, 100, 75, 200, 75],
         ... })
         >>> df
-        item  quantity
+           item  quantity
         0  shoe       100
         1  shoe       100
         2   bag        75
         3  shoe       200
         4   bag        75
         >>> df.get_dupes(column_names=["item"])
-        item  quantity
+           item  quantity
         0  shoe       100
         1  shoe       100
         2   bag        75
         3  shoe       200
         4   bag        75
         >>> df.get_dupes(column_names=["quantity"])
-        item  quantity
+           item  quantity
         0  shoe       100
         1  shoe       100
         2   bag        75

@@ -24,31 +24,40 @@ def fill_missing_timestamps(
     If timestamps are not missing, then the function will return the DataFrame
     unmodified.
 
-    Functional usage example:
-
-    ```python
-    import pandas as pd
-    import janitor.timeseries
-
-    df = pd.DataFrame(...)
-
-    df = janitor.timeseries.fill_missing_timestamps(
-        df=df,
-        frequency="1H",
-    )
-    ```
-
     Method chaining example:
 
-    ```python
-    import pandas as pd
-    import janitor.timeseries
+    >>> import pandas as pd
+    >>> import janitor.timeseries
+    >>> from random import randint
 
-    df = (
-        pd.DataFrame(...)
-        .fill_missing_timestamps(frequency="1H")
-    )
-    ```
+    >>> ts_index = pd.date_range("1/1/2019", periods=4, freq="1H")
+    >>> v1 = [randint(1, 2000) for i in range(4)]
+    >>> df = (pd.DataFrame(pd.DataFrame({"v1": v1}, index=ts_index)
+    ...         .fill_missing_timestamps(frequency="1H") )
+    ...      )
+    >>> df
+                           v1
+    2019-01-01 00:00:00  418
+    2019-01-01 01:00:00  1610
+    2019-01-01 02:00:00  339
+    2019-01-01 03:00:00  1458
+    >>> df.drop(df.index[1])
+                           v1
+    2019-01-01 00:00:00   418
+    2019-01-01 02:00:00   339
+    2019-01-01 03:00:00  1458
+    >>> result = (
+    ...     df
+    ...     .drop(df.index[1])
+    ...     .fill_missing_timestamps(frequency="1H")
+    ... )
+    >>> result
+                             v1
+    2019-01-01 00:00:00     418
+    2019-01-01 01:00:00     NaN
+    2019-01-01 02:00:00     339
+    2019-01-01 03:00:00    1458
+
 
     :param df: DataFrame which needs to be tested for missing timestamps
     :param frequency: sampling frequency of the data.
@@ -119,30 +128,40 @@ def sort_timestamps_monotonically(
     the DataFrame unmodified. If timestamps are not monotonic,
     then the function will sort the DataFrame.
 
-    Functional usage example:
-
-    ```python
-    import pandas as pd
-    import janitor.timeseries
-
-    df = pd.DataFrame(...)
-
-    df = janitor.timeseries.sort_timestamps_monotonically(
-        direction="increasing"
-    )
-    ```
-
     Method chaining example:
 
-    ```python
-    import pandas as pd
-    import janitor.timeseries
+    >>> import pandas as pd
+    >>> import janitor.timeseries
+    >>> from random import randint
 
-    df = (
-        pd.DataFrame(...)
-        .sort_timestamps_monotonically(direction="increasing")
-    )
-    ```
+    >>> ts_index = pd.date_range("1/1/2019", periods=4, freq="1H")
+    >>> v1 = [randint(1, 2000) for i in range(4)]
+    >>> df = (pd.DataFrame(pd.DataFrame({"v1": v1}, index=ts_index)
+    ...         .fill_missing_timestamps(frequency="1H") )
+    ...      )
+    >>> df
+                           v1
+    2019-01-01 00:00:00  1404
+    2019-01-01 01:00:00  1273
+    2019-01-01 02:00:00  1288
+    2019-01-01 03:00:00   576
+    >>> df.shuffle(reset_index=False)
+                           v1
+    2019-01-01 02:00:00  1288
+    2019-01-01 03:00:00   576
+    2019-01-01 01:00:00  1273
+    2019-01-01 00:00:00  1404
+    >>> result = (
+    ...    df
+    ...    .shuffle(reset_index=False)
+    ...    .sort_timestamps_monotonically(direction="increasing")
+    ... )
+    >>> result
+                           v1
+    2019-01-01 00:00:00  1404
+    2019-01-01 01:00:00  1273
+    2019-01-01 02:00:00  1288
+    2019-01-01 03:00:00   576
 
     :param df: DataFrame which needs to be tested for monotonicity.
     :param direction: type of monotonicity desired.
@@ -275,88 +294,72 @@ def flag_jumps(
     Create boolean column(s) that flag whether or not the change
     between consecutive rows exceeds a provided threshold.
 
-    Functional usage example:
-
-    ```python
-    import pandas as pd
-    import janitor.timeseries
-
-    df = pd.DataFrame(...)
-
-    df = flag_jumps(
-        df=df,
-        scale="absolute",
-        direction="any",
-        threshold=2,
-    )
-    ```
-
     Method chaining example:
 
     ```python
-    import pandas as pd
-    import janitor.timeseries
+    >>> import pandas as pd
+    >>> import janitor.timeseries
 
-    df = (
-        pd.DatFrame(...)
-        .flag_jumps(
-            scale="absolute",
-            direction="any",
-            threshold=2,
-        )
-    )
-    ```
-
-    Detailed chaining examples:
-
-    ```python
-    # Applies specified criteria across all columns of the DataFrame
-    # Appends a flag column for each column in the DataFrame
-    df = (
-        pd.DataFrame(...)
-        .flag_jumps(
-            scale="absolute",
-            direction="any",
-            threshold=2
-        )
-    )
-
-    # Applies specific criteria to certain DataFrame columns
-    # Applies default criteria to columns not specifically listed
-    # Appends a flag column for each column in the DataFrame
-    df = (
-        pd.DataFrame(...)
-        .flag_jumps(
-            scale=dict(col1="absolute", col2="percentage"),
-            direction=dict(col1="increasing", col2="any"),
-            threshold=dict(col1=1, col2=0.5),
-        )
-    )
+    >>> ts_index = pd.date_range("1/1/2019", periods=3, freq="1H")
+    >>> test_df = pd.DataFrame(
+    ...    {
+    ...         "col1": [*range(3)],
+    ...         "col2": [*range(0,6,2)],
+    ...         "col3": [20, 21, 42],
+    ...    },
+    ...    index=ts_index,
+    ... )
+    >>> test_df
+                         col1  col2  col3
+    2019-01-01 00:00:00     0     0    20
+    2019-01-01 01:00:00     1     2    21
+    2019-01-01 02:00:00     2     4    42
+    >>> test_df.flag_jumps(
+    ...        scale="absolute",
+    ...        direction="any",
+    ...        threshold=1.0,
+    ...    )
+                         col1  col2  col3  col1_jump_flag  col2_jump_flag  col3_jump_flag
+    2019-01-01 00:00:00     0     0    20               0               0               0
+    2019-01-01 01:00:00     1     2    21               0               1               0
+    2019-01-01 02:00:00     2     4    42               0               1               1
+    >>> test_df.flag_jumps(
+    ...     strict = True,
+    ...     scale=dict(col3="percentage"),
+    ...     direction=dict(col2="any"),
+    ...     threshold=dict(col2=.5),
+    ... )
+                         col1  col2  col3  col1_jump_flag  col2_jump_flag  col3_jump_flag
+    2019-01-01 00:00:00     0     0    20               0               0               0
+    2019-01-01 01:00:00     1     2    21               1               1               0
+    2019-01-01 02:00:00     2     4    42               1               1               1
 
     # Applies specific criteria to certain DataFrame columns
     # Applies default criteria to columns not specifically listed
     # Appends a flag column for each column in the DataFrame
-    df = (
-        pd.DataFrame(...)
-        .flag_jumps(
-            scale=dict(col1="absolute"),
-            direction=dict(col2="increasing"),
-        )
-    )
+    >>> test_df.flag_jumps(
+    ...     scale=dict(col1="absolute"),
+    ...     direction=dict(col2="increasing"),
+    ... )
+                         col1  col2  col3  col1_jump_flag  col2_jump_flag  col3_jump_flag
+    2019-01-01 00:00:00     0     0    20               0               0               0
+    2019-01-01 01:00:00     1     2    21               1               1               1
+    2019-01-01 02:00:00     2     4    42               1               1               1
 
     # Applies specific criteria to certain DataFrame columns
     # Applies default criteria to columns not specifically listed
     # Appends a flag column for only those columns found in
-    #   specified criteria
-    df = (
-        pd.DataFrame(...)
-        .flag_jumps(
-            scale=dict(col1="absolute"),
-            threshold=dict(col2=1),
-            strict=True,
-        )
-    )
-    ```
+    # specified criteria
+
+    >>> test_df.flag_jumps(
+    ...     scale=dict(col1="absolute"),
+    ...     threshold=dict(col2=1),
+    ...     strict=True,
+    ... )
+                         col1  col2  col3  col1_jump_flag  col2_jump_flag
+    2019-01-01 00:00:00     0     0    20               0               0
+    2019-01-01 01:00:00     1     2    21               1               1
+    2019-01-01 02:00:00     2     4    42               1               0
 
     :param df: DataFrame which needs to be flagged for changes between
         consecutive rows above a certain threshold.
@@ -390,7 +393,7 @@ def flag_jumps(
     :raises JanitorError: if `direction` is not one of
         `("increasing", "decreasing", "any")`.
     :raises JanitorError: if `threshold` is less than `0.0`.
-    """
+    """  # noqa: E501
     df = df.copy()
 
     if strict:

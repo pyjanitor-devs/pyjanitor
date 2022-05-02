@@ -7,11 +7,12 @@ functionality.
 from typing import Union
 
 import numpy as np
-import xarray as xr
 from pandas_flavor import (
     register_xarray_dataarray_method,
     register_xarray_dataset_method,
 )
+
+import xarray as xr
 
 
 @register_xarray_dataarray_method
@@ -39,17 +40,24 @@ def clone_using(
     dimension names but dropping the coordinates (the input NumPy array is of a
     different size):
 
-    .. code-block:: python
-
-        da = xr.DataArray(
-            np.zeros((512, 512)), dims=['ax_1', 'ax_2'],
-            coords=dict(ax_1=np.linspace(0, 1, 512),
-                        ax_2=np.logspace(-2, 2, 1024)),
-            name='original'
-        )
-
-        new_da = da.clone_using(np.ones((4, 6)), new_name='new_and_improved',
-                                use_coords=False)
+        >>> import xarray as xr
+        >>> import janitor.xarray
+        >>> da = xr.DataArray(
+        ...     np.zeros((512, 1024)), dims=["ax_1", "ax_2"],
+        ...     coords=dict(ax_1=np.linspace(0, 1, 512),
+        ...                 ax_2=np.logspace(-2, 2, 1024)),
+        ...     name="original"
+        ... )
+        >>> new_da = da.clone_using(
+        ...     np.ones((4, 6)), new_name='new_and_improved', use_coords=False
+        ... )
+        >>> new_da
+        <xarray.DataArray 'new_and_improved' (ax_1: 4, ax_2: 6)>
+        array([[1., 1., 1., 1., 1., 1.],
+               [1., 1., 1., 1., 1., 1.],
+               [1., 1., 1., 1., 1., 1.],
+               [1., 1., 1., 1., 1., 1.]])
+        Dimensions without coordinates: ax_1, ax_2
 
     :param da: The `DataArray` supplied by the method itself.
     :param np_arr: The NumPy array which will be wrapped in a new `DataArray`
@@ -108,19 +116,23 @@ def convert_datetime_to_number(
     representation.
 
     Usage example to convert a `DataArray`'s time dimension coordinates from
-    a `datetime` to minutes:
+    a minutes to seconds:
 
-    .. code-block:: python
-
-        timepoints = 60
-
-        da = xr.DataArray(
-            np.random.randint(0, 10, size=timepoints),
-            dims='time',
-            coords=dict(time=np.arange(timepoints) * np.timedelta64(1, 's'))
-        )
-
-        da_minutes = da.convert_datetime_to_number('m', dim='time)
+        >>> import numpy as np
+        >>> import xarray as xr
+        >>> import janitor.xarray
+        >>> timepoints = 5
+        >>> da = xr.DataArray(
+        ...     np.array([2, 8, 0, 1, 7, 7]),
+        ...     dims='time',
+        ...     coords=dict(time=np.arange(6) * np.timedelta64(1, 'm'))
+        ... )
+        >>> da_minutes = da.convert_datetime_to_number('s', dim='time')
+        >>> da_minutes
+        <xarray.DataArray (time: 6)>
+        array([2, 8, 0, 1, 7, 7])
+        Coordinates:
+          * time     (time) float64 0.0 60.0 120.0 180.0 240.0 300.0
 
     :param da_or_ds: XArray object.
     :param time_units: Numpy timedelta string specification for the unit you

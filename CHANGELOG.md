@@ -31,6 +31,7 @@
 -   [DOC] Convert `expand_column` code examples to doctests, issue #972. @gahjelle
 -   [DOC] Convert `get_dupes` code examples to doctests, issue #972. @ethompsy
 -   [DOC] Convert `engineering` code examples to doctests, issue #972 @ashenafiyb
+-   [DOC] Convert `groupby_topk` code examples to doctests, issue #972. @ethompsy
 
 ## [v0.22.0] - 2021-11-21
 

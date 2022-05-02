@@ -44,7 +44,7 @@ def update_where(
        a  b   c
     0  1  5   0
     1  2  6   0
-    2  3  7   10
+    2  3  7  10
     3  4  8   0
     >>> df.update_where( # supports pandas *query* style string expressions
     ...    conditions = "a > 2 and b < 8",

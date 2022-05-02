@@ -8,6 +8,7 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_numeric_dtype
 from scipy.special import expit
+from scipy.special import logit as scipy_logit
 from scipy.special import softmax as scipy_softmax
 from scipy.stats import norm
 
@@ -16,6 +17,18 @@ from scipy.stats import norm
 def log(s: pd.Series, error: str = "warn") -> pd.Series:
     """
     Take natural logarithm of the Series.
+
+    Each value in the series should be positive. Use `error` to control the
+    behavior if there are nonpositive entries in the series.
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([0, 1, 3], name="numbers")
+        >>> s.log(error="ignore")
+        0         NaN
+        1    0.000000
+        2    1.098612
+        Name: numbers, dtype: float64
 
     :param s: Input Series.
     :param error: Determines behavior when taking the log of nonpositive
@@ -45,6 +58,15 @@ def exp(s: pd.Series) -> pd.Series:
     """
     Take the exponential transform of the series.
 
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([0, 1, 3], name="numbers")
+        >>> s.exp()
+        0     1.000000
+        1     2.718282
+        2    20.085537
+        Name: numbers, dtype: float64
+
     :param s: Input Series.
     :return: Transformed Series.
     """
@@ -59,6 +81,15 @@ def sigmoid(s: pd.Series) -> pd.Series:
     ```python
     sigmoid(x) = 1 / (1 + exp(-x))
     ```
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([-1, 0, 4], name="numbers")
+        >>> s.sigmoid()
+        0    0.268941
+        1    0.500000
+        2    0.982014
+        Name: numbers, dtype: float64
 
     :param s: Input Series.
     :return: Transformed Series.
@@ -81,6 +112,15 @@ def softmax(s: pd.Series) -> pd.Series:
     softmax(x) = exp(x)/sum(exp(x))
     ```
 
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([0, 1, 3], name="numbers")
+        >>> s.softmax()
+        0    0.042010
+        1    0.114195
+        2    0.843795
+        Name: numbers, dtype: float64
+
     :param s: Input Series.
     :return: Transformed Series.
     """
@@ -96,8 +136,20 @@ def logit(s: pd.Series, error: str = "warn") -> pd.Series:
     logit(p) = log(p/(1-p))
     ```
 
+    Each value in the series should be between 0 and 1. Use `error` to
+    control the behavior if any series entries are outside of (0, 1).
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([0.1, 0.5, 0.9], name="numbers")
+        >>> s.logit()
+        0   -2.197225
+        1    0.000000
+        2    2.197225
+        Name: numbers, dtype: float64
+
     :param s: Input Series.
-    :param error: Determines behavior when `s / (1-s)` is outside of `(0, 1)`.
+    :param error: Determines behavior when `s` is outside of `(0, 1)`.
         If `'warn'` then a `RuntimeWarning` is thrown. If `'raise'`, then a
         `RuntimeError` is thrown. Otherwise, nothing is thrown and `np.nan`
         is returned for the problematic entries; defaults to `'warn'`.
@@ -105,25 +157,32 @@ def logit(s: pd.Series, error: str = "warn") -> pd.Series:
     :raises RuntimeError: if `error` is set to `'raise'`.
     """
     s = s.copy()
-    odds_ratio = s / (1 - s)
-    outside_support = (odds_ratio <= 0) | (odds_ratio >= 1)
+    outside_support = (s <= 0) | (s >= 1)
     if (outside_support).any():
-        msg = f"Odds ratio for {outside_support.sum()} value(s) \
-are outside of (0, 1)"
+        msg = f"{outside_support.sum()} value(s) are outside of (0, 1)"
         if error.lower() == "warn":
             warnings.warn(msg, RuntimeWarning)
         if error.lower() == "raise":
             raise RuntimeError(msg)
         else:
             pass
-    odds_ratio[outside_support] = np.nan
-    return odds_ratio.log(error="ignore")
+    s[outside_support] = np.nan
+    return scipy_logit(s)
 
 
 @pf.register_series_method
 def normal_cdf(s: pd.Series) -> pd.Series:
     """
     Transforms the Series via the CDF of the Normal distribution.
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([-1, 0, 3], name="numbers")
+        >>> s.normal_cdf()
+        0    0.158655
+        1    0.500000
+        2    0.998650
+        dtype: float64
 
     :param s: Input Series.
     :return: Transformed Series.
@@ -135,6 +194,18 @@ def normal_cdf(s: pd.Series) -> pd.Series:
 def probit(s: pd.Series, error: str = "warn") -> pd.Series:
     """
     Transforms the Series via the inverse CDF of the Normal distribution.
+
+    Each value in the series should be between 0 and 1. Use `error` to
+    control the behavior if any series entries are outside of (0, 1).
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([0.1, 0.5, 0.8], name="numbers")
+        >>> s.probit()
+        0   -1.281552
+        1    0.000000
+        2    0.841621
+        dtype: float64
 
     :param s: Input Series.
     :param error: Determines behavior when `s` is outside of `(0, 1)`.
@@ -173,6 +244,15 @@ def z_score(
     ```python
     z = (s - s.mean()) / s.std()
     ```
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> s = pd.Series([0, 1, 3], name="numbers")
+        >>> s.z_score()
+        0   -0.872872
+        1   -0.218218
+        2    1.091089
+        Name: numbers, dtype: float64
 
     :param s: Input Series.
     :param moments_dict: If not `None`, then the mean and standard
@@ -215,6 +295,15 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
 
     Also, if the `dtype` of the series is not numeric,
     a `TypeError` is raised.
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"numbers": [0, 4, 0, 1, 2, 1, 1, 3]})
+        >>> x, y = df["numbers"].ecdf()
+        >>> x
+        array([0, 0, 1, 1, 1, 2, 3, 4])
+        >>> y
+        array([0.125, 0.25 , 0.375, 0.5  , 0.625, 0.75 , 0.875, 1.   ])
 
     :param s: A pandas series. `dtype` should be numeric.
     :returns: `(x, y)`.

@@ -24,6 +24,7 @@
 -   [ENH] Let `filter_string` suit parameters of `Series.str.contains` Issue #1003 and #1047. @Zeroto521
 -   [ENH] `names_glue` in `pivot_wider` now takes a string form, using str.format_map under the hood. `levels_order` is also deprecated. @samukweku
 -   [BUG] Fixed bug in `transform_columns` which ignored the `column_names` specification when `new_column_names` dictionary was provided as an argument, issue #1063. @thatlittleboy
+-   [BUG] `count_cumulative_unique` no longer modifies the column being counted in the output when `case_sensitive` argument is set to False, issue #1065. @thatlittleboy
 
 ## [v0.22.0] - 2021-11-21
 

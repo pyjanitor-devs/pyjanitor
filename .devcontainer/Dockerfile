@@ -29,7 +29,7 @@ RUN apt-get update \
     #
     # Install pylint
     && /opt/conda/bin/pip install pylint \
-    && /opt/conda/bin/conda install mamba -c conda-forge \
+    && /opt/conda/bin/conda install mamba gh -c conda-forge \
     #
     # Update Python environment based on environment-dev.yml (if present)
     && if [ -f "/tmp/conda-tmp/environment-dev.yml" ]; then /opt/conda/bin/mamba env update -n base -f /tmp/conda-tmp/environment-dev.yml; fi \

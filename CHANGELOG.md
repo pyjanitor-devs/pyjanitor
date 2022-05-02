@@ -27,8 +27,10 @@
 -   [BUG] `count_cumulative_unique` no longer modifies the column being counted in the output when `case_sensitive` argument is set to False, issue #1065. @thatlittleboy
 -   [BUG] Fix for gcc missing error in dev container
 -   [DOC] Added a step in the dev guide to install `Remote Container` in VS Code. @ashenafiyb
+-   [DOC] Convert `expand_column` and `find_replace` code examples to doctests, issue #972. @gahjelle
 -   [DOC] Convert `expand_column` code examples to doctests, issue #972. @gahjelle
 -   [DOC] Convert `get_dupes` code examples to doctests, issue #972. @ethompsy
+-   [DOC] Convert `engineering` code examples to doctests, issue #972 @ashenafiyb
 
 ## [v0.22.0] - 2021-11-21
 

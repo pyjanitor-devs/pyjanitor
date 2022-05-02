@@ -1,1 +1,6 @@
-mkdocs/index.md
+# PyJanitor
+
+Welcome to PyJanitor!
+
+Our official docs are stored here:
+    mkdocs/index.md

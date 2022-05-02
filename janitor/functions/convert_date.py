@@ -21,19 +21,12 @@ def convert_excel_date(
     Implementation is also from
     [Stack Overflow](https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas)
 
-    Functional usage syntax:
-
-    ```python
-        df = convert_excel_date(df, column_name='date')
-    ```
-
     Method chaining syntax:
 
-    ```python
-        import pandas as pd
-        import janitor
-        df = pd.DataFrame(...).convert_excel_date('date')
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(...).convert_excel_date('date')
+    
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.

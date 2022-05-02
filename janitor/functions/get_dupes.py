@@ -22,9 +22,9 @@ def get_dupes(
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
-            ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
-            ...     "quantity": [100, 100, 75, 200, 75],
-            ... })
+        ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
+        ...     "quantity": [100, 100, 75, 200, 75],
+        ... })
         >>> janitor.get_dupes(df)
         item  quantity
         0  shoe       100

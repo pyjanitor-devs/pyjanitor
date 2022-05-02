@@ -34,7 +34,7 @@ jobs:
         run: |
           conda activate pyjanitor-dev
           python -m pip install -e .
-          make test
+          pytest
 
       # https://github.com/codecov/codecov-action
       - name: Upload code coverage

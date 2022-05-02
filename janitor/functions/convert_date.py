@@ -118,12 +118,12 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         >>> import janitor
         >>> df = pd.DataFrame({"date": [1651510462, 53394822, 1126233195]})
         >>> df
-                date
+                 date
         0  1651510462
         1    53394822
         2  1126233195
         >>> df.convert_unix_date('date')
-                        date
+                         date
         0 2022-05-02 16:54:22
         1 1971-09-10 23:53:42
         2 2005-09-09 02:33:15

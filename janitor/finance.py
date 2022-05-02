@@ -635,40 +635,32 @@ def inflate_currency(
 
     **Note**: This method mutates the original DataFrame.
 
-    Functional usage example:
-
-    ```python
-    import pandas as pd
-    import janitor.finance
-
-    df = pd.DataFrame(...)
-
-    df = janitor.finance.inflate_currency(
-        df=df,
-        column_name='profit',
-        country='USA',
-        currency_year=2015,
-        to_year=2018,
-        make_new_column=True
-    )
-    ```
-
     Method chaining usage example:
 
-    ```python
-    import pandas as pd
-    import janitor.finance
+    >>> import pandas as pd
+    >>> import janitor.finance
+    >>> df = pd.DataFrame({"profit":[100.10, 200.20, 300.30, 400.40, 500.50]})
+    >>> df
+        profit
+    0   100.1
+    1   200.2
+    2   300.3
+    3   400.4
+    4   500.5
+    >>> df.inflate_currency(
+    ...    column_name='profit',
+    ...    country='USA',
+    ...    currency_year=2015,
+    ...    to_year=2018,
+    ...    make_new_column=True
+    ... )
+        profit  profit_2018
+    0   100.1   106.050596
+    1   200.2   212.101191
+    2   300.3   318.151787
+    3   400.4   424.202382
+    4   500.5   530.252978
 
-    df = pd.DataFrame(...)
-
-    df = df.inflate_currency(
-        column_name='profit',
-        country='USA',
-        currency_year=2015,
-        to_year=2018,
-        make_new_column=True
-    )
-    ```
 
     :param df: A pandas DataFrame.
     :param column_name: Name of the column containing monetary

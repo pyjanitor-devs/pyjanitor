@@ -25,7 +25,7 @@ def groupby_topk(
     List of all sort_values() parameters can be found
     [here](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html).
 
-    Example setup:
+    Example:
 
         >>> import pandas as pd
         >>> import janitor
@@ -34,66 +34,28 @@ def groupby_topk(
         ...     "id": [1, 4, 6, 2, 5],
         ...     "result": ["pass", "pass", "fail", "pass", "fail"]
         ... })
-
-    Ascending top 3:
-
-        >>> df.groupby_topk('result', 'age', 3)
-                age  id result
+        >>> df
+                   age  id result
+        result
+        fail    4   21   5   fail
+                2   22   6   fail
+        pass    0   20   1   pass
+                3   43   2   pass
+                1   23   4   pass
+        >>> df.groupby_topk('result', 'age', 3) # Ascending top 3
+                   age  id result
         result
         fail    4   21   5   fail
                 2   22   6   fail
         pass    0   20   1   pass
                 1   23   4   pass
                 3   43   2   pass
-
-
-    Descending top 2:
-
-        >>> df.groupby_topk('result', 'age', 2, {'ascending':False})
-                age  id result
+        >>> df.groupby_topk('result', 'age', 2, {'ascending':False}) # Descending top 2
+                   age  id result
         result
         fail    2   22   6   fail
                 4   21   5   fail
         pass    3   43   2   pass
-                1   23   4   pass
-
-
-    Functional usage syntax:
-
-        >>> janitor.groupby_topk(
-        ...    df = df,
-        ...    groupby_column_name = 'result',
-        ...    sort_column_name = 'id',
-        ...    k = 5
-        >>> )
-                age  id result
-        result
-        fail    4   21   5   fail
-                2   22   6   fail
-        pass    0   20   1   pass
-                3   43   2   pass
-                1   23   4   pass
-
-    Method-chaining usage syntax:
-
-        >>> import pandas as pd
-        >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "age": [20, 23, 22, 43, 21],
-        ...     "id": [1, 4, 6, 2, 5],
-        ...     "result": ["pass", "pass", "fail", "pass", "fail"]
-        ... }).groupby_topk(
-        ...    groupby_column_name = 'result',
-        ...    sort_column_name = 'id',
-        ...    k = 5
-        ...    )
-        >>> print(df)
-                age  id result
-        result
-        fail    4   21   5   fail
-                2   22   6   fail
-        pass    0   20   1   pass
-                3   43   2   pass
                 1   23   4   pass
 
 

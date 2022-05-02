@@ -24,8 +24,16 @@ def get_dupes(
         >>> df = pd.DataFrame({
         ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
         ...     "quantity": [100, 100, 75, 200, 75],
-        ... }).get_dupes()
-        item  quantity
+        ... })
+        >>> df
+           item  quantity
+        0  shoe       100
+        1  shoe       100
+        2   bag        75
+        3  shoe       200
+        4   bag        75
+        >>> df.get_dupes()
+           item  quantity
         0  shoe       100
         1  shoe       100
         2   bag        75
@@ -33,6 +41,19 @@ def get_dupes(
 
     Optional `column_names` usage:
 
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
+        ...     "quantity": [100, 100, 75, 200, 75],
+        ... })
+        >>> df
+           item  quantity
+        0  shoe       100
+        1  shoe       100
+        2   bag        75
+        3  shoe       200
+        4   bag        75
         >>> df.get_dupes(column_names=["item"])
         item  quantity
         0  shoe       100

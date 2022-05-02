@@ -26,6 +26,7 @@ def test_clean_names_method_chain(spark_df):
     assert set(spark_df.columns) == set(expected_columns)
 
 
+@pytest.mark.turtle
 @pytest.mark.xfail(reason="causing issues in CI, to be fixed later")
 @pytest.mark.spark_functions
 def test_clean_names_special_characters(spark_df):

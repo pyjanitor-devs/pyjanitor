@@ -2,29 +2,32 @@
 
 ## [Unreleased]
 
-- [ENH] Deprecate `num_bins` from `bin_numeric` in favour of `bins`, and allow generic `**kwargs` to be passed into `pd.cut`. Issue #969. @thatlittleboy
-- [ENH] Fix `concatenate_columns` not working on category inputs @zbarry
-- [INF] Simplify CI system @ericmjl
-- [ENH] Added "read_commandline" function to janitor.io @BaritoneBeard
-- [BUG] Fix bug with the complement parameter of `filter_on`. Issue #988. @thatlittleboy
-- [ENH] Add `xlsx_table`, for reading tables from an Excel sheet. @samukweku
-- [ENH] minor improvements for conditional_join; equality only joins are no longer supported; there has to be at least one non-equi join present. @samukweku
-- [BUG] `sort_column_value_order` no longer mutates original dataframe.
-- [BUG] Extend `fill_empty`'s `column_names` type range. Issue #998. @Zeroto521
-- [BUG] Removed/updated error-inducing default arguments in `row_to_names` (#1004) and `round_to_fraction` (#1005). @thatlittleboy
-- [ENH] `patterns` deprecated in favour of importing `re.compile`. #1007 @samukweku
-- [ENH] Changes to kwargs in `encode_categorical`, where the values can either be a string or a 1D array. #1021 @samukweku
-- [ENH] Add `fill_value` and `explicit` parameters to the `complete` function. #1019 @samukweku
-- [ENH] Performance improvement for `expand_grid`. @samukweku
-- [BUG] Make `factorize_columns` (PR #1028) and `truncate_datetime_dataframe` (PR #1040) functions non-mutating. @thatlittleboy
-- [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe`, along with further performance improvements (PR #1040). @thatlittleboy
-- [ENH] Performance improvement for `conditional_join`. @samukweku
-- [ENH] Multiple `.value` is now supported in `pivot_longer`. Multiple values_to is also supported, when names_pattern is a list or tuple. #1034, #1048 @samukweku
-- [ENH] Add `xlsx_cells` for reading a spreadsheet as a table of individual cells. #929 @samukweku.
-- [ENH] Let `filter_string` suit parameters of `Series.str.contains` Issue #1003 and #1047. @Zeroto521
-- [ENH] `names_glue` in `pivot_wider` now takes a string form, using str.format_map under the hood. `levels_order` is also deprecated. @samukweku
-- [BUG] Fixed bug in `transform_columns` which ignored the `column_names` specification when `new_column_names` dictionary was provided as an argument, issue #1063. @thatlittleboy
-- [DOC] Added a step in the dev guide to install `Remote Container` in VS Code. @ashenafiyb
+-   [ENH] Deprecate `num_bins` from `bin_numeric` in favour of `bins`, and allow generic `**kwargs` to be passed into `pd.cut`. Issue #969. @thatlittleboy
+-   [ENH] Fix `concatenate_columns` not working on category inputs @zbarry
+-   [INF] Simplify CI system @ericmjl
+-   [ENH] Added "read_commandline" function to janitor.io @BaritoneBeard
+-   [BUG] Fix bug with the complement parameter of `filter_on`. Issue #988. @thatlittleboy
+-   [ENH] Add `xlsx_table`, for reading tables from an Excel sheet. @samukweku
+-   [ENH] minor improvements for conditional_join; equality only joins are no longer supported; there has to be at least one non-equi join present. @samukweku
+-   [BUG] `sort_column_value_order` no longer mutates original dataframe.
+-   [BUG] Extend `fill_empty`'s `column_names` type range. Issue #998. @Zeroto521
+-   [BUG] Removed/updated error-inducing default arguments in `row_to_names` (#1004) and `round_to_fraction` (#1005). @thatlittleboy
+-   [ENH] `patterns` deprecated in favour of importing `re.compile`. #1007 @samukweku
+-   [ENH] Changes to kwargs in `encode_categorical`, where the values can either be a string or a 1D array. #1021 @samukweku
+-   [ENH] Add `fill_value` and `explicit` parameters to the `complete` function. #1019 @samukweku
+-   [ENH] Performance improvement for `expand_grid`. @samukweku
+-   [BUG] Make `factorize_columns` (PR #1028) and `truncate_datetime_dataframe` (PR #1040) functions non-mutating. @thatlittleboy
+-   [BUG] Fix SettingWithCopyWarning and other minor bugs when using `truncate_datetime_dataframe`, along with further performance improvements (PR #1040). @thatlittleboy
+-   [ENH] Performance improvement for `conditional_join`. @samukweku
+-   [ENH] Multiple `.value` is now supported in `pivot_longer`. Multiple values_to is also supported, when names_pattern is a list or tuple. `names_transform` parameter added, for efficient dtype transformation of unpivoted columns. #1034, #1048, #1051 @samukweku
+-   [ENH] Add `xlsx_cells` for reading a spreadsheet as a table of individual cells. #929 @samukweku.
+-   [ENH] Let `filter_string` suit parameters of `Series.str.contains` Issue #1003 and #1047. @Zeroto521
+-   [ENH] `names_glue` in `pivot_wider` now takes a string form, using str.format_map under the hood. `levels_order` is also deprecated. @samukweku
+-   [BUG] Fixed bug in `transform_columns` which ignored the `column_names` specification when `new_column_names` dictionary was provided as an argument, issue #1063. @thatlittleboy
+-   [BUG] `count_cumulative_unique` no longer modifies the column being counted in the output when `case_sensitive` argument is set to False, issue #1065. @thatlittleboy
+-   [BUG] Fix for gcc missing error in dev container
+-   [DOC] Added a step in the dev guide to install `Remote Container` in VS Code. @ashenafiyb
+
 ## [v0.22.0] - 2021-11-21
 
 -   [BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku

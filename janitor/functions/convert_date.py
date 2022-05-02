@@ -25,7 +25,9 @@ def convert_excel_date(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame(...).convert_excel_date('date')
+        >>> df = pd.DataFrame({"date": [39690, 39690, 37118]})
+        >>> df
+        >>> df.convert_excel_date('date')
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.
@@ -64,7 +66,9 @@ def convert_matlab_date(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame(...).convert_matlab_date('date')
+        >>> df = pd.DataFrame({"date": [737125.0, 737124.815863, 737124.4985, 737124]})
+        >>> df
+        >>> df.convert_matlab_date('date')
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.
@@ -94,7 +98,9 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame(...).convert_unix_date('date')
+        >>> df = pd.DataFrame({"date": [1651510462, 53394822, 1126233195]"})
+        >>> df
+        >>> df.convert_unix_date('date')
 
     :param df: A pandas DataFrame.
     :param column_name: A column name.

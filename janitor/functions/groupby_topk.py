@@ -35,13 +35,12 @@ def groupby_topk(
         ...     "result": ["pass", "pass", "fail", "pass", "fail"]
         ... })
         >>> df
-                   age  id result
-        result
-        fail    4   21   5   fail
-                2   22   6   fail
-        pass    0   20   1   pass
-                3   43   2   pass
-                1   23   4   pass
+           age  id result
+        0   20   1   pass
+        1   23   4   pass
+        2   22   6   fail
+        3   43   2   pass
+        4   21   5   fail
         >>> df.groupby_topk('result', 'age', 3) # Ascending top 3
                    age  id result
         result

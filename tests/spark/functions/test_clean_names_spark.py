@@ -12,6 +12,7 @@ import janitor.spark  # noqa: F401 isort:skip
 
 @pytest.mark.xfail(reason="causing issues in CI, to be fixed later")
 @pytest.mark.spark_functions
+@pytest.mark.turtle
 def test_clean_names_method_chain(spark_df):
     """Tests clean names function in a method chain call."""
     spark_df = spark_df.clean_names()

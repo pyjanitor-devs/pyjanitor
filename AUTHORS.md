@@ -105,4 +105,3 @@ Contributors
 - [@robertmitchellv](https://github.com/robertmitchellv) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Arobertmitchellv)
 - [@ashenafiyb](https://github.com/ashenafiya) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aashenafiyb)
 - [@gahjelle](https://github.com/gahjelle) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Agahjelle)
-

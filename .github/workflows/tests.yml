@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-subset: ["slow", "not slow"]
+        test-subset: ["turtle", "not turtle"]
     runs-on: ubuntu-latest
     name: Run pyjanitor test suite
 

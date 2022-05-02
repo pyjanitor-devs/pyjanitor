@@ -167,10 +167,10 @@ def fill_empty(
     1     2   4.0   5.0
     2     3   0.0   6.0
     >>> df.fill_empty(column_names = ['col2', 'col3'], value = 0)
-        col1    col2    col3
-    0      1     0.0     0.0
-    1      2     4.0     5.0
-    2      3     0.0     6.0
+       col1  col2  col3
+    0     1   0.0   0.0
+    1     2   4.0   5.0
+    2     3   0.0   6.0
 
 
     :param df: A pandas DataFrame.

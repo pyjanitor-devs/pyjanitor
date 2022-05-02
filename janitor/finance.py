@@ -641,7 +641,7 @@ def inflate_currency(
     >>> import janitor.finance
     >>> df = pd.DataFrame({"profit":[100.10, 200.20, 300.30, 400.40, 500.50]})
     >>> df
-        profit
+       profit
     0   100.1
     1   200.2
     2   300.3
@@ -654,7 +654,7 @@ def inflate_currency(
     ...    to_year=2018,
     ...    make_new_column=True
     ... )
-        profit  profit_2018
+       profit  profit_2018
     0   100.1   106.050596
     1   200.2   212.101191
     2   300.3   318.151787

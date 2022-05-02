@@ -17,21 +17,6 @@ def get_dupes(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage syntax:
-
-        >>> import pandas as pd
-        >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
-        ...     "quantity": [100, 100, 75, 200, 75],
-        ... })
-        >>> janitor.get_dupes(df)
-        item  quantity
-        0  shoe       100
-        1  shoe       100
-        2   bag        75
-        4   bag        75
-
     Method chaining syntax:
 
         >>> import pandas as pd
@@ -48,14 +33,14 @@ def get_dupes(
 
     Optional `column_names` usage:
 
-        >>> janitor.get_dupes(df, column_names=["item"])
+        >>> df.get_dupes(column_names=["item"])
         item  quantity
         0  shoe       100
         1  shoe       100
         2   bag        75
         3  shoe       200
         4   bag        75
-        >>> janitor.get_dupes(df, column_names=["quantity"])
+        >>> df.get_dupes(column_names=["quantity"])
         item  quantity
         0  shoe       100
         1  shoe       100

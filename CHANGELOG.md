@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Updated developer guide docs.
+
 ## [v0.23.1] - 2022-05-03
 
 -   [DOC] Updated `fill.py` and `update_where.py` documentation with working examples.

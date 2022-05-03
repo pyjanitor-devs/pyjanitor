@@ -1,3 +1,7 @@
+"""
+Function for updating values based on other column values
+"""
+
 from typing import Any, Hashable
 import pandas_flavor as pf
 import pandas as pd
@@ -20,45 +24,38 @@ def update_where(
 
     Example usage:
 
-    ```python
-        data = {
-            "a": [1, 2, 3, 4],
-            "b": [5, 6, 7, 8],
-            "c": [0, 0, 0, 0]
-        }
-        df = pd.DataFrame(data)
-
-           a  b  c
-        0  1  5  0
-        1  2  6  0
-        2  3  7  0
-        3  4  8  0
-
-        df.update_where(conditions = (df.a > 2) & (df.b < 8),
-                        target_column_name = 'c',
-                        target_val = 10)
-
-           a  b   c
-        0  1  5   0
-        1  2  6   0
-        2  3  7  10
-        3  4  8   0
-    ```
-
-    `update_where` also supports pandas *query* style string expressions:
-
-    ```python
-        df.update_where(conditions = "a > 2 and b < 8",
-                        target_column_name = 'c',
-                        target_val = 10)
-
-           a  b   c
-        0  1  5   0
-        1  2  6   0
-        2  3  7  10
-        3  4  8   0
-    ```
-
+    >>> data = {
+    ...    "a": [1, 2, 3, 4],
+    ...    "b": [5, 6, 7, 8],
+    ...    "c": [0, 0, 0, 0],
+    ... }
+    >>> df = pd.DataFrame(data)
+    >>> df
+       a  b  c
+    0  1  5  0
+    1  2  6  0
+    2  3  7  0
+    3  4  8  0
+    >>> df.update_where(
+    ...    conditions = (df.a > 2) & (df.b < 8),
+    ...    target_column_name = 'c',
+    ...    target_val = 10
+    ... )
+       a  b   c
+    0  1  5   0
+    1  2  6   0
+    2  3  7  10
+    3  4  8   0
+    >>> df.update_where( # supports pandas *query* style string expressions
+    ...    conditions = "a > 2 and b < 8",
+    ...    target_column_name = 'c',
+    ...    target_val = 10
+    ... )
+       a  b   c
+    0  1  5   0
+    1  2  6   0
+    2  3  7  10
+    3  4  8   0
 
     :param df: The pandas DataFrame object.
     :param conditions: Conditions used to update a target column

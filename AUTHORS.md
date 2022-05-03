@@ -106,3 +106,4 @@ Contributors
 - [@ashenafiyb](https://github.com/ashenafiya) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aashenafiyb)
 - [@gahjelle](https://github.com/gahjelle) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Agahjelle)
 - [@apatao](https://github.com/apatao) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aapatao)
+- [@OdinTech3](https://github.com/OdinTech3) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pull/1094)

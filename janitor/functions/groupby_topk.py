@@ -1,3 +1,4 @@
+"""Implementation of the `groupby_topk` function"""
 from typing import Dict, Hashable
 import pandas_flavor as pf
 import pandas as pd
@@ -24,78 +25,38 @@ def groupby_topk(
     List of all sort_values() parameters can be found
     [here](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.sort_values.html).
 
+    Example:
 
-    ```python
-        import pandas as pd
-        import janitor as jn
-
-           age  ID result
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "age": [20, 23, 22, 43, 21],
+        ...     "id": [1, 4, 6, 2, 5],
+        ...     "result": ["pass", "pass", "fail", "pass", "fail"]
+        ... })
+        >>> df
+           age  id result
         0   20   1   pass
-        1   22   2   fail
-        2   24   3   pass
-        3   23   4   pass
+        1   23   4   pass
+        2   22   6   fail
+        3   43   2   pass
         4   21   5   fail
-        5   22   6   pass
-    ```
-
-    Ascending top 3:
-
-    ```python
-        df.groupby_topk('result', 'age', 3)
-
-                    age  ID result
+        >>> df.groupby_topk('result', 'age', 3) # Ascending top 3
+                  age  id result
         result
-        fail    4   21   5   fail
-                1   22   2   fail
-        pass    0   20   1   pass
-                5   22   6   pass
-                3   23   4   pass
-    ```
-
-    Descending top 2:
-
-    ```python
-        df.groupby_topk('result', 'age', 2, {'ascending':False})
-
-                    age  ID result
+        fail   4   21   5   fail
+               2   22   6   fail
+        pass   0   20   1   pass
+               1   23   4   pass
+               3   43   2   pass
+        >>> df.groupby_topk('result', 'age', 2, {'ascending':False}) # Descending top 2
+                  age  id result
         result
-        fail    1   22   2   fail
-                4   21   5   fail
-        pass    2   24   3   pass
-                3   23   4   pass
-    ```
+        fail   2   22   6   fail
+               4   21   5   fail
+        pass   3   43   2   pass
+               1   23   4   pass
 
-    Functional usage syntax:
-
-    ```python
-        import pandas as pd
-        import janitor as jn
-
-        df = pd.DataFrame(...)
-        df = jn.groupby_topk(
-            df = df,
-            groupby_column_name = 'groupby_column',
-            sort_column_name = 'sort_column',
-            k = 5
-            )
-    ```
-
-    Method-chaining usage syntax:
-
-    ```python
-        import pandas as pd
-        import janitor as jn
-
-        df = (
-            pd.DataFrame(...)
-            .groupby_topk(
-            df = df,
-            groupby_column_name = 'groupby_column',
-            sort_column_name = 'sort_column',
-            k = 5
-            )
-        )
-    ```
 
     :param df: A pandas DataFrame.
     :param groupby_column_name: Column name to group input DataFrame `df` by.

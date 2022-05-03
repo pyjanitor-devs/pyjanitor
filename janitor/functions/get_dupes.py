@@ -1,3 +1,4 @@
+"""Implementation of the `get_dupes` function"""
 from typing import Hashable, Iterable, Optional, Union
 import pandas_flavor as pf
 import pandas as pd
@@ -16,20 +17,56 @@ def get_dupes(
 
     This method does not mutate the original DataFrame.
 
-    Functional usage syntax:
-
-    ```python
-    df = pd.DataFrame(...)
-    df = get_dupes(df)
-    ```
-
     Method chaining syntax:
 
-    ```python
-    import pandas as pd
-    import janitor
-    df = pd.DataFrame(...).get_dupes()
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
+        ...     "quantity": [100, 100, 75, 200, 75],
+        ... })
+        >>> df
+           item  quantity
+        0  shoe       100
+        1  shoe       100
+        2   bag        75
+        3  shoe       200
+        4   bag        75
+        >>> df.get_dupes()
+           item  quantity
+        0  shoe       100
+        1  shoe       100
+        2   bag        75
+        4   bag        75
+
+    Optional `column_names` usage:
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
+        ...     "quantity": [100, 100, 75, 200, 75],
+        ... })
+        >>> df
+           item  quantity
+        0  shoe       100
+        1  shoe       100
+        2   bag        75
+        3  shoe       200
+        4   bag        75
+        >>> df.get_dupes(column_names=["item"])
+           item  quantity
+        0  shoe       100
+        1  shoe       100
+        2   bag        75
+        3  shoe       200
+        4   bag        75
+        >>> df.get_dupes(column_names=["quantity"])
+           item  quantity
+        0  shoe       100
+        1  shoe       100
+        2   bag        75
+        4   bag        75
 
     :param df: The pandas DataFrame object.
     :param column_names: (optional) A column name or an iterable

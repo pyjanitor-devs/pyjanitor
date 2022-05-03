@@ -29,7 +29,12 @@
 -   [BUG] Fix for gcc missing error in dev container
 -   [DOC] Added a step in the dev guide to install `Remote Container` in VS Code. @ashenafiyb
 -   [DOC] Convert `expand_column` and `find_replace` code examples to doctests, issue #972. @gahjelle
+-   [DOC] Convert `expand_column` code examples to doctests, issue #972. @gahjelle
+-   [DOC] Convert `get_dupes` code examples to doctests, issue #972. @ethompsy
 -   [DOC] Convert `engineering` code examples to doctests, issue #972 @ashenafiyb
+-   [DOC] Convert `groupby_topk` code examples to doctests, issue #972. @ethompsy
+-   [DOC] Add doctests to `math`, issue #972. @gahjelle
+-   [DOC] Add doctests to `math` and `ml`, issue #972. @gahjelle
 -   [DOC] Add doctests to `math`, `ml`, and `xarray`, issue #972. @gahjelle
 
 ## [v0.22.0] - 2021-11-21

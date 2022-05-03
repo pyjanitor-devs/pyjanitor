@@ -1,7 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+
 -   [DOC] Updated developer guide docs.
+
+## [v0.23.1] - 2022-05-03
+
 -   [DOC] Updated `fill.py` and `update_where.py` documentation with working examples.
 -   [ENH] Deprecate `num_bins` from `bin_numeric` in favour of `bins`, and allow generic `**kwargs` to be passed into `pd.cut`. Issue #969. @thatlittleboy
 -   [ENH] Fix `concatenate_columns` not working on category inputs @zbarry
@@ -29,7 +33,12 @@
 -   [BUG] Fix for gcc missing error in dev container
 -   [DOC] Added a step in the dev guide to install `Remote Container` in VS Code. @ashenafiyb
 -   [DOC] Convert `expand_column` and `find_replace` code examples to doctests, issue #972. @gahjelle
+-   [DOC] Convert `expand_column` code examples to doctests, issue #972. @gahjelle
+-   [DOC] Convert `get_dupes` code examples to doctests, issue #972. @ethompsy
 -   [DOC] Convert `engineering` code examples to doctests, issue #972 @ashenafiyb
+-   [DOC] Convert `groupby_topk` code examples to doctests, issue #972. @ethompsy
+-   [DOC] Add doctests to `math`, issue #972. @gahjelle
+-   [DOC] Add doctests to `math` and `ml`, issue #972. @gahjelle
 -   [DOC] Add doctests to `math`, `ml`, and `xarray`, issue #972. @gahjelle
 
 ## [v0.22.0] - 2021-11-21
@@ -281,7 +290,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.23.1...HEAD
+
+[v0.23.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.22.0...v0.23.1
 
 [v0.22.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.2...v0.22.0
 

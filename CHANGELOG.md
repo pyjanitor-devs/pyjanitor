@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 -   [DOC] Updated developer guide docs.
+-   [EHN] `min_max_scale` drop `old_min` and `old_max` to fit sklearn's method API. #1097 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

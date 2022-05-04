@@ -33,7 +33,10 @@ def min_max_scale(
     Method chaining syntax:
 
     ```python
-        df = pd.DataFrame(...).min_max_scale(column_name="a")
+        df = (
+            pd.DataFrame(...)
+            .min_max_scale(column_name="a")
+        )
     ```
 
     Setting custom minimum and maximum:
@@ -50,7 +53,6 @@ def min_max_scale(
 
     Setting a min and max that is not based on the data, while applying to
     entire dataframe:
-
 
     ```python
         df = (

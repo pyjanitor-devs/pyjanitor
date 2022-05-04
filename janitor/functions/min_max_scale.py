@@ -75,16 +75,24 @@ def min_max_scale(
     :param feature_range: (optional) Desired range of transformed data.
     :param column_name: (optional) The column on which to perform scaling.
     :returns: A pandas DataFrame with scaled data.
-    :raises ValueError: if `old_max` is not greater than `old_min``.
+    :raises ValueError: if `feature_range` isn't tuple type.
+    :raises ValueError: if the length of `feature_range` isn't equal to two.
+    :raises ValueError: if the element of `feature_range` isn't number type.
     :raises ValueError: if `feature_range[1]` is not greater than `feature_range[0]``.
     """
 
-    new_min, new_max = feature_range
-    if new_max <= new_min:
+    if not (
+        isinstance(feature_range, (tuple, list))
+        and len(feature_range) == 2
+        and all((isinstance(i, (int, float))) for i in feature_range)
+        and feature_range[1] > feature_range[0]
+    ):
         raise ValueError(
-            "`feature_range[1]` should be greater than `feature_range[0]`"
+            "`feature_range` should be a range type contains number element, "
+            "the first element must be greater than the second one"
         )
 
+    new_min, new_max = feature_range
     new_range = new_max - new_min
 
     if column_name:

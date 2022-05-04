@@ -79,12 +79,13 @@ def min_max_scale(
     :raises ValueError: if `feature_range[1]` is not greater than `feature_range[0]``.
     """
 
-    if feature_range[1] <= feature_range[0]:
+    new_min, new_max = feature_range
+    if new_max <= new_min:
         raise ValueError(
             "`feature_range[1]` should be greater than `feature_range[0]`"
         )
 
-    new_range = feature_range[1] - feature_range[0]
+    new_range = new_max - new_min
 
     if column_name:
         old_min = df[column_name].min()
@@ -93,12 +94,12 @@ def min_max_scale(
 
         df[column_name] = (
             df[column_name] - old_min
-        ) * new_range / old_range + feature_range[0]
+        ) * new_range / old_range + new_min
     else:
         old_min = df.min().min()
         old_max = df.max().max()
         old_range = old_max - old_min
 
-        df = (df - old_min) * new_range / old_range + feature_range[0]
+        df = (df - old_min) * new_range / old_range + new_min
 
     return df

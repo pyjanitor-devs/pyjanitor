@@ -11,7 +11,11 @@ from janitor.utils import deprecated_alias
 def min_max_scale(
     df: pd.DataFrame,
     feature_range: tuple[int | float, int | float] = (0, 1),
-    column_name=None,
+    column_name: str
+    | int
+    | list[str | int]
+    | tuple[str | int]
+    | pd.Index = None,
 ) -> pd.DataFrame:
     """
     Scales data to between a minimum and maximum value.

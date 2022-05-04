@@ -10,37 +10,25 @@ import pytest
         (
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
             None,
-            pd.DataFrame({"a": [0, 1], "b": [0, 0.5]}),
-        ),
-        # test tuple condition
-        (
-            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
-            ("a", "b"),
-            pd.DataFrame({"a": [0, 1], "b": [0, 1]}),
+            pd.DataFrame({"a": [0.5, 1], "b": [0, 0.5]}),
         ),
         # test list condition
         (
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
             ("a", "b"),
-            pd.DataFrame({"a": [0, 1], "b": [0, 1]}),
-        ),
-        # test Index condition
-        (
-            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
-            pd.Index(["a", "b"]),
-            pd.DataFrame({"a": [0, 1], "b": [0, 1]}),
+            pd.DataFrame({"a": [0, 1.0], "b": [0, 1.0]}),
         ),
         # test str condition
         (
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
             "a",
-            pd.DataFrame({"a": [0, 1], "b": [0, 5]}),
+            pd.DataFrame({"a": [0, 1.0], "b": [0, 5]}),
         ),
         # test int condition
         (
             pd.DataFrame({1: [5, 10], "b": [0, 5]}),
             1,
-            pd.DataFrame({1: [0, 1], "b": [0, 5]}),
+            pd.DataFrame({1: [0, 1.0], "b": [0, 5]}),
         ),
     ],
 )

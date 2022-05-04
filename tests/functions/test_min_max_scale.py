@@ -18,6 +18,12 @@ import pytest
             ["a", "b"],
             pd.DataFrame({"a": [0, 1.0], "b": [0, 1.0]}),
         ),
+        # test Index condition
+        (
+            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
+            pd.Index(["a", "b"]),
+            pd.DataFrame({"a": [0, 1.0], "b": [0, 1.0]}),
+        ),
         # test str condition
         (
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),

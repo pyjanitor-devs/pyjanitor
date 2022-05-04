@@ -11,7 +11,7 @@ from janitor.utils import deprecated_alias
 def min_max_scale(
     df: pd.DataFrame,
     feature_range: tuple[int | float, int | float] = (0, 1),
-    column_name: str | int | list[str | int] = None,
+    column_name: str | int | list[str | int] | pd.Index = None,
 ) -> pd.DataFrame:
     """
     Scales data to between a minimum and maximum value.
@@ -91,7 +91,7 @@ def min_max_scale(
     new_min, new_max = feature_range
     new_range = new_max - new_min
 
-    if column_name:
+    if column_name is not None:
         old_min = df[column_name].min()
         old_max = df[column_name].max()
         old_range = old_max - old_min

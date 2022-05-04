@@ -15,7 +15,7 @@ import pytest
         # test list condition
         (
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
-            ("a", "b"),
+            ["a", "b"],
             pd.DataFrame({"a": [0, 1.0], "b": [0, 1.0]}),
         ),
         # test str condition

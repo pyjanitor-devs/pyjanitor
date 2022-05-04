@@ -60,13 +60,13 @@ def test_subtype_names_to(df_checks):
     and the wrong type is provided for entries
     in names_to.
     """
-    with pytest.raises(TypeError):
-        df_checks.pivot_longer(names_to=[("famid",)])
+    with pytest.raises(TypeError, match="1 in names_to.+"):
+        df_checks.pivot_longer(names_to=[1])
 
 
 def test_duplicate_names_to(df_checks):
     """Raise error if names_to contains duplicates."""
-    with pytest.raises(ValueError, match="y already exists in names_to."):
+    with pytest.raises(ValueError, match="y is duplicated in names_to."):
         df_checks.pivot_longer(names_to=["y", "y"], names_pattern="(.+)(.)")
 
 
@@ -75,7 +75,10 @@ def test_both_names_sep_and_pattern(df_checks):
     Raise ValueError if both names_sep
     and names_pattern is provided.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Only one of names_pattern or names_sep should be provided.",
+    ):
         df_checks.pivot_longer(
             names_to=["rar", "bar"], names_sep="-", names_pattern="(.+)(.)"
         )
@@ -83,7 +86,7 @@ def test_both_names_sep_and_pattern(df_checks):
 
 def test_name_pattern_wrong_type(df_checks):
     """Raise TypeError if the wrong type provided for names_pattern."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="names_pattern should be one of.+"):
         df_checks.pivot_longer(names_to=["rar", "bar"], names_pattern=2007)
 
 
@@ -99,7 +102,11 @@ def test_name_pattern_groups_len(df_checks):
     and the number of groups
     differs from the length of names_to.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The length of names_to does not match "
+        "the number of groups in names_pattern.+",
+    ):
         df_checks.pivot_longer(names_to=".value", names_pattern="(.+)(.)")
 
 
@@ -108,7 +115,7 @@ def test_names_pattern_wrong_subtype(df_checks):
     Raise TypeError if names_pattern is a list/tuple
     and wrong subtype is supplied.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="1 in names_pattern.+"):
         df_checks.pivot_longer(
             names_to=["ht", "num"], names_pattern=[1, "\\d"]
         )
@@ -119,7 +126,11 @@ def test_names_pattern_names_to_unequal_length(df_checks):
     Raise ValueError if names_pattern is a list/tuple
     and wrong number of items in names_to.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The length of names_to does not match "
+        "the number of regexes in names_pattern.+",
+    ):
         df_checks.pivot_longer(
             names_to=["variable"], names_pattern=["^ht", ".+i.+"]
         )
@@ -130,7 +141,11 @@ def test_names_pattern_names_to_dot_value(df_checks):
     Raise Error if names_pattern is a list/tuple and
     .value in names_to.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=".value is not accepted in names_to "
+        "if names_pattern is a list/tuple.",
+    ):
         df_checks.pivot_longer(
             names_to=["variable", ".value"], names_pattern=["^ht", ".+i.+"]
         )
@@ -138,7 +153,7 @@ def test_names_pattern_names_to_dot_value(df_checks):
 
 def test_name_sep_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for names_sep."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="names_sep should be one of.+"):
         df_checks.pivot_longer(names_to=[".value", "num"], names_sep=["_"])
 
 
@@ -150,8 +165,72 @@ def test_name_sep_no_names_to(df_checks):
 
 def test_values_to_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for `values_to`."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="values_to should be one of.+"):
+        df_checks.pivot_longer(values_to={"salvo"})
+
+
+def test_values_to_wrong_type_names_pattern(df_checks):
+    """
+    Raise TypeError if `values_to` is a list,
+    and names_pattern is not.
+    """
+    with pytest.raises(
+        TypeError,
+        match="values_to can be a list/tuple only "
+        "if names_pattern is a list/tuple.",
+    ):
         df_checks.pivot_longer(values_to=["salvo"])
+
+
+def test_values_to_names_pattern_unequal_length(df_checks):
+    """
+    Raise ValueError if `values_to` is a list,
+    and the length of names_pattern
+    does not match the length of values_to.
+    """
+    with pytest.raises(
+        ValueError,
+        match="The length of values_to does not match "
+        "the number of regexes in names_pattern.+",
+    ):
+        df_checks.pivot_longer(
+            values_to=["salvo"],
+            names_pattern=["ht", r"\d"],
+            names_to=["foo", "bar"],
+        )
+
+
+def test_values_to_names_seq_names_to(df_checks):
+    """
+    Raise ValueError if `values_to` is a list,
+    and intersects with names_to.
+    """
+    with pytest.raises(
+        ValueError, match="salvo in values_to already exists in names_to."
+    ):
+        df_checks.pivot_longer(
+            values_to=["salvo"], names_pattern=["ht"], names_to="salvo"
+        )
+
+
+def test_sub_values_to(df_checks):
+    """Raise error if values_to is a sequence, and contains non strings."""
+    with pytest.raises(TypeError, match="1 in values_to.+"):
+        df_checks.pivot_longer(
+            names_to=["x", "y"],
+            names_pattern=[r"ht", r"\d"],
+            values_to=[1, "salvo"],
+        )
+
+
+def test_duplicate_values_to(df_checks):
+    """Raise error if values_to is a sequence, and contains duplicates."""
+    with pytest.raises(ValueError, match="salvo is duplicated in values_to."):
+        df_checks.pivot_longer(
+            names_to=["x", "y"],
+            names_pattern=[r"ht", r"\d"],
+            values_to=["salvo", "salvo"],
+        )
 
 
 def test_values_to_exists_in_columns(df_checks):
@@ -160,7 +239,7 @@ def test_values_to_exists_in_columns(df_checks):
     exists in the dataframe's columns.
     """
     with pytest.raises(ValueError):
-        df_checks.pivot_longer(values_to="birth")
+        df_checks.pivot_longer(index="birth", values_to="birth")
 
 
 def test_values_to_exists_in_names_to(df_checks):
@@ -240,7 +319,10 @@ def test_names_to_index(df_checks):
     Raise ValueError if there is no names_sep/names_pattern,
     .value not in names_to and names_to intersects with index.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist as column labels.+",
+    ):
         df_checks.pivot_longer(
             names_to="famid",
             index="famid",
@@ -252,7 +334,10 @@ def test_names_sep_pattern_names_to_index(df_checks):
     Raise ValueError if names_sep/names_pattern,
     .value not in names_to and names_to intersects with index.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist as column labels.+",
+    ):
         df_checks.pivot_longer(
             names_to=["dim", "famid"],
             names_sep="_",
@@ -266,9 +351,28 @@ def test_dot_value_names_to_columns_intersect(df_checks):
     .value in names_to,
     and names_to intersects with the new columns
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r".+in names_to already exist in the new dataframe\'s columns.+",
+    ):
         df_checks.pivot_longer(
             index="famid", names_to=(".value", "ht"), names_pattern="(.+)(.)"
+        )
+
+
+def test_values_to_seq_index_intersect(df_checks):
+    """
+    Raise ValueError if values_to is a sequence,
+    and intersects with the index
+    """
+    match = ".+values_to already exist as column labels assigned "
+    match = match + "to the dataframe's index parameter.+"
+    with pytest.raises(ValueError, match=rf"{match}"):
+        df_checks.pivot_longer(
+            index="famid",
+            names_to=("value", "ht"),
+            names_pattern=["ht", r"\d"],
+            values_to=("famid", "foo"),
         )
 
 
@@ -278,7 +382,12 @@ def test_dot_value_names_to_index_intersect(df_checks):
     .value in names_to,
     and names_to intersects with the index
     """
-    with pytest.raises(ValueError):
+    match = ".+already exist as column labels assigned "
+    match = match + "to the dataframe's index parameter.+"
+    with pytest.raises(
+        ValueError,
+        match=rf"{match}",
+    ):
         df_checks.rename(columns={"famid": "ht"}).pivot_longer(
             index="ht", names_to=(".value", "num"), names_pattern="(.+)(.)"
         )
@@ -289,7 +398,9 @@ def test_names_pattern_list_empty_any(df_checks):
     Raise ValueError if names_pattern is a list,
     and not all matches are returned.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="No match was returned for the regex.+"
+    ):
         df_checks.pivot_longer(
             index=["famid", "birth"],
             names_to=["ht"],
@@ -299,7 +410,9 @@ def test_names_pattern_list_empty_any(df_checks):
 
 def test_names_pattern_no_match(df_checks):
     """Raise error if names_pattern is a regex and returns no matches."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Column labels .+ could not be matched with any .+"
+    ):
         df_checks.pivot_longer(
             index="famid",
             names_to=[".value", "value"],
@@ -312,7 +425,9 @@ def test_names_pattern_incomplete_match(df_checks):
     Raise error if names_pattern is a regex
     and returns incomplete matches.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Column labels .+ could not be matched with any .+"
+    ):
         df_checks.pivot_longer(
             index="famid",
             names_to=[".value", "value"],
@@ -348,7 +463,10 @@ def test_pivot_index_only(df_checks):
 def test_pivot_column_only(df_checks):
     """Test output if only column_names is passed."""
     result = df_checks.pivot_longer(
-        column_names="ht*", names_to="dim", values_to="num", ignore_index=False
+        column_names=["ht1", "ht2"],
+        names_to="dim",
+        values_to="num",
+        ignore_index=False,
     )
 
     actual = df_checks.melt(
@@ -362,7 +480,7 @@ def test_pivot_column_only(df_checks):
 
 
 def test_pivot_sort_by_appearance(df_checks):
-    """Test output if only sort_by_appearance is True."""
+    """Test output if sort_by_appearance is True."""
     result = df_checks.pivot_longer(
         column_names="ht*",
         names_to="dim",
@@ -408,7 +526,10 @@ def test_names_pat_str(df_checks):
 
 
 def test_multiindex_column_level(df_multi):
-    """Test output from MultiIndex column"""
+    """
+    Test output from MultiIndex column,
+    when column_level is provided.
+    """
     result = df_multi.pivot_longer(
         index="name", column_names="names", column_level=0
     )
@@ -416,6 +537,69 @@ def test_multiindex_column_level(df_multi):
         id_vars="name", value_vars="names", col_level=0
     )
     assert_frame_equal(result, expected_output)
+
+
+def test_multiindex(df_multi):
+    """
+    Test output from MultiIndex column,
+    where column_level is not provided,
+    and there is no names_sep/names_pattern.
+    """
+    result = df_multi.pivot_longer(index=[("name", "a")])
+    expected_output = df_multi.melt(id_vars=[("name", "a")])
+    assert_frame_equal(result, expected_output)
+
+
+def test_multiindex_names_to(df_multi):
+    """
+    Test output from MultiIndex column,
+    where column_level is not provided,
+    there is no names_sep/names_pattern,
+    and names_to is provided as a sequence.
+    """
+    result = df_multi.pivot_longer(
+        index=[("name", "a")], names_to=["variable_0", "variable_1"]
+    )
+    expected_output = df_multi.melt(id_vars=[("name", "a")])
+    assert_frame_equal(result, expected_output)
+
+
+def test_multiindex_names_to_length_mismatch(df_multi):
+    """
+    Raise error if the length of names_to does not
+    match the number of column levels.
+    """
+    with pytest.raises(ValueError):
+        df_multi.pivot_longer(
+            index=[("name", "a")],
+            names_to=["variable_0", "variable_1", "variable_2"],
+        )
+
+
+def test_multiindex_incomplete_level_names(df_multi):
+    """
+    Raise error if not all the levels have names.
+    """
+    with pytest.raises(ValueError):
+        df_multi.columns.names = [None, "a"]
+        df_multi.pivot_longer(index=[("name", "a")])
+
+
+def test_multiindex_index_level_names_intersection(df_multi):
+    """
+    Raise error if level names exist in index.
+    """
+    with pytest.raises(ValueError):
+        df_multi.columns.names = [None, "a"]
+        df_multi.pivot_longer(index=[("name", "a")])
+
+
+def test_no_column_names(df_checks):
+    """
+    Test output if all the columns
+    are assigned to the index parameter.
+    """
+    assert_frame_equal(df_checks.pivot_longer(df_checks.columns), df_checks)
 
 
 @pytest.fixture
@@ -480,7 +664,7 @@ def test_names_pattern_str(test_df):
             sep="_",
             i="index",
             j="set",
-            suffix=".+",
+            suffix=r".+",
         )
         .reset_index("set")
         .reset_index(drop=True)
@@ -584,6 +768,23 @@ def test_not_dot_value_sep(not_dot_value):
         .rename("score")
         .sort_index()
         .reset_index()
+    )
+
+    assert_frame_equal(result, actual)
+
+
+def test_not_dot_value_sep2(not_dot_value):
+    """Test output when names_sep and no dot_value"""
+
+    result = not_dot_value.pivot_longer(
+        "country",
+        names_to="event",
+        names_sep="/",
+        values_to="score",
+    )
+
+    actual = not_dot_value.melt(
+        "country", var_name="event", value_name="score"
     )
 
     assert_frame_equal(result, actual)
@@ -764,7 +965,7 @@ def test_names_pattern_seq_single_column(single_val):
     Test output if names_pattern is a list.
     """
     df = single_val[["id", "x1"]]
-    result = df.pivot_longer(index="id", names_to="yA", names_pattern=["(.+)"])
+    result = df.pivot_longer(index="id", names_to="yA", names_pattern=[".+"])
 
     assert_frame_equal(result, df.rename(columns={"x1": "yA"}))
 
@@ -810,3 +1011,148 @@ def test_names_pattern_nulls_in_data():
     )
 
     assert_frame_equal(result, actual)
+
+
+@pytest.fixture
+def multiple_values_to():
+    """fixture for multiple values_to"""
+    # https://stackoverflow.com/q/51519101/7175713
+    return pd.DataFrame(
+        {
+            "City": ["Houston", "Austin", "Hoover"],
+            "State": ["Texas", "Texas", "Alabama"],
+            "Name": ["Aria", "Penelope", "Niko"],
+            "Mango": [4, 10, 90],
+            "Orange": [10, 8, 14],
+            "Watermelon": [40, 99, 43],
+            "Gin": [16, 200, 34],
+            "Vodka": [20, 33, 18],
+        },
+        columns=[
+            "City",
+            "State",
+            "Name",
+            "Mango",
+            "Orange",
+            "Watermelon",
+            "Gin",
+            "Vodka",
+        ],
+    )
+
+
+def test_output_values_to_seq(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+
+    actual = multiple_values_to.melt(
+        ["City", "State"],
+        value_vars=["Mango", "Orange", "Watermelon"],
+        var_name="Fruit",
+        value_name="Pounds",
+    )
+
+    expected = multiple_values_to.pivot_longer(
+        index=["City", "State"],
+        column_names=slice("Mango", "Watermelon"),
+        names_to=("Fruit"),
+        values_to=("Pounds",),
+        names_pattern=[r"M|O|W"],
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+def test_output_values_to_seq1(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+    # https://stackoverflow.com/a/51520155/7175713
+    df1 = multiple_values_to.melt(
+        id_vars=["City", "State"],
+        value_vars=["Mango", "Orange", "Watermelon"],
+        var_name="Fruit",
+        value_name="Pounds",
+    )
+    df2 = multiple_values_to.melt(
+        id_vars=["City", "State"],
+        value_vars=["Gin", "Vodka"],
+        var_name="Drink",
+        value_name="Ounces",
+    )
+
+    df1 = df1.set_index(
+        ["City", "State", df1.groupby(["City", "State"]).cumcount()]
+    )
+    df2 = df2.set_index(
+        ["City", "State", df2.groupby(["City", "State"]).cumcount()]
+    )
+
+    actual = (
+        pd.concat([df1, df2], axis=1)
+        .sort_index(level=2)
+        .reset_index(level=2, drop=True)
+        .reset_index()
+        .astype({"Fruit": "category", "Drink": "category"})
+    )
+
+    expected = multiple_values_to.pivot_longer(
+        index=["City", "State"],
+        column_names=slice("Mango", "Vodka"),
+        names_to=("Fruit", "Drink"),
+        values_to=("Pounds", "Ounces"),
+        names_pattern=[r"M|O|W", r"G|V"],
+        names_transform={"Fruit": "category", "Drink": "category"},
+    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+
+    assert_frame_equal(expected, actual)
+
+
+def test_categorical(df_checks):
+    """Test category output for names_to."""
+
+    actual = df_checks.melt(["famid", "birth"]).astype(
+        {"variable": "category"}
+    )
+    expected = df_checks.pivot_longer(
+        ["famid", "birth"], names_transform="category"
+    )
+
+    assert_frame_equal(actual, expected, check_categorical=False)
+
+
+def test_names_transform_numeric():
+    """
+    Test output for names_transform on numeric sub columns
+    """
+
+    df = pd.DataFrame(
+        {
+            "treatment_1.1": [1.0, 2.0],
+            "treatment_2.1": [3.0, 4.0],
+            "result_1.2": [5.0, 6.0],
+            "result_1": [0, 9],
+            "A": ["X1", "X2"],
+        }
+    )
+
+    expected = (
+        df.pivot_longer(
+            index="A",
+            names_to=(".value", "colname"),
+            names_sep="_",
+            names_transform=float,
+        )
+        .sort_values(
+            ["A", "colname", "result", "treatment"], ignore_index=True
+        )
+        .loc[:, ["A", "colname", "result", "treatment"]]
+    )
+
+    actual = pd.wide_to_long(
+        df,
+        ["result", "treatment"],
+        i="A",
+        j="colname",
+        suffix="[0-9.]+",
+        sep="_",
+    ).reset_index()
+
+    assert_frame_equal(actual, expected)

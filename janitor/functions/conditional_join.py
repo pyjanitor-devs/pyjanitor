@@ -14,6 +14,7 @@ from pandas.core.dtypes.common import (
     is_numeric_dtype,
     is_string_dtype,
 )
+
 from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
@@ -222,7 +223,7 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(df.columns, pd.MultiIndex):
         raise ValueError(
-            "MultiIndex columns are not supported for conditional_join."
+            "MultiIndex columns are not supported for conditional joins."
         )
 
     check("right", right, [pd.DataFrame, pd.Series])
@@ -319,20 +320,15 @@ def _conditional_join_type_check(
             f"'{right_column.name}' has {right_column.dtype} type."
         )
 
-    if (
-        is_string_dtype(left_column)
-        and op != _JoinOperator.STRICTLY_EQUAL.value
+    if (op in less_than_join_types.union(greater_than_join_types)) & (
+        (is_string_dtype(left_column) | is_categorical_dtype(left_column))
     ):
         raise ValueError(
-            "For string columns, only the `==` operator is supported."
-        )
-
-    if (
-        is_categorical_dtype(left_column)
-        and op != _JoinOperator.STRICTLY_EQUAL.value
-    ):
-        raise ValueError(
-            "For categorical columns, only the `==` operator is supported."
+            "non-equi joins are supported "
+            "only for datetime and numeric dtypes. "
+            f"{left_column.name} in condition "
+            f"({left_column.name}, {right_column.name}, {op}) "
+            f"has a dtype {left_column.dtype}."
         )
 
     return None
@@ -390,7 +386,6 @@ def _conditional_join_compute(
             df, right, *result, how, sort_by_appearance
         )
 
-    # multiple conditions
     if eq_check:
         result = _multiple_conditional_join_eq(df, right, conditions)
     elif le_lt_check:
@@ -407,7 +402,9 @@ def _conditional_join_compute(
 
 
 def _less_than_indices(
-    left_c: pd.Series, right_c: pd.Series, strict: bool
+    left_c: pd.Series,
+    right_c: pd.Series,
+    strict: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -417,12 +414,9 @@ def _less_than_indices(
     where `left_c` is less than
     (but not equal to) `right_c` are returned.
 
-    A tuple of integer indexes for left_c and right_c is returned.
+    A tuple of integer indexes
+    for left_c and right_c is returned.
     """
-
-    # TODO
-    # reintroduce `multiple_conditions` argument
-    # when numba is introduced in a future PR?
 
     # no point going through all the hassle
     if left_c.min() > right_c.max():
@@ -449,6 +443,7 @@ def _less_than_indices(
     right_c = extract_array(right_c, extract_numpy=True)
 
     search_indices = right_c.searchsorted(left_c, side="left")
+
     # if any of the positions in `search_indices`
     # is equal to the length of `right_keys`
     # that means the respective position in `left_c`
@@ -517,7 +512,8 @@ def _greater_than_indices(
     if multiple_conditions is False, a tuple of integer indexes
     for left_c and right_c is returned;
     else a tuple of the index for left_c, right_c, as well
-    as the positions of left_c in right_c is returned."""
+    as the positions of left_c in right_c is returned.
+    """
 
     # quick break, avoiding the hassle
     if left_c.max() < right_c.min():
@@ -672,6 +668,56 @@ def _not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     return left_c, right_c
 
 
+def _eq_indices(
+    left_c: pd.Series,
+    right_c: pd.Series,
+) -> tuple:
+    """
+    Use binary search to get indices where left_c
+    is equal to right_c.
+
+    Returns a tuple of the left_index, right_index,
+    lower_boundary and upper_boundary.
+    """
+
+    # no point going through all the hassle
+    if left_c.min() > right_c.max():
+        return None
+    if left_c.max() < right_c.min():
+        return None
+
+    any_nulls = pd.isna(right_c)
+    if any_nulls.any():
+        right_c = right_c[~any_nulls]
+    if right_c.empty:
+        return None
+    any_nulls = pd.isna(left_c)
+    if any_nulls.any():
+        left_c = left_c[~any_nulls]
+    if left_c.empty:
+        return None
+    any_nulls = None
+
+    if not right_c.is_monotonic_increasing:
+        right_c = right_c.sort_values(kind="stable")
+
+    left_index = left_c.index.to_numpy(dtype=int, copy=False)
+    left_c = extract_array(left_c, extract_numpy=True)
+    right_index = right_c.index.to_numpy(dtype=int, copy=False)
+    right_c = extract_array(right_c, extract_numpy=True)
+
+    lower_boundary = right_c.searchsorted(left_c, side="left")
+    upper_boundary = right_c.searchsorted(left_c, side="right")
+    keep_rows = lower_boundary < upper_boundary
+    if not keep_rows.any():
+        return None
+    if not keep_rows.all():
+        left_index = left_index[keep_rows]
+        lower_boundary = lower_boundary[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+    return left_index, right_index, lower_boundary, upper_boundary
+
+
 def _generic_func_cond_join(
     left_c: pd.Series,
     right_c: pd.Series,
@@ -741,7 +787,7 @@ def _multiple_conditional_join_ne(
     Returns a tuple of (left_index, right_index)
     """
 
-    # there is no optimization option here
+    # currently, there is no optimization option here
     # not equal typically combines less than
     # and greater than, so a lot more rows are returned
     # than just less than or greater than
@@ -776,16 +822,20 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (df_index, right_index)
     """
-
     # TODO
-    # this could be better optimized/less wasteful
-    # At the moment, it gets the indices, all the indices
-    # indexes the main df and right, to get all the rows
-    # before pruning down
-    # a more efficient way would be to get the pruned rows
-    # before hitting df and right
-    # something similar to  the `_range_indices` function
-    # for less than and greater than
+    # this uses the idea in the `_range_indices` function
+    # for less than and greater than;
+    # I'd like to believe there is a smarter/more efficient way of doing this
+    # where the filter occurs within the join, and avoids a blow-up
+    # the current implementation uses
+    # a list comprehension to find first matches
+    # in a bid to reduce the blow up size ...
+    # this applies only to integers/dates
+    # and only offers advantages in scenarios
+    # where the right is duplicated
+    # for one to many joins,
+    # or one to one or strings/category, use merge
+    # as it is significantly faster than a binary search
 
     eqs = [
         (left_on, right_on)
@@ -794,25 +844,130 @@ def _multiple_conditional_join_eq(
     ]
 
     left_on, right_on = zip(*eqs)
-
     left_on = [*left_on]
     right_on = [*right_on]
 
-    # get merge indices
-    left_index, right_index = _MergeOperation(
-        df, right, left_on=left_on, right_on=right_on, sort=False, copy=False
-    )._get_join_indexers()
-
-    if not left_index.size:
-        return None
-
-    rest = (
-        (df[left_on], right[right_on], op)
-        for left_on, right_on, op in conditions
-        if op != _JoinOperator.STRICTLY_EQUAL.value
+    strings_or_category = any(
+        col
+        for col in left_on
+        if (is_string_dtype(df[col]) | is_categorical_dtype(df[col]))
     )
 
-    return _generate_indices(left_index, right_index, rest)
+    if (
+        strings_or_category
+        | (not right.duplicated(subset=right_on).any(axis=None))
+        | (not df.duplicated(subset=left_on).any(axis=None))
+    ):
+        rest = (
+            (df[left_on], right[right_on], op)
+            for left_on, right_on, op in conditions
+            if op != _JoinOperator.STRICTLY_EQUAL.value
+        )
+
+        left_index, right_index = _MergeOperation(
+            df,
+            right,
+            left_on=left_on,
+            right_on=right_on,
+            sort=False,
+            copy=False,
+        )._get_join_indexers()
+
+        if not left_index.size:
+            return None
+
+        return _generate_indices(left_index, right_index, rest)
+
+    left_on, right_on = eqs[0]
+    outcome = _eq_indices(df[left_on], right[right_on])
+    if not outcome:
+        return None
+    left_index, right_index, lower_boundary, upper_boundary = outcome
+    eq_check = [condition for condition in conditions if condition != eqs[0]]
+
+    rest = [
+        (df.loc[left_index, left_on], right.loc[right_index, right_on], op)
+        for left_on, right_on, op in eq_check
+    ]
+    rest = [
+        (
+            extract_array(left_c, extract_numpy=True),
+            extract_array(right_c, extract_numpy=True),
+            operator_map[op],
+        )
+        for left_c, right_c, op in rest
+    ]
+
+    def _extension_array_check(arr):
+        """
+        Convert boolean array to numpy array
+        if it is an extension array.
+        """
+        if is_extension_array_dtype(arr):
+            return arr.to_numpy(dtype=bool, na_value=False, copy=False)
+        return arr
+
+    pos = np.copy(upper_boundary)
+    upper = np.copy(upper_boundary)
+    counter = np.arange(left_index.size)
+
+    # faster within C/Rust? better implemented within Pandas itself?
+    # the idea here is that lower_boundary moves up by 1
+    # till it gets to upper_boundary;
+    # if we get all our matches before the end of the iteration, even better
+    for _ in range((upper_boundary - lower_boundary).max()):
+        if not counter.size:
+            break
+        if (lower_boundary == upper).any():
+            keep_rows = lower_boundary < upper
+            rest = [
+                (left_c[keep_rows], right_c, op)
+                for left_c, right_c, op in rest
+            ]
+            lower_boundary = lower_boundary[keep_rows]
+            upper = upper[keep_rows]
+            counter = counter[keep_rows]
+        keep_rows = [
+            op(left_c, right_c[lower_boundary]) for left_c, right_c, op in rest
+        ]
+        keep_rows = [_extension_array_check(arr) for arr in keep_rows]
+        keep_rows = np.logical_and.reduce(keep_rows)
+        if not keep_rows.any():
+            lower_boundary += 1
+            continue
+        pos[counter[keep_rows]] = lower_boundary[keep_rows]
+        counter = counter[~keep_rows]
+        rest = [
+            (left_c[~keep_rows], right_c, op) for left_c, right_c, op in rest
+        ]
+        upper = upper[~keep_rows]
+        lower_boundary = lower_boundary[~keep_rows]
+        lower_boundary += 1
+
+    keep_rows = pos < upper_boundary
+
+    if not keep_rows.any():
+        return None
+
+    if not keep_rows.all():
+        left_index = left_index[keep_rows]
+        pos = pos[keep_rows]
+        upper_boundary = upper_boundary[keep_rows]
+
+    repeater = upper_boundary - pos
+    right_index = [
+        right_index[start:end] for start, end in zip(pos, upper_boundary)
+    ]
+
+    right_index = np.concatenate(right_index)
+    left_index = np.repeat(left_index, repeater)
+
+    eq_check = [
+        (df[left_on], right[right_on], op)
+        for left_on, right_on, op in eq_check
+    ]
+
+    return _generate_indices(left_index, right_index, eq_check)
 
 
 def _multiple_conditional_join_le_lt(
@@ -860,20 +1015,22 @@ def _multiple_conditional_join_le_lt(
     # use the optimised path
     le_lt = None
     ge_gt = None
+    # keep the first match for le_lt or ge_gt
     for condition in conditions:
         *_, op = condition
         if op in less_than_join_types:
+            if le_lt:
+                continue
             le_lt = condition
         elif op in greater_than_join_types:
+            if ge_gt:
+                continue
             ge_gt = condition
-        # we've gotten our two conditions
-        # so end the for loop
         if le_lt and ge_gt:
             break
 
     # optimised path
     if le_lt and ge_gt:
-        # capture the remaining conditions here
         rest = [
             condition
             for condition in conditions
@@ -1123,7 +1280,7 @@ def _create_conditional_join_frame(
     Create final dataframe for conditional join,
     if there are matches.
     """
-    if sort_by_appearance:  # useful for strictly non-equi joins
+    if sort_by_appearance:
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
         left_index = left_index[sorter]
@@ -1149,7 +1306,7 @@ def _create_conditional_join_frame(
     if how == _JoinTypes.LEFT.value:
         right = right.loc[right_index]
         right.index = left_index
-    else:  # how == 'right'
+    else:
         df = df.loc[left_index]
         df.index = right_index
     df = pd.merge(

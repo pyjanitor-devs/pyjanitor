@@ -20,4 +20,4 @@ I would like to propose a change, such that now the docs...
 to get you started. -->
 
 - [Link to documentation page](https://pyjanitor-devs.github.io/pyjanitor/)
-- [Link to exact file to be edited](https://github.com/pyjanitor-devs/pyjanitor/blob/dev/AUTHORS.rst)
+- [Link to exact file to be edited](https://github.com/pyjanitor-devs/pyjanitor/blob/dev/AUTHORS.md)

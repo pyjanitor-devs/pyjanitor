@@ -22,10 +22,11 @@ To get started:
 1. Fork the repository.
 2. Ensure you have Docker running on your local machine.
 3. Ensure you have VSCode running on your local machine.
-4. In Visual Studio Code,
+4. In VS Code, Install an extension called `Remote - Containers`.
+5. In Visual Studio Code,
     click on the quick actions Status Bar item in the lower left corner.
-5. Then select "Remote Containers: Clone Repository In Container Volume".
-6. Enter in the URL of your fork of `pyjanitor`.
+6. Then select "Remote Containers: Clone Repository In Container Volume".
+7. Enter in the URL of your fork of `pyjanitor`.
 
 VSCode will pull down the prebuilt Docker container,
 git clone the repository for you inside an isolated Docker volume,
@@ -51,40 +52,35 @@ so please read the in-line documentation in the Dockerfile carefully.
 Firstly, begin by forking the [`pyjanitor` repo][repo] on GitHub.
 Then, clone your fork locally:
 
-[repo]: https://github.com/ericmjl/pyjanitor
+[repo]: https://github.com/pyjanitor-devs/pyjanitor
 
 ```bash
-git clone git@github.com:your_name_here/pyjanitor.git
+git clone git@github.com:<your_github_username>/pyjanitor.git
 ```
 
 ### Setup the conda environment
 
-Now, install your local copy into a conda environment.
+Now, install your cloned repo into a conda environment.
 Assuming you have conda installed,
 this is how you set up your fork for local development
 
 ```bash
 cd pyjanitor/
-make install
+# Activate the pyjanitor conda environment
+source activate pyjanitor-dev
+
+# Create your conda environment
+conda env create -f environment-dev.yml
+
+# Install PyJanitor in development mode
+python setup.py develop
+
+# Register current virtual environment as a Jupyter Python kernel
+python -m ipykernel install --user --name pyjanitor-dev --display-name "PyJanitor development"
 ```
-
-This also installs your new conda environment as a Jupyter-accessible kernel.
 If you plan to write any notebooks,
-to run correctly inside the environment,
-make sure you select the correct kernel from the top right corner of JupyterLab!
-
-!!! note "Windows Users"
-
-    If you are on Windows,
-    you may need to install `make` before you can run the install.
-    You can get it from `conda-forge`::
-
-    ``bash
-    conda install -c defaults -c conda-forge make
-    ``
-
-    You should be able to run `make` now.
-    The command above installs `make` to the `~/Anaconda3/Library/bin` directory.
+make sure they run correctly inside the environment by
+selecting the correct kernel from the top right corner of JupyterLab!
 
 !!! note "PyCharm Users"
 
@@ -107,38 +103,26 @@ pre-commit install
 
 ### Build docs locally
 
-You should also be able to build the docs locally.
+You should also be able to preview the docs locally.
 To do this, from the main `pyjanitor` directory:
 
 ```bash
-make docs
+python -m mkdocs serve
 ```
-
 The command above allows you to view the documentation locally in your browser.
-`Sphinx (a python documentation generator) <http://www.sphinx-doc.org/en/stable/usage/quickstart.html>`_ builds and renders the html for you,
-and you can find the html files by navigating to `pyjanitor/docs/_build`,
-and then you can find the correct html file.
-To see the main pyjanitor page,
-open the `index.html` file.
 
-!!! note "Errors with documentation builds"
+If you get any errors about importing modules when running `mkdocs serve`,
+first activate the development environment:
 
-    If you get any errors about importing modules when running `make docs`,
-    first activate the development environment:
-
-    ``bash
-    source activate pyjanitor-dev || conda activate pyjanitor-dev
-    ``
-
-Sphinx uses `rst files (restructured text) <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ as its markdown language.
-To edit documentation,
-go to the rst file that corresponds to the html file you would like to edit.
-Make the changes directly in the rst file with the correct markup.
-Save the file and rebuild the html pages using the same commands as above to see what your changes look like in html.
+```bash
+source activate pyjanitor-dev || conda activate pyjanitor-dev
+```
 
 ### Plan out the change you'd like to contribute
 
-The old adage rings true: failing to plan means planning to fail.
+The old adage rings true:
+> failing to plan means planning to fail.
+
 We'd encourage you to flesh out the idea you'd like to contribute
 on the GitHub issue tracker before embarking on a contribution.
 Submitting new code, in particular,
@@ -151,7 +135,7 @@ submit an issue to the [`pyjanitor` GitHub issue tracker][issuetracker]
 describing your planned changes.
 The issue tracker also helps us keep track of who is working on what.
 
-[issuetracker]: https://github.com/ericmjl/pyjanitor/issues
+[issuetracker]: https://github.com/pyjanitor-devs/pyjanitor
 
 ### Create a branch for local development
 
@@ -162,38 +146,52 @@ based off the latest version of the `dev` branch.
 To create a new branch:
 
 ```bash
-git checkout -b name-of-your-bugfix-or-feature dev
+git checkout -b <name-of-your-bugfix-or-feature> dev
 ```
 
 Now you can make your changes locally.
 
-### Check your code
+### Check your environment
 
-When you're done making changes,
-check that your changes are properly formatted and that all tests still pass::
+To ensure that your environemnt is properly set up, run the following command:
 
 ```bash
-make check
+python -m pytest -m "not turtle"
 ```
 
-If any of the checks fail, you can apply the checks individually (to save time):
+If all tests pass then your environment is setup for
+development and you are ready to contribute 🥳.
 
-* Automated code formatting: `make style`
-* Code styling problems check: `make lint`
-* Code unit testing: `make test`
+### Check your code
 
-Styling problems must be resolved before the pull request can be accepted.
+When you're done making changes, commit your staged files with a meaningful message.
+While we have automated checks that run before code is commited via pre-commit and GitHub Actions
+to run tests before code can be merged,
+you can still manually run the following commands to check that your changes are properly
+formatted and that all tests still pass.
 
-`make test` runs all `pyjanitor`'s unit tests
-to probe whether changes to the source code have potentially introduced bugs.
-These tests must also pass before the pull request is accepted,
-and the continuous integration system up on GitHub Actions
-will help run all of the tests before they are committed to the repository.
+To do so:
 
-When you run the test locally,
-the tests in `chemistry.py`, `biology.py`, `spark.py`
-are automatically skipped if you don't have
-the optional dependencies (e.g. `rdkit`) installed.
+* Run `python -m flake8 --exclude nbconvert_config.py janitor` to check code styling problems
+* Run `python -m black -c pyproject.toml` to format your code.
+* Run `python -m interrogate -c pyproject.toml` to check your code for missing docstring.
+* Run `darglint -v 2` to check quality of your docstrings.
+* Run `python -m pytest` to run all unit tests.
+
+!!! tip
+    You can run `python -m pytest -m "not turtle"` to run the fast tests.
+
+!!! note "Running test locally"
+    When you run tests locally,
+    the tests in `chemistry.py`, `biology.py`, `spark.py`
+    are automatically skipped if you don't have
+    the optional dependencies (e.g. `rdkit`) installed.
+
+!!! info
+    * pre-commit **does not run** your tests locally rather all tests are run in continous integration (CI).
+    * All tests must pass in CI before the pull request is accepted,
+    and the continuous integration system up on GitHub Actions
+    will help run all of the tests before they are committed to the repository.
 
 ### Commit your changes
 
@@ -202,12 +200,12 @@ Now you can commit your changes and push your branch to GitHub:
 ```bash
 git add .
 git commit -m "Your detailed description of your changes."
-git push origin name-of-your-bugfix-or-feature
+git push origin <name-of-your-bugfix-or-feature>
 ```
 
 ### Submit a pull request through the GitHub website
 
-Congratulations, you've made it to the penultimate step;
+Congratulations 🎉🎉🎉, you've made it to the penultimate step;
 your code is ready to be checked and reviewed by the maintainers!
 Head over to the GitHub website and create a pull request.
 When you are picking out which branch to merge into,

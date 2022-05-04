@@ -1,6 +1,8 @@
+"""Implementation for expand_column."""
 from typing import Hashable
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import deprecated_alias
 
@@ -21,23 +23,47 @@ def expand_column(
 
     Functional usage syntax:
 
-        df = expand_column(
-            df,
-            column_name='col_name',
-            sep=', '  # note space in sep
-        )
+        >>> import pandas as pd
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
+        ...         "col2": [1, 2, 3, 4],
+        ...     }
+        ... )
+        >>> df = expand_column(
+        ...     df,
+        ...     column_name="col1",
+        ...     sep=", "  # note space in sep
+        ... )
+        >>> df
+              col1  col2  A  B  C  D  E  F
+        0     A, B     1  1  1  0  0  0  0
+        1  B, C, D     2  0  1  1  1  0  0
+        2     E, F     3  0  0  0  0  1  1
+        3  A, E, F     4  1  0  0  0  1  1
 
     Method chaining syntax:
 
-        import pandas as pd
-        import janitor
-        df = (
-            pd.DataFrame(...)
-            .expand_column(
-                column_name='col_name',
-                sep=', '
-            )
-        )
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = (
+        ...     pd.DataFrame(
+        ...         {
+        ...             "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
+        ...             "col2": [1, 2, 3, 4],
+        ...         }
+        ...     )
+        ...     .expand_column(
+        ...         column_name='col1',
+        ...         sep=', '
+        ...     )
+        ... )
+        >>> df
+              col1  col2  A  B  C  D  E  F
+        0     A, B     1  1  1  0  0  0  0
+        1  B, C, D     2  0  1  1  1  0  0
+        2     E, F     3  0  0  0  0  1  1
+        3  A, E, F     4  1  0  0  0  1  1
 
     :param df: A pandas DataFrame.
     :param column_name: Which column to expand.

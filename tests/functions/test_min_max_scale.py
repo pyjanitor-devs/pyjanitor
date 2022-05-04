@@ -1,11 +1,55 @@
+from collections import Iterable
+
+import pandas as pd
 import pytest
 
 
 @pytest.mark.functions
-def test_min_max_scale(dataframe):
-    df = dataframe.min_max_scale(column_name="a")
-    assert df["a"].min() == 0
-    assert df["a"].max() == 1
+@pytest.mark.parametrize(
+    "df, column_name, excepted",
+    [
+        # test default parameter
+        (
+            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
+            None,
+            pd.DataFrame({"a": [0, 1], "b": [0, 0.5]}),
+        ),
+        # test tuple condition
+        (
+            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
+            ('a', 'b'),
+            pd.DataFrame({"a": [0, 1], "b": [0, 1]}),
+        ),
+        # test list condition
+        (
+            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
+            ('a', 'b'),
+            pd.DataFrame({"a": [0, 1], "b": [0, 1]}),
+        ),
+        # test Index condition
+        (
+            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
+            pd.Index(['a', 'b']),
+            pd.DataFrame({"a": [0, 1], "b": [0, 1]}),
+        ),
+        # test str condition
+        (
+            pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
+            'a',
+            pd.DataFrame({"a": [0, 1], "b": [0, 5]}),
+        ),
+        # test int condition
+        (
+            pd.DataFrame({1: [5, 10], "b": [0, 5]}),
+            1,
+            pd.DataFrame({1: [0, 1], "b": [0, 5]}),
+        ),
+    ],
+)
+def test_min_max_scale_column_name(df, column_name, excepted):
+    result = df.min_max_scale(column_name=column_name)
+
+    assert result.equals(excepted)
 
 
 @pytest.mark.functions

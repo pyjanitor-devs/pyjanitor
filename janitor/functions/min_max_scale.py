@@ -78,7 +78,8 @@ def min_max_scale(
     :raises ValueError: if `feature_range` isn't tuple type.
     :raises ValueError: if the length of `feature_range` isn't equal to two.
     :raises ValueError: if the element of `feature_range` isn't number type.
-    :raises ValueError: if `feature_range[1]` is not greater than `feature_range[0]``.
+    :raises ValueError: if `feature_range[1]` is not greater than
+    `feature_range[0]`.
     """
 
     if not (

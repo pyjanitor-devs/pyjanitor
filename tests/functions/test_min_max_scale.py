@@ -1,5 +1,3 @@
-from collections import Iterable
-
 import pandas as pd
 import pytest
 

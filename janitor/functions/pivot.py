@@ -606,6 +606,8 @@ def _computations_pivot_longer(
             name: extract_array(df[name], extract_numpy=True) for name in index
         }
 
+    if len(column_names) != len(set(column_names)):
+        column_names = pd.unique(column_names)
     df = df.loc[:, column_names]
 
     len_index = len(df)

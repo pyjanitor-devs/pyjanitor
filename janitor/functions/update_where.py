@@ -31,7 +31,7 @@ def update_where(
         ... }
         >>> df = pd.DataFrame(data)
         >>> df
-        a  b  c
+           a  b  c
         0  1  5  0
         1  2  6  0
         2  3  7  0
@@ -41,7 +41,7 @@ def update_where(
         ...    target_column_name = 'c',
         ...    target_val = 10
         ... )
-        a  b   c
+           a  b   c
         0  1  5   0
         1  2  6   0
         2  3  7  10
@@ -51,7 +51,7 @@ def update_where(
         ...    target_column_name = 'c',
         ...    target_val = 10
         ... )
-        a  b   c
+           a  b   c
         0  1  5   0
         1  2  6   0
         2  3  7  10

@@ -97,9 +97,8 @@ def groupby_topk(
             "to be returned must be greater than 0."
         )
 
-    indices = df.groupby(by=by, dropna=dropna, sort=False, observed=True)[
-        column
-    ]
+    indices = df.groupby(by=by, dropna=dropna, sort=False, observed=True)
+    indices = indices[column]
 
     if ascending:
         indices = indices.nsmallest(n=k)

@@ -1,17 +1,17 @@
 """Implementation of the `groupby_topk` function"""
-from typing import Hashable
+from typing import Hashable, Union
 import pandas_flavor as pf
 import pandas as pd
 
 from janitor.utils import check_column
-from janitor.utils import deprecated_alias
+from janitor.utils import check, deprecated_alias
 
 
 @pf.register_dataframe_method
 @deprecated_alias(groupby_column_name="by", sort_column_name="column")
 def groupby_topk(
     df: pd.DataFrame,
-    by: Hashable,
+    by: Union[list, Hashable],
     column: Hashable,
     k: int,
     dropna: bool = True,
@@ -24,6 +24,8 @@ def groupby_topk(
     Returns a DataFrame that has the top `k` values per `column`,
     grouped by `by`. Under the hood it uses `nlargest/nsmallest`,
     which avoids sorting the entire dataframe, and is usually more performant.
+    No sorting is done to the `by` column(s); the order is maintained
+    in the final output.
 
 
     Example:
@@ -89,7 +91,15 @@ def groupby_topk(
     :raises ValueError: if `k` is less than 1.
     """  # noqa: E501
 
-    check_column(df, [by, column])
+    # TODO: allow multiple columns for `columns`
+    # when DataFrameGroupBy.nlargest/nsmallest is implemented
+    if isinstance(by, Hashable):
+        by = [by]
+
+    check("by", by, [Hashable, list])
+
+    check_column(df, [column])
+    check_column(df, by)
 
     if k < 1:
         raise ValueError(

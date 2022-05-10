@@ -18,6 +18,12 @@ def df():
     )
 
 
+def test_dtype_by(df):
+    """Check dtype for by."""
+    with pytest.raises(TypeError):
+        df.groupby_topk(by={"result"}, column="age", k=2)
+
+
 def test_ascending_groupby_k_2(df):
     """Test ascending group by, k=2"""
     expected = (

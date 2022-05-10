@@ -40,6 +40,7 @@
 -   [DOC] Add doctests to `math`, issue #972. @gahjelle
 -   [DOC] Add doctests to `math` and `ml`, issue #972. @gahjelle
 -   [DOC] Add doctests to `math`, `ml`, and `xarray`, issue #972. @gahjelle
+-   [ENH] Performance improvement for groupby_topk. #1093 @samukweku
 
 ## [v0.22.0] - 2021-11-21
 

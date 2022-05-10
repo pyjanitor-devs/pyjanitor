@@ -19,42 +19,55 @@ def df():
 
 def test_ascending_groupby_k_2(df):
     """Test ascending group by, k=2"""
-    expected = df.groupby("result").apply(
-        lambda d: d.sort_values("age").head(2)
+    expected = (
+        df.groupby("result", sort=False)
+        .apply(lambda d: d.sort_values("age").head(2))
+        .droplevel(0)
     )
-    assert_frame_equal(df.groupby_topk("result", "age", 2), expected)
+    assert_frame_equal(
+        df.groupby_topk("result", "age", 2, ignore_index=False), expected
+    )
 
 
 def test_descending_groupby_k_3(df):
     """Test descending group by, k=3"""
-    expected = df.groupby("result").apply(
-        lambda d: d.sort_values("age", ascending=False).head(3)
+    expected = (
+        df.groupby("result", sort=False)
+        .apply(lambda d: d.sort_values("age", ascending=False).head(3))
+        .droplevel(0)
+        .reset_index(drop=True)
     )
     assert_frame_equal(
-        df.groupby_topk("result", "age", 3, {"ascending": False}), expected
+        df.groupby_topk("result", "age", 3, ascending=False), expected
     )
 
 
 def test_wrong_groupby_column_name(df):
     """Raise Value Error if wrong groupby column name is provided."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="RESULT not present in dataframe columns!"
+    ):
         df.groupby_topk("RESULT", "age", 3)
 
 
 def test_wrong_sort_column_name(df):
     """Raise Value Error if wrong sort column name is provided."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Age not present in dataframe columns!"
+    ):
         df.groupby_topk("result", "Age", 3)
 
 
 def test_negative_k(df):
     """Raises Value Error if k is less than 1 (negative or 0)."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Numbers of rows per group.+",
+    ):
         df.groupby_topk("result", "age", -2)
-    with pytest.raises(ValueError):
-        df.groupby_topk("result", "age", 0)
 
 
+@pytest.mark.xfail(reason="sort_value_kwargs parameter deprecated.")
 def test_inplace(df):
     """Raise Key Error if inplace is True in sort_values_kwargs"""
     with pytest.raises(KeyError):

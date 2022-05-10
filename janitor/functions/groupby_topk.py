@@ -42,23 +42,31 @@ def groupby_topk(
         2   22   6   fail
         3   43   2   pass
         4   21   5   fail
-        >>> df.groupby_topk('result', 'age', 3) # Ascending top 3
-        ... # doctest: +NORMALIZE_WHITESPACE
-                  age  id result
-        result
-        fail   4   21   5   fail
-               2   22   6   fail
-        pass   0   20   1   pass
-               1   23   4   pass
-               3   43   2   pass
-        >>> df.groupby_topk('result', 'age', 2, {'ascending':False}) # Descending top 2
-        ... # doctest: +NORMALIZE_WHITESPACE
-                  age  id result
-        result
-        fail   2   22   6   fail
-               4   21   5   fail
-        pass   3   43   2   pass
-               1   23   4   pass
+
+    Ascending top 3:
+
+        >>> df.groupby_topk(by = 'result', column = 'age',  k = 3)
+           age  id result
+        0   20   1   pass
+        1   23   4   pass
+        2   43   2   pass
+        3   21   5   fail
+        4   22   6   fail
+
+    Descending top 2 :
+
+        >>> df.groupby_topk(
+        ...     by = 'result',
+        ...     column = 'age',
+        ...     k = 2,
+        ...     ascending = False,
+        ...     ignore_index = False
+        ...     )
+           age  id result
+        3   43   2   pass
+        1   23   4   pass
+        2   22   6   fail
+        4   21   5   fail
 
 
     :param df: A pandas DataFrame.
@@ -83,10 +91,10 @@ def groupby_topk(
 
     check_column(df, [by, column])
 
-    # Check if k is greater than 0.
     if k < 1:
         raise ValueError(
-            "Numbers of rows per group to be returned must be greater than 0."
+            "Numbers of rows per group "
+            "to be returned must be greater than 0."
         )
 
     indices = df.groupby(by=by, dropna=dropna, sort=False, observed=True)[

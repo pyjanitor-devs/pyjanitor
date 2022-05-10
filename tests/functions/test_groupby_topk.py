@@ -5,6 +5,7 @@ from pandas.testing import assert_frame_equal
 
 @pytest.fixture
 def df():
+    """fixture for groupby_topk"""
     return pd.DataFrame(
         [
             {"age": 22, "major": "science", "ID": 145, "result": "pass"},

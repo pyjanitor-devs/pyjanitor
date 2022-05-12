@@ -228,7 +228,10 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
 
 def deprecated_kwargs(
     *arguments: list[str],
-    message: str = "The keyword argument '{argument}' of '{func_name}' is deprecated.",
+    message: str = (
+        "The keyword argument '{argument}' of '{func_name}' "
+        "is deprecated."
+    ),
 ):
     """
     Used as a decorator when deprecating function's keyword arguments.

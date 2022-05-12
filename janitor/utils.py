@@ -232,7 +232,7 @@ def deprecated_kwargs(
         "The keyword argument '{argument}' of '{func_name}' "
         "is deprecated."
     ),
-):
+) -> Callable:
     """
     Used as a decorator when deprecating function's keyword arguments.
 
@@ -251,6 +251,8 @@ def deprecated_kwargs(
         `func_name` and `argument`.
     :raises ValueError: If one of `arguments` is in the decorated function's
         keyword arguments.
+    :return: Your original function wrapped with the depreated `kwargs`
+        checking function.
     """
 
     def decorator(func):

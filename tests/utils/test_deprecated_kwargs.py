@@ -30,7 +30,7 @@ def test_arguments(arguments, kwargs):
         (["b"], [1, 1], 2),
         (["a", "b"], [0, 1], 1),
         (["b", "a"], [0, 1], 1),
-    ]
+    ],
 )
 def test_work(arguments, args, excepted):
     @deprecated_kwargs(*arguments)

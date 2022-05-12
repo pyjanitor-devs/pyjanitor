@@ -248,10 +248,10 @@ def deprecated_kwargs(
     :param message: The message of `ValueError`. It should be a string
         or a string template. If a string template defaults input
         `func_name` and `argument`.
-    :raises ValueError: If one of `arguments` is in the decorated function's
-        keyword arguments.
     :return: Your original function wrapped with the depreated `kwargs`
         checking function.
+    :raises ValueError: If one of `arguments` is in the decorated function's
+        keyword arguments.
     """
 
     def decorator(func):

@@ -32,7 +32,8 @@ def test_df_multiindex(dummy, series):
     """Raise ValueError if `df` columns is a MultiIndex."""
     with pytest.raises(
         ValueError,
-        match="MultiIndex columns are not supported for conditional joins.",
+        match="The number of column levels "
+        "from the left and right frames must match.+",
     ):
         dummy.columns = [list("ABC"), list("FGH")]
         dummy.conditional_join(series, (("A", "F"), "non", "=="))
@@ -53,15 +54,15 @@ def test_right_series(dummy):
         dummy.conditional_join(pd.Series([2, 3, 4]), ("id", "non", ">="))
 
 
-def test_right_multiindex(dummy):
-    """Raise ValueError if `right` columns is a MultiIndex."""
-    with pytest.raises(
-        ValueError,
-        match="MultiIndex columns are not supported for conditional joins.",
-    ):
-        right = dummy.copy()
-        right.columns = [list("ABC"), list("FGH")]
-        dummy.conditional_join(right, ("id", ("A", "F"), ">="))
+# def test_right_multiindex(dummy):
+#     """Raise ValueError if `right` columns is a MultiIndex."""
+#     with pytest.raises(
+#         ValueError,
+#         match="MultiIndex columns are not supported for conditional joins.",
+#     ):
+#         right = dummy.copy()
+#         right.columns = [list("ABC"), list("FGH")]
+#         dummy.conditional_join(right, ("id", ("A", "F"), ">="))
 
 
 def test_check_conditions_exist(dummy, series):

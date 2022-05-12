@@ -221,11 +221,6 @@ def _conditional_join_preliminary_checks(
     is returned.
     """
 
-    if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError(
-            "MultiIndex columns are not supported for conditional joins."
-        )
-
     check("right", right, [pd.DataFrame, pd.Series])
 
     df = df.copy()
@@ -238,9 +233,13 @@ def _conditional_join_preliminary_checks(
             )
         right = right.to_frame()
 
-    if isinstance(right.columns, pd.MultiIndex):
+    if df.columns.nlevels != right.columns.nlevels:
         raise ValueError(
-            "MultiIndex columns are not supported for conditional joins."
+            "The number of column levels "
+            "from the left and right frames must match. "
+            "The number of column levels from the left dataframe "
+            f"is {df.columns.nlevels}, while the number of column levels "
+            f"from the right dataframe is {right.columns.nlevels}."
         )
 
     if not conditions:

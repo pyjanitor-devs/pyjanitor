@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 -   [DOC] Updated developer guide docs.
+-   [EHN] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

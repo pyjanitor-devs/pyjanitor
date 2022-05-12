@@ -226,6 +226,49 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
         )
 
 
+def deprecated_kwargs(
+    *arguments: list[str],
+    message: str = "The keyword argument '{argument}' of '{func_name}' is deprecated.",
+):
+    """
+    Used as a decorator when deprecating function's keyword arguments.
+
+    Example:
+
+        >>> from janitor.utils import deprecated_kwargs
+        >>> @deprecated_kwargs('x', 'y')
+        ... def plus(a, b, x=0, y=0):
+        ...     return a + b
+        >>> plus(1, 2, x=1, y=2)  # doctest: +SKIP
+        ValueError: The keyword argument 'x' of 'plus' is deprecated.
+
+    :param arguments: The list of deprecated keyword arguments.
+    :param message: The message of `ValueError`. It should be a string
+        or a string template. If a string template defaults input
+        `func_name` and `argument`.
+    :raises ValueError: If one of `arguments` is in the decorated function's
+        keyword arguments.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for argument in arguments:
+                if argument in kwargs:
+                    raise ValueError(
+                        message.format(
+                            func_name=func.__name__,
+                            argument=argument,
+                        )
+                    )
+
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 def deprecated_alias(**aliases) -> Callable:
     """
     Used as a decorator when deprecating old function argument names, while

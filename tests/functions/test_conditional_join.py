@@ -88,15 +88,15 @@ def test_check_condition_length(dummy, series):
 
 
 def test_check_left_on_type(dummy, series):
-    """Raise TypeError if left_on is not a string."""
+    """Raise TypeError if left_on is not a hashable."""
     with pytest.raises(TypeError, match="left_on should be one of.+"):
-        dummy.conditional_join(series, (1, "B", "<"))
+        dummy.conditional_join(series, ([1], "B", "<"))
 
 
 def test_check_right_on_type(dummy, series):
-    """Raise TypeError if right_on is not a string."""
+    """Raise TypeError if right_on is not a hashable."""
     with pytest.raises(TypeError, match="right_on should be one of.+"):
-        dummy.conditional_join(series, ("id", 1, "<"))
+        dummy.conditional_join(series, ("id", {1}, "<"))
 
 
 def test_check_op_type(dummy, series):

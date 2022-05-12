@@ -1,6 +1,6 @@
 import operator
 from enum import Enum
-from typing import Union
+from typing import Union, Hashable
 
 import numpy as np
 import pandas as pd
@@ -255,11 +255,11 @@ def _conditional_join_preliminary_checks(
             )
 
     for left_on, right_on, op in conditions:
-        check("left_on", left_on, [str])
-        check("right_on", right_on, [str])
+        check("left_on", left_on, [Hashable])
+        check("right_on", right_on, [Hashable])
         check("operator", op, [str])
-        check_column(df, left_on)
-        check_column(right, right_on)
+        check_column(df, [left_on])
+        check_column(right, [right_on])
         _check_operator(op)
 
     if all(

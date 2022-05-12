@@ -1,16 +1,11 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
-import functools
 import os
 import socket
 import sys
 import warnings
-from typing import (
-    Callable,
-    Dict,
-    Iterable,
-    Union,
-)
+from functools import singledispatch, wraps
+from typing import Callable, Dict, Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -46,7 +41,7 @@ def check(varname: str, value, expected_types: list):
         raise TypeError(f"{varname} should be one of {expected_types}.")
 
 
-@functools.singledispatch
+@singledispatch
 def _expand_grid(value, grid_index, key):
     """
     Base function for dispatch of `_expand_grid`.
@@ -252,7 +247,7 @@ def deprecated_alias(**aliases) -> Callable:
     """  # noqa: E501
 
     def decorator(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(*args, **kwargs):
             rename_kwargs(func.__name__, kwargs, aliases)
             return func(*args, **kwargs)

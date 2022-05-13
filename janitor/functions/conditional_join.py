@@ -1,6 +1,6 @@
 import operator
 from enum import Enum
-from typing import Union, Hashable, Optional
+from typing import Union, Any, Optional, Hashable
 
 import numpy as np
 import pandas as pd
@@ -27,8 +27,8 @@ def conditional_join(
     *conditions,
     how: str = "inner",
     sort_by_appearance: bool = False,
-    df_columns: Optional[Union[Hashable, list, dict]] = None,
-    right_columns: Optional[Union[Hashable, list, dict]] = None,
+    df_columns: Optional[Any] = None,
+    right_columns: Optional[Any] = None,
 ) -> pd.DataFrame:
     """
 
@@ -225,8 +225,8 @@ def _conditional_join_preliminary_checks(
     conditions: tuple,
     how: str,
     sort_by_appearance: bool,
-    df_columns: Union[Hashable, list, dict, None],
-    right_columns: Union[Hashable, list, dict, None],
+    df_columns: Any,
+    right_columns: Any,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -369,8 +369,8 @@ def _conditional_join_compute(
     conditions: list,
     how: str,
     sort_by_appearance: bool,
-    df_columns: Union[Hashable, list, dict, None],
-    right_columns: Union[Hashable, list, dict, None],
+    df_columns: Any,
+    right_columns: Any,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -1289,8 +1289,8 @@ def _create_conditional_join_empty_frame(
     df: pd.DataFrame,
     right: pd.DataFrame,
     how: str,
-    df_columns: Union[Hashable, list, dict, None],
-    right_columns: Union[Hashable, list, dict, None],
+    df_columns: Any,
+    right_columns: Any,
 ):
     """
     Create final dataframe for conditional join,
@@ -1364,8 +1364,8 @@ def _create_conditional_join_frame(
     right_index: np.ndarray,
     how: str,
     sort_by_appearance: bool,
-    df_columns: Union[Hashable, list, dict, None],
-    right_columns: Union[Hashable, list, dict, None],
+    df_columns: Any,
+    right_columns: Any,
 ):
     """
     Create final dataframe for conditional join,

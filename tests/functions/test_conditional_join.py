@@ -54,17 +54,6 @@ def test_right_series(dummy):
         dummy.conditional_join(pd.Series([2, 3, 4]), ("id", "non", ">="))
 
 
-# def test_right_multiindex(dummy):
-#     """Raise ValueError if `right` columns is a MultiIndex."""
-#     with pytest.raises(
-#         ValueError,
-#         match="MultiIndex columns are not supported for conditional joins.",
-#     ):
-#         right = dummy.copy()
-#         right.columns = [list("ABC"), list("FGH")]
-#         dummy.conditional_join(right, ("id", ("A", "F"), ">="))
-
-
 def test_check_conditions_exist(dummy, series):
     """Raise ValueError if no condition is provided."""
     with pytest.raises(
@@ -176,6 +165,23 @@ def test_check_sort_by_appearance_type(dummy, series):
     ):
         dummy.conditional_join(
             series, ("id", "B", "<"), sort_by_appearance="True"
+        )
+
+
+def test_df_columns(dummy):
+    """
+    Raise TypeError if `df_columns`is a dictionary,
+    and the columns is a MultiIndex.
+    """
+    with pytest.raises(
+        ValueError,
+        match="Column renaming with a dictionary is not supported.+",
+    ):
+        dummy.columns = [list("ABC"), list("FGH")]
+        dummy.conditional_join(
+            dummy,
+            (("A", "F"), ("A", "F"), ">="),
+            df_columns={("A", "F"): ("C", "D")},
         )
 
 
@@ -1677,19 +1683,25 @@ def test_multiple_non_eqi(df, right):
             & df.B.gt(df.Floats)
         ]
         .sort_values(columns, ignore_index=True)
+        .filter(columns)
+        .rename(columns={"B": "b", "Floats": "floats"})
     )
-    expected = expected.filter(columns)
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", ">="),
-            ("E", "Dates", ">"),
-            ("B", "Floats", ">"),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(columns, ignore_index=True)
+
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", ">="),
+        ("E", "Dates", ">"),
+        ("B", "Floats", ">"),
+        how="inner",
+        sort_by_appearance=False,
+        df_columns={"B": "b", "A": "A", "E": "E"},
+        right_columns={
+            "Floats": "floats",
+            "Integers": "Integers",
+            "Dates": "Dates",
+        },
+    ).sort_values(
+        ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
     )
 
     assert_frame_equal(expected, actual)
@@ -1821,17 +1833,15 @@ def test_eq_strings(df, right):
         expected.A >= expected.Integers, columns
     ].sort_values(columns, ignore_index=True)
 
-    actual = (
-        df[["C", "A"]]
-        .conditional_join(
-            right[["Strings", "Integers"]],
-            ("C", "Strings", "=="),
-            ("A", "Integers", ">="),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
+    actual = df.conditional_join(
+        right,
+        ("C", "Strings", "=="),
+        ("A", "Integers", ">="),
+        how="inner",
+        sort_by_appearance=False,
+        df_columns=["C", "A"],
+        right_columns=["Strings", "Integers"],
+    ).sort_values(columns, ignore_index=True)
 
     assert_frame_equal(expected, actual)
 

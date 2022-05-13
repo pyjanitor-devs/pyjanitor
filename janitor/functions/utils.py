@@ -230,16 +230,14 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     `re.compile` is required for the regular expression.
     A list of column names is returned.
     """
-    df_columns = df.columns
-    filtered_columns = [
-        column_name
-        for column_name in df_columns
-        if re.search(columns_to_select, column_name)
-    ]
+    filtered_columns = df.columns.str.contains(columns_to_select, na=False)
+    filtered_columns = df.columns[filtered_columns]
 
-    if not filtered_columns:
-        raise KeyError("No column name matched the regular expression.")
-    df_columns = None
+    if filtered_columns.empty:
+        raise KeyError(
+            "No column name matched the regular expression "
+            f" '{columns_to_select}'."
+        )
 
     return filtered_columns
 
@@ -253,51 +251,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     if columns_to_select not in df.columns:
         raise KeyError(f"No match was returned for {columns_to_select}")
-    return columns_to_select
-
-
-@_select_column_names.register(list)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
-    """
-    Base function for column selection.
-    Applies only to list type.
-    It can take any of slice, str, callable, re.Pattern types,
-    or a combination of these types.
-    A list of column names is returned.
-    """
-
-    # takes care of boolean entries
-    if all(map(pd.api.types.is_bool, columns_to_select)):
-        if len(columns_to_select) != len(df.columns):
-            raise ValueError(
-                "The length of the list of booleans "
-                "does not match the number of columns "
-                "in the dataframe."
-            )
-
-        return [*df.columns[columns_to_select]]
-
-    filtered_columns = []
-    columns_to_select = (
-        _select_column_names(entry, df) for entry in columns_to_select
-    )
-
-    # this is required,
-    # to maintain `tuple` status
-    # when combining all the entries into a single list
-    columns_to_select = (
-        [entry] if isinstance(entry, tuple) else entry
-        for entry in columns_to_select
-    )
-
-    columns_to_select = chain.from_iterable(columns_to_select)
-
-    # get rid of possible duplicates
-    for column_name in columns_to_select:
-        if column_name not in filtered_columns:
-            filtered_columns.append(column_name)
-
-    return filtered_columns
+    return [columns_to_select]
 
 
 @_select_column_names.register(str)  # noqa: F811
@@ -316,7 +270,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             return filtered_columns
     elif columns_to_select in df.columns:
         return [columns_to_select]
-    raise KeyError(f"No match was returned for '{columns_to_select}'")
+    raise KeyError(f"No match was returned for '{columns_to_select}'.")
 
 
 @_select_column_names.register(slice)  # noqa: F811
@@ -395,8 +349,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         filtered_columns = df_columns[slice(stop, start + 1, step)][::-1]
     else:
         filtered_columns = df_columns[slice(start, stop + 1, step)]
-    df_columns = None
-    return [*filtered_columns]
+    return filtered_columns
 
 
 @_select_column_names.register(dispatch_callable)  # noqa: F811
@@ -421,4 +374,39 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     if not filtered_columns.any():
         raise ValueError("No match was returned for the provided callable.")
 
-    return [*df.columns[filtered_columns]]
+    return df.columns[filtered_columns]
+
+
+@_select_column_names.register(list)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to list type.
+    It can take any of slice, str, callable, re.Pattern types,
+    or a combination of these types.
+    A list of column names is returned.
+    """
+
+    if all(map(pd.api.types.is_bool, columns_to_select)):
+        if len(columns_to_select) != len(df.columns):
+            raise ValueError(
+                "The length of the list of booleans "
+                "does not match the number of columns "
+                "in the dataframe."
+            )
+
+        return df.columns[columns_to_select]
+
+    filtered_columns = []
+    columns_to_select = (
+        _select_column_names(entry, df) for entry in columns_to_select
+    )
+
+    columns_to_select = chain.from_iterable(columns_to_select)
+
+    # get rid of possible duplicates
+    for column_name in columns_to_select:
+        if column_name not in filtered_columns:
+            filtered_columns.append(column_name)
+
+    return filtered_columns

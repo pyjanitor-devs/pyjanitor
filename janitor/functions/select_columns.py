@@ -56,16 +56,12 @@ def select_columns(
 
     # applicable for any
     # list-like object (ndarray, Series, pd.Index, ...)
-    # excluding tuples, which are returned as is
     search_column_names = []
     for arg in args:
-        if is_list_like(arg) and (not isinstance(arg, tuple)):
-            search_column_names.extend([*arg])
+        if is_list_like(arg):
+            search_column_names.extend(arg)
         else:
             search_column_names.append(arg)
-    if len(search_column_names) == 1:
-        search_column_names = search_column_names[0]
-
     full_column_list = _select_column_names(search_column_names, df)
 
     if invert:

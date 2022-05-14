@@ -1266,15 +1266,11 @@ def _range_indices(
     return _generate_indices(left_index, right_index, rest)
 
 
-def _cond_join_select_columns(
-    columns: Union[Hashable, list, dict], df: pd.DataFrame
-):
+def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
     """
-    Args:
-        column : Hashable/list/dict
-        df: Pandas DataFrame
+    Select and/or rename columns in a DataFrame.
 
-    A Pandas DataFrame.
+    Returns a Pandas DataFrame.
     """
 
     df = df.select_columns(columns)
@@ -1283,6 +1279,26 @@ def _cond_join_select_columns(
         df.columns = [columns.get(name, name) for name in df]
 
     return df
+
+
+def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
+    """
+    Create a MultiIndex column for conditional_join.
+    """
+    header = [np.array(["left"]).repeat(df.columns.size)]
+    columns = [
+        df.columns.get_level_values(n) for n in range(df.columns.nlevels)
+    ]
+    header.extend(columns)
+    df.columns = pd.MultiIndex.from_arrays(header)
+    header = [np.array(["right"]).repeat(right.columns.size)]
+    columns = [
+        right.columns.get_level_values(n) for n in range(right.columns.nlevels)
+    ]
+    header.extend(columns)
+    right.columns = pd.MultiIndex.from_arrays(header)
+    header = None
+    return df, right
 
 
 def _create_conditional_join_empty_frame(
@@ -1303,20 +1319,7 @@ def _create_conditional_join_empty_frame(
         right = _cond_join_select_columns(right_columns, right)
 
     if set(df.columns).intersection(right.columns):
-        columns = [
-            df.columns.get_level_values(n) for n in range(df.columns.nlevels)
-        ]
-        header = [["left"] * columns[0].size]
-        header.extend(columns)
-        df.columns = pd.MultiIndex.from_arrays(header)
-        columns = [
-            right.columns.get_level_values(n)
-            for n in range(right.columns.nlevels)
-        ]
-        header = [["right"] * columns[0].size]
-        header.extend(columns)
-        right.columns = pd.MultiIndex.from_arrays(header)
-        header = None
+        df, right = _create_multiindex_column(df, right)
 
     if how == _JoinTypes.INNER.value:
         df = df.dtypes.to_dict()
@@ -1383,20 +1386,7 @@ def _create_conditional_join_frame(
         right = _cond_join_select_columns(right_columns, right)
 
     if set(df.columns).intersection(right.columns):
-        columns = [
-            df.columns.get_level_values(n) for n in range(df.columns.nlevels)
-        ]
-        header = [["left"] * columns[0].size]
-        header.extend(columns)
-        df.columns = pd.MultiIndex.from_arrays(header)
-        columns = [
-            right.columns.get_level_values(n)
-            for n in range(right.columns.nlevels)
-        ]
-        header = [["right"] * columns[0].size]
-        header.extend(columns)
-        right.columns = pd.MultiIndex.from_arrays(header)
-        header = None
+        df, right = _create_multiindex_column(df, right)
 
     if how == _JoinTypes.INNER.value:
         df = {

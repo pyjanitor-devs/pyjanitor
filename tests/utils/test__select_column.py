@@ -5,8 +5,23 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from janitor.functions.utils import _select_column_names, patterns
 from pandas.testing import assert_index_equal
+from janitor.functions.utils import _select_column_names, patterns
+
+
+@pytest.fixture
+def df_dates():
+    """pytest fixture"""
+    start = datetime.datetime(2011, 1, 1)
+    end = datetime.datetime(2012, 1, 1)
+    rng = pd.date_range(start, end, freq="BM")
+    return pd.DataFrame([np.random.randn(len(rng))], columns=rng)
+
+
+@pytest.fixture
+def df_numbers():
+    """pytest fixture"""
+    return pd.DataFrame([np.random.randn(20)], columns=range(20))
 
 
 @pytest.fixture

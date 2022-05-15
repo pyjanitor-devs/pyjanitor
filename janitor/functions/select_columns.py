@@ -58,7 +58,7 @@ def select_columns(
     # list-like object (ndarray, Series, pd.Index, ...)
     search_column_names = []
     for arg in args:
-        if is_list_like(arg):
+        if is_list_like(arg) and (not isinstance(arg, tuple)):
             search_column_names.extend(arg)
         else:
             search_column_names.append(arg)

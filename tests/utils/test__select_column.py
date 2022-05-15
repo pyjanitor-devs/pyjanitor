@@ -62,13 +62,21 @@ def df_tuple():
     return frame
 
 
-def test_type(df):
-    """Raise TypeError if `columns_to_select` is the wrong type."""
-    with pytest.raises(TypeError):
+def test_col_not_found(df):
+    """Raise KeyError if `columns_to_select` is not in df.columns."""
+    with pytest.raises(KeyError):
         _select_column_names(2.5, df)
-    with pytest.raises(TypeError):
+
+
+def test_col_not_found1(df):
+    """Raise KeyError if `columns_to_select` is not in df.columns."""
+    with pytest.raises(KeyError):
         _select_column_names(1, df)
-    with pytest.raises(TypeError):
+
+
+def test_col_not_found2(df):
+    """Raise KeyError if `columns_to_select` is not in df.columns."""
+    with pytest.raises(KeyError):
         _select_column_names([3, "id"], df)
 
 
@@ -116,8 +124,6 @@ def test_strings_do_not_exist(df):
     """
     with pytest.raises(KeyError):
         _select_column_names("word", df)
-    with pytest.raises(KeyError):
-        _select_column_names("*starter", df)
 
 
 def test_boolean_list_dtypes(df):

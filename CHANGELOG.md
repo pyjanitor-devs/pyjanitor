@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 -   [DOC] Updated developer guide docs.
+-   [ENH] Allow column selection/renaming within conditional_join. #1102 @samukweku.
 -   [ENH] Extend select_columns to support non-string columns. #1105 @samukweku
 
 ## [v0.23.1] - 2022-05-03

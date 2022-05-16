@@ -9,21 +9,21 @@ from janitor.utils import deprecated_kwargs
     [
         (
             ["a"],
-            "The keyword argument '{argument}' of '{func_name}' is deprecated.",
+            "The keyword argument '{argument}' of '{func_name}' is deprecated",
             dict(a=1),
-            "The keyword argument 'a' of 'simple_sum' is deprecated.",
+            "The keyword argument 'a' of 'simple_sum' is deprecated",
         ),
         (
             ["b"],
-            "The keyword argument '{argument}' of '{func_name}' is deprecated.",
+            "The keyword argument '{argument}' of '{func_name}' is deprecated",
             dict(b=2),
-            "The keyword argument 'b' of 'simple_sum' is deprecated.",
+            "The keyword argument 'b' of 'simple_sum' is deprecated",
         ),
         (
             ["a", "b"],
             "The option '{argument}' of '{func_name}' is deprecated.",
             dict(a=1, b=2),
-            "The option argument 'a' of 'simple_sum' is deprecated.",
+            "The option 'a' of 'simple_sum' is deprecated.",
         ),
         (
             ["b", "a"],

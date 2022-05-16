@@ -243,6 +243,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             timestamp = df_columns.get_loc(columns_to_select)
         except Exception as error:
             raise error
+        if isinstance(timestamp, slice):
+            return df_columns[timestamp]
         return [timestamp]
     raise KeyError(
         f"Strings('{columns_to_select}') can be applied "
@@ -285,7 +287,6 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
     A pandas Index of matching column names is returned.
     """
-
     df_columns = df.columns
     filtered_columns = None
     start_check = None

@@ -139,6 +139,14 @@ def test_strings_dates(df_dates):
     ].name
 
 
+def test_strings_dates_range(df_dates):
+    """Test output for datetime column."""
+    assert_index_equal(
+        _select_column_names("2011-01", df_dates),
+        df_dates.loc[:, slice("2011-01")].columns,
+    )
+
+
 def test_unsorted_dates(df_dates):
     """Raise Error if the dates are unsorted."""
     df_dates = df_dates.iloc[:, [10, 4, 7, 2, 1, 3, 5, 6, 8, 9, 11, 0]]

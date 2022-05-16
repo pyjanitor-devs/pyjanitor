@@ -231,6 +231,7 @@ def deprecated_kwargs(
     message: str = (
         "The keyword argument '{argument}' of '{func_name}' is deprecated."
     ),
+    error: bool = True,
 ) -> Callable:
     """
     Used as a decorator when deprecating function's keyword arguments.
@@ -246,9 +247,11 @@ def deprecated_kwargs(
     ```
 
     :param arguments: The list of deprecated keyword arguments.
-    :param message: The message of `ValueError`. It should be a string
-        or a string template. If a string template defaults input
-        `func_name` and `argument`.
+    :param message: The message of `ValueError` or `DeprecationWarning`.
+        It should be a string or a string template. If a string template
+        defaults input `func_name` and `argument`.
+    :param error: If True raises `ValueError` else returns
+        `DeprecationWarning`.
     :return: The original function wrapped with the deprecated `kwargs`
         checking function.
     :raises ValueError: If one of `arguments` is in the decorated function's
@@ -260,12 +263,14 @@ def deprecated_kwargs(
         def wrapper(*args, **kwargs):
             for argument in arguments:
                 if argument in kwargs:
-                    raise ValueError(
-                        message.format(
-                            func_name=func.__name__,
-                            argument=argument,
-                        )
+                    msg = message.format(
+                        func_name=func.__name__,
+                        argument=argument,
                     )
+                    if error:
+                        raise ValueError(msg)
+                    else:
+                        warnings.warn(msg, DeprecationWarning)
 
             return func(*args, **kwargs)
 

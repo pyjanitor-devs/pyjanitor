@@ -377,26 +377,28 @@ def _data_checks_pivot_longer(
 
     if column_names is not None:
         if is_list_like(column_names):
-            column_names = [*column_names]
+            column_names = list(column_names)
         else:
             column_names = [column_names]
         column_names = _select_column_names(column_names, df)
+        column_names = list(column_names)
 
     if index is not None:
         if is_list_like(index):
-            index = [*index]
+            index = list(index)
         else:
             index = [index]
         index = _select_column_names(index, df)
+        index = list(index)
 
-    if not index:
-        if not column_names:
-            column_names = [*df.columns]
+    if index is None:
+        if column_names is None:
+            column_names = df.columns.tolist()
         else:
-            index = [*df.columns.difference(column_names, sort=False)]
+            index = df.columns.difference(column_names, sort=False).tolist()
     else:
-        if not column_names:
-            column_names = [*df.columns.difference(index, sort=False)]
+        if column_names is None:
+            column_names = df.columns.difference(index, sort=False).tolist()
 
     len_names_to = 0
     if names_to is not None:
@@ -601,7 +603,7 @@ def _computations_pivot_longer(
     # since we already have made a copy of the original df
 
     if not column_names:
-        return df.rename_axis(columns=None)
+        return df
 
     if index:
         index = {

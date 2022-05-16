@@ -6,7 +6,6 @@
 -   [ENH] Allow column selection/renaming within conditional_join. #1102 @samukweku.
 -   [ENH] Performance improvement for groupby_topk. #1093 @samukweku
 
-
 ## [v0.23.1] - 2022-05-03
 
 -   [DOC] Updated `fill.py` and `update_where.py` documentation with working examples.

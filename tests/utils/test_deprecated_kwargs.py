@@ -13,7 +13,7 @@ from janitor.utils import deprecated_kwargs
         (["b", "a"], dict(a=1, b=2)),
     ],
 )
-def test_arguments(arguments, func_kwargs):
+def test_error(arguments, func_kwargs):
     @deprecated_kwargs(*arguments)
     def simple_sum(alpha, beta, a=0, b=0):
         return alpha + beta
@@ -32,7 +32,7 @@ def test_arguments(arguments, func_kwargs):
         (["b", "a"], [0, 1], 1),
     ],
 )
-def test_work(arguments, func_args, expected):
+def test_without_error(arguments, func_args, expected):
     @deprecated_kwargs(*arguments)
     def simple_sum(alpha, beta, a=0, b=0):
         return alpha + beta

@@ -1,6 +1,6 @@
 import operator
 from enum import Enum
-from typing import Union
+from typing import Union, Any, Optional, Hashable
 
 import numpy as np
 import pandas as pd
@@ -27,6 +27,8 @@ def conditional_join(
     *conditions,
     how: str = "inner",
     sort_by_appearance: bool = False,
+    df_columns: Optional[Any] = None,
+    right_columns: Optional[Any] = None,
 ) -> pd.DataFrame:
     """
 
@@ -41,6 +43,9 @@ def conditional_join(
     or the first match (lowest or highest) - `pd.merge_asof` covers that.
     There is also the IntervalIndex, which is usually more efficient
     for range joins, especially if the intervals do not overlap.
+
+    Column selection in `df_columns` and `right_columns` is possible using the
+    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -136,11 +141,23 @@ def conditional_join(
         that meet the join condition will be returned
         in the final dataframe in the same order
         that they were before the join.
+    :param df_columns: Columns to select from `df`.
+        It can be a single column or a list of columns.
+        It is also possible to rename the output columns via a dictionary.
+    :param right_columns: Columns to select from `right`.
+        It can be a single column or a list of columns.
+        It is also possible to rename the output columns via a dictionary.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     """
 
     return _conditional_join_compute(
-        df, right, conditions, how, sort_by_appearance
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+        df_columns,
+        right_columns,
     )
 
 
@@ -208,23 +225,15 @@ def _conditional_join_preliminary_checks(
     conditions: tuple,
     how: str,
     sort_by_appearance: bool,
+    df_columns: Any,
+    right_columns: Any,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
 
-    This function checks for conditions such as
-    MultiIndexed dataframe columns,
-    as well as unnamed Series.
-
-    A tuple of
-    (`df`, `right`, `left_on`, `right_on`, `operator`)
-    is returned.
+    Checks include differences in number of column levels,
+    length of conditions, existence of columns in dataframe, etc.
     """
-
-    if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError(
-            "MultiIndex columns are not supported for conditional joins."
-        )
 
     check("right", right, [pd.DataFrame, pd.Series])
 
@@ -238,9 +247,13 @@ def _conditional_join_preliminary_checks(
             )
         right = right.to_frame()
 
-    if isinstance(right.columns, pd.MultiIndex):
+    if df.columns.nlevels != right.columns.nlevels:
         raise ValueError(
-            "MultiIndex columns are not supported for conditional joins."
+            "The number of column levels "
+            "from the left and right frames must match. "
+            "The number of column levels from the left dataframe "
+            f"is {df.columns.nlevels}, while the number of column levels "
+            f"from the right dataframe is {right.columns.nlevels}."
         )
 
     if not conditions:
@@ -256,11 +269,11 @@ def _conditional_join_preliminary_checks(
             )
 
     for left_on, right_on, op in conditions:
-        check("left_on", left_on, [str])
-        check("right_on", right_on, [str])
+        check("left_on", left_on, [Hashable])
+        check("right_on", right_on, [Hashable])
         check("operator", op, [str])
-        check_column(df, left_on)
-        check_column(right, right_on)
+        check_column(df, [left_on])
+        check_column(right, [right_on])
         _check_operator(op)
 
     if all(
@@ -276,7 +289,23 @@ def _conditional_join_preliminary_checks(
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
-    return df, right, conditions, how, sort_by_appearance
+    if (df.columns.nlevels > 1) and (
+        isinstance(df_columns, dict) or isinstance(right_columns, dict)
+    ):
+        raise ValueError(
+            "Column renaming with a dictionary is not supported "
+            "for MultiIndex columns."
+        )
+
+    return (
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+        df_columns,
+        right_columns,
+    )
 
 
 def _conditional_join_type_check(
@@ -340,6 +369,8 @@ def _conditional_join_compute(
     conditions: list,
     how: str,
     sort_by_appearance: bool,
+    df_columns: Any,
+    right_columns: Any,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -353,8 +384,16 @@ def _conditional_join_compute(
         conditions,
         how,
         sort_by_appearance,
+        df_columns,
+        right_columns,
     ) = _conditional_join_preliminary_checks(
-        df, right, conditions, how, sort_by_appearance
+        df,
+        right,
+        conditions,
+        how,
+        sort_by_appearance,
+        df_columns,
+        right_columns,
     )
 
     eq_check = False
@@ -380,10 +419,18 @@ def _conditional_join_compute(
         )
 
         if result is None:
-            return _create_conditional_join_empty_frame(df, right, how)
+            return _create_conditional_join_empty_frame(
+                df, right, how, df_columns, right_columns
+            )
 
         return _create_conditional_join_frame(
-            df, right, *result, how, sort_by_appearance
+            df,
+            right,
+            *result,
+            how,
+            sort_by_appearance,
+            df_columns,
+            right_columns,
         )
 
     if eq_check:
@@ -394,10 +441,12 @@ def _conditional_join_compute(
         result = _multiple_conditional_join_ne(df, right, conditions)
 
     if result is None:
-        return _create_conditional_join_empty_frame(df, right, how)
+        return _create_conditional_join_empty_frame(
+            df, right, how, df_columns, right_columns
+        )
 
     return _create_conditional_join_frame(
-        df, right, *result, how, sort_by_appearance
+        df, right, *result, how, sort_by_appearance, df_columns, right_columns
     )
 
 
@@ -1217,17 +1266,60 @@ def _range_indices(
     return _generate_indices(left_index, right_index, rest)
 
 
+def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
+    """
+    Select and/or rename columns in a DataFrame.
+
+    Returns a Pandas DataFrame.
+    """
+
+    df = df.select_columns(columns)
+
+    if isinstance(columns, dict):
+        df.columns = [columns.get(name, name) for name in df]
+
+    return df
+
+
+def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
+    """
+    Create a MultiIndex column for conditional_join.
+    """
+    header = [np.array(["left"]).repeat(df.columns.size)]
+    columns = [
+        df.columns.get_level_values(n) for n in range(df.columns.nlevels)
+    ]
+    header.extend(columns)
+    df.columns = pd.MultiIndex.from_arrays(header)
+    header = [np.array(["right"]).repeat(right.columns.size)]
+    columns = [
+        right.columns.get_level_values(n) for n in range(right.columns.nlevels)
+    ]
+    header.extend(columns)
+    right.columns = pd.MultiIndex.from_arrays(header)
+    header = None
+    return df, right
+
+
 def _create_conditional_join_empty_frame(
-    df: pd.DataFrame, right: pd.DataFrame, how: str
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    how: str,
+    df_columns: Any,
+    right_columns: Any,
 ):
     """
     Create final dataframe for conditional join,
     if there are no matches.
     """
 
+    if df_columns:
+        df = _cond_join_select_columns(df_columns, df)
+    if right_columns:
+        right = _cond_join_select_columns(right_columns, right)
+
     if set(df.columns).intersection(right.columns):
-        df.columns = pd.MultiIndex.from_product([["left"], df.columns])
-        right.columns = pd.MultiIndex.from_product([["right"], right.columns])
+        df, right = _create_multiindex_column(df, right)
 
     if how == _JoinTypes.INNER.value:
         df = df.dtypes.to_dict()
@@ -1275,6 +1367,8 @@ def _create_conditional_join_frame(
     right_index: np.ndarray,
     how: str,
     sort_by_appearance: bool,
+    df_columns: Any,
+    right_columns: Any,
 ):
     """
     Create final dataframe for conditional join,
@@ -1286,9 +1380,13 @@ def _create_conditional_join_frame(
         left_index = left_index[sorter]
         sorter = None
 
+    if df_columns:
+        df = _cond_join_select_columns(df_columns, df)
+    if right_columns:
+        right = _cond_join_select_columns(right_columns, right)
+
     if set(df.columns).intersection(right.columns):
-        df.columns = pd.MultiIndex.from_product([["left"], df.columns])
-        right.columns = pd.MultiIndex.from_product([["right"], right.columns])
+        df, right = _create_multiindex_column(df, right)
 
     if how == _JoinTypes.INNER.value:
         df = {

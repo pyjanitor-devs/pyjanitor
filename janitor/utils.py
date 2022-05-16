@@ -3,7 +3,7 @@
 import os
 import socket
 import sys
-import warnings
+from warnings import warn
 from functools import singledispatch, wraps
 from typing import Callable, Dict, Iterable, Union
 
@@ -270,7 +270,7 @@ def deprecated_kwargs(
                     if error:
                         raise ValueError(msg)
                     else:
-                        warnings.warn(msg, DeprecationWarning)
+                        warn(msg, DeprecationWarning)
 
             return func(*args, **kwargs)
 
@@ -335,7 +335,7 @@ def refactored_function(message: str) -> Callable:
 
     def decorator(func):
         def emit_warning(*args, **kwargs):
-            warnings.warn(message, FutureWarning)
+            warn(message, FutureWarning)
             return func(*args, **kwargs)
 
         return emit_warning
@@ -363,7 +363,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
                 raise TypeError(
                     f"{func_name} received both {old_alias} and {new_alias}"
                 )
-            warnings.warn(
+            warn(
                 f"{old_alias} is deprecated; use {new_alias}",
                 DeprecationWarning,
             )
@@ -497,7 +497,7 @@ def is_connected(url: str) -> bool:
             return True
     except OSError as e:
 
-        warnings.warn(
+        warn(
             "There was an issue connecting to the internet. "
             "Please see original error below."
         )

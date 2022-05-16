@@ -237,12 +237,13 @@ def deprecated_kwargs(
 
     Example:
 
-        >>> from janitor.utils import deprecated_kwargs
-        >>> @deprecated_kwargs('x', 'y')
-        ... def plus(a, b, x=0, y=0):
-        ...     return a + b
-        >>> plus(1, 2, x=1, y=2)  # doctest: +SKIP
-        ValueError: The keyword argument 'x' of 'plus' is deprecated.
+    ```python
+    from janitor.utils import deprecated_kwargs
+
+    @deprecated_kwargs('x', 'y')
+    def plus(a, b, x=0, y=0):
+        return a + b
+    ```
 
     :param arguments: The list of deprecated keyword arguments.
     :param message: The message of `ValueError`. It should be a string

@@ -134,7 +134,7 @@ def test_strings_do_not_exist(df):
 
 def test_strings_dates(df_dates):
     """Test output for datetime column."""
-    assert _select_column_names("2011-01-31", df_dates)[0], df_dates.loc[
+    assert _select_column_names("2011-01-31", df_dates), df_dates.loc[
         :, "2011-01-31"
     ].name
 

@@ -5,20 +5,40 @@ from janitor.utils import deprecated_kwargs
 
 @pytest.mark.utils
 @pytest.mark.parametrize(
-    "arguments, func_kwargs",
+    "arguments, message, func_kwargs, msg_expected",
     [
-        (["a"], dict(a=1)),
-        (["b"], dict(b=2)),
-        (["a", "b"], dict(a=1, b=2)),
-        (["b", "a"], dict(a=1, b=2)),
+        (
+            ["a"],
+            "The keyword argument '{argument}' of '{func_name}' is deprecated.",
+            dict(a=1),
+            "The keyword argument 'a' of 'simple_sum' is deprecated.",
+        ),
+        (
+            ["b"],
+            "The keyword argument '{argument}' of '{func_name}' is deprecated.",
+            dict(b=2),
+            "The keyword argument 'b' of 'simple_sum' is deprecated.",
+        ),
+        (
+            ["a", "b"],
+            "The option '{argument}' of '{func_name}' is deprecated.",
+            dict(a=1, b=2),
+            "The option argument 'a' of 'simple_sum' is deprecated.",
+        ),
+        (
+            ["b", "a"],
+            "The keyword of function is deprecated.",
+            dict(a=1, b=2),
+            "The keyword of function is deprecated.",
+        ),
     ],
 )
-def test_error(arguments, func_kwargs):
-    @deprecated_kwargs(*arguments)
+def test_error(arguments, message, func_kwargs, msg_expected):
+    @deprecated_kwargs(*arguments, message=message)
     def simple_sum(alpha, beta, a=0, b=0):
         return alpha + beta
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=msg_expected):
         simple_sum(1, 2, **func_kwargs)
 
 

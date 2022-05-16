@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 -   [DOC] Updated developer guide docs.
+-   [ENH] Extend select_columns to support non-string columns. #1105 @samukweku
 
 ## [v0.23.1] - 2022-05-03
 

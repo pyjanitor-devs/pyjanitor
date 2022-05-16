@@ -36,6 +36,18 @@ def test_ascending_groupby_k_2(df):
     )
 
 
+def test_ascending_groupby_non_numeric(df):
+    """Test output for non-numeric column"""
+    expected = (
+        df.groupby("result", sort=False)
+        .apply(lambda d: d.sort_values("major").head(2))
+        .droplevel(0)
+    )
+    assert_frame_equal(
+        df.groupby_topk("result", "major", 2, ignore_index=False), expected
+    )
+
+
 def test_descending_groupby_k_3(df):
     """Test descending group by, k=3"""
     expected = (

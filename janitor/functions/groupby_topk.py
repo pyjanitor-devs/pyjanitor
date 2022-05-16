@@ -23,7 +23,9 @@ def groupby_topk(
 
     Returns a DataFrame that has the top `k` values per `column`,
     grouped by `by`. Under the hood it uses `nlargest/nsmallest`,
-    which avoids sorting the entire dataframe, and is usually more performant.
+    for numeric columns, which avoids sorting the entire dataframe,
+    and is usually more performant. For non-numeric columns, `pd.sort_values`
+    is used.
     No sorting is done to the `by` column(s); the order is maintained
     in the final output.
 
@@ -32,11 +34,13 @@ def groupby_topk(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "age": [20, 23, 22, 43, 21],
-        ...     "id": [1, 4, 6, 2, 5],
-        ...     "result": ["pass", "pass", "fail", "pass", "fail"]
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "age": [20, 23, 22, 43, 21],
+        ...         "id": [1, 4, 6, 2, 5],
+        ...         "result": ["pass", "pass", "fail", "pass", "fail"],
+        ...     }
+        ... )
         >>> df
            age  id result
         0   20   1   pass
@@ -47,7 +51,7 @@ def groupby_topk(
 
     Ascending top 3:
 
-        >>> df.groupby_topk(by = 'result', column = 'age',  k = 3)
+        >>> df.groupby_topk(by="result", column="age", k=3)
            age  id result
         0   20   1   pass
         1   23   4   pass
@@ -55,15 +59,11 @@ def groupby_topk(
         3   21   5   fail
         4   22   6   fail
 
-    Descending top 2 :
+    Descending top 2:
 
         >>> df.groupby_topk(
-        ...     by = 'result',
-        ...     column = 'age',
-        ...     k = 2,
-        ...     ascending = False,
-        ...     ignore_index = False
-        ...     )
+        ...     by="result", column="age", k=2, ascending=False, ignore_index=False
+        ... )
            age  id result
         3   43   2   pass
         1   23   4   pass
@@ -91,8 +91,6 @@ def groupby_topk(
     :raises ValueError: if `k` is less than 1.
     """  # noqa: E501
 
-    # TODO: allow multiple columns for `columns`
-    # when DataFrameGroupBy.nlargest/nsmallest is implemented
     if isinstance(by, Hashable):
         by = [by]
 
@@ -110,12 +108,17 @@ def groupby_topk(
     indices = df.groupby(by=by, dropna=dropna, sort=False, observed=True)
     indices = indices[column]
 
-    if ascending:
-        indices = indices.nsmallest(n=k)
-    else:
-        indices = indices.nlargest(n=k)
-    indices = indices.index.get_level_values(-1)
+    try:
+        if ascending:
+            indices = indices.nsmallest(n=k)
+        else:
+            indices = indices.nlargest(n=k)
+    except TypeError:
+        indices = indices.apply(
+            lambda d: d.sort_values(ascending=ascending).head(k)
+        )
 
+    indices = indices.index.get_level_values(-1)
     if ignore_index:
         return df.loc[indices].reset_index(drop=True)
     return df.loc[indices]

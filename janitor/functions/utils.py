@@ -247,7 +247,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             return df_columns[timestamp]
         return [timestamp]
     raise KeyError(
-        f"Strings('{columns_to_select}') can be applied "
+        f"String('{columns_to_select}') can be applied "
         "only to string/datetime columns."
     )
 

@@ -103,7 +103,7 @@ def test_col_not_found3(df_dates):
 
 def test_col_not_found4(df_numbers):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
-    with pytest.raises(KeyError, match=r"Strings\(.+\) can be applied.+"):
+    with pytest.raises(KeyError, match=r"String\(.+\) can be applied.+"):
         _select_column_names("id", df_numbers)
 
 

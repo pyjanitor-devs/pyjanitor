@@ -63,7 +63,6 @@ def select_columns(
         else:
             search_column_names.append(arg)
     full_column_list = _select_column_names(search_column_names, df)
-    return full_column_list
 
     if invert:
         return df.drop(columns=full_column_list)

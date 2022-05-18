@@ -255,7 +255,7 @@ def deprecated_kwargs(
     :return: The original function wrapped with the deprecated `kwargs`
         checking function.
     :raises ValueError: If one of `arguments` is in the decorated function's
-        keyword arguments.
+        keyword arguments.  # noqa: DAR402
     """
 
     def decorator(func):

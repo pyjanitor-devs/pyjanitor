@@ -4,6 +4,7 @@
 
 -   [DOC] Updated developer guide docs.
 -   [ENH] Allow column selection/renaming within conditional_join. #1102 @samukweku.
+-   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
 -   [ENH] Performance improvement for groupby_topk. #1093 @samukweku
 
 ## [v0.23.1] - 2022-05-03

@@ -1,16 +1,11 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
-import functools
 import os
 import socket
 import sys
-import warnings
-from typing import (
-    Callable,
-    Dict,
-    Iterable,
-    Union,
-)
+from warnings import warn
+from functools import singledispatch, wraps
+from typing import Callable, Dict, Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -46,7 +41,7 @@ def check(varname: str, value, expected_types: list):
         raise TypeError(f"{varname} should be one of {expected_types}.")
 
 
-@functools.singledispatch
+@singledispatch
 def _expand_grid(value, grid_index, key):
     """
     Base function for dispatch of `_expand_grid`.
@@ -231,6 +226,59 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
         )
 
 
+def deprecated_kwargs(
+    *arguments: list[str],
+    message: str = (
+        "The keyword argument '{argument}' of '{func_name}' is deprecated."
+    ),
+    error: bool = True,
+) -> Callable:
+    """
+    Used as a decorator when deprecating function's keyword arguments.
+
+    Example:
+
+    ```python
+    from janitor.utils import deprecated_kwargs
+
+    @deprecated_kwargs('x', 'y')
+    def plus(a, b, x=0, y=0):
+        return a + b
+    ```
+
+    :param arguments: The list of deprecated keyword arguments.
+    :param message: The message of `ValueError` or `DeprecationWarning`.
+        It should be a string or a string template. If a string template
+        defaults input `func_name` and `argument`.
+    :param error: If True raises `ValueError` else returns
+        `DeprecationWarning`.
+    :return: The original function wrapped with the deprecated `kwargs`
+        checking function.
+    :raises ValueError: If one of `arguments` is in the decorated function's
+        keyword arguments.  # noqa: DAR402
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for argument in arguments:
+                if argument in kwargs:
+                    msg = message.format(
+                        func_name=func.__name__,
+                        argument=argument,
+                    )
+                    if error:
+                        raise ValueError(msg)
+                    else:
+                        warn(msg, DeprecationWarning)
+
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 def deprecated_alias(**aliases) -> Callable:
     """
     Used as a decorator when deprecating old function argument names, while
@@ -252,7 +300,7 @@ def deprecated_alias(**aliases) -> Callable:
     """  # noqa: E501
 
     def decorator(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(*args, **kwargs):
             rename_kwargs(func.__name__, kwargs, aliases)
             return func(*args, **kwargs)
@@ -287,7 +335,7 @@ def refactored_function(message: str) -> Callable:
 
     def decorator(func):
         def emit_warning(*args, **kwargs):
-            warnings.warn(message, FutureWarning)
+            warn(message, FutureWarning)
             return func(*args, **kwargs)
 
         return emit_warning
@@ -315,7 +363,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
                 raise TypeError(
                     f"{func_name} received both {old_alias} and {new_alias}"
                 )
-            warnings.warn(
+            warn(
                 f"{old_alias} is deprecated; use {new_alias}",
                 DeprecationWarning,
             )
@@ -449,7 +497,7 @@ def is_connected(url: str) -> bool:
             return True
     except OSError as e:
 
-        warnings.warn(
+        warn(
             "There was an issue connecting to the internet. "
             "Please see original error below."
         )

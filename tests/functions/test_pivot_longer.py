@@ -1156,3 +1156,22 @@ def test_names_transform_numeric():
     ).reset_index()
 
     assert_frame_equal(actual, expected)
+
+
+def test_duplicated_columns():
+    """Test output for duplicated columns."""
+    rows = [["credit", 1, 1, 2, 3]]
+    columns = ["Type", "amount", "active", "amount", "active"]
+
+    df = pd.DataFrame(rows, columns=columns)
+    df = df.set_index("Type")
+
+    actual = pd.DataFrame(
+        {"amount": [1, 2], "active": [1, 3]},
+        index=pd.Index(["credit", "credit"], name="Type"),
+    )
+    expected = df.pivot_longer(
+        names_to=".value", names_pattern="(.+)", ignore_index=False
+    )
+
+    assert_frame_equal(actual, expected)

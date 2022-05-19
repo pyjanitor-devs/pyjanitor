@@ -4,9 +4,20 @@ import pandas_flavor as pf
 import pandas as pd
 
 from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_kwargs
 
 
 @pf.register_dataframe_method
+@deprecated_kwargs(
+    "old_min",
+    "old_max",
+    "new_min",
+    "new_max",
+    message=(
+        "The keyword argument '{argument}' of '{func_name}' is deprecated. "
+        "Please use 'feature_range' instead."
+    ),
+)
 @deprecated_alias(col_name="column_name")
 def min_max_scale(
     df: pd.DataFrame,

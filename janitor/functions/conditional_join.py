@@ -1160,21 +1160,33 @@ def _range_indices(
 
     Returns a tuple of (left_index, right_index)
     """
-
     # summary of code for range join:
     # get the positions where start_left is >/>= start_right
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
+
     left_on, right_on, op = first
+    left_c = df[left_on]
+    right_c = right[right_on]
+    left_on, right_on, _ = second
+    # get rid of any nulls
+    # this is helpful as we can convert extension arrays to numpy arrays safely
+    # and simplify the search logic below
+    any_nulls = pd.isna(df[left_on])
+    if any_nulls.any():
+        left_c = left_c[~any_nulls]
+    any_nulls = pd.isna(right[right_on])
+    if any_nulls.any():
+        right_c = right_c[~any_nulls]
 
     strict = False
     if op == _JoinOperator.GREATER_THAN.value:
         strict = True
 
     outcome = _greater_than_indices(
-        df[left_on],
-        right[right_on],
+        left_c,
+        right_c,
         strict,
         multiple_conditions=True,
     )
@@ -1186,28 +1198,30 @@ def _range_indices(
     left_on, right_on, op = second
     right_c = right.loc[right_index, right_on]
     left_c = df.loc[left_index, left_on]
-    left_c = extract_array(left_c, extract_numpy=True)
-    op = operator_map[op]
-    pos = np.copy(search_indices)
-    counter = np.arange(left_index.size)
-    ext_arr = is_extension_array_dtype(left_c)
 
     dupes = right_c.duplicated(keep="first")
-    right_c = extract_array(right_c, extract_numpy=True)
+    ext_arr = is_extension_array_dtype(left_c)
+    if ext_arr:
+        numpy_dtype = left_c.dtype.numpy_dtype
+        left_c = left_c.to_numpy(copy=False, dtype=numpy_dtype)
+        right_c = right_c.to_numpy(copy=False, dtype=numpy_dtype)
+    else:
+        left_c = left_c.to_numpy(copy=False)
+        right_c = right_c.to_numpy(copy=False)
     # use position, not label
     uniqs_index = np.arange(right_c.size)
     if dupes.any():
         uniqs_index = uniqs_index[~dupes]
         right_c = right_c[~dupes]
 
+    op = operator_map[op]
+    pos = np.copy(search_indices)
+    counter = np.arange(left_index.size)
+
     for ind in range(uniqs_index.size):
         if not counter.size:
             break
         keep_rows = op(left_c, right_c[ind])
-        if ext_arr:
-            keep_rows = keep_rows.to_numpy(
-                dtype=bool, na_value=False, copy=False
-            )
         if not keep_rows.any():
             continue
         # get the index positions where left_c is </<= right_c

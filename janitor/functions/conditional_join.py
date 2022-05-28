@@ -442,12 +442,10 @@ def _conditional_join_compute(
         result = _generic_func_cond_join(
             df[left_on], right[right_on], op, multiple_conditions, keep
         )
-
         if result is None:
             return _create_conditional_join_empty_frame(
                 df, right, how, df_columns, right_columns
             )
-
         return _create_conditional_join_frame(
             df,
             right,
@@ -456,6 +454,7 @@ def _conditional_join_compute(
             sort_by_appearance,
             df_columns,
             right_columns,
+            keep,
         )
 
     if eq_check:
@@ -470,7 +469,14 @@ def _conditional_join_compute(
         )
 
     return _create_conditional_join_frame(
-        df, right, *result, how, sort_by_appearance, df_columns, right_columns
+        df,
+        right,
+        *result,
+        how,
+        sort_by_appearance,
+        df_columns,
+        right_columns,
+        keep,
     )
 
 
@@ -574,9 +580,15 @@ def _less_than_indices(
     if right_is_sorted and (keep == _KeepTypes.FIRST.value):
         return left_index, right_index[search_indices]
     right_c = [right_index[ind:len_right] for ind in search_indices]
+    if keep == _KeepTypes.FIRST.value:
+        right_c = [arr.min() for arr in right_c]
+        return left_index, right_c
+    if keep == _KeepTypes.LAST.value:
+        right_c = [arr.max() for arr in right_c]
+        return left_index, right_c
     right_c = np.concatenate(right_c)
     left_c = np.repeat(left_index, len_right - search_indices)
-    return _keep_output(keep, left_c, right_c)
+    return left_c, right_c
 
 
 def _greater_than_indices(
@@ -673,9 +685,15 @@ def _greater_than_indices(
     if right_is_sorted and (keep == _KeepTypes.LAST.value):
         return left_index, right_index[search_indices - 1]
     right_c = [right_index[:ind] for ind in search_indices]
+    if keep == _KeepTypes.FIRST.value:
+        right_c = [arr.min() for arr in right_c]
+        return left_index, right_c
+    if keep == _KeepTypes.LAST.value:
+        right_c = [arr.max() for arr in right_c]
+        return left_index, right_c
     right_c = np.concatenate(right_c)
     left_c = np.repeat(left_index, search_indices)
-    return _keep_output(keep, left_c, right_c)
+    return left_c, right_c
 
 
 def _not_equal_indices(
@@ -1405,12 +1423,13 @@ def _create_conditional_join_frame(
     sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
+    keep: str,
 ):
     """
     Create final dataframe for conditional join,
     if there are matches.
     """
-    if sort_by_appearance:
+    if sort_by_appearance and (keep == _KeepTypes.ALL.value):
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
         left_index = left_index[sorter]

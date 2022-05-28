@@ -1862,11 +1862,20 @@ def test_multiple_eqs(df, right):
 def test_multiple_eqs_extension_array(df, right):
     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates", "index"]
+    columns = [
+        "B",
+        "A",
+        "E",
+        "Floats",
+        "Integers",
+        "Dates",
+        "index",
+        "indexer",
+    ]
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
     expected = df.assign(index=df.index).merge(
-        right,
+        right.assign(indexer=right.index),
         left_on=["B", "E"],
         right_on=["Floats", "Dates"],
         how="inner",
@@ -1874,9 +1883,9 @@ def test_multiple_eqs_extension_array(df, right):
     )
     expected = (
         expected.loc[expected.A != expected.Integers, columns]
-        .groupby("index")
+        .groupby(["index", "indexer"])
         .tail(1)
-        .drop(columns="index")
+        .drop(columns=["index", "indexer"])
         .reset_index(drop=True)
     )
 

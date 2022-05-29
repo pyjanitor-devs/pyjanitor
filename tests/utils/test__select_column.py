@@ -133,10 +133,13 @@ def test_strings_do_not_exist(df):
 
 
 def test_strings_dates(df_dates):
-    """Test output for datetime column."""
-    assert _select_column_names("2011-01-31", df_dates), df_dates.loc[
-        :, "2011-01-31"
-    ].name
+    """
+    Test output for datetime column.
+    """
+    assert (
+        _select_column_names("2011-01-31", df_dates)[0]
+        == df_dates.loc[:, "2011-01-31"].name
+    )
 
 
 def test_strings_dates_range(df_dates):
@@ -258,11 +261,16 @@ def test_slice(df1):
         _select_column_names(slice(None, None, 2), df1),
         df1.loc[:, slice(None, None, 2)].columns,
     )
-    assert _select_column_names(slice("code2", "code"), df1).tolist() == [
-        "code2",
-        "code1",
-        "code",
-    ]
+    assert_index_equal(
+        _select_column_names(slice("code2", "code"), df1),
+        pd.Index(
+            [
+                "code2",
+                "code1",
+                "code",
+            ]
+        ),
+    )
 
 
 def test_slice_dates(df_dates):

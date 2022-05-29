@@ -233,19 +233,16 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         if columns_to_select in df_columns:
             return [columns_to_select]
         raise KeyError(f"No match was returned for '{columns_to_select}'.")
-    if pd.api.types.is_datetime64_any_dtype(df.columns):
+    if pd.api.types.is_datetime64_any_dtype(df_columns):
         if not df_columns.is_monotonic_increasing:
             raise ValueError(
                 "The column is a DatetimeIndex and should be "
                 "monotonic increasing."
             )
-        try:
-            timestamp = df_columns.get_loc(columns_to_select)
-        except Exception as error:
-            raise error
+        timestamp = df_columns.get_loc(columns_to_select)
         if isinstance(timestamp, slice):
             return df_columns[timestamp]
-        return [timestamp]
+        return [df_columns[timestamp]]
     raise KeyError(
         f"String('{columns_to_select}') can be applied "
         "only to string/datetime columns."

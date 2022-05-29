@@ -2,7 +2,6 @@
 from itertools import chain
 import fnmatch
 import warnings
-
 from collections.abc import Callable as dispatch_callable
 import re
 from typing import Hashable, Iterable, List, Optional, Pattern, Union
@@ -211,93 +210,9 @@ def _select_column_names(columns_to_select, df):
     base function for column selection.
     Returns a list of column names.
     """
-    raise TypeError("This type is not supported in column selection.")
-
-
-# hack to get it to recognize typing.Pattern
-# functools.singledispatch does not natively
-# recognize types from the typing module
-# `type(re.compile(r"\d+"))` returns re.Pattern
-# which is a type and functools.singledispatch
-# accepts it without drama;
-# however, the same type from typing.Pattern
-# is not accepted.
-@_select_column_names.register(type(re.compile(r"\d+")))  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
-    """
-    Base function for column selection.
-    Applies only to regular expressions.
-    `re.compile` is required for the regular expression.
-    A list of column names is returned.
-    """
-    df_columns = df.columns
-    filtered_columns = [
-        column_name
-        for column_name in df_columns
-        if re.search(columns_to_select, column_name)
-    ]
-
-    if not filtered_columns:
-        raise KeyError("No column name matched the regular expression.")
-    df_columns = None
-
-    return filtered_columns
-
-
-@_select_column_names.register(tuple)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
-    """
-    Base function for column selection.
-    This caters to columns that are of tuple type.
-    The tuple is returned as is, if it exists in the columns.
-    """
-    if columns_to_select not in df.columns:
-        raise KeyError(f"No match was returned for {columns_to_select}")
-    return columns_to_select
-
-
-@_select_column_names.register(list)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
-    """
-    Base function for column selection.
-    Applies only to list type.
-    It can take any of slice, str, callable, re.Pattern types,
-    or a combination of these types.
-    A list of column names is returned.
-    """
-
-    # takes care of boolean entries
-    if all(map(pd.api.types.is_bool, columns_to_select)):
-        if len(columns_to_select) != len(df.columns):
-            raise ValueError(
-                "The length of the list of booleans "
-                "does not match the number of columns "
-                "in the dataframe."
-            )
-
-        return [*df.columns[columns_to_select]]
-
-    filtered_columns = []
-    columns_to_select = (
-        _select_column_names(entry, df) for entry in columns_to_select
-    )
-
-    # this is required,
-    # to maintain `tuple` status
-    # when combining all the entries into a single list
-    columns_to_select = (
-        [entry] if isinstance(entry, tuple) else entry
-        for entry in columns_to_select
-    )
-
-    columns_to_select = chain.from_iterable(columns_to_select)
-
-    # get rid of possible duplicates
-    for column_name in columns_to_select:
-        if column_name not in filtered_columns:
-            filtered_columns.append(column_name)
-
-    return filtered_columns
+    if columns_to_select in df.columns:
+        return [columns_to_select]
+    raise KeyError(f"No match was returned for '{columns_to_select}'.")
 
 
 @_select_column_names.register(str)  # noqa: F811
@@ -307,16 +222,50 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to strings.
     It is also applicable to shell-like glob strings,
     specifically, the `*`.
-    A list of column names is returned.
+    A list/pandas Index of matching column names is returned.
     """
+    df_columns = df.columns
+    if pd.api.types.is_string_dtype(df_columns):
+        if (
+            "*" in columns_to_select
+        ):  # shell-style glob string (e.g., `*_thing_*`)
+            return fnmatch.filter(df_columns, columns_to_select)
+        if columns_to_select in df_columns:
+            return [columns_to_select]
+        raise KeyError(f"No match was returned for '{columns_to_select}'.")
+    if pd.api.types.is_datetime64_any_dtype(df_columns):
+        if not df_columns.is_monotonic_increasing:
+            raise ValueError(
+                "The column is a DatetimeIndex and should be "
+                "monotonic increasing."
+            )
+        timestamp = df_columns.get_loc(columns_to_select)
+        if isinstance(timestamp, slice):
+            return df_columns[timestamp]
+        return [df_columns[timestamp]]
+    raise KeyError(
+        f"String('{columns_to_select}') can be applied "
+        "only to string/datetime columns."
+    )
 
-    if "*" in columns_to_select:  # shell-style glob string (e.g., `*_thing_*`)
-        filtered_columns = fnmatch.filter(df.columns, columns_to_select)
-        if filtered_columns:
-            return filtered_columns
-    elif columns_to_select in df.columns:
-        return [columns_to_select]
-    raise KeyError(f"No match was returned for '{columns_to_select}'")
+
+@_select_column_names.register(re.Pattern)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to regular expressions.
+    `re.compile` is required for the regular expression.
+    A pandas Index of matching column names is returned.
+    """
+    if pd.api.types.is_string_dtype(df.columns):
+        bools = df.columns.str.contains(
+            columns_to_select, na=False, regex=True
+        )
+        return df.columns[bools]
+    raise KeyError(
+        f"Regular expressions('{columns_to_select}') "
+        "can be applied only to string columns."
+    )
 
 
 @_select_column_names.register(slice)  # noqa: F811
@@ -324,20 +273,23 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to slices.
-    The start slice value must be a string or None;
+
+    The start slice value must be a string/tuple/None,
+    or exist in the dataframe's columns;
     same goes for the stop slice value.
     The step slice value should be an integer or None.
     A slice, if passed correctly in a Multindex column,
     returns a list of tuples across all levels of the
     column.
-    A list of column names is returned.
-    """
 
+    A pandas Index of matching column names is returned.
+    """
     df_columns = df.columns
     filtered_columns = None
     start_check = None
     stop_check = None
     step_check = None
+    method = None
 
     if not df_columns.is_unique:
         raise ValueError(
@@ -345,58 +297,60 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             "Kindly ensure the labels are unique "
             "to ensure the correct output."
         )
+    is_date_column = pd.api.types.is_datetime64_any_dtype(df_columns)
+    if is_date_column:
+        if not df_columns.is_monotonic_increasing:
+            raise ValueError(
+                "The column is a DatetimeIndex and should be "
+                "monotonic increasing."
+            )
+        method = "nearest"
 
     start, stop, step = (
         columns_to_select.start,
         columns_to_select.stop,
         columns_to_select.step,
     )
-    start_check = any((start is None, isinstance(start, str)))
-    stop_check = any((stop is None, isinstance(stop, str)))
+
     step_check = any((step is None, isinstance(step, int)))
-    if not start_check:
-        raise ValueError(
-            "The start value for the slice "
-            "must either be a string or `None`."
-        )
-    if not stop_check:
-        raise ValueError(
-            "The stop value for the slice "
-            "must either be a string or `None`."
-        )
     if not step_check:
         raise ValueError(
             "The step value for the slice "
             "must either be an integer or `None`."
         )
-    start_check = any((start is None, start in df_columns))
-    stop_check = any((stop is None, stop in df_columns))
-    if not start_check:
-        raise ValueError(
-            "The start value for the slice must either be `None` "
-            "or exist in the dataframe's columns."
-        )
-    if not stop_check:
-        raise ValueError(
-            "The stop value for the slice must either be `None` "
-            "or exist in the dataframe's columns."
-        )
+
+    if not is_date_column:
+        start_check = any((start is None, start in df_columns))
+        if not start_check:
+            raise ValueError(
+                "The start value for the slice must either be `None` "
+                "or exist in the dataframe's columns."
+            )
+        stop_check = any((stop is None, stop in df_columns))
+        if not stop_check:
+            raise ValueError(
+                "The stop value for the slice must either be `None` "
+                "or exist in the dataframe's columns."
+            )
 
     if start is None:
         start = 0
     else:
-        start = df_columns.get_loc(start)
+        start = df_columns.get_loc(start, method=method)
+        if isinstance(start, slice):
+            start = start.start
     if stop is None:
         stop = len(df_columns) + 1
     else:
-        stop = df_columns.get_loc(stop)
+        stop = df_columns.get_loc(stop, method=method)
+        if isinstance(stop, slice):
+            stop = stop.stop - 1
 
     if start > stop:
         filtered_columns = df_columns[slice(stop, start + 1, step)][::-1]
     else:
         filtered_columns = df_columns[slice(start, stop + 1, step)]
-    df_columns = None
-    return [*filtered_columns]
+    return filtered_columns
 
 
 @_select_column_names.register(dispatch_callable)  # noqa: F811
@@ -406,7 +360,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to callables.
     The callable is applied to every column in the dataframe.
     Either True or False is expected per column.
-    A list of column names is returned.
+
+    A pandas Index of matching column names is returned.
     """
     # the function will be applied per series.
     # this allows filtration based on the contents of the series
@@ -416,9 +371,45 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     # the returned values should be a sequence of booleans,
     # with at least one True.
 
-    filtered_columns = df.agg(columns_to_select)
+    filtered_columns = df.apply(columns_to_select)
 
-    if not filtered_columns.any():
-        raise ValueError("No match was returned for the provided callable.")
+    if not pd.api.types.is_bool_dtype(filtered_columns):
+        raise TypeError(
+            "The output of the applied callable should be a boolean array."
+        )
 
-    return [*df.columns[filtered_columns]]
+    return df.columns[filtered_columns]
+
+
+@_select_column_names.register(list)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to list type.
+    It can take any of slice, str, callable, re.Pattern types, ...,
+    or a combination of these types.
+    A list of column names is returned.
+    """
+
+    if all(map(pd.api.types.is_bool, columns_to_select)):
+        if len(columns_to_select) != len(df.columns):
+            raise ValueError(
+                "The length of the list of booleans "
+                f"({len(columns_to_select)}) does not match "
+                f"the number of columns({df.columns.size}) "
+                "in the dataframe."
+            )
+
+        return df.columns[columns_to_select]
+
+    filtered_columns = (
+        _select_column_names(entry, df) for entry in columns_to_select
+    )
+
+    filtered_columns = list(chain.from_iterable(filtered_columns))
+
+    # get rid of possible duplicates
+    if len(filtered_columns) != len(set(filtered_columns)):
+        filtered_columns = pd.unique(filtered_columns)
+
+    return filtered_columns

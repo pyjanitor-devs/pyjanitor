@@ -378,16 +378,12 @@ def _data_checks_pivot_longer(
     if column_names is not None:
         if is_list_like(column_names):
             column_names = list(column_names)
-        else:
-            column_names = [column_names]
         column_names = _select_column_names(column_names, df)
         column_names = list(column_names)
 
     if index is not None:
         if is_list_like(index):
             index = list(index)
-        else:
-            index = [index]
         index = _select_column_names(index, df)
         index = list(index)
 

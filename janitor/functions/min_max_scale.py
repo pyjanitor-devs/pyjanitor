@@ -110,6 +110,7 @@ def min_max_scale(
         old_max = df[column_name].max()
         old_range = old_max - old_min
 
+        df = df.copy()
         df[column_name] = (
             df[column_name] - old_min
         ) * new_range / old_range + new_min

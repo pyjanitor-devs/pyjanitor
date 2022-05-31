@@ -49,7 +49,8 @@ def select_columns(
         a callable which is applicable to each Series in the DataFrame,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-    :param level: If a MultiIndex column, what level should the selection be applied.
+    :param level: Determines which level in the columns should be used for the
+        column selection.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.

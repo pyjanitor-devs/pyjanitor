@@ -291,12 +291,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     step_check = None
     method = None
 
-    if not df_columns.is_unique:
-        raise ValueError(
-            "The column labels are not unique. "
-            "Kindly ensure the labels are unique "
-            "to ensure the correct output."
-        )
+    if not df_columns.is_unique and not df_columns.is_monotonic_increasing:
+        raise ValueError("Non-unique column labels should be lexsorted.")
     is_date_column = pd.api.types.is_datetime64_any_dtype(df_columns)
     if is_date_column:
         if not df_columns.is_monotonic_increasing:

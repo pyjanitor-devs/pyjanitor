@@ -195,8 +195,10 @@ def test_slice_unique():
     """
     Raise ValueError if the columns are not unique.
     """
-    not_unique = pd.DataFrame([], columns=["code", "code", "code1", "code2"])
-    with pytest.raises(ValueError):
+    not_unique = pd.DataFrame([], columns=["code", "code2", "code1", "code"])
+    with pytest.raises(
+        ValueError, match="Non-unique column labels should be lexsorted."
+    ):
         _select_column_names(slice("code", "code2"), not_unique)
 
 
@@ -218,11 +220,17 @@ def test_slice_dtypes(df):
     and either the start value or the stop value is not a string,
     or the step value is not an integer.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The start value for the slice must either be `None`.+",
+    ):
         _select_column_names(slice(1, "M_end_date_2"), df)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The stop value for the slice must either be `None`.+",
+    ):
         _select_column_names(slice("id", 2), df)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="The step value for the slice.+"):
         _select_column_names(slice("id", "M_end_date_2", "3"), df)
 
 
@@ -332,9 +340,13 @@ def test_boolean_list_dtypes(df):
     and the length is unequal to the number of columns
     in the dataframe.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The length of the list of booleans.+"
+    ):
         _select_column_names([True, False], df)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The length of the list of booleans.+"
+    ):
         _select_column_names(
             [True, True, True, False, False, False, True, True, True, False],
             df,
@@ -355,7 +367,9 @@ def test_callable(df_numbers):
         _select_column_names(lambda df: df + 3, df_numbers)
 
 
-@pytest.mark.xfail(reason="Indexing in Pandas is possible with a Series.")
+@pytest.mark.xfail(
+    reason="Indexing in Pandas is possible with a boolean Series."
+)
 def test_callable_returns_series(df):
     """
     Check that error is raised if `columns_to_select` is a

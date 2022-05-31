@@ -14,7 +14,7 @@ from janitor.utils import deprecated_kwargs
     "new_min",
     "new_max",
     message=(
-        "The keyword argument '{argument}' of '{func_name}' is deprecated. "
+        "The keyword argument {argument!r} of {func_name!r} is deprecated. "
         "Please use 'feature_range' instead."
     ),
 )

@@ -41,36 +41,39 @@ def min_max_scale(
     If a particular column name is specified, then only that column of data
     are scaled. Otherwise, the entire dataframe is scaled.
 
-    Method chaining syntax:
+    Example: Basic usage.
 
-    ```python
-        df = (
-            pd.DataFrame(...)
-            .min_max_scale(column_name="a")
-        )
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
+        >>> df.min_max_scale()
+             a    b
+        0  0.5  0.0
+        1  1.0  0.5
 
-    Setting custom minimum and maximum:
+    Example: Setting custom minimum and maximum.
 
-    ```python
-        df = (
-            pd.DataFrame(...)
-            .min_max_scale(
-                feature_range=(2, 10),
-                column_name="a",
-            )
-        )
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
+        >>> df.min_max_scale(feature_range=(0, 100))
+               a     b
+        0   50.0   0.0
+        1  100.0  50.0
 
-    Setting a min and max that is not based on the data, while applying to
-    entire dataframe:
+    Example: Apply min-max to the selected columns.
 
-    ```python
-        df = (
-            pd.DataFrame(...)
-            .min_max_scale()
-        )
-    ```
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
+        >>> df.min_max_scale(feature_range=(0, 100), column_name=['a', 'b'])
+               a      b
+        0    0.0    0.0
+        1  100.0  100.0
+        >>> df.min_max_scale(feature_range=(0, 100), column_name='a')
+               a  b
+        0    0.0  0
+        1  100.0  1
 
     The aforementioned example might be applied to something like scaling the
     isoelectric points of amino acids. While technically they range from

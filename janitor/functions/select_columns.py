@@ -55,7 +55,6 @@ def select_columns(
         This will result in the selection of the complement of the columns
         provided.
     :returns: A pandas DataFrame with the specified columns selected.
-    :raises ValueError: If level, and cannot be found.
     """  # noqa: E501
 
     # applicable for any
@@ -66,20 +65,9 @@ def select_columns(
             search_column_names.extend(arg)
         else:
             search_column_names.append(arg)
-    if level:
+    if level is not None:
         df_columns = df.columns
         check("level", level, [int, str])
-        if isinstance(level, int):
-            if (level > 0) and not (level < df_columns.nlevels):
-                raise ValueError(
-                    f"The level {level} is greater than the number of levels "
-                    f"{df_columns.nlevels} in the columns."
-                )
-        else:
-            if level not in df_columns.names:
-                raise ValueError(
-                    f"{level} not found in the names of the column levels."
-                )
         full_column_list = df_columns.get_level_values(level)
         full_column_list = _select_column_names(
             search_column_names, df.set_axis(labels=full_column_list, axis=1)
@@ -88,10 +76,7 @@ def select_columns(
         if invert:
             return df.loc[:, ~full_column_list]
         return df.loc[:, full_column_list]
-
-    else:
-        full_column_list = _select_column_names(search_column_names, df)
-
+    full_column_list = _select_column_names(search_column_names, df)
     if invert:
         return df.drop(columns=full_column_list)
     return df.loc[:, full_column_list]

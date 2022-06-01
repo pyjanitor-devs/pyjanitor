@@ -297,43 +297,6 @@ def test_slice_dates_inexact(df_dates):
     )
 
 
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_level_type(df_tuple):
-    """Raise TypeError if `level` is the wrong type."""
-    with pytest.raises(TypeError):
-        _select_column_names("A", df_tuple)
-
-
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_level_nonexistent(df_tuple):
-    """
-    Raise ValueError if column is a MultiIndex
-    and level is `None`.
-    """
-    with pytest.raises(ValueError):
-        _select_column_names("A", df_tuple)
-
-
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_tuple_callable(df_tuple):
-    """
-    Raise ValueError if dataframe has MultiIndex columns
-    and a callable is provided.
-    """
-    with pytest.raises(ValueError):
-        _select_column_names(lambda df: df.name.startswith("A"), df_tuple)
-
-
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_tuple_regex(df_tuple):
-    """
-    Raise ValueError if dataframe has MultiIndex columns'
-    a regex is provided and level is None.
-    """
-    with pytest.raises(ValueError):
-        _select_column_names(re.compile("A"), df_tuple)
-
-
 def test_boolean_list_dtypes(df):
     """
     Raise ValueError if `columns_to_select` is a list of booleans

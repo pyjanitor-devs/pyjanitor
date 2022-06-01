@@ -68,11 +68,10 @@ def select_columns(
     if level is not None:
         df_columns = df.columns
         check("level", level, [int, str])
-        full_column_list = df_columns.get_level_values(level)
-        full_column_list = _select_column_names(
-            search_column_names, df.set_axis(labels=full_column_list, axis=1)
-        )
+        df.columns = df_columns.get_level_values(level)
+        full_column_list = _select_column_names(search_column_names, df)
         full_column_list = df_columns.isin(full_column_list, level=level)
+        df.columns = df_columns
         if invert:
             return df.loc[:, ~full_column_list]
         return df.loc[:, full_column_list]

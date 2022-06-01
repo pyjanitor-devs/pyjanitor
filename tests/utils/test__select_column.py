@@ -197,7 +197,8 @@ def test_slice_unique():
     """
     not_unique = pd.DataFrame([], columns=["code", "code2", "code1", "code"])
     with pytest.raises(
-        ValueError, match="Non-unique column labels should be lexsorted."
+        ValueError,
+        match="Non-unique column labels should be monotonic increasing.",
     ):
         _select_column_names(slice("code", "code2"), not_unique)
 

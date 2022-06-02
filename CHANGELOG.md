@@ -7,6 +7,7 @@
 -   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
 -   [ENH] Extend select_columns to support non-string columns. #1105 @samukweku
 -   [ENH] Performance improvement for groupby_topk. #1093 @samukweku
+-   [EHN] `min_max_scale` drop `old_min` and `old_max` to fit sklearn's method API. Issue #1068 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

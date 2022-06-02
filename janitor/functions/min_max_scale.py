@@ -142,6 +142,9 @@ def min_max_value(df: pd.DataFrame, entire_data: bool) -> tuple:
     Return the minimum and maximum of DataFrame.
 
     Use the `entire_data` flag to control returning entire data or each column.
+
+    .. # noqa: DAR101
+    .. # noqa: DAR201
     """
 
     if entire_data:
@@ -169,6 +172,9 @@ def apply_min_max(
     - Inputting minimum and maximum type
         - int or float : It will apply minimax to the entire DataFrame.
         - Series : It will apply minimax to each column.
+
+    .. # noqa: DAR101
+    .. # noqa: DAR201
     """
 
     old_range = old_max - old_min

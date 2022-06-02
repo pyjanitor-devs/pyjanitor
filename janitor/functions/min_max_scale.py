@@ -28,8 +28,8 @@ def min_max_scale(
     """
     Scales DataFrame to between a minimum and maximum value.
 
-    One can optionally set a new target minimum and maximum value using the
-    `feature_range` keyword argument.
+    One can optionally set a new target **minimum** and **maximum** value
+    using the `feature_range` keyword argument.
 
     If `column_name` is specified, then only that column(s) of data is scaled.
     Otherwise, the entire dataframe is scaled.

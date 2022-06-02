@@ -26,19 +26,15 @@ def min_max_scale(
     entire_data: bool = False,
 ) -> pd.DataFrame:
     """
-    Scales data to between a minimum and maximum value.
-
-    If `minimum` and `maximum` are provided, the true min/max of the
-    `DataFrame` or column is ignored in the scaling process and replaced with
-    these values, instead.
+    Scales DataFrame to between a minimum and maximum value.
 
     One can optionally set a new target minimum and maximum value using the
-    `feature_range[0]` and `feature_range[1]` keyword arguments.
-    This will result in the transformed data being bounded between
-    `feature_range[0]` and `feature_range[1]`.
+    `feature_range` keyword argument.
 
-    If a particular column name is specified, then only that column of data
-    are scaled. Otherwise, the entire dataframe is scaled.
+    If `column_name` is specified, then only that column(s) of data is scaled.
+    Otherwise, the entire dataframe is scaled.
+    If `entire_data` is `True`, the entire dataframe will be regnozied as
+    the one to scale. Otherwise, each column of data will be scaled sperately.
 
     Example: Basic usage.
 
@@ -83,6 +79,7 @@ def min_max_scale(
     :param df: A pandas DataFrame.
     :param feature_range: (optional) Desired range of transformed data.
     :param column_name: (optional) The column on which to perform scaling.
+    :param entire_data: (bool) Scale the entire data if Ture.
     :returns: A pandas DataFrame with scaled data.
     :raises ValueError: if `feature_range` isn't tuple type.
     :raises ValueError: if the length of `feature_range` isn't equal to two.

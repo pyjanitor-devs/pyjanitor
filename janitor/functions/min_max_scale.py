@@ -43,6 +43,10 @@ def min_max_scale(
         >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
         >>> df.min_max_scale()
              a    b
+        0  0.0  0.0
+        1  1.0  1.0
+        >>> df.min_max_scale(entire_data=True)
+             a    b
         0  0.5  0.0
         1  1.0  0.5
 
@@ -52,6 +56,10 @@ def min_max_scale(
         >>> import janitor
         >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
         >>> df.min_max_scale(feature_range=(0, 100))
+               a      b
+        0    0.0    0.0
+        1  100.0  100.0
+        >>> df.min_max_scale(feature_range=(0, 100), enture_data=True)
                a     b
         0   50.0   0.0
         1  100.0  50.0
@@ -60,15 +68,26 @@ def min_max_scale(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
-        >>> df.min_max_scale(feature_range=(0, 100), column_name=['a', 'b'])
-               a      b
-        0    0.0    0.0
-        1  100.0  100.0
+        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1], 'c': []})
+        >>> df.min_max_scale(
+        ...     feature_range=(0, 100),
+        ...     column_name=["a", "c"],
+        ... )
+               a  b     c
+        0   50.0  0  50.0
+        1  100.0  1   0.0
+        >>> df.min_max_scale(
+        ...     feature_range=(0, 100),
+        ...     column_name=["a", "c"],
+        ...     entire_data=True,
+        ... )
+               a  b      c
+        0    0.0  0  100.0
+        1  100.0  1    0.0
         >>> df.min_max_scale(feature_range=(0, 100), column_name='a')
-               a  b
-        0    0.0  0
-        1  100.0  1
+               a  b  c
+        0    0.0  0  1
+        1  100.0  1  0
 
     The aforementioned example might be applied to something like scaling the
     isoelectric points of amino acids. While technically they range from

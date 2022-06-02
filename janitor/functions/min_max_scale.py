@@ -59,7 +59,7 @@ def min_max_scale(
                a      b
         0    0.0    0.0
         1  100.0  100.0
-        >>> df.min_max_scale(feature_range=(0, 100), enture_data=True)
+        >>> df.min_max_scale(feature_range=(0, 100), entire_data=True)
                a     b
         0   50.0   0.0
         1  100.0  50.0

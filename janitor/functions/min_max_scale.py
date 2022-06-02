@@ -73,17 +73,17 @@ def min_max_scale(
         ...     feature_range=(0, 100),
         ...     column_name=["a", "c"],
         ... )
-               a  b     c
-        0   50.0  0  50.0
-        1  100.0  1   0.0
+               a  b      c
+        0    0.0  0  100.0
+        1  100.0  1    0.0
         >>> df.min_max_scale(
         ...     feature_range=(0, 100),
         ...     column_name=["a", "c"],
         ...     entire_data=True,
         ... )
-               a  b      c
-        0    0.0  0  100.0
-        1  100.0  1    0.0
+               a  b     c
+        0   50.0  0  50.0
+        1  100.0  1   0.0
         >>> df.min_max_scale(feature_range=(0, 100), column_name='a')
                a  b  c
         0    0.0  0  1

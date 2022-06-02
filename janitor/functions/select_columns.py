@@ -66,6 +66,15 @@ def select_columns(
         else:
             search_column_names.append(arg)
     if level is not None:
+        # goal here is to capture the original columns
+        # trim the df.columns to the specified level only,
+        # apply the selection (_select_column_names)
+        # reassign the original columns,
+        # and finally select/deselect the matching labels
+        # via a boolean selection.
+        # note that no level is dropped; so if there are three levels,
+        # then three levels are returned, with the specified labels
+        # selected/deselected
         df_columns = df.columns
         check("level", level, [int, str])
         df.columns = df_columns.get_level_values(level)

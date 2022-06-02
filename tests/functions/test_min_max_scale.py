@@ -18,7 +18,7 @@ import pytest
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
             None,
             False,
-            pd.DataFrame({"a": [0, 1], "b": [0, 1]}),
+            pd.DataFrame({"a": [0, 1.0], "b": [0, 1.0]}),
         ),
         # test list condition
         (
@@ -39,14 +39,14 @@ import pytest
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
             pd.Index(["a", "b"]),
             False,
-            pd.DataFrame({"a": [0.5, 1.0], "b": [0, 0.5]}),
+            pd.DataFrame({"a": [0, 1.0], "b": [0, 1.0]}),
         ),
         # test Index condition
         (
             pd.DataFrame({"a": [5, 10], "b": [0, 5]}),
             pd.Index(["a", "b"]),
             True,
-            pd.DataFrame({"a": [0, 1.0], "b": [0, 1.0]}),
+            pd.DataFrame({"a": [0.5, 1], "b": [0, 0.5]}),
         ),
         # test str condition
         (

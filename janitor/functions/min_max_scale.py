@@ -23,11 +23,10 @@ def min_max_scale(
     df: pd.DataFrame,
     feature_range: tuple[int | float, int | float] = (0, 1),
     column_name: str | int | list[str | int] | pd.Index = None,
+    entire_data: bool = False,
 ) -> pd.DataFrame:
     """
     Scales data to between a minimum and maximum value.
-
-    This method mutates the original DataFrame.
 
     If `minimum` and `maximum` are provided, the true min/max of the
     `DataFrame` or column is ignored in the scaling process and replaced with
@@ -102,23 +101,61 @@ def min_max_scale(
             "the first element must be greater than the second one"
         )
 
-    new_min, new_max = feature_range
-    new_range = new_max - new_min
-
     if column_name is not None:
-        old_min = df[column_name].min()
-        old_max = df[column_name].max()
-        old_range = old_max - old_min
+        df = df.copy()  # Avoid to change the original DataFrame.
 
-        df = df.copy()
-        df[column_name] = (
-            df[column_name] - old_min
-        ) * new_range / old_range + new_min
+        old_feature_range = df[column_name].pipe(min_max_value, entire_data)
+        df[column_name] = df[column_name].pipe(
+            apply_min_max,
+            *old_feature_range,
+            *feature_range,
+        )
     else:
-        old_min = df.min().min()
-        old_max = df.max().max()
-        old_range = old_max - old_min
-
-        df = (df - old_min) * new_range / old_range + new_min
+        old_feature_range = df.pipe(min_max_value, entire_data)
+        df = df.pipe(
+            apply_min_max,
+            *old_feature_range,
+            *feature_range,
+        )
 
     return df
+
+
+def min_max_value(df: pd.DataFrame, entire_data: bool) -> tuple:
+    """
+    Return the minimum and maximum of DataFrame.
+
+    Use the `entire_data` flag to control returning entire data or each column.
+    """
+
+    if entire_data:
+        mmin = df.min().min()
+        mmax = df.max().max()
+    else:
+        mmin = df.min()
+        mmax = df.max()
+
+    return mmin, mmax
+
+
+def apply_min_max(
+    df: pd.DataFrame,
+    old_min: int | float | pd.Series,
+    old_max: int | float | pd.Series,
+    new_min: int | float | pd.Series,
+    new_max: int | float | pd.Series,
+) -> pd.DataFrame:
+    """
+    Apply minimax scaler to DataFrame.
+
+    Notes
+    -----
+    - Inputting minimum and maximum type
+        - int or float : It will apply minimax to the entire DataFrame.
+        - Series : It will apply minimax to each column.
+    """
+
+    old_range = old_max - old_min
+    new_range = new_max - new_min
+
+    return (df - old_min) * new_range / old_range + new_min

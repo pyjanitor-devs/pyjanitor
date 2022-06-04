@@ -773,56 +773,6 @@ def _not_equal_indices(
     return _keep_output(keep, left_c, right_c)
 
 
-def _eq_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
-) -> tuple:
-    """
-    Use binary search to get indices where left_c
-    is equal to right_c.
-
-    Returns a tuple of the left_index, right_index,
-    lower_boundary and upper_boundary.
-    """
-
-    # no point going through all the hassle
-    if left_c.min() > right_c.max():
-        return None
-    if left_c.max() < right_c.min():
-        return None
-
-    any_nulls = pd.isna(right_c)
-    if any_nulls.any():
-        right_c = right_c[~any_nulls]
-    if right_c.empty:
-        return None
-    any_nulls = pd.isna(left_c)
-    if any_nulls.any():
-        left_c = left_c[~any_nulls]
-    if left_c.empty:
-        return None
-    any_nulls = None
-
-    if not right_c.is_monotonic_increasing:
-        right_c = right_c.sort_values(kind="stable")
-
-    left_index = left_c.index.to_numpy(dtype=int, copy=False)
-    left_c = extract_array(left_c, extract_numpy=True)
-    right_index = right_c.index.to_numpy(dtype=int, copy=False)
-    right_c = extract_array(right_c, extract_numpy=True)
-
-    lower_boundary = right_c.searchsorted(left_c, side="left")
-    upper_boundary = right_c.searchsorted(left_c, side="right")
-    keep_rows = lower_boundary < upper_boundary
-    if not keep_rows.any():
-        return None
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        lower_boundary = lower_boundary[keep_rows]
-        upper_boundary = upper_boundary[keep_rows]
-    return left_index, right_index, lower_boundary, upper_boundary
-
-
 def _generic_func_cond_join(
     left_c: pd.Series,
     right_c: pd.Series,
@@ -933,21 +883,6 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (df_index, right_index)
     """
-    # TODO
-    # this uses the idea in the `_range_indices` function
-    # for less than and greater than;
-    # I'd like to believe there is a smarter/more efficient way of doing this
-    # where the filter occurs within the join, and avoids a blow-up
-    # the current implementation uses
-    # a list comprehension to find first matches
-    # in a bid to reduce the blow up size ...
-    # this applies only to integers/dates
-    # and only offers advantages in scenarios
-    # where the right is duplicated
-    # for one to many joins,
-    # or one to one or strings/category, use merge
-    # as it is significantly faster than a binary search
-
     eqs = [
         (left_on, right_on)
         for left_on, right_on, op in conditions
@@ -958,129 +893,29 @@ def _multiple_conditional_join_eq(
     left_on = [*left_on]
     right_on = [*right_on]
 
-    strings_or_category = any(
-        col
-        for col in left_on
-        if (is_string_dtype(df[col]) | is_categorical_dtype(df[col]))
-    )
-
-    if (
-        strings_or_category
-        | (not right.duplicated(subset=right_on).any(axis=None))
-        | (not df.duplicated(subset=left_on).any(axis=None))
-    ):
-        rest = (
-            (df[left_on], right[right_on], op)
-            for left_on, right_on, op in conditions
-            if op != _JoinOperator.STRICTLY_EQUAL.value
-        )
-
-        left_index, right_index = _MergeOperation(
-            df,
-            right,
-            left_on=left_on,
-            right_on=right_on,
-            sort=False,
-            copy=False,
-        )._get_join_indexers()
-
-        if not left_index.size:
-            return None
-
-        return _generate_indices(left_index, right_index, rest)
-
-    left_on, right_on = eqs[0]
-    outcome = _eq_indices(df[left_on], right[right_on])
-    if not outcome:
-        return None
-    left_index, right_index, lower_boundary, upper_boundary = outcome
-    eq_check = [condition for condition in conditions if condition != eqs[0]]
-
-    rest = [
-        (df.loc[left_index, left_on], right.loc[right_index, right_on], op)
-        for left_on, right_on, op in eq_check
-    ]
-    rest = [
-        (
-            extract_array(left_c, extract_numpy=True),
-            extract_array(right_c, extract_numpy=True),
-            operator_map[op],
-        )
-        for left_c, right_c, op in rest
-    ]
-
-    def _extension_array_check(arr):
-        """
-        Convert boolean array to numpy array
-        if it is an extension array.
-        """
-        if is_extension_array_dtype(arr):
-            return arr.to_numpy(dtype=bool, na_value=False, copy=False)
-        return arr
-
-    pos = np.copy(upper_boundary)
-    upper = np.copy(upper_boundary)
-    counter = np.arange(left_index.size)
-
-    # faster within C/Rust? better implemented within Pandas itself?
-    # the idea here is that lower_boundary moves up by 1
-    # till it gets to upper_boundary;
-    # if we get all our matches before the end of the iteration, even better
-    for _ in range((upper_boundary - lower_boundary).max()):
-        if not counter.size:
-            break
-        if (lower_boundary == upper).any():
-            keep_rows = lower_boundary < upper
-            rest = [
-                (left_c[keep_rows], right_c, op)
-                for left_c, right_c, op in rest
-            ]
-            lower_boundary = lower_boundary[keep_rows]
-            upper = upper[keep_rows]
-            counter = counter[keep_rows]
-        keep_rows = [
-            op(left_c, right_c[lower_boundary]) for left_c, right_c, op in rest
-        ]
-        keep_rows = [_extension_array_check(arr) for arr in keep_rows]
-        keep_rows = np.logical_and.reduce(keep_rows)
-        if not keep_rows.any():
-            lower_boundary += 1
-            continue
-        pos[counter[keep_rows]] = lower_boundary[keep_rows]
-        counter = counter[~keep_rows]
-        rest = [
-            (left_c[~keep_rows], right_c, op) for left_c, right_c, op in rest
-        ]
-        upper = upper[~keep_rows]
-        lower_boundary = lower_boundary[~keep_rows]
-        lower_boundary += 1
-
-    keep_rows = pos < upper_boundary
-
-    if not keep_rows.any():
-        return None
-
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        pos = pos[keep_rows]
-        upper_boundary = upper_boundary[keep_rows]
-
-    repeater = upper_boundary - pos
-    right_index = [
-        right_index[start:end] for start, end in zip(pos, upper_boundary)
-    ]
-
-    right_index = np.concatenate(right_index)
-    left_index = np.repeat(left_index, repeater)
-
-    eq_check = (
+    rest = (
         (df[left_on], right[right_on], op)
-        for left_on, right_on, op in eq_check
+        for left_on, right_on, op in conditions
+        if op != _JoinOperator.STRICTLY_EQUAL.value
     )
 
-    indices = _generate_indices(left_index, right_index, eq_check)
+    left_index, right_index = _MergeOperation(
+        df,
+        right,
+        left_on=left_on,
+        right_on=right_on,
+        sort=False,
+        copy=False,
+    )._get_join_indexers()
+
+    if not left_index.size:
+        return None
+
+    indices = _generate_indices(left_index, right_index, rest)
+
     if not indices:
         return None
+
     return _keep_output(keep, *indices)
 
 

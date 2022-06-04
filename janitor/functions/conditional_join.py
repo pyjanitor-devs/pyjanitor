@@ -41,7 +41,7 @@ def conditional_join(
 
     If the join is solely on equality, `pd.merge` function
     covers that; if you are interested in nearest joins, or rolling joins,
-    or the first match (lowest or highest) - `pd.merge_asof` covers that.
+    then `pd.merge_asof` covers that.
     There is also the IntervalIndex, which is usually more efficient
     for range joins, especially if the intervals do not overlap.
 
@@ -852,13 +852,10 @@ def _multiple_conditional_join_ne(
     # then use those indices to get the final indices,
     # using _generate_indices
     first, *rest = conditions
-    left_on, right_on, op = first
+    left_on, right_on, _ = first
 
     # get indices from the first condition
-    indices = _generic_func_cond_join(
-        df[left_on], right[right_on], op, multiple_conditions=False, keep="all"
-    )
-
+    indices = _not_equal_indices(df[left_on], right[right_on], keep="all")
     if indices is None:
         return None
 

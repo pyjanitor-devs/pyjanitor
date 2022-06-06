@@ -73,7 +73,8 @@ def select_columns(
         # note that no level is dropped; if there are three levels,
         # then three levels are returned, with the specified labels
         # selected/deselected.
-        # A copy of the dataframe is made via set_axis
+        # A copy of the dataframe is made via set_axis,
+        # to avoid mutating the original dataframe.
         df_columns = df.columns
         check("level", level, [int, str])
         full_column_list = df_columns.get_level_values(level)

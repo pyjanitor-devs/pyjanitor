@@ -75,10 +75,13 @@ def select_columns(
         # note that no level is dropped; if there are three levels,
         # then three levels are returned, with the specified labels
         # selected/deselected.
+        # A copy of the dataframe is made via set_axis
         df_columns = df.columns
         check("level", level, [int, str])
-        df.columns = df_columns.get_level_values(level)
-        full_column_list = _select_column_names(search_column_names, df)
+        temp_cols = df_columns.get_level_values(level)
+        full_column_list = _select_column_names(
+            search_column_names, df.set_axis(temp_cols, axis=1)
+        )
         full_column_list = df_columns.isin(full_column_list, level=level)
         full_column_list = df_columns[full_column_list]
         df.columns = df_columns

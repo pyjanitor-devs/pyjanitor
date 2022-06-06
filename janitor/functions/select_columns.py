@@ -72,19 +72,18 @@ def select_columns(
         # reassign the original columns,
         # and finally select/deselect the matching labels
         # via a boolean selection.
-        # note that no level is dropped; so if there are three levels,
+        # note that no level is dropped; if there are three levels,
         # then three levels are returned, with the specified labels
-        # selected/deselected
+        # selected/deselected.
         df_columns = df.columns
         check("level", level, [int, str])
         df.columns = df_columns.get_level_values(level)
         full_column_list = _select_column_names(search_column_names, df)
         full_column_list = df_columns.isin(full_column_list, level=level)
+        full_column_list = df_columns[full_column_list]
         df.columns = df_columns
-        if invert:
-            return df.loc[:, ~full_column_list]
-        return df.loc[:, full_column_list]
-    full_column_list = _select_column_names(search_column_names, df)
+    else:
+        full_column_list = _select_column_names(search_column_names, df)
     if invert:
         return df.drop(columns=full_column_list)
     return df.loc[:, full_column_list]

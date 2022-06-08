@@ -123,7 +123,6 @@ def test_strings(df1):
     ]
 
 
-@pytest.mark.xfail(reason="empty list returned instead.")
 def test_strings_do_not_exist(df):
     """
     Raise KeyError if `columns_to_select` is a string
@@ -179,6 +178,15 @@ def test_patterns_warning(df1):
             _select_column_names(patterns(r"\d$"), df1),
             df1.filter(regex=r"\d$").columns,
         )
+
+
+def test_regex_presence_string_column(df):
+    """
+    Raise KeyError if `columns_to_select` is a regex
+    and does not exist in the dataframe's columns.
+    """
+    with pytest.raises(KeyError, match="No match was returned for.+"):
+        _select_column_names(re.compile("word"), df)
 
 
 def test_regex_presence(df_dates):

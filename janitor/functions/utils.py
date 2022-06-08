@@ -228,7 +228,10 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     if pd.api.types.is_string_dtype(df_columns):
         if columns_to_select in df_columns:
             return [columns_to_select]
-        return fnmatch.filter(df_columns, columns_to_select)
+        outcome = fnmatch.filter(df_columns, columns_to_select)
+        if not outcome:
+            raise KeyError(f"No match was returned for '{columns_to_select}'.")
+        return outcome
 
     if df_columns.is_all_dates:
         if not df_columns.is_monotonic_increasing:
@@ -258,6 +261,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         bools = df.columns.str.contains(
             columns_to_select, na=False, regex=True
         )
+        if not bools.any():
+            raise KeyError(f"No match was returned for '{columns_to_select}'.")
         return df.columns[bools]
     raise KeyError(
         f"Regular expressions('{columns_to_select}') "

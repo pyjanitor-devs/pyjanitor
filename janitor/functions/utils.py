@@ -212,7 +212,7 @@ def _select_column_names(columns_to_select, df):
     """
     if columns_to_select in df.columns:
         return [columns_to_select]
-    raise KeyError(f"No match was returned for '{columns_to_select}'.")
+    raise KeyError(f"No match was returned for {columns_to_select}.")
 
 
 @_select_column_names.register(str)  # noqa: F811

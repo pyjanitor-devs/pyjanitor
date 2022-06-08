@@ -377,6 +377,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         raise TypeError(
             "The output of the applied callable should be a boolean array."
         )
+    if not filtered_columns.any():
+        raise KeyError(f"No match was returned for {columns_to_select}.")
 
     return df.columns[filtered_columns]
 

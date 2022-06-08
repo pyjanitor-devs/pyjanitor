@@ -354,12 +354,11 @@ def test_callable_returns_series(df):
 
 def test_callable_no_match(df):
     """
-    Test if `columns_to_select` is a callable,
-    and no value is returned.
+     Raise KeyError if `columns_to_select` is a callable,
+    and no match is returned.
     """
-    assert _select_column_names(pd.api.types.is_float_dtype, df).empty
-
-    assert _select_column_names(lambda x: "Date" in x.name, df).empty
+    with pytest.raises(KeyError, match="No match was returned.+"):
+        _select_column_names(pd.api.types.is_float_dtype, df)
 
 
 def test_tuple_presence(df_tuple):

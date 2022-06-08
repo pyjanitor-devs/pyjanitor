@@ -262,7 +262,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
             columns_to_select, na=False, regex=True
         )
         if not bools.any():
-            raise KeyError(f"No match was returned for '{columns_to_select}'.")
+            raise KeyError(f"No match was returned for {columns_to_select}.")
         return df.columns[bools]
     raise KeyError(
         f"Regular expressions('{columns_to_select}') "

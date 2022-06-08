@@ -221,7 +221,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Base function for column selection.
     Applies only to strings.
     It is also applicable to shell-like glob strings,
-    specifically, the `*`.
+    which are supported by `fnmatch`.
     A list/pandas Index of matching column names is returned.
     """
     df_columns = df.columns

@@ -226,7 +226,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list/pandas Index of matching column names is returned.
     """
     df_columns = df.columns
-    if df_columns.dtype.kind == "O":
+    if df_columns.dtype.kind in {"O", "S", "U"}:
         if columns_to_select in df_columns:
             return [columns_to_select]
         outcome = fnmatch.filter(df_columns, columns_to_select)
@@ -252,7 +252,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A pandas Index of matching column names is returned.
     """
     df_columns = df.columns
-    if df_columns.dtype.kind == "O":
+    if df_columns.dtype.kind in {"O", "S", "U"}:
         bools = df_columns.str.contains(
             columns_to_select, na=False, regex=True
         )

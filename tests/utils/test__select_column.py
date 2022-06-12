@@ -103,7 +103,7 @@ def test_col_not_found3(df_dates):
 
 def test_col_not_found4(df_numbers):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
-    with pytest.raises(KeyError, match=r"String\(.+\) can be applied.+"):
+    with pytest.raises(KeyError, match=r"No match was returned.+"):
         _select_column_names("id", df_numbers)
 
 
@@ -151,14 +151,12 @@ def test_strings_dates_range(df_dates):
 
 
 def test_unsorted_dates(df_dates):
-    """Raise Error if the dates are unsorted."""
+    """Test output if the dates are unsorted, and a string is passed."""
     df_dates = df_dates.iloc[:, [10, 4, 7, 2, 1, 3, 5, 6, 8, 9, 11, 0]]
-    with pytest.raises(
-        ValueError,
-        match="The column is a DatetimeIndex and should be "
-        "monotonic increasing.",
-    ):
-        _select_column_names("2011-01-31", df_dates)
+    assert_index_equal(
+        df_dates.loc[:, ["2011-01-31"]].columns,
+        _select_column_names("2011-01-31", df_dates),
+    )
 
 
 def test_regex(df1):
@@ -194,9 +192,7 @@ def test_regex_presence(df_dates):
     Raise KeyError if `columns_to_select` is a regex
     and the columns is not a string column.
     """
-    with pytest.raises(
-        KeyError, match=r"Regular expressions\(.+\) can be applied.+"
-    ):
+    with pytest.raises(KeyError, match=r"No match was returned.+"):
         _select_column_names(re.compile(r"^\d+"), df_dates)
 
 

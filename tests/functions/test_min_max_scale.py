@@ -77,9 +77,7 @@ import pytest
         ),
     ],
 )
-def test_min_max_scale_column_name_type(
-    df, column_name, jointly, excepted
-):
+def test_min_max_scale_column_name_type(df, column_name, jointly, excepted):
     result = df.min_max_scale(column_name=column_name, jointly=jointly)
 
     assert result.equals(excepted)

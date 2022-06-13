@@ -11,7 +11,6 @@ from pandas.api.types import (
     is_list_like,
     is_string_dtype,
     is_categorical_dtype,
-    is_scalar,
 )
 from pandas.core.construction import extract_array
 from pandas.core.dtypes.concat import concat_compat
@@ -1392,20 +1391,23 @@ def _computations_pivot_wider(
         index=index, columns=names_from, values=values_from
     )
 
-    if names_expand:
-        names_expand = df.loc[:, names_from].apply(is_categorical_dtype)
-        if names_expand.any():
-            cats = np.asarray(names_from)[names_expand]
-            cats = [
-                df[col].cat.categories if col in cats else df[col].unique()
-                for col in names_from
-            ]
-            if is_scalar(values_from) and (len(cats) == 1):
-                cats = cats[0]
-            if not is_scalar(values_from):
-                cats = [values_from] + cats
-            return cats
+    if (
+        names_expand
+        and df.loc[:, names_from].apply(is_categorical_dtype).any()
+    ):
+        if df_.columns.nlevels > 1:
+            indexer = pd.MultiIndex.from_product(df_.columns.levels)
+        else:
+            indexer = df_.columns.categories
+        df_ = df_.reindex(columns=indexer)
 
+    if id_expand and index:
+        if df.loc[:, index].apply(is_categorical_dtype).any():
+            if df_.index.nlevels > 1:
+                indexer = pd.MultiIndex.from_product(df_.index.levels)
+            else:
+                indexer = df_.index.categories
+            df_ = df_.reindex(index=indexer)
     # an empty df is likely because
     # there is no `values_from`
     if any((df_.empty, not flatten_levels)):
@@ -1461,11 +1463,9 @@ def _computations_pivot_wider(
                     f"{error} is not a column label in names_from."
                 ) from error
 
-    # if columns are of category type
-    # this returns columns to object dtype
-    # also, resetting index with category columns is not possible
-    df_.columns = [*df_.columns]
     if index and reset_index:
+        if is_categorical_dtype(df_.columns):
+            df_.columns = df_.columns.tolist()
         df_ = df_.reset_index()
 
     if df_.columns.names:

@@ -23,7 +23,7 @@ def min_max_scale(
     df: pd.DataFrame,
     feature_range: tuple[int | float, int | float] = (0, 1),
     column_name: str | int | list[str | int] | pd.Index = None,
-    entire_data: bool = False,
+    jointly: bool = False,
 ) -> pd.DataFrame:
     """
     Scales DataFrame to between a minimum and maximum value.
@@ -33,7 +33,7 @@ def min_max_scale(
 
     If `column_name` is specified, then only that column(s) of data is scaled.
     Otherwise, the entire dataframe is scaled.
-    If `entire_data` is `True`, the entire dataframe will be regnozied as
+    If `jointly` is `True`, the entire dataframe will be regnozied as
     the one to scale. Otherwise, each column of data will be scaled sperately.
 
     Example: Basic usage.
@@ -45,7 +45,7 @@ def min_max_scale(
              a    b
         0  0.0  0.0
         1  1.0  1.0
-        >>> df.min_max_scale(entire_data=True)
+        >>> df.min_max_scale(jointly=True)
              a    b
         0  0.5  0.0
         1  1.0  0.5
@@ -59,7 +59,7 @@ def min_max_scale(
                a      b
         0    0.0    0.0
         1  100.0  100.0
-        >>> df.min_max_scale(feature_range=(0, 100), entire_data=True)
+        >>> df.min_max_scale(feature_range=(0, 100), jointly=True)
                a     b
         0   50.0   0.0
         1  100.0  50.0
@@ -79,7 +79,7 @@ def min_max_scale(
         >>> df.min_max_scale(
         ...     feature_range=(0, 100),
         ...     column_name=["a", "c"],
-        ...     entire_data=True,
+        ...     jointly=True,
         ... )
                a  b     c
         0   50.0  0  50.0
@@ -98,7 +98,7 @@ def min_max_scale(
     :param df: A pandas DataFrame.
     :param feature_range: (optional) Desired range of transformed data.
     :param column_name: (optional) The column on which to perform scaling.
-    :param entire_data: (bool) Scale the entire data if Ture.
+    :param jointly: (bool) Scale the entire data if Ture.
     :returns: A pandas DataFrame with scaled data.
     :raises ValueError: if `feature_range` isn't tuple type.
     :raises ValueError: if the length of `feature_range` isn't equal to two.
@@ -120,14 +120,14 @@ def min_max_scale(
     if column_name is not None:
         df = df.copy()  # Avoid to change the original DataFrame.
 
-        old_feature_range = df[column_name].pipe(min_max_value, entire_data)
+        old_feature_range = df[column_name].pipe(min_max_value, jointly)
         df[column_name] = df[column_name].pipe(
             apply_min_max,
             *old_feature_range,
             *feature_range,
         )
     else:
-        old_feature_range = df.pipe(min_max_value, entire_data)
+        old_feature_range = df.pipe(min_max_value, jointly)
         df = df.pipe(
             apply_min_max,
             *old_feature_range,
@@ -137,17 +137,17 @@ def min_max_scale(
     return df
 
 
-def min_max_value(df: pd.DataFrame, entire_data: bool) -> tuple:
+def min_max_value(df: pd.DataFrame, jointly: bool) -> tuple:
     """
     Return the minimum and maximum of DataFrame.
 
-    Use the `entire_data` flag to control returning entire data or each column.
+    Use the `jointly` flag to control returning entire data or each column.
 
     .. # noqa: DAR101
     .. # noqa: DAR201
     """
 
-    if entire_data:
+    if jointly:
         mmin = df.min().min()
         mmax = df.max().max()
     else:

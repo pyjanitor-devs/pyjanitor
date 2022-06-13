@@ -4,7 +4,7 @@ import pytest
 
 @pytest.mark.functions
 @pytest.mark.parametrize(
-    "df, column_name, entire_data, excepted",
+    "df, column_name, jointly, excepted",
     [
         # test default parameter
         (
@@ -78,9 +78,9 @@ import pytest
     ],
 )
 def test_min_max_scale_column_name_type(
-    df, column_name, entire_data, excepted
+    df, column_name, jointly, excepted
 ):
-    result = df.min_max_scale(column_name=column_name, entire_data=entire_data)
+    result = df.min_max_scale(column_name=column_name, jointly=jointly)
 
     assert result.equals(excepted)
 

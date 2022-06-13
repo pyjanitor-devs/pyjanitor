@@ -10,6 +10,8 @@ import pandas_flavor as pf
 from pandas.api.types import (
     is_list_like,
     is_string_dtype,
+    is_categorical_dtype,
+    is_scalar,
 )
 from pandas.core.construction import extract_array
 from pandas.core.dtypes.concat import concat_compat
@@ -1386,22 +1388,36 @@ def _computations_pivot_wider(
         # check dtype of columns
         column_dtype = is_string_dtype(df.columns)
 
-    df = df.pivot(  # noqa: PD010
+    df_ = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
     )
 
+    if names_expand:
+        names_expand = df.loc[:, names_from].apply(is_categorical_dtype)
+        if names_expand.any():
+            cats = np.asarray(names_from)[names_expand]
+            cats = [
+                df[col].cat.categories if col in cats else df[col].unique()
+                for col in names_from
+            ]
+            if is_scalar(values_from) and (len(cats) == 1):
+                cats = cats[0]
+            if not is_scalar(values_from):
+                cats = [values_from] + cats
+            return cats
+
     # an empty df is likely because
     # there is no `values_from`
-    if any((df.empty, not flatten_levels)):
-        return df
+    if any((df_.empty, not flatten_levels)):
+        return df_
 
-    if isinstance(df.columns, pd.MultiIndex):
+    if isinstance(df_.columns, pd.MultiIndex):
         if (not names_from_all_strings) or (not column_dtype):
-            new_columns = [tuple(map(str, entry)) for entry in df]
+            new_columns = [tuple(map(str, entry)) for entry in df_]
         else:
-            new_columns = [entry for entry in df]
+            new_columns = [entry for entry in df_]
         if names_glue is not None:
-            if ("_value" in names_from) and (None in df.columns.names):
+            if ("_value" in names_from) and (None in df_.columns.names):
                 warnings.warn(
                     "For names_glue, _value is used as a placeholder "
                     "for the values_from section. "
@@ -1415,7 +1431,7 @@ def _computations_pivot_wider(
                 # there'll only be one None
                 names_from = [
                     "_value" if ent is None else ent
-                    for ent in df.columns.names
+                    for ent in df_.columns.names
                 ]
                 new_columns = [
                     names_glue.format_map(dict(zip(names_from, entry)))
@@ -1430,15 +1446,15 @@ def _computations_pivot_wider(
                 names_sep = "_"
             new_columns = [names_sep.join(entry) for entry in new_columns]
 
-        df.columns = new_columns
+        df_.columns = new_columns
     else:
         if (not names_from_all_strings) or (not column_dtype):
-            df.columns = df.columns.astype(str)
+            df_.columns = df_.columns.astype(str)
         if names_glue is not None:
             try:
-                df.columns = [
+                df_.columns = [
                     names_glue.format_map({names_from[0]: entry})
-                    for entry in df
+                    for entry in df_
                 ]
             except KeyError as error:
                 raise KeyError(
@@ -1448,14 +1464,14 @@ def _computations_pivot_wider(
     # if columns are of category type
     # this returns columns to object dtype
     # also, resetting index with category columns is not possible
-    df.columns = [*df.columns]
+    df_.columns = [*df_.columns]
     if index and reset_index:
-        df = df.reset_index()
+        df_ = df_.reset_index()
 
-    if df.columns.names:
-        df.columns.names = [None]
+    if df_.columns.names:
+        df_.columns.names = [None]
 
-    return df
+    return df_
 
 
 def _data_checks_pivot_wider(
@@ -1496,9 +1512,12 @@ def _data_checks_pivot_wider(
     if values_from is not None:
         if is_list_like(values_from):
             values_from = [*values_from]
-        values_from = _select_column_names(values_from, df)
-        if len(values_from) == 1:
-            values_from = values_from[0]
+        out = _select_column_names(values_from, df)
+        # hack to align with pd.pivot
+        if values_from == out[0]:
+            values_from = out[0]
+        else:
+            values_from = out
 
     check("flatten_levels", flatten_levels, [bool])
 

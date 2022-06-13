@@ -33,8 +33,9 @@ def min_max_scale(
 
     If `column_name` is specified, then only that column(s) of data is scaled.
     Otherwise, the entire dataframe is scaled.
-    If `jointly` is `True`, the entire dataframe will be regnozied as
-    the one to scale. Otherwise, each column of data will be scaled sperately.
+    If `jointly` is `True`, the `column_names` provided entire dataframe will be
+    regnozied as the one to jointly scale. Otherwise, each column of data will be
+    scaled separately.
 
     Example: Basic usage.
 

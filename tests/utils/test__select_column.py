@@ -123,6 +123,18 @@ def test_strings(df1):
     ]
 
 
+def test_strings_cat(df1):
+    """Test output on categorical columns"""
+    df1.columns = df1.columns.astype("category")
+    assert _select_column_names("id", df1) == ["id"]
+    assert _select_column_names("*type*", df1) == [
+        "type",
+        "type1",
+        "type2",
+        "type3",
+    ]
+
+
 def test_strings_do_not_exist(df):
     """
     Raise KeyError if `columns_to_select` is a string
@@ -161,6 +173,15 @@ def test_unsorted_dates(df_dates):
 
 def test_regex(df1):
     """Test _select_column_names function on regular expressions."""
+    assert_index_equal(
+        _select_column_names(re.compile(r"\d$"), df1),
+        df1.filter(regex=r"\d$").columns,
+    )
+
+
+def test_regex_cat(df1):
+    """Test output on categorical columns"""
+    df1.columns = df1.columns.astype("category")
     assert_index_equal(
         _select_column_names(re.compile(r"\d$"), df1),
         df1.filter(regex=r"\d$").columns,

@@ -1204,6 +1204,9 @@ def pivot_wider(
     flatten_levels: Optional[bool] = True,
     names_sep: str = "_",
     names_glue: str = None,
+    reset_index: bool = True,
+    names_expand: bool = False,
+    id_expand: bool = False,
 ) -> pd.DataFrame:
     """
     Reshapes data from *long* to *wide* form.
@@ -1301,6 +1304,14 @@ def pivot_wider(
         and special `_value` as a placeholder
         if there are multiple `values_from`.
         Applicable only if `flatten_levels` is `True`.
+    :param reset_index: Determines whether to restore `index`
+        as a column/columns. Applicable only if `index` is provided.
+        Default is `True`.
+    :param names_expand: Expand columns to show all the categories.
+        Applies only if `names_from` is a Categorical column.
+        Default is `False`.
+    :param id_expand: Expand the index to show all the categories.
+        Applies only if `index` is a Categorical column. Default is `False`.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
     """
@@ -1315,6 +1326,9 @@ def pivot_wider(
         flatten_levels,
         names_sep,
         names_glue,
+        reset_index,
+        names_expand,
+        id_expand,
     )
 
 
@@ -1326,6 +1340,9 @@ def _computations_pivot_wider(
     flatten_levels: Optional[bool] = True,
     names_sep: str = "_",
     names_glue: str = None,
+    reset_index: bool = True,
+    names_expand: bool = False,
+    id_expand: bool = False,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
@@ -1345,6 +1362,9 @@ def _computations_pivot_wider(
         flatten_levels,
         names_sep,
         names_glue,
+        reset_index,
+        names_expand,
+        id_expand,
     ) = _data_checks_pivot_wider(
         df,
         index,
@@ -1353,6 +1373,9 @@ def _computations_pivot_wider(
         flatten_levels,
         names_sep,
         names_glue,
+        reset_index,
+        names_expand,
+        id_expand,
     )
     if flatten_levels:
         # check dtype of `names_from` is string
@@ -1426,7 +1449,7 @@ def _computations_pivot_wider(
     # this returns columns to object dtype
     # also, resetting index with category columns is not possible
     df.columns = [*df.columns]
-    if index:
+    if index and reset_index:
         df = df.reset_index()
 
     if df.columns.names:
@@ -1443,6 +1466,9 @@ def _data_checks_pivot_wider(
     flatten_levels,
     names_sep,
     names_glue,
+    reset_index,
+    names_expand,
+    id_expand,
 ):
 
     """
@@ -1482,6 +1508,10 @@ def _data_checks_pivot_wider(
     if names_glue is not None:
         check("names_glue", names_glue, [str])
 
+    check("reset_index", reset_index, [bool])
+    check("names_expand", names_expand, [bool])
+    check("id_expand", id_expand, [bool])
+
     return (
         df,
         index,
@@ -1490,4 +1520,7 @@ def _data_checks_pivot_wider(
         flatten_levels,
         names_sep,
         names_glue,
+        reset_index,
+        names_expand,
+        id_expand,
     )

@@ -135,6 +135,30 @@ def test_name_sep_wrong_type(df_checks_output):
         )
 
 
+def test_name_expand_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `names_expand`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], names_expand=1
+        )
+
+
+def test_id_expand_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `id_expand`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], id_expand=1
+        )
+
+
+def test_reset_index_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `reset_index`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], reset_index=1
+        )
+
+
 def test_name_glue_wrong_type(df_checks_output):
     """Raise TypeError if the wrong type is provided for `names_glue`."""
     with pytest.raises(TypeError):
@@ -367,8 +391,9 @@ def test_change_level_order(df_checks_output):
         names_from="variable",
         values_from=["estimate", "error"],
         names_glue="{variable}_{_value}",
+        reset_index=False,
     )
-    assert_frame_equal(result, df_out)
+    assert_frame_equal(result, df_out.set_index(["geoid", "name"]))
 
 
 def test_names_glue_single_column(df_checks_output):

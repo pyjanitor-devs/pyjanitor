@@ -341,6 +341,31 @@ def test_index_names():
     assert_frame_equal(result, expected_output)
 
 
+def test_categorical():
+    """Test output for categorical column"""
+    df_in = pd.DataFrame(
+        {
+            "family": ["Kelly", "Kelly", "Quin", "Quin"],
+            "name": ["Mark", "Scott", "Tegan", "Sara"],
+            "n": pd.Categorical([1, 2, 1, 2]),
+        }
+    )
+    df_out = pd.DataFrame(
+        {
+            "family": ["Kelly", "Quin"],
+            1: ["Mark", "Tegan"],
+            2: ["Scott", "Sara"],
+        }
+    )
+
+    result = df_in.pivot_wider(
+        index="family",
+        names_from="n",
+        values_from="name",
+    )
+    assert_frame_equal(result, df_out)
+
+
 def test_names_glue():
     """Test output with `names_glue`"""
     df_in = pd.DataFrame(
@@ -446,3 +471,45 @@ def test_int_columns():
     )
 
     assert_frame_equal(result, df_out)
+
+
+@pytest.fixture
+def df_expand():
+    """pytest fixture"""
+    # adapted from https://www.tidyverse.org/blog/2022/02/tidyr-1-2-0/
+    weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    daily = {
+        "day": pd.Categorical(
+            ("Tue", "Thu", "Fri", "Mon"), categories=weekdays, ordered=True
+        ),
+        "value": (2, 3, 1, 5),
+    }
+
+    daily = pd.DataFrame(daily, index=[0, 0, 0, 0])
+    daily["type"] = ("A", "B", "B", "A")
+    return daily
+
+
+def test_names_expand(df_expand):
+    """Test output if `names_expand`"""
+    weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    actual = df_expand.complete({"day": weekdays}, fill_value={"value": 0})
+    actual.index = np.repeat([0], len(actual))
+    actual = (
+        actual.encode_categorical(day="appearance")
+        .pivot_wider(None, "day", "value")
+        .replace(0, np.nan)
+    )
+    expected = df_expand.pivot_wider(None, "day", "value", names_expand=True)
+    assert_frame_equal(actual, expected)
+
+
+def test_id_expand(df_expand):
+    """Test output if `id_expand`"""
+    weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    weekdays = pd.Categorical(weekdays, categories=weekdays, ordered=True)
+    actual = df_expand.pivot_wider(
+        "day", "type", "value", id_expand=True
+    ).complete({"day": weekdays})
+    expected = df_expand.pivot_wider("day", "type", "value", id_expand=True)
+    assert_frame_equal(actual, expected)

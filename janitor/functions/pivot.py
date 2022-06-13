@@ -1395,18 +1395,30 @@ def _computations_pivot_wider(
         names_expand
         and df.loc[:, names_from].apply(is_categorical_dtype).any()
     ):
-        if df_.columns.nlevels > 1:
-            indexer = pd.MultiIndex.from_product(df_.columns.levels)
+        indexer = df_.columns
+        if indexer.nlevels > 1:
+            # preserve the categorical status
+            indexer = pd.MultiIndex.from_product(indexer.levels)
         else:
-            indexer = df_.columns.categories
+            indexer = pd.Categorical(
+                values=indexer.categories,
+                categories=indexer.categories,
+                ordered=indexer.ordered,
+            )
         df_ = df_.reindex(columns=indexer)
 
     if id_expand and index:
         if df.loc[:, index].apply(is_categorical_dtype).any():
-            if df_.index.nlevels > 1:
-                indexer = pd.MultiIndex.from_product(df_.index.levels)
+            indexer = df_.index
+            if indexer.nlevels > 1:
+                # preserve the categorical status
+                indexer = pd.MultiIndex.from_product(indexer.levels)
             else:
-                indexer = df_.index.categories
+                indexer = pd.Categorical(
+                    values=indexer.categories,
+                    categories=indexer.categories,
+                    ordered=indexer.ordered,
+                )
             df_ = df_.reindex(index=indexer)
     # an empty df is likely because
     # there is no `values_from`
@@ -1450,8 +1462,6 @@ def _computations_pivot_wider(
 
         df_.columns = new_columns
     else:
-        if (not names_from_all_strings) or (not column_dtype):
-            df_.columns = df_.columns.astype(str)
         if names_glue is not None:
             try:
                 df_.columns = [

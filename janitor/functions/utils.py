@@ -13,6 +13,8 @@ from pandas.api.types import (
     is_scalar,
     is_list_like,
     is_datetime64_dtype,
+    is_string_dtype,
+    is_categorical_dtype,
 )
 import numpy as np
 from multipledispatch import dispatch
@@ -216,6 +218,15 @@ def _select_column_names(columns_to_select, df):
     raise KeyError(f"No match was returned for {columns_to_select}.")
 
 
+def _is_str_or_cat(df_columns):
+    """Check if the column is a string or categorical with strings."""
+    if is_string_dtype(df_columns):
+        return True
+    if is_categorical_dtype(df_columns):
+        return is_string_dtype(df_columns.categories)
+    return False
+
+
 @_select_column_names.register(str)  # noqa: F811
 def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     """
@@ -226,7 +237,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A list/pandas Index of matching column names is returned.
     """
     df_columns = df.columns
-    if df_columns.dtype.kind in {"O", "S", "U"}:
+
+    if _is_str_or_cat(df_columns):
         if columns_to_select in df_columns:
             return [columns_to_select]
         outcome = fnmatch.filter(df_columns, columns_to_select)
@@ -252,7 +264,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     A pandas Index of matching column names is returned.
     """
     df_columns = df.columns
-    if df_columns.dtype.kind in {"O", "S", "U"}:
+
+    if _is_str_or_cat(df_columns):
         bools = df_columns.str.contains(
             columns_to_select, na=False, regex=True
         )

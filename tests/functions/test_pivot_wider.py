@@ -504,12 +504,12 @@ def test_names_expand(df_expand):
     assert_frame_equal(actual, expected)
 
 
-def test_id_expand(df_expand):
-    """Test output if `id_expand`"""
+def test_index_expand(df_expand):
+    """Test output if `index_expand`"""
     weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     weekdays = pd.Categorical(weekdays, categories=weekdays, ordered=True)
-    actual = df_expand.pivot_wider(
-        "day", "type", "value", id_expand=True
-    ).complete({"day": weekdays})
-    expected = df_expand.pivot_wider("day", "type", "value", id_expand=True)
+    actual = df_expand.pivot_wider("day", "type", "value").complete(
+        {"day": weekdays}
+    )
+    expected = df_expand.pivot_wider("day", "type", "value", index_expand=True)
     assert_frame_equal(actual, expected)

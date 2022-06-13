@@ -1207,7 +1207,7 @@ def pivot_wider(
     names_glue: str = None,
     reset_index: bool = True,
     names_expand: bool = False,
-    id_expand: bool = False,
+    index_expand: bool = False,
 ) -> pd.DataFrame:
     """
     Reshapes data from *long* to *wide* form.
@@ -1311,7 +1311,7 @@ def pivot_wider(
     :param names_expand: Expand columns to show all the categories.
         Applies only if `names_from` is a Categorical column.
         Default is `False`.
-    :param id_expand: Expand the index to show all the categories.
+    :param index_expand: Expand the index to show all the categories.
         Applies only if `index` is a Categorical column. Default is `False`.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
@@ -1329,7 +1329,7 @@ def pivot_wider(
         names_glue,
         reset_index,
         names_expand,
-        id_expand,
+        index_expand,
     )
 
 
@@ -1343,7 +1343,7 @@ def _computations_pivot_wider(
     names_glue: str = None,
     reset_index: bool = True,
     names_expand: bool = False,
-    id_expand: bool = False,
+    index_expand: bool = False,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
@@ -1365,7 +1365,7 @@ def _computations_pivot_wider(
         names_glue,
         reset_index,
         names_expand,
-        id_expand,
+        index_expand,
     ) = _data_checks_pivot_wider(
         df,
         index,
@@ -1376,49 +1376,70 @@ def _computations_pivot_wider(
         names_glue,
         reset_index,
         names_expand,
-        id_expand,
+        index_expand,
     )
-    if flatten_levels:
-        # check dtype of `names_from` is string
-        names_from_all_strings = (
-            df.filter(names_from).agg(is_string_dtype).all().item()
-        )
-
-        # check dtype of columns
-        column_dtype = is_string_dtype(df.columns)
 
     df_ = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
     )
 
-    if (
-        names_expand
-        and df.loc[:, names_from].apply(is_categorical_dtype).any()
-    ):
-        indexer = df_.columns
-        if indexer.nlevels > 1:
-            # preserve the categorical status
-            indexer = pd.MultiIndex.from_product(indexer.levels)
-        else:
-            indexer = pd.Categorical(
-                values=indexer.categories,
-                categories=indexer.categories,
-                ordered=indexer.ordered,
-            )
-        df_ = df_.reindex(columns=indexer)
+    def _expand(indexer, retain_categories):
+        """
+        Expand Index to all categories.
+        Applies to categorical index.
+        Categories are preserved where possible.
+        If `flatten_levels`, a fastpath can be taken
+        to generate all possible combinations.
 
-    if id_expand and index:
-        if df.loc[:, index].apply(is_categorical_dtype).any():
-            indexer = df_.index
-            if indexer.nlevels > 1:
-                # preserve the categorical status
+        Returns an Index.
+        """
+        if indexer.nlevels > 1:
+            if not retain_categories:
                 indexer = pd.MultiIndex.from_product(indexer.levels)
+            else:
+                indexer = [
+                    indexer.get_level_values(n) for n in range(indexer.nlevels)
+                ]
+                indexer = [
+                    pd.Categorical(
+                        values=arr.categories,
+                        categories=arr.categories,
+                        ordered=arr.ordered,
+                    )
+                    if is_categorical_dtype(arr)
+                    else arr.unique()
+                    for arr in indexer
+                ]
+                indexer = pd.MultiIndex.from_product(indexer)
+        else:
+            if not retain_categories:
+                indexer = indexer.categories
             else:
                 indexer = pd.Categorical(
                     values=indexer.categories,
                     categories=indexer.categories,
                     ordered=indexer.ordered,
                 )
+        print(indexer)
+        return indexer
+
+    if (
+        names_expand
+        and df.loc[:, names_from].apply(is_categorical_dtype).any()
+    ):
+        retain_categories = True
+        if (
+            flatten_levels & (names_glue is not None)
+            | isinstance(df_.columns, pd.MultiIndex)
+            | ((index is not None) & reset_index)
+        ):
+            retain_categories = False
+        indexer = _expand(df_.columns, retain_categories=retain_categories)
+        df_ = df_.reindex(columns=indexer)
+
+    if index_expand and index:
+        if df.loc[:, index].apply(is_categorical_dtype).any():
+            indexer = _expand(df_.index, retain_categories=True)
             df_ = df_.reindex(index=indexer)
     # an empty df is likely because
     # there is no `values_from`
@@ -1426,7 +1447,12 @@ def _computations_pivot_wider(
         return df_
 
     if isinstance(df_.columns, pd.MultiIndex):
-        if (not names_from_all_strings) or (not column_dtype):
+        names_from_is_all_strings = (
+            df.filter(names_from).apply(is_string_dtype).all().item()
+        )
+
+        column_dtype_is_string = is_string_dtype(df.columns)
+        if (not names_from_is_all_strings) or (not column_dtype_is_string):
             new_columns = [tuple(map(str, entry)) for entry in df_]
         else:
             new_columns = [entry for entry in df_]
@@ -1474,8 +1500,6 @@ def _computations_pivot_wider(
                 ) from error
 
     if index and reset_index:
-        if is_categorical_dtype(df_.columns):
-            df_.columns = df_.columns.tolist()
         df_ = df_.reset_index()
 
     if df_.columns.names:
@@ -1494,7 +1518,7 @@ def _data_checks_pivot_wider(
     names_glue,
     reset_index,
     names_expand,
-    id_expand,
+    index_expand,
 ):
 
     """
@@ -1539,7 +1563,7 @@ def _data_checks_pivot_wider(
 
     check("reset_index", reset_index, [bool])
     check("names_expand", names_expand, [bool])
-    check("id_expand", id_expand, [bool])
+    check("index_expand", index_expand, [bool])
 
     return (
         df,
@@ -1551,5 +1575,5 @@ def _data_checks_pivot_wider(
         names_glue,
         reset_index,
         names_expand,
-        id_expand,
+        index_expand,
     )

@@ -106,8 +106,8 @@ def min_max_scale(
     :raises ValueError: if the element of `feature_range` isn't number type.
     :raises ValueError: if `feature_range[1]` <= `feature_range[0]`.
 
-    Changed in version 0.24.0: Deleted "old_min", "old_max", "new_min", and "new_max"
-    options.
+    Changed in version 0.24.0: Deleted "old_min", "old_max", "new_min", and
+    "new_max" options.
     Changed in version 0.24.0: Added "feature_range", and "jointly" options.
     """
 

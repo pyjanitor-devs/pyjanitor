@@ -526,9 +526,6 @@ def _data_checks_pivot_longer(
                     "index parameter. Kindly provide unique label(s)."
                 )
 
-    if names_transform:
-        check("names_transform", names_transform, [str, Callable, dict])
-
     check("sort_by_appearance", sort_by_appearance, [bool])
 
     check("ignore_index", ignore_index, [bool])

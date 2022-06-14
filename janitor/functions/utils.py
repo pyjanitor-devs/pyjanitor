@@ -12,6 +12,9 @@ from pandas.api.types import (
     union_categoricals,
     is_scalar,
     is_list_like,
+    is_datetime64_dtype,
+    is_string_dtype,
+    is_categorical_dtype,
 )
 import numpy as np
 from multipledispatch import dispatch
@@ -212,7 +215,16 @@ def _select_column_names(columns_to_select, df):
     """
     if columns_to_select in df.columns:
         return [columns_to_select]
-    raise KeyError(f"No match was returned for '{columns_to_select}'.")
+    raise KeyError(f"No match was returned for {columns_to_select}.")
+
+
+def _is_str_or_cat(df_columns):
+    """Check if the column is a string or categorical with strings."""
+    if is_string_dtype(df_columns):
+        return True
+    if is_categorical_dtype(df_columns):
+        return is_string_dtype(df_columns.categories)
+    return False
 
 
 @_select_column_names.register(str)  # noqa: F811
@@ -221,32 +233,26 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Base function for column selection.
     Applies only to strings.
     It is also applicable to shell-like glob strings,
-    specifically, the `*`.
+    which are supported by `fnmatch`.
     A list/pandas Index of matching column names is returned.
     """
     df_columns = df.columns
-    if pd.api.types.is_string_dtype(df_columns):
-        if (
-            "*" in columns_to_select
-        ):  # shell-style glob string (e.g., `*_thing_*`)
-            return fnmatch.filter(df_columns, columns_to_select)
+
+    if _is_str_or_cat(df_columns):
         if columns_to_select in df_columns:
             return [columns_to_select]
-        raise KeyError(f"No match was returned for '{columns_to_select}'.")
-    if pd.api.types.is_datetime64_any_dtype(df_columns):
-        if not df_columns.is_monotonic_increasing:
-            raise ValueError(
-                "The column is a DatetimeIndex and should be "
-                "monotonic increasing."
-            )
+        outcome = fnmatch.filter(df_columns, columns_to_select)
+        if not outcome:
+            raise KeyError(f"No match was returned for '{columns_to_select}'.")
+        return outcome
+
+    if is_datetime64_dtype(df_columns):
         timestamp = df_columns.get_loc(columns_to_select)
-        if isinstance(timestamp, slice):
+        if not isinstance(timestamp, int):
             return df_columns[timestamp]
         return [df_columns[timestamp]]
-    raise KeyError(
-        f"String('{columns_to_select}') can be applied "
-        "only to string/datetime columns."
-    )
+
+    raise KeyError(f"No match was returned for '{columns_to_select}'.")
 
 
 @_select_column_names.register(re.Pattern)  # noqa: F811
@@ -257,15 +263,16 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     `re.compile` is required for the regular expression.
     A pandas Index of matching column names is returned.
     """
-    if pd.api.types.is_string_dtype(df.columns):
-        bools = df.columns.str.contains(
+    df_columns = df.columns
+
+    if _is_str_or_cat(df_columns):
+        bools = df_columns.str.contains(
             columns_to_select, na=False, regex=True
         )
-        return df.columns[bools]
-    raise KeyError(
-        f"Regular expressions('{columns_to_select}') "
-        "can be applied only to string columns."
-    )
+        if not bools.any():
+            raise KeyError(f"No match was returned for {columns_to_select}.")
+        return df_columns[bools]
+    raise KeyError(f"No match was returned for {columns_to_select}.")
 
 
 @_select_column_names.register(slice)  # noqa: F811
@@ -291,13 +298,12 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     step_check = None
     method = None
 
-    if not df_columns.is_unique:
+    if not df_columns.is_unique and not df_columns.is_monotonic_increasing:
         raise ValueError(
-            "The column labels are not unique. "
-            "Kindly ensure the labels are unique "
-            "to ensure the correct output."
+            "Non-unique column labels should be monotonic increasing."
         )
-    is_date_column = pd.api.types.is_datetime64_any_dtype(df_columns)
+
+    is_date_column = is_datetime64_dtype(df_columns)
     if is_date_column:
         if not df_columns.is_monotonic_increasing:
             raise ValueError(
@@ -377,6 +383,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         raise TypeError(
             "The output of the applied callable should be a boolean array."
         )
+    if not filtered_columns.any():
+        raise KeyError(f"No match was returned for {columns_to_select}.")
 
     return df.columns[filtered_columns]
 

@@ -38,7 +38,7 @@ dependencies:
   - pre-commit
   - pyflakes
   - pylint
-  - pyspark
+  - pyspark>=3.2.0
   - pytest
   - pytest-cov
   - pytest-xdist

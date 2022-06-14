@@ -372,7 +372,7 @@ def test_names_glue():
         {
             "family": ["Kelly", "Kelly", "Quin", "Quin"],
             "name": ["Mark", "Scott", "Tegan", "Sara"],
-            "n": [1, 2, 1, 2],
+            "n": ["1", "2", "1", "2"],
         }
     )
     df_out = pd.DataFrame(
@@ -476,40 +476,101 @@ def test_int_columns():
 @pytest.fixture
 def df_expand():
     """pytest fixture"""
-    # adapted from https://www.tidyverse.org/blog/2022/02/tidyr-1-2-0/
-    weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-    daily = {
-        "day": pd.Categorical(
-            ("Tue", "Thu", "Fri", "Mon"), categories=weekdays, ordered=True
+    # adapted from
+    # https://github.com/tidyverse/tidyr/issues/770#issuecomment-993872495
+    return pd.DataFrame(
+        dict(
+            id=pd.Categorical(
+                values=(2, 1, 1, 2, 1), categories=(1, 2, 3), ordered=True
+            ),
+            year=(2018, 2018, 2019, 2020, 2020),
+            gender=pd.Categorical(
+                ("female", "male", "male", "female", "male")
+            ),
+            percentage=range(30, 80, 10),
         ),
-        "value": (2, 3, 1, 5),
-    }
-
-    daily = pd.DataFrame(daily, index=[0, 0, 0, 0])
-    daily["type"] = ("A", "B", "B", "A")
-    return daily
+        index=np.repeat([0], 5),
+    )
 
 
 def test_names_expand(df_expand):
     """Test output if `names_expand`"""
-    weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-    actual = df_expand.complete({"day": weekdays}, fill_value={"value": 0})
-    actual.index = np.repeat([0], len(actual))
-    actual = (
-        actual.encode_categorical(day="appearance")
-        .pivot_wider(None, "day", "value")
-        .replace(0, np.nan)
+    actual = df_expand.pivot("year", "id", "percentage").reindex(
+        columns=pd.Categorical([1, 2, 3], ordered=True)
     )
-    expected = df_expand.pivot_wider(None, "day", "value", names_expand=True)
+    expected = df_expand.pivot_wider(
+        "year", "id", "percentage", names_expand=True, flatten_levels=False
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_names_expand_flatten_levels(df_expand):
+    """Test output if `names_expand`"""
+    actual = (
+        df_expand.pivot("year", "id", "percentage")
+        .reindex(columns=[1, 2, 3])
+        .rename_axis(columns=None)
+        .reset_index()
+    )
+    expected = df_expand.pivot_wider(
+        "year", "id", "percentage", names_expand=True, flatten_levels=True
+    )
     assert_frame_equal(actual, expected)
 
 
 def test_index_expand(df_expand):
     """Test output if `index_expand`"""
-    weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-    weekdays = pd.Categorical(weekdays, categories=weekdays, ordered=True)
-    actual = df_expand.pivot_wider("day", "type", "value").complete(
-        {"day": weekdays}
+    actual = df_expand.pivot("id", "year", "percentage").reindex(
+        pd.Categorical([1, 2, 3], ordered=True)
     )
-    expected = df_expand.pivot_wider("day", "type", "value", index_expand=True)
+    expected = df_expand.pivot_wider(
+        "id", "year", "percentage", index_expand=True, flatten_levels=False
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_index_expand_flatten_levels(df_expand):
+    """Test output if `index_expand`"""
+    actual = (
+        df_expand.pivot("id", "year", "percentage")
+        .reindex(pd.Categorical([1, 2, 3], ordered=True))
+        .rename_axis(columns=None)
+        .reset_index()
+    )
+    expected = df_expand.pivot_wider(
+        "id", "year", "percentage", index_expand=True
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_expand_multiple_levels(df_expand):
+    """Test output for names_expand for multiple names_from."""
+    expected = df_expand.pivot_wider(
+        "id",
+        ("year", "gender"),
+        "percentage",
+        names_expand=True,
+        flatten_levels=False,
+    )
+    actual = df_expand.complete("year", "gender", "id").pivot(
+        "id", ("year", "gender"), "percentage"
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_expand_multiple_levels_flatten_levels(df_expand):
+    """Test output for names_expand for multiple names_from."""
+    expected = df_expand.pivot_wider(
+        "id",
+        ("year", "gender"),
+        "percentage",
+        names_expand=True,
+        flatten_levels=True,
+    )
+    actual = (
+        df_expand.complete("year", "gender", "id")
+        .pivot("id", ("year", "gender"), "percentage")
+        .collapse_levels()
+        .reset_index()
+    )
     assert_frame_equal(actual, expected)

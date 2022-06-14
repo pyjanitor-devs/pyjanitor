@@ -1388,11 +1388,12 @@ def _computations_pivot_wider(
         Expand Index to all categories.
         Applies to categorical index.
         Categories are preserved where possible.
-        If `flatten_levels`, a fastpath can be taken
+        If `retain_categories` is False, a fastpath can be taken
         to generate all possible combinations.
 
         Returns an Index.
         """
+        names = indexer.names
         if indexer.nlevels > 1:
             if not retain_categories:
                 indexer = pd.MultiIndex.from_product(indexer.levels)
@@ -1411,6 +1412,7 @@ def _computations_pivot_wider(
                     for arr in indexer
                 ]
                 indexer = pd.MultiIndex.from_product(indexer)
+
         else:
             if not retain_categories:
                 indexer = indexer.categories
@@ -1420,7 +1422,7 @@ def _computations_pivot_wider(
                     categories=indexer.categories,
                     ordered=indexer.ordered,
                 )
-        print(indexer)
+        indexer.names = names
         return indexer
 
     if (
@@ -1428,8 +1430,8 @@ def _computations_pivot_wider(
         and df.loc[:, names_from].apply(is_categorical_dtype).any()
     ):
         retain_categories = True
-        if (
-            flatten_levels & (names_glue is not None)
+        if flatten_levels & (
+            (names_glue is not None)
             | isinstance(df_.columns, pd.MultiIndex)
             | ((index is not None) & reset_index)
         ):
@@ -1441,21 +1443,22 @@ def _computations_pivot_wider(
         if df.loc[:, index].apply(is_categorical_dtype).any():
             indexer = _expand(df_.index, retain_categories=True)
             df_ = df_.reindex(index=indexer)
-    # an empty df is likely because
+    # an empty df_ is likely because
     # there is no `values_from`
+    indexer = None
     if any((df_.empty, not flatten_levels)):
         return df_
 
     if isinstance(df_.columns, pd.MultiIndex):
-        names_from_is_all_strings = (
+        not_all_strings = not (
             df.filter(names_from).apply(is_string_dtype).all().item()
         )
 
-        column_dtype_is_string = is_string_dtype(df.columns)
-        if (not names_from_is_all_strings) or (not column_dtype_is_string):
-            new_columns = [tuple(map(str, entry)) for entry in df_]
+        not_all_strings |= not is_string_dtype(df.columns)
+        if not_all_strings:
+            new_columns = (tuple(map(str, entry)) for entry in df_.columns)
         else:
-            new_columns = [entry for entry in df_]
+            new_columns = df_.columns
         if names_glue is not None:
             if ("_value" in names_from) and (None in df_.columns.names):
                 warnings.warn(
@@ -1492,7 +1495,7 @@ def _computations_pivot_wider(
             try:
                 df_.columns = [
                     names_glue.format_map({names_from[0]: entry})
-                    for entry in df_
+                    for entry in df_.columns
                 ]
             except KeyError as error:
                 raise KeyError(

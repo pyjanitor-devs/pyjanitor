@@ -68,7 +68,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
             f"has a dimension of {value.ndim}."
         )
 
-    value = value[grid_index]
+    value = value.take(grid_index)
 
     if value.ndim == 1:
         return {(key, 0): value}
@@ -84,9 +84,18 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     Returns a dictionary.
     """
 
-    value = value[grid_index]
+    return {(key, 0): value.take(grid_index)}
 
-    return {(key, 0): value}
+
+@_expand_grid.register(pd.api.extensions.ExtensionArray)
+def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+    """
+    Expands the pandas array based on `grid_index`.
+
+    Returns a dictionary.
+    """
+
+    return {(key, 0): value.take(grid_index)}
 
 
 @_expand_grid.register(pd.Series)
@@ -100,7 +109,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     name = value.name
     if not name:
         name = 0
-    value = extract_array(value, extract_numpy=True)[grid_index]
+    value = extract_array(value, extract_numpy=True).take(grid_index)
 
     return {(key, name): value}
 
@@ -120,7 +129,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
         value = value.set_axis(columns, axis="columns")
 
     return {
-        (key, name): extract_array(val, extract_numpy=True)[grid_index]
+        (key, name): extract_array(val, extract_numpy=True).take(grid_index)
         for name, val in value.items()
     }
 
@@ -138,7 +147,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     for n in range(value.nlevels):
         arr = value.get_level_values(n)
         name = arr.name
-        arr = extract_array(arr, extract_numpy=True)[grid_index]
+        arr = extract_array(arr, extract_numpy=True).take(grid_index)
         if not name:
             name = num
             num += 1
@@ -156,7 +165,9 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     name = value.name
     if not name:
         name = 0
-    return {(key, name): extract_array(value, extract_numpy=True)[grid_index]}
+    return {
+        (key, name): extract_array(value, extract_numpy=True).take(grid_index)
+    }
 
 
 def import_message(

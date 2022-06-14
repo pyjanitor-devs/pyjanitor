@@ -258,8 +258,8 @@ def pivot_longer(
         arguments must match.
         `names_pattern` does not work with MultiIndex columns.
     :param names_transform: Use this option to change the types of columns that
-        have been transformed to rows. This does not applies to the values columns.
-        Accepts a string, a callable, or a dictionary that is acceptable by `pd.astype`.
+        have been transformed to rows. This does not applies to the values' columns.
+        Accepts any argument that is acceptable by `pd.astype`.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         the final look of the DataFrame. If `True`, the unpivoted DataFrame
         will be stacked in order of first appearance.

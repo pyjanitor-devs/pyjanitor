@@ -1,11 +1,11 @@
 """Implementation of select_columns"""
+from typing import Optional, Union
 import pandas_flavor as pf
 import pandas as pd
-
-from janitor.utils import deprecated_alias
+from pandas.api.types import is_list_like
+from janitor.utils import deprecated_alias, check
 
 from janitor.functions.utils import _select_column_names
-from pandas.api.types import is_list_like
 
 
 @pf.register_dataframe_method
@@ -13,6 +13,7 @@ from pandas.api.types import is_list_like
 def select_columns(
     df: pd.DataFrame,
     *args,
+    level: Optional[Union[int, str]] = None,
     invert: bool = False,
 ) -> pd.DataFrame:
     """
@@ -48,6 +49,8 @@ def select_columns(
         a callable which is applicable to each Series in the DataFrame,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
+    :param level: Determines which level in the columns should be used for the
+        column selection.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.
@@ -62,8 +65,26 @@ def select_columns(
             search_column_names.extend(arg)
         else:
             search_column_names.append(arg)
-    full_column_list = _select_column_names(search_column_names, df)
-
+    if level is not None:
+        # goal here is to capture the original columns
+        # trim the df.columns to the specified level only,
+        # and apply the selection (_select_column_names)
+        # to get the relevant column labels.
+        # note that no level is dropped; if there are three levels,
+        # then three levels are returned, with the specified labels
+        # selected/deselected.
+        # A copy of the dataframe is made via set_axis,
+        # to avoid mutating the original dataframe.
+        df_columns = df.columns
+        check("level", level, [int, str])
+        full_column_list = df_columns.get_level_values(level)
+        full_column_list = _select_column_names(
+            search_column_names, df.set_axis(full_column_list, axis=1)
+        )
+        full_column_list = df_columns.isin(full_column_list, level=level)
+        full_column_list = df_columns[full_column_list]
+    else:
+        full_column_list = _select_column_names(search_column_names, df)
     if invert:
         return df.drop(columns=full_column_list)
     return df.loc[:, full_column_list]

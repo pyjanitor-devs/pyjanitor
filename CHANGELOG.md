@@ -5,9 +5,10 @@
 -   [DOC] Updated developer guide docs.
 -   [ENH] Allow column selection/renaming within conditional_join. #1102 @samukweku.
 -   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
--   [ENH] Extend select_columns to support non-string columns. #1105 @samukweku
+-   [ENH] Extend select_columns to support non-string columns. Also allow selection on MultiIndex columns via level parameter. #1105 @samukweku
 -   [ENH] Performance improvement for groupby_topk. #1093 @samukweku
 -   [EHN] `min_max_scale` drop `old_min` and `old_max` to fit sklearn's method API. Issue #1068 @Zeroto521
+-   [EHN] Add `jointly` option for `min_max_scale` support to transform each column values or entire values. Default transform each column, similar behavior to `sklearn.preprocessing.MinMaxScaler`. Issue #1067 @Zeroto521
 -   [INF] Require pyspark minimal version is v3.2.0 to cut duplicates codes. Issue #1110 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03

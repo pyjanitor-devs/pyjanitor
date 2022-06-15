@@ -103,7 +103,7 @@ def test_col_not_found3(df_dates):
 
 def test_col_not_found4(df_numbers):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
-    with pytest.raises(KeyError, match=r"String\(.+\) can be applied.+"):
+    with pytest.raises(KeyError, match=r"No match was returned.+"):
         _select_column_names("id", df_numbers)
 
 
@@ -114,6 +114,18 @@ def test_tuple(df_tuple):
 
 def test_strings(df1):
     """Test _select_column_names function on strings."""
+    assert _select_column_names("id", df1) == ["id"]
+    assert _select_column_names("*type*", df1) == [
+        "type",
+        "type1",
+        "type2",
+        "type3",
+    ]
+
+
+def test_strings_cat(df1):
+    """Test output on categorical columns"""
+    df1.columns = df1.columns.astype("category")
     assert _select_column_names("id", df1) == ["id"]
     assert _select_column_names("*type*", df1) == [
         "type",
@@ -151,18 +163,25 @@ def test_strings_dates_range(df_dates):
 
 
 def test_unsorted_dates(df_dates):
-    """Raise Error if the dates are unsorted."""
+    """Test output if the dates are unsorted, and a string is passed."""
     df_dates = df_dates.iloc[:, [10, 4, 7, 2, 1, 3, 5, 6, 8, 9, 11, 0]]
-    with pytest.raises(
-        ValueError,
-        match="The column is a DatetimeIndex and should be "
-        "monotonic increasing.",
-    ):
-        _select_column_names("2011-01-31", df_dates)
+    assert_index_equal(
+        df_dates.loc[:, ["2011-01-31"]].columns,
+        _select_column_names("2011-01-31", df_dates),
+    )
 
 
 def test_regex(df1):
     """Test _select_column_names function on regular expressions."""
+    assert_index_equal(
+        _select_column_names(re.compile(r"\d$"), df1),
+        df1.filter(regex=r"\d$").columns,
+    )
+
+
+def test_regex_cat(df1):
+    """Test output on categorical columns"""
+    df1.columns = df1.columns.astype("category")
     assert_index_equal(
         _select_column_names(re.compile(r"\d$"), df1),
         df1.filter(regex=r"\d$").columns,
@@ -180,14 +199,21 @@ def test_patterns_warning(df1):
         )
 
 
+def test_regex_presence_string_column(df):
+    """
+    Raise KeyError if `columns_to_select` is a regex
+    and does not exist in the dataframe's columns.
+    """
+    with pytest.raises(KeyError, match="No match was returned for.+"):
+        _select_column_names(re.compile("word"), df)
+
+
 def test_regex_presence(df_dates):
     """
     Raise KeyError if `columns_to_select` is a regex
     and the columns is not a string column.
     """
-    with pytest.raises(
-        KeyError, match=r"Regular expressions\(.+\) can be applied.+"
-    ):
+    with pytest.raises(KeyError, match=r"No match was returned.+"):
         _select_column_names(re.compile(r"^\d+"), df_dates)
 
 
@@ -195,8 +221,11 @@ def test_slice_unique():
     """
     Raise ValueError if the columns are not unique.
     """
-    not_unique = pd.DataFrame([], columns=["code", "code", "code1", "code2"])
-    with pytest.raises(ValueError):
+    not_unique = pd.DataFrame([], columns=["code", "code2", "code1", "code"])
+    with pytest.raises(
+        ValueError,
+        match="Non-unique column labels should be monotonic increasing.",
+    ):
         _select_column_names(slice("code", "code2"), not_unique)
 
 
@@ -218,11 +247,17 @@ def test_slice_dtypes(df):
     and either the start value or the stop value is not a string,
     or the step value is not an integer.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The start value for the slice must either be `None`.+",
+    ):
         _select_column_names(slice(1, "M_end_date_2"), df)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The stop value for the slice must either be `None`.+",
+    ):
         _select_column_names(slice("id", 2), df)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="The step value for the slice.+"):
         _select_column_names(slice("id", "M_end_date_2", "3"), df)
 
 
@@ -289,52 +324,19 @@ def test_slice_dates_inexact(df_dates):
     )
 
 
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_level_type(df_tuple):
-    """Raise TypeError if `level` is the wrong type."""
-    with pytest.raises(TypeError):
-        _select_column_names("A", df_tuple)
-
-
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_level_nonexistent(df_tuple):
-    """
-    Raise ValueError if column is a MultiIndex
-    and level is `None`.
-    """
-    with pytest.raises(ValueError):
-        _select_column_names("A", df_tuple)
-
-
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_tuple_callable(df_tuple):
-    """
-    Raise ValueError if dataframe has MultiIndex columns
-    and a callable is provided.
-    """
-    with pytest.raises(ValueError):
-        _select_column_names(lambda df: df.name.startswith("A"), df_tuple)
-
-
-@pytest.mark.xfail(reason="level parameter removed.")
-def test_tuple_regex(df_tuple):
-    """
-    Raise ValueError if dataframe has MultiIndex columns'
-    a regex is provided and level is None.
-    """
-    with pytest.raises(ValueError):
-        _select_column_names(re.compile("A"), df_tuple)
-
-
 def test_boolean_list_dtypes(df):
     """
     Raise ValueError if `columns_to_select` is a list of booleans
     and the length is unequal to the number of columns
     in the dataframe.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The length of the list of booleans.+"
+    ):
         _select_column_names([True, False], df)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The length of the list of booleans.+"
+    ):
         _select_column_names(
             [True, True, True, False, False, False, True, True, True, False],
             df,
@@ -355,7 +357,9 @@ def test_callable(df_numbers):
         _select_column_names(lambda df: df + 3, df_numbers)
 
 
-@pytest.mark.xfail(reason="Indexing in Pandas is possible with a Series.")
+@pytest.mark.xfail(
+    reason="Indexing in Pandas is possible with a boolean Series."
+)
 def test_callable_returns_series(df):
     """
     Check that error is raised if `columns_to_select` is a
@@ -367,12 +371,11 @@ def test_callable_returns_series(df):
 
 def test_callable_no_match(df):
     """
-    Test if `columns_to_select` is a callable,
-    and no value is returned.
+     Raise KeyError if `columns_to_select` is a callable,
+    and no match is returned.
     """
-    assert _select_column_names(pd.api.types.is_float_dtype, df).empty
-
-    assert _select_column_names(lambda x: "Date" in x.name, df).empty
+    with pytest.raises(KeyError, match="No match was returned.+"):
+        _select_column_names(pd.api.types.is_float_dtype, df)
 
 
 def test_tuple_presence(df_tuple):

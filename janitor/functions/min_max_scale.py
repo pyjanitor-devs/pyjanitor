@@ -125,16 +125,16 @@ def min_max_scale(
     if column_name is not None:
         df = df.copy()  # Avoid to change the original DataFrame.
 
-        old_feature_range = df[column_name].pipe(min_max_value, jointly)
+        old_feature_range = df[column_name].pipe(_min_max_value, jointly)
         df[column_name] = df[column_name].pipe(
-            apply_min_max,
+            _apply_min_max,
             *old_feature_range,
             *feature_range,
         )
     else:
-        old_feature_range = df.pipe(min_max_value, jointly)
+        old_feature_range = df.pipe(_min_max_value, jointly)
         df = df.pipe(
-            apply_min_max,
+            _apply_min_max,
             *old_feature_range,
             *feature_range,
         )
@@ -142,7 +142,7 @@ def min_max_scale(
     return df
 
 
-def min_max_value(df: pd.DataFrame, jointly: bool) -> tuple:
+def _min_max_value(df: pd.DataFrame, jointly: bool) -> tuple:
     """
     Return the minimum and maximum of DataFrame.
 
@@ -162,7 +162,7 @@ def min_max_value(df: pd.DataFrame, jointly: bool) -> tuple:
     return mmin, mmax
 
 
-def apply_min_max(
+def _apply_min_max(
     df: pd.DataFrame,
     old_min: int | float | pd.Series,
     old_max: int | float | pd.Series,

@@ -99,8 +99,8 @@ def min_max_scale(
     !!! summary "Version Changed"
 
         - 0.24.0:
-            - Deleted "old_min", "old_max", "new_min", and "new_max" options.
-            - Added "feature_range", and "jointly" options.
+            - Deleted `old_min`, `old_max`, `new_min`, and `new_max` options.
+            - Added `feature_range`, and `jointly` options.
 
     :param df: A pandas DataFrame.
     :param feature_range: (optional) Desired range of transformed data.

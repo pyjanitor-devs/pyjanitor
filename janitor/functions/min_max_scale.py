@@ -96,9 +96,11 @@ def min_max_scale(
     1 to 14. Hence, 3 gets scaled not to 0 but approx. 0.15 instead, while 10
     gets scaled to approx. 0.69 instead.
 
-    Changed in version 0.24.0: Deleted "old_min", "old_max", "new_min", and
-    "new_max" options.
-    Changed in version 0.24.0: Added "feature_range", and "jointly" options.
+    !!! summary "Version Changed"
+
+        - 0.24.0:
+            - Deleted "old_min", "old_max", "new_min", and "new_max" options.
+            - Added "feature_range", and "jointly" options.
 
     :param df: A pandas DataFrame.
     :param feature_range: (optional) Desired range of transformed data.

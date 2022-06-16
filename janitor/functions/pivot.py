@@ -1390,49 +1390,6 @@ def _computations_pivot_wider(
         index=index, columns=names_from, values=values_from
     )
 
-    def _expand(indexer, retain_categories):
-        """
-        Expand Index to all categories.
-        Applies to categorical index.
-        Categories are preserved where possible.
-        If `retain_categories` is False, a fastpath is taken
-        to generate all possible combinations.
-
-        Returns an Index.
-        """
-        if indexer.nlevels > 1:
-            names = indexer.names
-            if not retain_categories:
-                indexer = pd.MultiIndex.from_product(
-                    indexer.levels, names=names
-                )
-            else:
-                indexer = [
-                    indexer.get_level_values(n) for n in range(indexer.nlevels)
-                ]
-                indexer = [
-                    pd.Categorical(
-                        values=arr.categories,
-                        categories=arr.categories,
-                        ordered=arr.ordered,
-                    )
-                    if is_categorical_dtype(arr)
-                    else arr.unique()
-                    for arr in indexer
-                ]
-                indexer = pd.MultiIndex.from_product(indexer, names=names)
-
-        else:
-            if not retain_categories:
-                indexer = indexer.categories
-            else:
-                indexer = pd.Categorical(
-                    values=indexer.categories,
-                    categories=indexer.categories,
-                    ordered=indexer.ordered,
-                )
-        return indexer
-
     if (
         names_expand
         and df.loc[:, names_from].apply(is_categorical_dtype).any()
@@ -1591,3 +1548,47 @@ def _data_checks_pivot_wider(
         index_expand,
         sort_by_appearance,
     )
+
+
+def _expand(indexer, retain_categories):
+    """
+    Expand Index to all categories.
+    Applies to categorical index, and used
+    in _computations_pivot_wider for scenarios where
+    names_expand and/or index_expand is True.
+    Categories are preserved where possible.
+    If `retain_categories` is False, a fastpath is taken
+    to generate all possible combinations.
+
+    Returns an Index.
+    """
+    if indexer.nlevels > 1:
+        names = indexer.names
+        if not retain_categories:
+            indexer = pd.MultiIndex.from_product(indexer.levels, names=names)
+        else:
+            indexer = [
+                indexer.get_level_values(n) for n in range(indexer.nlevels)
+            ]
+            indexer = [
+                pd.Categorical(
+                    values=arr.categories,
+                    categories=arr.categories,
+                    ordered=arr.ordered,
+                )
+                if is_categorical_dtype(arr)
+                else arr.unique()
+                for arr in indexer
+            ]
+            indexer = pd.MultiIndex.from_product(indexer, names=names)
+
+    else:
+        if not retain_categories:
+            indexer = indexer.categories
+        else:
+            indexer = pd.Categorical(
+                values=indexer.categories,
+                categories=indexer.categories,
+                ordered=indexer.ordered,
+            )
+    return indexer

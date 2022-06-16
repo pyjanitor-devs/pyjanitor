@@ -23,23 +23,19 @@ def min_max_scale(
     df: pd.DataFrame,
     feature_range: tuple[int | float, int | float] = (0, 1),
     column_name: str | int | list[str | int] | pd.Index = None,
+    jointly: bool = False,
 ) -> pd.DataFrame:
     """
-    Scales data to between a minimum and maximum value.
+    Scales DataFrame to between a minimum and maximum value.
 
-    This method mutates the original DataFrame.
+    One can optionally set a new target **minimum** and **maximum** value
+    using the `feature_range` keyword argument.
 
-    If `minimum` and `maximum` are provided, the true min/max of the
-    `DataFrame` or column is ignored in the scaling process and replaced with
-    these values, instead.
-
-    One can optionally set a new target minimum and maximum value using the
-    `feature_range[0]` and `feature_range[1]` keyword arguments.
-    This will result in the transformed data being bounded between
-    `feature_range[0]` and `feature_range[1]`.
-
-    If a particular column name is specified, then only that column of data
-    are scaled. Otherwise, the entire dataframe is scaled.
+    If `column_name` is specified, then only that column(s) of data is scaled.
+    Otherwise, the entire dataframe is scaled.
+    If `jointly` is `True`, the `column_names` provided entire dataframe will
+    be regnozied as the one to jointly scale. Otherwise, each column of data
+    will be scaled separately.
 
     Example: Basic usage.
 
@@ -47,6 +43,10 @@ def min_max_scale(
         >>> import janitor
         >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
         >>> df.min_max_scale()
+             a    b
+        0  0.0  0.0
+        1  1.0  1.0
+        >>> df.min_max_scale(jointly=True)
              a    b
         0  0.5  0.0
         1  1.0  0.5
@@ -57,6 +57,10 @@ def min_max_scale(
         >>> import janitor
         >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
         >>> df.min_max_scale(feature_range=(0, 100))
+               a      b
+        0    0.0    0.0
+        1  100.0  100.0
+        >>> df.min_max_scale(feature_range=(0, 100), jointly=True)
                a     b
         0   50.0   0.0
         1  100.0  50.0
@@ -65,15 +69,26 @@ def min_max_scale(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
-        >>> df.min_max_scale(feature_range=(0, 100), column_name=['a', 'b'])
-               a      b
-        0    0.0    0.0
-        1  100.0  100.0
+        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1], 'c': [1, 0]})
+        >>> df.min_max_scale(
+        ...     feature_range=(0, 100),
+        ...     column_name=["a", "c"],
+        ... )
+               a  b      c
+        0    0.0  0  100.0
+        1  100.0  1    0.0
+        >>> df.min_max_scale(
+        ...     feature_range=(0, 100),
+        ...     column_name=["a", "c"],
+        ...     jointly=True,
+        ... )
+               a  b     c
+        0   50.0  0  50.0
+        1  100.0  1   0.0
         >>> df.min_max_scale(feature_range=(0, 100), column_name='a')
-               a  b
-        0    0.0  0
-        1  100.0  1
+               a  b  c
+        0    0.0  0  1
+        1  100.0  1  0
 
     The aforementioned example might be applied to something like scaling the
     isoelectric points of amino acids. While technically they range from
@@ -81,9 +96,16 @@ def min_max_scale(
     1 to 14. Hence, 3 gets scaled not to 0 but approx. 0.15 instead, while 10
     gets scaled to approx. 0.69 instead.
 
+    !!! summary "Version Changed"
+
+        - 0.24.0
+            - Deleted `old_min`, `old_max`, `new_min`, and `new_max` options.
+            - Added `feature_range`, and `jointly` options.
+
     :param df: A pandas DataFrame.
     :param feature_range: (optional) Desired range of transformed data.
     :param column_name: (optional) The column on which to perform scaling.
+    :param jointly: (bool) Scale the entire data if Ture.
     :returns: A pandas DataFrame with scaled data.
     :raises ValueError: if `feature_range` isn't tuple type.
     :raises ValueError: if the length of `feature_range` isn't equal to two.
@@ -102,23 +124,67 @@ def min_max_scale(
             "the first element must be greater than the second one"
         )
 
-    new_min, new_max = feature_range
-    new_range = new_max - new_min
-
     if column_name is not None:
-        old_min = df[column_name].min()
-        old_max = df[column_name].max()
-        old_range = old_max - old_min
+        df = df.copy()  # Avoid to change the original DataFrame.
 
-        df = df.copy()
-        df[column_name] = (
-            df[column_name] - old_min
-        ) * new_range / old_range + new_min
+        old_feature_range = df[column_name].pipe(_min_max_value, jointly)
+        df[column_name] = df[column_name].pipe(
+            _apply_min_max,
+            *old_feature_range,
+            *feature_range,
+        )
     else:
-        old_min = df.min().min()
-        old_max = df.max().max()
-        old_range = old_max - old_min
-
-        df = (df - old_min) * new_range / old_range + new_min
+        old_feature_range = df.pipe(_min_max_value, jointly)
+        df = df.pipe(
+            _apply_min_max,
+            *old_feature_range,
+            *feature_range,
+        )
 
     return df
+
+
+def _min_max_value(df: pd.DataFrame, jointly: bool) -> tuple:
+    """
+    Return the minimum and maximum of DataFrame.
+
+    Use the `jointly` flag to control returning entire data or each column.
+
+    .. # noqa: DAR101
+    .. # noqa: DAR201
+    """
+
+    if jointly:
+        mmin = df.min().min()
+        mmax = df.max().max()
+    else:
+        mmin = df.min()
+        mmax = df.max()
+
+    return mmin, mmax
+
+
+def _apply_min_max(
+    df: pd.DataFrame,
+    old_min: int | float | pd.Series,
+    old_max: int | float | pd.Series,
+    new_min: int | float | pd.Series,
+    new_max: int | float | pd.Series,
+) -> pd.DataFrame:
+    """
+    Apply minimax scaler to DataFrame.
+
+    Notes
+    -----
+    - Inputting minimum and maximum type
+        - int or float : It will apply minimax to the entire DataFrame.
+        - Series : It will apply minimax to each column.
+
+    .. # noqa: DAR101
+    .. # noqa: DAR201
+    """
+
+    old_range = old_max - old_min
+    new_range = new_max - new_min
+
+    return (df - old_min) * new_range / old_range + new_min

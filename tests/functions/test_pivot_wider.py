@@ -392,10 +392,9 @@ def test_names_glue():
     assert_frame_equal(result, df_out)
 
 
-def test_change_level_order(df_checks_output):
+def test_names_glue_multiple_levels(df_checks_output):
     """
-    Test output with `levels_order`,
-    while maintaining order from `names_from`.
+    Test output with names_glue for multiple levels.
     """
 
     df_out = pd.DataFrame(

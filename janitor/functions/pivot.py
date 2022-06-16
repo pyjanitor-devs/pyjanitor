@@ -1395,7 +1395,7 @@ def _computations_pivot_wider(
         Expand Index to all categories.
         Applies to categorical index.
         Categories are preserved where possible.
-        If `retain_categories` is False, a fastpath can be taken
+        If `retain_categories` is False, a fastpath is taken
         to generate all possible combinations.
 
         Returns an Index.

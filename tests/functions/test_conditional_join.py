@@ -185,6 +185,23 @@ def test_df_columns(dummy):
         )
 
 
+def test_check_keep_type(dummy, series):
+    """
+    Raise TypeError if `keep` is not a string.
+    """
+    with pytest.raises(TypeError, match="keep should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", "<"), keep=1)
+
+
+def test_check_keep_value(dummy, series):
+    """
+    Raise ValueError if `keep` is not one of
+    `all`, `first`, or `last`.
+    """
+    with pytest.raises(ValueError, match="'keep' should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", "<"), keep="ALL")
+
+
 def test_unequal_categories(dummy):
     """
     Raise ValueError if the dtypes are both categories
@@ -257,6 +274,60 @@ def test_dtype_category_non_equi():
 
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats_keep_first(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    right = right.sort_values("Numeric").dropna(subset=["Numeric"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]],
+        left_on="B",
+        right_on="Numeric",
+        direction="forward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = df[["B"]].conditional_join(
+        right[["Numeric"]],
+        ("B", "Numeric", "<"),
+        how="left",
+        sort_by_appearance=False,
+        keep="first",
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats_keep_last(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    right = right.sort_values("Numeric").dropna(subset=["Numeric"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]],
+        left_on="B",
+        right_on="Numeric",
+        direction="backward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = df[["B"]].conditional_join(
+        right[["Numeric"]],
+        ("B", "Numeric", ">"),
+        how="left",
+        sort_by_appearance=False,
+        keep="last",
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats(df, right):
     """Test output for a single condition. "<"."""
 
@@ -316,20 +387,21 @@ def test_single_condition_less_than_ints_extension_array(df, right):
 
     expected = (
         df[["A"]]
+        .assign(index=df.index)
         .merge(right[["Integers"]], how="cross")
         .loc[lambda df: df.A < df.Integers]
-        .sort_values(["A", "Integers"], ignore_index=True)
+        .groupby("index")
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
     )
 
-    actual = (
-        df[["A"]]
-        .conditional_join(
-            right[["Integers"]],
-            ("A", "Integers", "<"),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(["A", "Integers"], ignore_index=True)
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", "<"),
+        how="inner",
+        keep="first",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -342,20 +414,21 @@ def test_single_condition_less_than_equal(df, right):
 
     expected = (
         df[["E"]]
+        .assign(index=df.index)
         .merge(right[["Dates"]], how="cross")
         .loc[lambda df: df.E.le(df.Dates)]
-        .sort_values(["E", "Dates"], ignore_index=True)
+        .groupby("index")
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
     )
 
-    actual = (
-        df[["E"]]
-        .conditional_join(
-            right[["Dates"]],
-            ("E", "Dates", "<="),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(["E", "Dates"], ignore_index=True)
+    actual = df[["E"]].conditional_join(
+        right[["Dates"]],
+        ("E", "Dates", "<="),
+        how="inner",
+        keep="last",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -418,20 +491,21 @@ def test_single_condition_greater_than_ints(df, right):
 
     expected = (
         df[["A"]]
+        .assign(index=df.index)
         .merge(right[["Integers"]], how="cross")
         .loc[lambda df: df.A.ge(df.Integers)]
-        .sort_values(["A", "Integers"], ignore_index=True)
+        .groupby("index")
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
     )
 
-    actual = (
-        df[["A"]]
-        .conditional_join(
-            right[["Integers"]],
-            ("A", "Integers", ">="),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(["A", "Integers"], ignore_index=True)
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", ">="),
+        how="inner",
+        keep="first",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -444,19 +518,20 @@ def test_single_condition_greater_than_floats_floats(df, right):
 
     expected = (
         df[["B"]]
+        .assign(index=df.index)
         .merge(right[["Numeric"]], how="cross")
         .loc[lambda df: df.B.gt(df.Numeric)]
-        .sort_values(["B", "Numeric"], ignore_index=True)
+        .groupby("index")
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
     )
-    actual = (
-        df[["B"]]
-        .conditional_join(
-            right[["Numeric"]],
-            ("B", "Numeric", ">"),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(["B", "Numeric"], ignore_index=True)
+    actual = df[["B"]].conditional_join(
+        right[["Numeric"]],
+        ("B", "Numeric", ">"),
+        how="inner",
+        keep="last",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -523,20 +598,21 @@ def test_single_condition_not_equal_floats_only(df, right):
 
     expected = (
         df[["B"]]
+        .assign(index=df.index)
         .merge(right[["Numeric"]], how="cross")
         .loc[lambda df: df.B != df.Numeric]
-        .sort_values(["B", "Numeric"], ignore_index=True)
+        .groupby("index")
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
     )
 
-    actual = (
-        df[["B"]]
-        .conditional_join(
-            right[["Numeric"]],
-            ("B", "Numeric", "!="),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(["B", "Numeric"], ignore_index=True)
+    actual = df[["B"]].conditional_join(
+        right[["Numeric"]],
+        ("B", "Numeric", "!="),
+        how="inner",
+        keep="last",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -549,20 +625,21 @@ def test_single_condition_not_equal_datetime(df, right):
 
     expected = (
         df[["E"]]
+        .assign(index=df.index)
         .merge(right[["Dates"]], how="cross")
         .loc[lambda df: df.E != df.Dates]
-        .sort_values(["E", "Dates"], ignore_index=True)
+        .groupby("index")
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
     )
 
-    actual = (
-        df[["E"]]
-        .conditional_join(
-            right[["Dates"]],
-            ("E", "Dates", "!="),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(["E", "Dates"], ignore_index=True)
+    actual = df[["E"]].conditional_join(
+        right[["Dates"]],
+        ("E", "Dates", "!="),
+        how="inner",
+        keep="first",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -1713,9 +1790,9 @@ def test_multiple_non_eqi(df, right):
 def test_multiple_non_eq(df, right):
     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
         df[["B", "A", "E"]]
+        .assign(index=df.index)
         .merge(
             right[["Floats", "Integers", "Dates"]],
             how="cross",
@@ -1725,20 +1802,20 @@ def test_multiple_non_eq(df, right):
             & df.A.lt(df.Integers)
             & df.E.lt(df.Dates)
         ]
-        .sort_values(columns, ignore_index=True)
+        .groupby("index")
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
     )
 
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("B", "Floats", "<="),
-            ("A", "Integers", "<"),
-            ("E", "Dates", "<"),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(columns, ignore_index=True)
+    actual = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates"]],
+        ("B", "Floats", "<="),
+        ("A", "Integers", "<"),
+        ("E", "Dates", "<"),
+        how="inner",
+        keep="first",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -1785,31 +1862,41 @@ def test_multiple_eqs(df, right):
 def test_multiple_eqs_extension_array(df, right):
     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    columns = [
+        "B",
+        "A",
+        "E",
+        "Floats",
+        "Integers",
+        "Dates",
+        "index",
+        "indexer",
+    ]
     df = df.assign(A=df["A"].astype("Int64"))
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
-    expected = df.merge(
-        right,
+    expected = df.assign(index=df.index).merge(
+        right.assign(indexer=right.index),
         left_on=["B", "E"],
         right_on=["Floats", "Dates"],
         how="inner",
         sort=False,
     )
-    expected = expected.loc[
-        expected.A != expected.Integers, columns
-    ].sort_values(columns, ignore_index=True)
+    expected = (
+        expected.loc[expected.A != expected.Integers, columns]
+        .groupby(["index", "indexer"])
+        .tail(1)
+        .drop(columns=["index", "indexer"])
+        .reset_index(drop=True)
+    )
 
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("E", "Dates", "=="),
-            ("B", "Floats", "=="),
-            ("A", "Integers", "!="),
-            how="inner",
-            sort_by_appearance=False,
-        )
-        .sort_values(columns, ignore_index=True)
+    actual = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates"]],
+        ("E", "Dates", "=="),
+        ("B", "Floats", "=="),
+        ("A", "Integers", "!="),
+        how="inner",
+        keep="last",
+        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)

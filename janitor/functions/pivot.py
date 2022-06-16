@@ -1208,6 +1208,7 @@ def pivot_wider(
     reset_index: bool = True,
     names_expand: bool = False,
     index_expand: bool = False,
+    sort_by_appearance: bool = False,
 ) -> pd.DataFrame:
     """
     Reshapes data from *long* to *wide* form.
@@ -1302,17 +1303,19 @@ def pivot_wider(
         and uses python's `str.format_map` under the hood.
         Simply create the string template,
         using the column labels in `names_from`,
-        and special `_value` as a placeholder
-        if there are multiple `values_from`.
+        and special `_value` as a placeholder for `values_from`.
         Applicable only if `flatten_levels` is `True`.
     :param reset_index: Determines whether to restore `index`
-        as a column/columns. Applicable only if `index` is provided.
-        Default is `True`.
+        as a column/columns. Applicable only if `index` is provided,
+        and `flatten_levels` is `True`. Default is `True`.
     :param names_expand: Expand columns to show all the categories.
         Applies only if `names_from` is a Categorical column.
         Default is `False`.
     :param index_expand: Expand the index to show all the categories.
         Applies only if `index` is a Categorical column. Default is `False`.
+    :param sort_by_appearance: Whether to reorder the columns,
+        based on the order of appearance in the `names_from` columns.
+        Default is `False`.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
     """
@@ -1330,6 +1333,7 @@ def pivot_wider(
         reset_index,
         names_expand,
         index_expand,
+        sort_by_appearance,
     )
 
 
@@ -1344,6 +1348,7 @@ def _computations_pivot_wider(
     reset_index: bool = True,
     names_expand: bool = False,
     index_expand: bool = False,
+    sort_by_appearance: bool = False,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
@@ -1366,6 +1371,7 @@ def _computations_pivot_wider(
         reset_index,
         names_expand,
         index_expand,
+        sort_by_appearance,
     ) = _data_checks_pivot_wider(
         df,
         index,
@@ -1377,6 +1383,7 @@ def _computations_pivot_wider(
         reset_index,
         names_expand,
         index_expand,
+        sort_by_appearance,
     )
 
     df_ = df.pivot(  # noqa: PD010
@@ -1523,6 +1530,7 @@ def _data_checks_pivot_wider(
     reset_index,
     names_expand,
     index_expand,
+    sort_by_appearance,
 ):
 
     """
@@ -1568,6 +1576,7 @@ def _data_checks_pivot_wider(
     check("reset_index", reset_index, [bool])
     check("names_expand", names_expand, [bool])
     check("index_expand", index_expand, [bool])
+    check("sort_by_appearance", sort_by_appearance, [bool])
 
     return (
         df,
@@ -1580,4 +1589,5 @@ def _data_checks_pivot_wider(
         reset_index,
         names_expand,
         index_expand,
+        sort_by_appearance,
     )

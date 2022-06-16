@@ -3,13 +3,14 @@
 ## [Unreleased]
 
 -   [DOC] Updated developer guide docs.
--   [ENH] Allow column selection/renaming within conditional_join. #1102 @samukweku.
+-   [ENH] Allow column selection/renaming within conditional_join. #1102. Also allow first or last match. #1020 @samukweku.
 -   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
 -   [ENH] Extend select_columns to support non-string columns. Also allow selection on MultiIndex columns via level parameter. #1105 @samukweku
 -   [ENH] Performance improvement for groupby_topk. #1093 @samukweku
--   [EHN] `min_max_scale` drop `old_min` and `old_max` to fit sklearn's method API. Issue #1068 @Zeroto521
--   [EHN] Add `jointly` option for `min_max_scale` support to transform each column values or entire values. Default transform each column, similar behavior to `sklearn.preprocessing.MinMaxScaler`. Issue #1067 @Zeroto521
+-   [ENH] `min_max_scale` drop `old_min` and `old_max` to fit sklearn's method API. Issue #1068 @Zeroto521
+-   [ENH] Add `jointly` option for `min_max_scale` support to transform each column values or entire values. Default transform each column, similar behavior to `sklearn.preprocessing.MinMaxScaler`. (Issue #1067, PR #1112, PR #1123) @Zeroto521
 -   [INF] Require pyspark minimal version is v3.2.0 to cut duplicates codes. Issue #1110 @Zeroto521
+
 
 ## [v0.23.1] - 2022-05-03
 
@@ -83,7 +84,7 @@
 -   [DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas
 -   [INF] Fix `isort` automatic checks. Issue #845. @loganthomas
 -   [ENH] `complete` function now uses variable args (\*args) - @samukweku
--   [EHN] Set `expand_column`'s `sep` default is `"|"`, same to `pandas.Series.str.get_dummies`. Issue #876. @Zeroto521
+-   [ENH] Set `expand_column`'s `sep` default is `"|"`, same to `pandas.Series.str.get_dummies`. Issue #876. @Zeroto521
 -   [ENH] Deprecate `limit` from fill_direction. fill_direction now uses kwargs. @samukweku
 -   [ENH] Added `conditional_join` function that supports joins on non-equi operators. @samukweku
 -   [INF] Speed up pytest via `-n` (pytest-xdist) option. Issue #881. @Zeroto521

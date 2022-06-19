@@ -1232,6 +1232,7 @@ def pivot_wider(
     at the start of each label in the columns.
 
 
+
     Example:
 
         >>> import pandas as pd
@@ -1308,10 +1309,10 @@ def pivot_wider(
         as a column/columns. Applicable only if `index` is provided,
         and `flatten_levels` is `True`. Default is `True`.
     :param names_expand: Expand columns to show all the categories.
-        Applies only if `names_from` is a Categorical column.
+        Applies only if `names_from` is a categorical column.
         Default is `False`.
     :param index_expand: Expand the index to show all the categories.
-        Applies only if `index` is a Categorical column. Default is `False`.
+        Applies only if `index` is a categorical column. Default is `False`.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
     """

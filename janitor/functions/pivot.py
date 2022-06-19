@@ -932,7 +932,7 @@ def _pivot_longer_dot_value(
     """
     if np.count_nonzero(mapping.columns == ".value") > 1:
         outcome = mapping.pop(".value")
-        outcome = outcome.agg("".join, axis=1)
+        outcome = outcome.apply("".join, axis=1)
         mapping[".value"] = outcome
 
     exclude = {

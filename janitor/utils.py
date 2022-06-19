@@ -71,7 +71,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     if value.ndim == 1:
         return {(key, 0): value}
 
-    return {(key, num): arr for num, arr in enumerate(value.T)}
+    return {(key, num): value[:, num] for num in range(value.shape[-1])}
 
 
 @_expand_grid.register(pd.arrays.PandasArray)

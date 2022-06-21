@@ -151,9 +151,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     Expands the Index based on `grid_index`.
     Returns a dictionary.
     """
-    name = value.name
-    if not name:
-        name = 0
+    name = value.name or 0
     return {(key, name): value.array[grid_index]}
 
 

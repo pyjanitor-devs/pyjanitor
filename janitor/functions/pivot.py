@@ -11,7 +11,6 @@ from pandas.api.types import (
     is_list_like,
     is_string_dtype,
 )
-from pandas.core.construction import extract_array
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
@@ -599,9 +598,7 @@ def _computations_pivot_longer(
         return df
 
     if index:
-        index = {
-            name: extract_array(df[name], extract_numpy=True) for name in index
-        }
+        index = {name: df[name]._values for name in index}
 
     if len(column_names) != len(set(column_names)):
         column_names = pd.unique(column_names)
@@ -729,10 +726,7 @@ def _pivot_longer_names_pattern_sequence(
             values = _names_transform(
                 names_transform, is_dataframe=False, values=values
             )
-        values = {
-            name: extract_array(arr, extract_numpy=True).repeat(len_index)
-            for name, arr in values
-        }
+        values = {name: arr._values.repeat(len_index) for name, arr in values}
     else:
         values = {}
 
@@ -893,12 +887,9 @@ def _base_melt(
         outcome = _names_transform(
             names_transform, is_dataframe=False, values=outcome
         )
-    outcome = {
-        name: extract_array(arr, extract_numpy=True).repeat(len_index)
-        for name, arr in outcome
-    }
+    outcome = {name: arr._values.repeat(len_index) for name, arr in outcome}
 
-    values = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
+    values = [arr._values for _, arr in df.items()]
     values = {values_to: concat_compat(values)}
 
     return _final_frame_longer(
@@ -1000,7 +991,7 @@ def _pivot_longer_dot_value(
                 names_transform, is_dataframe=True, values=outcome
             )
         outcome = {
-            name: extract_array(arr, extract_numpy=True).repeat(len_index)
+            name: arr._values.repeat(len_index)
             for name, arr in outcome.items()
         }
 
@@ -1063,8 +1054,7 @@ def _dict_from_grouped_names(df: pd.DataFrame) -> dict:
     """
     outcome = defaultdict(list)
     for num, name in enumerate(df.columns):
-        arr = df.iloc[:, num]
-        arr = extract_array(arr, extract_numpy=True)
+        arr = df.iloc[:, num]._values
         outcome[name].append(arr)
     return {name: concat_compat(arr) for name, arr in outcome.items()}
 

@@ -104,7 +104,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     name = value.name
     if not name:
         name = 0
-    value = value.array[grid_index]
+    value = value._values[grid_index]
 
     return {(key, name): value}
 
@@ -122,7 +122,9 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
         columns = ["_".join(map(str, ent)) for ent in value]
         value = value.set_axis(columns, axis="columns")
 
-    return {(key, name): val.array[grid_index] for name, val in value.items()}
+    return {
+        (key, name): val._values[grid_index] for name, val in value.items()
+    }
 
 
 @_expand_grid.register(pd.MultiIndex)
@@ -137,7 +139,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     for n in range(value.nlevels):
         arr = value.get_level_values(n)
         name = arr.name
-        arr = arr.array[grid_index]
+        arr = arr._values[grid_index]
         if not name:
             name = num
             num += 1
@@ -152,7 +154,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     Returns a dictionary.
     """
     name = value.name or 0
-    return {(key, name): value.array[grid_index]}
+    return {(key, name): value._values[grid_index]}
 
 
 def import_message(

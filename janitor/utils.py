@@ -101,12 +101,9 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     Returns a dictionary.
     """
 
-    name = value.name
-    if not name:
-        name = 0
-    value = value._values[grid_index]
+    name = value.name or 0
 
-    return {(key, name): value}
+    return {(key, name): value._values[grid_index]}
 
 
 @_expand_grid.register(pd.DataFrame)

@@ -1175,14 +1175,14 @@ def _final_frame_longer(
     Build final dataframe for pivot_longer.
     """
     indexer = np.tile(np.arange(len_index), reps)
-    df_index = df.index[indexer]
+    dfindex = df.index[indexer]
     if index:
         index = {name: arr[indexer] for name, arr in index.items()}
     else:
         index = {}
     df = {**index, **outcome, **values}
 
-    df = pd.DataFrame(df, copy=False, index=df_index)
+    df = pd.DataFrame(df, copy=False, index=dfindex)
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)
@@ -1379,45 +1379,49 @@ def _computations_pivot_wider(
         index_expand,
     )
 
-    df_ = df.pivot(  # noqa: PD010
+    df = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
     )
 
-    if (
-        names_expand
-        and df.loc[:, names_from].apply(is_categorical_dtype).any()
-    ):
-        retain_categories = True
-        if flatten_levels & (
-            (names_glue is not None)
-            | isinstance(df_.columns, pd.MultiIndex)
-            | ((index is not None) & reset_index)
-        ):
-            retain_categories = False
-        indexer = _expand(df_.columns, retain_categories=retain_categories)
-        df_ = df_.reindex(columns=indexer)
+    if names_expand:
+        any_categoricals = (
+            df.columns.get_level_values(name) for name in names_from
+        )
+        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
+        if any_categoricals:
+            retain_categories = True
+            if flatten_levels & (
+                (names_glue is not None)
+                | isinstance(df.columns, pd.MultiIndex)
+                | ((index is not None) & reset_index)
+            ):
+                retain_categories = False
+            indexer = _expand(df.columns, retain_categories=retain_categories)
+            df = df.reindex(columns=indexer)
 
     if index_expand and index:
-        if df.loc[:, index].apply(is_categorical_dtype).any():
-            indexer = _expand(df_.index, retain_categories=True)
-            df_ = df_.reindex(index=indexer)
+        any_categoricals = (df.index.get_level_values(name) for name in index)
+        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
+        if any_categoricals:
+            indexer = _expand(df.index, retain_categories=True)
+            df = df.reindex(index=indexer)
 
     indexer = None
-    if any((df_.empty, not flatten_levels)):
-        return df_
+    if any((df.empty, not flatten_levels)):
+        return df
 
-    if isinstance(df_.columns, pd.MultiIndex):
-        not_all_strings = not (
-            df.filter(names_from).apply(is_string_dtype).all().item()
+    if isinstance(df.columns, pd.MultiIndex):
+        all_strings = (
+            df.columns.get_level_values(num)
+            for num in range(df.columns.nlevels)
         )
-
-        not_all_strings |= not is_string_dtype(df.columns)
-        if not_all_strings:
-            new_columns = (tuple(map(str, entry)) for entry in df_.columns)
+        all_strings = all(map(is_string_dtype, all_strings))
+        if not all_strings:
+            new_columns = (tuple(map(str, entry)) for entry in df.columns)
         else:
-            new_columns = df_.columns
+            new_columns = df.columns
         if names_glue is not None:
-            if ("_value" in names_from) and (None in df_.columns.names):
+            if ("_value" in names_from) and (None in df.columns.names):
                 warnings.warn(
                     "For names_glue, _value is used as a placeholder "
                     "for the values_from section. "
@@ -1431,7 +1435,7 @@ def _computations_pivot_wider(
                 # there'll only be one None
                 names_from = [
                     "_value" if ent is None else ent
-                    for ent in df_.columns.names
+                    for ent in df.columns.names
                 ]
                 new_columns = [
                     names_glue.format_map(dict(zip(names_from, entry)))
@@ -1446,13 +1450,13 @@ def _computations_pivot_wider(
                 names_sep = "_"
             new_columns = [names_sep.join(entry) for entry in new_columns]
 
-        df_.columns = new_columns
+        df.columns = new_columns
     else:
         if names_glue is not None:
             try:
-                df_.columns = [
+                df.columns = [
                     names_glue.format_map({names_from[0]: entry})
-                    for entry in df_.columns
+                    for entry in df.columns
                 ]
             except KeyError as error:
                 raise KeyError(
@@ -1460,12 +1464,12 @@ def _computations_pivot_wider(
                 ) from error
 
     if index and reset_index:
-        df_ = df_.reset_index()
+        df = df.reset_index()
 
-    if df_.columns.names:
-        df_.columns.names = [None]
+    if df.columns.names:
+        df.columns.names = [None]
 
-    return df_
+    return df
 
 
 def _data_checks_pivot_wider(

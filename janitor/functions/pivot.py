@@ -1383,43 +1383,45 @@ def _computations_pivot_wider(
         index=index, columns=names_from, values=values_from
     )
 
+    indexer = df.index
+    if index_expand and index:
+        any_categoricals = (indexer.get_level_values(name) for name in index)
+        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
+        if any_categoricals:
+            indexer = _expand(indexer, retain_categories=True)
+            df = df.reindex(index=indexer)
+
+    indexer = df.columns
     if names_expand:
         any_categoricals = (
-            df.columns.get_level_values(name) for name in names_from
+            indexer.get_level_values(name) for name in names_from
         )
         any_categoricals = any(map(is_categorical_dtype, any_categoricals))
         if any_categoricals:
             retain_categories = True
             if flatten_levels & (
                 (names_glue is not None)
-                | isinstance(df.columns, pd.MultiIndex)
+                | isinstance(indexer, pd.MultiIndex)
                 | ((index is not None) & reset_index)
             ):
                 retain_categories = False
-            indexer = _expand(df.columns, retain_categories=retain_categories)
+            indexer = _expand(indexer, retain_categories=retain_categories)
             df = df.reindex(columns=indexer)
-
-    if index_expand and index:
-        any_categoricals = (df.index.get_level_values(name) for name in index)
-        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
-        if any_categoricals:
-            indexer = _expand(df.index, retain_categories=True)
-            df = df.reindex(index=indexer)
 
     indexer = None
     if any((df.empty, not flatten_levels)):
         return df
 
     if isinstance(df.columns, pd.MultiIndex):
+        new_columns = df.columns
         all_strings = (
-            df.columns.get_level_values(num)
-            for num in range(df.columns.nlevels)
+            new_columns.get_level_values(num)
+            for num in range(new_columns.nlevels)
         )
         all_strings = all(map(is_string_dtype, all_strings))
         if not all_strings:
-            new_columns = (tuple(map(str, entry)) for entry in df.columns)
-        else:
-            new_columns = df.columns
+            new_columns = (tuple(map(str, entry)) for entry in new_columns)
+
         if names_glue is not None:
             if ("_value" in names_from) and (None in df.columns.names):
                 warnings.warn(

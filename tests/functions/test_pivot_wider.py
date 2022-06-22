@@ -542,34 +542,34 @@ def test_index_expand_flatten_levels(df_expand):
     assert_frame_equal(actual, expected)
 
 
-# def test_expand_multiple_levels(df_expand):
-#     """Test output for names_expand for multiple names_from."""
-#     expected = df_expand.pivot_wider(
-#         "id",
-#         ("year", "gender"),
-#         "percentage",
-#         names_expand=True,
-#         flatten_levels=False,
-#     )
-#     actual = df_expand.complete("year", "gender", "id").pivot(
-#         "id", ("year", "gender"), "percentage"
-#     )
-#     assert_frame_equal(actual, expected)
+def test_expand_multiple_levels(df_expand):
+    """Test output for names_expand for multiple names_from."""
+    expected = df_expand.pivot_wider(
+        "id",
+        ("year", "gender"),
+        "percentage",
+        names_expand=True,
+        flatten_levels=False,
+    )
+    actual = df_expand.complete("year", "gender", "id").pivot(
+        "id", ("year", "gender"), "percentage"
+    )
+    assert_frame_equal(actual, expected)
 
 
-# def test_expand_multiple_levels_flatten_levels(df_expand):
-#     """Test output for names_expand for multiple names_from."""
-#     expected = df_expand.pivot_wider(
-#         "id",
-#         ("year", "gender"),
-#         "percentage",
-#         names_expand=True,
-#         flatten_levels=True,
-#     )
-#     actual = (
-#         df_expand.complete("year", "gender", "id")
-#         .pivot("id", ("year", "gender"), "percentage")
-#         .collapse_levels()
-#         .reset_index()
-#     )
-#     assert_frame_equal(actual, expected)
+def test_expand_multiple_levels_flatten_levels(df_expand):
+    """Test output for names_expand for multiple names_from."""
+    expected = df_expand.pivot_wider(
+        "id",
+        ("year", "gender"),
+        "percentage",
+        names_expand=True,
+        flatten_levels=True,
+    )
+    actual = (
+        df_expand.complete("year", "gender", "id")
+        .pivot("id", ("year", "gender"), "percentage")
+        .collapse_levels()
+        .reset_index()
+    )
+    assert_frame_equal(actual, expected)

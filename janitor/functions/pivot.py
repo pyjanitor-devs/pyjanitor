@@ -924,6 +924,11 @@ def _pivot_longer_dot_value(
     if np.count_nonzero(mapping.columns == ".value") > 1:
         outcome = mapping.pop(".value")
         out = outcome.iloc[:, 0]
+        # for loop preferred over agg
+        # primarily for speed
+        # if the column is a large array
+        # direct addition is surprisingly faster than
+        # the convenient agg(','.join, axis = 1) option
         for _, val in outcome.iloc[:, 1:].items():
             out += "" + val
         mapping[".value"] = out

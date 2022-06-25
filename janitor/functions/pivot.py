@@ -930,7 +930,7 @@ def _pivot_longer_dot_value(
         # direct addition is surprisingly faster than
         # the convenient agg(','.join, axis = 1) option
         for _, val in outcome.iloc[:, 1:].items():
-            out += "" + val
+            out += val
         mapping[".value"] = out
 
     exclude = {

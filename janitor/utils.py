@@ -9,7 +9,6 @@ from typing import Callable, Dict, Iterable, Union
 
 import numpy as np
 import pandas as pd
-from pandas.core.construction import extract_array
 
 
 def check(varname: str, value, expected_types: list):
@@ -72,9 +71,10 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     if value.ndim == 1:
         return {(key, 0): value}
 
-    return {(key, num): arr for num, arr in enumerate(value.T)}
+    return {(key, num): value[:, num] for num in range(value.shape[-1])}
 
 
+@_expand_grid.register(pd.api.extensions.ExtensionArray)
 @_expand_grid.register(pd.arrays.PandasArray)
 def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
@@ -82,24 +82,20 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     Returns a dictionary.
     """
 
-    value = value[grid_index]
-
-    return {(key, 0): value}
+    return {(key, 0): value[grid_index]}
 
 
+@_expand_grid.register(pd.Index)
 @_expand_grid.register(pd.Series)
 def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
-    Expands the Series based on `grid_index`.
+    Expands the pd.Series/pd.Index based on `grid_index`.
     Returns a dictionary.
     """
 
-    name = value.name
-    if not name:
-        name = 0
-    value = extract_array(value, extract_numpy=True)[grid_index]
+    name = value.name or 0
 
-    return {(key, name): value}
+    return {(key, name): value._values[grid_index]}
 
 
 @_expand_grid.register(pd.DataFrame)
@@ -116,8 +112,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
         value = value.set_axis(columns, axis="columns")
 
     return {
-        (key, name): extract_array(val, extract_numpy=True)[grid_index]
-        for name, val in value.items()
+        (key, name): val._values[grid_index] for name, val in value.items()
     }
 
 
@@ -133,24 +128,12 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     for n in range(value.nlevels):
         arr = value.get_level_values(n)
         name = arr.name
-        arr = extract_array(arr, extract_numpy=True)[grid_index]
+        arr = arr._values[grid_index]
         if not name:
             name = num
             num += 1
         contents[(key, name)] = arr
     return contents
-
-
-@_expand_grid.register(pd.Index)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
-    """
-    Expands the Index based on `grid_index`.
-    Returns a dictionary.
-    """
-    name = value.name
-    if not name:
-        name = 0
-    return {(key, name): extract_array(value, extract_numpy=True)[grid_index]}
 
 
 def import_message(

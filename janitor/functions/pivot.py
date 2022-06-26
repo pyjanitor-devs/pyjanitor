@@ -11,7 +11,6 @@ from pandas.api.types import (
     is_list_like,
     is_string_dtype,
 )
-from pandas.core.construction import extract_array
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
@@ -258,8 +257,8 @@ def pivot_longer(
         arguments must match.
         `names_pattern` does not work with MultiIndex columns.
     :param names_transform: Use this option to change the types of columns that
-        have been transformed to rows. This does not applies to the values columns.
-        Accepts a string, a callable, or a dictionary that is acceptable by `pd.astype`.
+        have been transformed to rows. This does not applies to the values' columns.
+        Accepts any argument that is acceptable by `pd.astype`.
     :param sort_by_appearance: Default `False`. Boolean value that determines
         the final look of the DataFrame. If `True`, the unpivoted DataFrame
         will be stacked in order of first appearance.
@@ -526,9 +525,6 @@ def _data_checks_pivot_longer(
                     "index parameter. Kindly provide unique label(s)."
                 )
 
-    if names_transform:
-        check("names_transform", names_transform, [str, Callable, dict])
-
     check("sort_by_appearance", sort_by_appearance, [bool])
 
     check("ignore_index", ignore_index, [bool])
@@ -602,9 +598,7 @@ def _computations_pivot_longer(
         return df
 
     if index:
-        index = {
-            name: extract_array(df[name], extract_numpy=True) for name in index
-        }
+        index = {name: df[name]._values for name in index}
 
     if len(column_names) != len(set(column_names)):
         column_names = pd.unique(column_names)
@@ -732,10 +726,7 @@ def _pivot_longer_names_pattern_sequence(
             values = _names_transform(
                 names_transform, is_dataframe=False, values=values
             )
-        values = {
-            name: extract_array(arr, extract_numpy=True).repeat(len_index)
-            for name, arr in values
-        }
+        values = {name: arr._values.repeat(len_index) for name, arr in values}
     else:
         values = {}
 
@@ -896,12 +887,9 @@ def _base_melt(
         outcome = _names_transform(
             names_transform, is_dataframe=False, values=outcome
         )
-    outcome = {
-        name: extract_array(arr, extract_numpy=True).repeat(len_index)
-        for name, arr in outcome
-    }
+    outcome = {name: arr._values.repeat(len_index) for name, arr in outcome}
 
-    values = [extract_array(arr, extract_numpy=True) for _, arr in df.items()]
+    values = [arr._values for _, arr in df.items()]
     values = {values_to: concat_compat(values)}
 
     return _final_frame_longer(
@@ -935,8 +923,15 @@ def _pivot_longer_dot_value(
     """
     if np.count_nonzero(mapping.columns == ".value") > 1:
         outcome = mapping.pop(".value")
-        outcome = outcome.agg("".join, axis=1)
-        mapping[".value"] = outcome
+        out = outcome.iloc[:, 0]
+        # for loop preferred over agg
+        # primarily for speed
+        # if the column is a large array
+        # direct addition is surprisingly faster than
+        # the convenient agg(','.join, axis = 1) option
+        for _, val in outcome.iloc[:, 1:].items():
+            out += val
+        mapping[".value"] = out
 
     exclude = {
         word
@@ -1001,7 +996,7 @@ def _pivot_longer_dot_value(
                 names_transform, is_dataframe=True, values=outcome
             )
         outcome = {
-            name: extract_array(arr, extract_numpy=True).repeat(len_index)
+            name: arr._values.repeat(len_index)
             for name, arr in outcome.items()
         }
 
@@ -1064,8 +1059,7 @@ def _dict_from_grouped_names(df: pd.DataFrame) -> dict:
     """
     outcome = defaultdict(list)
     for num, name in enumerate(df.columns):
-        arr = df.iloc[:, num]
-        arr = extract_array(arr, extract_numpy=True)
+        arr = df.iloc[:, num]._values
         outcome[name].append(arr)
     return {name: concat_compat(arr) for name, arr in outcome.items()}
 

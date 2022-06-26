@@ -74,6 +74,7 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     return {(key, num): value[:, num] for num in range(value.shape[-1])}
 
 
+@_expand_grid.register(pd.api.extensions.ExtensionArray)
 @_expand_grid.register(pd.arrays.PandasArray)
 def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
@@ -84,20 +85,11 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     return {(key, 0): value[grid_index]}
 
 
-@_expand_grid.register(pd.api.extensions.ExtensionArray)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
-    """
-    Expands the pandas extension array based on `grid_index`.
-    Returns a dictionary.
-    """
-
-    return {(key, 0): value[grid_index]}
-
-
+@_expand_grid.register(pd.Index)
 @_expand_grid.register(pd.Series)
 def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
-    Expands the Series based on `grid_index`.
+    Expands the pd.Series/pd.Index based on `grid_index`.
     Returns a dictionary.
     """
 
@@ -142,16 +134,6 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
             num += 1
         contents[(key, name)] = arr
     return contents
-
-
-@_expand_grid.register(pd.Index)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
-    """
-    Expands the Index based on `grid_index`.
-    Returns a dictionary.
-    """
-    name = value.name or 0
-    return {(key, name): value._values[grid_index]}
 
 
 def import_message(

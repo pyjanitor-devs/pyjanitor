@@ -188,7 +188,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     grid = ((*left, right) for left, right in grid)
     contents = {}
     for key, value, grid_index in grid:
-        contents = {**contents, **_expand_grid(value, grid_index, key)}
+        contents.update(_expand_grid(value, grid_index, key))
     return pd.DataFrame(contents, copy=False)
 
 

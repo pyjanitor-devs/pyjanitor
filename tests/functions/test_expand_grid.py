@@ -8,6 +8,7 @@ from janitor.testing_utils.strategies import (
     categoricaldf_strategy,
 )
 from janitor.functions import expand_grid
+from functools import reduce
 
 
 @given(df=df_strategy())
@@ -324,3 +325,21 @@ def test_series_name(df):
         [["city", "A"], ["cities", 0]]
     )
     assert_frame_equal(result, expected)
+
+
+def test_extension_array():
+    """Test output on an extension array"""
+    others = dict(
+        id=pd.Categorical(
+            values=(2, 1, 1, 2, 1), categories=(1, 2, 3), ordered=True
+        ),
+        year=(2018, 2018, 2019, 2020, 2020),
+        gender=pd.Categorical(("female", "male", "male", "female", "male")),
+    )
+
+    expected = expand_grid(others=others).droplevel(axis=1, level=-1)
+    others = [pd.Series(val).rename(key) for key, val in others.items()]
+
+    func = lambda x, y: pd.merge(x, y, how="cross")  # noqa: E731
+    actual = reduce(func, others)
+    assert_frame_equal(expected, actual)

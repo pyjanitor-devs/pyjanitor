@@ -1177,6 +1177,7 @@ def _final_frame_longer(
     df = {**index, **outcome, **values}
 
     df = pd.DataFrame(df, copy=False, index=df_index)
+    df_index = None
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)

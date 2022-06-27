@@ -1169,14 +1169,14 @@ def _final_frame_longer(
     Build final dataframe for pivot_longer.
     """
     indexer = np.tile(np.arange(len_index), reps)
-    dfindex = df.index[indexer]
+    df_index = df.index[indexer]
     if index:
         index = {name: arr[indexer] for name, arr in index.items()}
     else:
         index = {}
     df = {**index, **outcome, **values}
 
-    df = pd.DataFrame(df, copy=False, index=dfindex)
+    df = pd.DataFrame(df, copy=False, index=df_index)
 
     if sort_by_appearance:
         df = _sort_by_appearance_for_melt(df=df, len_index=len_index)

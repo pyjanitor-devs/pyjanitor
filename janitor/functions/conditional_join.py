@@ -20,11 +20,6 @@ from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
 
-from janitor.functions._numba_utils import (
-    _numba_keep_last,
-    _numba_keep_first,
-)
-
 
 @pf.register_dataframe_method
 def conditional_join(
@@ -331,11 +326,11 @@ def _conditional_join_preliminary_checks(
 
     check("use_numba", use_numba, [bool])
 
-    # if use_numba:
-    # from janitor.functions._numba_utils import (
-    #     _numba_keep_last,
-    #     _numba_keep_first,
-    # )
+    if use_numba:
+        from janitor.functions._numba_utils import (  # noqa : F401
+            _numba_keep_last,  # noqa : F401
+            _numba_keep_first,  # noqa : F401
+        )
 
     return (
         df,
@@ -633,13 +628,17 @@ def _less_than_indices(
         right_c = [right_index[ind:len_right] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         if use_numba:
-            right_c = _numba_keep_first(search_indices, right_index, len_right)
+            right_c = _numba_keep_first(  # noqa : F821
+                search_indices, right_index, len_right
+            )
         else:
             right_c = [arr.min() for arr in right_c]
         return left_index, right_c
     if keep == _KeepTypes.LAST.value:
         if use_numba:
-            right_c = _numba_keep_last(search_indices, right_index, len_right)
+            right_c = _numba_keep_last(  # noqa : F821
+                search_indices, right_index, len_right
+            )
         else:
             right_c = [arr.max() for arr in right_c]
         return left_index, right_c
@@ -748,13 +747,17 @@ def _greater_than_indices(
         right_c = [right_index[:ind] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         if use_numba:
-            right_c = _numba_keep_first(search_indices, right_index, 0)
+            right_c = _numba_keep_first(  # noqa : F821
+                search_indices, right_index, 0
+            )
         else:
             right_c = [arr.min() for arr in right_c]
         return left_index, right_c
     if keep == _KeepTypes.LAST.value:
         if use_numba:
-            right_c = _numba_keep_last(search_indices, right_index, 0)
+            right_c = _numba_keep_last(  # noqa : F821
+                search_indices, right_index, 0
+            )
         else:
             right_c = [arr.max() for arr in right_c]
         return left_index, right_c

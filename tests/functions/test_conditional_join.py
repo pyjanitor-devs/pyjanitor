@@ -185,6 +185,14 @@ def test_df_columns(dummy):
         )
 
 
+def test_check_use_numba_type(dummy, series):
+    """
+    Raise TypeError if `use_numba` is not a string.
+    """
+    with pytest.raises(TypeError, match="use_numba should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", "<"), use_numba=1)
+
+
 def test_check_keep_type(dummy, series):
     """
     Raise TypeError if `keep` is not a string.
@@ -346,6 +354,96 @@ def test_single_condition_less_than_floats(df, right):
             sort_by_appearance=False,
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats_keep_first_numba(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    right = right.sort_values("Numeric").dropna(subset=["Numeric"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]],
+        left_on="B",
+        right_on="Numeric",
+        direction="forward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = df[["B"]].conditional_join(
+        right[["Numeric"]],
+        ("B", "Numeric", "<"),
+        how="left",
+        sort_by_appearance=False,
+        keep="first",
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats_keep_last_numba(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    right = right.sort_values("Numeric").dropna(subset=["Numeric"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]],
+        left_on="B",
+        right_on="Numeric",
+        direction="backward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = df[["B"]].conditional_join(
+        right[["Numeric"]],
+        ("B", "Numeric", ">"),
+        how="left",
+        sort_by_appearance=False,
+        keep="last",
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_ints_extension_array_numba(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df[["A"]]
+        .assign(index=df.index)
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A < df.Integers]
+        .groupby("index")
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", "<"),
+        how="inner",
+        keep="first",
+        sort_by_appearance=False,
+        use_numba=True,
     )
 
     assert_frame_equal(expected, actual)

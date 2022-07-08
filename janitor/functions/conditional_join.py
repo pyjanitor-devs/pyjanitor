@@ -1,11 +1,11 @@
 import operator
 from enum import Enum
 from typing import Union, Any, Optional, Hashable
+from janitor.functions.utils import _numba_utils, _KeepTypes
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.core.construction import extract_array
 from pandas.core.dtypes.common import (
     is_categorical_dtype,
     is_datetime64_dtype,
@@ -193,14 +193,14 @@ class _JoinTypes(Enum):
     RIGHT = "right"
 
 
-class _KeepTypes(Enum):
-    """
-    List of keep types for conditional_join.
-    """
+# class _KeepTypes(Enum):
+#     """
+#     List of keep types for conditional_join.
+#     """
 
-    ALL = "all"
-    FIRST = "first"
-    LAST = "last"
+#     ALL = "all"
+#     FIRST = "first"
+#     LAST = "last"
 
 
 operator_map = {
@@ -325,12 +325,6 @@ def _conditional_join_preliminary_checks(
         raise ValueError(f"'keep' should be one of {checker}.")
 
     check("use_numba", use_numba, [bool])
-
-    if use_numba:
-        from janitor.functions._numba_utils import (  # noqa : F401
-            _numba_keep_last,  # noqa : F401
-            _numba_keep_first,  # noqa : F401
-        )
 
     return (
         df,
@@ -628,16 +622,16 @@ def _less_than_indices(
         right_c = [right_index[ind:len_right] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         if use_numba:
-            right_c = _numba_keep_first(  # noqa : F821
-                search_indices, right_index, len_right
+            right_c = _numba_utils(
+                search_indices, right_index, len_right, keep
             )
         else:
             right_c = [arr.min() for arr in right_c]
         return left_index, right_c
     if keep == _KeepTypes.LAST.value:
         if use_numba:
-            right_c = _numba_keep_last(  # noqa : F821
-                search_indices, right_index, len_right
+            right_c = _numba_utils(
+                search_indices, right_index, len_right, keep
             )
         else:
             right_c = [arr.max() for arr in right_c]
@@ -747,17 +741,13 @@ def _greater_than_indices(
         right_c = [right_index[:ind] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         if use_numba:
-            right_c = _numba_keep_first(  # noqa : F821
-                search_indices, right_index, 0
-            )
+            right_c = _numba_utils(search_indices, right_index, 0, keep)
         else:
             right_c = [arr.min() for arr in right_c]
         return left_index, right_c
     if keep == _KeepTypes.LAST.value:
         if use_numba:
-            right_c = _numba_keep_last(  # noqa : F821
-                search_indices, right_index, 0
-            )
+            right_c = _numba_utils(search_indices, right_index, 0, keep)
         else:
             right_c = [arr.max() for arr in right_c]
         return left_index, right_c
@@ -896,8 +886,8 @@ def _generate_indices(
 
     for condition in conditions:
         left_c, right_c, op = condition
-        left_c = extract_array(left_c, extract_numpy=True)[left_index]
-        right_c = extract_array(right_c, extract_numpy=True)[right_index]
+        left_c = left_c._values[left_index]
+        right_c = right_c._values[right_index]
         op = operator_map[op]
         mask = op(left_c, right_c)
         if not mask.any():

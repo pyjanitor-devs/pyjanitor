@@ -420,7 +420,9 @@ def test_single_condition_less_than_floats_keep_last_numba(df, right):
 @settings(deadline=None)
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_less_than_ints_extension_array_numba(df, right):
+def test_single_condition_less_than_ints_extension_array_numba_first_match(
+    df, right
+):
     """Test output for a single condition. "<"."""
 
     df = df.assign(A=df["A"].astype("Int64"))
@@ -442,6 +444,108 @@ def test_single_condition_less_than_ints_extension_array_numba(df, right):
         ("A", "Integers", "<"),
         how="inner",
         keep="first",
+        sort_by_appearance=False,
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_ints_extension_array_numba_last_match(
+    df, right
+):
+    """Test output for a single condition. "<"."""
+
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df[["A"]]
+        .assign(index=df.index)
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A < df.Integers]
+        .groupby("index")
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", "<"),
+        how="inner",
+        keep="last",
+        sort_by_appearance=False,
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_ints_extension_array_numba_1st_match(
+    df, right
+):
+    """Test output for a single condition. ">"."""
+
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df[["A"]]
+        .assign(index=df.index)
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A > df.Integers]
+        .groupby("index")
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", ">"),
+        how="inner",
+        keep="first",
+        sort_by_appearance=False,
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@pytest.mark.turtle
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_ints_extension_array_numba_last_match(
+    df, right
+):
+    """Test output for a single condition. ">"."""
+
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df[["A"]]
+        .assign(index=df.index)
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A > df.Integers]
+        .groupby("index")
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", ">"),
+        how="inner",
+        keep="last",
         sort_by_appearance=False,
         use_numba=True,
     )

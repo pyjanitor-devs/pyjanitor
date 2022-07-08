@@ -193,16 +193,6 @@ class _JoinTypes(Enum):
     RIGHT = "right"
 
 
-# class _KeepTypes(Enum):
-#     """
-#     List of keep types for conditional_join.
-#     """
-
-#     ALL = "all"
-#     FIRST = "first"
-#     LAST = "last"
-
-
 operator_map = {
     _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
     _JoinOperator.LESS_THAN.value: operator.lt,
@@ -618,23 +608,15 @@ def _less_than_indices(
         if any_nulls:
             return left_index, right_index[search_indices]
         return left_index, search_indices
-    if not use_numba:
-        right_c = [right_index[ind:len_right] for ind in search_indices]
+    if use_numba & (keep != _KeepTypes.ALL.value):
+        right_c = _numba_utils(search_indices, right_index, len_right, keep)
+        return left_index, right_c
+    right_c = [right_index[ind:len_right] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
-        if use_numba:
-            right_c = _numba_utils(
-                search_indices, right_index, len_right, keep
-            )
-        else:
-            right_c = [arr.min() for arr in right_c]
+        right_c = [arr.min() for arr in right_c]
         return left_index, right_c
     if keep == _KeepTypes.LAST.value:
-        if use_numba:
-            right_c = _numba_utils(
-                search_indices, right_index, len_right, keep
-            )
-        else:
-            right_c = [arr.max() for arr in right_c]
+        right_c = [arr.max() for arr in right_c]
         return left_index, right_c
     right_c = np.concatenate(right_c)
     left_c = np.repeat(left_index, len_right - search_indices)
@@ -737,19 +719,15 @@ def _greater_than_indices(
         if any_nulls:
             return left_index, right_index[search_indices - 1]
         return left_index, search_indices - 1
-    if not use_numba:
-        right_c = [right_index[:ind] for ind in search_indices]
+    if use_numba & (keep != _KeepTypes.ALL.value):
+        right_c = _numba_utils(search_indices, right_index, 0, keep)
+        return left_index, right_c
+    right_c = [right_index[:ind] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
-        if use_numba:
-            right_c = _numba_utils(search_indices, right_index, 0, keep)
-        else:
-            right_c = [arr.min() for arr in right_c]
+        right_c = [arr.min() for arr in right_c]
         return left_index, right_c
     if keep == _KeepTypes.LAST.value:
-        if use_numba:
-            right_c = _numba_utils(search_indices, right_index, 0, keep)
-        else:
-            right_c = [arr.max() for arr in right_c]
+        right_c = [arr.max() for arr in right_c]
         return left_index, right_c
     right_c = np.concatenate(right_c)
     left_c = np.repeat(left_index, search_indices)

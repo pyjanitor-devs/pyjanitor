@@ -499,7 +499,7 @@ def _keep_output(keep: str, left_c: np.ndarray, right_c: np.ndarray):
     return grouped.index, grouped.array
 
 
-def _covert_to_numpy_array(
+def _convert_to_numpy_array(
     left_c: np.ndarray, right_c: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -1131,7 +1131,7 @@ def _range_indices(
     ext_arr = is_extension_array_dtype(left_c)
     left_c = left_c._values
     right_c = right_c._values
-    left_c, right_c = _covert_to_numpy_array(left_c, right_c)
+    left_c, right_c = _convert_to_numpy_array(left_c, right_c)
     # use position, not label
     uniqs_index = np.arange(right_c.size)
     if dupes.any():

@@ -286,10 +286,9 @@ def test_single_condition_less_than_floats_keep_first(df, right):
     """Test output for a single condition. "<"."""
 
     df = df.sort_values("B").dropna(subset=["B"])
-    right = right.sort_values("Numeric").dropna(subset=["Numeric"])
     expected = pd.merge_asof(
         df[["B"]],
-        right[["Numeric"]],
+        right[["Numeric"]].sort_values("Numeric").dropna(subset=["Numeric"]),
         left_on="B",
         right_on="Numeric",
         direction="forward",
@@ -297,7 +296,7 @@ def test_single_condition_less_than_floats_keep_first(df, right):
     )
     expected.index = range(len(expected))
     actual = df[["B"]].conditional_join(
-        right[["Numeric"]],
+        right[["Numeric"]].sort_values("Numeric"),
         ("B", "Numeric", "<"),
         how="left",
         sort_by_appearance=False,

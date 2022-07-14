@@ -29,7 +29,7 @@ dependencies:
   - interrogate
 
   # dev tools
-  - pip-compile
+  - pip-tools
   - pre-commit
   - pylint
   - isort

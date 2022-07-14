@@ -8,6 +8,7 @@ dependencies:
   - pandas-flavor
   - multipledispatch
   - scipy
+
   # optional
   - biopython
   - natsort

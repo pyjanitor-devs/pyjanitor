@@ -29,7 +29,7 @@ dependencies:
   - pandas-vet
   - interrogate
 
-  # dev tools
+  # dev
   - pip-tools
   - pre-commit
   - pylint

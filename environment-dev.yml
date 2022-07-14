@@ -38,7 +38,7 @@ dependencies:
   # release
   - twine
 
-  # doc build
+  # doc
   - mkdocs
   - mkdocs-material
   - mkdocstrings<0.18.0

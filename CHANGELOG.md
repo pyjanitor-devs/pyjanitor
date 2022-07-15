@@ -12,6 +12,7 @@
 -   [INF] Require pyspark minimal version is v3.2.0 to cut duplicates codes. Issue #1110 @Zeroto521
 -   [ENH] Added support for extension arrays in `expand_grid`. Issue #1121 @samukweku
 -   [ENH] Add `names_expand` and `index_expand` parameters to `pivot_wider` for exposing missing categoricals. Issue #1108 @samukweku
+-   [ENH] Add fix  for slicing error when selecting columns in `pivot_wider`. Issue #1134 @samukweku
 
 ## [v0.23.1] - 2022-05-03
 

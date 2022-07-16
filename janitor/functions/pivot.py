@@ -746,7 +746,9 @@ def _pivot_longer_names_pattern_sequence(
     )
 
     if values_to_is_a_sequence:
-        df = df.loc[:, names_to]
+        # dump down for speed improvement
+        df = {name: df[name]._values for name in names_to}
+        return pd.DataFrame(df, copy=False)
 
     return df
 

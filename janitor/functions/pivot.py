@@ -970,7 +970,7 @@ def _pivot_longer_dot_value(
         # and in the same order
         # reindex ensures that, after getting a MultiIndex.from_product
         other = [entry for entry in names_to if entry != ".value"]
-        columns = [*mapping.columns]
+        columns = mapping.columns.tolist()
         others = mapping.loc[:, other].drop_duplicates()
         outcome = mapping.loc[:, ".value"].unique()
         if not mapping.duplicated().any(axis=None):
@@ -979,7 +979,7 @@ def _pivot_longer_dot_value(
         else:
             columns.append("".join(columns))
             cumcount = mapping.groupby(
-                [*mapping.columns], sort=False, observed=True
+                mapping.columns.tolist(), sort=False, observed=True
             ).cumcount()
             df.columns = [arr for _, arr in mapping.items()] + [cumcount]
             indexer = {
@@ -988,6 +988,7 @@ def _pivot_longer_dot_value(
                 "cumcount": cumcount.unique(),
             }
         indexer = _computations_expand_grid(indexer)
+
         indexer.columns = columns
         df = df.reindex(columns=indexer)
         df.columns = df.columns.get_level_values(".value")

@@ -1002,18 +1002,14 @@ def test_names_pattern_nulls_in_data():
     result = df.pivot_longer(
         "family",
         names_to=[".value", "child"],
-        names_pattern=r"(.+)_(.+)\d",
+        names_pattern=r"(.+)_(.+)",
         ignore_index=False,
     )
     result.index = range(len(result))
 
-    actual = (
-        pd.wide_to_long(
-            df, ["dob", "gender"], i="family", j="child", sep="_", suffix=".+"
-        )
-        .reset_index()
-        .assign(child=lambda df: df.child.str[:-1])
-    )
+    actual = pd.wide_to_long(
+        df, ["dob", "gender"], i="family", j="child", sep="_", suffix=".+"
+    ).reset_index()
 
     assert_frame_equal(result, actual)
 

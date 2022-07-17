@@ -744,12 +744,27 @@ def _pivot_longer_names_pattern_sequence(
                 names_transform, is_dataframe=False, values=values
             )
         values = {name: arr._values.repeat(len_index) for name, arr in values}
+
     else:
         values = {}
         names_to = None
 
     mapping = pd.Series(mapping)
     outcome, group_max = _headers_single_series(df=df, mapping=mapping)
+    any_nulls = None
+    if values_dropna and not values_to_is_a_sequence:
+        any_nulls = [pd.isna(arr) for _, arr in outcome.items()]
+        if all(arr.any() for arr in any_nulls):
+            matches = np.equal.reduce(any_nulls)
+            any_nulls = np.where(matches, any_nulls[0], False)
+            if any_nulls.any():
+                outcome = {
+                    name: arr[~any_nulls] for name, arr in outcome.items()
+                }
+            else:
+                any_nulls = None
+        else:
+            any_nulls = None
 
     df = _final_frame_longer(
         df=df,
@@ -759,7 +774,7 @@ def _pivot_longer_names_pattern_sequence(
         outcome=outcome,
         values=values,
         names_to=names_to,
-        any_nulls=None,
+        any_nulls=any_nulls,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -821,6 +836,7 @@ def _pivot_longer_names_pattern_str(
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
         names_to=names_to,
+        values_dropna=values_dropna,
         names_transform=names_transform,
         mapping=mapping,
     )
@@ -881,6 +897,7 @@ def _pivot_longer_names_sep(
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
         names_to=names_to,
+        values_dropna=values_dropna,
         names_transform=names_transform,
         mapping=mapping,
     )
@@ -943,6 +960,7 @@ def _pivot_longer_dot_value(
     sort_by_appearance: bool,
     ignore_index: bool,
     names_to: list,
+    values_dropna: bool,
     names_transform: Union[str, Callable, dict, None],
     mapping: pd.DataFrame,
 ) -> pd.DataFrame:

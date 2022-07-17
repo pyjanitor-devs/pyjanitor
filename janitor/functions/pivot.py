@@ -730,6 +730,7 @@ def _pivot_longer_names_pattern_sequence(
         values = {name: arr._values.repeat(len_index) for name, arr in values}
     else:
         values = {}
+        names_to = None
 
     mapping = pd.Series(mapping)
     outcome, group_max = _headers_single_series(df=df, mapping=mapping)
@@ -741,14 +742,10 @@ def _pivot_longer_names_pattern_sequence(
         index=index,
         outcome=outcome,
         values=values,
+        names_to=names_to,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
-
-    if values_to_is_a_sequence:
-        # dump down for speed improvement
-        df = {name: df[name]._values for name in names_to}
-        return pd.DataFrame(df, copy=False)
 
     return df
 
@@ -902,6 +899,7 @@ def _base_melt(
         index=index,
         outcome=outcome,
         values=values,
+        names_to=None,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -1011,6 +1009,7 @@ def _pivot_longer_dot_value(
         index=index,
         outcome=outcome,
         values=values,
+        names_to=None,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -1048,7 +1047,8 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
         df.columns = [mapping, positions]
         indexer = group_size.index, np.arange(group_max)
         indexer = pd.MultiIndex.from_product(indexer)
-        df = df.reindex(columns=indexer).droplevel(axis=1, level=1)
+        df = df.reindex(columns=indexer)
+        df.columns = df.columns.get_level_values(0)
     else:
         df.columns = mapping
     outcome = _dict_from_grouped_names(df=df)
@@ -1165,6 +1165,7 @@ def _final_frame_longer(
     index: Union[dict, None],
     outcome: dict,
     values: dict,
+    names_to: Union[list, None],
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
@@ -1178,6 +1179,13 @@ def _final_frame_longer(
     else:
         index = {}
     df = {**index, **outcome, **values}
+
+    if names_to:
+        # relevant if values_to is a sequence
+        # helps with reordering the data
+        # and is much faster than having to use `.loc`
+        # after the DataFrame is created
+        df = {name: df[name] for name in names_to}
 
     df = pd.DataFrame(df, copy=False, index=df_index)
     df_index = None

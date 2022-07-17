@@ -751,30 +751,16 @@ def _pivot_longer_names_pattern_sequence(
 
     mapping = pd.Series(mapping)
     outcome, group_max = _headers_single_series(df=df, mapping=mapping)
-    any_nulls = None
-    if values_dropna and not values_to_is_a_sequence:
-        any_nulls = [pd.isna(arr) for _, arr in outcome.items()]
-        if all(arr.any() for arr in any_nulls):
-            matches = np.equal.reduce(any_nulls)
-            any_nulls = np.where(matches, any_nulls[0], False)
-            if any_nulls.any():
-                outcome = {
-                    name: arr[~any_nulls] for name, arr in outcome.items()
-                }
-            else:
-                any_nulls = None
-        else:
-            any_nulls = None
 
     df = _final_frame_longer(
         df=df,
         len_index=len_index,
         reps=group_max,
         index=index,
-        outcome=outcome,
-        values=values,
+        outcome=values,
+        values=outcome,
         names_to=names_to,
-        any_nulls=any_nulls,
+        values_dropna=values_dropna,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -930,14 +916,6 @@ def _base_melt(
 
     values = [arr._values for _, arr in df.items()]
     values = {values_to: concat_compat(values)}
-    any_nulls = None
-    if values_dropna:
-        any_nulls = pd.isna(values[values_to])
-        if any_nulls.any():
-            values = {values_to: values[values_to][~any_nulls]}
-            outcome = {name: arr[~any_nulls] for name, arr in outcome.items()}
-        else:
-            any_nulls = None
 
     return _final_frame_longer(
         df=df,
@@ -947,7 +925,7 @@ def _base_melt(
         outcome=outcome,
         values=values,
         names_to=None,
-        any_nulls=any_nulls,
+        values_dropna=values_dropna,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -1011,6 +989,7 @@ def _pivot_longer_dot_value(
         mapping = mapping.iloc[:, 0]
         values, group_max = _headers_single_series(df=df, mapping=mapping)
         outcome = {}
+
     else:
         # For multiple columns, the labels in `.value`
         # should have every value in other
@@ -1040,6 +1019,7 @@ def _pivot_longer_dot_value(
         df = df.reindex(columns=indexer)
         df.columns = df.columns.get_level_values(".value")
         values = _dict_from_grouped_names(df=df)
+        # return values
         outcome = indexer.loc[indexer[".value"] == outcome[0], other]
         group_max = len(outcome)
         if names_transform:
@@ -1059,7 +1039,7 @@ def _pivot_longer_dot_value(
         outcome=outcome,
         values=values,
         names_to=None,
-        any_nulls=None,
+        values_dropna=values_dropna,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -1216,7 +1196,7 @@ def _final_frame_longer(
     outcome: dict,
     values: dict,
     names_to: Union[list, None],
-    any_nulls: Union[np.ndarray, None],
+    values_dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
@@ -1225,14 +1205,32 @@ def _final_frame_longer(
     """
     indexer = np.tile(np.arange(len_index), reps)
     df_index = df.index[indexer]
-    if any_nulls is not None:
-        df_index = df_index[~any_nulls]
     if index:
         index = {name: arr[indexer] for name, arr in index.items()}
-        if any_nulls is not None:
-            index = {name: arr[~any_nulls] for name, arr in index.items()}
     else:
         index = {}
+
+    if values_dropna and not names_to:
+        if len(values) == 1:
+            key = next(iter(values))
+            any_nulls = pd.isna(values[key])
+        else:
+            _, any_nulls = zip(*values.items())
+            any_nulls = [pd.isna(arr) for _, arr in values.items()]
+            bools = np.equal.reduce(any_nulls)
+            any_nulls = np.where(bools, any_nulls[0], False)
+        if any_nulls.any():
+            values = {name: arr[~any_nulls] for name, arr in values.items()}
+            df_index = df_index[~any_nulls]
+            if index:
+                index = {name: arr[~any_nulls] for name, arr in index.items()}
+            if outcome:
+                outcome = {
+                    name: arr[~any_nulls] for name, arr in outcome.items()
+                }
+
+    any_nulls = None
+
     df = {**index, **outcome, **values}
 
     if names_to:

@@ -433,7 +433,7 @@ def test_names_glue_single_column(df_checks_output):
     )
 
     result = df_checks_output.pivot_wider(
-        ["geoid", "name"],
+        slice("geoid", "name"),
         "variable",
         "estimate",
         names_glue="{variable}_estimate",

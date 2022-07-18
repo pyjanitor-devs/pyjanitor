@@ -1492,8 +1492,9 @@ def _data_checks_pivot_wider(
 
     if index is not None:
         if is_list_like(index):
-            index = [*index]
+            index = list(index)
         index = _select_column_names(index, df)
+        index = list(index)
 
     if names_from is None:
         raise ValueError(
@@ -1501,13 +1502,15 @@ def _data_checks_pivot_wider(
         )
 
     if is_list_like(names_from):
-        names_from = [*names_from]
+        names_from = list(names_from)
     names_from = _select_column_names(names_from, df)
+    names_from = list(names_from)
 
     if values_from is not None:
         if is_list_like(values_from):
-            values_from = [*values_from]
+            values_from = list(values_from)
         out = _select_column_names(values_from, df)
+        out = list(out)
         # hack to align with pd.pivot
         if values_from == out[0]:
             values_from = out[0]

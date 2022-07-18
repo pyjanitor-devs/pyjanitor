@@ -1268,3 +1268,26 @@ def test_dot_value_duplicated_sub_columns():
     )
 
     assert_frame_equal(actual, expected)
+
+
+def test_preserve_extension_types():
+    """Preserve extension types where possible."""
+    cats = pd.DataFrame(
+        [
+            {"Cat": "A", "L_1": 1, "L_2": 2, "L_3": 3},
+            {"Cat": "B", "L_1": 4, "L_2": 5, "L_3": 6},
+            {"Cat": "C", "L_1": 7, "L_2": 8, "L_3": 9},
+        ]
+    )
+    cats = cats.astype("category")
+
+    actual = cats.pivot_longer("Cat", sort_by_appearance=True)
+    expected = (
+        cats.set_index("Cat")
+        .rename_axis(columns="variable")
+        .stack()
+        .rename("value")
+        .reset_index()
+    )
+
+    assert_frame_equal(expected, actual)

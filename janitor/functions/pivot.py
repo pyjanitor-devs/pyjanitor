@@ -913,9 +913,17 @@ def _base_melt(
             names_transform, is_dataframe=False, values=outcome
         )
     outcome = {name: arr._values.repeat(len_index) for name, arr in outcome}
-
-    values = [arr._values for _, arr in df.items()]
-    values = {values_to: concat_compat(values)}
+    # offers a fast route
+    # while still returning the underlying array
+    # which could be an extension array
+    # thus helping in preserving dtypes where possible
+    if df._mgr.any_extension_types:
+        values = df._mgr
+        values = [values.iget_values(i) for i in range(df.columns.size)]
+        values = concat_compat(values)
+    else:
+        values = df._values.ravel(order="F")
+    values = {values_to: values}
 
     return _final_frame_longer(
         df=df,
@@ -1020,7 +1028,6 @@ def _pivot_longer_dot_value(
         df = df.reindex(columns=indexer)
         df.columns = df.columns.get_level_values(".value")
         values = _dict_from_grouped_names(df=df)
-        # return values
         outcome = indexer.loc[indexer[".value"] == outcome[0], other]
         group_max = len(outcome)
         if names_transform:

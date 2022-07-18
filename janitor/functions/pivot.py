@@ -1008,7 +1008,6 @@ def _pivot_longer_dot_value(
         others = mapping.loc[:, other].drop_duplicates()
         outcome = mapping.loc[:, ".value"].unique()
         if not mapping.duplicated().any(axis=None):
-            print(mapping.duplicated())
             df.columns = pd.MultiIndex.from_frame(mapping)
             indexer = {".value": outcome, "other": others}
         else:

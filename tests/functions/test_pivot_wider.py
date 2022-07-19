@@ -135,6 +135,30 @@ def test_name_sep_wrong_type(df_checks_output):
         )
 
 
+def test_name_expand_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `names_expand`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], names_expand=1
+        )
+
+
+def test_id_expand_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `id_expand`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], id_expand=1
+        )
+
+
+def test_reset_index_wrong_type(df_checks_output):
+    """Raise TypeError if the wrong type is provided for `reset_index`."""
+    with pytest.raises(TypeError):
+        df_checks_output.pivot_wider(
+            index="name", names_from=["estimate", "variable"], reset_index=1
+        )
+
+
 def test_name_glue_wrong_type(df_checks_output):
     """Raise TypeError if the wrong type is provided for `names_glue`."""
     with pytest.raises(TypeError):
@@ -317,13 +341,38 @@ def test_index_names():
     assert_frame_equal(result, expected_output)
 
 
+def test_categorical():
+    """Test output for categorical column"""
+    df_in = pd.DataFrame(
+        {
+            "family": ["Kelly", "Kelly", "Quin", "Quin"],
+            "name": ["Mark", "Scott", "Tegan", "Sara"],
+            "n": pd.Categorical([1, 2, 1, 2]),
+        }
+    )
+    df_out = pd.DataFrame(
+        {
+            "family": ["Kelly", "Quin"],
+            1: ["Mark", "Tegan"],
+            2: ["Scott", "Sara"],
+        }
+    )
+
+    result = df_in.pivot_wider(
+        index="family",
+        names_from="n",
+        values_from="name",
+    )
+    assert_frame_equal(result, df_out)
+
+
 def test_names_glue():
     """Test output with `names_glue`"""
     df_in = pd.DataFrame(
         {
             "family": ["Kelly", "Kelly", "Quin", "Quin"],
             "name": ["Mark", "Scott", "Tegan", "Sara"],
-            "n": [1, 2, 1, 2],
+            "n": ["1", "2", "1", "2"],
         }
     )
     df_out = pd.DataFrame(
@@ -343,10 +392,9 @@ def test_names_glue():
     assert_frame_equal(result, df_out)
 
 
-def test_change_level_order(df_checks_output):
+def test_names_glue_multiple_levels(df_checks_output):
     """
-    Test output with `levels_order`,
-    while maintaining order from `names_from`.
+    Test output with names_glue for multiple levels.
     """
 
     df_out = pd.DataFrame(
@@ -367,8 +415,9 @@ def test_change_level_order(df_checks_output):
         names_from="variable",
         values_from=["estimate", "error"],
         names_glue="{variable}_{_value}",
+        reset_index=False,
     )
-    assert_frame_equal(result, df_out)
+    assert_frame_equal(result, df_out.set_index(["geoid", "name"]))
 
 
 def test_names_glue_single_column(df_checks_output):
@@ -384,7 +433,7 @@ def test_names_glue_single_column(df_checks_output):
     )
 
     result = df_checks_output.pivot_wider(
-        ["geoid", "name"],
+        slice("geoid", "name"),
         "variable",
         "estimate",
         names_glue="{variable}_estimate",
@@ -421,3 +470,106 @@ def test_int_columns():
     )
 
     assert_frame_equal(result, df_out)
+
+
+@pytest.fixture
+def df_expand():
+    """pytest fixture"""
+    # adapted from
+    # https://github.com/tidyverse/tidyr/issues/770#issuecomment-993872495
+    return pd.DataFrame(
+        dict(
+            id=pd.Categorical(
+                values=(2, 1, 1, 2, 1), categories=(1, 2, 3), ordered=True
+            ),
+            year=(2018, 2018, 2019, 2020, 2020),
+            gender=pd.Categorical(
+                ("female", "male", "male", "female", "male")
+            ),
+            percentage=range(30, 80, 10),
+        ),
+        index=np.repeat([0], 5),
+    )
+
+
+def test_names_expand(df_expand):
+    """Test output if `names_expand`"""
+    actual = df_expand.pivot("year", "id", "percentage").reindex(
+        columns=pd.Categorical([1, 2, 3], ordered=True)
+    )
+    expected = df_expand.pivot_wider(
+        "year", "id", "percentage", names_expand=True, flatten_levels=False
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_names_expand_flatten_levels(df_expand):
+    """Test output if `names_expand`"""
+    actual = (
+        df_expand.pivot("year", "id", "percentage")
+        .reindex(columns=[1, 2, 3])
+        .rename_axis(columns=None)
+        .reset_index()
+    )
+    expected = df_expand.pivot_wider(
+        "year", "id", "percentage", names_expand=True, flatten_levels=True
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_index_expand(df_expand):
+    """Test output if `index_expand`"""
+    actual = df_expand.pivot("id", "year", "percentage").reindex(
+        pd.Categorical([1, 2, 3], ordered=True)
+    )
+    expected = df_expand.pivot_wider(
+        "id", "year", "percentage", index_expand=True, flatten_levels=False
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_index_expand_flatten_levels(df_expand):
+    """Test output if `index_expand`"""
+    actual = (
+        df_expand.pivot("id", "year", "percentage")
+        .reindex(pd.Categorical([1, 2, 3], ordered=True))
+        .rename_axis(columns=None)
+        .reset_index()
+    )
+    expected = df_expand.pivot_wider(
+        "id", "year", "percentage", index_expand=True
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_expand_multiple_levels(df_expand):
+    """Test output for names_expand for multiple names_from."""
+    expected = df_expand.pivot_wider(
+        "id",
+        ("year", "gender"),
+        "percentage",
+        names_expand=True,
+        flatten_levels=False,
+    )
+    actual = df_expand.complete("year", "gender", "id").pivot(
+        "id", ("year", "gender"), "percentage"
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_expand_multiple_levels_flatten_levels(df_expand):
+    """Test output for names_expand for multiple names_from."""
+    expected = df_expand.pivot_wider(
+        "id",
+        ("year", "gender"),
+        "percentage",
+        names_expand=True,
+        flatten_levels=True,
+    )
+    actual = (
+        df_expand.complete("year", "gender", "id")
+        .pivot("id", ("year", "gender"), "percentage")
+        .collapse_levels()
+        .reset_index()
+    )
+    assert_frame_equal(actual, expected)

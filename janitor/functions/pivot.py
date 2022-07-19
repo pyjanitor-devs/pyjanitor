@@ -697,17 +697,17 @@ def _pivot_longer_names_pattern_sequence(
                 "column labels assigned to the dataframe's index parameter. "
                 "Kindly use unique labels."
             )
-    outcome = df.columns
+    values = df.columns
 
     mapping = [
-        outcome.str.contains(regex, na=False, regex=True)
+        values.str.contains(regex, na=False, regex=True)
         for regex in names_pattern
     ]
 
-    outcome = (arr.any() for arr in mapping)
+    values = (arr.any() for arr in mapping)
     # within each match, check the individual matches
     # and raise an error if any is False
-    for position, boolean in enumerate(outcome):
+    for position, boolean in enumerate(values):
         if not boolean.item():
             raise ValueError(
                 "No match was returned for the regex "
@@ -715,50 +715,52 @@ def _pivot_longer_names_pattern_sequence(
             )
 
     if values_to_is_a_sequence:
-        mapping, values = np.select(mapping, values_to, None), np.select(
+        mapping, outcome = np.select(mapping, values_to, None), np.select(
             mapping, names_to, None
         )
     else:
         mapping = np.select(mapping, names_to, None)
 
     # only matched columns are retained
-    outcome = pd.notna(mapping)
-    df = df.loc[:, outcome]
-    mapping = mapping[outcome]
+    values = pd.notna(mapping)
+    df = df.loc[:, values]
+    mapping = mapping[values]
     if values_to_is_a_sequence:
         names_to = zip(names_to, values_to)
         names_to = [*chain.from_iterable(names_to)]
         if index:
             names_to = [*index] + names_to
-        values = values[outcome]
+        outcome = outcome[values]
         arr = defaultdict(list)
-        for label, name in zip(values, df.columns):
+        for label, name in zip(outcome, df.columns):
             arr[label].append(name)
-        values = arr.keys()
+        outcome = arr.keys()
         arr = (entry for _, entry in arr.items())
         arr = zip(*zip_longest(*arr))
         arr = map(pd.Series, arr)
-        values = zip(values, arr)
+        outcome = zip(outcome, arr)
         if names_transform:
-            values = _names_transform(
-                names_transform, is_dataframe=False, values=values
+            outcome = _names_transform(
+                names_transform, is_dataframe=False, values=outcome
             )
-        values = {name: arr._values.repeat(len_index) for name, arr in values}
+        outcome = {
+            name: arr._values.repeat(len_index) for name, arr in outcome
+        }
 
     else:
-        values = {}
+        outcome = {}
         names_to = None
 
     mapping = pd.Series(mapping)
-    outcome, group_max = _headers_single_series(df=df, mapping=mapping)
+    values, group_max = _headers_single_series(df=df, mapping=mapping)
 
     df = _final_frame_longer(
         df=df,
         len_index=len_index,
         reps=group_max,
         index=index,
-        outcome=values,
-        values=outcome,
+        outcome=outcome,
+        values=values,
         names_to=names_to,
         dropna=dropna,
         sort_by_appearance=sort_by_appearance,

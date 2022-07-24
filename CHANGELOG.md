@@ -13,6 +13,7 @@
 -   [ENH] Added support for extension arrays in `expand_grid`. Issue #1121 @samukweku
 -   [ENH] Add `names_expand` and `index_expand` parameters to `pivot_wider` for exposing missing categoricals. Issue #1108 @samukweku
 -   [ENH] Add fix  for slicing error when selecting columns in `pivot_wider`. Issue #1134 @samukweku
+-   [ENH] `dropna` parameter added to `pivot_longer`. Issue #1132 @samukweku
 
 ## [v0.23.1] - 2022-05-03
 

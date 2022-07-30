@@ -27,6 +27,7 @@ dependencies:
   - multipledispatch
   - mypy
   - natsort
+  - numba
   - numpy
   - openpyxl
   - pandas-flavor

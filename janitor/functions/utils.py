@@ -2,8 +2,10 @@
 from itertools import chain
 import fnmatch
 import warnings
+from enum import Enum
 from collections.abc import Callable as dispatch_callable
 import re
+import importlib
 from typing import Hashable, Iterable, List, Optional, Pattern, Union
 
 import pandas as pd
@@ -421,3 +423,89 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         filtered_columns = pd.unique(filtered_columns)
 
     return filtered_columns
+
+
+class _KeepTypes(Enum):
+    """
+    List of keep types for conditional_join.
+    """
+
+    ALL = "all"
+    FIRST = "first"
+    LAST = "last"
+
+
+def _import_numba():
+    """
+    Import numba if installed.
+    If not installed, an error message is raised.
+    """
+    # adapted from pandas.compat._optional.py
+    try:
+        module = importlib.import_module("numba")
+    except ImportError:
+        msg = (
+            "Missing optional dependency 'numba'. "
+            "Use pip or conda to install numba."
+        )
+        raise ImportError(msg) from None
+
+    return module
+
+
+def _numba_utils(
+    search_indices: np.ndarray,
+    right_index: np.ndarray,
+    len_right: int,
+    keep: str,
+):
+    """Utility functions for numba."""
+
+    numba = _import_numba()
+    loop_range = numba.prange
+
+    @numba.njit(cache=True, parallel=True)
+    def _numba_keep_first(
+        search_indices: np.ndarray, right_index: np.ndarray, len_right: int
+    ) -> np.ndarray:
+        """Parallelized output for first match."""
+
+        length_of_indices = search_indices.size
+        right_c = np.empty(shape=length_of_indices, dtype=np.intp)
+        if len_right:
+            for ind in loop_range(length_of_indices):
+                right_c[ind] = right_index[
+                    search_indices[ind] : len_right  # noqa:E203
+                ].min()
+        else:
+            for ind in loop_range(length_of_indices):
+                right_c[ind] = right_index[
+                    : search_indices[ind]
+                ].min()  # noqa:E203
+        return right_c
+
+    @numba.njit(cache=True, parallel=True)
+    def _numba_keep_last(
+        search_indices: np.ndarray, right_index: np.ndarray, len_right: int
+    ) -> np.ndarray:
+        """Parallelized output for last match."""
+
+        length_of_indices = search_indices.size
+        right_c = np.empty(shape=length_of_indices, dtype=np.intp)
+        if len_right:
+            for ind in loop_range(length_of_indices):
+                right_c[ind] = right_index[
+                    search_indices[ind] : len_right  # noqa:E203
+                ].max()
+        else:
+            for ind in loop_range(length_of_indices):
+                right_c[ind] = right_index[
+                    : search_indices[ind]
+                ].max()  # noqa:E203
+        return right_c
+
+    if keep == _KeepTypes.FIRST.value:
+        return _numba_keep_first(search_indices, right_index, len_right)
+
+    if keep == _KeepTypes.LAST.value:
+        return _numba_keep_last(search_indices, right_index, len_right)

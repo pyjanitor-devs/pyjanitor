@@ -6,6 +6,8 @@ import pytest
 
 from janitor.testing_utils import date_data
 
+os.environ["NUMBA_DISABLE_JIT"] = "1"
+
 TEST_DATA_DIR = "tests/test_data"
 EXAMPLES_DIR = "examples/"
 

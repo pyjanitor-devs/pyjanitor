@@ -56,6 +56,12 @@ def test_type_names_to(df_checks):
         df_checks.pivot_longer(names_to={2007})
 
 
+def test_type_dropna(df_checks):
+    """Raise TypeError if wrong type is provided for dropna."""
+    with pytest.raises(TypeError):
+        df_checks.pivot_longer(dropna="True")
+
+
 def test_subtype_names_to(df_checks):
     """
     Raise TypeError if names_to is a sequence
@@ -975,9 +981,10 @@ def test_names_pattern_seq_single_column(single_val):
     assert_frame_equal(result, df.rename(columns={"x1": "yA"}))
 
 
-def test_names_pattern_nulls_in_data():
-    """Test output if nulls are present in data."""
-    df = pd.DataFrame(
+@pytest.fixture
+def df_null():
+    "Dataframe with nulls."
+    return pd.DataFrame(
         {
             "family": [1, 2, 3, 4, 5],
             "dob_child1": [
@@ -999,23 +1006,66 @@ def test_names_pattern_nulls_in_data():
         }
     )
 
-    result = df.pivot_longer(
+
+def test_names_pattern_nulls_in_data(df_null):
+    """Test output if nulls are present in data."""
+    result = df_null.pivot_longer(
         "family",
         names_to=[".value", "child"],
-        names_pattern=r"(.+)_(.+)\d",
-        ignore_index=False,
+        names_pattern=r"(.+)_(.+)",
+        ignore_index=True,
     )
-    result.index = range(len(result))
+
+    actual = pd.wide_to_long(
+        df_null, ["dob", "gender"], i="family", j="child", sep="_", suffix=".+"
+    ).reset_index()
+
+    assert_frame_equal(result, actual)
+
+
+def test_dropna_multiple_columns(df_null):
+    """Test output if dropna = True."""
+    result = df_null.pivot_longer(
+        "family",
+        names_to=[".value", "child"],
+        names_pattern=r"(.+)_(.+)",
+        ignore_index=True,
+        dropna=True,
+    )
 
     actual = (
         pd.wide_to_long(
-            df, ["dob", "gender"], i="family", j="child", sep="_", suffix=".+"
+            df_null,
+            ["dob", "gender"],
+            i="family",
+            j="child",
+            sep="_",
+            suffix=".+",
         )
+        .dropna()
         .reset_index()
-        .assign(child=lambda df: df.child.str[:-1])
     )
 
     assert_frame_equal(result, actual)
+
+
+def test_dropna_single_column():
+    """
+    Test output if dropna = True,
+    and a single value column is returned.
+    """
+    df = pd.DataFrame(
+        [
+            {"a": 1.0, "b": np.nan, "c": np.nan, "d": np.nan},
+            {"a": np.nan, "b": 2.0, "c": np.nan, "d": np.nan},
+            {"a": np.nan, "b": np.nan, "c": 3.0, "d": 2.0},
+            {"a": np.nan, "b": np.nan, "c": 1.0, "d": np.nan},
+        ]
+    )
+
+    expected = df.pivot_longer(dropna=True)
+    actual = df.melt().dropna().reset_index(drop=True)
+    assert_frame_equal(expected, actual)
 
 
 @pytest.fixture
@@ -1180,3 +1230,64 @@ def test_duplicated_columns():
     )
 
     assert_frame_equal(actual, expected)
+
+
+def test_dot_value_duplicated_sub_columns():
+    """Test output when the column extracts are not unique."""
+    # https://stackoverflow.com/q/64061588/7175713
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "M_start_date_1": [201709, 201709, 201709],
+            "M_end_date_1": [201905, 201905, 201905],
+            "M_start_date_2": [202004, 202004, 202004],
+            "M_end_date_2": [202005, 202005, 202005],
+            "F_start_date_1": [201803, 201803, 201803],
+            "F_end_date_1": [201904, 201904, 201904],
+            "F_start_date_2": [201912, 201912, 201912],
+            "F_end_date_2": [202007, 202007, 202007],
+        }
+    )
+
+    expected = df.set_index("id")
+    expected.columns = expected.columns.str.split("_", expand=True)
+    expected = (
+        expected.stack(level=[0, 2, 3])
+        .sort_index(level=[0, 1], ascending=[True, False])
+        .reset_index(level=[2, 3], drop=True)
+        .sort_index(axis=1, ascending=False)
+        .rename_axis(["id", "cod"])
+        .reset_index()
+    )
+
+    actual = df.pivot_longer(
+        "id",
+        names_to=("cod", ".value"),
+        names_pattern="(.)_(start|end).+",
+        sort_by_appearance=True,
+    )
+
+    assert_frame_equal(actual, expected)
+
+
+def test_preserve_extension_types():
+    """Preserve extension types where possible."""
+    cats = pd.DataFrame(
+        [
+            {"Cat": "A", "L_1": 1, "L_2": 2, "L_3": 3},
+            {"Cat": "B", "L_1": 4, "L_2": 5, "L_3": 6},
+            {"Cat": "C", "L_1": 7, "L_2": 8, "L_3": 9},
+        ]
+    )
+    cats = cats.astype("category")
+
+    actual = cats.pivot_longer("Cat", sort_by_appearance=True)
+    expected = (
+        cats.set_index("Cat")
+        .rename_axis(columns="variable")
+        .stack()
+        .rename("value")
+        .reset_index()
+    )
+
+    assert_frame_equal(expected, actual)

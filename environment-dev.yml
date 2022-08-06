@@ -17,6 +17,8 @@ dependencies:
   - tqdm
   - unyt
   - xarray
+  - numba
+
   # io
   - openpyxl
   - xlrd

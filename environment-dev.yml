@@ -22,7 +22,6 @@ dependencies:
   - make
   - mkdocs
   - mkdocs-material
-  - mkdocstrings
   - missingno
   - multipledispatch
   - mypy
@@ -54,3 +53,4 @@ dependencies:
   - xorg-libxrender
   - pip:
       - mknotebooks
+      - mkdocstrings[python]

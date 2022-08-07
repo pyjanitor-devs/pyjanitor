@@ -124,7 +124,8 @@ def softmax(s: pd.Series) -> pd.Series:
     :param s: Input Series.
     :return: Transformed Series.
     """
-    return scipy_softmax(s)
+
+    return pd.Series(scipy_softmax(s), index=s.index, name=s.name)
 
 
 @pf.register_series_method

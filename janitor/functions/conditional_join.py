@@ -608,9 +608,10 @@ def _less_than_indices(
         if any_nulls:
             return left_index, right_index[search_indices]
         return left_index, search_indices
-    if use_numba & (keep != _KeepTypes.ALL.value):
-        right_c = _numba_utils(search_indices, right_index, len_right, keep)
-        return left_index, right_c
+    if use_numba:
+        return _numba_utils(
+            search_indices, right_index, left_index, len_right, keep
+        )
     right_c = [right_index[ind:len_right] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         right_c = [arr.min() for arr in right_c]
@@ -719,9 +720,8 @@ def _greater_than_indices(
         if any_nulls:
             return left_index, right_index[search_indices - 1]
         return left_index, search_indices - 1
-    if use_numba & (keep != _KeepTypes.ALL.value):
-        right_c = _numba_utils(search_indices, right_index, 0, keep)
-        return left_index, right_c
+    if use_numba:
+        return _numba_utils(search_indices, right_index, left_index, 0, keep)
     right_c = [right_index[:ind] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         right_c = [arr.min() for arr in right_c]

@@ -456,6 +456,7 @@ def _import_numba():
 def _numba_utils(
     search_indices: np.ndarray,
     right_index: np.ndarray,
+    left_index: np.ndarray,
     len_right: int,
     keep: str,
 ):
@@ -465,47 +466,60 @@ def _numba_utils(
     loop_range = numba.prange
 
     @numba.njit(cache=True, parallel=True)
-    def _numba_keep_first(
-        search_indices: np.ndarray, right_index: np.ndarray, len_right: int
+    def _numba_keep_first_or_last(
+        search_indices: np.ndarray,
+        right_index: np.ndarray,
+        left_index: np.ndarray,
+        len_right: int,
     ) -> np.ndarray:
-        """Parallelized output for first match."""
+        """Parallelized output for first/last match."""
 
         length_of_indices = search_indices.size
         right_c = np.empty(shape=length_of_indices, dtype=np.intp)
-        if len_right:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    search_indices[ind] : len_right  # noqa:E203
-                ].min()
-        else:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    : search_indices[ind]
-                ].min()  # noqa:E203
-        return right_c
+        for ind in loop_range(length_of_indices):
+            if len_right:
+                slicer = slice(search_indices[ind], len_right)
+            else:
+                slicer = slice(None, search_indices[ind])
+            if keep == _KeepTypes.FIRST.value:
+                right_c[ind] = right_index[slicer].min()
+            else:
+                right_c[ind] = right_index[slicer].max()
+        return left_index, right_c
 
     @numba.njit(cache=True, parallel=True)
-    def _numba_keep_last(
-        search_indices: np.ndarray, right_index: np.ndarray, len_right: int
+    def _numba_keep_all(
+        search_indices: np.ndarray,
+        right_index: np.ndarray,
+        left_index: np.ndarray,
+        len_right: int,
     ) -> np.ndarray:
-        """Parallelized output for last match."""
+        """Parallelized output for all matches."""
 
-        length_of_indices = search_indices.size
-        right_c = np.empty(shape=length_of_indices, dtype=np.intp)
         if len_right:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    search_indices[ind] : len_right  # noqa:E203
-                ].max()
+            end = np.cumsum(len_right - search_indices)
         else:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    : search_indices[ind]
-                ].max()  # noqa:E203
-        return right_c
+            end = np.cumsum(search_indices)
+        right_c = np.empty(shape=end[-1], dtype=np.intp)
+        left_c = np.empty(shape=end[-1], dtype=np.intp)
+        # end goal here is to create a start:end slice per row
+        start = np.empty(end.size, dtype=np.intp)
+        start[0] = 0
+        start[1:] = end[:-1]
+        for ind in loop_range(search_indices.size):
+            left_slicer = slice(start[ind], end[ind])
+            if len_right:
+                right_slicer = slice(search_indices[ind], len_right)
+            else:
+                right_slicer = slice(None, search_indices[ind])
+            right_c[left_slicer] = right_index[right_slicer]
+            left_c[left_slicer] = left_index[ind]
 
-    if keep == _KeepTypes.FIRST.value:
-        return _numba_keep_first(search_indices, right_index, len_right)
+        return left_c, right_c
 
-    if keep == _KeepTypes.LAST.value:
-        return _numba_keep_last(search_indices, right_index, len_right)
+    if keep != _KeepTypes.ALL.value:
+        return _numba_keep_first_or_last(
+            search_indices, right_index, left_index, len_right
+        )
+
+    return _numba_keep_all(search_indices, right_index, left_index, len_right)

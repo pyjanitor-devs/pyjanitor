@@ -358,6 +358,33 @@ def test_single_condition_less_than_floats(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats_numba(df, right):
+    """Test output for a single condition. "<"."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric"]], how="cross")
+        .loc[lambda df: df.B.lt(df.Numeric)]
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", "<"),
+            how="inner",
+            sort_by_appearance=False,
+            use_numba=True,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
 @settings(deadline=None)
 @pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
@@ -609,6 +636,38 @@ def test_single_condition_less_than_ints_extension_array(df, right):
 
 
 @pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_ints_extension_array_numba(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.assign(A=df["A"].astype("Int64"))
+    right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
+
+    expected = (
+        df[["A"]]
+        .assign(index=df.index)
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A < df.Integers]
+        .groupby("index")
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["A"]].conditional_join(
+        right[["Integers"]],
+        ("A", "Integers", "<"),
+        how="inner",
+        keep="first",
+        sort_by_appearance=False,
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_equal(df, right):
     """Test output for a single condition. "<=". DateTimes"""
@@ -678,6 +737,33 @@ def test_single_condition_greater_than_datetime(df, right):
             ("E", "Dates", ">"),
             how="inner",
             sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_datetime_numba(df, right):
+    """Test output for a single condition. ">". Datetimes"""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates"]], how="cross")
+        .loc[lambda df: df.E.gt(df.Dates)]
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]],
+            ("E", "Dates", ">"),
+            how="inner",
+            sort_by_appearance=False,
+            use_numba=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
     )

@@ -22,7 +22,7 @@ dependencies:
   - make
   - mkdocs
   - mkdocs-material
-  - mkdocstrings<0.18.0
+  - mkdocstrings-python
   - missingno
   - multipledispatch
   - mypy

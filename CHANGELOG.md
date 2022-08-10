@@ -14,6 +14,7 @@
 -   [ENH] Add `names_expand` and `index_expand` parameters to `pivot_wider` for exposing missing categoricals. Issue #1108 @samukweku
 -   [ENH] Add fix  for slicing error when selecting columns in `pivot_wider`. Issue #1134 @samukweku
 -   [ENH] `dropna` parameter added to `pivot_longer`. Issue #1132 @samukweku
+-   [INF] Update `mkdocstrings` version and to fit its new coming features. PR #1138 @Zeroto521
 -   [BUG] Force `math.softmax` returning `Series`. PR #1139 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03

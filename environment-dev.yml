@@ -33,9 +33,11 @@ dependencies:
   # dev
   - pip-tools
   - pre-commit
+  - make
+  # IDE code style
+  - black
   - pylint
   - isort
-  - make
 
   # doc
   - mkdocs

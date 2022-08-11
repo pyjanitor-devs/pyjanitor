@@ -100,7 +100,7 @@ Contributors
 - [@MollyCroke](https://github.com/MollyCroke) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AMollyCroke)
 - [@ericclessantostv](https://github.com/ericlessantostv) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aericclessantostv)
 - [@fireddd](https://github.com/fireddd) |  [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Afireddd)
-- [@Zeroto521](https://github.com/Zeroto521) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Zeroto521)
+- [@Zeroto521](https://github.com/Zeroto521) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?q=is%3Aclosed+mentions%3Azeroto521)
 - [@thatlittleboy](https://github.com/thatlittleboy) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Athatlittleboy)
 - [@robertmitchellv](https://github.com/robertmitchellv) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Arobertmitchellv)
 - [@Econundrums](https://github.com/Econundrums) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AEconundrums)

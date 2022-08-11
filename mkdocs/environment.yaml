@@ -1,14 +1,13 @@
-name: pyjanitor-dev
+name: pyjanitor-doc
 channels:
   - conda-forge
 dependencies:
-  - python>=3.6
+  - python
   # required
   - pandas
   - pandas-flavor
   - multipledispatch
   - scipy
-
   # optional
   - biopython
   - natsort
@@ -18,27 +17,6 @@ dependencies:
   - unyt
   - xarray
   - numba
-  # io
-  - openpyxl
-  - xlrd
-
-  # testing
-  - pytest
-  - pytest-cov
-  - pytest-xdist
-  - hypothesis
-  - pandas-vet
-  - interrogate
-
-  # dev
-  - pip-tools
-  - pre-commit
-  - pylint
-  - isort
-  - make
-  # release
-  - twine
-
   # doc
   - mkdocs
   - mkdocs-material

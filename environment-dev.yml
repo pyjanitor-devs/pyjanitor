@@ -36,8 +36,6 @@ dependencies:
   - pylint
   - isort
   - make
-  # release
-  - twine
 
   # doc
   - mkdocs

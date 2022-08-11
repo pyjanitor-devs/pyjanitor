@@ -6,17 +6,18 @@ dependencies:
   - pandas
   - pandas-flavor
   - multipledispatch
-  - scipy
+  - scipy  # math, functions
 
   # optional
-  - biopython
-  - natsort
-  - pyspark
-  - rdkit
-  - tqdm
-  - unyt
+  - natsort  # functions
+  - numba  # functions
+  - biopython  # biology
+  - rdkit  # chemistry
+  - tqdm  # chemistry
+  - unyt  # engineering
+  - requests  # finance
+  - pyspark>=3.2.0
   - xarray
-  - numba
   # io
   - openpyxl
   - xlrd

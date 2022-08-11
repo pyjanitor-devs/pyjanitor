@@ -1,0 +1,30 @@
+name: pyjanitor-dev
+channels:
+  - conda-forge
+dependencies:
+  # required
+  - pandas
+  - pandas-flavor
+  - multipledispatch
+  - scipy
+
+  # optional
+  - biopython
+  - natsort
+  - pyspark
+  - rdkit
+  - tqdm
+  - unyt
+  - xarray
+  - numba
+  # io
+  - openpyxl
+  - xlrd
+
+  # testing
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - hypothesis
+  - pandas-vet
+  - interrogate

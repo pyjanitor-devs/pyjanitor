@@ -1,4 +1,4 @@
-name: pyjanitor-dev
+name: pyjanitor-test
 channels:
   - conda-forge
 dependencies:

@@ -16,7 +16,7 @@ dependencies:
   - tqdm  # chemistry
   - unyt  # engineering
   - requests  # finance
-  - pyspark>=3.2.0
+  - pyspark>=3.2.2
   - xarray
   # io
   - openpyxl

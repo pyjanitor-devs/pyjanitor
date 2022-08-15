@@ -22,7 +22,7 @@ jobs:
         with:
           auto-update-conda: true
           miniforge-variant: Mambaforge
-          environment-file: mkdocs/environment.yaml
+          environment-file: environment-dev.yml
           use-mamba: true
 
       - name: Build docs

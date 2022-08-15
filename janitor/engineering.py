@@ -36,20 +36,22 @@ def convert_units(
 
     Method chaining usage example:
 
-    ```python
-    >>> import pandas as pd
-    >>> import janitor.engineering
-    >>> df = pd.DataFrame({"temp_F": [-40, 112]})
-    >>> df = df.convert_units(
-    ...     column_name='temp_F',
-    ...     existing_units='degF',
-    ...     to_units='degC',
-    ...     dest_column_name='temp_C'
-    ... )
-    >>> df
-       temp_F     temp_C
-    0     -40 -40.000000
-    1     112  44.444444
+    Example:
+
+        >>> import pandas as pd
+        >>> import janitor.engineering
+        >>> df = pd.DataFrame({"temp_F": [-40, 112]})
+        >>> df = df.convert_units(
+        ...     column_name='temp_F',
+        ...     existing_units='degF',
+        ...     to_units='degC',
+        ...     dest_column_name='temp_C'
+        ... )
+        >>> df
+           temp_F     temp_C
+        0     -40 -40.000000
+        1     112  44.444444
+
 
 
     Unit conversion can only take place if the `existing_units` and

@@ -30,6 +30,11 @@ jobs:
           pip install .
           mkdocs build
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: website
+          path: site/
+
       - name: Deploy docs preview to Netlify
         uses: nwtgck/actions-netlify@v1.1
         with:

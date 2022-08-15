@@ -4,7 +4,7 @@
 #
 #    pip-compile .requirements/spark.in
 #
-py4j==0.10.9.3
+py4j==0.10.9.5
     # via pyspark
-pyspark==3.2.1
-    # via -r .requirements/spark.in
+pyspark==3.2.2
+    # via -r spark.in

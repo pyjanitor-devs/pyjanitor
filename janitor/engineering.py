@@ -48,7 +48,7 @@ def convert_units(
         ...     dest_column_name='temp_C'
         ... )
         >>> df
-        temp_F     temp_C
+           temp_F     temp_C
         0     -40 -40.000000
         1     112  44.444444
 

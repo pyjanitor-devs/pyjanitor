@@ -1,3 +1,3 @@
 # Functions
 
-::: janitor.functions.add_columns
+::: janitor.functions

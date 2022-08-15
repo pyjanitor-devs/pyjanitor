@@ -46,7 +46,7 @@ plugins:
             show_source: true
           # https://github.com/mkdocstrings/mkdocstrings/issues/278#issuecomment-831411193
           selection:
-            docstring_style: sphinx
+            docstring_style: restructured-text
       # custom_templates: templates
       watch:
         - janitor/

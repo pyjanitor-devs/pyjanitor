@@ -94,34 +94,34 @@ def smiles2mol(
 
     Functional usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
+        >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
 
-    >>> df = janitor.chemistry.smiles2mol(
-    ...    df=df,
-    ...    smiles_column_name='smiles',
-    ...    mols_column_name='mols'
-    ... )
+        >>> df = janitor.chemistry.smiles2mol(
+        ...    df=df,
+        ...    smiles_column_name='smiles',
+        ...    mols_column_name='mols'
+        ... )
 
-    >>> df.mols[0].GetNumAtoms(), df.mols[0].GetNumBonds()
-    (3, 2)
-    >>> df.mols[1].GetNumAtoms(), df.mols[1].GetNumBonds()
-    (5, 4)
+        >>> df.mols[0].GetNumAtoms(), df.mols[0].GetNumBonds()
+        (3, 2)
+        >>> df.mols[1].GetNumAtoms(), df.mols[1].GetNumBonds()
+        (5, 4)
 
     Method chaining usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = df.smiles2mol(
-    ...     smiles_column_name='smiles',
-    ...     mols_column_name='rdkmol'
-    ... )
+        >>> df = df.smiles2mol(
+        ...     smiles_column_name='smiles',
+        ...     mols_column_name='rdkmol'
+        ... )
 
-    >>> df.rdkmol[0].GetNumAtoms(), df.rdkmol[0].GetNumBonds()
-    (3, 2)
+        >>> df.rdkmol[0].GetNumAtoms(), df.rdkmol[0].GetNumBonds()
+        (3, 2)
 
     A progressbar can be optionally used.
 
@@ -184,78 +184,78 @@ def morgan_fingerprint(
 
     Functional usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
+        >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
 
-    # For "counts" kind
-    >>> morgans = janitor.chemistry.morgan_fingerprint(
-    ...     df=df.smiles2mol('smiles', 'mols'),
-    ...     mols_column_name='mols',
-    ...     radius=3,      # Defaults to 3
-    ...     nbits=2048,    # Defaults to 2048
-    ...     kind='counts'  # Defaults to "counts"
-    ... )
+        # For "counts" kind
+        >>> morgans = janitor.chemistry.morgan_fingerprint(
+        ...     df=df.smiles2mol('smiles', 'mols'),
+        ...     mols_column_name='mols',
+        ...     radius=3,      # Defaults to 3
+        ...     nbits=2048,    # Defaults to 2048
+        ...     kind='counts'  # Defaults to "counts"
+        ... )
 
-    >>> set(morgans.iloc[0])
-    {0.0, 1.0, 2.0}
+        >>> set(morgans.iloc[0])
+        {0.0, 1.0, 2.0}
 
-    # For "bits" kind
-    >>> morgans = janitor.chemistry.morgan_fingerprint(
-    ...     df=df.smiles2mol('smiles', 'mols'),
-    ...     mols_column_name='mols',
-    ...     radius=3,      # Defaults to 3
-    ...     nbits=2048,    # Defaults to 2048
-    ...     kind='bits'    # Defaults to "counts"
-    ...  )
+        # For "bits" kind
+        >>> morgans = janitor.chemistry.morgan_fingerprint(
+        ...     df=df.smiles2mol('smiles', 'mols'),
+        ...     mols_column_name='mols',
+        ...     radius=3,      # Defaults to 3
+        ...     nbits=2048,    # Defaults to 2048
+        ...     kind='bits'    # Defaults to "counts"
+        ...  )
 
-    >>> set(morgans.iloc[0])
-    {0.0, 1.0}
+        >>> set(morgans.iloc[0])
+        {0.0, 1.0}
 
     Method chaining usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
+        >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
 
-    # For "counts" kind
-    >>> morgans = (
-    ...     df.smiles2mol('smiles', 'mols')
-    ...     .morgan_fingerprint(
-    ...         mols_column_name='mols',
-    ...         radius=3,      # Defaults to 3
-    ...         nbits=2048,    # Defaults to 2048
-    ...         kind='counts'  # Defaults to "counts"
-    ...     )
-    ... )
+        # For "counts" kind
+        >>> morgans = (
+        ...     df.smiles2mol('smiles', 'mols')
+        ...     .morgan_fingerprint(
+        ...         mols_column_name='mols',
+        ...         radius=3,      # Defaults to 3
+        ...         nbits=2048,    # Defaults to 2048
+        ...         kind='counts'  # Defaults to "counts"
+        ...     )
+        ... )
 
-    >>> set(morgans.iloc[0])
-    {0.0, 1.0, 2.0}
+        >>> set(morgans.iloc[0])
+        {0.0, 1.0, 2.0}
 
-    # For "bits" kind
-    >>> morgans = (
-    ...     df
-    ...     .smiles2mol('smiles', 'mols')
-    ...     .morgan_fingerprint(
-    ...         mols_column_name='mols',
-    ...         radius=3,    # Defaults to 3
-    ...         nbits=2048,  # Defaults to 2048
-    ...         kind='bits'  # Defaults to "counts"
-    ...     )
-    ... )
+        # For "bits" kind
+        >>> morgans = (
+        ...     df
+        ...     .smiles2mol('smiles', 'mols')
+        ...     .morgan_fingerprint(
+        ...         mols_column_name='mols',
+        ...         radius=3,    # Defaults to 3
+        ...         nbits=2048,  # Defaults to 2048
+        ...         kind='bits'  # Defaults to "counts"
+        ...     )
+        ... )
 
-    >>> set(morgans.iloc[0])
-    {0.0, 1.0}
+        >>> set(morgans.iloc[0])
+        {0.0, 1.0}
 
     If you wish to join the morgan fingerprints back into the original
     dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    >>> joined = df.join(morgans)
-    >>> len(joined.columns)
-    2050
+        >>> joined = df.join(morgans)
+        >>> len(joined.columns)
+        2050
 
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT
@@ -324,47 +324,47 @@ def molecular_descriptors(
 
     Functional usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
+        >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
 
-    >>> mol_desc = (
-    ...     janitor.chemistry.molecular_descriptors(
-    ...         df=df.smiles2mol('smiles', 'mols'),
-    ...         mols_column_name='mols'
-    ...     )
-    ... )
+        >>> mol_desc = (
+        ...     janitor.chemistry.molecular_descriptors(
+        ...         df=df.smiles2mol('smiles', 'mols'),
+        ...         mols_column_name='mols'
+        ...     )
+        ... )
 
-    >>> mol_desc.TPSA
-    0    34.14
-    1    37.30
-    Name: TPSA, dtype: float64
+        >>> mol_desc.TPSA
+        0    34.14
+        1    37.30
+        Name: TPSA, dtype: float64
 
     Method chaining usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
+        >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
 
-    >>> mol_desc = (
-    ...     df.smiles2mol('smiles', 'mols')
-    ...     .molecular_descriptors(mols_column_name='mols')
-    ... )
+        >>> mol_desc = (
+        ...     df.smiles2mol('smiles', 'mols')
+        ...     .molecular_descriptors(mols_column_name='mols')
+        ... )
 
-    >>> mol_desc.TPSA
-    0    34.14
-    1    37.30
-    Name: TPSA, dtype: float64
+        >>> mol_desc.TPSA
+        0    34.14
+        1    37.30
+        Name: TPSA, dtype: float64
 
     If you wish to join the molecular descriptors back into the original
     dataframe, this can be accomplished by doing a `join`,
     because the indices are preserved:
 
-    >>> joined = df.join(mol_desc)
-    >>> len(joined.columns)
-    41
+        >>> joined = df.join(mol_desc)
+        >>> len(joined.columns)
+        41
 
     :param df: A pandas DataFrame.
     :param mols_column_name: The name of the column that has the RDKIT mol
@@ -435,33 +435,33 @@ def maccs_keys_fingerprint(
 
     Functional usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
+        >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
 
-    >>> maccs = janitor.chemistry.maccs_keys_fingerprint(
-    ...     df=df.smiles2mol('smiles', 'mols'),
-    ...     mols_column_name='mols'
-    ... )
+        >>> maccs = janitor.chemistry.maccs_keys_fingerprint(
+        ...     df=df.smiles2mol('smiles', 'mols'),
+        ...     mols_column_name='mols'
+        ... )
 
-    >>> len(maccs.columns)
-    167
+        >>> len(maccs.columns)
+        167
 
     Method chaining usage example:
 
-    >>> import pandas as pd
-    >>> import janitor.chemistry
+        >>> import pandas as pd
+        >>> import janitor.chemistry
 
-    >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
+        >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
 
-    >>> maccs = (
-    ...     df.smiles2mol('smiles', 'mols')
-    ...         .maccs_keys_fingerprint(mols_column_name='mols')
-    ... )
+        >>> maccs = (
+        ...     df.smiles2mol('smiles', 'mols')
+        ...         .maccs_keys_fingerprint(mols_column_name='mols')
+        ... )
 
-    >>> len(maccs.columns)
-    167
+        >>> len(maccs.columns)
+        167
 
     If you wish to join the maccs keys fingerprints back into the
     original dataframe, this can be accomplished by doing a `join`,

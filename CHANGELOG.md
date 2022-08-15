@@ -17,6 +17,7 @@
 -   [INF] Update `mkdocstrings` version and to fit its new coming features. PR #1138 @Zeroto521
 -   [BUG] Force `math.softmax` returning `Series`. PR #1139 @Zeroto521
 -   [INF] Set independent environment for building documentation. PR #1141 @Zeroto521
+-   [DOC] Add local documentation preview via github action artifact. PR #1149 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

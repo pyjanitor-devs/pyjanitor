@@ -1,7 +1,6 @@
 import operator
 from enum import Enum
 from typing import Union, Any, Optional, Hashable
-from janitor.functions.utils import _numba_utils, _KeepTypes
 
 import numpy as np
 import pandas as pd
@@ -15,10 +14,10 @@ from pandas.core.dtypes.common import (
     is_string_dtype,
 )
 
-from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
+from janitor.functions.utils import _convert_to_numpy_array
 
 
 @pf.register_dataframe_method
@@ -191,6 +190,16 @@ class _JoinTypes(Enum):
     INNER = "inner"
     LEFT = "left"
     RIGHT = "right"
+
+
+class _KeepTypes(Enum):
+    """
+    List of keep types for conditional_join.
+    """
+
+    ALL = "all"
+    FIRST = "first"
+    LAST = "last"
 
 
 operator_map = {
@@ -449,6 +458,7 @@ def _conditional_join_compute(
             keep,
             use_numba,
         )
+
         if result is None:
             return _create_conditional_join_empty_frame(
                 df, right, how, df_columns, right_columns
@@ -461,7 +471,6 @@ def _conditional_join_compute(
             sort_by_appearance,
             df_columns,
             right_columns,
-            keep,
         )
 
     if eq_check:
@@ -483,7 +492,6 @@ def _conditional_join_compute(
         sort_by_appearance,
         df_columns,
         right_columns,
-        keep,
     )
 
 
@@ -499,28 +507,11 @@ def _keep_output(keep: str, left_c: np.ndarray, right_c: np.ndarray):
     return grouped.index, grouped.array
 
 
-def _convert_to_numpy_array(
-    left_c: np.ndarray, right_c: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Convert array to numpy array for use in numba
-    """
-    if is_extension_array_dtype(left_c):
-        numpy_dtype = left_c.dtype.numpy_dtype
-        left_c = left_c.to_numpy(dtype=numpy_dtype, copy=False)
-        right_c = right_c.to_numpy(dtype=numpy_dtype, copy=False)
-    elif isinstance(left_c, (ABCPandasArray, ABCExtensionArray)):
-        left_c = left_c.to_numpy(copy=False)
-        right_c = right_c.to_numpy(copy=False)
-    return left_c, right_c
-
-
 def _less_than_indices(
     left_c: pd.Series,
     right_c: pd.Series,
     strict: bool,
     keep: str,
-    use_numba: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -608,9 +599,6 @@ def _less_than_indices(
         if any_nulls:
             return left_index, right_index[search_indices]
         return left_index, search_indices
-    if use_numba & (keep != _KeepTypes.ALL.value):
-        right_c = _numba_utils(search_indices, right_index, len_right, keep)
-        return left_index, right_c
     right_c = [right_index[ind:len_right] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         right_c = [arr.min() for arr in right_c]
@@ -629,7 +617,6 @@ def _greater_than_indices(
     strict: bool,
     multiple_conditions: bool,
     keep: str,
-    use_numba: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left_c
@@ -719,9 +706,6 @@ def _greater_than_indices(
         if any_nulls:
             return left_index, right_index[search_indices - 1]
         return left_index, search_indices - 1
-    if use_numba & (keep != _KeepTypes.ALL.value):
-        right_c = _numba_utils(search_indices, right_index, 0, keep)
-        return left_index, right_c
     right_c = [right_index[:ind] for ind in search_indices]
     if keep == _KeepTypes.FIRST.value:
         right_c = [arr.min() for arr in right_c]
@@ -735,7 +719,7 @@ def _greater_than_indices(
 
 
 def _not_equal_indices(
-    left_c: pd.Series, right_c: pd.Series, keep: str, use_numba: bool
+    left_c: pd.Series, right_c: pd.Series, keep: str
 ) -> tuple:
     """
     Use binary search to get indices where
@@ -785,9 +769,7 @@ def _not_equal_indices(
     l1_nulls = np.concatenate([l1_nulls, l2_nulls])
     r1_nulls = np.concatenate([r1_nulls, r2_nulls])
 
-    outcome = _less_than_indices(
-        left_c, right_c, strict=True, keep="all", use_numba=use_numba
-    )
+    outcome = _less_than_indices(left_c, right_c, strict=True, keep="all")
 
     if outcome is None:
         lt_left = dummy
@@ -796,12 +778,7 @@ def _not_equal_indices(
         lt_left, lt_right = outcome
 
     outcome = _greater_than_indices(
-        left_c,
-        right_c,
-        strict=True,
-        multiple_conditions=False,
-        keep="all",
-        use_numba=use_numba,
+        left_c, right_c, strict=True, multiple_conditions=False, keep="all"
     )
 
     if outcome is None:
@@ -840,14 +817,25 @@ def _generic_func_cond_join(
     }:
         strict = True
 
+    if use_numba:
+        if op in less_than_join_types:
+            op_code = 1
+        elif op in greater_than_join_types:
+            op_code = 0
+        else:
+            op_code = -1
+        from janitor.functions._numba import _numba_single_join
+
+        return _numba_single_join(left_c, right_c, strict, keep, op_code)
+
     if op in less_than_join_types:
-        return _less_than_indices(left_c, right_c, strict, keep, use_numba)
+        return _less_than_indices(left_c, right_c, strict, keep)
     if op in greater_than_join_types:
         return _greater_than_indices(
-            left_c, right_c, strict, multiple_conditions, keep, use_numba
+            left_c, right_c, strict, multiple_conditions, keep
         )
     if op == _JoinOperator.NOT_EQUAL.value:
-        return _not_equal_indices(left_c, right_c, keep, use_numba)
+        return _not_equal_indices(left_c, right_c, keep)
 
 
 def _generate_indices(
@@ -901,9 +889,7 @@ def _multiple_conditional_join_ne(
     left_on, right_on, _ = first
 
     # get indices from the first condition
-    indices = _not_equal_indices(
-        df[left_on], right[right_on], keep="all", use_numba=False
-    )
+    indices = _not_equal_indices(df[left_on], right[right_on], keep="all")
     if indices is None:
         return None
 
@@ -1116,7 +1102,6 @@ def _range_indices(
         strict,
         multiple_conditions=True,
         keep="all",
-        use_numba=False,
     )
 
     if outcome is None:
@@ -1305,13 +1290,12 @@ def _create_conditional_join_frame(
     sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
-    keep: str,
 ):
     """
     Create final dataframe for conditional join,
     if there are matches.
     """
-    if sort_by_appearance and (keep == _KeepTypes.ALL.value):
+    if sort_by_appearance:
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
         left_index = left_index[sorter]

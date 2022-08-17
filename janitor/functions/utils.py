@@ -7,6 +7,7 @@ from collections.abc import Callable as dispatch_callable
 import re
 import importlib
 from typing import Hashable, Iterable, List, Optional, Pattern, Union
+from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
@@ -17,6 +18,7 @@ from pandas.api.types import (
     is_datetime64_dtype,
     is_string_dtype,
     is_categorical_dtype,
+    is_extension_array_dtype,
 )
 import numpy as np
 from multipledispatch import dispatch
@@ -423,6 +425,22 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         filtered_columns = pd.unique(filtered_columns)
 
     return filtered_columns
+
+
+def _convert_to_numpy_array(
+    left_c: np.ndarray, right_c: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Convert array to numpy array for use in numba
+    """
+    if is_extension_array_dtype(left_c):
+        numpy_dtype = left_c.dtype.numpy_dtype
+        left_c = left_c.to_numpy(dtype=numpy_dtype, copy=False)
+        right_c = right_c.to_numpy(dtype=numpy_dtype, copy=False)
+    elif isinstance(left_c, (ABCPandasArray, ABCExtensionArray)):
+        left_c = left_c.to_numpy(copy=False)
+        right_c = right_c.to_numpy(copy=False)
+    return left_c, right_c
 
 
 class _KeepTypes(Enum):

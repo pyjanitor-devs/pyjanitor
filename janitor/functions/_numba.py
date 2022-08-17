@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from enum import Enum
 from janitor.functions.utils import _convert_to_numpy_array
-from numba import njit, prange as loop_range
+from numba import njit, prange
 
 
 class _KeepTypes(Enum):
@@ -17,9 +17,18 @@ class _KeepTypes(Enum):
     LAST = "last"
 
 
-def _numba_single_join(left_c, right_c, strict, keep, op_code):
+def _numba_single_join(
+    left_c: pd.Series,
+    right_c: pd.Series,
+    strict: bool,
+    keep: str,
+    op_code: int,
+) -> tuple:
     """Return matching indices for single non-equi join."""
     if op_code == -1:
+        # for the not equal join, we combine indices
+        # from strictly less than and strictly greater than indices
+        # as well as indices for nulls, if any
         left_nulls, right_nulls = _numba_not_equal_indices(left_c, right_c)
         dummy = np.array([], dtype=int)
         result = _numba_less_than_indices(left_c, right_c)
@@ -73,10 +82,19 @@ def _numba_single_join(left_c, right_c, strict, keep, op_code):
 
 
 def _numba_generate_indices_ne(
-    left_c, left_index, right_c, right_index, strict, keep, op_code
-):
+    left_c: np.ndarray,
+    left_index: np.ndarray,
+    right_c: np.ndarray,
+    right_index: np.ndarray,
+    strict: bool,
+    keep: str,
+    op_code: int,
+) -> tuple:
     """
-    Generate indices for either greater or less than.
+    Generate indices within a not equal join,
+    for either greater or less than.
+    if op_code is 1, that is a less than operation,
+    if op_code is 0, that is a greater than operation.
     """
     dummy = np.array([], dtype=int)
     result = _get_regions(
@@ -109,6 +127,7 @@ def _prep_numba_first_last(right_index, right_region):
 def _numba_not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
     """
     Preparatory function for _numba_single_join
+    This retrieves the indices for nulls, if any.
     """
 
     dummy = np.array([], dtype=int)
@@ -215,7 +234,12 @@ def _numba_greater_than_indices(
 
 
 @njit(parallel=True)
-def _numba_single_non_equi(left_index, right_index, left_region, right_region):
+def _numba_single_non_equi(
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    left_region: np.ndarray,
+    right_region: np.ndarray,
+) -> tuple:
     """
     Generate all indices when keep = `all`.
     Applies only to >, >= , <, <= operators.
@@ -224,7 +248,7 @@ def _numba_single_non_equi(left_index, right_index, left_region, right_region):
     counter = 0
     positions = np.empty(length, np.intp)
     # compute the exact length of the new indices
-    for num in loop_range(length):
+    for num in prange(length):
         val = right_region[num]
         # left region is always sorted, take advantage of that
         val = np.searchsorted(left_region, val, side="right")
@@ -237,7 +261,7 @@ def _numba_single_non_equi(left_index, right_index, left_region, right_region):
     starts[0] = 0
     starts[1:] = np.cumsum(positions)[:-1]
     # build the actual indices
-    for num in loop_range(length):
+    for num in prange(length):
         val = right_index[num]
         pos = positions[num]
         posn = starts[num]
@@ -250,8 +274,12 @@ def _numba_single_non_equi(left_index, right_index, left_region, right_region):
 
 @njit(parallel=True)
 def _numba_single_non_equi_keep_first_last(
-    left_index, right_index, left_region, right_region, keep
-):
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    left_region: np.ndarray,
+    right_region: np.ndarray,
+    keep: str,
+) -> tuple:
     """
     Generate all indices when keep = `first` or `last`
     Applies only to >, >= , <, <= operators.
@@ -259,7 +287,7 @@ def _numba_single_non_equi_keep_first_last(
     length = left_index.size
     positions = np.empty(length, np.intp)
 
-    for num in loop_range(length):
+    for num in prange(length):
         val = left_region[num]
         val = np.searchsorted(right_region, val)
         positions[num] = val
@@ -268,7 +296,7 @@ def _numba_single_non_equi_keep_first_last(
     r_index = np.empty(length, np.intp)
 
     len_right = right_index.size
-    for num in loop_range(length):
+    for num in prange(length):
         val = left_index[num]
         pos = positions[num]
         base_val = right_index[pos]
@@ -293,12 +321,45 @@ def _get_regions(
     right_index: np.ndarray,
     strict: int,
     op_code: int,
-):
+) -> tuple:
     """
     Get the regions where left_c and right_c converge.
     Strictly for non-equi joins,
     specifically  -->  >, >= , <, <= operators.
     """
+    # The idea is to group values within regions.
+    # An example:
+    # left_array: [2, 5, 7]
+    # right_array: [0, 3, 7]
+    # if the join is left_array <= right_array
+    # we should have pairs (0), (2,3),(5,7),(5,7)
+    # since no value is less than 0, we can discard that
+    # our final regions should be
+    #  (2,3) --->  0
+    #  (5,7) --->  1
+    #  (7,7) --->  1
+    #  based on the regions, we can see that any value in
+    #  region 0 will be less than 1 ---> 2 <= 3, 7
+    #  region 1 values are the end ---> 5 <= 7 & 7 <= 7
+    #  if the join is left_array >= right_array
+    #  then the left_array is sorted in descending order
+    #  and the final pairs should be :
+    #  (7, 7), (5, 3), (2, 0)
+    # our final regions should be
+    #  (7,7) --->  0
+    #  (5,3) --->  1
+    #  (2,0) --->  2
+    #  based on the regions, we can see that any value in
+    #  region 0 will be greater than 1 and 2 ---> 7 >= 7, 5, 0
+    #  region 1 values will be greater than 2 ---> 5 >= 3, 0
+    #  region 2 values are the end ----> 2 >= 0
+    #  this concept becomes more relevant when two non equi conditions
+    #  are present ---> l1 < r1 & l2 > r2
+    #  For two non equi conditions, the matches are where
+    #  the regions from group A (l1 < r1)
+    #  are also lower than the regions from group B (l2 > r2)
+    #  This implementation is based on the algorithm outlined here:
+    #  https://www.scitepress.org/papers/2018/68268/68268.pdf
     indices = _search_indices(left_c, right_c, strict, op_code)
     left_region = np.empty(left_c.size, dtype=np.intp)
     left_region[:] = -1
@@ -316,6 +377,7 @@ def _get_regions(
     mask = left_region == 1
     left_region[mask] = np.arange(len(set(indices)))
     start = left_region[-1]
+    # this is where we spool out the region numbers
     for num in range(left_region.size - 1, -1, -1):
         if left_region[num] != -1:
             start = left_region[num]
@@ -328,12 +390,12 @@ def _get_regions(
 @njit(parallel=True)
 def _search_indices(
     left_c: np.ndarray, right_c: np.ndarray, strict: int, op_code: int
-):
+) -> np.ndarray:
     """
     Get search indices for non-equi joins
     """
     indices = np.empty(right_c.size, dtype=np.intp)
-    for num in loop_range(right_c.size):
+    for num in prange(right_c.size):
         value = right_c[num]
         if strict:
             high = _searchsorted_left(left_c, value, op_code)
@@ -345,7 +407,7 @@ def _search_indices(
 
 
 @njit()
-def _searchsorted_left(arr, value, op_code):
+def _searchsorted_left(arr: np.ndarray, value: int, op_code: int) -> int:
     """
     Modification of Python's bisect_left function.
     Used to get the relevant region
@@ -367,7 +429,7 @@ def _searchsorted_left(arr, value, op_code):
 
 
 @njit()
-def _searchsorted_right(arr, value, op_code):
+def _searchsorted_right(arr: np.ndarray, value: int, op_code: int) -> int:
     """
     Modification of Python's bisect_right function.
     Used to get the relevant region

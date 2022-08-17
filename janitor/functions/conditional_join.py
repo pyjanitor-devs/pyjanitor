@@ -34,20 +34,23 @@ def conditional_join(
 ) -> pd.DataFrame:
     """
 
-    This is a convenience function that operates similarly to `pd.merge`,
+    The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,
     or a combination of equi and non-equi joins.
 
-    Join solely on equality are not supported.
+    Joins solely on equality are not supported.
 
     If the join is solely on equality, `pd.merge` function
     covers that; if you are interested in nearest joins, or rolling joins,
     then `pd.merge_asof` covers that.
-    There is also the IntervalIndex, which is usually more efficient
-    for range joins, especially if the intervals do not overlap.
+    There is also pandas' IntervalIndex, which is efficient for range joins,
+    especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+
+    For possible performance improvement, set `use_numba` to `True`,
+    if `numba` is installed.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -58,11 +61,6 @@ def conditional_join(
     operator is used to combine the results of the individual conditions.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
-
-    A binary search is used to get the relevant rows for non-equi joins;
-    this avoids a cartesian join, and makes the process less memory intensive.
-
-    For equi-joins, Pandas internal merge function is used.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -103,25 +101,15 @@ def conditional_join(
         7         1         3
         >>> df1.conditional_join(
         ...     df2,
-        ...     ("value_1", "value_2A", ">="),
-        ...     ("value_1", "value_2B", "<=")
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<")
         ... )
-            value_1  value_2A  value_2B
-        0         2         1         3
-        1         2         2         4
-        2         5         3         5
-        3         5         3         6
-        4         7         7         9
-        5         1         0         1
-        6         1         0         1
-        7         1         1         3
-        8         3         1         3
-        9         3         2         4
-        10        3         3         5
-        11        3         3         6
-        12        4         2         4
-        13        4         3         5
-        14        4         3         6
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         5
+        4        4         3         6
 
 
     :param df: A pandas DataFrame.
@@ -135,10 +123,10 @@ def conditional_join(
         of the individual conditions.
     :param how: Indicates the type of join to be performed.
         It can be one of `inner`, `left`, `right`.
-        Full join is not supported. Defaults to `inner`.
+        Full outer join is not supported. Defaults to `inner`.
     :param sort_by_appearance: Default is `False`.
-        This is useful for strictly non-equi joins,
-        where the user wants the original order maintained.
+        This is useful for scenarios where the user wants
+        the original order maintained.
         If True, values from `df` and `right`
         that meet the join condition will be returned
         in the final dataframe in the same order
@@ -151,7 +139,7 @@ def conditional_join(
         It is also possible to rename the output columns via a dictionary.
     :param keep: Choose whether to return the first match,
         last match or all matches. Default is `all`.
-    :param use_numba: Use numba to accelerate the computation.
+    :param use_numba: Use numba, if installed, to accelerate the computation.
         Default is `False`.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     """

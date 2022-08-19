@@ -18,6 +18,7 @@
 -   [BUG] Force `math.softmax` returning `Series`. PR #1139 @Zeroto521
 -   [INF] Set independent environment for building documentation. PR #1141 @Zeroto521
 -   [DOC] Add local documentation preview via github action artifact. PR #1149 @Zeroto521
+-   [TST] Rename `tests/utils/test_select_column.py` → `tests/utils/test_select_column.py` and update `functions/utils.py::_select_column_names` testcase. PR #1152 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

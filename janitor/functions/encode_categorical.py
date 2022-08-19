@@ -2,8 +2,9 @@ import warnings
 from enum import Enum
 from typing import Hashable, Iterable, Union
 
-import pandas_flavor as pf
+import numpy as np
 import pandas as pd
+import pandas_flavor as pf
 from pandas.api.types import is_list_like
 
 from janitor.utils import check, check_column, deprecated_alias
@@ -191,7 +192,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             raise TypeError(f"{value} should be list-like or a string.")
         if is_list_like(value):
             if not hasattr(value, "shape"):
-                value = pd.Index([*value])
+                value = np.asarray(value)
 
             arr_ndim = value.ndim
             if (arr_ndim != 1) or isinstance(value, pd.MultiIndex):

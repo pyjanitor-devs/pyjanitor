@@ -194,8 +194,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
             if not hasattr(value, "shape"):
                 value = np.asarray(value)
 
-            arr_ndim = value.ndim
-            if (arr_ndim != 1) or isinstance(value, pd.MultiIndex):
+            if (value.ndim != 1) or isinstance(value, pd.MultiIndex):
                 raise ValueError(
                     f"{value} is not a 1-D array. "
                     "Kindly provide a 1-D array-like object."

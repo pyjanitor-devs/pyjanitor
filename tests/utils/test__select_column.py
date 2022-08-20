@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandas.testing import assert_index_equal
+from pandas.testing import assert_index_equal, assert_frame_equal
 from janitor.functions.utils import _select_column_names, patterns
 
 
@@ -165,10 +165,10 @@ def test_strings_dates_range(df_dates):
 def test_unsorted_dates(df_dates):
     """Test output if the dates are unsorted, and a string is passed."""
     df_dates = df_dates.iloc[:, [10, 4, 7, 2, 1, 3, 5, 6, 8, 9, 11, 0]]
-    assert (
-        df_dates.loc[:, "2011-01-31"].name
-        == _select_column_names("2011-01-31", df_dates)[0]
-    )
+    expected = df_dates.loc[:, ["2011-01-31"]]
+    actual = _select_column_names("2011-01-31", df_dates)
+    actual = df_dates.loc[:, actual]
+    assert_frame_equal(expected, actual)
 
 
 def test_regex(df1):

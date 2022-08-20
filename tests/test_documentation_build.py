@@ -1,7 +1,5 @@
 """Tests for documentation build."""
 
-import os
-
 import pytest
 
 try:

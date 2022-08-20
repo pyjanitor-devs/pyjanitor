@@ -426,16 +426,16 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
 
 def _convert_to_numpy_array(
-    left_c: np.ndarray, right_c: np.ndarray
+    left: np.ndarray, right: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Convert array to numpy array for use in numba
     """
-    if is_extension_array_dtype(left_c):
-        numpy_dtype = left_c.dtype.numpy_dtype
-        left_c = left_c.to_numpy(dtype=numpy_dtype, copy=False)
-        right_c = right_c.to_numpy(dtype=numpy_dtype, copy=False)
-    elif isinstance(left_c, (ABCPandasArray, ABCExtensionArray)):
-        left_c = left_c.to_numpy(copy=False)
-        right_c = right_c.to_numpy(copy=False)
-    return left_c, right_c
+    if is_extension_array_dtype(left):
+        numpy_dtype = left.dtype.numpy_dtype
+        left = left.to_numpy(dtype=numpy_dtype, copy=False)
+        right = right.to_numpy(dtype=numpy_dtype, copy=False)
+    elif isinstance(left, (ABCPandasArray, ABCExtensionArray)):
+        left = left.to_numpy(copy=False)
+        right = right.to_numpy(copy=False)
+    return left, right

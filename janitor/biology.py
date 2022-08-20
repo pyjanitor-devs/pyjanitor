@@ -41,32 +41,32 @@ def join_fasta(
 
     Method chaining usage example:
 
-    >>> import tempfile
-    >>> import pandas as pd
-    >>> import janitor.biology
+        >>> import tempfile
+        >>> import pandas as pd
+        >>> import janitor.biology
 
-    >>> tf = tempfile.NamedTemporaryFile()
-    >>> tf.write('''>SEQUENCE_1
-    ... MTEITAAMVKELRESTGAGMMDCK
-    ... >SEQUENCE_2
-    ... SATVSEINSETDFVAKN'''.encode('utf8'))
-    66
-    >>> tf.seek(0)
-    0
+        >>> tf = tempfile.NamedTemporaryFile()
+        >>> tf.write('''>SEQUENCE_1
+        ... MTEITAAMVKELRESTGAGMMDCK
+        ... >SEQUENCE_2
+        ... SATVSEINSETDFVAKN'''.encode('utf8'))
+        66
+        >>> tf.seek(0)
+        0
 
-    >>> df = pd.DataFrame({"sequence_accession":
-    ... ["SEQUENCE_1", "SEQUENCE_2", ]})
+        >>> df = pd.DataFrame({"sequence_accession":
+        ... ["SEQUENCE_1", "SEQUENCE_2", ]})
 
-    >>> df = df.join_fasta(
-    ...     filename=tf.name,
-    ...     id_col='sequence_accession',
-    ...     column_name='sequence',
-    ... )
+        >>> df = df.join_fasta(
+        ...     filename=tf.name,
+        ...     id_col='sequence_accession',
+        ...     column_name='sequence',
+        ... )
 
-    >>> df.sequence
-    0    MTEITAAMVKELRESTGAGMMDCK
-    1           SATVSEINSETDFVAKN
-    Name: sequence, dtype: object
+        >>> df.sequence
+        0    MTEITAAMVKELRESTGAGMMDCK
+        1           SATVSEINSETDFVAKN
+        Name: sequence, dtype: object
 
     :param df: A pandas DataFrame.
     :param filename: Path to the FASTA file.

@@ -1,8 +1,22 @@
 """Tests for documentation build."""
 
-import os
+import sys
+
+import pytest
+
+try:
+    import mkdocs
+except ImportError:
+    ...
 
 
+@pytest.mark.skipif(
+    "mkdocs" not in sys.modules,
+    reason=(
+        "Requires the MkDocs library. "
+        "And only test documentation in documentation building CI."
+    ),
+)
 def test_docs_general_functions_present():
     """Test that all docs pages build correctly.
 
@@ -10,8 +24,6 @@ def test_docs_general_functions_present():
     all of the functions are present in the docs.
     This is an awesome thing that we could use help with in the future.
     """
-    # Build docs using mkdocs
-    os.system("mkdocs build --clean")
 
     # We want to check that the following keywords are all present.
     # I put in a subsample of general functions.

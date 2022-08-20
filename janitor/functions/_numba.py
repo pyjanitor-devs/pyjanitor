@@ -18,8 +18,8 @@ class _KeepTypes(Enum):
 
 
 def _numba_single_join(
-    left_c: pd.Series,
-    right_c: pd.Series,
+    left: pd.Series,
+    right: pd.Series,
     strict: bool,
     keep: str,
     op_code: int,
@@ -29,9 +29,9 @@ def _numba_single_join(
         # for the not equal join, we combine indices
         # from strictly less than and strictly greater than indices
         # as well as indices for nulls, if any
-        left_nulls, right_nulls = _numba_not_equal_indices(left_c, right_c)
+        left_nulls, right_nulls = _numba_not_equal_indices(left, right)
         dummy = np.array([], dtype=int)
-        result = _numba_less_than_indices(left_c, right_c)
+        result = _numba_less_than_indices(left, right)
         if result is None:
             lt_left = dummy
             lt_right = dummy
@@ -39,7 +39,7 @@ def _numba_single_join(
             lt_left, lt_right = _numba_generate_indices_ne(
                 *result, strict, keep, op_code=1
             )
-        result = _numba_greater_than_indices(left_c, right_c)
+        result = _numba_greater_than_indices(left, right)
         if result is None:
             gt_left = dummy
             gt_right = dummy
@@ -47,35 +47,37 @@ def _numba_single_join(
             gt_left, gt_right = _numba_generate_indices_ne(
                 *result, strict, keep, op_code=0
             )
-        left_c = np.concatenate([lt_left, gt_left, left_nulls])
-        right_c = np.concatenate([lt_right, gt_right, right_nulls])
-        if (not left_c.size) & (not right_c.size):
+        left = np.concatenate([lt_left, gt_left, left_nulls])
+        right = np.concatenate([lt_right, gt_right, right_nulls])
+        if (not left.size) & (not right.size):
             return None
         if keep == _KeepTypes.ALL.value:
-            return left_c, right_c
-        indexer = np.argsort(left_c)
-        left_c, pos = np.unique(left_c[indexer], return_index=True)
+            return left, right
+        indexer = np.argsort(left)
+        left, pos = np.unique(left[indexer], return_index=True)
         if keep == _KeepTypes.FIRST.value:
-            right_c = np.minimum.reduceat(right_c[indexer], pos)
+            right = np.minimum.reduceat(right[indexer], pos)
         else:
-            right_c = np.maximum.reduceat(right_c[indexer], pos)
-        return left_c, right_c
+            right = np.maximum.reduceat(right[indexer], pos)
+        return left, right
 
     if op_code == 1:
-        result = _numba_less_than_indices(left_c, right_c)
+        result = _numba_less_than_indices(left, right)
     else:
-        result = _numba_greater_than_indices(left_c, right_c)
+        result = _numba_greater_than_indices(left, right)
     if result is None:
         return None
     result = _get_regions(*result, strict, op_code)
     if result is None:
         return None
-    if keep == _KeepTypes.ALL.value:
-        return _numba_single_non_equi(*result)
     left_index, right_index, left_region, right_region = result
-    right_index, right_region = _prep_numba_first_last(
+    right_index, right_region = _prep_numba_sort_right(
         right_index, right_region
     )
+    if keep == _KeepTypes.ALL.value:
+        return _numba_single_non_equi(
+            left_index, right_index, left_region, right_region
+        )
     return _numba_single_non_equi_keep_first_last(
         left_index, right_index, left_region, right_region, keep
     )
@@ -102,22 +104,26 @@ def _numba_generate_indices_ne(
     )
     if result is None:
         return dummy, dummy
-    if keep == _KeepTypes.ALL.value:
-        return _numba_single_non_equi(*result)
     left_index, right_index, left_region, right_region = result
-    right_index, right_region = _prep_numba_first_last(
+    right_index, right_region = _prep_numba_sort_right(
         right_index, right_region
     )
+    if keep == _KeepTypes.ALL.value:
+        return _numba_single_non_equi(
+            left_index, right_index, left_region, right_region
+        )
     return _numba_single_non_equi_keep_first_last(
         left_index, right_index, left_region, right_region, keep
     )
 
 
-def _prep_numba_first_last(right_index, right_region):
+def _prep_numba_sort_right(right_index, right_region):
     """
-    Preparatory function if keep = 'first'/'last'
+    Sort right_index and right_region for faster searching
+    via binary search.
     """
-    if not pd.Series(right_region).is_monotonic_increasing:
+    bools = np.all(right_region[1:] >= right_region[:-1])
+    if not bools:
         indexer = np.lexsort((right_index, right_region))
         right_region = right_region[indexer]
         right_index = right_index[indexer]
@@ -170,67 +176,67 @@ def _numba_not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
 
 
 def _numba_less_than_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
+    left: pd.Series,
+    right: pd.Series,
 ) -> tuple:
     """
     Preparatory function for _numba_single_join
     """
 
-    if left_c.min() > right_c.max():
+    if left.min() > right.max():
         return None
-    any_nulls = pd.isna(left_c)
+    any_nulls = pd.isna(left)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        left_c = left_c[~any_nulls]
-    if not left_c.is_monotonic_increasing:
-        left_c = left_c.sort_values(kind="stable", ascending=True)
-    any_nulls = pd.isna(right_c)
+        left = left[~any_nulls]
+    if not left.is_monotonic_increasing:
+        left = left.sort_values(kind="stable", ascending=True)
+    any_nulls = pd.isna(right)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        right_c = right_c[~any_nulls]
+        right = right[~any_nulls]
     any_nulls = None
-    left_index = left_c.index._values
-    left_c = left_c._values
-    right_index = right_c.index._values
-    right_c = right_c._values
-    left_c, right_c = _convert_to_numpy_array(left_c, right_c)
-    return left_c, left_index, right_c, right_index
+    left_index = left.index._values
+    left = left._values
+    right_index = right.index._values
+    right = right._values
+    left, right = _convert_to_numpy_array(left, right)
+    return left, left_index, right, right_index
 
 
 def _numba_greater_than_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
+    left: pd.Series,
+    right: pd.Series,
 ) -> tuple:
     """
     Preparatory function for _numba_single_join
     """
-    if left_c.max() < right_c.min():
+    if left.max() < right.min():
         return None
 
-    any_nulls = pd.isna(left_c)
+    any_nulls = pd.isna(left)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        left_c = left_c[~any_nulls]
-    if not left_c.is_monotonic_decreasing:
-        left_c = left_c.sort_values(kind="stable", ascending=False)
-    any_nulls = pd.isna(right_c)
+        left = left[~any_nulls]
+    if not left.is_monotonic_decreasing:
+        left = left.sort_values(kind="stable", ascending=False)
+    any_nulls = pd.isna(right)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        right_c = right_c[~any_nulls]
+        right = right[~any_nulls]
 
     any_nulls = None
-    left_index = left_c.index._values
-    left_c = left_c._values
-    right_index = right_c.index._values
-    right_c = right_c._values
+    left_index = left.index._values
+    left = left._values
+    right_index = right.index._values
+    right = right._values
 
-    left_c, right_c = _convert_to_numpy_array(left_c, right_c)
-    return left_c, left_index, right_c, right_index
+    left, right = _convert_to_numpy_array(left, right)
+    return left, left_index, right, right_index
 
 
 @njit(parallel=True)
@@ -244,30 +250,30 @@ def _numba_single_non_equi(
     Generate all indices when keep = `all`.
     Applies only to >, >= , <, <= operators.
     """
-    length = right_index.size
+    length = left_index.size
+    len_right = right_index.size
     counter = 0
     positions = np.empty(length, np.intp)
     # compute the exact length of the new indices
     for num in prange(length):
-        val = right_region[num]
-        # left region is always sorted, take advantage of that
-        val = np.searchsorted(left_region, val, side="right")
-        counter += val
+        val = left_region[num]
+        val = np.searchsorted(right_region, val)
+        counter += len_right - val
         positions[num] = val
     l_index = np.empty(counter, np.intp)
     r_index = np.empty(counter, np.intp)
     starts = np.empty(length, np.intp)
     # capture the starts and ends for each sub range
     starts[0] = 0
-    starts[1:] = np.cumsum(positions)[:-1]
+    starts[1:] = np.cumsum(len_right - positions)[:-1]
     # build the actual indices
     for num in prange(length):
-        val = right_index[num]
+        val = left_index[num]
         pos = positions[num]
         posn = starts[num]
-        for ind in range(pos):
-            l_index[posn] = left_index[ind]
-            r_index[posn] = val
+        for ind in range(pos, len_right):
+            r_index[posn] = right_index[ind]
+            l_index[posn] = val
             posn += 1
     return l_index, r_index
 

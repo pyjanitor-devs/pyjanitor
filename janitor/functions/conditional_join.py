@@ -170,26 +170,6 @@ class _JoinOperator(Enum):
     NOT_EQUAL = "!="
 
 
-class _JoinTypes(Enum):
-    """
-    List of join types for conditional_join.
-    """
-
-    INNER = "inner"
-    LEFT = "left"
-    RIGHT = "right"
-
-
-class _KeepTypes(Enum):
-    """
-    List of keep types for conditional_join.
-    """
-
-    ALL = "all"
-    FIRST = "first"
-    LAST = "last"
-
-
 operator_map = {
     _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
     _JoinOperator.LESS_THAN.value: operator.lt,
@@ -291,9 +271,8 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    checker = {jointype.value for jointype in _JoinTypes}
-    if how not in checker:
-        raise ValueError(f"'how' should be one of {checker}.")
+    if how not in {"inner", "left", "right"}:
+        raise ValueError("'how' should be one of 'inner', 'left' or 'right'.")
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -307,9 +286,8 @@ def _conditional_join_preliminary_checks(
 
     check("keep", keep, [str])
 
-    checker = {jointype.value for jointype in _KeepTypes}
-    if keep not in checker:
-        raise ValueError(f"'keep' should be one of {checker}.")
+    if keep not in {"all", "first", "last"}:
+        raise ValueError("'keep' should be one of 'all', 'first', 'last'.")
 
     check("use_numba", use_numba, [bool])
 
@@ -485,10 +463,10 @@ def _conditional_join_compute(
 
 def _keep_output(keep: str, left_c: np.ndarray, right_c: np.ndarray):
     """return indices for left and right index based on the value of `keep`."""
-    if keep == _KeepTypes.ALL.value:
+    if keep == "all":
         return left_c, right_c
     grouped = pd.Series(right_c).groupby(left_c)
-    if keep == _KeepTypes.FIRST.value:
+    if keep == "first":
         grouped = grouped.min()
         return grouped.index, grouped.array
     grouped = grouped.max()
@@ -583,15 +561,15 @@ def _less_than_indices(
 
         if not search_indices.size:
             return None
-    if right_is_sorted and (keep == _KeepTypes.FIRST.value):
+    if right_is_sorted and (keep == "first"):
         if any_nulls:
             return left_index, right_index[search_indices]
         return left_index, search_indices
     right = [right_index[ind:len_right] for ind in search_indices]
-    if keep == _KeepTypes.FIRST.value:
+    if keep == "first":
         right = [arr.min() for arr in right]
         return left_index, right
-    if keep == _KeepTypes.LAST.value:
+    if keep == "last":
         right = [arr.max() for arr in right]
         return left_index, right
     right = np.concatenate(right)
@@ -690,15 +668,15 @@ def _greater_than_indices(
 
     if multiple_conditions:
         return left_index, right_index, search_indices
-    if right_is_sorted and (keep == _KeepTypes.LAST.value):
+    if right_is_sorted and (keep == "last"):
         if any_nulls:
             return left_index, right_index[search_indices - 1]
         return left_index, search_indices - 1
     right = [right_index[:ind] for ind in search_indices]
-    if keep == _KeepTypes.FIRST.value:
+    if keep == "first":
         right = [arr.min() for arr in right]
         return left_index, right
-    if keep == _KeepTypes.LAST.value:
+    if keep == "last":
         right = [arr.max() for arr in right]
         return left_index, right
     right = np.concatenate(right)
@@ -1204,7 +1182,6 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
     ]
     header.extend(columns)
     right.columns = pd.MultiIndex.from_arrays(header)
-    header = None
     return df, right
 
 
@@ -1228,14 +1205,14 @@ def _create_conditional_join_empty_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if how == _JoinTypes.INNER.value:
+    if how == "inner":
         df = df.dtypes.to_dict()
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
         return pd.DataFrame(df, copy=False)
 
-    if how == _JoinTypes.LEFT.value:
+    if how == "left":
         right = right.dtypes.to_dict()
         right = {
             key: float if dtype.kind == "i" else dtype
@@ -1295,7 +1272,7 @@ def _create_conditional_join_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if how == _JoinTypes.INNER.value:
+    if how == "inner":
         df = {key: value._values[left_index] for key, value in df.items()}
         right = {
             key: value._values[right_index] for key, value in right.items()
@@ -1304,7 +1281,7 @@ def _create_conditional_join_frame(
 
     # dirty tests show slight speed gain when copy=False
     # which is achievable only within pd.merge
-    if how == _JoinTypes.LEFT.value:
+    if how == "left":
         right = {
             key: value._values[right_index] for key, value in right.items()
         }

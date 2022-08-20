@@ -2,19 +2,8 @@
 
 import numpy as np
 import pandas as pd
-from enum import Enum
 from janitor.functions.utils import _convert_to_numpy_array
 from numba import njit, prange
-
-
-class _KeepTypes(Enum):
-    """
-    List of keep types for conditional_join.
-    """
-
-    ALL = "all"
-    FIRST = "first"
-    LAST = "last"
 
 
 def _numba_single_join(
@@ -51,11 +40,11 @@ def _numba_single_join(
         right = np.concatenate([lt_right, gt_right, right_nulls])
         if (not left.size) & (not right.size):
             return None
-        if keep == _KeepTypes.ALL.value:
+        if keep == "all":
             return left, right
         indexer = np.argsort(left)
         left, pos = np.unique(left[indexer], return_index=True)
-        if keep == _KeepTypes.FIRST.value:
+        if keep == "first":
             right = np.minimum.reduceat(right[indexer], pos)
         else:
             right = np.maximum.reduceat(right[indexer], pos)
@@ -71,15 +60,20 @@ def _numba_single_join(
     if result is None:
         return None
     left_index, right_index, left_region, right_region = result
-    right_index, right_region = _prep_numba_sort_right(
-        right_index, right_region
-    )
-    if keep == _KeepTypes.ALL.value:
+    bools = np.all(right_region[1:] >= right_region[:-1])
+    if not bools:
+        indexer = np.lexsort((right_index, right_region))
+        right_region = right_region[indexer]
+        right_index = right_index[indexer]
+    positions = right_region.searchsorted(left_region, side="left")
+    if keep == "all":
+        counts = right_region.size - positions
+        counts = counts.cumsum()
         return _numba_single_non_equi(
-            left_index, right_index, left_region, right_region
+            left_index, right_index, counts, positions
         )
     return _numba_single_non_equi_keep_first_last(
-        left_index, right_index, left_region, right_region, keep
+        left_index, right_index, positions, keep
     )
 
 
@@ -105,29 +99,21 @@ def _numba_generate_indices_ne(
     if result is None:
         return dummy, dummy
     left_index, right_index, left_region, right_region = result
-    right_index, right_region = _prep_numba_sort_right(
-        right_index, right_region
-    )
-    if keep == _KeepTypes.ALL.value:
-        return _numba_single_non_equi(
-            left_index, right_index, left_region, right_region
-        )
-    return _numba_single_non_equi_keep_first_last(
-        left_index, right_index, left_region, right_region, keep
-    )
-
-
-def _prep_numba_sort_right(right_index, right_region):
-    """
-    Sort right_index and right_region for fast searching
-    via binary search.
-    """
     bools = np.all(right_region[1:] >= right_region[:-1])
     if not bools:
         indexer = np.lexsort((right_index, right_region))
         right_region = right_region[indexer]
         right_index = right_index[indexer]
-    return right_index, right_region
+    positions = right_region.searchsorted(left_region, side="left")
+    if keep == "all":
+        counts = right_region.size - positions
+        counts = counts.cumsum()
+        return _numba_single_non_equi(
+            left_index, right_index, counts, positions
+        )
+    return _numba_single_non_equi_keep_first_last(
+        left_index, right_index, positions, keep
+    )
 
 
 def _numba_not_equal_indices(left_c: pd.Series, right_c: pd.Series) -> tuple:
@@ -199,10 +185,8 @@ def _numba_less_than_indices(
         right = right[~any_nulls]
     any_nulls = None
     left_index = left.index._values
-    left = left._values
     right_index = right.index._values
-    right = right._values
-    left, right = _convert_to_numpy_array(left, right)
+    left, right = _convert_to_numpy_array(left._values, right._values)
     return left, left_index, right, right_index
 
 
@@ -231,11 +215,8 @@ def _numba_greater_than_indices(
 
     any_nulls = None
     left_index = left.index._values
-    left = left._values
     right_index = right.index._values
-    right = right._values
-
-    left, right = _convert_to_numpy_array(left, right)
+    left, right = _convert_to_numpy_array(left._values, right._values)
     return left, left_index, right, right_index
 
 
@@ -243,8 +224,8 @@ def _numba_greater_than_indices(
 def _numba_single_non_equi(
     left_index: np.ndarray,
     right_index: np.ndarray,
-    left_region: np.ndarray,
-    right_region: np.ndarray,
+    counts: np.ndarray,
+    positions: np.ndarray,
 ) -> tuple:
     """
     Generate all indices when keep = `all`.
@@ -252,20 +233,12 @@ def _numba_single_non_equi(
     """
     length = left_index.size
     len_right = right_index.size
-    counter = 0
-    positions = np.empty(length, np.intp)
-    # compute the exact length of the new indices
-    for num in prange(length):
-        val = left_region[num]
-        val = np.searchsorted(right_region, val)
-        counter += len_right - val
-        positions[num] = val
-    l_index = np.empty(counter, np.intp)
-    r_index = np.empty(counter, np.intp)
+    l_index = np.empty(counts[-1], np.intp)
+    r_index = np.empty(counts[-1], np.intp)
     starts = np.empty(length, np.intp)
     # capture the starts and ends for each sub range
     starts[0] = 0
-    starts[1:] = np.cumsum(len_right - positions)[:-1]
+    starts[1:] = counts[:-1]
     # build the actual indices
     for num in prange(length):
         val = left_index[num]
@@ -282,8 +255,7 @@ def _numba_single_non_equi(
 def _numba_single_non_equi_keep_first_last(
     left_index: np.ndarray,
     right_index: np.ndarray,
-    left_region: np.ndarray,
-    right_region: np.ndarray,
+    positions: np.ndarray,
     keep: str,
 ) -> tuple:
     """
@@ -291,13 +263,6 @@ def _numba_single_non_equi_keep_first_last(
     Applies only to >, >= , <, <= operators.
     """
     length = left_index.size
-    positions = np.empty(length, np.intp)
-
-    for num in prange(length):
-        val = left_region[num]
-        val = np.searchsorted(right_region, val)
-        positions[num] = val
-
     l_index = np.empty(length, np.intp)
     r_index = np.empty(length, np.intp)
 

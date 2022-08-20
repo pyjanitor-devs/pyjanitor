@@ -1,18 +1,22 @@
 """Tests for documentation build."""
 
 import os
-import sys
 
 import pytest
 
 try:
-    import mkdocs  # noqa: F401
-except ImportError:
-    ...
+    import mkdocs
+    # Even if 'mkdocs' is installed
+    # 'mkdocs' is could be imported as <module 'mkdocs' (namespace)>
+    # Need to check if 'mkdocs' has '__version__' attribute
+
+    mkdocs_installed = hasattr(mkdocs, "__version__")
+except (ImportError, AttributeError):
+    mkdocs_installed = False
 
 
 @pytest.mark.skipif(
-    "mkdocs" not in sys.modules,
+    not mkdocs_installed,
     reason=(
         "Requires the MkDocs library. "
         "And only test documentation in documentation building CI."

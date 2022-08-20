@@ -6,6 +6,7 @@ import pytest
 
 try:
     import mkdocs
+
     # Even if 'mkdocs' is installed
     # 'mkdocs' is could be imported as <module 'mkdocs' (namespace)>
     # Need to check if 'mkdocs' has '__version__' attribute

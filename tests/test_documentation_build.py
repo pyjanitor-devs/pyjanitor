@@ -5,7 +5,7 @@ import sys
 import pytest
 
 try:
-    import mkdocs
+    import mkdocs  # noqa: F401
 except ImportError:
     ...
 

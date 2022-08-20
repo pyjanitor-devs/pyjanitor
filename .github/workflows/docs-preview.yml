@@ -35,6 +35,9 @@ jobs:
           name: website
           path: site/
 
+      - name: Test built result
+        run: pytest .\tests\test_documentation_build.py
+
       - name: Deploy docs preview to Netlify
         uses: nwtgck/actions-netlify@v1.1
         with:

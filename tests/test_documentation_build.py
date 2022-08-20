@@ -2,16 +2,12 @@
 
 import pytest
 
-try:
-    import mkdocs
 
-    # Even if 'mkdocs' is installed
-    # 'mkdocs' is could be imported as <module 'mkdocs' (namespace)>
-    # Need to check if 'mkdocs' has '__version__' attribute
-
-    mkdocs_installed = hasattr(mkdocs, "__version__")
-except (ImportError, AttributeError):
-    mkdocs_installed = False
+# Even if 'mkdocs' is installed
+# 'mkdocs' is could be imported as <module 'mkdocs' (namespace)>
+# Need to check if 'mkdocs' has '__version__' attribute
+mkdocs = pytest.importorskip("mkdocs")
+mkdocs_installed = hasattr(mkdocs, "__version__")
 
 
 @pytest.mark.skipif(
@@ -21,6 +17,7 @@ except (ImportError, AttributeError):
         "And only test documentation in documentation building CI."
     ),
 )
+@pytest.mark.documentation
 def test_docs_general_functions_present():
     """Test that all docs pages build correctly.
 

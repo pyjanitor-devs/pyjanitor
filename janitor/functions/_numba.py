@@ -84,9 +84,9 @@ def _numba_single_join(
 
 
 def _numba_generate_indices_ne(
-    left_c: np.ndarray,
+    left: np.ndarray,
     left_index: np.ndarray,
-    right_c: np.ndarray,
+    right: np.ndarray,
     right_index: np.ndarray,
     strict: bool,
     keep: str,
@@ -100,7 +100,7 @@ def _numba_generate_indices_ne(
     """
     dummy = np.array([], dtype=int)
     result = _get_regions(
-        left_c, left_index, right_c, right_index, strict, op_code
+        left, left_index, right, right_index, strict, op_code
     )
     if result is None:
         return dummy, dummy
@@ -119,7 +119,7 @@ def _numba_generate_indices_ne(
 
 def _prep_numba_sort_right(right_index, right_region):
     """
-    Sort right_index and right_region for faster searching
+    Sort right_index and right_region for fast searching
     via binary search.
     """
     bools = np.all(right_region[1:] >= right_region[:-1])

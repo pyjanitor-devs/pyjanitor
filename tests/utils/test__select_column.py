@@ -165,9 +165,9 @@ def test_strings_dates_range(df_dates):
 def test_unsorted_dates(df_dates):
     """Test output if the dates are unsorted, and a string is passed."""
     df_dates = df_dates.iloc[:, [10, 4, 7, 2, 1, 3, 5, 6, 8, 9, 11, 0]]
-    assert_index_equal(
-        df_dates.loc[:, ["2011-01-31"]].columns,
-        _select_column_names("2011-01-31", df_dates),
+    assert (
+        df_dates.loc[:, "2011-01-31"].name
+        == _select_column_names("2011-01-31", df_dates)[0]
     )
 
 

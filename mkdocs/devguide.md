@@ -228,7 +228,7 @@ can help you with reviewing the code checks.
 
 ## Code Compatibility
 
-pyjanitor supports Python 3.8+,
+pyjanitor supports Python 3.9+,
 so all contributed code must maintain this compatibility.
 
 ## Tips

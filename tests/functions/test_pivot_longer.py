@@ -663,8 +663,9 @@ def test_names_pattern_str(test_df):
         column_names="*_*",
         names_to=["set", ".value"],
         names_pattern="(.+)_(.+)",
-        sort_by_appearance=True,
+        sort_by_appearance=False,
     )
+    result = result.sort_values(result.columns.tolist(), ignore_index=True)
 
     actual = test_df.copy()
     actual.columns = actual.columns.str.split("_").str[::-1].str.join("_")
@@ -680,6 +681,7 @@ def test_names_pattern_str(test_df):
         .reset_index("set")
         .reset_index(drop=True)
     )
+    actual = actual.sort_values(actual.columns.tolist(), ignore_index=True)
 
     assert_frame_equal(result, actual)
 
@@ -705,6 +707,9 @@ def test_names_sep(test_df):
         .reset_index("set")
         .reset_index(drop=True)
     )
+
+    result = result.sort_values(result.columns.tolist(), ignore_index=True)
+    actual = actual.sort_values(actual.columns.tolist(), ignore_index=True)
 
     assert_frame_equal(result, actual)
 
@@ -1188,18 +1193,12 @@ def test_names_transform_numeric():
         }
     )
 
-    expected = (
-        df.pivot_longer(
-            index="A",
-            names_to=(".value", "colname"),
-            names_sep="_",
-            names_transform=float,
-        )
-        .sort_values(
-            ["A", "colname", "result", "treatment"], ignore_index=True
-        )
-        .loc[:, ["A", "colname", "result", "treatment"]]
-    )
+    result = df.pivot_longer(
+        index="A",
+        names_to=(".value", "colname"),
+        names_sep="_",
+        names_transform=float,
+    ).loc[:, ["A", "colname", "result", "treatment"]]
 
     actual = pd.wide_to_long(
         df,
@@ -1210,7 +1209,10 @@ def test_names_transform_numeric():
         sep="_",
     ).reset_index()
 
-    assert_frame_equal(actual, expected)
+    result = result.sort_values(result.columns.tolist(), ignore_index=True)
+    actual = actual.sort_values(actual.columns.tolist(), ignore_index=True)
+
+    assert_frame_equal(actual, result)
 
 
 def test_duplicated_columns():

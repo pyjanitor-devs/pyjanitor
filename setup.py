@@ -121,7 +121,7 @@ setup(
     packages=find_packages(),
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRA_REQUIRES,
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     long_description=generate_long_description(),
     long_description_content_type="text/x-rst",
 )

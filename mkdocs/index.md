@@ -177,7 +177,7 @@ conda install pyjanitor -c conda-forge
 pipenv install --pre pyjanitor
 ```
 
-`pyjanitor` requires Python 3.6+.
+`pyjanitor` requires Python 3.8+.
 
 ## Functionality
 

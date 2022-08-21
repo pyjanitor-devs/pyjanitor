@@ -8,6 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         test-subset: ["turtle", "not turtle"]
+        python-version: ["3.8", "3.9", "3.10"]
     runs-on: ubuntu-latest
     name: Run pyjanitor test suite
 
@@ -34,6 +35,7 @@ jobs:
       - name: Run unit tests
         run: |
           conda activate pyjanitor-dev
+          mamba install python=${{ matrix.python-version }}
           python -m pip install -e .
           pytest -m "${{ matrix.test-subset }}"
 

@@ -50,6 +50,10 @@ def _numba_single_join(
             right = np.maximum.reduceat(right[indexer], pos)
         return left, right
 
+    # convert Series to numpy arrays
+    # get the regions for left and right
+    # get the total count of indices
+    # build the final left and right indices
     if op_code == 1:
         result = _numba_less_than_indices(left, right)
     else:
@@ -60,6 +64,7 @@ def _numba_single_join(
     if result is None:
         return None
     left_index, right_index, left_region, right_region = result
+    # numpy version of pandas monotonic increasing
     bools = np.all(right_region[1:] >= right_region[:-1])
     if not bools:
         indexer = np.lexsort((right_index, right_region))
@@ -67,6 +72,7 @@ def _numba_single_join(
         right_index = right_index[indexer]
     positions = right_region.searchsorted(left_region, side="left")
     if keep == "all":
+        # get actual length of left and right indices
         counts = right_region.size - positions
         counts = counts.cumsum()
         return _numba_single_non_equi(
@@ -99,6 +105,7 @@ def _numba_generate_indices_ne(
     if result is None:
         return dummy, dummy
     left_index, right_index, left_region, right_region = result
+    # numpy version of pandas monotonic increasing
     bools = np.all(right_region[1:] >= right_region[:-1])
     if not bools:
         indexer = np.lexsort((right_index, right_region))
@@ -106,6 +113,7 @@ def _numba_generate_indices_ne(
         right_index = right_index[indexer]
     positions = right_region.searchsorted(left_region, side="left")
     if keep == "all":
+        # get actual length of left and right indices
         counts = right_region.size - positions
         counts = counts.cumsum()
         return _numba_single_non_equi(

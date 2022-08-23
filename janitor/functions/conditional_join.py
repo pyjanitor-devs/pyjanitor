@@ -465,7 +465,7 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
     """return indices for left and right index based on the value of `keep`."""
     if keep == "all":
         return left, right
-    grouped = pd.Series(right_c).groupby(left_c)
+    grouped = pd.Series(right).groupby(left)
     if keep == "first":
         grouped = grouped.min()
         return grouped.index, grouped.array

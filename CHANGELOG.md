@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 -   [DOC] Updated developer guide docs.
--   [ENH] Allow column selection/renaming within conditional_join. #1102. Also allow first or last match. #1020 @samukweku.
+-   [ENH] Allow column selection/renaming within conditional_join. Issue #1102. Also allow first or last match. Issue #1020 @samukweku.
 -   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
 -   [ENH] Extend select_columns to support non-string columns. Also allow selection on MultiIndex columns via level parameter. #1105 @samukweku
 -   [ENH] Performance improvement for groupby_topk. #1093 @samukweku
@@ -18,7 +18,7 @@
 -   [BUG] Force `math.softmax` returning `Series`. PR #1139 @Zeroto521
 -   [INF] Set independent environment for building documentation. PR #1141 @Zeroto521
 -   [DOC] Add local documentation preview via github action artifact. PR #1149 @Zeroto521
--   [ENH] Faster computation for a single non-equi join, with a numba engine. #1102 @samukweku
+-   [ENH] Faster computation for a single non-equi join, with a numba engine. Issue #1102 @samukweku
 
 ## [v0.23.1] - 2022-05-03
 

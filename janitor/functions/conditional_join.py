@@ -464,7 +464,7 @@ def _conditional_join_compute(
 def _keep_output(keep: str, left_c: np.ndarray, right_c: np.ndarray):
     """return indices for left and right index based on the value of `keep`."""
     if keep == "all":
-        return left_c, right_c
+        return left, right
     grouped = pd.Series(right_c).groupby(left_c)
     if keep == "first":
         grouped = grouped.min()

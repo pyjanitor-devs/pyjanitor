@@ -461,7 +461,7 @@ def _conditional_join_compute(
     )
 
 
-def _keep_output(keep: str, left_c: np.ndarray, right_c: np.ndarray):
+def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
     """return indices for left and right index based on the value of `keep`."""
     if keep == "all":
         return left, right

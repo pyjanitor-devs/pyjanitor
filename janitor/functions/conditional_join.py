@@ -49,8 +49,10 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
 
-    For possible performance improvement, set `use_numba` to `True`,
-    if `numba` is installed.
+    For strictly non-equi joins,
+    involving either `>`, `<`, `>=`, `<=` operators,
+    performance could be improved by setting `use_numba` to `True`.
+    This assumes that `numba` is installed.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -453,7 +455,6 @@ def _conditional_join_compute(
         return _create_conditional_join_empty_frame(
             df, right, how, df_columns, right_columns
         )
-
     return _create_conditional_join_frame(
         df,
         right,
@@ -982,7 +983,7 @@ def _multiple_conditional_join_le_lt(
             indices = [arr for arr in indices if arr is not None]
             if not indices:
                 indices = None
-            elif indices == 1:
+            elif len(indices) == 1:
                 indices = indices[0]
             else:
                 indices = zip(*indices)

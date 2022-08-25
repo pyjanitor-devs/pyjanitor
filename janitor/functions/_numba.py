@@ -174,6 +174,7 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # there is no point searching within that space
     max_arr = np.maximum.accumulate(r_table2[::-1])[::-1]
     bools = l_table2 > max_arr[positions]
+    # there is no match
     if bools.all():
         return None
     if bools.any():
@@ -181,13 +182,9 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
         l_index = l_index[~bools]
         l_table2 = l_table2[~bools]
 
-    out = _get_matching_indices(
+    return _get_matching_indices(
         l_index, l_table2, r_index, r_table2, positions, max_arr
     )
-
-    if out[0] is None:
-        return None
-    return out
 
 
 def _numba_single_join(

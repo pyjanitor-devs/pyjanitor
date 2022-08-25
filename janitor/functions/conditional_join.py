@@ -957,7 +957,7 @@ def _multiple_conditional_join_le_lt(
             # finally unionize the outcome of the pairs
             # this only works if there is no null in the != condition
             # thanks to Hypothesis tests for pointing this out
-            (left_on, right_on, op), *conditions = conditions
+            left_on, right_on, op = conditions[0]
             # check for nulls in the patch
             # and follow this path, only if there are no nulls
             if df[left_on].notna().all() & right[right_on].notna().all():
@@ -984,7 +984,9 @@ def _multiple_conditional_join_le_lt(
                 else:
                     indices = zip(*indices)
                     indices = map(np.concatenate, indices)
+                conditions = conditions[1:]
             else:
+                left_on, right_on, op = pairs[0]
                 indices = _generic_func_cond_join(
                     df[left_on],
                     right[right_on],

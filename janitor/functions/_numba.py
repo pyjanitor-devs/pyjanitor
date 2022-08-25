@@ -4,6 +4,190 @@ import numpy as np
 import pandas as pd
 from janitor.functions.utils import _convert_to_numpy_array
 from numba import njit, prange
+from enum import Enum
+
+
+class _JoinOperator(Enum):
+    """
+    List of operators used in conditional_join.
+    """
+
+    GREATER_THAN = ">"
+    LESS_THAN = "<"
+    GREATER_THAN_OR_EQUAL = ">="
+    LESS_THAN_OR_EQUAL = "<="
+    STRICTLY_EQUAL = "=="
+    NOT_EQUAL = "!="
+
+
+less_than_join_types = {
+    _JoinOperator.LESS_THAN.value,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value,
+}
+greater_than_join_types = {
+    _JoinOperator.GREATER_THAN.value,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value,
+}
+
+
+def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
+    """
+    Numba implementation of algorithm in this paper:
+    # https://www.scitepress.org/papers/2018/68268/68268.pdf
+    Generally faster than the _range_indices algorithm
+    and more generalised - it covers any pair of non equi joins
+    in >, >=, <, <=.
+    Returns a tuple of left and right indices.
+    """
+    # https://www.scitepress.org/papers/2018/68268/68268.pdf
+
+    left_indices = []
+    right_indices = []
+    left_regions = []
+    right_regions = []
+    left_index = df.index
+    right_index = right.index
+    for num, (left_on, right_on, op) in enumerate(pair):
+        # indexing is expensive; avoid it if possible
+        if num:
+            left_c = df.loc[left_index, left_on]
+            right_c = right.loc[right_index, right_on]
+        else:
+            left_c = df[left_on]
+            right_c = right[right_on]
+
+        any_nulls = pd.isna(right_c)
+        if any_nulls.all():
+            return None
+        if any_nulls.any():
+            right_c = right_c[~any_nulls]
+        any_nulls = pd.isna(left_c)
+        if any_nulls.all():
+            return None
+        if any_nulls.any():
+            left_c = left_c[~any_nulls]
+
+        if op in less_than_join_types:
+            left_is_sorted = pd.Series(left_c).is_monotonic_increasing
+            if not left_is_sorted:
+                left_c = left_c.sort_values(kind="stable", ascending=True)
+        else:
+            left_is_sorted = pd.Series(left_c).is_monotonic_decreasing
+            if not left_is_sorted:
+                left_c = left_c.sort_values(kind="stable", ascending=False)
+
+        left_index = left_c.index._values
+        right_index = right_c.index._values
+        left_c, right_c = _convert_to_numpy_array(
+            left_c._values, right_c._values
+        )
+
+        if op in {
+            _JoinOperator.LESS_THAN.value,
+            _JoinOperator.GREATER_THAN.value,
+        }:
+            strict = 1
+        else:
+            strict = 0
+        if op in less_than_join_types:
+            op_code = 1
+        else:
+            op_code = 0
+
+        result = _get_regions(
+            left_c, left_index, right_c, right_index, strict, op_code
+        )
+        if result is None:
+            return None
+        (
+            left_index,
+            right_index,
+            left_region,
+            right_region,
+        ) = result
+
+        left_indices.append(left_index)
+        right_indices.append(right_index)
+        left_regions.append(left_region)
+        right_regions.append(right_region)
+
+    def _realign(indices, regions):
+        """
+        Realign the indices and regions
+        obtained from _get_regions.
+        """
+        # we've got two regions, since we have two pairs
+        # there might be region numbers missing from either
+        # or misalignment of the arrays
+        # this function ensures the regions are properly aligned
+        arr1, arr2 = indices
+        region1, region2 = regions
+        indexer = pd.Index(arr2).get_indexer(arr1)
+        mask = indexer == -1
+        if mask.any():
+            arr1 = arr1[~mask]
+            region1 = region1[~mask]
+            indexer = indexer[~mask]
+        region2 = region2[indexer]
+        return arr1, region1, region2
+
+    l_index, l_table1, l_table2 = _realign(left_indices, left_regions)
+    r_index, r_table1, r_table2 = _realign(right_indices, right_regions)
+
+    del (
+        left_indices,
+        left_regions,
+        right_indices,
+        right_regions,
+        left_region,
+        right_region,
+    )
+
+    # we'll be running a for loop to check sub arrays
+    # to see if the region from the left is less than
+    # the region on the right
+    # sorting here allows us to search each the first level
+    # array more efficiently
+    if not pd.Series(r_table1).is_monotonic_increasing:
+        indexer = np.lexsort((r_table2, r_table1))
+        r_index, r_table1, r_table2 = (
+            right_index[indexer],
+            r_table1[indexer],
+            r_table2[indexer],
+        )
+
+    indexer = None
+
+    positions = r_table1.searchsorted(l_table1, side="left")
+    # anything equal to the length of r_table1
+    # implies exclusion
+    bools = positions < r_table1.size
+    if not bools.any():
+        return None
+    if not bools.all():
+        positions = positions[bools]
+        l_index = l_index[bools]
+        l_table2 = l_table2[bools]
+
+    # find the maximum from the bottom upwards
+    # if value from l_table2 is greater than the maximum
+    # there is no point searching within that space
+    max_arr = np.maximum.accumulate(r_table2[::-1])[::-1]
+    bools = l_table2 > max_arr[positions]
+    if bools.all():
+        return None
+    if bools.any():
+        positions = positions[~bools]
+        l_index = l_index[~bools]
+        l_table2 = l_table2[~bools]
+
+    out = _get_matching_indices(
+        l_index, l_table2, r_index, r_table2, positions, max_arr
+    )
+
+    if out[0] is None:
+        return None
+    return out
 
 
 def _numba_single_join(
@@ -292,6 +476,74 @@ def _numba_single_non_equi_keep_first_last(
     return l_index, r_index
 
 
+@njit(cache=True, parallel=True)
+def _get_matching_indices(
+    l_index, l_table2, r_index, r_table2, positions, max_arr
+):
+    """
+    Retrieves the matching indices
+    for the left and right regions.
+    Strictly for non-equi joins.
+    """
+    length = r_index.size
+    counts = np.empty(positions.size, dtype=np.intp)
+    ends = np.empty(positions.size, dtype=np.intp)
+
+    # first let's get the total number of matches
+    for num in prange(l_index.size):
+        l2 = l_table2[num]
+        pos = positions[num]
+        end = 0
+        pos_end = length
+        # get the first point where l2
+        # is less than the cumulative max
+        # that will serve as the range
+        # (pos, pos_end)
+        # within which to search for actual matches
+        for ind in range(pos + 1, length):
+            val = max_arr[ind]
+            if l2 > val:
+                pos_end = ind
+                break
+        ends[num] = pos_end
+        # get the total number of exact matches
+        # for l2
+        for ind in range(pos, pos_end):
+            out = r_table2[ind]
+            out = l2 <= out
+            end += out
+        counts[num] = end
+
+    start_indices = np.cumsum(counts)
+    starts = np.empty(counts.size, dtype=np.intp)
+    starts[0] = 0
+    starts[1:] = start_indices[:-1]
+
+    # create left and right indexes
+    left_index = np.empty(start_indices[-1], dtype=np.intp)
+    right_index = np.empty(start_indices[-1], dtype=np.intp)
+    start_indices = None
+
+    for num in prange(l_index.size):
+        pos = positions[num]
+        pos_end = ends[num]
+        l2 = l_table2[num]
+        l3 = l_index[num]
+        start = starts[num]
+        counter = counts[num]
+        for ind in range(pos, pos_end):
+            if not counter:
+                break
+            if r_table2[ind] < l2:
+                continue
+            left_index[start] = l3
+            right_index[start] = r_index[ind]
+            start += 1
+            counter -= 1
+
+    return left_index, right_index
+
+
 @njit()
 def _get_regions(
     left_c: np.ndarray,
@@ -354,10 +606,12 @@ def _get_regions(
         indices = indices[~mask]
     left_region[indices] = 1
     mask = left_region == 1
-    left_region[mask] = np.arange(len(set(indices)))
+    count_unique_indices = np.bincount(indices)
+    count_unique_indices = np.count_nonzero(count_unique_indices)
+    left_region[mask] = np.arange(count_unique_indices)
     start = left_region[-1]
-    # this is where we spool out the region numbers
-    for num in range(left_region.size - 1, -1, -1):
+    arr = np.arange(left_region.size)[::-1]
+    for num in arr:
         if left_region[num] != -1:
             start = left_region[num]
         else:

@@ -225,8 +225,8 @@ def _conditional_join_preliminary_checks(
 
     check("right", right, [pd.DataFrame, pd.Series])
 
-    df = df.copy()
-    right = right.copy()
+    df = df[:]
+    right = right[:]
 
     if isinstance(right, pd.Series):
         if not right.name:
@@ -442,9 +442,13 @@ def _conditional_join_compute(
     if eq_check:
         result = _multiple_conditional_join_eq(df, right, conditions, keep)
     elif le_lt_check:
-        result = _multiple_conditional_join_le_lt(df, right, conditions, keep)
+        result = _multiple_conditional_join_le_lt(
+            df, right, conditions, keep, use_numba
+        )
     else:
-        result = _multiple_conditional_join_ne(df, right, conditions, keep)
+        result = _multiple_conditional_join_ne(
+            df, right, conditions, keep, use_numba
+        )
     if result is None:
         return _create_conditional_join_empty_frame(
             df, right, how, df_columns, right_columns
@@ -832,7 +836,11 @@ def _generate_indices(
 
 
 def _multiple_conditional_join_ne(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: list, keep: str
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    keep: str,
+    use_numba: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -850,10 +858,17 @@ def _multiple_conditional_join_ne(
     # then use those indices to get the final indices,
     # using _generate_indices
     first, *rest = conditions
-    left_on, right_on, _ = first
+    left_on, right_on, op = first
 
     # get indices from the first condition
-    indices = _not_equal_indices(df[left_on], right[right_on], keep="all")
+    indices = _generic_func_cond_join(
+        df[left_on],
+        right[right_on],
+        op,
+        multiple_conditions=False,
+        keep="all",
+        use_numba=use_numba,
+    )
     if indices is None:
         return None
 
@@ -915,7 +930,11 @@ def _multiple_conditional_join_eq(
 
 
 def _multiple_conditional_join_le_lt(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: list, keep: str
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    keep: str,
+    use_numba: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -924,87 +943,134 @@ def _multiple_conditional_join_le_lt(
 
     Returns a tuple of (df_index, right_index)
     """
+    if use_numba:
+        from janitor.functions._numba import _numba_pair_le_lt
 
-    # there is an opportunity for optimization for range joins
-    # which is usually `lower_value < value < upper_value`
-    # or `lower_value < a` and `b < upper_value`
-    # intervalindex is not used here, as there are scenarios
-    # where there will be overlapping intervals;
-    # intervalindex does not offer an efficient way to get
-    # the indices for overlaps
-    # also, intervalindex covers only the first option
-    # i.e => `lower_value < value < upper_value`
-    # it does not extend to range joins for different columns
-    # i.e => `lower_value < a` and `b < upper_value`
-    # the option used for range joins is a simple form
-    # dependent on sorting and extensible to overlaps
-    # as well as the second option:
-    # i.e =>`lower_value < a` and `b < upper_value`
-    # range joins are also the more common types of non-equi joins
-    # the other joins do not have an optimisation opportunity
-    # as far as I know, so a blowup of all the rows
-    # is unavoidable.
-    # future PR could use numba to improve performance, although it
-    # still doesn't help that an optimisation path is not available
-    # that I am aware of
-
-    # first step is to get two conditions, if possible
-    # where one has a less than operator
-    # and the other has a greater than operator
-    # get the indices from that
-    # and then build the remaining indices,
-    # using _generate_indices function
-    # the aim of this for loop is to see if there is
-    # the possiblity of a range join, and if there is
-    # use the optimised path
-    le_lt = None
-    ge_gt = None
-    # keep the first match for le_lt or ge_gt
-    for condition in conditions:
-        *_, op = condition
-        if op in less_than_join_types:
-            if le_lt:
-                continue
-            le_lt = condition
-        elif op in greater_than_join_types:
-            if ge_gt:
-                continue
-            ge_gt = condition
-        if le_lt and ge_gt:
-            break
-
-    # optimised path
-    if le_lt and ge_gt:
+        pairs = [
+            condition
+            for condition in conditions
+            if condition[-1] != _JoinOperator.NOT_EQUAL.value
+        ]
         conditions = [
             condition
             for condition in conditions
-            if condition not in (ge_gt, le_lt)
+            if condition[-1] == _JoinOperator.NOT_EQUAL.value
         ]
-
-        indices = _range_indices(df, right, ge_gt, le_lt)
-
-    # no optimised path
-    # blow up the rows and prune
-    else:
-        if le_lt:
-            conditions = [
-                condition for condition in conditions if condition != le_lt
-            ]
-            left_on, right_on, op = le_lt
+        if len(pairs) > 2:
+            patch = pairs[2:]
+            conditions.extend(patch)
+            pairs = pairs[:2]
+        if len(pairs) < 2:
+            # combine with != condition
+            # say we have ('start', 'ID', '<='), ('end', 'ID', '!=')
+            # we convert conditions to :
+            # ('start', 'ID', '<='), ('end', 'ID', '>'), ('end', 'ID', '<')
+            # subsequently we run the numba pair fn on the pairs:
+            # ('start', 'ID', '<=') & ('end', 'ID', '>')
+            # ('start', 'ID', '<=') & ('end', 'ID', '<')
+            # finally unionize the outcome of the pairs
+            (left_on, right_on, op), *conditions = conditions
+            patch = (left_on, right_on, _JoinOperator.GREATER_THAN.value), (
+                left_on,
+                right_on,
+                _JoinOperator.LESS_THAN.value,
+            )
+            pairs.extend(patch)
+            first, middle, last = pairs
+            pairs = [(first, middle), (first, last)]
+            indices = [_numba_pair_le_lt(df, right, pair) for pair in pairs]
+            indices = [arr for arr in indices if arr is not None]
+            if not indices:
+                indices = None
+            elif indices == 1:
+                indices = indices[0]
+            else:
+                indices = zip(*indices)
+                indices = map(np.concatenate, indices)
         else:
-            conditions = [
-                condition for condition in conditions if condition != ge_gt
-            ]
-            left_on, right_on, op = ge_gt
+            indices = _numba_pair_le_lt(df, right, pairs)
+    else:
+        # there is an opportunity for optimization for range joins
+        # which is usually `lower_value < value < upper_value`
+        # or `lower_value < a` and `b < upper_value`
+        # intervalindex is not used here, as there are scenarios
+        # where there will be overlapping intervals;
+        # intervalindex does not offer an efficient way to get
+        # the indices for overlaps
+        # also, intervalindex covers only the first option
+        # i.e => `lower_value < value < upper_value`
+        # it does not extend to range joins for different columns
+        # i.e => `lower_value < a` and `b < upper_value`
+        # the option used for range joins is a simple form
+        # dependent on sorting and extensible to overlaps
+        # as well as the second option:
+        # i.e =>`lower_value < a` and `b < upper_value`
+        # range joins are also the more common types of non-equi joins
+        # the other joins do not have an optimisation opportunity
+        # within this space, as far as I know,
+        # so a blowup of all the rows is unavoidable.
 
-        indices = _generic_func_cond_join(
-            df[left_on],
-            right[right_on],
-            op,
-            multiple_conditions=False,
-            keep="all",
-            use_numba=False,
-        )
+        # The numba version offers optimisations
+        # for all types of non-equi joins
+        # and is generally much faster
+
+        # first step is to get two conditions, if possible
+        # where one has a less than operator
+        # and the other has a greater than operator
+        # get the indices from that
+        # and then build the remaining indices,
+        # using _generate_indices function
+        # the aim of this for loop is to see if there is
+        # the possiblity of a range join, and if there is
+        # use the optimised path
+        le_lt = None
+        ge_gt = None
+        # keep the first match for le_lt or ge_gt
+        for condition in conditions:
+            *_, op = condition
+            if op in less_than_join_types:
+                if le_lt:
+                    continue
+                le_lt = condition
+            elif op in greater_than_join_types:
+                if ge_gt:
+                    continue
+                ge_gt = condition
+            if le_lt and ge_gt:
+                break
+
+        # optimised path
+        if le_lt and ge_gt:
+            conditions = [
+                condition
+                for condition in conditions
+                if condition not in (ge_gt, le_lt)
+            ]
+
+            indices = _range_indices(df, right, ge_gt, le_lt)
+
+        # no optimised path
+        # blow up the rows and prune
+        else:
+            if le_lt:
+                conditions = [
+                    condition for condition in conditions if condition != le_lt
+                ]
+                left_on, right_on, op = le_lt
+            else:
+                conditions = [
+                    condition for condition in conditions if condition != ge_gt
+                ]
+                left_on, right_on, op = ge_gt
+
+            indices = _generic_func_cond_join(
+                df[left_on],
+                right[right_on],
+                op,
+                multiple_conditions=False,
+                keep="all",
+                use_numba=False,
+            )
 
     if not indices:
         return None

@@ -41,6 +41,145 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     """
     # https://www.scitepress.org/papers/2018/68268/68268.pdf
 
+    # summary:
+    # get regions for first and second conditions in the pair
+    # (l_col1, r_col1, op1), (l_col2, r_col2, op2)
+    # the idea is that r_col1 should always be ahead of the
+    # appropriate valye from lcol1; same applies to l_col2 & r_col2.
+    # if the operator is in less than join types
+    # the l_col should be in ascending order
+    # if in greater than join types, it should be
+    # in descending order
+    # Example :
+    #     df1:
+    #    id  value_1
+    # 0   1        2
+    # 1   1        5
+    # 2   1        7
+    # 3   2        1
+    # 4   2        3
+    # 5   3        4
+    #
+    #
+    #  df2:
+    #    id  value_2A  value_2B
+    # 0   1         0         1
+    # 1   1         3         5
+    # 2   1         7         9
+    # 3   1        12        15
+    # 4   2         0         1
+    # 5   2         2         4
+    # 6   2         3         6
+    # 7   3         1         3
+    #
+    #
+    # ('value_1', 'value_2A','>'), ('value_1', 'value_2B', '<')
+    # for the first pair, since op is greater than
+    # 'value_1' is sorted in descending order
+    #  our pairing should be :
+    # value  source      region number
+    # 12   value_2A       0
+    # 7    value_2A       1
+    # 7    value_1        2
+    # 5    value_1        2
+    # 4    value_1        2
+    # 3    value_2A       2
+    # 3    value_2A       2
+    # 3    value_1        3
+    # 2    value_2A       3
+    # 2    value_1        4
+    # 1    value_2A       4
+    # 1    value_1        5
+    # 0    value_2A       5
+    # 0    value_2A       5
+    #
+    # note that 7 for value_2A is not matched with 7 of value_1
+    # because it is >, not >=, hence the different region numbers
+    # looking at the output above, we can safely discard regions 0 and 1
+    # since they do not have any matches with value_1
+    # for the second pair, since op is <, value_1 is sorted
+    # in ascending order, and our pairing should be:
+    #   value    source    region number
+    #     1    value_2B       0
+    #     1    value_2B       1
+    #     1    value_1        2
+    #     2    value_1        2
+    #     3    value_2B       2
+    #     3    value_1        3
+    #     4    value_2B       3
+    #     4    value_1        4
+    #     5    value_2B       4
+    #     5    value_1        5
+    #     6    value_2B       5
+    #     7    value_1        6
+    #     9    value_2B       6
+    #     15   value_2B       6
+    #
+    # from the above we can safely discard regions 0 and 1, since there are
+    # no matches with value_1 ... note that the index for regions 0 and 1
+    # coincide with the index for region 5 values in value_2A(0, 0);
+    # as such those regions will be discarded.
+    # Similarly, the index for regions 0 and 1 of value_2A(12, 7)
+    # coincide with the index for regions 6 for value_2B(9, 15);
+    # these will be discarded as well.
+    # let's create a table of the regions, paired with the index
+    #
+    #
+    #  value_1 :
+    ###############################################
+    # index-->  2  1  5  4  0  3
+    # pair1-->  2  2  2  3  4  5
+    # pair2-->  6  5  4  3  2  2
+    ###############################################
+    #
+    #
+    # value_2A, value_2B
+    ##############################################
+    # index --> 1  6  5  7
+    # pair1 --> 2  2  3  4
+    # pair2 --> 4  5  3  2
+    ##############################################
+    #
+    # To find matching indices, the regions from value_1 must be less than
+    # or equal to the regions in value_2A/2B.
+    # pair1 <= pair1 and pair2 <= pair2
+    # Starting from the highest region in value_1
+    # 5 in pair1 is not less than any in value_2A/2B, so we discard
+    # 4 in pair1 is matched to 4 in pair 1
+    # we look at the equivalent value in pair2 for 4, which is 2
+    # 2 matches 2 in pair 2, so we have a complete match -> (0, 7)
+    # 3 in pair 1 from value_1 matches 3 and 4 in pair1 for value_2A/2b
+    # next we compare the equivalent value from pair2, which is 3
+    # 3 matches only 3, so our only match is  -> (4, 5)
+    # next is 2 (we have 3 2s in value_1)
+    # they all match 2, 2, 3, 4 in pair1 of value_2A/2B
+    # compare the first equivalent in pair2 -> 4
+    # 4 matches only 4, 5 in pair2 of value_2A/2B
+    # ->(5, 1), (5, 6)
+    # the next equivalent is -> 5
+    # 5 matches only 5 in pair2 of value_2A/2B
+    # -> (1, 6)
+    # the last equivalent is -> 6
+    # 6 has no match in pair2 of value_2A/2B, so we discard
+    # our final matching indices for the left and right pairs
+    #########################################################
+    # left_index      right_indes
+    #     0              7
+    #     4              5
+    #     5              1
+    #     5              6
+    #     1              6
+    ########################################################
+    # and if we index the dataframes should give the output below:
+    #################################
+    #    value_1  value_2A  value_2B
+    # 0        2         1         3
+    # 1        5         3         6
+    # 2        3         2         4
+    # 3        4         3         5
+    # 4        4         3         6
+    ################################
+
     left_indices = []
     right_indices = []
     left_regions = []
@@ -146,8 +285,8 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # we'll be running a for loop to check sub arrays
     # to see if the region from the left is less than
     # the region on the right
-    # sorting here allows us to search each the first level
-    # array more efficiently
+    # sorting here allows us to search each first level
+    # array more efficiently with a binary search
     if not pd.Series(r_table1).is_monotonic_increasing:
         indexer = np.lexsort((r_table2, r_table1))
         r_index, r_table1, r_table2 = (
@@ -480,7 +619,7 @@ def _get_matching_indices(
     """
     Retrieves the matching indices
     for the left and right regions.
-    Strictly for non-equi joins.
+    Strictly for non-equi joins (pairs).
     """
     length = r_index.size
     counts = np.empty(positions.size, dtype=np.intp)
@@ -636,6 +775,14 @@ def _search_indices(
     return indices
 
 
+# the binary search functions below are modifications
+# of python's bisect function, with a simple aim of
+# getting regions.
+# region should always be at the far end left or right
+# e.g for [2, 3, 3, 4], 3 (if <) should be position 0
+# if (<=), position should be 1
+# for [4, 3, 2, 2], 3 (if >) should be position 0
+# if >=, position should be 1
 @njit()
 def _searchsorted_left(arr: np.ndarray, value: int, op_code: int) -> int:
     """

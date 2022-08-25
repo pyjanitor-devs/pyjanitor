@@ -413,49 +413,31 @@ def _conditional_join_compute(
     df.index = range(len(df))
     right.index = range(len(right))
 
-    multiple_conditions = len(conditions) > 1
-
-    if not multiple_conditions:
+    if len(conditions) > 1:
+        if eq_check:
+            result = _multiple_conditional_join_eq(df, right, conditions, keep)
+        elif le_lt_check:
+            result = _multiple_conditional_join_le_lt(
+                df, right, conditions, keep, use_numba
+            )
+        else:
+            result = _multiple_conditional_join_ne(
+                df, right, conditions, keep, use_numba
+            )
+    else:
         left_on, right_on, op = conditions[0]
-
         result = _generic_func_cond_join(
             df[left_on],
             right[right_on],
             op,
-            multiple_conditions,
+            False,
             keep,
             use_numba,
         )
-
-        if result is None:
-            return _create_conditional_join_empty_frame(
-                df, right, how, df_columns, right_columns
-            )
-        return _create_conditional_join_frame(
-            df,
-            right,
-            *result,
-            how,
-            sort_by_appearance,
-            df_columns,
-            right_columns,
-        )
-
-    if eq_check:
-        result = _multiple_conditional_join_eq(df, right, conditions, keep)
-    elif le_lt_check:
-        result = _multiple_conditional_join_le_lt(
-            df, right, conditions, keep, use_numba
-        )
-    else:
-        result = _multiple_conditional_join_ne(
-            df, right, conditions, keep, use_numba
-        )
     if result is None:
-        return _create_conditional_join_empty_frame(
-            df, right, how, df_columns, right_columns
-        )
-    return _create_conditional_join_frame(
+        result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+
+    return _create_frame(
         df,
         right,
         *result,
@@ -738,7 +720,7 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
     l1_nulls = np.concatenate([l1_nulls, l2_nulls])
     r1_nulls = np.concatenate([r1_nulls, r2_nulls])
 
-    outcome = _less_than_indices(left, right, strict=True, keep="all")
+    outcome = _less_than_indices(left, right, strict=True, keep=keep)
 
     if outcome is None:
         lt_left = dummy
@@ -747,7 +729,7 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
         lt_left, lt_right = outcome
 
     outcome = _greater_than_indices(
-        left, right, strict=True, multiple_conditions=False, keep="all"
+        left, right, strict=True, multiple_conditions=False, keep=keep
     )
 
     if outcome is None:
@@ -808,7 +790,9 @@ def _generic_func_cond_join(
 
 
 def _generate_indices(
-    left_index: np.ndarray, right_index: np.ndarray, conditions: list
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    conditions: list[tuple[pd.Series, pd.Series, str]],
 ) -> tuple:
     """
     Run a for loop to get the final indices.
@@ -839,7 +823,7 @@ def _generate_indices(
 def _multiple_conditional_join_ne(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    conditions: list,
+    conditions: list[tuple[pd.Series, pd.Series, str]],
     keep: str,
     use_numba: bool,
 ) -> tuple:
@@ -1022,8 +1006,8 @@ def _multiple_conditional_join_le_lt(
         # and then build the remaining indices,
         # using _generate_indices function
         # the aim of this for loop is to see if there is
-        # the possiblity of a range join, and if there is
-        # use the optimised path
+        # the possiblity of a range join, and if there is,
+        # then use the optimised path
         le_lt = None
         ge_gt = None
         # keep the first match for le_lt or ge_gt
@@ -1192,11 +1176,8 @@ def _range_indices(
         right_index[start:end] for start, end in zip(pos, search_indices)
     ]
 
-    # get indices and filter to get exact indices
-    # that meet the condition
     right_index = np.concatenate(right_index)
     left_index = np.repeat(left_index, repeater)
-
     # here we search for actual positions
     # where left_c is </<= right_c
     # safe to index the arrays, since we are picking the positions
@@ -1220,8 +1201,8 @@ def _range_indices(
 
 def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
     """
-    Select and/or rename columns in a DataFrame.
-
+    Select columns in a DataFrame.
+    Optionally rename the columns while selecting.
     Returns a Pandas DataFrame.
     """
 
@@ -1252,66 +1233,7 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
     return df, right
 
 
-def _create_conditional_join_empty_frame(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    how: str,
-    df_columns: Any,
-    right_columns: Any,
-):
-    """
-    Create final dataframe for conditional join,
-    if there are no matches.
-    """
-
-    if df_columns:
-        df = _cond_join_select_columns(df_columns, df)
-    if right_columns:
-        right = _cond_join_select_columns(right_columns, right)
-
-    if set(df.columns).intersection(right.columns):
-        df, right = _create_multiindex_column(df, right)
-
-    if how == "inner":
-        df = df.dtypes.to_dict()
-        right = right.dtypes.to_dict()
-        df = {**df, **right}
-        df = {key: pd.Series([], dtype=value) for key, value in df.items()}
-        return pd.DataFrame(df, copy=False)
-
-    if how == "left":
-        right = right.dtypes.to_dict()
-        right = {
-            key: float if dtype.kind == "i" else dtype
-            for key, dtype in right.items()
-        }
-        right = {
-            key: pd.Series([], dtype=value) for key, value in right.items()
-        }
-        right = pd.DataFrame(right, copy=False)
-
-    else:  # how == 'right'
-        df = df.dtypes.to_dict()
-        df = {
-            key: float if dtype.kind == "i" else dtype
-            for key, dtype in df.items()
-        }
-        df = {key: pd.Series([], dtype=value) for key, value in df.items()}
-        df = pd.DataFrame(df, copy=False)
-    df = pd.merge(
-        df,
-        right,
-        left_index=True,
-        right_index=True,
-        how=how,
-        copy=False,
-        sort=False,
-    )
-    df.index = range(len(df))
-    return df
-
-
-def _create_conditional_join_frame(
+def _create_frame(
     df: pd.DataFrame,
     right: pd.DataFrame,
     left_index: np.ndarray,
@@ -1322,8 +1244,7 @@ def _create_conditional_join_frame(
     right_columns: Any,
 ):
     """
-    Create final dataframe for conditional join,
-    if there are matches.
+    Create final dataframe
     """
     if sort_by_appearance:
         sorter = np.lexsort((right_index, left_index))
@@ -1333,6 +1254,7 @@ def _create_conditional_join_frame(
 
     if df_columns:
         df = _cond_join_select_columns(df_columns, df)
+
     if right_columns:
         right = _cond_join_select_columns(right_columns, right)
 
@@ -1346,8 +1268,6 @@ def _create_conditional_join_frame(
         }
         return pd.DataFrame({**df, **right}, copy=False)
 
-    # dirty tests show slight speed gain when copy=False
-    # which is achievable only within pd.merge
     if how == "left":
         right = {
             key: value._values[right_index] for key, value in right.items()
@@ -1356,6 +1276,7 @@ def _create_conditional_join_frame(
     else:
         df = {key: value._values[left_index] for key, value in df.items()}
         df = pd.DataFrame(df, index=right_index, copy=False)
+
     df = pd.merge(
         df,
         right,

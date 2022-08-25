@@ -45,10 +45,10 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # get regions for first and second conditions in the pair
     # (l_col1, r_col1, op1), (l_col2, r_col2, op2)
     # the idea is that r_col1 should always be ahead of the
-    # appropriate valye from lcol1; same applies to l_col2 & r_col2.
+    # appropriate value from lcol1; same applies to l_col2 & r_col2.
     # if the operator is in less than join types
     # the l_col should be in ascending order
-    # if in greater than join types, it should be
+    # if in greater than join types, l_col should be
     # in descending order
     # Example :
     #     df1:
@@ -145,13 +145,13 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # pair1 <= pair1 and pair2 <= pair2
     # Starting from the highest region in value_1
     # 5 in pair1 is not less than any in value_2A/2B, so we discard
-    # 4 in pair1 is matched to 4 in pair 1
+    # 4 in pair1 is matched to 4 in pair1 of value_2A/2B
     # we look at the equivalent value in pair2 for 4, which is 2
-    # 2 matches 2 in pair 2, so we have a complete match -> (0, 7)
-    # 3 in pair 1 from value_1 matches 3 and 4 in pair1 for value_2A/2b
+    # 2 matches 2 in pair 2, so we have a match -> (0, 7)
+    # 3 in pair 1 from value_1 matches 3 and 4 in pair1 for value_2A/2B
     # next we compare the equivalent value from pair2, which is 3
-    # 3 matches only 3, so our only match is  -> (4, 5)
-    # next is 2 (we have 3 2s in value_1)
+    # 3 matches only 3 in value_2A/2B, so our only match is  -> (4, 5)
+    # next is 2 (we have 3 2s in value_1 for pair1)
     # they all match 2, 2, 3, 4 in pair1 of value_2A/2B
     # compare the first equivalent in pair2 -> 4
     # 4 matches only 4, 5 in pair2 of value_2A/2B
@@ -170,7 +170,7 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     #     5              6
     #     1              6
     ########################################################
-    # and if we index the dataframes should give the output below:
+    # and if we index the dataframes, we should get the output below:
     #################################
     #    value_1  value_2A  value_2B
     # 0        2         1         3

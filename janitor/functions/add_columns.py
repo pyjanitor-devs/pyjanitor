@@ -1,8 +1,10 @@
+"""Implementation of add_columns."""
+from __future__ import annotations
 import pandas_flavor as pf
 
 from janitor.utils import check, deprecated_alias
 import pandas as pd
-from typing import Union, List, Any, Tuple
+from typing import Any
 import numpy as np
 
 
@@ -11,7 +13,7 @@ import numpy as np
 def add_column(
     df: pd.DataFrame,
     column_name: str,
-    value: Union[List[Any], Tuple[Any], Any],
+    value: list[Any] | tuple[Any] | Any,
     fill_remaining: bool = False,
 ) -> pd.DataFrame:
     """Add a column to the dataframe.

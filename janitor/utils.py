@@ -1,11 +1,12 @@
 """Miscellaneous internal PyJanitor helper functions."""
 
+from __future__ import annotations
 import os
 import socket
 import sys
 from warnings import warn
 from functools import singledispatch, wraps
-from typing import Callable, Dict, Iterable, Union
+from typing import Callable, Dict, Iterable
 
 import numpy as np
 import pandas as pd
@@ -348,7 +349,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
 
 
 def check_column(
-    df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
+    df: pd.DataFrame, column_names: Iterable | str, present: bool = True
 ):
     """
     One-liner syntactic sugar for checking the presence or absence

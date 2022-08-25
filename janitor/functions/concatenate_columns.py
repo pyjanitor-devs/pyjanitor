@@ -1,4 +1,4 @@
-from typing import Hashable, List
+from typing import Hashable
 import pandas_flavor as pf
 import pandas as pd
 from janitor.errors import JanitorError
@@ -10,7 +10,7 @@ from janitor.utils import deprecated_alias
 @deprecated_alias(columns="column_names")
 def concatenate_columns(
     df: pd.DataFrame,
-    column_names: List[Hashable],
+    column_names: list[Hashable],
     new_column_name: Hashable,
     sep: str = "-",
     ignore_empty: bool = True,

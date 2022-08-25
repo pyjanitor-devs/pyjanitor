@@ -1,6 +1,6 @@
 import operator
 from enum import Enum
-from typing import Union, Any, Optional, Hashable
+from typing import Union, Any, Optional, Hashable, Tuple
 from janitor.functions.utils import _numba_utils, _KeepTypes
 
 import numpy as np
@@ -501,7 +501,7 @@ def _keep_output(keep: str, left_c: np.ndarray, right_c: np.ndarray):
 
 def _convert_to_numpy_array(
     left_c: np.ndarray, right_c: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Convert array to numpy array for use in numba
     """

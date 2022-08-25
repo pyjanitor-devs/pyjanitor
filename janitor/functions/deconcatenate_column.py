@@ -1,5 +1,6 @@
 """Implementation of deconcatenating columns."""
-from typing import Hashable, List, Optional, Tuple, Union
+from __future__ import annotations
+from typing import Hashable, Optional
 import pandas_flavor as pf
 import pandas as pd
 from janitor.errors import JanitorError
@@ -13,7 +14,7 @@ def deconcatenate_column(
     df: pd.DataFrame,
     column_name: Hashable,
     sep: Optional[str] = None,
-    new_column_names: Optional[Union[List[str], Tuple[str]]] = None,
+    new_column_names: Optional[list[str] | tuple[str]] = None,
     autoname: str = None,
     preserve_position: bool = False,
 ) -> pd.DataFrame:

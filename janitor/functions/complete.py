@@ -1,4 +1,5 @@
-from typing import Optional, Union, List, Tuple, Dict, Any
+from __future__ import annotations
+from typing import Optional, Any
 from pandas.core.common import apply_if_callable
 from pandas.core.construction import extract_array
 import pandas_flavor as pf
@@ -16,8 +17,8 @@ def complete(
     df: pd.DataFrame,
     *columns,
     sort: bool = False,
-    by: Optional[Union[list, str]] = None,
-    fill_value: Optional[Union[Dict, Any]] = None,
+    by: Optional[list | str] = None,
+    fill_value: Optional[dict | Any] = None,
     explicit: bool = True,
 ) -> pd.DataFrame:
     """
@@ -170,10 +171,10 @@ def complete(
 
 def _computations_complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]],
+    columns: list[list | tuple | dict | str],
     sort: bool,
-    by: Optional[Union[list, str]],
-    fill_value: Optional[Union[Dict, Any]],
+    by: Optional[list | str],
+    fill_value: Optional[dict | Any],
     explicit: bool,
 ) -> pd.DataFrame:
     """
@@ -427,10 +428,10 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
 
 def _data_checks_complete(
     df: pd.DataFrame,
-    columns: List[Union[List, Tuple, Dict, str]],
+    columns: list[list | tuple | dict | str],
     sort: Optional[bool],
-    by: Optional[Union[list, str]],
-    fill_value: Optional[Union[Dict, Any]],
+    by: Optional[list | str],
+    fill_value: Optional[dict | Any],
     explicit: bool,
 ):
     """

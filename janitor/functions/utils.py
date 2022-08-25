@@ -6,7 +6,7 @@ from enum import Enum
 from collections.abc import Callable as dispatch_callable
 import re
 import importlib
-from typing import Hashable, Iterable, List, Optional, Pattern, Union
+from typing import Hashable, Iterable, Optional, Pattern, Union
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
@@ -26,7 +26,7 @@ import functools
 
 def unionize_dataframe_categories(
     *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
-) -> List[pd.DataFrame]:
+) -> list[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
     each categorical column present, find all the possible categories across

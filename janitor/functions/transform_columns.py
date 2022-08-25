@@ -1,4 +1,5 @@
-from typing import Callable, Dict, Hashable, List, Optional, Tuple, Union
+from __future__ import annotations
+from typing import Callable, Hashable, Optional
 import pandas_flavor as pf
 import pandas as pd
 
@@ -121,11 +122,11 @@ def transform_column(
 @deprecated_alias(columns="column_names", new_names="new_column_names")
 def transform_columns(
     df: pd.DataFrame,
-    column_names: Union[List[str], Tuple[str]],
+    column_names: list[str] | tuple[str],
     function: Callable,
     suffix: Optional[str] = None,
     elementwise: bool = True,
-    new_column_names: Optional[Dict[str, str]] = None,
+    new_column_names: Optional[dict[str, str]] = None,
 ) -> pd.DataFrame:
     """Transform multiple columns through the same transformation.
 

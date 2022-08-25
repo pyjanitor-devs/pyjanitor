@@ -434,6 +434,7 @@ def _conditional_join_compute(
             keep,
             use_numba,
         )
+
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -954,24 +955,44 @@ def _multiple_conditional_join_le_lt(
             # ('start', 'ID', '<=') & ('end', 'ID', '>')
             # ('start', 'ID', '<=') & ('end', 'ID', '<')
             # finally unionize the outcome of the pairs
+            # this only works if there is no null in the != condition
+            # thanks to Hypothesis tests for pointing this out
             (left_on, right_on, op), *conditions = conditions
-            patch = (left_on, right_on, _JoinOperator.GREATER_THAN.value), (
-                left_on,
-                right_on,
-                _JoinOperator.LESS_THAN.value,
-            )
-            pairs.extend(patch)
-            first, middle, last = pairs
-            pairs = [(first, middle), (first, last)]
-            indices = [_numba_pair_le_lt(df, right, pair) for pair in pairs]
-            indices = [arr for arr in indices if arr is not None]
-            if not indices:
-                indices = None
-            elif len(indices) == 1:
-                indices = indices[0]
+            # check for nulls in the patch
+            # and follow this path, only if there are no nulls
+            if df[left_on].notna().all() & right[right_on].notna().all():
+                patch = (
+                    left_on,
+                    right_on,
+                    _JoinOperator.GREATER_THAN.value,
+                ), (
+                    left_on,
+                    right_on,
+                    _JoinOperator.LESS_THAN.value,
+                )
+                pairs.extend(patch)
+                first, middle, last = pairs
+                pairs = [(first, middle), (first, last)]
+                indices = [
+                    _numba_pair_le_lt(df, right, pair) for pair in pairs
+                ]
+                indices = [arr for arr in indices if arr is not None]
+                if not indices:
+                    indices = None
+                elif len(indices) == 1:
+                    indices = indices[0]
+                else:
+                    indices = zip(*indices)
+                    indices = map(np.concatenate, indices)
             else:
-                indices = zip(*indices)
-                indices = map(np.concatenate, indices)
+                indices = _generic_func_cond_join(
+                    df[left_on],
+                    right[right_on],
+                    op,
+                    multiple_conditions=False,
+                    keep="all",
+                    use_numba=True,
+                )
         else:
             indices = _numba_pair_le_lt(df, right, pairs)
     else:

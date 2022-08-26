@@ -19,6 +19,7 @@
 -   [INF] Set independent environment for building documentation. PR #1141 @Zeroto521
 -   [DOC] Add local documentation preview via github action artifact. PR #1149 @Zeroto521
 -   [ENH] Enable `encode_categorical` handle 2 (or more ) dimensions array. PR #1153 @Zeroto521
+-   [TST] Fix testcases failing on Window. Issue #1160 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

@@ -244,7 +244,9 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         if columns_to_select in df_columns:
             return [columns_to_select]
         # fix for Github Issue 1160
-        outcome = [fnmatch.fnmatchcase(column, columns_to_select) for column in df]
+        outcome = [
+            fnmatch.fnmatchcase(column, columns_to_select) for column in df
+        ]
         if not any(outcome):
             raise KeyError(f"No match was returned for '{columns_to_select}'.")
         return df.columns[outcome]

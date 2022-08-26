@@ -249,7 +249,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         ]
         if not any(outcome):
             raise KeyError(f"No match was returned for '{columns_to_select}'.")
-        return df_columns[outcome].tolist()
+        return df_columns[outcome]
 
     if is_datetime64_dtype(df_columns):
         timestamp = df_columns.get_loc(columns_to_select)

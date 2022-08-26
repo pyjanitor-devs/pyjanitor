@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import assume, given
+from hypothesis import assume, given, settings
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import (
@@ -76,6 +76,7 @@ def test_default_ndim(df):
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_default_length(df):
     """Raise ValueError if `default` length != len(df)."""
     assume(len(df) > 10)

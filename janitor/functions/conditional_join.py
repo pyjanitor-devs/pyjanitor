@@ -1,7 +1,6 @@
 import operator
 from enum import Enum
-from typing import Union, Any, Optional, Hashable
-from janitor.functions.utils import _numba_utils, _KeepTypes
+from typing import Union, Any, Optional, Hashable, Literal
 
 import numpy as np
 import pandas as pd
@@ -15,10 +14,10 @@ from pandas.core.dtypes.common import (
     is_string_dtype,
 )
 
-from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
+from janitor.functions.utils import _convert_to_numpy_array
 
 
 @pf.register_dataframe_method
@@ -26,29 +25,32 @@ def conditional_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
     *conditions,
-    how: str = "inner",
+    how: Literal["inner", "left", "right"] = "inner",
     sort_by_appearance: bool = False,
     df_columns: Optional[Any] = None,
     right_columns: Optional[Any] = None,
-    keep: str = "all",
+    keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
 ) -> pd.DataFrame:
     """
 
-    This is a convenience function that operates similarly to `pd.merge`,
+    The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,
     or a combination of equi and non-equi joins.
 
-    Join solely on equality are not supported.
+    Joins solely on equality are not supported.
 
     If the join is solely on equality, `pd.merge` function
     covers that; if you are interested in nearest joins, or rolling joins,
     then `pd.merge_asof` covers that.
-    There is also the IntervalIndex, which is usually more efficient
-    for range joins, especially if the intervals do not overlap.
+    There is also pandas' IntervalIndex, which is efficient for range joins,
+    especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+
+    For possible performance improvement, set `use_numba` to `True`,
+    if `numba` is installed.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -59,11 +61,6 @@ def conditional_join(
     operator is used to combine the results of the individual conditions.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
-
-    A binary search is used to get the relevant rows for non-equi joins;
-    this avoids a cartesian join, and makes the process less memory intensive.
-
-    For equi-joins, Pandas internal merge function is used.
 
     The join is done only on the columns.
     MultiIndex columns are not supported.
@@ -104,25 +101,15 @@ def conditional_join(
         7         1         3
         >>> df1.conditional_join(
         ...     df2,
-        ...     ("value_1", "value_2A", ">="),
-        ...     ("value_1", "value_2B", "<=")
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<")
         ... )
-            value_1  value_2A  value_2B
-        0         2         1         3
-        1         2         2         4
-        2         5         3         5
-        3         5         3         6
-        4         7         7         9
-        5         1         0         1
-        6         1         0         1
-        7         1         1         3
-        8         3         1         3
-        9         3         2         4
-        10        3         3         5
-        11        3         3         6
-        12        4         2         4
-        13        4         3         5
-        14        4         3         6
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         5
+        4        4         3         6
 
 
     :param df: A pandas DataFrame.
@@ -136,10 +123,10 @@ def conditional_join(
         of the individual conditions.
     :param how: Indicates the type of join to be performed.
         It can be one of `inner`, `left`, `right`.
-        Full join is not supported. Defaults to `inner`.
+        Full outer join is not supported. Defaults to `inner`.
     :param sort_by_appearance: Default is `False`.
-        This is useful for strictly non-equi joins,
-        where the user wants the original order maintained.
+        This is useful for scenarios where the user wants
+        the original order maintained.
         If True, values from `df` and `right`
         that meet the join condition will be returned
         in the final dataframe in the same order
@@ -152,7 +139,7 @@ def conditional_join(
         It is also possible to rename the output columns via a dictionary.
     :param keep: Choose whether to return the first match,
         last match or all matches. Default is `all`.
-    :param use_numba: Use numba to accelerate the computation.
+    :param use_numba: Use numba, if installed, to accelerate the computation.
         Default is `False`.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     """
@@ -181,16 +168,6 @@ class _JoinOperator(Enum):
     LESS_THAN_OR_EQUAL = "<="
     STRICTLY_EQUAL = "=="
     NOT_EQUAL = "!="
-
-
-class _JoinTypes(Enum):
-    """
-    List of join types for conditional_join.
-    """
-
-    INNER = "inner"
-    LEFT = "left"
-    RIGHT = "right"
 
 
 operator_map = {
@@ -294,9 +271,8 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    checker = {jointype.value for jointype in _JoinTypes}
-    if how not in checker:
-        raise ValueError(f"'how' should be one of {checker}.")
+    if how not in {"inner", "left", "right"}:
+        raise ValueError("'how' should be one of 'inner', 'left' or 'right'.")
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -310,9 +286,8 @@ def _conditional_join_preliminary_checks(
 
     check("keep", keep, [str])
 
-    checker = {jointype.value for jointype in _KeepTypes}
-    if keep not in checker:
-        raise ValueError(f"'keep' should be one of {checker}.")
+    if keep not in {"all", "first", "last"}:
+        raise ValueError("'keep' should be one of 'all', 'first', 'last'.")
 
     check("use_numba", use_numba, [bool])
 
@@ -449,6 +424,7 @@ def _conditional_join_compute(
             keep,
             use_numba,
         )
+
         if result is None:
             return _create_conditional_join_empty_frame(
                 df, right, how, df_columns, right_columns
@@ -461,7 +437,6 @@ def _conditional_join_compute(
             sort_by_appearance,
             df_columns,
             right_columns,
-            keep,
         )
 
     if eq_check:
@@ -483,93 +458,75 @@ def _conditional_join_compute(
         sort_by_appearance,
         df_columns,
         right_columns,
-        keep,
     )
 
 
-def _keep_output(keep: str, left_c: np.ndarray, right_c: np.ndarray):
+def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
     """return indices for left and right index based on the value of `keep`."""
-    if keep == _KeepTypes.ALL.value:
-        return left_c, right_c
-    grouped = pd.Series(right_c).groupby(left_c)
-    if keep == _KeepTypes.FIRST.value:
+    if keep == "all":
+        return left, right
+    grouped = pd.Series(right).groupby(left)
+    if keep == "first":
         grouped = grouped.min()
         return grouped.index, grouped.array
     grouped = grouped.max()
     return grouped.index, grouped.array
 
 
-def _convert_to_numpy_array(
-    left_c: np.ndarray, right_c: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Convert array to numpy array for use in numba
-    """
-    if is_extension_array_dtype(left_c):
-        numpy_dtype = left_c.dtype.numpy_dtype
-        left_c = left_c.to_numpy(dtype=numpy_dtype, copy=False)
-        right_c = right_c.to_numpy(dtype=numpy_dtype, copy=False)
-    elif isinstance(left_c, (ABCPandasArray, ABCExtensionArray)):
-        left_c = left_c.to_numpy(copy=False)
-        right_c = right_c.to_numpy(copy=False)
-    return left_c, right_c
-
-
 def _less_than_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
+    left: pd.Series,
+    right: pd.Series,
     strict: bool,
     keep: str,
-    use_numba: bool,
 ) -> tuple:
     """
-    Use binary search to get indices where left_c
-    is less than or equal to right_c.
+    Use binary search to get indices where left
+    is less than or equal to right.
 
     If strict is True, then only indices
-    where `left_c` is less than
-    (but not equal to) `right_c` are returned.
+    where `left` is less than
+    (but not equal to) `right` are returned.
 
     A tuple of integer indexes
-    for left_c and right_c is returned.
+    for left and right is returned.
     """
 
     # no point going through all the hassle
-    if left_c.min() > right_c.max():
+    if left.min() > right.max():
         return None
 
-    any_nulls = pd.isna(left_c)
+    any_nulls = pd.isna(left)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        left_c = left_c[~any_nulls]
-    any_nulls = pd.isna(right_c)
+        left = left[~any_nulls]
+    any_nulls = pd.isna(right)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        right_c = right_c[~any_nulls]
+        right = right[~any_nulls]
     any_nulls = any_nulls.any()
-    right_is_sorted = right_c.is_monotonic_increasing
+    right_is_sorted = right.is_monotonic_increasing
     if not right_is_sorted:
-        right_c = right_c.sort_values(kind="stable")
+        right = right.sort_values(kind="stable")
 
-    left_index = left_c.index._values
-    left_c = left_c._values
-    right_index = right_c.index._values
-    right_c = right_c._values
+    left_index = left.index._values
+    left = left._values
+    right_index = right.index._values
+    right = right._values
 
-    search_indices = right_c.searchsorted(left_c, side="left")
+    search_indices = right.searchsorted(left, side="left")
 
     # if any of the positions in `search_indices`
     # is equal to the length of `right_keys`
-    # that means the respective position in `left_c`
-    # has no values from `right_c` that are less than
+    # that means the respective position in `left`
+    # has no values from `right` that are less than
     # or equal, and should therefore be discarded
-    len_right = right_c.size
+    len_right = right.size
     rows_equal = search_indices == len_right
 
     if rows_equal.any():
-        left_c = left_c[~rows_equal]
+        left = left[~rows_equal]
         left_index = left_index[~rows_equal]
         search_indices = search_indices[~rows_equal]
 
@@ -577,106 +534,102 @@ def _less_than_indices(
     # shift to the right to the immediate next position
     # that is not equal
     if strict:
-        rows_equal = right_c[search_indices]
-        rows_equal = left_c == rows_equal
+        rows_equal = right[search_indices]
+        rows_equal = left == rows_equal
         # replace positions where rows are equal
         # with positions from searchsorted('right')
         # positions from searchsorted('right') will never
         # be equal and will be the furthermost in terms of position
-        # example : right_c -> [2, 2, 2, 3], and we need
+        # example : right -> [2, 2, 2, 3], and we need
         # positions where values are not equal for 2;
         # the furthermost will be 3, and searchsorted('right')
         # will return position 3.
         if rows_equal.any():
-            replacements = right_c.searchsorted(left_c, side="right")
+            replacements = right.searchsorted(left, side="right")
             # now we can safely replace values
             # with strictly less than positions
             search_indices = np.where(rows_equal, replacements, search_indices)
         # check again if any of the values
-        # have become equal to length of right_c
+        # have become equal to length of right
         # and get rid of them
         rows_equal = search_indices == len_right
 
         if rows_equal.any():
-            left_c = left_c[~rows_equal]
+            left = left[~rows_equal]
             left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
         if not search_indices.size:
             return None
-    if right_is_sorted and (keep == _KeepTypes.FIRST.value):
+    if right_is_sorted and (keep == "first"):
         if any_nulls:
             return left_index, right_index[search_indices]
         return left_index, search_indices
-    if use_numba & (keep != _KeepTypes.ALL.value):
-        right_c = _numba_utils(search_indices, right_index, len_right, keep)
-        return left_index, right_c
-    right_c = [right_index[ind:len_right] for ind in search_indices]
-    if keep == _KeepTypes.FIRST.value:
-        right_c = [arr.min() for arr in right_c]
-        return left_index, right_c
-    if keep == _KeepTypes.LAST.value:
-        right_c = [arr.max() for arr in right_c]
-        return left_index, right_c
-    right_c = np.concatenate(right_c)
-    left_c = np.repeat(left_index, len_right - search_indices)
-    return left_c, right_c
+    right = [right_index[ind:len_right] for ind in search_indices]
+    if keep == "first":
+        right = [arr.min() for arr in right]
+        return left_index, right
+    if keep == "last":
+        right = [arr.max() for arr in right]
+        return left_index, right
+    right = np.concatenate(right)
+    left = np.repeat(left_index, len_right - search_indices)
+    return left, right
 
 
 def _greater_than_indices(
-    left_c: pd.Series,
-    right_c: pd.Series,
+    left: pd.Series,
+    right: pd.Series,
     strict: bool,
     multiple_conditions: bool,
     keep: str,
-    use_numba: bool,
 ) -> tuple:
     """
-    Use binary search to get indices where left_c
-    is greater than or equal to right_c.
+    Use binary search to get indices where left
+    is greater than or equal to right.
 
     If strict is True, then only indices
-    where `left_c` is greater than
-    (but not equal to) `right_c` are returned.
+    where `left` is greater than
+    (but not equal to) `right` are returned.
 
     if multiple_conditions is False, a tuple of integer indexes
-    for left_c and right_c is returned;
-    else a tuple of the index for left_c, right_c, as well
-    as the positions of left_c in right_c is returned.
+    for left and right is returned;
+    else a tuple of the index for left, right, as well
+    as the positions of left in right is returned.
     """
 
     # quick break, avoiding the hassle
-    if left_c.max() < right_c.min():
+    if left.max() < right.min():
         return None
 
-    any_nulls = pd.isna(left_c)
+    any_nulls = pd.isna(left)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        left_c = left_c[~any_nulls]
-    any_nulls = pd.isna(right_c)
+        left = left[~any_nulls]
+    any_nulls = pd.isna(right)
     if any_nulls.all():
         return None
     if any_nulls.any():
-        right_c = right_c[~any_nulls]
+        right = right[~any_nulls]
     any_nulls = any_nulls.any()
-    right_is_sorted = right_c.is_monotonic_increasing
+    right_is_sorted = right.is_monotonic_increasing
     if not right_is_sorted:
-        right_c = right_c.sort_values(kind="stable")
+        right = right.sort_values(kind="stable")
 
-    left_index = left_c.index._values
-    left_c = left_c._values
-    right_index = right_c.index._values
-    right_c = right_c._values
+    left_index = left.index._values
+    left = left._values
+    right_index = right.index._values
+    right = right._values
 
-    search_indices = right_c.searchsorted(left_c, side="right")
+    search_indices = right.searchsorted(left, side="right")
     # if any of the positions in `search_indices`
     # is equal to 0 (less than 1), it implies that
-    # left_c[position] is not greater than any value
-    # in right_c
+    # left[position] is not greater than any value
+    # in right
     rows_equal = search_indices < 1
     if rows_equal.any():
-        left_c = left_c[~rows_equal]
+        left = left[~rows_equal]
         left_index = left_index[~rows_equal]
         search_indices = search_indices[~rows_equal]
 
@@ -684,19 +637,19 @@ def _greater_than_indices(
     # shift downwards to the immediate next position
     # that is not equal
     if strict:
-        rows_equal = right_c[search_indices - 1]
-        rows_equal = left_c == rows_equal
+        rows_equal = right[search_indices - 1]
+        rows_equal = left == rows_equal
         # replace positions where rows are equal with
         # searchsorted('left');
         # however there can be scenarios where positions
         # from searchsorted('left') would still be equal;
         # in that case, we shift down by 1
         if rows_equal.any():
-            replacements = right_c.searchsorted(left_c, side="left")
+            replacements = right.searchsorted(left, side="left")
             # return replacements
-            # `left` might result in values equal to len right_c
+            # `left` might result in values equal to len right
             replacements = np.where(
-                replacements == right_c.size, replacements - 1, replacements
+                replacements == right.size, replacements - 1, replacements
             )
             # now we can safely replace values
             # with strictly greater than positions
@@ -706,7 +659,7 @@ def _greater_than_indices(
         # with side='right' should be 1
         rows_equal = search_indices < 1
         if rows_equal.any():
-            left_c = left_c[~rows_equal]
+            left = left[~rows_equal]
             left_index = left_index[~rows_equal]
             search_indices = search_indices[~rows_equal]
 
@@ -715,36 +668,31 @@ def _greater_than_indices(
 
     if multiple_conditions:
         return left_index, right_index, search_indices
-    if right_is_sorted and (keep == _KeepTypes.LAST.value):
+    if right_is_sorted and (keep == "last"):
         if any_nulls:
             return left_index, right_index[search_indices - 1]
         return left_index, search_indices - 1
-    if use_numba & (keep != _KeepTypes.ALL.value):
-        right_c = _numba_utils(search_indices, right_index, 0, keep)
-        return left_index, right_c
-    right_c = [right_index[:ind] for ind in search_indices]
-    if keep == _KeepTypes.FIRST.value:
-        right_c = [arr.min() for arr in right_c]
-        return left_index, right_c
-    if keep == _KeepTypes.LAST.value:
-        right_c = [arr.max() for arr in right_c]
-        return left_index, right_c
-    right_c = np.concatenate(right_c)
-    left_c = np.repeat(left_index, search_indices)
-    return left_c, right_c
+    right = [right_index[:ind] for ind in search_indices]
+    if keep == "first":
+        right = [arr.min() for arr in right]
+        return left_index, right
+    if keep == "last":
+        right = [arr.max() for arr in right]
+        return left_index, right
+    right = np.concatenate(right)
+    left = np.repeat(left_index, search_indices)
+    return left, right
 
 
-def _not_equal_indices(
-    left_c: pd.Series, right_c: pd.Series, keep: str, use_numba: bool
-) -> tuple:
+def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
     """
     Use binary search to get indices where
-    `left_c` is exactly  not equal to `right_c`.
+    `left` is exactly  not equal to `right`.
 
     It is a combination of strictly less than
     and strictly greater than indices.
 
-    A tuple of integer indexes for left_c and right_c
+    A tuple of integer indexes for left and right
     is returned.
     """
 
@@ -755,12 +703,12 @@ def _not_equal_indices(
     r1_nulls = dummy
     l2_nulls = dummy
     r2_nulls = dummy
-    any_left_nulls = left_c.isna()
-    any_right_nulls = right_c.isna()
+    any_left_nulls = left.isna()
+    any_right_nulls = right.isna()
     if any_left_nulls.any():
-        l1_nulls = left_c.index[any_left_nulls.array]
+        l1_nulls = left.index[any_left_nulls.array]
         l1_nulls = l1_nulls.to_numpy(copy=False)
-        r1_nulls = right_c.index
+        r1_nulls = right.index
         # avoid NAN duplicates
         if any_right_nulls.any():
             r1_nulls = r1_nulls[~any_right_nulls.array]
@@ -772,9 +720,9 @@ def _not_equal_indices(
         if nulls_count > 1:
             r1_nulls = np.repeat(r1_nulls, nulls_count)
     if any_right_nulls.any():
-        r2_nulls = right_c.index[any_right_nulls.array]
+        r2_nulls = right.index[any_right_nulls.array]
         r2_nulls = r2_nulls.to_numpy(copy=False)
-        l2_nulls = left_c.index
+        l2_nulls = left.index
         nulls_count = r2_nulls.size
         # blow up nulls to match length of left
         r2_nulls = np.tile(r2_nulls, l2_nulls.size)
@@ -785,9 +733,7 @@ def _not_equal_indices(
     l1_nulls = np.concatenate([l1_nulls, l2_nulls])
     r1_nulls = np.concatenate([r1_nulls, r2_nulls])
 
-    outcome = _less_than_indices(
-        left_c, right_c, strict=True, keep="all", use_numba=use_numba
-    )
+    outcome = _less_than_indices(left, right, strict=True, keep="all")
 
     if outcome is None:
         lt_left = dummy
@@ -796,12 +742,7 @@ def _not_equal_indices(
         lt_left, lt_right = outcome
 
     outcome = _greater_than_indices(
-        left_c,
-        right_c,
-        strict=True,
-        multiple_conditions=False,
-        keep="all",
-        use_numba=use_numba,
+        left, right, strict=True, multiple_conditions=False, keep="all"
     )
 
     if outcome is None:
@@ -810,17 +751,17 @@ def _not_equal_indices(
     else:
         gt_left, gt_right = outcome
 
-    left_c = np.concatenate([lt_left, gt_left, l1_nulls])
-    right_c = np.concatenate([lt_right, gt_right, r1_nulls])
+    left = np.concatenate([lt_left, gt_left, l1_nulls])
+    right = np.concatenate([lt_right, gt_right, r1_nulls])
 
-    if (not left_c.size) & (not right_c.size):
+    if (not left.size) & (not right.size):
         return None
-    return _keep_output(keep, left_c, right_c)
+    return _keep_output(keep, left, right)
 
 
 def _generic_func_cond_join(
-    left_c: pd.Series,
-    right_c: pd.Series,
+    left: pd.Series,
+    right: pd.Series,
     op: str,
     multiple_conditions: bool,
     keep: str,
@@ -840,14 +781,25 @@ def _generic_func_cond_join(
     }:
         strict = True
 
+    if use_numba:
+        if op in less_than_join_types:
+            op_code = 1
+        elif op in greater_than_join_types:
+            op_code = 0
+        else:
+            op_code = -1
+        from janitor.functions._numba import _numba_single_join
+
+        return _numba_single_join(left, right, strict, keep, op_code)
+
     if op in less_than_join_types:
-        return _less_than_indices(left_c, right_c, strict, keep, use_numba)
+        return _less_than_indices(left, right, strict, keep)
     if op in greater_than_join_types:
         return _greater_than_indices(
-            left_c, right_c, strict, multiple_conditions, keep, use_numba
+            left, right, strict, multiple_conditions, keep
         )
     if op == _JoinOperator.NOT_EQUAL.value:
-        return _not_equal_indices(left_c, right_c, keep, use_numba)
+        return _not_equal_indices(left, right, keep)
 
 
 def _generate_indices(
@@ -863,11 +815,11 @@ def _generate_indices(
     """
 
     for condition in conditions:
-        left_c, right_c, op = condition
-        left_c = left_c._values[left_index]
-        right_c = right_c._values[right_index]
+        left, right, op = condition
+        left = left._values[left_index]
+        right = right._values[right_index]
         op = operator_map[op]
-        mask = op(left_c, right_c)
+        mask = op(left, right)
         if not mask.any():
             return None
         if is_extension_array_dtype(mask):
@@ -901,9 +853,7 @@ def _multiple_conditional_join_ne(
     left_on, right_on, _ = first
 
     # get indices from the first condition
-    indices = _not_equal_indices(
-        df[left_on], right[right_on], keep="all", use_numba=False
-    )
+    indices = _not_equal_indices(df[left_on], right[right_on], keep="all")
     if indices is None:
         return None
 
@@ -1116,7 +1066,6 @@ def _range_indices(
         strict,
         multiple_conditions=True,
         keep="all",
-        use_numba=False,
     )
 
     if outcome is None:
@@ -1233,7 +1182,6 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
     ]
     header.extend(columns)
     right.columns = pd.MultiIndex.from_arrays(header)
-    header = None
     return df, right
 
 
@@ -1257,14 +1205,14 @@ def _create_conditional_join_empty_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if how == _JoinTypes.INNER.value:
+    if how == "inner":
         df = df.dtypes.to_dict()
         right = right.dtypes.to_dict()
         df = {**df, **right}
         df = {key: pd.Series([], dtype=value) for key, value in df.items()}
         return pd.DataFrame(df, copy=False)
 
-    if how == _JoinTypes.LEFT.value:
+    if how == "left":
         right = right.dtypes.to_dict()
         right = {
             key: float if dtype.kind == "i" else dtype
@@ -1305,13 +1253,12 @@ def _create_conditional_join_frame(
     sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
-    keep: str,
 ):
     """
     Create final dataframe for conditional join,
     if there are matches.
     """
-    if sort_by_appearance and (keep == _KeepTypes.ALL.value):
+    if sort_by_appearance:
         sorter = np.lexsort((right_index, left_index))
         right_index = right_index[sorter]
         left_index = left_index[sorter]
@@ -1325,7 +1272,7 @@ def _create_conditional_join_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if how == _JoinTypes.INNER.value:
+    if how == "inner":
         df = {key: value._values[left_index] for key, value in df.items()}
         right = {
             key: value._values[right_index] for key, value in right.items()
@@ -1334,7 +1281,7 @@ def _create_conditional_join_frame(
 
     # dirty tests show slight speed gain when copy=False
     # which is achievable only within pd.merge
-    if how == _JoinTypes.LEFT.value:
+    if how == "left":
         right = {
             key: value._values[right_index] for key, value in right.items()
         }

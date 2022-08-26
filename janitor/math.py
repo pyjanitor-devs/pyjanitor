@@ -301,9 +301,9 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
         >>> import janitor
         >>> df = pd.DataFrame({"numbers": [0, 4, 0, 1, 2, 1, 1, 3]})
         >>> x, y = df["numbers"].ecdf()
-        >>> x
-        array([0, 0, 1, 1, 1, 2, 3, 4], dtype=int64)
-        >>> y
+        >>> x  # doctest: +SKIP
+        array([0, 0, 1, 1, 1, 2, 3, 4])
+        >>> y  
         array([0.125, 0.25 , 0.375, 0.5  , 0.625, 0.75 , 0.875, 1.   ])
 
     :param s: A pandas series. `dtype` should be numeric.

@@ -57,20 +57,21 @@ def change_type(
     :raises ValueError: If unknown option provided for
         `ignore_exception`.
     """
+
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)
     elif ignore_exception == "keep_values":
         df[column_name] = df[column_name].astype(dtype, errors="ignore")
     elif ignore_exception == "fillna":
-
-        def convert(x, dtype):
-            """Casts item `x` to `dtype` or None if not possible."""
-            try:
-                return dtype(x)
-            except ValueError:
-                return None
-
-        df[column_name] = df[column_name].apply(lambda x: convert(x, dtype))
+        df[column_name] = df[column_name].apply(lambda x: _convert(x, dtype))
     else:
         raise ValueError("Unknown option for ignore_exception")
     return df
+
+
+def _convert(x, dtype):
+    """Casts item `x` to `dtype` or None if not possible."""
+    try:
+        return dtype(x)
+    except ValueError:
+        return None

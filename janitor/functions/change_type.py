@@ -2,6 +2,7 @@ from typing import Hashable
 
 import pandas as pd
 import pandas_flavor as pf
+
 from janitor.utils import deprecated_alias
 
 
@@ -67,6 +68,7 @@ def change_type(
         df[column_name] = df[column_name].apply(lambda x: _convert(x, dtype))
     else:
         raise ValueError("Unknown option for ignore_exception")
+
     return df
 
 

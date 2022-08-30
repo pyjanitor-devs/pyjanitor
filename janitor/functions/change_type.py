@@ -1,7 +1,7 @@
 from typing import Hashable
+
 import pandas as pd
 import pandas_flavor as pf
-
 from janitor.utils import deprecated_alias
 
 

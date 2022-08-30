@@ -20,7 +20,7 @@
 -   [DOC] Add local documentation preview via github action artifact. PR #1149 @Zeroto521
 -   [ENH] Enable `encode_categorical` handle 2 (or more ) dimensions array. PR #1153 @Zeroto521
 -   [INF] Cancel old workflow runs via Github Action `concurrency`. PR #1161 @Zeroto521
--   [ENH] Faster computation for a single non-equi join, with a numba engine. Issue #1102 @samukweku
+-   [ENH] Faster computation for non-equi join, with a numba engine. Issue #1102 @samukweku
 
 ## [v0.23.1] - 2022-05-03
 

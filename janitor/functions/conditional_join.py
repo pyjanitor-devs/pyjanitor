@@ -1150,37 +1150,21 @@ def _range_indices(
     right_c = right.loc[right_index, right_on]
     left_c = df.loc[left_index, left_on]
 
-    dupes = right_c.duplicated(keep="first")
-    ext_arr = is_extension_array_dtype(left_c)
     left_c = left_c._values
     right_c = right_c._values
     left_c, right_c = _convert_to_numpy_array(left_c, right_c)
-    # use position, not label
-    uniqs_index = np.arange(right_c.size)
-    if dupes.any():
-        uniqs_index = uniqs_index[~dupes]
-        right_c = right_c[~dupes]
-
     op = operator_map[op]
-    pos = np.copy(search_indices)
-    counter = np.arange(left_index.size)
+    pos = np.empty(left_c.size, dtype=np.intp)
 
-    for ind in range(uniqs_index.size):
-        if not counter.size:
-            break
-        keep_rows = op(left_c, right_c[ind])
-        if not keep_rows.any():
-            continue
-        # get the index positions where left_c is </<= right_c
-        # that minimum position combined with the equivalent position
-        # from search_indices becomes our search space
-        # for the equivalent left_c index
-        pos[counter[keep_rows]] = uniqs_index[ind]
-        counter = counter[~keep_rows]
-        left_c = left_c[~keep_rows]
+    # better served in a compiled environment
+    # where we can break early
+    # parallelise the operation, as well as
+    # avoid the restrictive fixed size approach of numpy
+    # which isnt particularly helpful in a for loop
+    for ind in range(left_c.size):
+        out = op(left_c[ind], right_c)
+        pos[ind] = np.argmax(out)
 
-    dupes = None
-    uniqs_index = None
     # no point searching within (a, b)
     # if a == b
     # since range(a, b) yields none
@@ -1209,6 +1193,7 @@ def _range_indices(
     # while still ensuring correctness
     left_c = df[left_on]._values[left_index]
     right_c = right[right_on]._values[right_index]
+    ext_arr = is_extension_array_dtype(left_c)
 
     mask = op(left_c, right_c)
 

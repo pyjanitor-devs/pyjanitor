@@ -58,6 +58,7 @@ def change_type(
         `ignore_exception`.
     """
 
+    df = df.copy()  # avoid mutating the original DataFrame
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)
     elif ignore_exception == "keep_values":

@@ -68,9 +68,7 @@ def change_type(
         if isinstance(column_name, Hashable):
             column_name = [column_name]
 
-        df[column_name] = df[column_name].apply(
-            lambda s: s.map(lambda x: _convert(x, dtype))
-        )
+        df[column_name] = df[column_name].applymap(_convert, dtype=dtype)
     else:
         raise ValueError("Unknown option for ignore_exception")
     return df

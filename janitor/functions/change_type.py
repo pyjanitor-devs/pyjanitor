@@ -72,7 +72,7 @@ def change_type(
     return df
 
 
-def _convert(x: pd.Series, dtype: type) -> pd.Series:
+def _convert(x, dtype: type):
     """Casts item `x` to `dtype` or None if not possible."""
 
     try:

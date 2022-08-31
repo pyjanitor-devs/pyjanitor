@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from typing import Hashable
+
 import pandas as pd
 import pandas_flavor as pf
 
@@ -9,7 +12,7 @@ from janitor.utils import deprecated_alias
 @deprecated_alias(column="column_name")
 def change_type(
     df: pd.DataFrame,
-    column_name: Hashable,
+    column_name: Hashable | list[Hashable] | pd.Index,
     dtype: type,
     ignore_exception: bool = False,
 ) -> pd.DataFrame:
@@ -49,7 +52,7 @@ def change_type(
         2    2   1.0
 
     :param df: A pandas DataFrame.
-    :param column_name: A column in the dataframe.
+    :param column_name: The column(s) in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
     :param ignore_exception: one of `{False, "fillna", "keep_values"}`.

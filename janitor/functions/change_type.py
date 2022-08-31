@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Hashable
+from typing import Any, Hashable
 
 import pandas as pd
 import pandas_flavor as pf
@@ -65,15 +65,21 @@ def change_type(
     elif ignore_exception == "keep_values":
         df[column_name] = df[column_name].astype(dtype, errors="ignore")
     elif ignore_exception == "fillna":
+        if isinstance(column_name, Hashable):
+            column_name = [column_name]
 
-        def convert(x, dtype):
-            """Casts item `x` to `dtype` or None if not possible."""
-            try:
-                return dtype(x)
-            except ValueError:
-                return None
-
-        df[column_name] = df[column_name].apply(lambda x: convert(x, dtype))
+        df[column_name] = df[column_name].apply(
+            lambda s: s.map(lambda x: _convert(x, dtype))
+        )
     else:
         raise ValueError("Unknown option for ignore_exception")
     return df
+
+
+def _convert(x: Any, dtype: type) -> Any:
+    """Casts item `x` to `dtype` or None if not possible."""
+
+    try:
+        return dtype(x)
+    except ValueError:
+        return None

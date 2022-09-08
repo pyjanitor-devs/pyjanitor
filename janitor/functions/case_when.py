@@ -1,14 +1,17 @@
 from itertools import count
 from pandas.core.common import apply_if_callable
-from pandas.api.types import is_list_like
+from typing import Any, Optional
 import pandas_flavor as pf
 import pandas as pd
+from pandas.core.dtypes.inference import is_array_like
 
 from janitor.utils import check
 
 
 @pf.register_dataframe_method
-def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
+def case_when(
+    df: pd.DataFrame, *args, default: Optional[Any] = 0, column_name: str
+) -> pd.DataFrame:
     """
     Create a column based on a condition or multiple conditions.
 
@@ -33,8 +36,8 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         >>> df.case_when(
         ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a,
         ...     (df.b == 0) & (df.a == 0), "x",
-        ...     df.c,
-        ...     column_name="value",
+        ...     default = df.c,
+        ...     column_name = "value",
         ... )
             a    b     c value
         0   0    0     6     x
@@ -90,7 +93,7 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
     :param df: A pandas DataFrame.
     :param args: Variable argument of conditions and expected values.
         Takes the form
-        `condition0`, `value0`, `condition1`, `value1`, ..., `default`.
+        `condition0`, `value0`, `condition1`, `value1`, ... .
         `condition` can be a 1-D boolean array, a callable, or a string.
         If `condition` is a callable, it should evaluate
         to a 1-D boolean array. The array should have the same length
@@ -99,26 +102,51 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
         `result` can be a scalar, a 1-D array, or a callable.
         If `result` is a callable, it should evaluate to a 1-D array.
         For a 1-D array, it should have the same length as the DataFrame.
-        The `default` argument applies if none of `condition0`,
-        `condition1`, ..., evaluates to `True`.
-        Value can be a scalar, a callable, or a 1-D array. if `default` is a
-        callable, it should evaluate to a 1-D array.
+    :param default: scalar, 1-D array or callable.
+        If callable, it should evaluate to a 1-D array.
         The 1-D array should be the same length as the DataFrame.
+        The element inserted in the output when all conditions
+        evaluate to False. Default is 0.
     :param column_name: Name of column to assign results to. A new column
         is created, if it does not already exist in the DataFrame.
-    :raises ValueError: If the condition fails to evaluate.
     :returns: A pandas DataFrame.
     """
-    conditions, targets, default = _case_when_checks(df, args, column_name)
+    check("column_name", column_name, [str])
+    default = if_else(df, args, default)
+    return df.assign(**{column_name: default})
 
-    if len(conditions) == 1:
-        default = default.mask(conditions[0], targets[0])
-        return df.assign(**{column_name: default})
 
+def if_else(df: pd.DataFrame, args, default: Optional[Any]) -> pd.Series:
+    """
+    Evaluates conditions against values;
+    useful as a standalone for use within Pandas' assign.
+
+    :param df: A pandas DataFrame.
+    :param args: Variable argument of conditions and expected values.
+        Takes the form
+        `condition0`, `value0`, `condition1`, `value1`, ... .
+        `condition` can be a 1-D boolean array, a callable, or a string.
+        If `condition` is a callable, it should evaluate
+        to a 1-D boolean array. The array should have the same length
+        as the DataFrame. If it is a string, it is computed on the dataframe,
+        via `df.eval`, and should return a 1-D boolean array.
+        `result` can be a scalar, a 1-D array, or a callable.
+        If `result` is a callable, it should evaluate to a 1-D array.
+        For a 1-D array, it should have the same length as the DataFrame.
+    :param default: scalar, 1-D array or callable.
+        If callable, it should evaluate to a 1-D array.
+        The 1-D array should be the same length as the DataFrame.
+        The element inserted in the output when all conditions
+        evaluate to False. Default is 0.
+    :raises ValueError: If the condition fails to evaluate.
+    :returns: A pandas Series.
+    """
+
+    booleans, replacements, default = _case_when_checks(df, args, default)
     # ensures value assignment is on a first come basis
-    conditions = conditions[::-1]
-    targets = targets[::-1]
-    for condition, value, index in zip(conditions, targets, count()):
+    booleans = booleans[::-1]
+    replacements = replacements[::-1]
+    for condition, value, index in zip(booleans, replacements, count()):
         try:
             default = default.mask(condition, value)
         # error `feedoff` idea from SO
@@ -128,71 +156,79 @@ def case_when(df: pd.DataFrame, *args, column_name: str) -> pd.DataFrame:
                 f"condition{index} and value{index} failed to evaluate. "
                 f"Original error message: {e}"
             ) from e
+    return default
 
-    return df.assign(**{column_name: default})
 
-
-def _case_when_checks(df: pd.DataFrame, args, column_name):
+def _case_when_checks(
+    df: pd.DataFrame, args, default
+) -> tuple[list, list, pd.Series]:
     """
     Preliminary checks on the case_when function.
     """
-    if len(args) < 3:
+    if len(args) < 2:
         raise ValueError(
-            "At least three arguments are required for the `args` parameter."
+            "At least two arguments are required for the `args` parameter"
         )
-    if len(args) % 2 != 1:
-        raise ValueError(
-            "It seems the `default` argument is missing from the variable "
-            "`args` parameter."
-        )
-
-    check("column_name", column_name, [str])
-
-    *args, default = args
 
     booleans = []
     replacements = []
     for index, value in enumerate(args):
-        if index % 2 == 0:
-            booleans.append(value)
-        else:
+        if index % 2:
             replacements.append(value)
+        else:
+            booleans.append(value)
+    if len(booleans) != len(replacements):
+        raise ValueError(
+            "The number of conditions and values do not match. "
+            f"There are {len(booleans)} conditions and {len(replacements)} "
+            "values."
+        )
 
-    conditions = []
-    for condition in booleans:
-        if callable(condition):
-            condition = apply_if_callable(condition, df)
-        elif isinstance(condition, str):
-            condition = df.eval(condition)
-        conditions.append(condition)
+    booleans = [
+        apply_if_callable(condition, df)
+        if callable(condition)
+        else df.eval(condition)
+        if isinstance(condition, str)
+        else condition
+        for condition in booleans
+    ]
 
-    targets = []
-    for replacement in replacements:
-        if callable(replacement):
-            replacement = apply_if_callable(replacement, df)
-        targets.append(replacement)
+    replacements = [
+        apply_if_callable(replacement, df)
+        if callable(replacement)
+        else replacement
+        for replacement in replacements
+    ]
 
     if callable(default):
         default = apply_if_callable(default, df)
-    if not is_list_like(default):
+    if pd.api.types.is_scalar(default):
         default = pd.Series([default]).repeat(len(df))
-        default.index = df.index
-    if not hasattr(default, "shape"):
-        default = pd.Series([*default])
+    if not is_array_like(default):
+        raise TypeError(
+            "The argument for the `default` parameter "
+            "should evaluate to an array-like object, "
+            f"instead got {type(default)}"
+        )
     if isinstance(default, pd.Index):
         arr_ndim = default.nlevels
     else:
         arr_ndim = default.ndim
     if arr_ndim != 1:
         raise ValueError(
-            "The `default` argument should either be a 1-D array, a scalar, "
-            "or a callable that can evaluate to a 1-D array."
+            f"The argument for the `default` parameter "
+            "should evaluate to a 1-D array, "
+            f"instead got dimension of length {arr_ndim}"
+        )
+    if len(default) != len(df):
+        raise ValueError(
+            f"The length of the argument for the `default` parameter "
+            "is {len(default)}, "
+            "which is different from the length of the dataframe, "
+            f"{len(df)}"
         )
     if not isinstance(default, pd.Series):
         default = pd.Series(default)
-    if default.size != len(df):
-        raise ValueError(
-            "The length of the `default` argument should be equal to the "
-            "length of the DataFrame."
-        )
-    return conditions, targets, default
+    default.index = df.index
+
+    return booleans, replacements, default

@@ -25,19 +25,19 @@ def concatenate_columns(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": [1, 3, 5], "b": list("xyz")})
+        >>> df = pd.DataFrame({"a": [1, pd.NA, 5], "b": list("xyz")})
         >>> df
-           a  b
-        0  1  x
-        1  3  y
-        2  5  z
+           a     b
+        0  1     x
+        1  <NA>  y
+        2  5     z
         >>> df.concatenate_columns(
         ...     column_names=["a", "b"], new_column_name="m",
         ... )
-           a  b    m
-        0  1  x  1-x
-        1  3  y  3-y
-        2  5  z  5-z
+           a     b  m
+        0  <NA>  x  x
+        1  3     y  3-y
+        2  5     z  5-z
 
     :param df: A pandas DataFrame.
     :param column_names: A list of columns to concatenate together.
@@ -52,7 +52,10 @@ def concatenate_columns(
         raise JanitorError("At least two columns must be specified")
 
     df[new_column_name] = (
-        df[column_names].astype(str).fillna("").agg(sep.join, axis=1)
+        df[column_names]
+        .astype(str)
+        .replace(["NaT", "nan", "<NA>"], "")
+        .agg(sep.join, axis=1)
     )
 
     if ignore_empty:

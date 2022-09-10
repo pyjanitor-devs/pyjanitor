@@ -1091,13 +1091,13 @@ def _final_frame_longer(
     if (names_transform is not None) & (outcome is not None):
         if isinstance(names_transform, dict):
             outcome = {
-                key: arr.astype(names_transform[key])
+                key: arr.astype(names_transform[key], copy=False)
                 for key, arr in outcome.items()
                 if key in names_transform
             }
         else:
             outcome = {
-                key: arr.astype(names_transform)
+                key: arr.astype(names_transform, copy=False)
                 for key, arr in outcome.items()
             }
     if outcome is not None:
@@ -1105,14 +1105,13 @@ def _final_frame_longer(
             name: arr._values.repeat(len_index)
             for name, arr in outcome.items()
         }
-    if dropna and not names_to:
+    if dropna:
         if len(values) == 1:
             key = next(iter(values))
             any_nulls = pd.isna(values[key])
         else:
             any_nulls = [pd.isna(arr) for _, arr in values.items()]
-            bools = np.equal.reduce(any_nulls)
-            any_nulls = np.where(bools, any_nulls[0], False)
+            any_nulls = np.logical_and.reduce(any_nulls)
         if any_nulls.any():
             values = {name: arr[~any_nulls] for name, arr in values.items()}
             indexer = indexer[~any_nulls]
@@ -1122,7 +1121,6 @@ def _final_frame_longer(
                 }
 
     any_nulls = None
-    bools = None
 
     df_index = df.index[indexer]
     if index:
@@ -1145,8 +1143,7 @@ def _final_frame_longer(
     df_index = None
 
     if sort_by_appearance:
-        indexer = indexer.argsort(kind="stable")
-        df = df.take(indexer)
+        df = df.sort_index()
 
     if ignore_index:
         df.index = range(len(df))

@@ -95,7 +95,11 @@ def case_when(
 
     ```py
     from janitor.case_when import if_else
-    df.assign(var1 = if_else(...), var2 = if_else(...), ...)
+    df.assign(
+        var1 = if_else(args, default),
+        var2 = if_else(args, default),
+        # more assignments
+        )
     ```
 
     :param df: A pandas DataFrame.

@@ -1143,7 +1143,7 @@ def _final_frame_longer(
     df_index = None
 
     if sort_by_appearance:
-        indexer = indexer.argsort(kind='stable')
+        indexer = indexer.argsort(kind="stable")
         df = df.take(indexer)
     indexer = None
 

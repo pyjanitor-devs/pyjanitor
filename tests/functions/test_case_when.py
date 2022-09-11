@@ -75,6 +75,8 @@ def test_default_ndim(df):
         df.case_when(df.a < 10, "less_than_10", df, column_name="a")
 
 
+@pytest.mark.turtle
+@settings(deadline=None)
 @given(df=df_strategy())
 @settings(deadline=None)
 def test_default_length(df):

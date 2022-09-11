@@ -208,7 +208,7 @@ def _case_when_checks(
         raise TypeError(
             "The argument for the `default` parameter "
             "should evaluate to an array-like object, "
-            f"instead got {type(default)}"
+            f"instead got {type(default)!r}"
         )
     if isinstance(default, pd.Index):
         arr_ndim = default.nlevels

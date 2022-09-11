@@ -1,4 +1,3 @@
-from itertools import count
 from pandas.core.common import apply_if_callable
 from typing import Any, Optional
 import pandas_flavor as pf
@@ -91,6 +90,14 @@ def case_when(
         default
     ```
 
+    For multiple use case, the `if_else` function can be imported as
+    a standalone function, for use in `pandas.assign`:
+
+    ```py
+    from janitor.case_when import if_else
+    df.assign(var1 = if_else(...), var2 = if_else(...), ...)
+    ```
+
     :param df: A pandas DataFrame.
     :param args: Variable argument of conditions and expected values.
         Takes the form
@@ -117,7 +124,7 @@ def case_when(
     return df.assign(**{column_name: default})
 
 
-def if_else(df: pd.DataFrame, args, default: Optional[Any]) -> pd.Series:
+def if_else(df: pd.DataFrame, args, default: Optional[Any] = 0) -> pd.Series:
     """
     Evaluates conditions against values;
     useful as a standalone for use within Pandas' assign.
@@ -147,16 +154,16 @@ def if_else(df: pd.DataFrame, args, default: Optional[Any]) -> pd.Series:
     # ensures value assignment is on a first come basis
     booleans = booleans[::-1]
     replacements = replacements[::-1]
-    for condition, value, index in zip(booleans, replacements, count()):
+    for index, (condition, value) in enumerate(zip(booleans, replacements)):
         try:
             default = default.mask(condition, value)
         # error `feedoff` idea from SO
         # https://stackoverflow.com/a/46091127/7175713
-        except Exception as e:
+        except Exception as error:
             raise ValueError(
                 f"condition{index} and value{index} failed to evaluate. "
-                f"Original error message: {e}"
-            ) from e
+                f"Original error message: {error}"
+            ) from error
     return default
 
 
@@ -166,40 +173,33 @@ def _case_when_checks(
     """
     Preliminary checks on the case_when function.
     """
-    if len(args) < 2:
+    len_args = len(args)
+    if len_args < 2:
         raise ValueError(
             "At least two arguments are required for the `args` parameter"
         )
 
-    booleans = []
-    replacements = []
-    for index, value in enumerate(args):
-        if index % 2:
-            replacements.append(value)
-        else:
-            booleans.append(value)
-    if len(booleans) != len(replacements):
+    if len_args % 2:
         raise ValueError(
             "The number of conditions and values do not match. "
-            f"There are {len(booleans)} conditions and {len(replacements)} "
-            "values."
+            f"There are {len_args - len_args//2} conditions "
+            f"and {len_args//2} values."
         )
 
-    booleans = [
-        apply_if_callable(condition, df)
-        if callable(condition)
-        else df.eval(condition)
-        if isinstance(condition, str)
-        else condition
-        for condition in booleans
-    ]
+    booleans = []
+    replacements = []
 
-    replacements = [
-        apply_if_callable(replacement, df)
-        if callable(replacement)
-        else replacement
-        for replacement in replacements
-    ]
+    for index, value in enumerate(args):
+        if index % 2:
+            if callable(value):
+                value = apply_if_callable(value, df)
+            replacements.append(value)
+        else:
+            if callable(value):
+                value = apply_if_callable(value, df)
+            elif isinstance(value, str):
+                value = df.eval(value)
+            booleans.append(value)
 
     if callable(default):
         default = apply_if_callable(default, df)
@@ -224,7 +224,7 @@ def _case_when_checks(
     if len(default) != len(df):
         raise ValueError(
             f"The length of the argument for the `default` parameter "
-            "is {len(default)}, "
+            f"is {len(default)}, "
             "which is different from the length of the dataframe, "
             f"{len(df)}"
         )

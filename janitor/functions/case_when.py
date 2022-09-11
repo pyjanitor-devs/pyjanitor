@@ -10,7 +10,7 @@ from janitor.utils import check
 
 @pf.register_dataframe_method
 def case_when(
-    df: pd.DataFrame, *args, default: Optional[Any] = 0, column_name: str
+    df: pd.DataFrame, *args, *, default: Optional[Any] = 0, column_name: str
 ) -> pd.DataFrame:
     """
     Create a column based on a condition or multiple conditions.

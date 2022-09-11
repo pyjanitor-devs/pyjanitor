@@ -1143,7 +1143,9 @@ def _final_frame_longer(
     df_index = None
 
     if sort_by_appearance:
-        df = df.sort_index()
+        indexer = indexer.argsort(kind='stable')
+        df = df.take(indexer)
+    indexer = None
 
     if ignore_index:
         df.index = range(len(df))

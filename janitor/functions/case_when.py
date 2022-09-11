@@ -4,13 +4,14 @@ from typing import Any, Optional
 import pandas_flavor as pf
 import pandas as pd
 from pandas.core.dtypes.inference import is_array_like
+from pandas.api.types import is_scalar
 
 from janitor.utils import check
 
 
 @pf.register_dataframe_method
 def case_when(
-    df: pd.DataFrame, *args, *, default: Optional[Any] = 0, column_name: str
+    df: pd.DataFrame, *args, default: Optional[Any] = 0, column_name: str
 ) -> pd.DataFrame:
     """
     Create a column based on a condition or multiple conditions.
@@ -202,7 +203,7 @@ def _case_when_checks(
 
     if callable(default):
         default = apply_if_callable(default, df)
-    if pd.api.types.is_scalar(default):
+    if is_scalar(default):
         default = pd.Series([default]).repeat(len(df))
     if not is_array_like(default):
         raise TypeError(

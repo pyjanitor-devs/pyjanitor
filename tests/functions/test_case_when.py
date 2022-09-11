@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import assume, given
+from hypothesis import assume, given, settings
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import (
@@ -75,6 +75,8 @@ def test_default_ndim(df):
         df.case_when(df.a < 10, "less_than_10", df, column_name="a")
 
 
+@pytest.mark.turtle
+@settings(deadline=None)
 @given(df=df_strategy())
 def test_default_length(df):
     """Raise ValueError if `default` length != len(df)."""

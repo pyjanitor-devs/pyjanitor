@@ -76,7 +76,6 @@ def test_default_ndim(df):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
 @given(df=df_strategy())
 @settings(deadline=None)
 def test_default_length(df):

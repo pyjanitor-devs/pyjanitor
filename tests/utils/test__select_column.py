@@ -115,7 +115,7 @@ def test_tuple(df_tuple):
 def test_strings(df1):
     """Test _select_column_names function on strings."""
     assert _select_column_names("id", df1) == ["id"]
-    assert _select_column_names("*type*", df1) == [
+    assert _select_column_names("*type*", df1).tolist() == [
         "type",
         "type1",
         "type2",
@@ -127,7 +127,7 @@ def test_strings_cat(df1):
     """Test output on categorical columns"""
     df1.columns = df1.columns.astype("category")
     assert _select_column_names("id", df1) == ["id"]
-    assert _select_column_names("*type*", df1) == [
+    assert _select_column_names("*type*", df1).tolist() == [
         "type",
         "type1",
         "type2",

@@ -1,4 +1,5 @@
 from typing import Hashable
+
 import pandas as pd
 import pandas_flavor as pf
 
@@ -15,7 +16,7 @@ def change_type(
 ) -> pd.DataFrame:
     """Change the type of a column.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Exceptions that are raised can be ignored. For example, if one has a mixed
     dtype column that has non-integer strings and integers, and you want to
@@ -57,20 +58,24 @@ def change_type(
     :raises ValueError: If unknown option provided for
         `ignore_exception`.
     """
+
+    df = df.copy()  # avoid mutating the original DataFrame
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)
     elif ignore_exception == "keep_values":
         df[column_name] = df[column_name].astype(dtype, errors="ignore")
     elif ignore_exception == "fillna":
-
-        def convert(x, dtype):
-            """Casts item `x` to `dtype` or None if not possible."""
-            try:
-                return dtype(x)
-            except ValueError:
-                return None
-
-        df[column_name] = df[column_name].apply(lambda x: convert(x, dtype))
+        df[column_name] = df[column_name].apply(lambda x: _convert(x, dtype))
     else:
         raise ValueError("Unknown option for ignore_exception")
+
     return df
+
+
+def _convert(x, dtype: type):
+    """Casts item `x` to `dtype` or None if not possible."""
+
+    try:
+        return dtype(x)
+    except ValueError:
+        return None

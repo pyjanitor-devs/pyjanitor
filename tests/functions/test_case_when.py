@@ -78,7 +78,6 @@ def test_default_ndim(df):
 @pytest.mark.turtle
 @settings(deadline=None)
 @given(df=df_strategy())
-@settings(deadline=None)
 def test_default_length(df):
     """Raise ValueError if `default` length != len(df)."""
     assume(len(df) > 10)

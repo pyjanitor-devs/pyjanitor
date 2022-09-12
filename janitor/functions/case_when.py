@@ -1,5 +1,5 @@
 from pandas.core.common import apply_if_callable
-from typing import Any, Optional
+from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 from pandas.core.dtypes.inference import is_array_like
@@ -10,7 +10,7 @@ from janitor.utils import check
 
 @pf.register_dataframe_method
 def case_when(
-    df: pd.DataFrame, *args, default: Optional[Any] = 0, column_name: str
+    df: pd.DataFrame, *args, default: Any, column_name: str
 ) -> pd.DataFrame:
     """
     Create a column based on a condition or multiple conditions.
@@ -90,18 +90,6 @@ def case_when(
         default
     ```
 
-    For multiple use case, the `if_else` function can be imported as
-    a standalone function, for use in `pandas.assign`:
-
-    ```py
-    from janitor.case_when import if_else
-    df.assign(
-        var1 = if_else(args, default),
-        var2 = if_else(args, default),
-        # more assignments
-        )
-    ```
-
     :param df: A pandas DataFrame.
     :param args: Variable argument of conditions and expected values.
         Takes the form
@@ -118,42 +106,13 @@ def case_when(
         If callable, it should evaluate to a 1-D array.
         The 1-D array should be the same length as the DataFrame.
         The element inserted in the output when all conditions
-        evaluate to False. Default is 0.
+        evaluate to False.
     :param column_name: Name of column to assign results to. A new column
         is created, if it does not already exist in the DataFrame.
+    :raises ValueError: if condition/value fails to evaluate.
     :returns: A pandas DataFrame.
     """
     check("column_name", column_name, [str])
-    default = if_else(df, args, default)
-    return df.assign(**{column_name: default})
-
-
-def if_else(df: pd.DataFrame, args, default: Optional[Any] = 0) -> pd.Series:
-    """
-    Evaluates conditions against values;
-    useful as a standalone for use within Pandas' assign.
-
-    :param df: A pandas DataFrame.
-    :param args: Variable argument of conditions and expected values.
-        Takes the form
-        `condition0`, `value0`, `condition1`, `value1`, ... .
-        `condition` can be a 1-D boolean array, a callable, or a string.
-        If `condition` is a callable, it should evaluate
-        to a 1-D boolean array. The array should have the same length
-        as the DataFrame. If it is a string, it is computed on the dataframe,
-        via `df.eval`, and should return a 1-D boolean array.
-        `result` can be a scalar, a 1-D array, or a callable.
-        If `result` is a callable, it should evaluate to a 1-D array.
-        For a 1-D array, it should have the same length as the DataFrame.
-    :param default: scalar, 1-D array or callable.
-        If callable, it should evaluate to a 1-D array.
-        The 1-D array should be the same length as the DataFrame.
-        The element inserted in the output when all conditions
-        evaluate to False. Default is 0.
-    :raises ValueError: If the condition fails to evaluate.
-    :returns: A pandas Series.
-    """
-
     booleans, replacements, default = _case_when_checks(df, args, default)
     # ensures value assignment is on a first come basis
     booleans = booleans[::-1]
@@ -168,7 +127,7 @@ def if_else(df: pd.DataFrame, args, default: Optional[Any] = 0) -> pd.Series:
                 f"condition{index} and value{index} failed to evaluate. "
                 f"Original error message: {error}"
             ) from error
-    return default
+    return df.assign(**{column_name: default})
 
 
 def _case_when_checks(

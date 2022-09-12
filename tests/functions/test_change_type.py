@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.functions
@@ -43,3 +44,14 @@ def test_change_type_raise_exception():
         df = df.change_type(
             column_name="col1", dtype=float, ignore_exception=False
         )
+
+
+@pytest.mark.functions
+def test_original_data_type(dataframe):
+    df = pd.DataFrame(range(3), columns=["col1"])
+    df_original = df.copy()
+
+    df.change_type("col1", dtype=str)
+
+    # 'cols' is still int type not str type
+    assert_frame_equal(df, df_original)

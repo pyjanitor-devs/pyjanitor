@@ -489,7 +489,7 @@ def test_explicit_scalar(fill_df):
         .reindex(columns=fill_df.columns)
         .sort_values(columns, ignore_index=True)
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 def test_explicit_scalar_cat(fill_df):
@@ -521,7 +521,7 @@ def test_explicit_scalar_cat(fill_df):
             }
         )
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 # https://tidyr.tidyverse.org/reference/complete.html
@@ -595,7 +595,7 @@ def test_explicit_dict(fill_df):
         ]
     )
 
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 def test_explicit_(fill_df):

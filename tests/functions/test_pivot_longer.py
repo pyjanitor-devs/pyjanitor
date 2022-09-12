@@ -530,7 +530,7 @@ def test_names_pat_str(df_checks):
         df_checks, stubnames="ht", i=["famid", "birth"], j="age"
     ).reset_index()
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_dtype=False)
 
 
 def test_multiindex_column_level(df_multi):
@@ -897,7 +897,7 @@ def test_multiple_dot_value():
         .reset_index()
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_dtype=False)
 
 
 @pytest.fixture

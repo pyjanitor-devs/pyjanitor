@@ -57,13 +57,13 @@ def join_fasta(
         >>> df = pd.DataFrame({"sequence_accession":
         ... ["SEQUENCE_1", "SEQUENCE_2", ]})
 
-        >>> df = df.join_fasta(
+        >>> df = df.join_fasta(  # doctest: +SKIP
         ...     filename=tf.name,
         ...     id_col='sequence_accession',
         ...     column_name='sequence',
         ... )
 
-        >>> df.sequence
+        >>> df.sequence  # doctest: +SKIP
         0    MTEITAAMVKELRESTGAGMMDCK
         1           SATVSEINSETDFVAKN
         Name: sequence, dtype: object

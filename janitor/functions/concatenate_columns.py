@@ -51,6 +51,7 @@ def concatenate_columns(
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")
 
+    df = df.copy()  # avoid mutating original data
     df[new_column_name] = (
         df[column_names]
         .astype(str)

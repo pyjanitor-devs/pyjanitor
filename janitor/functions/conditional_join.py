@@ -15,6 +15,7 @@ from pandas.core.dtypes.common import (
 )
 
 from pandas.core.reshape.merge import _MergeOperation
+from pandas.core.dtypes.missing import na_value_for_dtype
 
 from janitor.utils import check, check_column
 from janitor.functions.utils import _convert_to_numpy_array
@@ -1269,30 +1270,62 @@ def _create_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if how == "inner":
+    def _inner(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_index: pd.DataFrame,
+        right_index: pd.DataFrame,
+    ) -> pd.DataFrame:
+        """Create DataFrame if how == 'inner'"""
         df = {key: value._values[left_index] for key, value in df.items()}
         right = {
             key: value._values[right_index] for key, value in right.items()
         }
-        return pd.DataFrame({**df, **right}, copy=False)
+        df.update(right)
+        return pd.DataFrame(df, copy=False)
+
+    if how == "inner":
+        return _inner(df, right, left_index, right_index)
 
     if how == "left":
-        right = {
-            key: value._values[right_index] for key, value in right.items()
-        }
-        right = pd.DataFrame(right, index=left_index, copy=False)
+        if left_index.size == 0:
+            frame = {key: value._values for key, value in df.items()}
+            for key, value in right.items():
+                na_value = na_value_for_dtype(value.dtype, compat=False)
+                frame[key] = pd.array([na_value]).repeat(len(df))
+        else:
+            checker = np.bincount(left_index, minlength=df.index.size)
+            if checker.min() > 0:
+                return _inner(df, right, left_index, right_index)
+            checker = np.where(checker == 0, 1, checker)
+            indexer = df.index.repeat(checker)
+            checker = indexer.isin(left_index)
+            frame = {key: value._values[indexer] for key, value in df.items()}
+            for key, value in right.items():
+                na_value = na_value_for_dtype(value.dtype, compat=False)
+                arr = pd.array([na_value]).repeat(indexer.size)
+                arr[checker] = value._values[right_index]
+                frame[key] = arr
+        return pd.DataFrame(frame, copy=False)
+    if right_index.size == 0:
+        other = {key: value._values for key, value in right.items()}
+        frame = {}
+        for key, value in df.items():
+            na_value = na_value_for_dtype(value.dtype, compat=False)
+            frame[key] = pd.array([na_value]).repeat(len(right))
     else:
-        df = {key: value._values[left_index] for key, value in df.items()}
-        df = pd.DataFrame(df, index=right_index, copy=False)
-
-    df = pd.merge(
-        df,
-        right,
-        left_index=True,
-        right_index=True,
-        how=how,
-        copy=False,
-        sort=False,
-    )
-    df.index = range(len(df))
-    return df
+        checker = np.bincount(right_index, minlength=right.index.size)
+        if checker.min() > 0:
+            return _inner(df, right, left_index, right_index)
+        checker = np.where(checker == 0, 1, checker)
+        indexer = right.index.repeat(checker)
+        checker = indexer.isin(right_index)
+        other = {key: value._values[indexer] for key, value in right.items()}
+        frame = {}
+        for key, value in df.items():
+            na_value = na_value_for_dtype(value.dtype, compat=False)
+            arr = pd.array([na_value]).repeat(indexer.size)
+            arr[checker] = value._values[left_index]
+            frame[key] = arr
+    frame.update(other)
+    return pd.DataFrame(frame, copy=False)

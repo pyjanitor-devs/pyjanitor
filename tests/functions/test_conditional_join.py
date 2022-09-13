@@ -296,12 +296,16 @@ def test_single_condition_less_than_floats_keep_first(df, right):
         allow_exact_matches=False,
     )
     expected.index = range(len(expected))
-    actual = df[["B"]].conditional_join(
-        right[["Numeric"]].sort_values("Numeric"),
-        ("B", "Numeric", "<"),
-        how="left",
-        sort_by_appearance=False,
-        keep="first",
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]].sort_values("Numeric"),
+            ("B", "Numeric", "<"),
+            how="left",
+            sort_by_appearance=False,
+            keep="first",
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -324,12 +328,16 @@ def test_single_condition_less_than_floats_keep_last(df, right):
         allow_exact_matches=False,
     )
     expected.index = range(len(expected))
-    actual = df[["B"]].conditional_join(
-        right[["Numeric"]],
-        ("B", "Numeric", ">"),
-        how="left",
-        sort_by_appearance=False,
-        keep="last",
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", ">"),
+            how="left",
+            sort_by_appearance=False,
+            keep="last",
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -378,13 +386,17 @@ def test_single_condition_less_than_floats_keep_first_numba(df, right):
         allow_exact_matches=False,
     )
     expected.index = range(len(expected))
-    actual = df[["B"]].conditional_join(
-        right[["Numeric"]],
-        ("B", "Numeric", "<"),
-        how="left",
-        sort_by_appearance=False,
-        keep="first",
-        use_numba=True,
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", "<"),
+            how="left",
+            sort_by_appearance=False,
+            keep="first",
+            use_numba=True,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -405,15 +417,19 @@ def test_single_condition_less_than_floats_keep_last_numba(df, right):
         right_on="Numeric",
         direction="backward",
         allow_exact_matches=False,
-    )
+    ).sort_values(["B", "Numeric"], ignore_index=True)
     expected.index = range(len(expected))
-    actual = df[["B"]].conditional_join(
-        right[["Numeric"]],
-        ("B", "Numeric", ">"),
-        how="left",
-        sort_by_appearance=False,
-        keep="last",
-        use_numba=True,
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", ">"),
+            how="left",
+            sort_by_appearance=False,
+            keep="last",
+            use_numba=True,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -1170,13 +1186,17 @@ def test_how_left(df, right):
     expected = (
         df[["A"]]
         .join(expected[["Integers"]], how="left", sort=False)
+        .sort_values(["A", "Integers"], ignore_index=True)
         .reset_index(drop=True)
     )
-    actual = df[["A"]].conditional_join(
-        right[["Integers"]],
-        ("A", "Integers", "<="),
-        how="left",
-        sort_by_appearance=True,
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right[["Integers"]],
+            ("A", "Integers", "<="),
+            how="left",
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -1196,13 +1216,17 @@ def test_how_right(df, right):
     expected = (
         expected[["E"]]
         .join(right[["Dates"]], how="right", sort=False)
+        .sort_values(["E", "Dates"], ignore_index=True)
         .reset_index(drop=True)
     )
-    actual = df[["E"]].conditional_join(
-        right[["Dates"]],
-        ("E", "Dates", ">"),
-        how="right",
-        sort_by_appearance=True,
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]],
+            ("E", "Dates", ">"),
+            how="right",
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -1539,15 +1563,19 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     expected = (
         expected[["B"]]
         .join(right[["Numeric", "Floats"]], how="right", sort=False)
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
         .reset_index(drop=True)
     )
 
-    actual = df[["B"]].conditional_join(
-        right[["Numeric", "Floats"]],
-        ("B", "Numeric", ">"),
-        ("B", "Floats", "<"),
-        how="right",
-        sort_by_appearance=True,
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Numeric", ">"),
+            ("B", "Floats", "<"),
+            how="right",
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
     assert_frame_equal(expected, actual)
 

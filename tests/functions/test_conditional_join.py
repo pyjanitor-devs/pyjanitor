@@ -417,7 +417,7 @@ def test_single_condition_less_than_floats_keep_last_numba(df, right):
         right_on="Numeric",
         direction="backward",
         allow_exact_matches=False,
-    ).sort_values(["B", "Numeric"], ignore_index=True)
+    ).sort_values(["B", "Numeric"], ascending=[True, False], ignore_index=True)
     expected.index = range(len(expected))
     actual = (
         df[["B"]]
@@ -429,7 +429,9 @@ def test_single_condition_less_than_floats_keep_last_numba(df, right):
             keep="last",
             use_numba=True,
         )
-        .sort_values(["B", "Numeric"], ignore_index=True)
+        .sort_values(
+            ["B", "Numeric"], ascending=[True, False], ignore_index=True
+        )
     )
 
     assert_frame_equal(expected, actual)
@@ -1527,14 +1529,18 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
         df[["B"]]
         .join(expected[["Numeric", "Floats"]], how="left", sort=False)
         .reset_index(drop=True)
-    )
+    ).sort_values(["B", "Numeric", "Floats"], ignore_index=True)
 
-    actual = df[["B"]].conditional_join(
-        right[["Numeric", "Floats"]],
-        ("B", "Numeric", ">"),
-        ("B", "Floats", "<"),
-        how="left",
-        sort_by_appearance=True,
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Numeric", ">"),
+            ("B", "Floats", "<"),
+            how="left",
+            sort_by_appearance=True,
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -1563,7 +1569,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     expected = (
         expected[["B"]]
         .join(right[["Numeric", "Floats"]], how="right", sort=False)
-        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+        .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
         .reset_index(drop=True)
     )
 
@@ -1575,7 +1581,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
             ("B", "Floats", "<"),
             how="right",
         )
-        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+        .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
     )
     assert_frame_equal(expected, actual)
 
@@ -1592,18 +1598,26 @@ def test_dual_ne_extension(df, right):
     df = df.astype({"A": "Int64"})
     right = right.astype({"Integers": "Int64"})
     expected = df.merge(right, how="cross")
-    expected = expected.loc[
-        expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric),
-        filters,
-    ].reset_index(drop=True)
+    expected = (
+        expected.loc[
+            expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric),
+            filters,
+        ]
+        .reset_index(drop=True)
+        .sort_values(filters, ignore_index=True)
+    )
 
-    actual = df.conditional_join(
-        right,
-        ("A", "Integers", "!="),
-        ("B", "Numeric", "!="),
-        how="inner",
-        sort_by_appearance=True,
-    ).filter(filters)
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", "!="),
+            ("B", "Numeric", "!="),
+            how="inner",
+            sort_by_appearance=True,
+        )
+        .filter(filters)
+        .sort_values(filters, ignore_index=True)
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -1651,19 +1665,27 @@ def test_dual_ne_numba_extension(df, right):
     df = df.astype({"A": "Int64"})
     right = right.astype({"Integers": "Int64"})
     expected = df.merge(right, how="cross")
-    expected = expected.loc[
-        expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric),
-        filters,
-    ].reset_index(drop=True)
+    expected = (
+        expected.loc[
+            expected.A.ne(expected.Integers) & expected.B.ne(expected.Numeric),
+            filters,
+        ]
+        .reset_index(drop=True)
+        .sort_values(filters, ignore_index=True)
+    )
 
-    actual = df.conditional_join(
-        right,
-        ("A", "Integers", "!="),
-        ("B", "Numeric", "!="),
-        how="inner",
-        use_numba=True,
-        sort_by_appearance=True,
-    ).filter(filters)
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", "!="),
+            ("B", "Numeric", "!="),
+            how="inner",
+            use_numba=True,
+            sort_by_appearance=True,
+        )
+        .filter(filters)
+        .sort_values(filters, ignore_index=True)
+    )
     assert_frame_equal(expected, actual)
 
 

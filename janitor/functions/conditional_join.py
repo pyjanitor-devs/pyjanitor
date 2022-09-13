@@ -55,6 +55,8 @@ def conditional_join(
     performance could be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
+    To preserve row order, kindly set `sort_by_appearance` to `True`.
+
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
     as a variable argument of tuples, where the tuple is of
@@ -130,10 +132,9 @@ def conditional_join(
     :param sort_by_appearance: Default is `False`.
         This is useful for scenarios where the user wants
         the original order maintained.
-        If True, values from `df` and `right`
-        that meet the join condition will be returned
-        in the final dataframe in the same order
-        that they were before the join.
+        If `True` and `how = left`, the row order from the left dataframe
+        is preserved; if `True` and `how = right`, the row order
+        from the right dataframe is preserved.
     :param df_columns: Columns to select from `df`.
         It can be a single column or a list of columns.
         It is also possible to rename the output columns via a dictionary.
@@ -1264,10 +1265,7 @@ def _create_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if sort_by_appearance & left_index.size:
-        sorter = np.lexsort((right_index, left_index))
-        left_index = left_index[sorter]
-        right_index = right_index[sorter]
+    if sort_by_appearance & (left_index.size > 0):
         if how in {"inner", "left"}:
             right = right.take(right_index)
             right.index = left_index
@@ -1292,7 +1290,7 @@ def _create_frame(
         left_index: pd.DataFrame,
         right_index: pd.DataFrame,
     ) -> pd.DataFrame:
-        """Create DataFrame if how == 'inner'"""
+        """Create DataFrame for inner join"""
         df = {key: value._values[left_index] for key, value in df.items()}
         right = {
             key: value._values[right_index] for key, value in right.items()

@@ -15,7 +15,6 @@ from pandas.core.dtypes.common import (
 )
 
 from pandas.core.reshape.merge import _MergeOperation
-from pandas.core.dtypes.missing import na_value_for_dtype
 
 from janitor.utils import check, check_column
 from janitor.functions.utils import _convert_to_numpy_array
@@ -1265,7 +1264,24 @@ def _create_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if sort_by_appearance & (left_index.size > 0):
+    def _inner(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_index: pd.DataFrame,
+        right_index: pd.DataFrame,
+    ) -> pd.DataFrame:
+        """Create DataFrame for inner join"""
+        df = {key: value._values[left_index] for key, value in df.items()}
+        right = {
+            key: value._values[right_index] for key, value in right.items()
+        }
+        df.update(right)
+        return pd.DataFrame(df, copy=False)
+
+    if how == "inner":
+        return _inner(df, right, left_index, right_index)
+
+    if sort_by_appearance | (left_index.size == 0):
         if how in {"inner", "left"}:
             right = right.take(right_index)
             right.index = left_index
@@ -1284,48 +1300,6 @@ def _create_frame(
         df.index = range(len(df))
         return df
 
-    def _inner(
-        df: pd.DataFrame,
-        right: pd.DataFrame,
-        left_index: pd.DataFrame,
-        right_index: pd.DataFrame,
-    ) -> pd.DataFrame:
-        """Create DataFrame for inner join"""
-        df = {key: value._values[left_index] for key, value in df.items()}
-        right = {
-            key: value._values[right_index] for key, value in right.items()
-        }
-        df.update(right)
-        return pd.DataFrame(df, copy=False)
-
-    if how == "inner":
-        return _inner(df, right, left_index, right_index)
-
-    if not left_index.size:
-        if how == "left":
-            len_arr = len(df)
-            df = {key: value._values for key, value in df.items()}
-            right = {
-                key: na_value_for_dtype(value.dtype, compat=False)
-                for key, value in right.items()
-            }
-            right = {
-                key: pd.array([value]).repeat(len_arr)
-                for key, value in right.items()
-            }
-        elif how == "right":
-            len_arr = len(right)
-            right = {key: value._values for key, value in right.items()}
-            df = {
-                key: na_value_for_dtype(value.dtype, compat=False)
-                for key, value in df.items()
-            }
-            df = {
-                key: pd.array([value]).repeat(len_arr)
-                for key, value in df.items()
-            }
-        df.update(right)
-        return pd.DataFrame(df, copy=False)
     if how == "left":
         df_ = np.bincount(left_index, minlength=df.index.size) == 0
         df_ = df_.nonzero()[0]
@@ -1333,8 +1307,7 @@ def _create_frame(
             return _inner(df, right, left_index, right_index)
         df_ = df.take(df_)
         df = _inner(df, right, left_index, right_index)
-        df = pd.concat([df, df_], ignore_index=True)
-        return df
+        return pd.concat([df, df_], ignore_index=True)
     if how == "right":
         right_ = np.bincount(right_index, minlength=right.index.size) == 0
         right_ = right_.nonzero()[0]
@@ -1342,5 +1315,4 @@ def _create_frame(
             return _inner(df, right, left_index, right_index)
         right_ = right.take(right_)
         right = _inner(df, right, left_index, right_index)
-        right = pd.concat([right, right_], ignore_index=True)
-        return right
+        return pd.concat([right, right_], ignore_index=True)

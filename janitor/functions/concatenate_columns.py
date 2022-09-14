@@ -54,8 +54,8 @@ def concatenate_columns(
     df = df.copy()  # avoid mutating original data
     df[new_column_name] = (
         df[column_names]
-        .astype(str)
-        .replace(["NaT", "nan", "<NA>"], "")
+        .astype("string")
+        .fillna("")
         .agg(sep.join, axis=1)
     )
 

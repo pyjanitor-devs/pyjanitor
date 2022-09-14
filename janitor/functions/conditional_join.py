@@ -54,7 +54,7 @@ def conditional_join(
     performance could be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
-    To preserve row order, kindly set `sort_by_appearance` to `True`.
+    To preserve row order, set `sort_by_appearance` to `True`.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in

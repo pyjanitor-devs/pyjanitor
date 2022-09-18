@@ -1264,23 +1264,6 @@ def _create_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    def _inner(
-        df: pd.DataFrame,
-        right: pd.DataFrame,
-        left_index: pd.DataFrame,
-        right_index: pd.DataFrame,
-    ) -> pd.DataFrame:
-        """Create DataFrame for inner join"""
-        df = {key: value._values[left_index] for key, value in df.items()}
-        right = {
-            key: value._values[right_index] for key, value in right.items()
-        }
-        df.update(right)
-        return pd.DataFrame(df, copy=False)
-
-    if how == "inner":
-        return _inner(df, right, left_index, right_index)
-
     if sort_by_appearance or (left_index.size == 0):
         if how in {"inner", "left"}:
             right = right.take(right_index)
@@ -1299,6 +1282,23 @@ def _create_frame(
         )
         df.index = range(len(df))
         return df
+
+    def _inner(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_index: pd.DataFrame,
+        right_index: pd.DataFrame,
+    ) -> pd.DataFrame:
+        """Create DataFrame for inner join"""
+        df = {key: value._values[left_index] for key, value in df.items()}
+        right = {
+            key: value._values[right_index] for key, value in right.items()
+        }
+        df.update(right)
+        return pd.DataFrame(df, copy=False)
+
+    if how == "inner":
+        return _inner(df, right, left_index, right_index)
 
     if how == "left":
         df_ = np.bincount(left_index, minlength=df.index.size) == 0

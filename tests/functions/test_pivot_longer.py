@@ -1301,6 +1301,8 @@ def test_dropna_sort_by_appearance():
     Test output when `dropna=True` and
     `sort_by_appearance=True`
     """
+    # GH PR #1169, Issue #1168
+
     treatments = dict(
         id=range(1, 6),
         A=("A", NA, "A", NA, NA),

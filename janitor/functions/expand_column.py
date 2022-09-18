@@ -73,7 +73,7 @@ def expand_column(
         the original dataframe (`concat=True`), or to return it standalone
         (`concat=False`).
     :returns: A pandas DataFrame with an expanded column.
-    """
+    """  # noqa: E501
     expanded_df = df[column_name].str.get_dummies(sep=sep)
     if concat:
         df = df.join(expanded_df)

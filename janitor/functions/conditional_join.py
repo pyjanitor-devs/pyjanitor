@@ -1281,7 +1281,7 @@ def _create_frame(
     if how == "inner":
         return _inner(df, right, left_index, right_index)
 
-    if sort_by_appearance | (left_index.size == 0):
+    if sort_by_appearance or (left_index.size == 0):
         if how in {"inner", "left"}:
             right = right.take(right_index)
             right.index = left_index

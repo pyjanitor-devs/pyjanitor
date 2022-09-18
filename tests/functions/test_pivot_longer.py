@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from pandas.testing import assert_frame_equal
+from pandas import NA
 
 
 @pytest.fixture
@@ -1293,3 +1294,37 @@ def test_preserve_extension_types():
     )
 
     assert_frame_equal(expected, actual)
+
+
+def test_dropna_sort_by_appearance():
+    """
+    Test output when `dropna=True` and
+    `sort_by_appearance=True`
+    """
+    treatments = dict(
+        id=range(1, 6),
+        A=("A", NA, "A", NA, NA),
+        A_date=(1, NA, 2, NA, NA),
+        B=(NA, "B", "B", NA, NA),
+        B_date=(NA, 3, 2, NA, NA),
+        other=(NA, NA, NA, "C", "D"),
+        other_date=(NA, NA, NA, 1, 5),
+    )
+    treatments = pd.DataFrame(treatments)
+    actual = treatments.pivot_longer(
+        index="id",
+        names_to=["date", "treatment"],
+        names_pattern=[".+date$", ".+"],
+        dropna=True,
+        sort_by_appearance=True,
+    )
+
+    expected = pd.lreshape(
+        treatments,
+        {
+            "treatment": ["A", "B", "other"],
+            "date": ["A_date", "B_date", "other_date"],
+        },
+    ).sort_values(["id", "treatment", "date"], ignore_index=True)
+
+    assert_frame_equal(actual, expected)

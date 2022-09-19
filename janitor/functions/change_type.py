@@ -51,6 +51,16 @@ def change_type(
         1    1   5.0
         2    2   1.0
 
+        It also could be used to change the type of multiple columns at once.
+        If you want to change all columns to a specific type, please use
+        `DataFrame.astype` instead.
+
+        >>> df.change_type(['col1', 'col2'], str)
+          col1  col2
+        0    0     m
+        1    1     5
+        2    2  True 
+
     :param df: A pandas DataFrame.
     :param column_name: The column(s) in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard

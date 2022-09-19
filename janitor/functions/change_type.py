@@ -31,7 +31,7 @@ def change_type(
     df[col] = df[col].astype(dtype)
     ```
 
-    Example:
+    Example: Change the type of a column.
 
         >>> import pandas as pd
         >>> import janitor
@@ -51,10 +51,13 @@ def change_type(
         1    1   5.0
         2    2   1.0
 
-        It also could be used to change the type of multiple columns at once.
-        If you want to change all columns to a specific type, please use
-        `DataFrame.astype` instead.
+    Example: Change the type of multiple columns.
 
+    Change the type of all columns, please use `DataFrame.astype` instead.
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"col1": range(3), "col2": ["m", 5, True]})
         >>> df.change_type(['col1', 'col2'], str)
           col1  col2
         0    0     m

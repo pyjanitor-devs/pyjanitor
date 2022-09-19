@@ -131,4 +131,4 @@ def test_tables_none():
         .astype({"CategoryID": int}),
     }
     for key, value in expected.items():
-        assert_frame_equal(value, actual[key])
+        assert_frame_equal(value, actual[key], check_dtype=False)

@@ -18,7 +18,7 @@ def change_type(
 ) -> pd.DataFrame:
     """Change the type of a column.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Exceptions that are raised can be ignored. For example, if one has a mixed
     dtype column that has non-integer strings and integers, and you want to
@@ -70,6 +70,8 @@ def change_type(
     :raises ValueError: If unknown option provided for
         `ignore_exception`.
     """
+
+    df = df.copy()  # avoid mutating the original DataFrame
     if not ignore_exception:
         df[column_name] = df[column_name].astype(dtype)
     elif ignore_exception == "keep_values":
@@ -77,10 +79,10 @@ def change_type(
     elif ignore_exception == "fillna":
         if isinstance(column_name, Hashable):
             column_name = [column_name]
-
         df[column_name] = df[column_name].applymap(_convert, dtype=dtype)
     else:
         raise ValueError("Unknown option for ignore_exception")
+
     return df
 
 

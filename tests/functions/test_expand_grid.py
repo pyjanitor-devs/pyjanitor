@@ -164,7 +164,7 @@ def test_numpy_2d(df):
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B", "B"], expected.columns]
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 @settings(deadline=None)
@@ -272,7 +272,7 @@ def test_sequence(df):
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B"], expected.columns]
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 @settings(deadline=None)
@@ -290,7 +290,7 @@ def test_scalar(df):
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B"], expected.columns]
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 @settings(deadline=None)
@@ -342,4 +342,4 @@ def test_extension_array():
 
     func = lambda x, y: pd.merge(x, y, how="cross")  # noqa: E731
     actual = reduce(func, others)
-    assert_frame_equal(expected, actual)
+    assert_frame_equal(expected, actual, check_dtype=False)

@@ -109,3 +109,14 @@ def test_multiple_columns(df, column_name, dtype, ignore_exception, expected):
     )
 
     assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_original_data_type(dataframe):
+    df = pd.DataFrame(range(3), columns=["col1"])
+    df_original = df.copy()
+
+    df.change_type("col1", dtype=str)
+
+    # 'cols' is still int type not str type
+    assert_frame_equal(df, df_original)

@@ -59,7 +59,7 @@ def change_type(
           col1  col2
         0    0     m
         1    1     5
-        2    2  True 
+        2    2  True
 
     :param df: A pandas DataFrame.
     :param column_name: The column(s) in the dataframe.

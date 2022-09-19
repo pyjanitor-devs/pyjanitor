@@ -24,6 +24,7 @@
 -   [INF] Cancel old workflow runs via Github Action `concurrency`. PR #1161 @Zeroto521
 -   [ENH] Faster computation for non-equi join, with a numba engine. Issue #1102 @samukweku
 -   [BUG] Avoid `change_type` mutating original `DataFrame`. PR #1162 @Zeroto521
+-   [ENH] Fix error when `sort_by_appearance=True` is combined with `dropna=True`. Issue #1168 @samukweku
 
 ## [v0.23.1] - 2022-05-03
 

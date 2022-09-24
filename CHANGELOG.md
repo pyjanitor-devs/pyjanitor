@@ -25,6 +25,7 @@
 -   [ENH] Faster computation for non-equi join, with a numba engine. Issue #1102 @samukweku
 -   [BUG] Avoid `change_type` mutating original `DataFrame`. PR #1162 @Zeroto521
 -   [ENH] The parameter `column_name` of `change_type` totally supports inputing multi-column now. #1163 @Zeroto521
+-   [ENH] Fix error when `sort_by_appearance=True` is combined with `dropna=True`. Issue #1168 @samukweku
 
 ## [v0.23.1] - 2022-05-03
 

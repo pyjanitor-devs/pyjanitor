@@ -22,7 +22,7 @@
 -   [ENH] Faster computation for a single non-equi join, with a numba engine. Issue #1102 @samukweku
 -   [TST] Fix testcases failing on Window. Issue #1160 @Zeroto521, and @samukweku
 -   [INF] Cancel old workflow runs via Github Action `concurrency`. PR #1161 @Zeroto521
--   [ENH] Faster computation for non-equi join, with a numba engine. Issue #1102 @samukweku
+-   [ENH] Faster computation for non-equi join, with a numba engine. Speed improvement for left/right joins when `sort_by_appearance` is False. Issue #1102 @samukweku
 -   [BUG] Avoid `change_type` mutating original `DataFrame`. PR #1162 @Zeroto521
 -   [ENH] The parameter `column_name` of `change_type` totally supports inputing multi-column now. #1163 @Zeroto521
 -   [ENH] Fix error when `sort_by_appearance=True` is combined with `dropna=True`. Issue #1168 @samukweku

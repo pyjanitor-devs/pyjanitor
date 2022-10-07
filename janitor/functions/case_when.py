@@ -7,6 +7,8 @@ from pandas.api.types import is_scalar
 import warnings
 from janitor.utils import check
 
+warnings.simplefilter("always", DeprecationWarning)
+
 
 @pf.register_dataframe_method
 def case_when(
@@ -103,42 +105,21 @@ def case_when(
         If `result` is a callable, it should evaluate to a 1-D array.
         For a 1-D array, it should have the same length as the DataFrame.
     :param default: scalar, 1-D array or callable.
+        This is the element inserted in the output
+        when all conditions evaluate to False.
         If callable, it should evaluate to a 1-D array.
         The 1-D array should be the same length as the DataFrame.
-        The element inserted in the output when all conditions
-        evaluate to False.
+
     :param column_name: Name of column to assign results to. A new column
         is created, if it does not already exist in the DataFrame.
     :raises ValueError: if condition/value fails to evaluate.
+    :raises TypeError: if `default` is list-like but not array-like.
     :returns: A pandas DataFrame.
     """
+    # Preliminary checks on the case_when function.
+    # The bare minimum checks are done; the remaining checks
+    # are done within `pd.Series.mask`.
     check("column_name", column_name, [str])
-    booleans, replacements, default = _case_when_checks(df, args, default)
-    # ensures value assignment is on a first come basis
-    booleans = booleans[::-1]
-    replacements = replacements[::-1]
-    for index, (condition, value) in enumerate(zip(booleans, replacements)):
-        try:
-            default = default.mask(condition, value)
-        # error `feedoff` idea from SO
-        # https://stackoverflow.com/a/46091127/7175713
-        except Exception as error:
-            raise ValueError(
-                f"condition{index} and value{index} failed to evaluate. "
-                f"Original error message: {error}"
-            ) from error
-    return df.assign(**{column_name: default})
-
-
-def _case_when_checks(
-    df: pd.DataFrame, args, default
-) -> tuple[list, list, pd.Series]:
-    """
-    Preliminary checks on the case_when function.
-    The bare minimum checks are done; the remaining checks
-    are done within `pd.mask`.
-    """
-
     len_args = len(args)
     if len_args < 2:
         raise ValueError(
@@ -147,8 +128,6 @@ def _case_when_checks(
 
     if len_args % 2:
         if default is None:
-            default = args[-1]
-            args = args[:-1]
             warnings.warn(
                 "The last argument in the variable arguments "
                 "has been assigned as the default. "
@@ -160,6 +139,7 @@ def _case_when_checks(
                 DeprecationWarning,
                 stacklevel=2,
             )
+            *args, default = args
         else:
             raise ValueError(
                 "The number of conditions and values do not match. "
@@ -205,5 +185,19 @@ def _case_when_checks(
     if not isinstance(default, pd.Series):
         default = pd.Series(default)
     default.index = df.index
-
-    return booleans, replacements, default
+    # actual computation
+    # ensures value assignment is on a first come basis
+    booleans = booleans[::-1]
+    replacements = replacements[::-1]
+    for index, (condition, value) in enumerate(zip(booleans, replacements)):
+        try:
+            default = default.mask(condition, value)
+        # error `feedoff` idea from SO
+        # https://stackoverflow.com/a/46091127/7175713
+        except Exception as error:
+            raise ValueError(
+                f"condition{index} and value{index} failed to evaluate. "
+                f"Original error message: {error}"
+            ) from error
+    default = {column_name: default}
+    return df.assign(**default)

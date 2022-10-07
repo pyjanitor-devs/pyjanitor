@@ -103,6 +103,7 @@ def test_default_ndim():
         )
 
 
+@pytest.mark.xfail(reason="Error handled by pd.Series.mask")
 def test_default_length():
     """Raise ValueError if `default` length != len(df)."""
     df = pd.DataFrame({"a": range(20)})

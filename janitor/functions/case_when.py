@@ -4,13 +4,13 @@ import pandas_flavor as pf
 import pandas as pd
 from pandas.core.dtypes.inference import is_array_like
 from pandas.api.types import is_scalar
-
+import warnings
 from janitor.utils import check
 
 
 @pf.register_dataframe_method
 def case_when(
-    df: pd.DataFrame, *args, default: Any, column_name: str
+    df: pd.DataFrame, *args, default: Any = None, column_name: str
 ) -> pd.DataFrame:
     """
     Create a column based on a condition or multiple conditions.
@@ -135,7 +135,10 @@ def _case_when_checks(
 ) -> tuple[list, list, pd.Series]:
     """
     Preliminary checks on the case_when function.
+    The bare minimum checks are done; the remaining checks
+    are done within `pd.mask`.
     """
+
     len_args = len(args)
     if len_args < 2:
         raise ValueError(
@@ -143,11 +146,26 @@ def _case_when_checks(
         )
 
     if len_args % 2:
-        raise ValueError(
-            "The number of conditions and values do not match. "
-            f"There are {len_args - len_args//2} conditions "
-            f"and {len_args//2} values."
-        )
+        if default is None:
+            default = args[-1]
+            args = args[:-1]
+            warnings.warn(
+                "The last argument in the variable arguments "
+                "has been assigned as the default. "
+                "Note however that this will be deprecated "
+                "in a future release; use an even number "
+                "of boolean conditions and values, "
+                "and pass the default argument to the `default` "
+                "parameter instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        else:
+            raise ValueError(
+                "The number of conditions and values do not match. "
+                f"There are {len_args - len_args//2} conditions "
+                f"and {len_args//2} values."
+            )
 
     booleans = []
     replacements = []
@@ -183,13 +201,6 @@ def _case_when_checks(
             f"The argument for the `default` parameter "
             "should evaluate to a 1-D array, "
             f"instead got dimension of length {arr_ndim}"
-        )
-    if len(default) != len(df):
-        raise ValueError(
-            f"The length of the argument for the `default` parameter "
-            f"is {len(default)}, "
-            "which is different from the length of the dataframe, "
-            f"{len(df)}"
         )
     if not isinstance(default, pd.Series):
         default = pd.Series(default)

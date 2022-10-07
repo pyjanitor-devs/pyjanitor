@@ -64,6 +64,21 @@ def test_args_even(dataframe):
         )
 
 
+def test_args_even_warning(dataframe):
+    """
+    Raise Warning if `args` length
+    is odd and `default` is None.
+    """
+    with pytest.warns(DeprecationWarning):
+        dataframe.case_when(
+            dataframe.a < 10,
+            "less_than_10",
+            dataframe.a == 5,
+            default=None,
+            column_name="a",
+        )
+
+
 def test_column_name(dataframe):
     """Raise TypeError if `column_name` is not a string."""
     with pytest.raises(TypeError):

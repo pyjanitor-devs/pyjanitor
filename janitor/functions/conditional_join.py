@@ -54,6 +54,8 @@ def conditional_join(
     performance could be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
+    To preserve row order, set `sort_by_appearance` to `True`.
+
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
     as a variable argument of tuples, where the tuple is of
@@ -129,10 +131,9 @@ def conditional_join(
     :param sort_by_appearance: Default is `False`.
         This is useful for scenarios where the user wants
         the original order maintained.
-        If True, values from `df` and `right`
-        that meet the join condition will be returned
-        in the final dataframe in the same order
-        that they were before the join.
+        If `True` and `how = left`, the row order from the left dataframe
+        is preserved; if `True` and `how = right`, the row order
+        from the right dataframe is preserved.
     :param df_columns: Columns to select from `df`.
         It can be a single column or a list of columns.
         It is also possible to rename the output columns via a dictionary.
@@ -1254,12 +1255,6 @@ def _create_frame(
     """
     Create final dataframe
     """
-    if sort_by_appearance:
-        sorter = np.lexsort((right_index, left_index))
-        right_index = right_index[sorter]
-        left_index = left_index[sorter]
-        sorter = None
-
     if df_columns:
         df = _cond_join_select_columns(df_columns, df)
 
@@ -1269,30 +1264,55 @@ def _create_frame(
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)
 
-    if how == "inner":
+    if sort_by_appearance or (left_index.size == 0):
+        if how in {"inner", "left"}:
+            right = right.take(right_index)
+            right.index = left_index
+        else:
+            df = df.take(left_index)
+            df.index = right_index
+        df = pd.merge(
+            df,
+            right,
+            left_index=True,
+            right_index=True,
+            sort=False,
+            copy=False,
+            how=how,
+        )
+        df.index = range(len(df))
+        return df
+
+    def _inner(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_index: pd.DataFrame,
+        right_index: pd.DataFrame,
+    ) -> pd.DataFrame:
+        """Create DataFrame for inner join"""
         df = {key: value._values[left_index] for key, value in df.items()}
         right = {
             key: value._values[right_index] for key, value in right.items()
         }
-        return pd.DataFrame({**df, **right}, copy=False)
+        df.update(right)
+        return pd.DataFrame(df, copy=False)
+
+    if how == "inner":
+        return _inner(df, right, left_index, right_index)
 
     if how == "left":
-        right = {
-            key: value._values[right_index] for key, value in right.items()
-        }
-        right = pd.DataFrame(right, index=left_index, copy=False)
-    else:
-        df = {key: value._values[left_index] for key, value in df.items()}
-        df = pd.DataFrame(df, index=right_index, copy=False)
-
-    df = pd.merge(
-        df,
-        right,
-        left_index=True,
-        right_index=True,
-        how=how,
-        copy=False,
-        sort=False,
-    )
-    df.index = range(len(df))
-    return df
+        df_ = np.bincount(left_index, minlength=df.index.size) == 0
+        df_ = df_.nonzero()[0]
+        if not df_.size:
+            return _inner(df, right, left_index, right_index)
+        df_ = df.take(df_)
+        df = _inner(df, right, left_index, right_index)
+        return pd.concat([df, df_], ignore_index=True)
+    if how == "right":
+        right_ = np.bincount(right_index, minlength=right.index.size) == 0
+        right_ = right_.nonzero()[0]
+        if not right_.size:
+            return _inner(df, right, left_index, right_index)
+        right_ = right.take(right_)
+        right = _inner(df, right, left_index, right_index)
+        return pd.concat([right, right_], ignore_index=True)

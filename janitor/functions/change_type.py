@@ -1,4 +1,6 @@
-from typing import Hashable
+from __future__ import annotations
+
+from typing import Any, Hashable
 
 import pandas as pd
 import pandas_flavor as pf
@@ -10,7 +12,7 @@ from janitor.utils import deprecated_alias
 @deprecated_alias(column="column_name")
 def change_type(
     df: pd.DataFrame,
-    column_name: Hashable,
+    column_name: Hashable | list[Hashable] | pd.Index,
     dtype: type,
     ignore_exception: bool = False,
 ) -> pd.DataFrame:
@@ -29,7 +31,7 @@ def change_type(
     df[col] = df[col].astype(dtype)
     ```
 
-    Example:
+    Example: Change the type of a column.
 
         >>> import pandas as pd
         >>> import janitor
@@ -49,8 +51,21 @@ def change_type(
         1    1   5.0
         2    2   1.0
 
+    Example: Change the type of multiple columns.
+
+    Change the type of all columns, please use `DataFrame.astype` instead.
+
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"col1": range(3), "col2": ["m", 5, True]})
+        >>> df.change_type(['col1', 'col2'], str)
+          col1  col2
+        0    0     m
+        1    1     5
+        2    2  True
+
     :param df: A pandas DataFrame.
-    :param column_name: A column in the dataframe.
+    :param column_name: The column(s) in the dataframe.
     :param dtype: The datatype to convert to. Should be one of the standard
         Python types, or a numpy datatype.
     :param ignore_exception: one of `{False, "fillna", "keep_values"}`.
@@ -65,14 +80,16 @@ def change_type(
     elif ignore_exception == "keep_values":
         df[column_name] = df[column_name].astype(dtype, errors="ignore")
     elif ignore_exception == "fillna":
-        df[column_name] = df[column_name].apply(lambda x: _convert(x, dtype))
+        if isinstance(column_name, Hashable):
+            column_name = [column_name]
+        df[column_name] = df[column_name].applymap(_convert, dtype=dtype)
     else:
         raise ValueError("Unknown option for ignore_exception")
 
     return df
 
 
-def _convert(x, dtype: type):
+def _convert(x: Any, dtype: type) -> Any:
     """Casts item `x` to `dtype` or None if not possible."""
 
     try:

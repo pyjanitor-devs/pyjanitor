@@ -15,7 +15,7 @@ from pandas.api.types import (
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
-    _select_column_names,
+    _select_columns,
     _computations_expand_grid,
 )
 from janitor.utils import check
@@ -385,13 +385,13 @@ def _data_checks_pivot_longer(
     if column_names is not None:
         if is_list_like(column_names):
             column_names = list(column_names)
-        column_names = _select_column_names(column_names, df)
+        column_names = _select_columns(column_names, df)
         column_names = list(column_names)
 
     if index is not None:
         if is_list_like(index):
             index = list(index)
-        index = _select_column_names(index, df)
+        index = _select_columns(index, df)
         index = list(index)
 
     if index is None:
@@ -1458,7 +1458,7 @@ def _data_checks_pivot_wider(
     if index is not None:
         if is_list_like(index):
             index = list(index)
-        index = _select_column_names(index, df)
+        index = _select_columns(index, df)
         index = list(index)
 
     if names_from is None:
@@ -1468,13 +1468,13 @@ def _data_checks_pivot_wider(
 
     if is_list_like(names_from):
         names_from = list(names_from)
-    names_from = _select_column_names(names_from, df)
+    names_from = _select_columns(names_from, df)
     names_from = list(names_from)
 
     if values_from is not None:
         if is_list_like(values_from):
             values_from = list(values_from)
-        out = _select_column_names(values_from, df)
+        out = _select_columns(values_from, df)
         out = list(out)
         # hack to align with pd.pivot
         if values_from == out[0]:

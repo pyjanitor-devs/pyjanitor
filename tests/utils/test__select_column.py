@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from pandas.testing import assert_index_equal, assert_frame_equal
-from janitor.functions.utils import _select_column_names, patterns
+from janitor.functions.utils import _select_columns, patterns
 
 
 @pytest.fixture
@@ -80,42 +80,42 @@ def df_tuple():
 def test_col_not_found(df):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
     with pytest.raises(KeyError, match="No match was returned.+"):
-        _select_column_names(2.5, df)
+        _select_columns(2.5, df)
 
 
 def test_col_not_found1(df):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
     with pytest.raises(KeyError, match="No match was returned.+"):
-        _select_column_names(1, df)
+        _select_columns(1, df)
 
 
 def test_col_not_found2(df):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
     with pytest.raises(KeyError, match="No match was returned.+"):
-        _select_column_names([3, "id"], df)
+        _select_columns([3, "id"], df)
 
 
 def test_col_not_found3(df_dates):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
     with pytest.raises(KeyError):
-        _select_column_names("id", df_dates)
+        _select_columns("id", df_dates)
 
 
 def test_col_not_found4(df_numbers):
     """Raise KeyError if `columns_to_select` is not in df.columns."""
     with pytest.raises(KeyError, match=r"No match was returned.+"):
-        _select_column_names("id", df_numbers)
+        _select_columns("id", df_numbers)
 
 
 def test_tuple(df_tuple):
-    """Test _select_column_names function on tuple."""
-    assert _select_column_names(("A", "D"), df_tuple) == [("A", "D")]
+    """Test _select_columns function on tuple."""
+    assert _select_columns(("A", "D"), df_tuple) == [("A", "D")]
 
 
 def test_strings(df1):
-    """Test _select_column_names function on strings."""
-    assert _select_column_names("id", df1) == ["id"]
-    assert _select_column_names("*type*", df1).tolist() == [
+    """Test _select_columns function on strings."""
+    assert _select_columns("id", df1) == ["id"]
+    assert _select_columns("*type*", df1).tolist() == [
         "type",
         "type1",
         "type2",
@@ -126,8 +126,8 @@ def test_strings(df1):
 def test_strings_cat(df1):
     """Test output on categorical columns"""
     df1.columns = df1.columns.astype("category")
-    assert _select_column_names("id", df1) == ["id"]
-    assert _select_column_names("*type*", df1).tolist() == [
+    assert _select_columns("id", df1) == ["id"]
+    assert _select_columns("*type*", df1).tolist() == [
         "type",
         "type1",
         "type2",
@@ -141,7 +141,7 @@ def test_strings_do_not_exist(df):
     and does not exist in the dataframe's columns.
     """
     with pytest.raises(KeyError, match="No match was returned for.+"):
-        _select_column_names("word", df)
+        _select_columns("word", df)
 
 
 def test_strings_dates(df_dates):
@@ -149,7 +149,7 @@ def test_strings_dates(df_dates):
     Test output for datetime column.
     """
     assert (
-        _select_column_names("2011-01-31", df_dates)[0]
+        _select_columns("2011-01-31", df_dates)[0]
         == df_dates.loc[:, "2011-01-31"].name
     )
 
@@ -157,7 +157,7 @@ def test_strings_dates(df_dates):
 def test_strings_dates_range(df_dates):
     """Test output for datetime column."""
     assert_index_equal(
-        _select_column_names("2011-01", df_dates),
+        _select_columns("2011-01", df_dates),
         df_dates.loc[:, slice("2011-01")].columns,
     )
 
@@ -166,15 +166,15 @@ def test_unsorted_dates(df_dates):
     """Test output if the dates are unsorted, and a string is passed."""
     df_dates = df_dates.iloc[:, [10, 4, 7, 2, 1, 3, 5, 6, 8, 9, 11, 0]]
     expected = df_dates.loc[:, ["2011-01-31"]]
-    actual = _select_column_names("2011-01-31", df_dates)
+    actual = _select_columns("2011-01-31", df_dates)
     actual = df_dates.loc[:, actual]
     assert_frame_equal(expected, actual)
 
 
 def test_regex(df1):
-    """Test _select_column_names function on regular expressions."""
+    """Test _select_columns function on regular expressions."""
     assert_index_equal(
-        _select_column_names(re.compile(r"\d$"), df1),
+        _select_columns(re.compile(r"\d$"), df1),
         df1.filter(regex=r"\d$").columns,
     )
 
@@ -183,7 +183,7 @@ def test_regex_cat(df1):
     """Test output on categorical columns"""
     df1.columns = df1.columns.astype("category")
     assert_index_equal(
-        _select_column_names(re.compile(r"\d$"), df1),
+        _select_columns(re.compile(r"\d$"), df1),
         df1.filter(regex=r"\d$").columns,
     )
 
@@ -194,7 +194,7 @@ def test_patterns_warning(df1):
     """
     with pytest.warns(DeprecationWarning):
         assert_index_equal(
-            _select_column_names(patterns(r"\d$"), df1),
+            _select_columns(patterns(r"\d$"), df1),
             df1.filter(regex=r"\d$").columns,
         )
 
@@ -205,7 +205,7 @@ def test_regex_presence_string_column(df):
     and does not exist in the dataframe's columns.
     """
     with pytest.raises(KeyError, match="No match was returned for.+"):
-        _select_column_names(re.compile("word"), df)
+        _select_columns(re.compile("word"), df)
 
 
 def test_regex_presence(df_dates):
@@ -214,7 +214,7 @@ def test_regex_presence(df_dates):
     and the columns is not a string column.
     """
     with pytest.raises(KeyError, match=r"No match was returned.+"):
-        _select_column_names(re.compile(r"^\d+"), df_dates)
+        _select_columns(re.compile(r"^\d+"), df_dates)
 
 
 def test_slice_unique():
@@ -226,7 +226,7 @@ def test_slice_unique():
         ValueError,
         match="Non-unique column labels should be monotonic increasing.",
     ):
-        _select_column_names(slice("code", "code2"), not_unique)
+        _select_columns(slice("code", "code2"), not_unique)
 
 
 def test_slice_presence(df):
@@ -236,9 +236,9 @@ def test_slice_presence(df):
     in the dataframe.
     """
     with pytest.raises(ValueError):
-        _select_column_names(slice("Id", "M_start_date_1"), df)
+        _select_columns(slice("Id", "M_start_date_1"), df)
     with pytest.raises(ValueError):
-        _select_column_names(slice("id", "M_end_date"), df)
+        _select_columns(slice("id", "M_end_date"), df)
 
 
 def test_slice_dtypes(df):
@@ -251,14 +251,14 @@ def test_slice_dtypes(df):
         ValueError,
         match="The start value for the slice must either be `None`.+",
     ):
-        _select_column_names(slice(1, "M_end_date_2"), df)
+        _select_columns(slice(1, "M_end_date_2"), df)
     with pytest.raises(
         ValueError,
         match="The stop value for the slice must either be `None`.+",
     ):
-        _select_column_names(slice("id", 2), df)
+        _select_columns(slice("id", 2), df)
     with pytest.raises(ValueError, match="The step value for the slice.+"):
-        _select_column_names(slice("id", "M_end_date_2", "3"), df)
+        _select_columns(slice("id", "M_end_date_2", "3"), df)
 
 
 def test_unsorted_dates_slice(df_dates):
@@ -269,35 +269,33 @@ def test_unsorted_dates_slice(df_dates):
         match="The column is a DatetimeIndex and should be "
         "monotonic increasing.",
     ):
-        _select_column_names(slice("2011-01-31", "2011-03-31"), df_dates)
+        _select_columns(slice("2011-01-31", "2011-03-31"), df_dates)
 
 
 def test_slice(df1):
-    """Test _select_column_names function on slices."""
+    """Test _select_columns function on slices."""
     assert_index_equal(
-        _select_column_names(slice("code", "code2"), df1),
+        _select_columns(slice("code", "code2"), df1),
         df1.loc[:, slice("code", "code2")].columns,
     )
 
     assert_index_equal(
-        _select_column_names(slice("code2", None), df1),
+        _select_columns(slice("code2", None), df1),
         df1.loc[:, slice("code2", None)].columns,
     )
 
     assert_index_equal(
-        _select_column_names(slice(None, "code2"), df1),
+        _select_columns(slice(None, "code2"), df1),
         df1.loc[:, slice(None, "code2")].columns,
     )
 
+    assert_index_equal(_select_columns(slice(None, None), df1), df1.columns)
     assert_index_equal(
-        _select_column_names(slice(None, None), df1), df1.columns
-    )
-    assert_index_equal(
-        _select_column_names(slice(None, None, 2), df1),
+        _select_columns(slice(None, None, 2), df1),
         df1.loc[:, slice(None, None, 2)].columns,
     )
     assert_index_equal(
-        _select_column_names(slice("code2", "code"), df1),
+        _select_columns(slice("code2", "code"), df1),
         pd.Index(
             [
                 "code2",
@@ -311,7 +309,7 @@ def test_slice(df1):
 def test_slice_dates(df_dates):
     """Test output of slice on date column."""
     assert_index_equal(
-        _select_column_names(slice("2011-01-31", "2011-03-31"), df_dates),
+        _select_columns(slice("2011-01-31", "2011-03-31"), df_dates),
         df_dates.loc[:, "2011-01-31":"2011-03-31"].columns,
     )
 
@@ -319,7 +317,7 @@ def test_slice_dates(df_dates):
 def test_slice_dates_inexact(df_dates):
     """Test output of slice on date column."""
     assert_index_equal(
-        _select_column_names(slice("2011-01", "2011-03"), df_dates),
+        _select_columns(slice("2011-01", "2011-03"), df_dates),
         df_dates.loc[:, "2011-01":"2011-03"].columns,
     )
 
@@ -333,11 +331,11 @@ def test_boolean_list_dtypes(df):
     with pytest.raises(
         ValueError, match="The length of the list of booleans.+"
     ):
-        _select_column_names([True, False], df)
+        _select_columns([True, False], df)
     with pytest.raises(
         ValueError, match="The length of the list of booleans.+"
     ):
-        _select_column_names(
+        _select_columns(
             [True, True, True, False, False, False, True, True, True, False],
             df,
         )
@@ -354,7 +352,7 @@ def test_callable(df_numbers):
         match="The output of the applied callable "
         "should be a boolean array.",
     ):
-        _select_column_names(lambda df: df + 3, df_numbers)
+        _select_columns(lambda df: df + 3, df_numbers)
 
 
 @pytest.mark.xfail(
@@ -366,7 +364,7 @@ def test_callable_returns_series(df):
     callable, and returns a Series.
     """
     with pytest.raises(ValueError):
-        _select_column_names(lambda x: x + 1, df)
+        _select_columns(lambda x: x + 1, df)
 
 
 def test_callable_no_match(df):
@@ -375,7 +373,7 @@ def test_callable_no_match(df):
     and no match is returned.
     """
     with pytest.raises(KeyError, match="No match was returned.+"):
-        _select_column_names(pd.api.types.is_float_dtype, df)
+        _select_columns(pd.api.types.is_float_dtype, df)
 
 
 def test_tuple_presence(df_tuple):
@@ -384,74 +382,74 @@ def test_tuple_presence(df_tuple):
     and no match is returned.
     """
     with pytest.raises(KeyError, match="No match was returned.+"):
-        _select_column_names(("A", "C"), df_tuple)
+        _select_columns(("A", "C"), df_tuple)
 
 
 def test_callable_data_type(df1):
     """
-    Test _select_column_names function on callables,
+    Test _select_columns function on callables,
     specifically for data type checks.
     """
     assert_index_equal(
-        _select_column_names(pd.api.types.is_integer_dtype, df1),
+        _select_columns(pd.api.types.is_integer_dtype, df1),
         df1.select_dtypes(int).columns,
     )
 
     assert_index_equal(
-        _select_column_names(pd.api.types.is_float_dtype, df1),
+        _select_columns(pd.api.types.is_float_dtype, df1),
         df1.select_dtypes(float).columns,
     )
 
     assert_index_equal(
-        _select_column_names(pd.api.types.is_numeric_dtype, df1),
+        _select_columns(pd.api.types.is_numeric_dtype, df1),
         df1.select_dtypes("number").columns,
     )
 
     assert_index_equal(
-        _select_column_names(pd.api.types.is_categorical_dtype, df1),
+        _select_columns(pd.api.types.is_categorical_dtype, df1),
         df1.select_dtypes("category").columns,
     )
 
     assert_index_equal(
-        _select_column_names(pd.api.types.is_datetime64_dtype, df1),
+        _select_columns(pd.api.types.is_datetime64_dtype, df1),
         df1.select_dtypes(np.datetime64).columns,
     )
 
     assert_index_equal(
-        _select_column_names(pd.api.types.is_object_dtype, df1),
+        _select_columns(pd.api.types.is_object_dtype, df1),
         df1.select_dtypes("object").columns,
     )
 
 
 def test_callable_string_methods(df1):
     """
-    Test _select_column_names function on callables,
+    Test _select_columns function on callables,
     specifically for column name checks.
     """
     assert_index_equal(
-        _select_column_names(lambda x: x.name.startswith("type"), df1),
+        _select_columns(lambda x: x.name.startswith("type"), df1),
         df1.filter(like="type").columns,
     )
 
     assert_index_equal(
-        _select_column_names(lambda x: x.name.endswith(("1", "2", "3")), df1),
+        _select_columns(lambda x: x.name.endswith(("1", "2", "3")), df1),
         df1.filter(regex=r"\d$").columns,
     )
 
     assert_index_equal(
-        _select_column_names(lambda x: "d" in x.name, df1),
+        _select_columns(lambda x: "d" in x.name, df1),
         df1.filter(regex="d").columns,
     )
 
     assert_index_equal(
-        _select_column_names(
+        _select_columns(
             lambda x: x.name.startswith("code") and x.name.endswith("1"), df1
         ),
         df1.filter(regex=r"code.*1$").columns,
     )
 
     assert_index_equal(
-        _select_column_names(
+        _select_columns(
             lambda x: x.name.startswith("code") or x.name.endswith("1"), df1
         ),
         df1.filter(regex=r"^code.*|.*1$").columns,
@@ -460,31 +458,29 @@ def test_callable_string_methods(df1):
 
 def test_callable_computations(df1):
     """
-    Test _select_column_names function on callables,
+    Test _select_columns function on callables,
     specifically for computations.
     """
     assert_index_equal(
-        _select_column_names(lambda x: x.isna().any(), df1),
+        _select_columns(lambda x: x.isna().any(), df1),
         df1.columns[df1.isna().any().array],
     )
 
 
 def test_list_various(df1):
-    """Test _select_column_names function on list type."""
+    """Test _select_columns function on list type."""
 
-    assert _select_column_names(["id", "Name"], df1) == ["id", "Name"]
-    assert _select_column_names(["id", "code*"], df1) == list(
+    assert _select_columns(["id", "Name"], df1) == ["id", "Name"]
+    assert _select_columns(["id", "code*"], df1) == list(
         df1.filter(regex="^id|^code").columns
     )
     assert [
-        *_select_column_names(["id", "code*", slice("code", "code2")], df1)
+        *_select_columns(["id", "code*", slice("code", "code2")], df1)
     ] == df1.filter(regex="^(id|code)").columns.tolist()
-    assert _select_column_names(["id", "Name"], df1) == ["id", "Name"]
+    assert _select_columns(["id", "Name"], df1) == ["id", "Name"]
 
 
 def test_list_boolean(df):
-    """Test _select_column_names function on list of booleans."""
+    """Test _select_columns function on list of booleans."""
     booleans = [True, True, True, False, False, False, True, True, True]
-    assert_index_equal(
-        _select_column_names(booleans, df), df.columns[booleans]
-    )
+    assert_index_equal(_select_columns(booleans, df), df.columns[booleans])

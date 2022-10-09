@@ -74,7 +74,6 @@ def test_args_even_warning(dataframe):
             dataframe.a < 10,
             "less_than_10",
             dataframe.a == 5,
-            default=None,
             column_name="a",
         )
 

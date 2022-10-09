@@ -95,7 +95,7 @@ def test_default_ndim():
     with pytest.raises(
         ValueError,
         match="The argument for the `default` parameter "
-        "should evaluate to a 1-D array.+",
+        "should either be a 1-D array.+",
     ):
         df.case_when(
             df.a < 10, "less_than_10", default=df.to_numpy(), column_name="a"
@@ -115,26 +115,6 @@ def test_default_length():
             "less_than_10",
             default=df.loc[:5, "a"],
             column_name="a",
-        )
-
-
-def test_case_when_default_not_array_like():
-    """
-    Test case_when for scenarios where `default`
-    is list-like, but not a Pandas or numpy object.
-    """
-    df = pd.DataFrame({"numbers": range(20)})
-    default = range(len(df))
-    with pytest.raises(
-        TypeError,
-        match="The argument for the `default` parameter "
-        "should evaluate to an array-like object.+",
-    ):
-        df.case_when(
-            "numbers > 1",
-            lambda df: df.numbers + 10,
-            default=default,
-            column_name="bleh",
         )
 
 
@@ -187,6 +167,24 @@ def test_case_when_default_array(df):
     Test case_when for scenarios where `default` is array-like
     """
     default = np.arange(len(df))
+    result = df.case_when(
+        "numbers > 1",
+        lambda df: df.numbers + 10,
+        default=default,
+        column_name="bleh",
+    )
+    expected = np.where(df.numbers > 1, df.numbers + 10, default)
+    expected = df.assign(bleh=expected)
+    assert_frame_equal(result, expected)
+
+
+@given(df=categoricaldf_strategy())
+def test_case_when_default_list_like(df):
+    """
+    Test case_when for scenarios where `default` is list-like,
+    but has no shape attribute.
+    """
+    default = range(len(df))
     result = df.case_when(
         "numbers > 1",
         lambda df: df.numbers + 10,

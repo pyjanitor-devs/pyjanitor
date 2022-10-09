@@ -2,7 +2,6 @@ from pandas.core.common import apply_if_callable
 from typing import Any
 import pandas_flavor as pf
 import pandas as pd
-from pandas.core.dtypes.inference import is_array_like
 from pandas.api.types import is_scalar
 import warnings
 from janitor.utils import check
@@ -113,7 +112,6 @@ def case_when(
     :param column_name: Name of column to assign results to. A new column
         is created, if it does not already exist in the DataFrame.
     :raises ValueError: if condition/value fails to evaluate.
-    :raises TypeError: if `default` is list-like but not array-like.
     :returns: A pandas DataFrame.
     """
     # Preliminary checks on the case_when function.
@@ -166,21 +164,17 @@ def case_when(
         default = apply_if_callable(default, df)
     if is_scalar(default):
         default = pd.Series([default]).repeat(len(df))
-    if not is_array_like(default):
-        raise TypeError(
-            "The argument for the `default` parameter "
-            "should evaluate to an array-like object, "
-            f"instead got {type(default)!r}"
-        )
+    if not hasattr(default, "shape"):
+        default = pd.Series([*default])
     if isinstance(default, pd.Index):
         arr_ndim = default.nlevels
     else:
         arr_ndim = default.ndim
     if arr_ndim != 1:
         raise ValueError(
-            f"The argument for the `default` parameter "
-            "should evaluate to a 1-D array, "
-            f"instead got dimension of length {arr_ndim}"
+            "The argument for the `default` parameter "
+            "should either be a 1-D array, a scalar, "
+            "or a callable that can evaluate to a 1-D array."
         )
     if not isinstance(default, pd.Series):
         default = pd.Series(default)
@@ -199,5 +193,5 @@ def case_when(
                 f"condition{index} and value{index} failed to evaluate. "
                 f"Original error message: {error}"
             ) from error
-    default = {column_name: default}
-    return df.assign(**default)
+
+    return df.assign(**{column_name: default})

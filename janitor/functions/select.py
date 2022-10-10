@@ -1,10 +1,14 @@
-from typing import Optional, Union
 import pandas_flavor as pf
 import pandas as pd
+import numpy as np
 from pandas.api.types import is_list_like
-from janitor.utils import deprecated_alias, check
-
-from janitor.functions.utils import _select_columns, _select_rows
+from janitor.utils import deprecated_alias
+from janitor.functions.utils import (
+    _select_columns,
+    _select_rows,
+    _level_labels,
+    level_labels,
+)
 
 
 @pf.register_dataframe_method
@@ -12,7 +16,6 @@ from janitor.functions.utils import _select_columns, _select_rows
 def select_columns(
     df: pd.DataFrame,
     *args,
-    level: Optional[Union[int, str]] = None,
     invert: bool = False,
 ) -> pd.DataFrame:
     """
@@ -22,9 +25,6 @@ def select_columns(
     regex, slice, array-like object, or a list of the previous options.
 
     This method does not mutate the original DataFrame.
-
-    The `level` argument is handy for selecting on a particular level
-    in a MultiIndex column.
 
     Optional ability to invert selection of columns available as well.
 
@@ -49,52 +49,52 @@ def select_columns(
         a callable which is applicable to each Series in the DataFrame,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-    :param level: Determines which level in the columns should be used for the
-        column selection.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.
+    :raises ValueError: if `levels_label` is combined with other selection
+        options.
     :returns: A pandas DataFrame with the specified columns selected.
     """  # noqa: E501
 
-    # applicable for any
-    # list-like object (ndarray, Series, pd.Index, ...)
-    search_column_names = []
+    all_levels = all((isinstance(arg, level_labels) for arg in args))
+    if all_levels:
+        contents = [
+            _level_labels(df.columns, arg.label, arg.level) for arg in args
+        ]
+        if len(contents) > 1:
+            contents = np.concatenate(contents)
+            # remove possible duplicates
+            contents = pd.unique(contents)
+        else:
+            contents = contents[0]
+        if invert:
+            arr = np.ones(df.columns.size, dtype=np.bool8)
+            arr[contents] = False
+            return df.iloc[arr]
+        return df.iloc[contents]
+    any_levels = any((isinstance(arg, level_labels) for arg in args))
+    if any_levels:
+        raise ValueError(
+            "`level_labels` cannot be combined with other selection options."
+        )
+    # applicable to any list-like object (ndarray, Series, pd.Index, ...)
+    search_result = []
     for arg in args:
         if is_list_like(arg) and (not isinstance(arg, tuple)):
-            search_column_names.extend(arg)
+            search_result.extend(arg)
         else:
-            search_column_names.append(arg)
-    if level is not None:
-        # goal here is to capture the original columns
-        # trim the df.columns to the specified level only,
-        # and apply the selection (_select_column_names)
-        # to get the relevant column labels.
-        # note that no level is dropped; if there are three levels,
-        # then three levels are returned, with the specified labels
-        # selected/deselected.
-        # A copy of the dataframe is made via set_axis,
-        # to avoid mutating the original dataframe.
-        df_columns = df.columns
-        check("level", level, [int, str])
-        full_column_list = df_columns.get_level_values(level)
-        full_column_list = _select_columns(
-            search_column_names, df.set_axis(full_column_list, axis=1)
-        )
-        full_column_list = df_columns.isin(full_column_list, level=level)
-        full_column_list = df_columns[full_column_list]
-    else:
-        full_column_list = _select_columns(search_column_names, df)
+            search_result.append(arg)
+    search_result = _select_columns(search_result, df)
     if invert:
-        return df.drop(columns=full_column_list)
-    return df.loc[:, full_column_list]
+        return df.drop(columns=search_result)
+    return df.loc[:, search_result]
 
 
 @pf.register_dataframe_method
 def select_rows(
     df: pd.DataFrame,
     *args,
-    level: Optional[Union[int, str]] = None,
     invert: bool = False,
 ) -> pd.DataFrame:
     """
@@ -104,9 +104,6 @@ def select_rows(
     regex, slice, array-like object, or a list of the previous options.
 
     This method does not mutate the original DataFrame.
-
-    The `level` argument is handy for selecting on a particular level
-    in a MultiIndex index.
 
     Optional ability to invert selection of rows available as well.
 
@@ -131,42 +128,43 @@ def select_rows(
         a callable which is applicable to each Series in the DataFrame,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-    :param level: Determines which level in the index should be used for the
-        row selection.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the rows
         provided.
+    :raises ValueError: if `levels_label` is combined with other selection
+        options.
     :returns: A pandas DataFrame with the specified rows selected.
     """  # noqa: E501
 
-    # applicable for any
-    # list-like object (ndarray, Series, pd.Index, ...)
-    search_row_names = []
+    all_levels = all((isinstance(arg, level_labels) for arg in args))
+    if all_levels:
+        contents = [
+            _level_labels(df.index, arg.label, arg.level) for arg in args
+        ]
+        if len(contents) > 1:
+            contents = np.concatenate(contents)
+            # remove possible duplicates
+            contents = pd.unique(contents)
+        else:
+            contents = contents[0]
+        if invert:
+            arr = np.ones(df.index.size, dtype=np.bool8)
+            arr[contents] = False
+            return df.iloc[arr]
+        return df.iloc[contents]
+    any_levels = any((isinstance(arg, level_labels) for arg in args))
+    if any_levels:
+        raise ValueError(
+            "`level_labels` cannot be combined with other selection options."
+        )
+    # applicable to any list-like object (ndarray, Series, pd.Index, ...)
+    search_result = []
     for arg in args:
         if is_list_like(arg) and (not isinstance(arg, tuple)):
-            search_row_names.extend(arg)
+            search_result.extend(arg)
         else:
-            search_row_names.append(arg)
-    if level is not None:
-        # goal here is to capture the original columns
-        # trim the df.columns to the specified level only,
-        # and apply the selection (_select_column_names)
-        # to get the relevant column labels.
-        # note that no level is dropped; if there are three levels,
-        # then three levels are returned, with the specified labels
-        # selected/deselected.
-        # A copy of the dataframe is made via set_axis,
-        # to avoid mutating the original dataframe.
-        df_index = df.index
-        check("level", level, [int, str])
-        full_column_list = df_index.get_level_values(level)
-        full_column_list = _select_rows(
-            search_row_names, df.set_axis(full_column_list, axis=0)
-        )
-        full_column_list = df_index.isin(full_column_list, level=level)
-        full_column_list = df_index[full_column_list]
-    else:
-        full_column_list = _select_rows(search_row_names, df)
+            search_result.append(arg)
+    search_result = _select_rows(search_result, df)
     if invert:
-        return df.drop(index=full_column_list)
-    return df.loc[full_column_list]
+        return df.drop(index=search_result)
+    return df.loc[search_result]

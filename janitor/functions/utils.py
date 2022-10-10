@@ -4,9 +4,11 @@ import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
 import re
-from typing import Hashable, Iterable, List, Optional, Pattern, Union
+from typing import Hashable, Iterable, List, Optional, Pattern, Union, Any
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.api.indexers import check_array_indexer
+from dataclasses import dataclass, is_dataclass
+
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
@@ -538,6 +540,111 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
     return _select_list(df, rows, _select_rows, label="index")
 
 
+def _level_labels(
+    index: pd.Index, label: Any, level: Optional[Union[list, int, str]] = None
+):
+    """
+    Get labels from a pandas Index. It is meant to be used in level_labels,
+    which should be called in any of the select functions
+    (`select_columns`, `select_rows`, `select`),
+    for selecting on multiple levels.
+
+    `label` can be a scalar, a slice, a sequence of labels - any argument
+    that can be passed to `pd.MultiIndex.get_loc` or `pd.MultiIndex.get_locs`.
+
+    :param index: A Pandas Index.
+    :param label: Any object that is supported in Pandas index.
+    :param level: Which level to select the labels from.
+        If None, the labels are assumed to be selected
+        from all levels.
+        For multiple levels, the length of `arg` should
+        match the length of `level`.
+    :returns: A Pandas Index of matching labels.
+    :raises TypeError: If `level` is a list and contains
+        a mix of strings and integers.
+    :raises ValueError: If `level` is a string and does not exist.
+    :raises IndexError: If `level` is an integer and is not less than
+        the number of levels of the Index.
+    """
+    if not isinstance(index, pd.MultiIndex):
+        raise ValueError("Selection is applicable only to MultiIndex.")
+    if level is None:
+        if is_scalar(label) or isinstance(label, tuple):
+            arr = index.get_loc(label)
+        else:
+            arr = index.get_locs(label)
+
+    else:
+
+        check("level", level, [list, int, str])
+
+        if isinstance(level, (str, int)):
+            level = [level]
+
+        all_str = (isinstance(entry, str) for entry in level)
+        all_str = all(all_str)
+        all_int = (isinstance(entry, int) for entry in level)
+        all_int = all(all_int)
+        if not all_str | all_int:
+            raise TypeError(
+                "All entries in the `level` parameter "
+                "should be either strings or integers."
+            )
+
+        uniqs = set()
+        level_numbers = []
+        # check for duplicates
+        # check if every value in `level` exists
+        for lev in level:
+            if isinstance(lev, str):
+                if lev not in index.names:
+                    raise ValueError(f"Level {lev} not found.")
+                pos = index.names.index(lev)
+                level_numbers.append(pos)
+            else:
+                # copied from pandas/indexes/multi.py
+                n_levs = index.nlevels
+                if lev < 0:
+                    lev += n_levs
+                if lev < 0:
+                    orig_lev = lev - n_levs
+                    raise IndexError(
+                        f"Too many levels: Index has only {n_levs} levels, "
+                        f"{orig_lev} is not a valid level number"
+                    )
+                elif lev >= n_levs:
+                    raise IndexError(
+                        f"Too many levels: Index has only {n_levs} levels, "
+                        f"not {lev + 1}"
+                    )
+                level_numbers.append(lev)
+            if lev in uniqs:
+                raise ValueError(
+                    f"Entries in `level` should be unique; "
+                    f"{lev} exists multiple times."
+                )
+            uniqs.add(lev)  # noqa: PD005
+
+        n_levs = len(level)
+        n_levels = range(index.nlevels)
+        ordered = list(n_levels[:n_levs]) == level_numbers
+        if not ordered:
+            tail = (num for num in n_levels if num not in level_numbers)
+            level_numbers.extend(tail)
+            index = index.reorder_levels(order=level_numbers)
+        if is_scalar(label) or isinstance(label, tuple):
+            arr = index.get_loc(label)
+        else:
+            arr = index.get_locs(label)
+    if is_bool_dtype(arr):
+        return arr.nonzero()[0]
+    if isinstance(arr, slice):
+        return np.r_[arr]
+    if isinstance(arr, int):
+        return [arr]
+    return arr
+
+
 def _convert_to_numpy_array(
     left: np.ndarray, right: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -552,3 +659,29 @@ def _convert_to_numpy_array(
         left = left.to_numpy(copy=False)
         right = right.to_numpy(copy=False)
     return left, right
+
+
+# copied from python dataclasses docs
+def is_dataclass_instance(obj):
+    return is_dataclass(obj) and not isinstance(obj, type)
+
+
+@dataclass
+class level_labels:
+    """
+    Helper class for selecting on a Pandas MultiIndex.
+
+    `label` can be a scalar, a slice, a sequence of labels
+    - any argument that can be passed to
+    `pd.MultiIndex.get_loc` or `pd.MultiIndex.get_locs`
+
+    :param label: Value to be selected from the index.
+    :param level: Determines hich level to select the labels from.
+        If None, the labels are assumed to be selected
+        from all levels. For multiple levels,
+        the length of `label` should match the length of `level`.
+    :returns: A dataclass.
+    """
+
+    label: Any
+    level: Optional[Union[int, str]] = None

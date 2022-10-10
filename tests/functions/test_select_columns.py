@@ -1,6 +1,5 @@
 import pandas as pd
 import pytest
-import re
 from pandas.testing import assert_frame_equal
 
 
@@ -87,9 +86,10 @@ def test_select_callable_columns(dataframe, invert, expected):
     assert_frame_equal(df, dataframe[expected])
 
 
-@pytest.fixture
-def df_tuple():
-    "pytest fixture."
+def test_multiindex():
+    """
+    Test output for a MultiIndex and tuple passed.
+    """
     frame = pd.DataFrame(
         {
             "A": {0: "a", 1: "b", 2: "c"},
@@ -98,49 +98,6 @@ def df_tuple():
         }
     )
     frame.columns = [list("ABC"), list("DEF")]
-    return frame
-
-
-def test_multiindex(df_tuple):
-    """
-    Test output for a MultiIndex and tuple passed.
-    """
     assert_frame_equal(
-        df_tuple.select_columns(("A", "D")), df_tuple.loc[:, [("A", "D")]]
+        frame.select_columns(("A", "D")), frame.loc[:, [("A", "D")]]
     )
-
-
-def test_level_callable(df_tuple):
-    """
-    Test output if level is supplied for a callable.
-    """
-    expected = df_tuple.select_columns(
-        lambda df: df.name.startswith("A"), level=0
-    )
-    actual = df_tuple.xs("A", axis=1, drop_level=False, level=0)
-    assert_frame_equal(actual, expected)
-
-
-def test_level_regex(df_tuple):
-    """
-    Test output if level is supplied for a regex
-    """
-    expected = df_tuple.select_columns(re.compile("D"), level=1)
-    actual = df_tuple.xs("D", axis=1, drop_level=False, level=1)
-    assert_frame_equal(actual, expected)
-
-
-def test_level_slice(df_tuple):
-    """
-    Test output if level is supplied for a slice
-    """
-    expected = df_tuple.select_columns(slice("F", "D"), level=1)
-    assert_frame_equal(df_tuple, expected)
-
-
-def test_level_str(df_tuple):
-    """
-    Test output if level is supplied for a string.
-    """
-    expected = df_tuple.select_columns("A", level=0, invert=True)
-    assert_frame_equal(df_tuple.drop(columns="A", axis=1, level=0), expected)

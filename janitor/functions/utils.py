@@ -325,7 +325,6 @@ def _select_slice(index, selection, label="column"):
         stop_ = index.get_loc(stop)
     start_check = isinstance(start_, slice)
     stop_check = isinstance(stop_, slice)
-    print(start_check, stop_check)
 
     if start_check:
         start = start_.start

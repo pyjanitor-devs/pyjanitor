@@ -364,7 +364,7 @@ class IndexLabel:
     """
 
     label: Any
-    level: Optional[Union[int, str]] = None
+    level: Optional[Union[list, int, str]] = None
 
 
 def _select_list(df, selection, func, label="columns"):

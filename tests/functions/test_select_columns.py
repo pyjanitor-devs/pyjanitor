@@ -190,15 +190,15 @@ def test_multiindex_invert(multiindex):
     )
 
 
-# def test_errors_MultiIndex(multiindex):
-#     """
-#     Raise if `level` is a mix of str and int
-#     """
-#     ix = IndexLabel(("bar", "one"), level=["first", 1])
-#     msg = "All entries in the `level` parameter "
-#     msg += "should be either strings or integers."
-#     with pytest.raises(TypeError, match=msg):
-#         multiindex.select_columns(ix)
+def test_errors_MultiIndex(multiindex):
+    """
+    Raise if `level` is a mix of str and int
+    """
+    ix = IndexLabel(("bar", "one"), level=["first", 1])
+    msg = "All entries in the `level` parameter "
+    msg += "should be either strings or integers."
+    with pytest.raises(TypeError, match=msg):
+        multiindex.select_columns(ix)
 
 
 def test_errors_MultiIndex1(multiindex):

@@ -711,6 +711,7 @@ def _generic_select(
     """
     indices = []
     func = {"index": _select_rows, "columns": _select_columns}
+    # applicable to any list-like object (ndarray, Series, pd.Index, ...)
     for arg in args:
         if is_list_like(arg) and (not isinstance(arg, tuple)):
             indices.extend(arg)

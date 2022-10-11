@@ -53,7 +53,6 @@ def select_columns(
     :returns: A pandas DataFrame with the specified columns selected.
     """  # noqa: E501
 
-    # applicable to any list-like object (ndarray, Series, pd.Index, ...)
     return _generic_select(df, args, invert, axis="columns")
 
 
@@ -107,5 +106,4 @@ def select_rows(
     :returns: A pandas DataFrame with the specified rows selected.
     """  # noqa: E501
 
-    # applicable to any list-like object (ndarray, Series, pd.Index, ...)
     return _generic_select(df, args, invert, axis="index")

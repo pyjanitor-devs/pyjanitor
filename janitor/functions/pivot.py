@@ -382,17 +382,26 @@ def _data_checks_pivot_longer(
                 "when the columns are a MultiIndex."
             )
 
+    indices = None
     if column_names is not None:
         if is_list_like(column_names):
             column_names = list(column_names)
-        column_names = _select_columns(column_names, df)
-        column_names = list(column_names)
+        indices = _select_columns(column_names, df)
+        column_names = df.columns[indices]
+        if not is_list_like(column_names):
+            column_names = [column_names]
+        else:
+            column_names = list(column_names)
 
     if index is not None:
         if is_list_like(index):
             index = list(index)
-        index = _select_columns(index, df)
-        index = list(index)
+        indices = _select_columns(index, df)
+        index = df.columns[indices]
+        if not is_list_like(index):
+            index = [index]
+        else:
+            index = list(index)
 
     if index is None:
         if column_names is None:
@@ -1454,12 +1463,16 @@ def _data_checks_pivot_wider(
     Type annotations are not provided because this function is where type
     checking happens.
     """
-
+    indices = None
     if index is not None:
         if is_list_like(index):
             index = list(index)
-        index = _select_columns(index, df)
-        index = list(index)
+        indices = _select_columns(index, df)
+        index = df.columns[indices]
+        if not is_list_like(index):
+            index = [index]
+        else:
+            index = list(index)
 
     if names_from is None:
         raise ValueError(
@@ -1468,14 +1481,22 @@ def _data_checks_pivot_wider(
 
     if is_list_like(names_from):
         names_from = list(names_from)
-    names_from = _select_columns(names_from, df)
-    names_from = list(names_from)
+    indices = _select_columns(names_from, df)
+    names_from = df.columns[indices]
+    if not is_list_like(names_from):
+        names_from = [names_from]
+    else:
+        names_from = list(names_from)
 
     if values_from is not None:
         if is_list_like(values_from):
             values_from = list(values_from)
-        out = _select_columns(values_from, df)
-        out = list(out)
+        indices = _select_columns(values_from, df)
+        out = df.columns[indices]
+        if not is_list_like(out):
+            out = [out]
+        else:
+            out = list(out)
         # hack to align with pd.pivot
         if values_from == out[0]:
             values_from = out[0]

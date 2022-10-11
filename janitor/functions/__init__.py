@@ -64,7 +64,7 @@ from .rename_columns import rename_column, rename_columns
 from .reorder_columns import reorder_columns
 from .round_to_fraction import round_to_fraction
 from .row_to_names import row_to_names
-from .select import select_columns, select_rows, IndexLabel
+from .select import select_columns, select_rows
 from .shuffle import shuffle
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
@@ -75,4 +75,4 @@ from .toset import toset
 from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
-from .utils import patterns, unionize_dataframe_categories
+from .utils import patterns, unionize_dataframe_categories, IndexLabel

@@ -1,5 +1,4 @@
 """Utility functions for all of the functions submodule."""
-from itertools import chain
 import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
@@ -215,32 +214,37 @@ def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
     return df
 
 
-def _is_str_or_cat(df_columns):
-    """Check if the column/index is a string, or categorical with strings."""
-    if is_categorical_dtype(df_columns):
-        return is_string_dtype(df_columns.categories)
-    return is_string_dtype(df_columns)
+# this section relates to column/row selection
+# indices/slices/booleans are returned,
+# instead of the actual labels
+# as it is marginally faster when indexing the dataframe
+def _is_str_or_cat(index):
+    """
+    Check if the column/index is a string,
+    or categorical with strings.
+    """
+    if is_categorical_dtype(index):
+        return is_string_dtype(index.categories)
+    return is_string_dtype(index)
 
 
-def _select_strings(df_columns, selection):
-    """Generic function for string selection on rows/columns"""
-    if _is_str_or_cat(df_columns):
-        if selection in df_columns:
-            return [selection]
+def _select_strings(index, selection):
+    """
+    Generic function for string selection on rows/columns.
+
+    Returns a sequence of booleans, a slice, or an integer.
+    """
+    if _is_str_or_cat(index):
+        if selection in index:
+            return index.get_loc(selection)
         # fix for Github Issue 1160
-        outcome = [
-            fnmatch.fnmatchcase(column, selection) for column in df_columns
-        ]
+        outcome = [fnmatch.fnmatchcase(column, selection) for column in index]
         if not any(outcome):
             raise KeyError(f"No match was returned for '{selection}'.")
-        return df_columns[outcome]
-
-    if is_datetime64_dtype(df_columns):
+        return outcome
+    if is_datetime64_dtype(index):
         try:
-            timestamp = df_columns.get_loc(selection)
-            if not isinstance(timestamp, int):
-                return df_columns[timestamp]
-            return [df_columns[timestamp]]
+            return index.get_loc(selection)
         except Exception as exc:
             raise KeyError(
                 f"No match was returned for '{selection}'."
@@ -249,21 +253,29 @@ def _select_strings(df_columns, selection):
     raise KeyError(f"No match was returned for '{selection}'.")
 
 
-def _select_regex(df_columns, selection):
-    """Generic function for selecting regex rows/columns."""
-    if _is_str_or_cat(df_columns):
-        bools = df_columns.str.contains(selection, na=False, regex=True)
+def _select_regex(index, selection):
+    """
+    Generic function for selecting regex rows/columns.
+
+    Returns a sequence of booleans.
+    """
+    if _is_str_or_cat(index):
+        bools = index.str.contains(selection, na=False, regex=True)
         if not bools.any():
             raise KeyError(f"No match was returned for {selection}.")
-        return df_columns[bools]
+        return bools
     raise KeyError(f"No match was returned for {selection}.")
 
 
-def _select_slice(df_columns, selection, label="column"):
-    """Generic function for selecting slice on rows/columns."""
-    is_date_column = is_datetime64_dtype(df_columns)
-    if not df_columns.is_monotonic_increasing:
-        if not df_columns.is_unique:
+def _select_slice(index, selection, label="column"):
+    """
+    Generic function for selecting slice on rows/columns.
+
+    Returns a slice object.
+    """
+    is_date_column = is_datetime64_dtype(index)
+    if not index.is_monotonic_increasing:
+        if not index.is_unique:
             raise ValueError(
                 f"Non-unique {label} labels should be monotonic increasing."
             )
@@ -283,39 +295,37 @@ def _select_slice(df_columns, selection, label="column"):
     step_check = any((step is None, isinstance(step, int)))
     if not step_check:
         raise ValueError(
-            "The step value for the slice "
-            "must either be an integer or `None`."
-        )
-    if step and (not df_columns.is_unique):
-        raise ValueError(
-            "The step argument for slice is not applicable "
-            "to non unique labels."
+            f"The step value for the slice {selection} "
+            "must either be an integer or None."
         )
     start_check = None
     stop_check = None
     if not is_date_column:
-        start_check = any((start is None, start in df_columns))
+        start_check = any((start is None, start in index))
         if not start_check:
             raise ValueError(
-                "The start value for the slice must either be `None` "
+                f"The start value for the slice {selection} "
+                "must either be None "
                 f"or exist in the dataframe's {label}."
             )
-        stop_check = any((stop is None, stop in df_columns))
+        stop_check = any((stop is None, stop in index))
         if not stop_check:
             raise ValueError(
-                "The stop value for the slice must either be `None` "
+                f"The stop value for the slice {selection} "
+                "must either be None "
                 f"or exist in the dataframe's {label}."
             )
     if start is None:
         start_ = 0
     else:
-        start_ = df_columns.get_loc(start)
+        start_ = index.get_loc(start)
     if stop is None:
-        stop_ = len(df_columns)
+        stop_ = len(index)
     else:
-        stop_ = df_columns.get_loc(stop)
+        stop_ = index.get_loc(stop)
     start_check = isinstance(start_, slice)
     stop_check = isinstance(stop_, slice)
+    print(start_check, stop_check)
 
     if start_check:
         start = start_.start
@@ -330,10 +340,11 @@ def _select_slice(df_columns, selection, label="column"):
             start = start_.stop - 1
         if stop_check:
             stop = stop_.start
-
     if start > stop:
-        return df_columns[slice(stop, start + 1, step)][::-1]
-    return df_columns[slice(start, stop + 1, step)]
+        index = range(index.size)
+        slicer = slice(stop, start + 1, step)
+        return index[slicer][::-1]
+    return slice(start, stop + 1, step)
 
 
 @dataclass
@@ -358,35 +369,52 @@ class IndexLabel:
 
 
 def _select_list(df, selection, func, label="columns"):
-    """Generic function for list selection of rows/columns"""
-    df_columns = getattr(df, label)
+    """
+    Generic function for list selection of rows/columns.
+
+    Returns an array of integers.
+    """
+    index = getattr(df, label)
     if all(map(is_bool, selection)):
-        if len(selection) != len(df_columns):
+        if len(selection) != len(index):
             raise ValueError(
                 "The length of the list of booleans "
                 f"({len(selection)}) does not match "
-                f"the number of {label}({df_columns.size}) "
+                f"the number of {label}({index.size}) "
                 "in the dataframe."
             )
 
-        return df_columns[selection]
+        return np.asanyarray(selection).nonzero()[0]
 
-    selection = (func(entry, df) for entry in selection)
-
-    selection = chain.from_iterable(selection)
-
-    # get rid of possible duplicates
-    return list(dict.fromkeys(selection))
+    contents = []
+    for entry in selection:
+        arr = func(entry, df)
+        if is_list_like(arr):
+            arr = np.asanyarray(arr)
+        if is_bool_dtype(arr):
+            arr = arr.nonzero()[0]
+        elif isinstance(arr, slice):
+            arr = range(index.size)[arr]
+        elif isinstance(arr, int):
+            arr = [arr]
+        contents.append(arr)
+    if len(contents) > 1:
+        contents = np.concatenate(contents)
+        # remove possible duplicates
+        return pd.unique(contents)
+    return contents[0]
 
 
 @singledispatch
 def _select_columns(columns_to_select, df):
     """
-    base function for column selection.
-    Returns a list of column names.
+    Base function for column selection.
+
+    Returns either an integer, a slice,
+    a sequence of booleans, or an array of integers.
     """
     if columns_to_select in df.columns.tolist():
-        return [columns_to_select]
+        return df.columns.get_loc(columns_to_select)
     raise KeyError(f"No match was returned for {columns_to_select}.")
 
 
@@ -397,7 +425,9 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to strings.
     It is also applicable to shell-like glob strings,
     which are supported by `fnmatch`.
-    A list/pandas Index of matching column names is returned.
+
+    Returns either a sequence of booleans, an integer,
+    or a slice.
     """
     return _select_strings(df.columns, columns_to_select)
 
@@ -408,7 +438,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Base function for column selection.
     Applies only to regular expressions.
     `re.compile` is required for the regular expression.
-    A pandas Index of matching column names is returned.
+
+    Returns an array of booleans.
     """
     return _select_regex(df.columns, columns_to_select)
 
@@ -423,11 +454,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     or exist in the dataframe's columns;
     same goes for the stop slice value.
     The step slice value should be an integer or None.
-    A slice, if passed correctly in a Multindex column,
-    returns a list of tuples across all levels of the
-    column.
 
-    A pandas Index of matching column names is returned.
+    Returns a slice object.
     """
     return _select_slice(df.columns, columns_to_select, label="column")
 
@@ -440,7 +468,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     The callable is applied to every column in the dataframe.
     Either True or False is expected per column.
 
-    A pandas Index of matching column names is returned.
+    Returns an array of booleans.
     """
     # the function will be applied per series.
     # this allows filtration based on the contents of the series
@@ -450,22 +478,22 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     # the returned values should be a sequence of booleans,
     # with at least one True.
 
-    filtered_columns = df.apply(columns_to_select)
+    bools = df.apply(columns_to_select)
 
-    if not is_bool_dtype(filtered_columns):
+    if not is_bool_dtype(bools):
         raise TypeError(
             "The output of the applied callable should be a boolean array."
         )
-    if not filtered_columns.any():
+    if not bools.any():
         raise KeyError(f"No match was returned for {columns_to_select}.")
 
-    return df.columns[filtered_columns]
+    return bools
 
 
 @_select_columns.register(IndexLabel)  # noqa: F811
 def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
-    raise NotImplementedError(
-        "`IndexLabel` cannot be combined " "with other selection options."
+    return _level_labels(
+        df.columns, columns_to_select.label, columns_to_select.level
     )
 
 
@@ -476,7 +504,8 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Applies only to list type.
     It can take any of slice, str, callable, re.Pattern types, ...,
     or a combination of these types.
-    A list of column names is returned.
+
+    Returns an array of integers.
     """
     return _select_list(
         df, columns_to_select, _select_columns, label="columns"
@@ -486,11 +515,13 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 @singledispatch
 def _select_rows(rows, df):
     """
-    base function for row selection.
-    Returns a list of index names.
+    Base function for row selection.
+
+    Returns a sequence of booleans, an integer, a slice,
+    or an array of numbers.
     """
     if rows in df.index.tolist():
-        return [rows]
+        return df.index.get_loc(rows)
     raise KeyError(f"No match was returned for {rows}.")
 
 
@@ -501,7 +532,8 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
     Applies only to strings.
     It is also applicable to shell-like glob strings,
     which are supported by `fnmatch`.
-    A list/pandas Index of matching rows is returned.
+
+    Returns a sequence of booleans, an integer, or a slice.
     """
     return _select_strings(df.index, rows)
 
@@ -512,7 +544,8 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
     Base function for row selection.
     Applies only to regular expressions.
     `re.compile` is required for the regular expression.
-    A pandas Index of matching rows is returned.
+
+    Returns an array of booleans.
     """
     return _select_regex(df.index, rows)
 
@@ -527,11 +560,8 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
     or exist in the dataframe's index;
     same goes for the stop slice value.
     The step slice value should be an integer or None.
-    A slice, if passed correctly in a Multindex index,
-    returns a list of tuples across all levels of the
-    index.
 
-    A pandas Index of matching rows is returned.
+    Returns a slice object.
     """
     return _select_slice(df.index, rows, label="index")
 
@@ -544,20 +574,18 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
     The callable is applied to the dataframe.
     A valid list-like indexer is expected.
 
-    A pandas Index of matching rows is returned.
+    Returns an array of booleans/integers.
     """
     rows = apply_if_callable(rows, df)
 
     _ = check_array_indexer(df.index, rows)
 
-    return df.index[rows]
+    return rows
 
 
 @_select_rows.register(IndexLabel)  # noqa: F811
 def _row_sel_dispatch(rows, df):  # noqa: F811
-    raise NotImplementedError(
-        "`IndexLabel` cannot be combined " "with other selection options."
-    )
+    return _level_labels(df.index, rows.label, rows.level)
 
 
 @_select_rows.register(list)  # noqa: F811
@@ -567,7 +595,8 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
     Applies only to list type.
     It can take any of slice, str, callable, re.Pattern types, ...,
     or a combination of these types.
-    A list of matching row labels is returned.
+
+    Returns an array of integers.
     """
     return _select_list(df, rows, _select_rows, label="index")
 
@@ -591,7 +620,7 @@ def _level_labels(
         from all levels.
         For multiple levels, the length of `arg` should
         match the length of `level`.
-    :returns: A Pandas Index of matching labels.
+    :returns: An array of integers.
     :raises TypeError: If `level` is a list and contains
         a mix of strings and integers.
     :raises ValueError: If `level` is a string and does not exist.
@@ -668,32 +697,36 @@ def _level_labels(
             arr = index.get_locs(label)
     if is_bool_dtype(arr):
         return arr.nonzero()[0]
-    if isinstance(arr, slice):
-        return np.r_[arr]
-    if isinstance(arr, int):
+    elif isinstance(arr, slice):
+        index = range(len(index))
+        return index[arr]
+    elif isinstance(arr, int):
         return [arr]
     return arr
 
 
-def _select_index_labels(df, args, axis="index", invert=False):
+def _generic_select(
+    df: pd.DataFrame, args: tuple, invert: bool, axis: str = "index"
+) -> pd.DataFrame:
     """
-    Selection on rows/columns for a MultiIndex.
+    Index DataFrame on the index or columns.
+
+    Returns a DataFrame.
     """
-    df_columns = getattr(df, axis)
-    contents = [
-        _level_labels(df_columns, arg.label, arg.level) for arg in args
-    ]
-    if len(contents) > 1:
-        contents = np.concatenate(contents)
-        # remove possible duplicates
-        contents = pd.unique(contents)
-    else:
-        contents = contents[0]
+    indices = []
+    func = {"index": _select_rows, "columns": _select_columns}
+    for arg in args:
+        if is_list_like(arg) and (not isinstance(arg, tuple)):
+            indices.extend(arg)
+        else:
+            indices.append(arg)
+    indices = func[axis](indices, df)
     if invert:
-        arr = np.ones(df_columns.size, dtype=np.bool8)
-        arr[contents] = False
-        return df.iloc(axis=axis)[arr]
-    return df.iloc(axis=axis)[contents]
+        index = getattr(df, axis)
+        rev = np.ones(len(index), dtype=np.bool8)
+        rev[indices] = False
+        return df.iloc(axis=axis)[rev]
+    return df.iloc(axis=axis)[indices]
 
 
 def _convert_to_numpy_array(

@@ -1,13 +1,7 @@
 import pandas_flavor as pf
 import pandas as pd
-from pandas.api.types import is_list_like
 from janitor.utils import deprecated_alias
-from janitor.functions.utils import (
-    IndexLabel,
-    _select_columns,
-    _select_rows,
-    _select_index_labels,
-)
+from janitor.functions.utils import _generic_select
 
 
 @pf.register_dataframe_method
@@ -24,7 +18,7 @@ def select_columns(
     regex, slice, array-like object, or a list of the previous options.
 
     Selection on a MultiIndex is possible with the
-    [`IndexLabel`][janitor.functions.select.IndexLabel] class.
+    [`IndexLabel`][janitor.functions.utils.IndexLabel] class.
 
     This method does not mutate the original DataFrame.
 
@@ -52,7 +46,7 @@ def select_columns(
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
         For selection on a MultiIndex,
-        [`IndexLabel`][janitor.functions.select.IndexLabel] can be handy.
+        [`IndexLabel`][janitor.functions.utils.IndexLabel] can be handy.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.
@@ -60,19 +54,7 @@ def select_columns(
     """  # noqa: E501
 
     # applicable to any list-like object (ndarray, Series, pd.Index, ...)
-    search_result = []
-    for arg in args:
-        if is_list_like(arg) and (not isinstance(arg, tuple)):
-            search_result.extend(arg)
-        else:
-            search_result.append(arg)
-    index_labels = (isinstance(arg, IndexLabel) for arg in search_result)
-    if all(index_labels):
-        return _select_index_labels(df, search_result, "columns", invert)
-    search_result = _select_columns(search_result, df)
-    if invert:
-        return df.drop(columns=search_result)
-    return df.loc[:, search_result]
+    return _generic_select(df, args, invert, axis="columns")
 
 
 @pf.register_dataframe_method
@@ -88,7 +70,7 @@ def select_rows(
     regex, slice, array-like object, or a list of the previous options.
 
     Selection on a MultiIndex is possible with the
-    [`IndexLabel`][janitor.functions.select.IndexLabel] class.
+    [`IndexLabel`][janitor.functions.utils.IndexLabel] class.
 
     This method does not mutate the original DataFrame.
 
@@ -118,7 +100,7 @@ def select_rows(
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
         For selection on a MultiIndex,
-        [`IndexLabel`][janitor.functions.select.IndexLabel] can be handy.
+        [`IndexLabel`][janitor.functions.utils.IndexLabel] can be handy.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the rows
         provided.
@@ -126,17 +108,4 @@ def select_rows(
     """  # noqa: E501
 
     # applicable to any list-like object (ndarray, Series, pd.Index, ...)
-    search_result = []
-    for arg in args:
-        if is_list_like(arg) and (not isinstance(arg, tuple)):
-            search_result.extend(arg)
-        else:
-            search_result.append(arg)
-    index_labels = (isinstance(arg, IndexLabel) for arg in search_result)
-    if all(index_labels):
-        return _select_index_labels(df, search_result, "index", invert)
-
-    search_result = _select_rows(search_result, df)
-    if invert:
-        return df.drop(index=search_result)
-    return df.loc[search_result]
+    return _generic_select(df, args, invert, axis="index")

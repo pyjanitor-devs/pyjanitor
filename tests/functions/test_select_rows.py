@@ -116,18 +116,6 @@ def test_slice_start_presence(multiindex):
         multiindex.droplevel("first").select_rows(slice("bar", "one"))
 
 
-def test_errors_indexlabel(multiindex):
-    """
-    Raise if `IndexLabel` is combined
-    with other selection options
-    """
-    ix = IndexLabel("one")
-    msg = "`IndexLabel` cannot be combined "
-    msg += "with other selection options."
-    with pytest.raises(NotImplementedError, match=msg):
-        multiindex.select_rows(ix, "bar")
-
-
 def test_slice_stop_presence(multiindex):
     """
     Raise ValueError if `rows` is a slice instance
@@ -137,10 +125,13 @@ def test_slice_stop_presence(multiindex):
         multiindex.droplevel("second").select_rows(slice("bar", "one"))
 
 
-def test_slice_step_presence():
+slicers = [slice("code2", "Name"), slice("code2", "Name", 2)]
+
+
+@pytest.mark.parametrize("slicer", slicers)
+def test_slice_reverse(slicer):
     """
-    Raise ValueError if `rows` is a slice instance,
-    step value is provided, and the index is not unique.
+    Test output for reverse slice
     """
     index = [
         "Name",
@@ -157,29 +148,54 @@ def test_slice_step_presence():
         "type3",
     ]
     dups = pd.DataFrame([], index=index)
-    with pytest.raises(ValueError):
-        dups.select_rows(slice("code3", "code", 2))
+    actual = dups.select_rows(slicer)
+    start = slicer.stop
+    stop = slicer.start
+    step = slicer.step
+    expected = dups.loc[start:stop:step]
+    expected = expected.loc[::-1]
+    assert_frame_equal(actual, expected)
 
 
-def test_slice_dtypes(multiindex):
+def test_slice_start(multiindex):
     """
-    Raise ValueError if `columns_to_select` is a slice instance
-    and either the start value or the stop value is not a string,
-    or the step value is not an integer.
+    Raise ValueError if the search value
+    is a slice instance  and the start value
+    does not exist in the dataframe.
     """
-    multi = multiindex.droplevel(1).sort_index()
-    with pytest.raises(
-        ValueError,
-        match="The start value for the slice must either be `None`.+",
-    ):
-        multi.select_rows(slice(1, "foo"))
-    with pytest.raises(
-        ValueError,
-        match="The stop value for the slice must either be `None`.+",
-    ):
-        multi.select_rows(slice("bar", 1))
-    with pytest.raises(ValueError, match="The step value for the slice.+"):
-        multi.select_rows(slice("bar", "foo", "two"))
+    slicer = slice(1, "foo")
+    msg = f"The start value for the slice {slicer}"
+    msg += " must either be None or exist"
+    msg += " in the dataframe's index."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        multiindex.select_rows(slicer)
+
+
+def test_slice_stop(multiindex):
+    """
+    Raise ValueError if the search value
+    is a slice instance  and the stop value
+    does not exist in the dataframe
+    """
+    slicer = slice("bar", 1)
+    msg = f"The stop value for the slice {slicer}"
+    msg += " must either be None or exist"
+    msg += " in the dataframe's index."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        multiindex.select_rows(slicer)
+
+
+def test_slice_step(multiindex):
+    """
+    Raise ValueError if the search value
+    is a slice instance and the step value
+    is not an integer or None
+    """
+    slicer = slice("bar", "foo", "two")
+    msg = f"The step value for the slice {slicer}"
+    msg += " must either be an integer or None."
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        multiindex.select_rows(slicer)
 
 
 def test_boolean_list_uneven_length(dates):

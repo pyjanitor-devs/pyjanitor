@@ -116,6 +116,18 @@ def test_slice_start_presence(multiindex):
         multiindex.droplevel("first").select_rows(slice("bar", "one"))
 
 
+def test_errors_indexlabel(multiindex):
+    """
+    Raise if `IndexLabel` is combined
+    with other selection options
+    """
+    ix = IndexLabel("one")
+    msg = "`IndexLabel` cannot be combined "
+    msg += "with other selection options."
+    with pytest.raises(NotImplementedError, match=msg):
+        multiindex.select_rows(ix, "bar")
+
+
 def test_slice_stop_presence(multiindex):
     """
     Raise ValueError if `rows` is a slice instance

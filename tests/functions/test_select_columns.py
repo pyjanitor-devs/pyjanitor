@@ -240,3 +240,15 @@ def test_errors_MultiIndex4(multiindex):
     msg += "1 exists multiple times."
     with pytest.raises(ValueError, match=msg):
         multiindex.select_columns(ix)
+
+
+def test_errors_MultiIndex5(multiindex):
+    """
+    Raise if `IndexLabel` is combined
+    with other selection options
+    """
+    ix = IndexLabel("one")
+    msg = "`IndexLabel` cannot be combined "
+    msg += "with other selection options."
+    with pytest.raises(NotImplementedError, match=msg):
+        multiindex.select_columns(ix, "bar")

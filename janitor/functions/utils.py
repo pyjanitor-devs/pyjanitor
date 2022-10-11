@@ -489,7 +489,7 @@ def _select_rows(rows, df):
     base function for row selection.
     Returns a list of index names.
     """
-    if rows in df.index:
+    if rows in df.index.tolist():
         return [rows]
     raise KeyError(f"No match was returned for {rows}.")
 

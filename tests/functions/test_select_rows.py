@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from pandas.testing import assert_frame_equal
-from janitor.functions.select import IndexLabel
+from janitor.functions.utils import IndexLabel
 
 
 @pytest.fixture

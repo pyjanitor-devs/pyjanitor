@@ -52,7 +52,7 @@ def pivot_longer(
     row axis.
 
     Column selection in `index` and `column_names` is possible using the
-    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     Example:
 
@@ -1181,7 +1181,7 @@ def pivot_wider(
 
     Column selection in `index`, `names_from` and `values_from`
     is possible using the
-    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     A ValueError is raised if the combination
     of the `index` and `names_from` is not unique.

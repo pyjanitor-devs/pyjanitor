@@ -23,8 +23,8 @@ def select_columns(
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
 
-    Selection on a MultiIndex is possible with the `IndexLabel`
-    class.
+    Selection on a MultiIndex is possible with the
+    [`IndexLabel`][janitor.functions.select.IndexLabel] class.
 
     This method does not mutate the original DataFrame.
 
@@ -51,7 +51,8 @@ def select_columns(
         a callable which is applicable to each Series in the DataFrame,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-        For selection on a MultiIndex, `IndexLabel` can be handy.
+        For selection on a MultiIndex,
+        [`IndexLabel`][janitor.functions.select.IndexLabel] can be handy.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.
@@ -86,8 +87,8 @@ def select_rows(
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
 
-    Selection on a MultiIndex is possible with the `IndexLabel`
-    class.
+    Selection on a MultiIndex is possible with the
+    [`IndexLabel`][janitor.functions.select.IndexLabel] class.
 
     This method does not mutate the original DataFrame.
 
@@ -116,7 +117,8 @@ def select_rows(
         a callable which is applicable to the DataFrame,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-        For selection on a MultiIndex, `IndexLabel` can be handy.
+        For selection on a MultiIndex,
+        [`IndexLabel`][janitor.functions.select.IndexLabel] can be handy.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the rows
         provided.

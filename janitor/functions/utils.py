@@ -28,6 +28,8 @@ from multipledispatch import dispatch
 from janitor.utils import check_column
 from functools import singledispatch
 
+warnings.simplefilter("always", DeprecationWarning)
+
 
 def unionize_dataframe_categories(
     *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None

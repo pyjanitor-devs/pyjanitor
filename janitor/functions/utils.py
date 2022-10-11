@@ -356,7 +356,7 @@ class IndexLabel:
     `pd.MultiIndex.get_loc` or `pd.MultiIndex.get_locs`
 
     :param label: Value to be selected from the index.
-    :param level: Determines hich level to select the labels from.
+    :param level: Determines which level to select the labels from.
         If None, the labels are assumed to be selected
         from all levels. For multiple levels,
         the length of `label` should match the length of `level`.

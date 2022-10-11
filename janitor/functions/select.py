@@ -98,7 +98,7 @@ def select_rows(
         >>> import pandas as pd
         >>> import janitor
         >>> df = {"col1": [1, 2], "foo": [3, 4], "col2": [5, 6]}
-        >>> df = pd.DataFrame(df, orient='index')
+        >>> df = pd.DataFrame.from_dict(df, orient='index')
         >>> df
               0  1
         col1  1  2

@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from pandas.testing import assert_frame_equal
+from janitor.functions.select import IndexLabel
 
 
 @pytest.fixture
@@ -187,25 +188,11 @@ def test_invert_num(numbers):
     assert_frame_equal(expected, actual)
 
 
-# def test_level_string(multiindex):
-#     """Test output on a level of the MultiIndex."""
-#     expected = multiindex.select_rows("one", level=1)
-#     actual = multiindex.xs(key="one", level=1, drop_level=False)
-#     assert_frame_equal(expected, actual)
-
-
-# def test_level_string_glob(multiindex):
-#     """Test output on a level of the MultiIndex, with a glob."""
-#     expected = multiindex.select_rows("on*", level=1)
-#     actual = multiindex.xs(key="one", level=1, drop_level=False)
-#     assert_frame_equal(expected, actual)
-
-
-# def test_level_regex(multiindex):
-#     """Test output on a level of the MultiIndex, with a regex."""
-#     expected = multiindex.select_rows(re.compile("on."), level=1)
-#     actual = multiindex.xs(key="one", level=1, drop_level=False)
-#     assert_frame_equal(expected, actual)
+def test_level_string(multiindex):
+    """Test output on a level of the MultiIndex."""
+    expected = multiindex.select_rows(IndexLabel("one", level=1))
+    actual = multiindex.xs(key="one", level=1, drop_level=False)
+    assert_frame_equal(expected, actual)
 
 
 def test_date_partial_output(dates):

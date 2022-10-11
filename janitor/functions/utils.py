@@ -7,7 +7,7 @@ import re
 from typing import Hashable, Iterable, List, Optional, Pattern, Union, Any
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.api.indexers import check_array_indexer
-from dataclasses import dataclass, is_dataclass
+from dataclasses import dataclass
 
 
 import pandas as pd
@@ -336,12 +336,30 @@ def _select_slice(df_columns, selection, label="column"):
     return df_columns[slice(start, stop + 1, step)]
 
 
+@dataclass
+class IndexLabel:
+    """
+    Helper class for selecting on a Pandas MultiIndex.
+
+    `label` can be a scalar, a slice, a sequence of labels
+    - any argument that can be passed to
+    `pd.MultiIndex.get_loc` or `pd.MultiIndex.get_locs`
+
+    :param label: Value to be selected from the index.
+    :param level: Determines hich level to select the labels from.
+        If None, the labels are assumed to be selected
+        from all levels. For multiple levels,
+        the length of `label` should match the length of `level`.
+    :returns: A dataclass.
+    """
+
+    label: Any
+    level: Optional[Union[int, str]] = None
+
+
 def _select_list(df, selection, func, label="columns"):
     """Generic function for list selection of rows/columns"""
-    if label == "columns":
-        df_columns = df.columns
-    else:
-        df_columns = df.index
+    df_columns = getattr(df, label)
     if all(map(is_bool, selection)):
         if len(selection) != len(df_columns):
             raise ValueError(
@@ -367,7 +385,7 @@ def _select_columns(columns_to_select, df):
     base function for column selection.
     Returns a list of column names.
     """
-    if columns_to_select in df.columns:
+    if columns_to_select in df.columns.tolist():
         return [columns_to_select]
     raise KeyError(f"No match was returned for {columns_to_select}.")
 
@@ -442,6 +460,13 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
         raise KeyError(f"No match was returned for {columns_to_select}.")
 
     return df.columns[filtered_columns]
+
+
+@_select_columns.register(IndexLabel)  # noqa: F811
+def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+    raise NotImplementedError(
+        "`IndexLabel` cannot be combined " "with other selection options."
+    )
 
 
 @_select_columns.register(list)  # noqa: F811
@@ -528,6 +553,13 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
     return df.index[rows]
 
 
+@_select_rows.register(IndexLabel)  # noqa: F811
+def _row_sel_dispatch(rows, df):  # noqa: F811
+    raise NotImplementedError(
+        "`IndexLabel` cannot be combined " "with other selection options."
+    )
+
+
 @_select_rows.register(list)  # noqa: F811
 def _row_sel_dispatch(rows, df):  # noqa: F811
     """
@@ -553,7 +585,7 @@ def _level_labels(
     that can be passed to `pd.MultiIndex.get_loc` or `pd.MultiIndex.get_locs`.
 
     :param index: A Pandas Index.
-    :param label: Any object that is supported in Pandas index.
+    :param label: Value to select in Pandas index.
     :param level: Which level to select the labels from.
         If None, the labels are assumed to be selected
         from all levels.
@@ -566,8 +598,6 @@ def _level_labels(
     :raises IndexError: If `level` is an integer and is not less than
         the number of levels of the Index.
     """
-    if not isinstance(index, pd.MultiIndex):
-        raise ValueError("Selection is applicable only to MultiIndex.")
     if level is None:
         if is_scalar(label) or isinstance(label, tuple):
             arr = index.get_loc(label)
@@ -645,6 +675,27 @@ def _level_labels(
     return arr
 
 
+def _select_index_labels(df, args, axis="index", invert=False):
+    """
+    Selection on rows/columns for a MultiIndex.
+    """
+    df_columns = getattr(df, axis)
+    contents = [
+        _level_labels(df_columns, arg.label, arg.level) for arg in args
+    ]
+    if len(contents) > 1:
+        contents = np.concatenate(contents)
+        # remove possible duplicates
+        contents = pd.unique(contents)
+    else:
+        contents = contents[0]
+    if invert:
+        arr = np.ones(df_columns.size, dtype=np.bool8)
+        arr[contents] = False
+        return df.iloc(axis=axis)[arr]
+    return df.iloc(axis=axis)[contents]
+
+
 def _convert_to_numpy_array(
     left: np.ndarray, right: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -659,29 +710,3 @@ def _convert_to_numpy_array(
         left = left.to_numpy(copy=False)
         right = right.to_numpy(copy=False)
     return left, right
-
-
-# copied from python dataclasses docs
-def is_dataclass_instance(obj):
-    return is_dataclass(obj) and not isinstance(obj, type)
-
-
-@dataclass
-class level_labels:
-    """
-    Helper class for selecting on a Pandas MultiIndex.
-
-    `label` can be a scalar, a slice, a sequence of labels
-    - any argument that can be passed to
-    `pd.MultiIndex.get_loc` or `pd.MultiIndex.get_locs`
-
-    :param label: Value to be selected from the index.
-    :param level: Determines hich level to select the labels from.
-        If None, the labels are assumed to be selected
-        from all levels. For multiple levels,
-        the length of `label` should match the length of `level`.
-    :returns: A dataclass.
-    """
-
-    label: Any
-    level: Optional[Union[int, str]] = None

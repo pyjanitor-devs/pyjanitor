@@ -406,20 +406,21 @@ def _select_list(df, selection, func, label="columns"):
 
 
 @singledispatch
-def _select_columns(columns_to_select, df):
+def _select_columns(cols, df):
     """
     Base function for column selection.
 
     Returns either an integer, a slice,
-    a sequence of booleans, or an array of integers.
+    a sequence of booleans, or an array of integers,
+    that match the exact location of the target.
     """
-    if columns_to_select in df.columns.tolist():
-        return df.columns.get_loc(columns_to_select)
-    raise KeyError(f"No match was returned for {columns_to_select}.")
+    if cols in df.columns.tolist():
+        return df.columns.get_loc(cols)
+    raise KeyError(f"No match was returned for {cols}.")
 
 
 @_select_columns.register(str)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(cols, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to strings.
@@ -429,11 +430,11 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     Returns either a sequence of booleans, an integer,
     or a slice.
     """
-    return _select_strings(df.columns, columns_to_select)
+    return _select_strings(df.columns, cols)
 
 
 @_select_columns.register(re.Pattern)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(cols, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to regular expressions.
@@ -441,11 +442,11 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
     Returns an array of booleans.
     """
-    return _select_regex(df.columns, columns_to_select)
+    return _select_regex(df.columns, cols)
 
 
 @_select_columns.register(slice)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(cols, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to slices.
@@ -457,15 +458,15 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
     Returns a slice object.
     """
-    return _select_slice(df.columns, columns_to_select, label="column")
+    return _select_slice(df.columns, cols, label="column")
 
 
 @_select_columns.register(dispatch_callable)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(cols, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to callables.
-    The callable is applied to every column in the dataframe.
+    The callable is applied to each column in the dataframe.
     Either True or False is expected per column.
 
     Returns an array of booleans.
@@ -478,27 +479,25 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     # the returned values should be a sequence of booleans,
     # with at least one True.
 
-    bools = df.apply(columns_to_select)
+    bools = df.apply(cols)
 
     if not is_bool_dtype(bools):
         raise TypeError(
             "The output of the applied callable should be a boolean array."
         )
     if not bools.any():
-        raise KeyError(f"No match was returned for {columns_to_select}.")
+        raise KeyError(f"No match was returned for {cols}.")
 
     return bools
 
 
 @_select_columns.register(IndexLabel)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
-    return _level_labels(
-        df.columns, columns_to_select.label, columns_to_select.level
-    )
+def _column_sel_dispatch(cols, df):  # noqa: F811
+    return _level_labels(df.columns, cols.label, cols.level)
 
 
 @_select_columns.register(list)  # noqa: F811
-def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
+def _column_sel_dispatch(cols, df):  # noqa: F811
     """
     Base function for column selection.
     Applies only to list type.
@@ -507,9 +506,7 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
 
     Returns an array of integers.
     """
-    return _select_list(
-        df, columns_to_select, _select_columns, label="columns"
-    )
+    return _select_list(df, cols, _select_columns, label="columns")
 
 
 @singledispatch

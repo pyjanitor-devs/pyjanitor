@@ -404,6 +404,8 @@ def _select_list(df, selection, func, label="columns"):
     if len(indices) == 1:
         if isinstance(indices[0], int):
             return indices
+        if is_list_like(indices[0]):
+            return np.asanyarray(indices[0])
         return indices[0]
     contents = []
     for arr in indices:
@@ -748,6 +750,7 @@ def _generic_select(
     if invert:
         index = getattr(df, axis)
         rev = np.ones(len(index), dtype=np.bool8)
+
         rev[indices] = False
         return df.iloc(axis=axis)[rev]
     return df.iloc(axis=axis)[indices]

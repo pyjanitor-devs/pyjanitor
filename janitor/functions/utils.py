@@ -269,6 +269,18 @@ def _select_regex(index, selection):
     raise KeyError(f"No match was returned for {selection}.")
 
 
+def _select_tuple(index, selection):
+    """
+    Generic function for selecting tuples rows/columns.
+
+    Returns a sequence of booleans.
+    """
+    try:
+        return index.get_loc(selection)
+    except Exception as exc:
+        raise KeyError(f"No match was returned for {selection}.") from exc
+
+
 def _select_slice(index, selection, label="column"):
     """
     Generic function for selecting slice on rows/columns.
@@ -497,6 +509,11 @@ def _column_sel_dispatch(cols, df):  # noqa: F811
     return _level_labels(df.columns, cols.label, cols.level)
 
 
+@_select_columns.register(tuple)  # noqa: F811
+def _column_sel_dispatch(cols, df):  # noqa: F811
+    return _select_tuple(df.columns, cols)
+
+
 @_select_columns.register(list)  # noqa: F811
 def _column_sel_dispatch(cols, df):  # noqa: F811
     """
@@ -584,6 +601,11 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
 @_select_rows.register(IndexLabel)  # noqa: F811
 def _row_sel_dispatch(rows, df):  # noqa: F811
     return _level_labels(df.index, rows.label, rows.level)
+
+
+@_select_rows.register(tuple)  # noqa: F811
+def _row_sel_dispatch(rows, df):  # noqa: F811
+    return _select_tuple(df.index, rows)
 
 
 @_select_rows.register(list)  # noqa: F811

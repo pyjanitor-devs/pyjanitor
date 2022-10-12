@@ -292,3 +292,13 @@ def test_callable(dates):
     assert_frame_equal(
         dates.loc[func], dates.select_rows(func), check_freq=False
     )
+
+
+def test_multiindex_tuple_present(multiindex):
+    """
+    Test output for a MultiIndex and tuple passed.
+    """
+    assert_frame_equal(
+        multiindex.select_rows(("bar", "one")),
+        multiindex.loc[[("bar", "one")]],
+    )

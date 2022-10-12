@@ -1476,16 +1476,16 @@ def _data_checks_pivot_wider(
     is_multi_index = isinstance(df.columns, pd.MultiIndex)
     indices = None
     if index is not None:
-        if is_multi_index and not isinstance(index, list):
-            raise TypeError(
-                "For a MultiIndex column, pass a list of tuples "
-                "to the index argument."
-            )
-        if is_list_like(index):
-            index = list(index)
         if is_multi_index:
+            if not isinstance(index, list):
+                raise TypeError(
+                    "For a MultiIndex column, pass a list of tuples "
+                    "to the index argument."
+                )
             index = _check_tuples_multiindex(df.columns, index, "index")
         else:
+            if is_list_like(index):
+                index = list(index)
             indices = _select_columns(index, df)
             index = df.columns[indices]
             if not is_list_like(index):
@@ -1498,18 +1498,16 @@ def _data_checks_pivot_wider(
             "pivot_wider() is missing 1 required argument: 'names_from'"
         )
 
-    if is_multi_index and not isinstance(names_from, list):
-        raise TypeError(
-            "For a MultiIndex column, pass a list of tuples "
-            "to the names_from argument."
-        )
-    if is_list_like(names_from):
-        names_from = list(names_from)
     if is_multi_index:
-        names_from = _check_tuples_multiindex(
-            df.columns, names_from, "names_from"
-        )
+        if not isinstance(names_from, list):
+            raise TypeError(
+                "For a MultiIndex column, pass a list of tuples "
+                "to the names_from argument."
+            )
+        index = _check_tuples_multiindex(df.columns, names_from, "index")
     else:
+        if is_list_like(names_from):
+            names_from = list(names_from)
         indices = _select_columns(names_from, df)
         names_from = df.columns[indices]
         if not is_list_like(names_from):
@@ -1518,18 +1516,18 @@ def _data_checks_pivot_wider(
             names_from = list(names_from)
 
     if values_from is not None:
-        if is_multi_index and not isinstance(values_from, list):
-            raise TypeError(
-                "For a MultiIndex column, pass a list of tuples "
-                "to the values_from argument."
-            )
-        if is_list_like(values_from):
-            values_from = list(values_from)
         if is_multi_index:
+            if not isinstance(values_from, list):
+                raise TypeError(
+                    "For a MultiIndex column, pass a list of tuples "
+                    "to the values_from argument."
+                )
             out = _check_tuples_multiindex(
                 df.columns, values_from, "values_from"
             )
         else:
+            if is_list_like(values_from):
+                values_from = list(values_from)
             indices = _select_columns(values_from, df)
             out = df.columns[indices]
             if not is_list_like(out):

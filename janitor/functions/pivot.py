@@ -1624,7 +1624,7 @@ def _check_tuples_multiindex(indexer, args, param):
             "when the columns are a MultiIndex."
         )
 
-    not_found = [entry for entry in args if entry not in indexer]
+    not_found = set(args).difference(indexer)
     if any(not_found):
         raise KeyError(
             f"Tuples {*not_found,} in the {param} "

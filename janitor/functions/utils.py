@@ -269,16 +269,28 @@ def _select_regex(index, selection):
     raise KeyError(f"No match was returned for {selection}.")
 
 
-def _select_tuple(index, selection):
+def _select_dict(selection):
     """
-    Generic function for selecting tuples rows/columns.
+    Generic function for dictionary selection on rows/columns.
+    Applies to label selection on a MultiIndex.
 
-    Returns a sequence of booleans.
+    Returns an IndexLabel instance.
     """
-    try:
-        return index.get_loc(selection)
-    except Exception as exc:
-        raise KeyError(f"No match was returned for {selection}.") from exc
+    label = []
+    level = []
+    for key, value in selection.items():
+        if isinstance(key, tuple):
+            if not isinstance(value, tuple):
+                raise TypeError(
+                    f"If the level is a tuple, then a tuple of labels "
+                    "should be passed as the value. "
+                    f"Kindly pass a tuple of labels for the level {key}."
+                )
+            level.extend(key)
+        else:
+            level.append(key)
+        label.append(value)
+    return IndexLabel(label=label, level=level)
 
 
 def _select_slice(index, selection, label="column"):
@@ -401,6 +413,9 @@ def _select_list(df, selection, func, label="columns"):
 
     indices = [func(entry, df) for entry in selection]
 
+    # single entry does not to be combined
+    # or materialized if possible;
+    # this offers more performance
     if len(indices) == 1:
         if isinstance(indices[0], int):
             return indices
@@ -432,9 +447,10 @@ def _select_columns(cols, df):
     a sequence of booleans, or an array of integers,
     that match the exact location of the target.
     """
-    if cols in df.columns.tolist():
+    try:
         return df.columns.get_loc(cols)
-    raise KeyError(f"No match was returned for {cols}.")
+    except Exception as exc:
+        raise KeyError(f"No match was returned for {cols}.") from exc
 
 
 @_select_columns.register(str)  # noqa: F811
@@ -511,12 +527,27 @@ def _column_sel_dispatch(cols, df):  # noqa: F811
 
 @_select_columns.register(IndexLabel)  # noqa: F811
 def _column_sel_dispatch(cols, df):  # noqa: F811
+    """
+    Base function for column selection.
+    Applies only to the IndexLabel class.
+
+    Returns either a sequence of booleans, an integer,
+    or a slice.
+    """
     return _level_labels(df.columns, cols.label, cols.level)
 
 
-@_select_columns.register(tuple)  # noqa: F811
+@_select_columns.register(dict)  # noqa: F811
 def _column_sel_dispatch(cols, df):  # noqa: F811
-    return _select_tuple(df.columns, cols)
+    """
+    Base function for column selection.
+    Applies only to dictionary.
+
+    Returns either a sequence of booleans, an integer,
+    or a slice.
+    """
+    cols = _select_dict(cols)
+    return _level_labels(df.columns, cols.label, cols.level)
 
 
 @_select_columns.register(list)  # noqa: F811
@@ -540,9 +571,10 @@ def _select_rows(rows, df):
     Returns a sequence of booleans, an integer, a slice,
     or an array of numbers.
     """
-    if rows in df.index.tolist():
+    try:
         return df.index.get_loc(rows)
-    raise KeyError(f"No match was returned for {rows}.")
+    except Exception as exc:
+        raise KeyError(f"No match was returned for {rows}.") from exc
 
 
 @_select_rows.register(str)  # noqa: F811
@@ -605,12 +637,27 @@ def _row_sel_dispatch(rows, df):  # noqa: F811
 
 @_select_rows.register(IndexLabel)  # noqa: F811
 def _row_sel_dispatch(rows, df):  # noqa: F811
+    """
+    Base function for row selection.
+    Applies only to the IndexLabel class.
+
+    Returns either a sequence of booleans, an integer,
+    or a slice.
+    """
     return _level_labels(df.index, rows.label, rows.level)
 
 
-@_select_rows.register(tuple)  # noqa: F811
-def _row_sel_dispatch(rows, df):  # noqa: F811
-    return _select_tuple(df.index, rows)
+@_select_rows.register(dict)  # noqa: F811
+def _column_sel_dispatch(rows, df):  # noqa: F811
+    """
+    Base function for row selection.
+    Applies only to dictionary.
+
+    Returns either a sequence of booleans, an integer,
+    or a slice.
+    """
+    rows = _select_dict(rows)
+    return _level_labels(df.index, rows.label, rows.level)
 
 
 @_select_rows.register(list)  # noqa: F811
@@ -742,7 +789,7 @@ def _generic_select(
     func = {"index": _select_rows, "columns": _select_columns}
     # applicable to any list-like object (ndarray, Series, pd.Index, ...)
     for arg in args:
-        if is_list_like(arg) and (not isinstance(arg, tuple)):
+        if is_list_like(arg) and (not isinstance(arg, (tuple, dict))):
             indices.extend(arg)
         else:
             indices.append(arg)

@@ -302,3 +302,30 @@ def test_multiindex_tuple_present(multiindex):
         multiindex.select_rows(("bar", "one")),
         multiindex.loc[[("bar", "one")]],
     )
+
+
+def test_dict_error(multiindex):
+    """
+    Raise if key in dict is tuple
+    and value is not.
+    """
+    with pytest.raises(
+        TypeError, match="If the level is a tuple, then a tuple of labels.+"
+    ):
+        multiindex.select_rows({(0, 1): "bar"})
+
+
+def test_dict(multiindex):
+    """Test output on a dict"""
+    mapp = {"first": ["bar", "qux"], "second": "two"}
+    expected = multiindex.select_rows(mapp)
+    actual = multiindex.loc(axis=0)[["bar", "qux"], "two"]
+    assert_frame_equal(expected, actual)
+
+
+def test_dict_tuple(multiindex):
+    """Test output on a dict"""
+    mapp = {(0, 1): ("bar", "two")}
+    expected = multiindex.select_rows(mapp)
+    actual = multiindex.loc(axis=0)[("bar", "two"), slice(None)]
+    assert_frame_equal(expected, actual)

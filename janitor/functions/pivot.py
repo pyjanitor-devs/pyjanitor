@@ -1630,7 +1630,7 @@ def _check_tuples_multiindex(indexer, args, param):
     if any(not_found):
         raise KeyError(
             f"Tuples {*not_found,} in the {param} "
-            "arguments do not exist in the dataframe's columns."
+            "argument do not exist in the dataframe's columns."
         )
 
     return args

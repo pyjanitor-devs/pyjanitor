@@ -399,9 +399,14 @@ def _select_list(df, selection, func, label="columns"):
 
         return np.asanyarray(selection).nonzero()[0]
 
+    indices = [func(entry, df) for entry in selection]
+
+    if len(indices) == 1:
+        if isinstance(indices[0], int):
+            return indices
+        return indices[0]
     contents = []
-    for entry in selection:
-        arr = func(entry, df)
+    for arr in indices:
         if is_list_like(arr):
             arr = np.asanyarray(arr)
         if is_bool_dtype(arr):
@@ -411,11 +416,9 @@ def _select_list(df, selection, func, label="columns"):
         elif isinstance(arr, int):
             arr = [arr]
         contents.append(arr)
-    if len(contents) > 1:
-        contents = np.concatenate(contents)
-        # remove possible duplicates
-        return pd.unique(contents)
-    return contents[0]
+    contents = np.concatenate(contents)
+    # remove possible duplicates
+    return pd.unique(contents)
 
 
 @singledispatch

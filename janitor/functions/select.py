@@ -17,8 +17,8 @@ def select_columns(
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
 
-    Selection on a MultiIndex is possible with the
-    [`IndexLabel`][janitor.functions.utils.IndexLabel] class.
+    Selection on a MultiIndex is possible via a dictionary or tuple,
+    or with the [`IndexLabel`][janitor.functions.utils.IndexLabel] class.
 
     This method does not mutate the original DataFrame.
 
@@ -68,8 +68,8 @@ def select_rows(
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
 
-    Selection on a MultiIndex is possible with the
-    [`IndexLabel`][janitor.functions.utils.IndexLabel] class.
+    Selection on a MultiIndex is possible via a dictionary or tuple,
+    or with the [`IndexLabel`][janitor.functions.utils.IndexLabel] class.
 
     This method does not mutate the original DataFrame.
 

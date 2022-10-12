@@ -1504,7 +1504,9 @@ def _data_checks_pivot_wider(
                 "For a MultiIndex column, pass a list of tuples "
                 "to the names_from argument."
             )
-        index = _check_tuples_multiindex(df.columns, names_from, "index")
+        names_from = _check_tuples_multiindex(
+            df.columns, names_from, "names_from"
+        )
     else:
         if is_list_like(names_from):
             names_from = list(names_from)

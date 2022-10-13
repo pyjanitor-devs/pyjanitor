@@ -365,7 +365,7 @@ def test_slice_unique():
     not_unique = pd.DataFrame([], columns=["code", "code2", "code1", "code"])
     with pytest.raises(
         ValueError,
-        match="Non-unique column labels should be monotonic increasing.",
+        match="Non-unique Index labels should be monotonic increasing.",
     ):
         not_unique.select_columns(slice("code", "code2"))
 
@@ -375,8 +375,7 @@ def test_unsorted_dates_slice(df_dates):
     df_dates = df_dates.iloc[:, ::-1]
     with pytest.raises(
         ValueError,
-        match="The column is a DatetimeIndex and should be "
-        "monotonic increasing.",
+        match="The DatetimeIndex should be monotonic increasing.",
     ):
         df_dates.select_columns(slice("2011-01-31", "2011-03-31"))
 
@@ -390,7 +389,7 @@ def test_slice_start(df_strings):
     slicer = slice(1, "code")
     msg = f"The start value for the slice {slicer}"
     msg += " must either be None or exist"
-    msg += " in the dataframe's column."
+    msg += " in the dataframe's columns."
     with pytest.raises(ValueError, match=re.escape(msg)):
         df_strings.select_columns(slicer)
 
@@ -404,7 +403,7 @@ def test_slice_stop(df_strings):
     slicer = slice("id", "Code")
     msg = f"The stop value for the slice {slicer}"
     msg += " must either be None or exist"
-    msg += " in the dataframe's column."
+    msg += " in the dataframe's columns."
     with pytest.raises(ValueError, match=re.escape(msg)):
         df_strings.select_columns(slicer)
 

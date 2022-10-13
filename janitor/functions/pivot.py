@@ -15,7 +15,7 @@ from pandas.api.types import (
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
-    _select_columns,
+    _select_index,
     _computations_expand_grid,
 )
 from janitor.utils import check
@@ -392,7 +392,7 @@ def _data_checks_pivot_longer(
         else:
             if is_list_like(column_names):
                 column_names = list(column_names)
-            indices = _select_columns(column_names, df)
+            indices = _select_index(column_names, df, axis="columns")
             column_names = df.columns[indices]
             if not is_list_like(column_names):
                 column_names = [column_names]
@@ -405,7 +405,7 @@ def _data_checks_pivot_longer(
         else:
             if is_list_like(index):
                 index = list(index)
-            indices = _select_columns(index, df)
+            indices = _select_index(index, df, axis="columns")
             index = df.columns[indices]
             if not is_list_like(index):
                 index = [index]
@@ -1486,7 +1486,7 @@ def _data_checks_pivot_wider(
         else:
             if is_list_like(index):
                 index = list(index)
-            indices = _select_columns(index, df)
+            indices = _select_index(index, df, axis="columns")
             index = df.columns[indices]
             if not is_list_like(index):
                 index = [index]
@@ -1510,7 +1510,7 @@ def _data_checks_pivot_wider(
     else:
         if is_list_like(names_from):
             names_from = list(names_from)
-        indices = _select_columns(names_from, df)
+        indices = _select_index(names_from, df, axis="columns")
         names_from = df.columns[indices]
         if not is_list_like(names_from):
             names_from = [names_from]
@@ -1530,7 +1530,7 @@ def _data_checks_pivot_wider(
         else:
             if is_list_like(values_from):
                 values_from = list(values_from)
-            indices = _select_columns(values_from, df)
+            indices = _select_index(values_from, df, axis="columns")
             out = df.columns[indices]
             if not is_list_like(out):
                 out = [out]

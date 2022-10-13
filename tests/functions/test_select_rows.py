@@ -92,7 +92,7 @@ def test_slice_unique():
     not_unique = pd.DataFrame([], index=["code", "code2", "code1", "code"])
     with pytest.raises(
         ValueError,
-        match="Non-unique index labels should be monotonic increasing.",
+        match="Non-unique Index labels should be monotonic increasing.",
     ):
         not_unique.select_rows(slice("code", "code2"))
 
@@ -101,8 +101,7 @@ def test_unsorted_dates_slice(dates):
     """Raise Error if the dates are unsorted."""
     with pytest.raises(
         ValueError,
-        match="The index is a DatetimeIndex and should be "
-        "monotonic increasing.",
+        match="The DatetimeIndex should be monotonic increasing.",
     ):
         dates.iloc[::-1].select_rows(slice("2011-01-31", "2011-03-31"))
 

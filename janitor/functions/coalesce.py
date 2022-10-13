@@ -4,7 +4,7 @@ import pandas as pd
 import pandas_flavor as pf
 
 from janitor.utils import check, deprecated_alias
-from janitor.functions.utils import _select_columns
+from janitor.functions.utils import _select_index
 
 
 @pf.register_dataframe_method
@@ -95,7 +95,7 @@ def coalesce(
             "The number of columns to coalesce should be a minimum of 2."
         )
 
-    indices = _select_columns([*column_names], df)
+    indices = _select_index([*column_names], df, axis="columns")
     column_names = df.columns[indices]
 
     if target_column_name:

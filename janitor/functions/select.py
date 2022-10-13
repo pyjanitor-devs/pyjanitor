@@ -1,7 +1,7 @@
 import pandas_flavor as pf
 import pandas as pd
 from janitor.utils import deprecated_alias
-from janitor.functions.utils import _generic_select
+from janitor.functions.utils import _select
 
 
 @pf.register_dataframe_method
@@ -53,7 +53,7 @@ def select_columns(
     :returns: A pandas DataFrame with the specified columns selected.
     """  # noqa: E501
 
-    return _generic_select(df, args, invert, axis="columns")
+    return _select(df, args, invert, axis="columns")
 
 
 @pf.register_dataframe_method
@@ -106,4 +106,4 @@ def select_rows(
     :returns: A pandas DataFrame with the specified rows selected.
     """  # noqa: E501
 
-    return _generic_select(df, args, invert, axis="index")
+    return _select(df, args, invert, axis="index")

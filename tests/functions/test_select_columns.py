@@ -547,3 +547,19 @@ def test_dict_tuple(multiindex):
     expected = multiindex.select_columns(mapp)
     actual = multiindex.loc(axis=1)[("bar", "two"), slice(None)]
     assert_frame_equal(expected, actual)
+
+
+def test_dict_callable(multiindex):
+    """Test output on a dict"""
+    mapp = {"first": ["bar", "qux"], "second": lambda df: df == "two"}
+    expected = multiindex.select_columns(mapp)
+    actual = multiindex.loc(axis=1)[["bar", "qux"], "two"]
+    assert_frame_equal(expected, actual)
+
+
+def test_dict_regex(multiindex):
+    """Test output on a dict"""
+    mapp = {"first": ["bar", "qux"], "second": re.compile("tw.")}
+    expected = multiindex.select_columns(mapp)
+    actual = multiindex.loc(axis=1)[["bar", "qux"], "two"]
+    assert_frame_equal(expected, actual)

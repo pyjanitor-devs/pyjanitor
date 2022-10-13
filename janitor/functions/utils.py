@@ -459,6 +459,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     """
     label = []
     level = []
+    index = getattr(df, axis)
     for key, value in arg.items():
         if isinstance(key, tuple):
             if not isinstance(value, tuple):
@@ -469,9 +470,15 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 )
             level.extend(key)
         else:
+            if isinstance(value, dispatch_callable):
+                indexer = index.get_level_values(key)
+                value = value(indexer)
+            elif isinstance(value, re.Pattern):
+                indexer = index.get_level_values(key)
+                value = indexer.str.contains(value, na=False, regex=True)
             level.append(key)
         label.append(value)
-    index = getattr(df, axis)
+
     return _level_labels(index, label, level)
 
 
@@ -542,7 +549,8 @@ def _level_labels(
         from all levels.
         For multiple levels, the length of `arg` should
         match the length of `level`.
-    :returns: An array of integers.
+    :returns: An array of integers, or a slice,
+        or an integer, or a array of booleans.
     :raises TypeError: If `level` is a list and contains
         a mix of strings and integers.
     :raises ValueError: If `level` is a string and does not exist.
@@ -616,7 +624,7 @@ def _level_labels(
 
 
 def _select(
-    df: pd.DataFrame, args: tuple, invert: bool, axis: str = "index"
+    df: pd.DataFrame, args: tuple, invert: bool, axis: str
 ) -> pd.DataFrame:
     """
     Index DataFrame on the index or columns.

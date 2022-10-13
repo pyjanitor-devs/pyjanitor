@@ -19,7 +19,6 @@ from dataclasses import dataclass
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
-from pandas.core.common import apply_if_callable
 from pandas.api.types import (
     union_categoricals,
     is_scalar,
@@ -266,24 +265,26 @@ def _select_regex(index, arg):
         raise KeyError(f"No match was returned for {arg}.") from exc
 
 
-def _check_bool_array(index: pd.Index, arg: Callable, arr: Any):
+def _select_callable(arg, func: Callable, axis=None):
     """
-    Check that the array `arr` can be used on `index`
-    Used to check the output of a callable on a Pandas Index.
+    Process a callable on a Pandas DataFrame/Index.
     """
-    arr = np.asanyarray(arr)
-    if not is_bool_dtype(arr):
+    bools = func(arg)
+    bools = np.asanyarray(bools)
+    if not is_bool_dtype(bools):
         raise ValueError(
-            "The output of the applied callable " "should be a boolean array."
+            "The output of the applied callable should be a 1-D boolean array."
         )
-    if not arr.any():
-        raise KeyError(f"No match was returned for {arg}.")
-    if len(arr) != len(index):
+    if not bools.any():
+        raise KeyError(f"No match was returned for {func}.")
+    if axis:
+        arg = getattr(arg, axis)
+    if len(bools) != len(arg):
         raise IndexError(
             f"Boolean index has wrong length: "
-            f"{len(arr)} instead of {len(index)}"
+            f"{len(bools)} instead of {len(arg)}"
         )
-    return arr
+    return bools
 
 
 @singledispatch
@@ -318,7 +319,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             return index.get_loc(arg)
         except KeyError:
             # fix for Github Issue 1160
-            if _is_str_or_cat(index):
+            if _is_str_or_cat(index) and not isinstance(index, pd.MultiIndex):
                 outcome = [fnmatchcase(column, arg) for column in index]
                 if any(outcome):
                     return outcome
@@ -431,29 +432,12 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     Base function for selection on a Pandas Index object.
     Applies only to callables.
 
-    If axis == 'columns', the callable is applied
-    to each column in the DataFrame -
-    a single boolean(True/False) is expected;
-    otherwise, it is applied to the entire DataFrame -
-    a list-like object of booleans is expected.
+    The callable is applied to the entire DataFrame.
 
     Returns an array of booleans.
     """
 
-    if axis == "columns":
-        # the function will be applied per series.
-        # this allows filtration based on the contents of the series
-        # or based on the name of the series,
-        # which happens to be a column name as well.
-        # whatever the case may be,
-        # the returned values should be a sequence of booleans,
-        # with at least one True.
-        indexer = df.apply(arg)
-
-    else:
-        indexer = apply_if_callable(arg, df)
-
-    return _check_bool_array(getattr(df, axis), arg, indexer)
+    return _select_callable(df, arg, axis)
 
 
 @_select_index.register(IndexLabel)  # noqa: F811
@@ -492,7 +476,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         else:
             if isinstance(value, dispatch_callable):
                 indexer = index.get_level_values(key)
-                value = _check_bool_array(indexer, value, value(indexer))
+                value = _select_callable(indexer, value)
             elif isinstance(value, re.Pattern):
                 indexer = index.get_level_values(key)
                 value = _select_regex(indexer, value)

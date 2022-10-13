@@ -85,8 +85,8 @@ def test_select_unique_columns(dataframe, invert, expected):
 def test_select_callable_columns(dataframe, invert, expected):
     """Test that columns are returned when a callable is passed."""
 
-    def columns(x):
-        return "-" in x.name or "_" in x.name
+    def columns(frame):
+        return frame.columns.str.contains("[-,__]")
 
     df = dataframe.select_columns(columns, invert=invert)
 
@@ -517,7 +517,7 @@ def test_callable(numbers):
     with pytest.raises(
         ValueError,
         match="The output of the applied callable "
-        "should be a boolean array.",
+        "should be a 1-D boolean array.",
     ):
         numbers.select_columns(lambda df: df + 3)
 

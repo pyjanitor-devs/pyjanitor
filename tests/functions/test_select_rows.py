@@ -334,3 +334,12 @@ def test_boolean_multiindex(multiindex):
     """Raise if boolean length does not match index length"""
     with pytest.raises(IndexError):
         multiindex.select_rows(lambda df: [True, False])
+
+
+def test_dict_single_index(dates):
+    """
+    Raise if a dictionary is passed,
+    and the index is not a MultiIndex
+    """
+    with pytest.raises(TypeError):
+        dates.select_rows({0: "2011-01-31"})

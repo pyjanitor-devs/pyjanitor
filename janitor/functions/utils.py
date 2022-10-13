@@ -255,6 +255,37 @@ class IndexLabel:
     level: Optional[Union[list, int, str]] = None
 
 
+def _select_regex(index, arg):
+    "Process regex on a Pandas Index"
+    try:
+        bools = index.str.contains(arg, na=False, regex=True)
+        if not bools.any():
+            raise KeyError(f"No match was returned for {arg}.")
+        return bools
+    except Exception as exc:
+        raise KeyError(f"No match was returned for {arg}.") from exc
+
+
+def _check_bool_array(index: pd.Index, arg: Callable, arr: Any):
+    """
+    Check that the array `arr` can be used on `index`
+    Used to check the output of a callable on a Pandas Index.
+    """
+    arr = np.asanyarray(arr)
+    if not is_bool_dtype(arr):
+        raise ValueError(
+            "The output of the applied callable " "should be a boolean array."
+        )
+    if not arr.any():
+        raise KeyError(f"No match was returned for {arg}.")
+    if len(arr) != len(index):
+        raise IndexError(
+            f"Boolean index has wrong length: "
+            f"{len(arr)} instead of {len(index)}"
+        )
+    return arr
+
+
 @singledispatch
 def _select_index(arg, df, axis):
     """
@@ -294,37 +325,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 raise KeyError(f"No match was returned for '{arg}'.")
             raise KeyError(f"No match was returned for '{arg}'.")
     raise KeyError(f"No match was returned for '{arg}'.")
-
-
-def _select_regex(index, arg):
-    "Process regex on a Pandas Index"
-    try:
-        bools = index.str.contains(arg, na=False, regex=True)
-        if not bools.any():
-            raise KeyError(f"No match was returned for {arg}.")
-        return bools
-    except Exception as exc:
-        raise KeyError(f"No match was returned for {arg}.") from exc
-
-
-def _check_bool_array(index: pd.Index, arg: Callable, arr: Any):
-    """
-    Check that the array `arr` can be used on `index`
-    Used to check the output of a callable on a Pandas Index.
-    """
-    arr = np.asanyarray(arr)
-    if not is_bool_dtype(arr):
-        raise ValueError(
-            "The output of the applied callable " "should be a boolean array."
-        )
-    if not arr.any():
-        raise KeyError(f"No match was returned for {arg}.")
-    if len(arr) != len(index):
-        raise IndexError(
-            f"Boolean index has wrong length: "
-            f"{len(arr)} instead of {len(index)}"
-        )
-    return arr
 
 
 @_select_index.register(re.Pattern)  # noqa: F811

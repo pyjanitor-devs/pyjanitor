@@ -328,3 +328,9 @@ def test_dict_tuple(multiindex):
     expected = multiindex.select_rows(mapp)
     actual = multiindex.loc(axis=0)[("bar", "two"), slice(None)]
     assert_frame_equal(expected, actual)
+
+
+def test_boolean_multiindex(multiindex):
+    """Raise if boolean length does not match index length"""
+    with pytest.raises(IndexError):
+        multiindex.select_rows(lambda df: [True, False])

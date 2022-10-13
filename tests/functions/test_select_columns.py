@@ -515,7 +515,7 @@ def test_callable(numbers):
     that makes the callable unapplicable.
     """
     with pytest.raises(
-        TypeError,
+        ValueError,
         match="The output of the applied callable "
         "should be a boolean array.",
     ):

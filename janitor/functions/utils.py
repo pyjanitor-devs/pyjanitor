@@ -3,9 +3,17 @@ from fnmatch import fnmatchcase
 import warnings
 from collections.abc import Callable as dispatch_callable
 import re
-from typing import Hashable, Iterable, List, Optional, Pattern, Union, Any
+from typing import (
+    Hashable,
+    Iterable,
+    List,
+    Optional,
+    Pattern,
+    Union,
+    Any,
+    Callable,
+)
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
-from pandas.api.indexers import check_array_indexer
 from dataclasses import dataclass
 
 
@@ -216,10 +224,6 @@ def _factorize(df, column_name, suffix, **kwargs):  # noqa: F811
     return df
 
 
-# this section relates to column/row selection
-# indices/slices/booleans are returned,
-# instead of the actual labels
-# as it is marginally faster when indexing the dataframe
 def _is_str_or_cat(index):
     """
     Check if the column/index is a string,
@@ -292,6 +296,37 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     raise KeyError(f"No match was returned for '{arg}'.")
 
 
+def _select_regex(index, arg):
+    "Process regex on a Pandas Index"
+    try:
+        bools = index.str.contains(arg, na=False, regex=True)
+        if not bools.any():
+            raise KeyError(f"No match was returned for {arg}.")
+        return bools
+    except Exception as exc:
+        raise KeyError(f"No match was returned for {arg}.") from exc
+
+
+def _check_bool_array(index: pd.Index, arg: Callable, arr: Any):
+    """
+    Check that the array `arr` can be used on `index`
+    Used to check the output of a callable on a Pandas Index.
+    """
+    arr = np.asanyarray(arr)
+    if not is_bool_dtype(arr):
+        raise ValueError(
+            "The output of the applied callable " "should be a boolean array."
+        )
+    if not arr.any():
+        raise KeyError(f"No match was returned for {arg}.")
+    if len(arr) != len(index):
+        raise IndexError(
+            f"Boolean index has wrong length: "
+            f"{len(arr)} instead of {len(index)}"
+        )
+    return arr
+
+
 @_select_index.register(re.Pattern)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -302,12 +337,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     Returns an array of booleans.
     """
     index = getattr(df, axis)
-    if _is_str_or_cat(index):
-        bools = index.str.contains(arg, na=False, regex=True)
-        if not bools.any():
-            raise KeyError(f"No match was returned for {arg}.")
-        return bools
-    raise KeyError(f"No match was returned for {arg}.")
+    return _select_regex(index, arg)
 
 
 @_select_index.register(slice)  # noqa: F811
@@ -418,22 +448,12 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         # whatever the case may be,
         # the returned values should be a sequence of booleans,
         # with at least one True.
-
         indexer = df.apply(arg)
 
-        if not is_bool_dtype(indexer):
-            raise TypeError(
-                "The output of the applied callable should be a boolean array."
-            )
-        if not indexer.any():
-            raise KeyError(f"No match was returned for {arg}.")
+    else:
+        indexer = apply_if_callable(arg, df)
 
-        return indexer
-    indexer = apply_if_callable(arg, df)
-
-    _ = check_array_indexer(getattr(df, axis), indexer)
-
-    return indexer
+    return _check_bool_array(getattr(df, axis), arg, indexer)
 
 
 @_select_index.register(IndexLabel)  # noqa: F811
@@ -472,10 +492,10 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         else:
             if isinstance(value, dispatch_callable):
                 indexer = index.get_level_values(key)
-                value = value(indexer)
+                value = _check_bool_array(indexer, value, value(indexer))
             elif isinstance(value, re.Pattern):
                 indexer = index.get_level_values(key)
-                value = indexer.str.contains(value, na=False, regex=True)
+                value = _select_regex(indexer, value)
             level.append(key)
         label.append(value)
 
@@ -501,11 +521,11 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 f"the length of the DataFrame's {axis}({index.size})."
             )
 
-        return np.asanyarray(arg).nonzero()[0]
+        return arg
 
     indices = [_select_index(entry, df, axis) for entry in arg]
 
-    # single entry does not to be combined
+    # single entry does not need to be combined
     # or materialized if possible;
     # this offers more performance
     if len(indices) == 1:
@@ -557,8 +577,13 @@ def _level_labels(
     :raises IndexError: If `level` is an integer and is not less than
         the number of levels of the Index.
     """
+    if not isinstance(index, pd.MultiIndex):
+        raise TypeError(
+            "Index selection with an IndexLabel class "
+            "or a dictionary applies only to a MultiIndex."
+        )
     if level is None:
-        if is_scalar(label) or isinstance(label, tuple):
+        if is_scalar(label) or isinstance(label, (tuple, slice)):
             return index.get_loc(label)
         return index.get_locs(label)
 
@@ -618,7 +643,7 @@ def _level_labels(
         tail = (num for num in n_levels if num not in level_numbers)
         level_numbers.extend(tail)
         index = index.reorder_levels(order=level_numbers)
-    if is_scalar(label) or isinstance(label, tuple):
+    if is_scalar(label) or isinstance(label, (tuple, slice)):
         return index.get_loc(label)
     return index.get_locs(label)
 

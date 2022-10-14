@@ -509,10 +509,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             )
         return arg
     try:
-        if isinstance(index, pd.MultiIndex) and not isinstance(
-            arg, pd.MultiIndex
-        ):
-            index = index.get_level_values(0)
         if isinstance(arg, pd.Series):
             arr = arg.array
         else:

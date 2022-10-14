@@ -379,47 +379,6 @@ def test_unsorted_dates_slice(df_dates):
         df_dates.select_columns(slice("2011-01-31", "2011-03-31"))
 
 
-def test_slice_start(df_strings):
-    """
-    Raise ValueError if the search value
-    is a slice instance  and the start value
-    does not exist in the dataframe.
-    """
-    slicer = slice(1, "code")
-    msg = f"The start value for the slice {slicer}"
-    msg += " must either be None or exist"
-    msg += " in the dataframe's columns."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        df_strings.select_columns(slicer)
-
-
-def test_slice_stop(df_strings):
-    """
-    Raise ValueError if the search value
-    is a slice instance  and the stop value
-    does not exist in the dataframe
-    """
-    slicer = slice("id", "Code")
-    msg = f"The stop value for the slice {slicer}"
-    msg += " must either be None or exist"
-    msg += " in the dataframe's columns."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        df_strings.select_columns(slicer)
-
-
-def test_slice_step(df_strings):
-    """
-    Raise ValueError if the search value
-    is a slice instance and the step value
-    is not an integer or None
-    """
-    slicer = slice("id", "code", "1")
-    msg = f"The step value for the slice {slicer}"
-    msg += " must either be an integer or None."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        df_strings.select_columns(slicer)
-
-
 slicers = [
     slice("code", "code2"),
     slice("code2", None),

@@ -372,29 +372,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         arg.step,
     )
 
-    step_check = any((step is None, isinstance(step, int)))
-    if not step_check:
-        raise ValueError(
-            f"The step value for the slice {arg} "
-            "must either be an integer or None."
-        )
-    start_check = None
-    stop_check = None
-    if not is_date_column:
-        start_check = any((start is None, start in index))
-        if not start_check:
-            raise ValueError(
-                f"The start value for the slice {arg} "
-                "must either be None "
-                f"or exist in the dataframe's {axis}."
-            )
-        stop_check = any((stop is None, stop in index))
-        if not stop_check:
-            raise ValueError(
-                f"The stop value for the slice {arg} "
-                "must either be None "
-                f"or exist in the dataframe's {axis}."
-            )
     if start is None:
         start_ = 0
     else:

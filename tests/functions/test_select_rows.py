@@ -106,24 +106,6 @@ def test_unsorted_dates_slice(dates):
         dates.iloc[::-1].select_rows(slice("2011-01-31", "2011-03-31"))
 
 
-def test_slice_start_presence(multiindex):
-    """
-    Raise ValueError if `rows` is a slice instance
-    the start value is not present in the dataframe.
-    """
-    with pytest.raises(ValueError):
-        multiindex.droplevel("first").select_rows(slice("bar", "one"))
-
-
-def test_slice_stop_presence(multiindex):
-    """
-    Raise ValueError if `rows` is a slice instance
-    and the stop value is not present in the dataframe.
-    """
-    with pytest.raises(ValueError):
-        multiindex.droplevel("second").select_rows(slice("bar", "one"))
-
-
 slicers = [slice("code2", "Name"), slice("code2", "Name", 2)]
 
 
@@ -154,47 +136,6 @@ def test_slice_reverse(slicer):
     expected = dups.loc[start:stop:step]
     expected = expected.loc[::-1]
     assert_frame_equal(actual, expected)
-
-
-def test_slice_start(multiindex):
-    """
-    Raise ValueError if the search value
-    is a slice instance  and the start value
-    does not exist in the dataframe.
-    """
-    slicer = slice(1, "foo")
-    msg = f"The start value for the slice {slicer}"
-    msg += " must either be None or exist"
-    msg += " in the dataframe's index."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        multiindex.select_rows(slicer)
-
-
-def test_slice_stop(multiindex):
-    """
-    Raise ValueError if the search value
-    is a slice instance  and the stop value
-    does not exist in the dataframe
-    """
-    slicer = slice("bar", 1)
-    msg = f"The stop value for the slice {slicer}"
-    msg += " must either be None or exist"
-    msg += " in the dataframe's index."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        multiindex.select_rows(slicer)
-
-
-def test_slice_step(multiindex):
-    """
-    Raise ValueError if the search value
-    is a slice instance and the step value
-    is not an integer or None
-    """
-    slicer = slice("bar", "foo", "two")
-    msg = f"The step value for the slice {slicer}"
-    msg += " must either be an integer or None."
-    with pytest.raises(ValueError, match=re.escape(msg)):
-        multiindex.select_rows(slicer)
 
 
 def test_boolean_list_uneven_length(dates):

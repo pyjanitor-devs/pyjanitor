@@ -314,6 +314,14 @@ def test_dict_error(multiindex):
         multiindex.select_rows({(0, 1): "bar"})
 
 
+def test_series_multiindex(multiindex):
+    """Test output of a pandas object on a Multiindex"""
+    mapp = pd.Series(["bar", "qux"])
+    expected = multiindex.select_rows(mapp)
+    actual = multiindex.loc(axis=0)[["bar", "qux"]]
+    assert_frame_equal(expected, actual)
+
+
 def test_dict(multiindex):
     """Test output on a dict"""
     mapp = {"first": ["bar", "qux"], "second": "two"}

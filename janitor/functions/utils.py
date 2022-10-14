@@ -517,7 +517,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         not_found = arr == -1
         if not_found.all():
             raise KeyError(
-                "No match was returned " f"for any of the labels in {arg}."
+                f"No match was returned for any of the labels in {arg}."
             )
         elif not_found.any():
             not_found = set(arg).difference(index)

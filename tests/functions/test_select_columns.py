@@ -505,7 +505,7 @@ def test_dict_tuple(multiindex):
     """Test output on a dict"""
     mapp = {(0, 1): ("bar", "two")}
     expected = multiindex.select_columns(mapp)
-    actual = multiindex.loc(axis=1)[("bar", "two"), slice(None)]
+    actual = multiindex.loc(axis=1)[[("bar", "two")]]
     assert_frame_equal(expected, actual)
 
 

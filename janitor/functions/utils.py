@@ -15,6 +15,7 @@ from typing import (
 )
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from dataclasses import dataclass
+from pandas.core.common import is_bool_indexer
 
 
 import pandas as pd
@@ -28,7 +29,6 @@ from pandas.api.types import (
     is_categorical_dtype,
     is_extension_array_dtype,
     is_bool_dtype,
-    is_bool,
 )
 import numpy as np
 from multipledispatch import dispatch
@@ -355,13 +355,12 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     Returns a slice object.
     """
     index = getattr(df, axis)
-    is_date_column = is_datetime64_dtype(index)
     if not index.is_monotonic_increasing:
         if not index.is_unique:
             raise ValueError(
                 "Non-unique Index labels should be monotonic increasing."
             )
-        if is_date_column:
+        if is_datetime64_dtype(index):
             raise ValueError(
                 "The DatetimeIndex should be monotonic increasing."
             )
@@ -518,7 +517,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     Returns an array of integers.
     """
     index = getattr(df, axis)
-    if all(map(is_bool, arg)):
+    if is_bool_indexer(arg):
         if len(arg) != len(index):
             raise ValueError(
                 "The length of the list of booleans "
@@ -641,13 +640,19 @@ def _level_labels(
             )
         uniqs.add(lev)  # noqa: PD005
 
-    n_levs = len(level)
     n_levels = range(index.nlevels)
-    ordered = list(n_levels[:n_levs]) == level_numbers
+    ordered = list(n_levels[: len(level)]) == level_numbers
     if not ordered:
         tail = (num for num in n_levels if num not in level_numbers)
         level_numbers.extend(tail)
         index = index.reorder_levels(order=level_numbers)
+
+    if (
+        isinstance(label, list)
+        and (len(label) == 1)
+        and (is_scalar(label[0]) or isinstance(label[0], (tuple, slice)))
+    ):
+        return index.get_loc(label[0])
     if is_scalar(label) or isinstance(label, (tuple, slice)):
         return index.get_loc(label)
     return index.get_locs(label)

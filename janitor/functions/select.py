@@ -41,7 +41,7 @@ def select_columns(
     :param args: Valid inputs include: an exact column name to look for,
         a shell-style glob string (e.g., `*_thing_*`),
         a regular expression,
-        a callable which is applicable to each Series in the DataFrame,
+        a callable,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
         A dictionary can be used for complex selection on a MultiIndex.
@@ -92,7 +92,7 @@ def select_rows(
     :param args: Valid inputs include: an exact index name to look for,
         a shell-style glob string (e.g., `*_thing_*`),
         a regular expression,
-        a callable which is applicable to the DataFrame,
+        a callable,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
         A dictionary can be used for complex selection on a MultiIndex.

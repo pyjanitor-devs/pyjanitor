@@ -7,7 +7,6 @@ from pandas.testing import assert_frame_equal
 from itertools import product
 
 from janitor.functions.utils import IndexLabel, patterns
-from pandas.api.types import is_string_dtype
 
 
 @pytest.mark.functions
@@ -497,15 +496,6 @@ def test_number_dates(df_dates):
     """Raise if selecting number on a date column"""
     with pytest.raises(KeyError, match="No match was returned for 2.5"):
         df_dates.select_columns(2.5)
-
-
-def test_callable_no_match(df_dates):
-    """
-     Raise KeyError if the search value is a callable,
-    and no match is returned.
-    """
-    with pytest.raises(KeyError, match="No match was returned.+"):
-        df_dates.select_columns(is_string_dtype)
 
 
 def test_callable(numbers):

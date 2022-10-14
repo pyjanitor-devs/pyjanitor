@@ -343,3 +343,63 @@ def test_dict_single_index(dates):
     """
     with pytest.raises(TypeError):
         dates.select_rows({0: "2011-01-31"})
+
+
+def test_array(dates):
+    """Test output for pandas array"""
+    arr = pd.array(["2011-01-31"])
+    expected = dates.select_rows(arr)
+    actual = dates.loc[arr]
+    assert_frame_equal(expected, actual)
+
+
+def test_series(dates):
+    """Test output for pandas Series"""
+    arr = pd.Series(["2011-01-31"])
+    expected = dates.select_rows(arr)
+    actual = dates.loc[arr]
+    assert_frame_equal(expected, actual)
+
+
+def test_numpy_array(dates):
+    """Test output for pandas array"""
+    arr = np.array(["2011-01-31"])
+    expected = dates.select_rows(arr)
+    actual = dates.loc[arr]
+    assert_frame_equal(expected, actual)
+
+
+def test_array_bool(dates):
+    """Test output for pandas array"""
+    arr = np.array([True, False]).repeat(6)
+    expected = dates.select_rows(arr)
+    actual = dates.loc[arr]
+    assert_frame_equal(expected, actual)
+
+
+def test_Index(dates):
+    """Raise if pandas Index is not boolean"""
+    with pytest.raises(KeyError):
+        arr = pd.Index(["2011-01-31"])
+        dates.select_rows(arr)
+
+
+def test_boolean_Index(dates):
+    """Raise if boolean is not same length as index"""
+    with pytest.raises(IndexError):
+        arr = pd.Index([True, False]).repeat(4)
+        dates.select_rows(arr)
+
+
+def test_missing_all_array(dates):
+    """Raise if none of the labels exist."""
+    with pytest.raises(KeyError):
+        arr = pd.array(["2011"])
+        dates.select_rows(arr)
+
+
+def test_missing_some_array(dates):
+    """Raise if some of the labels do not exist."""
+    with pytest.raises(KeyError):
+        arr = pd.array(["2011", "2011-01-31"])
+        dates.select_rows(arr)

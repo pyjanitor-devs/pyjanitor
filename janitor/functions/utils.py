@@ -273,15 +273,15 @@ def _select_callable(arg, func: Callable, axis=None):
     bools = np.asanyarray(bools)
     if not is_bool_dtype(bools):
         raise ValueError(
-            "The output of the applied callable should be a 1-D boolean array."
+            "The output of the applied callable "
+            "should be a 1-D boolean array."
         )
-    if not bools.any():
-        raise KeyError(f"No match was returned for {func}.")
     if axis:
         arg = getattr(arg, axis)
     if len(bools) != len(arg):
         raise IndexError(
-            f"Boolean index has wrong length: "
+            f"The boolean array output from the callable {arg} "
+            f"has wrong length: "
             f"{len(bools)} instead of {len(arg)}"
         )
     return bools
@@ -486,6 +486,50 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     return _level_labels(index, label, level)
 
 
+@_select_index.register(np.ndarray)  # noqa: F811
+@_select_index.register(ABCPandasArray)  # noqa: F811
+@_select_index.register(ABCExtensionArray)  # noqa: F811
+@_select_index.register(pd.Index)  # noqa: F811
+@_select_index.register(pd.MultiIndex)  # noqa: F811
+@_select_index.register(pd.Series)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Applies to pd.Series/pd.Index/pd.array/np.ndarray.
+
+    Returns an array of integers.
+    """
+    index = getattr(df, axis)
+
+    if is_bool_dtype(arg):
+        if len(arg) != len(index):
+            raise IndexError(
+                f"{arg} is a boolean dtype and has wrong length: "
+                f"{len(arg)} instead of {len(index)}"
+            )
+        return arg
+    try:
+        if isinstance(arg, pd.Series):
+            arr = arg.array
+        else:
+            arr = arg
+        arr = index.get_indexer_for(arr)
+        not_found = arr == -1
+        if not_found.all():
+            raise KeyError(
+                "No match was returned " f"for any of the labels in {arg}."
+            )
+        elif not_found.any():
+            not_found = set(arg).difference(index)
+            raise KeyError(
+                f"No match was returned for these labels in {arg} - "
+                f"{*not_found,}"
+            )
+        return arr
+    except Exception as exc:
+        raise KeyError(f"No match was returned for '{arg}'.") from exc
+
+
 @_select_index.register(list)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -640,18 +684,11 @@ def _select(
 
     Returns a DataFrame.
     """
-    indices = []
-    # applicable to any list-like object (ndarray, Series, pd.Index, ...)
-    for arg in args:
-        if is_list_like(arg) and (not isinstance(arg, (tuple, dict))):
-            indices.extend(arg)
-        else:
-            indices.append(arg)
-    indices = _select_index(indices, df, axis)
+
+    indices = _select_index(list(args), df, axis)
     if invert:
         index = getattr(df, axis)
         rev = np.ones(len(index), dtype=np.bool8)
-
         rev[indices] = False
         return df.iloc(axis=axis)[rev]
     return df.iloc(axis=axis)[indices]

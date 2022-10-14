@@ -1216,7 +1216,7 @@ def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
     """
 
     if isinstance(columns, dict):
-        df = df.select_columns(columns.keys())
+        df = df.select_columns(*columns.keys())
         df.columns = [columns.get(name, name) for name in df]
     else:
         df = df.select_columns(columns)

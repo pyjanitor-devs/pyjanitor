@@ -512,6 +512,17 @@ def test_callable(numbers):
         numbers.select_columns(lambda df: df + 3)
 
 
+def test_callable_length(numbers):
+    """
+    Raise if the boolean output from the callable
+    is not the same as the length of the columns.
+    """
+    with pytest.raises(
+        IndexError, match="The boolean array output from the callable.+"
+    ):
+        numbers.select_columns(lambda df: [True, False])
+
+
 def test_dict_error(multiindex):
     """
     Raise if key in dict is tuple

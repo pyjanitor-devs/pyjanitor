@@ -5,8 +5,8 @@ import pytest
 
 @pytest.mark.functions
 def test_column_name_not_exists(dataframe):
-    """Checks that an error is raised if the column to be counted does not exist
-    in df.
+    """Checks that an error is raised if the column to be counted does not
+    exist in df.
     """
     with pytest.raises(
         ValueError,
@@ -21,8 +21,8 @@ def test_column_name_not_exists(dataframe):
 @pytest.mark.functions
 @pytest.mark.parametrize("case_sensitive", [True, False])
 def test_original_column_values_not_altered(dataframe, case_sensitive):
-    """Checks that the column to be counted is not altered by the case-switching
-    logic implemented by `count_cumulative_unique`.
+    """Checks that the column to be counted is not altered by the case-
+    switching logic implemented by `count_cumulative_unique`.
     """
     before = np.array(["a", "b", "c", "A", "B", "C", "a", "b", "c"])
     dataframe["ccu"] = before

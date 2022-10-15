@@ -547,3 +547,17 @@ def test_series_multi(multiindex):
     expected = multiindex.select_columns(mapp, slice("foo"))
     actual = multiindex.loc(axis=1)["bar":"foo"]
     assert_frame_equal(expected, actual)
+
+
+def test_glob_multi(multiindex):
+    """Test fnmatch output on a MultiIndex"""
+    expected = multiindex.select_columns("b*r")
+    actual = multiindex.loc(axis=1)[["bar"]]
+    assert_frame_equal(expected, actual)
+
+
+def test_regex_multi(multiindex):
+    """Test regex output on a MultiIndex"""
+    expected = multiindex.select_columns(re.compile("b.r"))
+    actual = multiindex.loc(axis=1)[["bar"]]
+    assert_frame_equal(expected, actual)

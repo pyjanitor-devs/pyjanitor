@@ -342,6 +342,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     Returns an array of booleans.
     """
     index = getattr(df, axis)
+    if isinstance(index, pd.MultiIndex):
+        index = index.get_level_values(0)
     return _select_regex(index, arg)
 
 

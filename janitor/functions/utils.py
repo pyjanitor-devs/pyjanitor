@@ -2,11 +2,10 @@
 from itertools import chain
 import fnmatch
 import warnings
-from enum import Enum
 from collections.abc import Callable as dispatch_callable
 import re
-import importlib
 from typing import Hashable, Iterable, List, Optional, Pattern, Union
+from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
@@ -17,11 +16,14 @@ from pandas.api.types import (
     is_datetime64_dtype,
     is_string_dtype,
     is_categorical_dtype,
+    is_extension_array_dtype,
 )
 import numpy as np
 from multipledispatch import dispatch
 from janitor.utils import check_column
 import functools
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 def unionize_dataframe_categories(
@@ -243,10 +245,13 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     if _is_str_or_cat(df_columns):
         if columns_to_select in df_columns:
             return [columns_to_select]
-        outcome = fnmatch.filter(df_columns, columns_to_select)
-        if not outcome:
+        # fix for Github Issue 1160
+        outcome = [
+            fnmatch.fnmatchcase(column, columns_to_select) for column in df
+        ]
+        if not any(outcome):
             raise KeyError(f"No match was returned for '{columns_to_select}'.")
-        return outcome
+        return df_columns[outcome]
 
     if is_datetime64_dtype(df_columns):
         timestamp = df_columns.get_loc(columns_to_select)
@@ -425,87 +430,17 @@ def _column_sel_dispatch(columns_to_select, df):  # noqa: F811
     return filtered_columns
 
 
-class _KeepTypes(Enum):
+def _convert_to_numpy_array(
+    left: np.ndarray, right: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    List of keep types for conditional_join.
+    Convert array to numpy array for use in numba
     """
-
-    ALL = "all"
-    FIRST = "first"
-    LAST = "last"
-
-
-def _import_numba():
-    """
-    Import numba if installed.
-    If not installed, an error message is raised.
-    """
-    # adapted from pandas.compat._optional.py
-    try:
-        module = importlib.import_module("numba")
-    except ImportError:
-        msg = (
-            "Missing optional dependency 'numba'. "
-            "Use pip or conda to install numba."
-        )
-        raise ImportError(msg) from None
-
-    return module
-
-
-def _numba_utils(
-    search_indices: np.ndarray,
-    right_index: np.ndarray,
-    len_right: int,
-    keep: str,
-):
-    """Utility functions for numba."""
-
-    numba = _import_numba()
-    loop_range = numba.prange
-
-    @numba.njit(cache=True, parallel=True)
-    def _numba_keep_first(
-        search_indices: np.ndarray, right_index: np.ndarray, len_right: int
-    ) -> np.ndarray:
-        """Parallelized output for first match."""
-
-        length_of_indices = search_indices.size
-        right_c = np.empty(shape=length_of_indices, dtype=np.intp)
-        if len_right:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    search_indices[ind] : len_right  # noqa:E203
-                ].min()
-        else:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    : search_indices[ind]
-                ].min()  # noqa:E203
-        return right_c
-
-    @numba.njit(cache=True, parallel=True)
-    def _numba_keep_last(
-        search_indices: np.ndarray, right_index: np.ndarray, len_right: int
-    ) -> np.ndarray:
-        """Parallelized output for last match."""
-
-        length_of_indices = search_indices.size
-        right_c = np.empty(shape=length_of_indices, dtype=np.intp)
-        if len_right:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    search_indices[ind] : len_right  # noqa:E203
-                ].max()
-        else:
-            for ind in loop_range(length_of_indices):
-                right_c[ind] = right_index[
-                    : search_indices[ind]
-                ].max()  # noqa:E203
-        return right_c
-
-    if keep == _KeepTypes.FIRST.value:
-        return _numba_keep_first(search_indices, right_index, len_right)
-
-    if keep == _KeepTypes.LAST.value:
-        return _numba_keep_last(search_indices, right_index, len_right)
+    if is_extension_array_dtype(left):
+        numpy_dtype = left.dtype.numpy_dtype
+        left = left.to_numpy(dtype=numpy_dtype, copy=False)
+        right = right.to_numpy(dtype=numpy_dtype, copy=False)
+    elif isinstance(left, (ABCPandasArray, ABCExtensionArray)):
+        left = left.to_numpy(copy=False)
+        right = right.to_numpy(copy=False)
+    return left, right

@@ -2,6 +2,10 @@ name: unit tests
 
 on: [pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   run-tests:
     name: ${{ matrix.os }}, ${{ matrix.python-version }}, ${{ matrix.env }}

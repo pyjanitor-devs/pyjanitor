@@ -291,7 +291,7 @@ def test_array(dates):
     arr = pd.array(["2011-01-31"])
     expected = dates.select_rows(arr)
     actual = dates.loc[arr]
-    assert_frame_equal(expected, actual)
+    assert_frame_equal(expected, actual, check_freq=False)
 
 
 def test_series(dates):
@@ -299,7 +299,7 @@ def test_series(dates):
     arr = pd.Series(["2011-01-31"])
     expected = dates.select_rows(arr)
     actual = dates.loc[arr]
-    assert_frame_equal(expected, actual)
+    assert_frame_equal(expected, actual, check_freq=False)
 
 
 def test_numpy_array(dates):
@@ -316,13 +316,6 @@ def test_array_bool(dates):
     expected = dates.select_rows(arr)
     actual = dates.loc[arr]
     assert_frame_equal(expected, actual)
-
-
-def test_Index(dates):
-    """Raise if pandas Index is not boolean"""
-    with pytest.raises(KeyError):
-        arr = pd.Index(["2011-01-31"])
-        dates.select_rows(arr)
 
 
 def test_boolean_Index(dates):

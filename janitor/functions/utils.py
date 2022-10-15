@@ -485,10 +485,15 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             )
         return arg
     try:
+
         if isinstance(arg, pd.Series):
             arr = arg.array
         else:
             arr = arg
+        if isinstance(index, pd.MultiIndex) and not isinstance(
+            arg, pd.MultiIndex
+        ):
+            return index.get_locs([arg])
         arr = index.get_indexer_for(arr)
         not_found = arr == -1
         if not_found.all():
@@ -666,14 +671,24 @@ def _select(
 
     Returns a DataFrame.
     """
-
-    indices = _select_index(list(args), df, axis)
-    if invert:
-        index = getattr(df, axis)
-        rev = np.ones(len(index), dtype=np.bool8)
-        rev[indices] = False
-        return df.iloc(axis=axis)[rev]
-    return df.iloc(axis=axis)[indices]
+    try:
+        indices = []
+        for entry in args:
+            if is_list_like(entry) and not isinstance(entry, tuple):
+                indices.extend(entry)
+            else:
+                indices.append(entry)
+        if invert:
+            return df.drop(indices, axis=axis)
+        return df.loc(axis=axis)[indices]
+    except Exception:
+        indices = _select_index(list(args), df, axis)
+        if invert:
+            index = getattr(df, axis)
+            rev = np.ones(len(index), dtype=np.bool8)
+            rev[indices] = False
+            return df.iloc(axis=axis)[rev]
+        return df.iloc(axis=axis)[indices]
 
 
 def _convert_to_numpy_array(

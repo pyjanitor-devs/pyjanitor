@@ -523,3 +523,27 @@ def test_dict_regex(multiindex):
     expected = multiindex.select_columns(mapp)
     actual = multiindex.loc(axis=1)[["bar", "qux"], "two"]
     assert_frame_equal(expected, actual)
+
+
+def test_boolean_series_multi(multiindex):
+    """Test boolean output on a MultiIndex"""
+    mapp = pd.Series([True, False]).repeat(4)
+    expected = multiindex.select_columns(mapp, "foo")
+    actual = multiindex.loc(axis=1)["bar":"foo"]
+    assert_frame_equal(expected, actual)
+
+
+def test_boolean_list_multi(multiindex):
+    """Test boolean output on a MultiIndex"""
+    mapp = [True, True, True, True, False, False, False, False]
+    expected = multiindex.select_columns(mapp, "foo")
+    actual = multiindex.loc(axis=1)["bar":"foo"]
+    assert_frame_equal(expected, actual)
+
+
+def test_series_multi(multiindex):
+    """Test pd.Series output on a MultiIndex"""
+    mapp = pd.Series(["bar"])
+    expected = multiindex.select_columns(mapp, slice("foo"))
+    actual = multiindex.loc(axis=1)["bar":"foo"]
+    assert_frame_equal(expected, actual)

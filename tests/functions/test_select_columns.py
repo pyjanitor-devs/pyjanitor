@@ -200,40 +200,7 @@ def test_errors_MultiIndex(multiindex):
         multiindex.select_columns(ix)
 
 
-def test_errors_MultiIndex1(multiindex):
-    """
-    Raise if `level` is a str and not found
-    """
-    ix = IndexLabel("one", level="1")
-    with pytest.raises(ValueError, match="Level 1 not found"):
-        multiindex.select_columns(ix)
-
-
 def test_errors_MultiIndex2(multiindex):
-    """
-    Raise if `level` is an int and less than 0
-    """
-    ix = IndexLabel("one", level=-200)
-    msg = "Too many levels: Index has only 2 levels, "
-    msg += "-200 is not a valid level number"
-    with pytest.raises(IndexError, match=msg):
-        multiindex.select_columns(ix)
-
-
-def test_errors_MultiIndex3(multiindex):
-    """
-    Raise if `level` is an int
-    and not less than the actual number
-    of levels of the MultiIndex
-    """
-    ix = IndexLabel("one", level=2)
-    msg = "Too many levels: Index has only 2 levels, "
-    msg += "not 3"
-    with pytest.raises(IndexError, match=msg):
-        multiindex.select_columns(ix)
-
-
-def test_errors_MultiIndex4(multiindex):
     """
     Raise if `level` is an int/string
     and duplicated

@@ -620,32 +620,7 @@ def _level_labels(
         )
 
     uniqs = set()
-    level_numbers = []
-    # check for duplicates
-    # check if every value in `level` exists
     for lev in level:
-        if isinstance(lev, str):
-            if lev not in index.names:
-                raise ValueError(f"Level {lev} not found.")
-            pos = index.names.index(lev)
-            level_numbers.append(pos)
-        else:
-            # copied from pandas/indexes/multi.py
-            n_levs = index.nlevels
-            if lev < 0:
-                lev += n_levs
-            if lev < 0:
-                orig_lev = lev - n_levs
-                raise IndexError(
-                    f"Too many levels: Index has only {n_levs} levels, "
-                    f"{orig_lev} is not a valid level number"
-                )
-            elif lev >= n_levs:
-                raise IndexError(
-                    f"Too many levels: Index has only {n_levs} levels, "
-                    f"not {lev + 1}"
-                )
-            level_numbers.append(lev)
         if lev in uniqs:
             raise ValueError(
                 f"Entries in `level` should be unique; "
@@ -653,6 +628,7 @@ def _level_labels(
             )
         uniqs.add(lev)  # noqa: PD005
 
+    level_numbers = [index._get_level_number(lev) for lev in level]
     n_levels = range(index.nlevels)
     ordered = list(n_levels[: len(level)]) == level_numbers
     if not ordered:
@@ -679,27 +655,6 @@ def _select(
 
     Returns a DataFrame.
     """
-    dict_present = (isinstance(arg, dict) for arg in args)
-    if any(dict_present) and isinstance(getattr(df, axis), pd.MultiIndex):
-        return _dispatch_to_select_index(df, args, invert, axis)
-    try:
-        indices = []
-        for entry in args:
-            if is_list_like(entry) and not isinstance(entry, tuple):
-                indices.extend(entry)
-            else:
-                indices.append(entry)
-        if invert:
-            return df.drop(indices, axis=axis)
-        return df.loc(axis=axis)[indices]
-    except Exception:
-        return _dispatch_to_select_index(df, args, invert, axis)
-
-
-def _dispatch_to_select_index(
-    df: pd.DataFrame, args: tuple, invert: bool, axis: str
-) -> pd.DataFrame:
-    """Dispatch arguments to _select_index function"""
     indices = _select_index(list(args), df, axis)
     if invert:
         index = getattr(df, axis)

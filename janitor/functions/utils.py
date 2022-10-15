@@ -318,8 +318,12 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         try:
             return index.get_loc(arg)
         except KeyError:
-            # fix for Github Issue 1160
-            if _is_str_or_cat(index) and not isinstance(index, pd.MultiIndex):
+
+            if _is_str_or_cat(index):
+                if isinstance(index, pd.MultiIndex):
+                    index = index.get_level_values(0)
+                # label selection should be case sensitive
+                # fix for Github Issue 1160
                 outcome = [fnmatchcase(column, arg) for column in index]
                 if any(outcome):
                     return outcome
@@ -359,10 +363,12 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         if not index.is_unique:
             raise ValueError(
                 "Non-unique Index labels should be monotonic increasing."
+                "Kindly sort the index."
             )
         if is_datetime64_dtype(index):
             raise ValueError(
                 "The DatetimeIndex should be monotonic increasing."
+                "Kindly sort the index"
             )
 
     start, stop, step = (
@@ -671,6 +677,9 @@ def _select(
 
     Returns a DataFrame.
     """
+    dict_present = (isinstance(arg, dict) for arg in args)
+    if any(dict_present) and isinstance(getattr(df, axis), pd.MultiIndex):
+        return _dispatch_to_select_index(df, args, invert, axis)
     try:
         indices = []
         for entry in args:
@@ -682,13 +691,20 @@ def _select(
             return df.drop(indices, axis=axis)
         return df.loc(axis=axis)[indices]
     except Exception:
-        indices = _select_index(list(args), df, axis)
-        if invert:
-            index = getattr(df, axis)
-            rev = np.ones(len(index), dtype=np.bool8)
-            rev[indices] = False
-            return df.iloc(axis=axis)[rev]
-        return df.iloc(axis=axis)[indices]
+        return _dispatch_to_select_index(df, args, invert, axis)
+
+
+def _dispatch_to_select_index(
+    df: pd.DataFrame, args: tuple, invert: bool, axis: str
+) -> pd.DataFrame:
+    """Dispatch arguments to _select_index function"""
+    indices = _select_index(list(args), df, axis)
+    if invert:
+        index = getattr(df, axis)
+        rev = np.ones(len(index), dtype=np.bool8)
+        rev[indices] = False
+        return df.iloc(axis=axis)[rev]
+    return df.iloc(axis=axis)[indices]
 
 
 def _convert_to_numpy_array(

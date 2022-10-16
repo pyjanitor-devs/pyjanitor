@@ -1,5 +1,5 @@
 """Utility functions for all of the functions submodule."""
-from fnmatch import fnmatchcase
+import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
 import re
@@ -254,10 +254,15 @@ class IndexLabel:
     level: Optional[Union[list, int, str]] = None
 
 
-def _select_regex(index, arg):
+def _select_regex(index, arg, source="regex"):
     "Process regex on a Pandas Index"
+    assert source in ("fnmatch", "regex"), source
     try:
-        bools = index.str.contains(arg, na=False, regex=True)
+        if source == "fnmatch":
+            bools = index.str.match(arg, na=False)
+        else:
+            bools = index.str.contains(arg, na=False, regex=True)
+        print(bools)
         if not bools.any():
             raise KeyError(f"No match was returned for {arg}.")
         return bools
@@ -317,18 +322,21 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     if _is_str_or_cat(index) or is_datetime64_dtype(index):
         try:
             return index.get_loc(arg)
-        except KeyError:
-
+        except KeyError as exc:
             if _is_str_or_cat(index):
                 if isinstance(index, pd.MultiIndex):
                     index = index.get_level_values(0)
                 # label selection should be case sensitive
                 # fix for Github Issue 1160
-                outcome = [fnmatchcase(column, arg) for column in index]
-                if any(outcome):
-                    return outcome
-                raise KeyError(f"No match was returned for '{arg}'.")
-            raise KeyError(f"No match was returned for '{arg}'.")
+                # translating to regex solves the case sensitivity
+                # and also avoids the list comprehension
+                # not that list comprehension is bad - i'd say it is efficient
+                # however, the Pandas str.match method used in _select_regex
+                # could offer more performance, especially if the
+                # underlying array of the index is a PyArrow string array
+                regex = fnmatch.translate(arg)
+                return _select_regex(index, regex, source="fnmatch")
+            raise KeyError(f"No match was returned for '{arg}'.") from exc
     raise KeyError(f"No match was returned for '{arg}'.")
 
 
@@ -373,41 +381,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 "Kindly sort the index"
             )
 
-    start, stop, step = (
-        arg.start,
-        arg.stop,
-        arg.step,
-    )
-
-    if start is None:
-        start_ = 0
-    else:
-        start_ = index.get_loc(start)
-    if stop is None:
-        stop_ = len(index)
-    else:
-        stop_ = index.get_loc(stop)
-    start_check = isinstance(start_, slice)
-    stop_check = isinstance(stop_, slice)
-
-    if start_check:
-        start = start_.start
-    else:
-        start = start_
-    if stop_check:
-        stop = stop_.stop - 1
-    else:
-        stop = stop_
-    if start > stop:
-        if start_check:
-            start = start_.stop - 1
-        if stop_check:
-            stop = stop_.start
-    if start > stop:
-        index = range(index.size)
-        slicer = slice(stop, start + 1, step)
-        return index[slicer][::-1]
-    return slice(start, stop + 1, step)
+    return index._convert_slice_indexer(arg, kind="loc")
 
 
 @_select_index.register(dispatch_callable)  # noqa: F811

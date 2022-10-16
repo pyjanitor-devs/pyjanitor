@@ -106,38 +106,6 @@ def test_unsorted_dates_slice(dates):
         dates.iloc[::-1].select_rows(slice("2011-01-31", "2011-03-31"))
 
 
-slicers = [slice("code2", "Name"), slice("code2", "Name", 2)]
-
-
-@pytest.mark.parametrize("slicer", slicers)
-def test_slice_reverse(slicer):
-    """
-    Test output for reverse slice
-    """
-    index = [
-        "Name",
-        "code",
-        "code",
-        "code1",
-        "code2",
-        "code2",
-        "code3",
-        "id",
-        "type",
-        "type1",
-        "type2",
-        "type3",
-    ]
-    dups = pd.DataFrame([], index=index)
-    actual = dups.select_rows(slicer)
-    start = slicer.stop
-    stop = slicer.start
-    step = slicer.step
-    expected = dups.loc[start:stop:step]
-    expected = expected.loc[::-1]
-    assert_frame_equal(actual, expected)
-
-
 def test_boolean_list_uneven_length(dates):
     """
     Raise ValueError if `rows` is a list of booleans
@@ -203,16 +171,6 @@ def test_slice2(dates):
     """Test output of slice on index."""
     expected = dates.select_rows(slice(None, None, 2))
     assert_frame_equal(expected, dates.loc[::2], check_freq=False)
-
-
-def test_slice3(dates):
-    """Test output of slice on index."""
-    expected = dates.select_rows(slice("2011-10", "2011-04", 2))
-    assert_frame_equal(
-        expected,
-        dates.loc[slice("2011-04", "2011-10", 2)].loc[::-1],
-        check_freq=False,
-    )
 
 
 def test_boolean_list(multiindex):

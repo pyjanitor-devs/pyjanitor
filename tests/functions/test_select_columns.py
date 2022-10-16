@@ -38,7 +38,7 @@ def test_select_column_names_glob_inputs(dataframe, invert, expected):
     columns = ["Bell__Chart", "a*"]
     df = dataframe.select_columns(columns, invert=invert)
 
-    assert_frame_equal(df, dataframe[expected])
+    assert_frame_equal(df, dataframe.loc(axis=1)[expected])
 
 
 @pytest.mark.functions
@@ -370,7 +370,7 @@ def test_slice_reverse(df_strings):
     """
     Test output on a reverse slice
     """
-    actual = df_strings.select_columns(slice("code2", "code"))
+    actual = df_strings.select_columns(slice("code2", "code", -1))
     expected = df_strings.loc[
         :,
         [

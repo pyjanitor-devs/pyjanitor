@@ -422,22 +422,13 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     level = []
     index = getattr(df, axis)
     for key, value in arg.items():
-        if isinstance(key, tuple):
-            if not isinstance(value, tuple):
-                raise TypeError(
-                    f"If the level is a tuple, then a tuple of labels "
-                    "should be passed as the value. "
-                    f"Kindly pass a tuple of labels for the level {key}."
-                )
-            level.extend(key)
-        else:
-            if isinstance(value, dispatch_callable):
-                indexer = index.get_level_values(key)
-                value = _select_callable(indexer, value)
-            elif isinstance(value, re.Pattern):
-                indexer = index.get_level_values(key)
-                value = _select_regex(indexer, value)
-            level.append(key)
+        if isinstance(value, dispatch_callable):
+            indexer = index.get_level_values(key)
+            value = _select_callable(indexer, value)
+        elif isinstance(value, re.Pattern):
+            indexer = index.get_level_values(key)
+            value = _select_regex(indexer, value)
+        level.append(key)
         label.append(value)
 
     return _level_labels(index, label, level)

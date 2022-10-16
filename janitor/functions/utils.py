@@ -262,7 +262,6 @@ def _select_regex(index, arg, source="regex"):
             bools = index.str.match(arg, na=False)
         else:
             bools = index.str.contains(arg, na=False, regex=True)
-        print(bools)
         if not bools.any():
             raise KeyError(f"No match was returned for {arg}.")
         return bools

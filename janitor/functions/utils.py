@@ -236,14 +236,15 @@ def _select_regex(index, arg, source="regex"):
     assert source in ("fnmatch", "regex"), source
     try:
         if source == "fnmatch":
-            bools = index.str.match(arg, na=False)
+            arg, regex = arg
+            bools = index.str.match(regex, na=False)
         else:
             bools = index.str.contains(arg, na=False, regex=True)
         if not bools.any():
-            raise KeyError(f"No match was returned for {arg}.")
+            raise KeyError(f"No match was returned for {arg}")
         return bools
     except Exception as exc:
-        raise KeyError(f"No match was returned for {arg}.") from exc
+        raise KeyError(f"No match was returned for {arg}") from exc
 
 
 def _select_callable(arg, func: Callable, axis=None):
@@ -280,7 +281,7 @@ def _select_index(arg, df, axis):
     try:
         return getattr(df, axis).get_loc(arg)
     except Exception as exc:
-        raise KeyError(f"No match was returned for {arg}.") from exc
+        raise KeyError(f"No match was returned for {arg}") from exc
 
 
 @_select_index.register(str)  # noqa: F811
@@ -310,10 +311,11 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 # however, the Pandas str.match method used in _select_regex
                 # could offer more performance, especially if the
                 # underlying array of the index is a PyArrow string array
-                regex = fnmatch.translate(arg)
-                return _select_regex(index, regex, source="fnmatch")
-            raise KeyError(f"No match was returned for '{arg}'.") from exc
-    raise KeyError(f"No match was returned for '{arg}'.")
+                return _select_regex(
+                    index, (arg, fnmatch.translate(arg)), source="fnmatch"
+                )
+            raise KeyError(f"No match was returned for '{arg}'") from exc
+    raise KeyError(f"No match was returned for '{arg}'")
 
 
 @_select_index.register(re.Pattern)  # noqa: F811
@@ -455,7 +457,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         not_found = arr == -1
         if not_found.all():
             raise KeyError(
-                f"No match was returned for any of the labels in {arg}."
+                f"No match was returned for any of the labels in {arg}"
             )
         elif not_found.any():
             not_found = set(arg).difference(index)
@@ -465,7 +467,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             )
         return arr
     except Exception as exc:
-        raise KeyError(f"No match was returned for '{arg}'.") from exc
+        raise KeyError(f"No match was returned for '{arg}'") from exc
 
 
 @_select_index.register(list)  # noqa: F811

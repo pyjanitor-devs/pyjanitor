@@ -375,7 +375,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
     Base function for selection on a Pandas Index object.
-    Applies only to dictionary.
+    Applies only to a dictionary.
 
     Returns an array of integers.
     """

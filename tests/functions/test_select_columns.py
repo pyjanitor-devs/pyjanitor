@@ -6,7 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 from itertools import product
 
-from janitor.functions.utils import IndexLabel, patterns
+from janitor.functions.utils import patterns
 
 
 @pytest.mark.functions
@@ -113,103 +113,6 @@ def test_multiindex(multiindex):
         multiindex.select_columns(("bar", "one")),
         multiindex.loc[:, [("bar", "one")]],
     )
-
-
-def test_multiindex_indexlabel(multiindex):
-    """
-    Test output for a MultiIndex with IndexLabel.
-    """
-    ix = IndexLabel(("bar", "one"))
-    assert_frame_equal(
-        multiindex.select_columns(ix), multiindex.loc[:, [("bar", "one")]]
-    )
-
-
-def test_multiindex_scalar(multiindex):
-    """
-    Test output for a MultiIndex with a scalar.
-    """
-    ix = IndexLabel("bar")
-    assert_frame_equal(
-        multiindex.select_columns(ix),
-        multiindex.xs(key="bar", level=0, axis=1, drop_level=False),
-    )
-
-
-def test_multiindex_multiple_labels(multiindex):
-    """
-    Test output for a MultiIndex with multiple labels.
-    """
-    ix = [IndexLabel(("bar", "one")), IndexLabel(("baz", "two"))]
-    assert_frame_equal(
-        multiindex.select_columns(ix),
-        multiindex.loc[:, [("bar", "one"), ("baz", "two")]],
-    )
-
-
-def test_multiindex_level(multiindex):
-    """
-    Test output for a MultiIndex on a level.
-    """
-    ix = IndexLabel("one", level=1)
-    assert_frame_equal(
-        multiindex.select_columns(ix),
-        multiindex.xs(key="one", axis=1, level=1, drop_level=False),
-    )
-
-
-def test_multiindex_slice(multiindex):
-    """
-    Test output for a MultiIndex on a slice.
-    """
-    ix = [slice("bar", "foo")]
-    ix = IndexLabel(ix)
-    assert_frame_equal(
-        multiindex.select_columns(ix), multiindex.loc[:, "bar":"foo"]
-    )
-
-
-def test_multiindex_bool(multiindex):
-    """
-    Test output for a MultiIndex on a boolean.
-    """
-    bools = [True, True, True, False, False, False, True, True]
-    ix = IndexLabel([bools], level="first")
-    assert_frame_equal(multiindex.select_columns(ix), multiindex.loc[:, bools])
-
-
-def test_multiindex_invert(multiindex):
-    """
-    Test output for a MultiIndex when `invert` is True.
-    """
-    bools = np.array([True, True, True, False, False, False, True, True])
-    ix = IndexLabel([bools], level="first")
-    assert_frame_equal(
-        multiindex.select_columns(ix, invert=True), multiindex.loc[:, ~bools]
-    )
-
-
-def test_errors_MultiIndex(multiindex):
-    """
-    Raise if `level` is a mix of str and int
-    """
-    ix = IndexLabel(("bar", "one"), level=["first", 1])
-    msg = "All entries in the `level` parameter "
-    msg += "should be either strings or integers."
-    with pytest.raises(TypeError, match=msg):
-        multiindex.select_columns(ix)
-
-
-def test_errors_MultiIndex2(multiindex):
-    """
-    Raise if `level` is an int/string
-    and duplicated
-    """
-    ix = IndexLabel("one", level=[1, 1])
-    msg = "Entries in `level` should be unique; "
-    msg += "1 exists multiple times."
-    with pytest.raises(ValueError, match=msg):
-        multiindex.select_columns(ix)
 
 
 @pytest.fixture

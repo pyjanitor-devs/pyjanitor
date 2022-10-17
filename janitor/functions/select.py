@@ -17,7 +17,8 @@ def select_columns(
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
 
-    Selection on a MultiIndex is possible via a dictionary or tuple.
+    Selection on a MultiIndex on a level, or multiple levels,
+    is possible with a dictionary.
 
     This method does not mutate the original DataFrame.
 
@@ -66,7 +67,8 @@ def select_rows(
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
 
-    Selection on a MultiIndex is possible via a dictionary or tuple.
+    Selection on a MultiIndex on a level, or multiple levels,
+    is possible with a dictionary.
 
     This method does not mutate the original DataFrame.
 

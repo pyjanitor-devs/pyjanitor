@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 
 from pandas.testing import assert_frame_equal
-from janitor.functions.utils import IndexLabel
 
 
 @pytest.fixture
@@ -124,13 +123,6 @@ def test_invert_num(numbers):
     assert_frame_equal(expected, actual)
 
 
-def test_level_string(multiindex):
-    """Test output on a level of the MultiIndex."""
-    expected = multiindex.select_rows(IndexLabel("one", level=1))
-    actual = multiindex.xs(key="one", level=1, drop_level=False)
-    assert_frame_equal(expected, actual)
-
-
 def test_date_partial_output(dates):
     """Test output on a date"""
     expected = dates.select_rows("2011")
@@ -200,6 +192,19 @@ def test_multiindex_tuple_present(multiindex):
         multiindex.select_rows(("bar", "one")),
         multiindex.loc[[("bar", "one")]],
     )
+
+
+def test_errors_MultiIndex_dict(multiindex):
+    """
+    Raise if `level` is an int/string
+    and duplicated
+    """
+    ix = {"second": "one", 0: "bar"}
+    msg = "The keys in the dictionary represent the levels "
+    msg += "in the MultiIndex, and should either be all "
+    msg += "strings or integers."
+    with pytest.raises(TypeError, match=msg):
+        multiindex.select_rows(ix)
 
 
 def test_dict(multiindex):

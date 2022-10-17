@@ -75,4 +75,4 @@ from .toset import toset
 from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
-from .utils import patterns, unionize_dataframe_categories, IndexLabel
+from .utils import patterns, unionize_dataframe_categories

@@ -47,7 +47,7 @@ def conditional_join(
     especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
-    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     For strictly non-equi joins,
     involving either `>`, `<`, `>=`, `<=` operators,

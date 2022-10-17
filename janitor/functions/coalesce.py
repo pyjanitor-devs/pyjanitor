@@ -107,7 +107,7 @@ def coalesce(
     if target_column_name is None:
         target_column_name = column_names[0]
 
-    outcome = df.filter(column_names).bfill(axis="columns").iloc[:, 0]
+    outcome = df.loc(axis=1)[column_names].bfill(axis="columns").iloc[:, 0]
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
 

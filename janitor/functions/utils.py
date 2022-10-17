@@ -241,10 +241,10 @@ def _select_regex(index, arg, source="regex"):
         else:
             bools = index.str.contains(arg, na=False, regex=True)
         if not bools.any():
-            raise KeyError(f"No match was returned for {arg}")
+            raise KeyError(f"No match was returned for '{arg}'")
         return bools
     except Exception as exc:
-        raise KeyError(f"No match was returned for {arg}") from exc
+        raise KeyError(f"No match was returned for '{arg}'") from exc
 
 
 def _select_callable(arg, func: Callable, axis=None):
@@ -339,11 +339,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     Base function for selection on a Pandas Index object.
     Applies only to slices.
 
-    The start slice value must be a string/tuple/None,
-    or exist in the dataframe's columns;
-    same goes for the stop slice value.
-    The step slice value should be an integer or None.
-
     Returns a slice object.
     """
     index = getattr(df, axis)
@@ -382,8 +377,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     Base function for selection on a Pandas Index object.
     Applies only to dictionary.
 
-    Returns either a sequence of booleans, an integer,
-    or a slice.
+    Returns an array of integers.
     """
     level_label = {}
     index = getattr(df, axis)
@@ -528,8 +522,7 @@ def _select(
     """
     indices = _select_index(list(args), df, axis)
     if invert:
-        index = getattr(df, axis)
-        rev = np.ones(len(index), dtype=np.bool8)
+        rev = np.ones(getattr(df, axis).size, dtype=np.bool8)
         rev[indices] = False
         return df.iloc(axis=axis)[rev]
     return df.iloc(axis=axis)[indices]

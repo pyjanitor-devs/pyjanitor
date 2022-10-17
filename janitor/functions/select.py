@@ -40,12 +40,12 @@ def select_columns(
 
     :param df: A pandas DataFrame.
     :param args: Valid inputs include: an exact column name to look for,
-        a shell-style glob string (e.g., `*_thing_*`),
+        a shell-style glob string (e.g. `*_thing_*`),
         a regular expression,
         a callable,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-        A dictionary can be used for complex selection on a MultiIndex.
+        A dictionary can be used for selection on a MultiIndex on different levels.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the columns
         provided.
@@ -92,12 +92,12 @@ def select_rows(
 
     :param df: A pandas DataFrame.
     :param args: Valid inputs include: an exact index name to look for,
-        a shell-style glob string (e.g., `*_thing_*`),
+        a shell-style glob string (e.g. `*_thing_*`),
         a regular expression,
         a callable,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-        A dictionary can be used for complex selection on a MultiIndex.
+        A dictionary can be used for complex on a MultiIndex on different levels.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the rows
         provided.

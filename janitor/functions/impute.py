@@ -1,12 +1,14 @@
 """Implementation of `impute` function"""
 from typing import Any, Hashable, Optional
 
+import lazy_loader as lazy
 import numpy as np
 import pandas_flavor as pf
 import pandas as pd
-from scipy.stats import mode
 
 from janitor.utils import deprecated_alias
+
+ss = lazy.load("scipy.stats")
 
 
 @pf.register_dataframe_method
@@ -100,7 +102,7 @@ def impute(
         "mean": np.mean,
         "average": np.mean,  # aliased
         "median": np.median,
-        "mode": mode,
+        "mode": ss.mode,
         "minimum": np.min,
         "min": np.min,  # aliased
         "maximum": np.max,

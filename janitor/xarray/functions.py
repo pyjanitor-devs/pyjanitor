@@ -5,17 +5,14 @@ functionality.
 
 
 from typing import Union
+import lazy_loader
 
-import numpy as np
-from pandas_flavor import (
-    register_xarray_dataarray_method,
-    register_xarray_dataset_method,
-)
-
-import xarray as xr
+np = lazy_loader.load("numpy")
+xr = lazy_loader.load("xarray")
+pf = lazy_loader.load("pandas_flavor")
 
 
-@register_xarray_dataarray_method
+@pf.register_xarray_dataarray_method
 def clone_using(
     da: xr.DataArray,
     np_arr: np.array,
@@ -104,8 +101,8 @@ def clone_using(
     )
 
 
-@register_xarray_dataset_method
-@register_xarray_dataarray_method
+@pf.register_xarray_dataset_method
+@pf.register_xarray_dataarray_method
 def convert_datetime_to_number(
     da_or_ds: Union[xr.DataArray, xr.Dataset],
     time_units: str,

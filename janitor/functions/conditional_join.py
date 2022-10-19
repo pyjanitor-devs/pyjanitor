@@ -902,7 +902,6 @@ def _multiple_conditional_join_eq(
         left_on=left_on,
         right_on=right_on,
         sort=False,
-        copy=False,
     )._get_join_indexers()
 
     if not left_index.size:

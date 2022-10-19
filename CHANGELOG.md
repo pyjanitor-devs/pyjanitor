@@ -27,7 +27,7 @@
 -   [ENH] The parameter `column_name` of `change_type` totally supports inputing multi-column now. #1163 @Zeroto521
 -   [ENH] Fix error when `sort_by_appearance=True` is combined with `dropna=True`. Issue #1168 @samukweku
 -   [ENH] Add explicit default parameter to `case_when` function. Issue #1159 @samukweku
-
+-   [BUG] pandas 1.5.x `_MergeOperation` doesn't have `copy` keyword anymore. Issue #1174 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

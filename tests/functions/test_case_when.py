@@ -175,7 +175,7 @@ def test_case_when_default_array(df):
     )
     expected = np.where(df.numbers > 1, df.numbers + 10, default)
     expected = df.assign(bleh=expected)
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 @given(df=categoricaldf_strategy())

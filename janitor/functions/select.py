@@ -24,6 +24,11 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
+    !!! Note
+    The preferred option when selecting columns or rows in Pandas DataFrame
+    is with `.loc` or `.iloc` methods, as they are generally performant.
+    `select_columns` is primarily for convenience.
+
     Example:
 
         >>> import pandas as pd
@@ -73,6 +78,11 @@ def select_rows(
     This method does not mutate the original DataFrame.
 
     Optional ability to invert selection of rows available as well.
+
+    !!! Note
+    The preferred option when selecting columns or rows in Pandas DataFrame
+    is with `.loc` or `.iloc` methods, as they are generally performant.
+    `select_rows` is primarily for convenience.
 
     Example:
 

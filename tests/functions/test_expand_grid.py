@@ -21,6 +21,7 @@ def test_others_not_dict(df):
 
 
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_others_none(df):
     """Return DataFrame if no `others`, and df exists."""
     assert_frame_equal(df.expand_grid("df"), df)

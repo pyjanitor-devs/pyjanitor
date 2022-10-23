@@ -4,7 +4,6 @@ import pytest
 from hypothesis import given
 from hypothesis import settings
 from hypothesis import strategies as st
-from hypothesis import HealthCheck
 from pandas.testing import assert_series_equal
 
 from janitor.testing_utils.strategies import df_strategy
@@ -16,7 +15,7 @@ from janitor.testing_utils.strategies import df_strategy
     x_vals=st.floats(),
     n_yvals=st.integers(min_value=0, max_value=100),
 )
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_add_columns(df, x_vals, n_yvals):
     """
     Test for adding multiple columns at the same time.

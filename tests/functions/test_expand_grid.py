@@ -5,7 +5,6 @@ import pandas as pd
 import pytest
 from hypothesis import given
 from hypothesis import settings
-from hypothesis import HealthCheck
 from pandas.testing import assert_frame_equal
 
 from janitor.functions import expand_grid
@@ -21,7 +20,7 @@ def test_others_not_dict(df):
 
 
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_others_none(df):
     """Return DataFrame if no `others`, and df exists."""
     assert_frame_equal(df.expand_grid("df"), df)
@@ -40,7 +39,7 @@ def test_df_key(df):
 
 
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_df_key_hashable(df):
     """Raise error if df exists and df_key is not Hashable."""
     with pytest.raises(TypeError):

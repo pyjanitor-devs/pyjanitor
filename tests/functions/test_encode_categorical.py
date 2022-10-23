@@ -4,7 +4,6 @@ import datetime
 import pytest
 from hypothesis import given
 from hypothesis import settings
-from hypothesis import HealthCheck
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import (
@@ -34,7 +33,7 @@ def test_encode_categorical(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_encode_categorical_missing_column(df):
     """
     Raise ValueError for missing columns
@@ -47,7 +46,7 @@ def test_encode_categorical_missing_column(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_encode_categorical_missing_columns(df):
     """
     Raise ValueError for missing columns
@@ -60,7 +59,7 @@ def test_encode_categorical_missing_columns(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_encode_categorical_invalid_input(df):
     """
     Raise ValueError for wrong input type
@@ -72,7 +71,7 @@ def test_encode_categorical_invalid_input(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_encode_categorical_invalid_input_2(df):
     """
     Raise TypeError for wrong input type
@@ -84,7 +83,7 @@ def test_encode_categorical_invalid_input_2(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_encode_categorical_multiple_column_names(df):
     """
     Test output when more than one column is provided
@@ -154,7 +153,7 @@ def test_categories_ndim_DataFrame_gt_1_in_kwargs(df_checks):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_categories_null_in_categories(df):
     """
     Raise ValueError if categories is provided, but has nulls.
@@ -165,7 +164,7 @@ def test_categories_null_in_categories(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_non_unique_cat(df):
     """Raise ValueError if categories is provided, but is not unique."""
     with pytest.raises(ValueError):
@@ -174,7 +173,7 @@ def test_non_unique_cat(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_empty_cat(df):
     """Raise ValueError if empty categories is provided."""
     with pytest.raises(ValueError):
@@ -183,7 +182,7 @@ def test_empty_cat(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_empty_col(df):
     """
     Raise ValueError if categories is provided,
@@ -210,7 +209,7 @@ def test_warnings(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_order_wrong_option_in_kwargs(df):
     """
     Raise ValueError if a string is provided, but is not
@@ -222,7 +221,7 @@ def test_order_wrong_option_in_kwargs(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_empty_col_sort(df):
     """
     Raise ValueError if a string is provided,
@@ -298,7 +297,7 @@ def test_all_cat_None_2(df):
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_all_cat_not_None(df):
     """
     Test output where categories is provided.

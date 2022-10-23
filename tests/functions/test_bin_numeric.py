@@ -1,14 +1,13 @@
 import pytest
 from hypothesis import given
 from hypothesis import settings
-from hypothesis import HealthCheck
 
 from janitor.testing_utils.strategies import df_strategy
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_bin_numeric_expected_columns(df):
     df = df.bin_numeric(from_column_name="a", to_column_name="a_bin")
     expected_columns = [
@@ -25,7 +24,7 @@ def test_bin_numeric_expected_columns(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(suppress_health_check=[HealthCheck.too_slow])
+@settings(deadline=None)
 def test_bin_numeric_kwargs_has_no_retbins(df):
 
     with pytest.raises(ValueError):

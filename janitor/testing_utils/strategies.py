@@ -14,7 +14,7 @@ def nulldf_strategy():
             column("2", st.sampled_from([np.nan])),
             column("3", st.sampled_from([np.nan])),
         ],
-        index=range_indexes(min_size=3, max_size=10),
+        index=range_indexes(min_size=3, max_size=20),
     )
 
 

@@ -7,7 +7,7 @@ from janitor.testing_utils.strategies import df_strategy
 
 
 @pytest.mark.ml
-@diven(df=df_strategy())
+@given(df=df_strategy())
 @settings(deadline=None)
 def test_get_features_targets(df):
     """Test one column returned as target and rest as features."""

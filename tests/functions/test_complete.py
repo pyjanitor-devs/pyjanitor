@@ -179,6 +179,7 @@ def test_all_strings_no_nulls(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_dict(df):
     """
     Test `complete` output when *columns
@@ -230,6 +231,7 @@ def test_dict_extension_array(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_dict_numpy(df):
     """
     Test `complete` output when *columns

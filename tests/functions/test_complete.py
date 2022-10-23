@@ -257,6 +257,7 @@ def test_dict_numpy(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_dict_Index(df):
     """
     Test `complete` output when *columns

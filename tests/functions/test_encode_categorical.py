@@ -47,6 +47,7 @@ def test_encode_categorical_missing_column(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_encode_categorical_missing_columns(df):
     """
     Raise ValueError for missing columns
@@ -59,6 +60,7 @@ def test_encode_categorical_missing_columns(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_encode_categorical_invalid_input(df):
     """
     Raise ValueError for wrong input type

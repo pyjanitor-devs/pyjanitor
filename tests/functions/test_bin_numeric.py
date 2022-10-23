@@ -25,6 +25,7 @@ def test_bin_numeric_expected_columns(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_bin_numeric_kwargs_has_no_retbins(df):
 
     with pytest.raises(ValueError):

@@ -21,6 +21,7 @@ def test_get_features_targets(df):
 
 @pytest.mark.ml
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_get_features_targets_multi_features(df):
     """Test one column returned as target and two as features."""
     X, y = df.clean_names().get_features_targets(

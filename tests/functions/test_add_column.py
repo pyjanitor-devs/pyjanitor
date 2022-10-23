@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from hypothesis import given
+from hypothesis import settings
 from hypothesis import strategies as st
+from hypothesis import HealthCheck
 from pandas.testing import assert_series_equal
 
 from janitor.testing_utils.strategies import df_strategy
@@ -10,6 +12,7 @@ from janitor.testing_utils.strategies import df_strategy
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_add_column_add_integer(df):
     """col_name wasn't a string"""
     with pytest.raises(TypeError):
@@ -48,6 +51,7 @@ def test_add_column_too_few_but_no_fill_remaining(dataframe):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_add_column_scalar(df):
     """Checks `add_column` works as expected when adding a numeric scalar
     to the column"""
@@ -63,6 +67,7 @@ def test_add_column_scalar(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_add_column_string(df):
     """Checks `add_column` works as expected when adding a string scalar
     to the column.

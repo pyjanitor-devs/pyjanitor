@@ -34,6 +34,7 @@ def test_encode_categorical(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_encode_categorical_missing_column(df):
     """
     Raise ValueError for missing columns
@@ -180,6 +181,7 @@ def test_empty_cat(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_empty_col(df):
     """
     Raise ValueError if categories is provided,
@@ -294,6 +296,7 @@ def test_all_cat_None_2(df):
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_all_cat_not_None(df):
     """
     Test output where categories is provided.

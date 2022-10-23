@@ -130,6 +130,7 @@ def test_error_multiple_conditions():
 
 
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_case_when_condition_callable(df):
     """Test case_when for callable."""
     result = df.case_when(

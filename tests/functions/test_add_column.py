@@ -99,6 +99,7 @@ def test_add_column_iterator_repeat_subtraction(dataframe):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_add_column_fill_scalar(df):
     """Checks the `fill_remaining` parameter works as expected when value
     is a scalar."""
@@ -110,6 +111,7 @@ def test_add_column_fill_scalar(df):
 
 @pytest.mark.functions
 @given(df=df_strategy(), vals=st.lists(elements=st.integers()))
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_add_column_fill_remaining_iterable(df, vals: list):
     """Checks the `fill_remaining` parameter works as expected."""
     if len(vals) > len(df) or not vals:

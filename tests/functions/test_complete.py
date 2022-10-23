@@ -158,6 +158,7 @@ def test_type_explicit(fill_df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_all_strings_no_nulls(df):
     """
     Test `complete` output when *columns

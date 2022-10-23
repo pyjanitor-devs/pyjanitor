@@ -1,14 +1,16 @@
 import pytest
-from hypothesis import assume, given
+from hypothesis import assume
+from hypothesis import given
+from hypothesis import settings
+from hypothesis import HealthCheck
 
-from janitor.testing_utils.strategies import (
-    categoricaldf_strategy,
-    names_strategy,
-)
+from janitor.testing_utils.strategies import categoricaldf_strategy
+from janitor.testing_utils.strategies import names_strategy
 
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy(), iterable=names_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_filter_column_isin(df, iterable):
     """
     `filter_column_isin` should return the property that the column of

@@ -171,6 +171,7 @@ def test_non_unique_cat(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_empty_cat(df):
     """Raise ValueError if empty categories is provided."""
     with pytest.raises(ValueError):

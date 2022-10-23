@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import settings
 from hypothesis import given
+from hypothesis import HealthCheck
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import (
@@ -139,6 +141,7 @@ def test_case_when_condition_callable(df):
 
 
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_case_when_condition_eval(df):
     """Test case_when for callable."""
     result = df.case_when("a < 10", "baby", default="bleh", column_name="bleh")
@@ -214,6 +217,7 @@ def test_case_when_default_index(df):
 
 
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_case_when_multiple_args(df):
     """Test case_when for multiple arguments."""
     result = df.case_when(

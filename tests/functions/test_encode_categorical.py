@@ -3,6 +3,8 @@ import pandas as pd
 import datetime
 import pytest
 from hypothesis import given
+from hypothesis import settings
+from hypothesis import HealthCheck
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import (
@@ -67,6 +69,7 @@ def test_encode_categorical_invalid_input(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_encode_categorical_invalid_input_2(df):
     """
     Raise TypeError for wrong input type
@@ -78,6 +81,7 @@ def test_encode_categorical_invalid_input_2(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_encode_categorical_multiple_column_names(df):
     """
     Test output when more than one column is provided
@@ -147,6 +151,7 @@ def test_categories_ndim_DataFrame_gt_1_in_kwargs(df_checks):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_categories_null_in_categories(df):
     """
     Raise ValueError if categories is provided, but has nulls.
@@ -157,6 +162,7 @@ def test_categories_null_in_categories(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_non_unique_cat(df):
     """Raise ValueError if categories is provided, but is not unique."""
     with pytest.raises(ValueError):
@@ -199,6 +205,7 @@ def test_warnings(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_order_wrong_option_in_kwargs(df):
     """
     Raise ValueError if a string is provided, but is not
@@ -210,6 +217,7 @@ def test_order_wrong_option_in_kwargs(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_empty_col_sort(df):
     """
     Raise ValueError if a string is provided,

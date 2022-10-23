@@ -1,5 +1,7 @@
 import pytest
 from hypothesis import given
+from hypothesis import settings
+from hypothesis import HealthCheck
 
 import janitor.ml  # noqa: F401
 from janitor.testing_utils.strategies import df_strategy
@@ -7,6 +9,7 @@ from janitor.testing_utils.strategies import df_strategy
 
 @pytest.mark.ml
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_get_features_targets(df):
     """Test one column returned as target and rest as features."""
     X, y = df.clean_names().get_features_targets(

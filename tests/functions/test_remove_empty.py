@@ -2,12 +2,15 @@ import numpy as np
 import pandas as pd
 import pytest
 from hypothesis import given
+from hypothesis import settings
+from hypothesis import HealthCheck
 
 from janitor.testing_utils.strategies import df_strategy
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(suppress_health_check=[HealthCheck.too_slow])
 def test_remove_empty(df):
     # This test ensures that there are no columns that are completely null.
     df = df.remove_empty()

@@ -1,14 +1,15 @@
+from functools import reduce
+
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
+from hypothesis import settings
 from pandas.testing import assert_frame_equal
-from janitor.testing_utils.strategies import (
-    df_strategy,
-    categoricaldf_strategy,
-)
+
 from janitor.functions import expand_grid
-from functools import reduce
+from janitor.testing_utils.strategies import df_strategy
+from janitor.testing_utils.strategies import categoricaldf_strategy
 
 
 @given(df=df_strategy())
@@ -19,6 +20,7 @@ def test_others_not_dict(df):
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_others_none(df):
     """Return DataFrame if no `others`, and df exists."""
     assert_frame_equal(df.expand_grid("df"), df)
@@ -37,6 +39,7 @@ def test_df_key(df):
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_df_key_hashable(df):
     """Raise error if df exists and df_key is not Hashable."""
     with pytest.raises(TypeError):

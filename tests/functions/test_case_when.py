@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import settings
 from hypothesis import given
 from pandas.testing import assert_frame_equal
 
@@ -128,6 +129,7 @@ def test_error_multiple_conditions():
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_case_when_condition_callable(df):
     """Test case_when for callable."""
     result = df.case_when(
@@ -139,6 +141,7 @@ def test_case_when_condition_callable(df):
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_case_when_condition_eval(df):
     """Test case_when for callable."""
     result = df.case_when("a < 10", "baby", default="bleh", column_name="bleh")
@@ -148,6 +151,7 @@ def test_case_when_condition_eval(df):
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_case_when_replacement_callable(df):
     """Test case_when for callable."""
     result = df.case_when(
@@ -214,6 +218,7 @@ def test_case_when_default_index(df):
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_case_when_multiple_args(df):
     """Test case_when for multiple arguments."""
     result = df.case_when(

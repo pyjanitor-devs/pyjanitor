@@ -1,11 +1,13 @@
 import pytest
 from hypothesis import given
+from hypothesis import settings
 
 from janitor.testing_utils.strategies import df_strategy
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_reorder_columns(df):
     # NOTE: This test essentially has four different tests underneath it.
     # WE should be able to refactor this using pytest.mark.parametrize.

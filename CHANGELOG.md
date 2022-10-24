@@ -28,7 +28,7 @@
 -   [ENH] Add explicit default parameter to `case_when` function. Issue #1159 @samukweku
 -   [BUG] pandas 1.5.x `_MergeOperation` doesn't have `copy` keyword anymore. Issue #1174 @Zeroto521
 -   [ENH] `select_rows` function added for flexible row selection. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku
-
+-   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

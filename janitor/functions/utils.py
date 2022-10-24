@@ -485,37 +485,31 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
-    try:
-        indices = index.get_indexer_for(arg)
-        if -1 in indices:
-            raise ValueError
-        return indices
-    except (TypeError, ValueError):
-        indices = [_select_index(entry, df, axis) for entry in arg]
+    indices = [_select_index(entry, df, axis) for entry in arg]
 
-        # single entry does not need to be combined
-        # or materialized if possible;
-        # this offers more performance
-        if len(indices) == 1:
-            if isinstance(indices[0], int):
-                return indices
-            if is_list_like(indices[0]):
-                return np.asanyarray(indices[0])
-            return indices[0]
-        contents = []
-        for arr in indices:
-            if is_list_like(arr):
-                arr = np.asanyarray(arr)
-            if is_bool_dtype(arr):
-                arr = arr.nonzero()[0]
-            elif isinstance(arr, slice):
-                arr = range(index.size)[arr]
-            elif isinstance(arr, int):
-                arr = [arr]
-            contents.append(arr)
-        contents = np.concatenate(contents)
-        # remove possible duplicates
-        return pd.unique(contents)
+    # single entry does not need to be combined
+    # or materialized if possible;
+    # this offers more performance
+    if len(indices) == 1:
+        if isinstance(indices[0], int):
+            return indices
+        if is_list_like(indices[0]):
+            return np.asanyarray(indices[0])
+        return indices[0]
+    contents = []
+    for arr in indices:
+        if is_list_like(arr):
+            arr = np.asanyarray(arr)
+        if is_bool_dtype(arr):
+            arr = arr.nonzero()[0]
+        elif isinstance(arr, slice):
+            arr = range(index.size)[arr]
+        elif isinstance(arr, int):
+            arr = [arr]
+        contents.append(arr)
+    contents = np.concatenate(contents)
+    # remove possible duplicates
+    return pd.unique(contents)
 
 
 def _select(

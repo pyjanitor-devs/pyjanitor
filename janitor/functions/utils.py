@@ -333,6 +333,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     return _select_regex(index, arg)
 
 
+@_select_index.register(range)  # noqa: F811
 @_select_index.register(slice)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """

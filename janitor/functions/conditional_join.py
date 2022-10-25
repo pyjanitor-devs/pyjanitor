@@ -143,7 +143,7 @@ def conditional_join(
     :param keep: Choose whether to return the first match,
         last match or all matches. Default is `all`.
     :param use_numba: Use numba, if installed, to accelerate the computation.
-        Default is `False`.
+        Applicable only to strictly non-equi joins. Default is `False`.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     """
 

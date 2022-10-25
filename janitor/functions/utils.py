@@ -462,7 +462,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             )
         return arr
     except Exception as exc:
-        raise KeyError(f"No match was returned for '{arg}'") from exc
+        raise KeyError(f"No match was returned for {arg}") from exc
 
 
 @_select_index.register(list)  # noqa: F811

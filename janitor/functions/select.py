@@ -107,7 +107,7 @@ def select_rows(
         a callable,
         or variable arguments of all the aforementioned.
         A sequence of booleans is also acceptable.
-        A dictionary can be used for complex on a MultiIndex on different levels.
+        A dictionary can be used for selection on a MultiIndex on different levels.
     :param invert: Whether or not to invert the selection.
         This will result in the selection of the complement of the rows
         provided.

@@ -25,16 +25,12 @@ jobs:
         with:
           auto-update-conda: true
           miniforge-variant: Mambaforge
-          channels: conda-forge
-          activate-environment: pyjanitor-dev
           environment-file: environment-dev.yml
           use-mamba: true
 
       - name: Build docs
         run: |
-          conda activate pyjanitor-dev
-          python -m ipykernel install --user --name pyjanitor-dev
-          pip install -e .
+          pip install .
           mkdocs build
 
       - name: Deploy website

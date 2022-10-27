@@ -36,6 +36,9 @@ jobs:
           pip install .
           mkdocs build
 
+      - name: Test docs
+        run: pytest -m "documentation"
+
       - uses: actions/upload-artifact@v3
         with:
           name: website

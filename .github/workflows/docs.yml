@@ -33,6 +33,11 @@ jobs:
           pip install .
           mkdocs build
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: website
+          path: site/
+
       - name: Deploy website
         uses: peaceiris/actions-gh-pages@v3
         with:

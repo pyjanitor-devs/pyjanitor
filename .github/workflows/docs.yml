@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - dev
+  pull_request:
+    branches:
+      - dev
 
 jobs:
   build-docs:
@@ -39,6 +42,7 @@ jobs:
           path: site/
 
       - name: Deploy website
+        if: ${{ github.event_name == 'pull_request' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token
@@ -51,3 +55,20 @@ jobs:
           force_orphan: true
           enable_jekyll: false
           disable_nojekyll: false
+
+      - name: Deploy docs preview to Netlify
+        if: ${{ github.event_name == 'push' }}
+        uses: nwtgck/actions-netlify@v1.1
+        with:
+          publish-dir: "./site"
+          production-deploy: false
+          github-token: ${{ secrets.GHPAGES_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: deploy-preview-${{ github.event.number }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1

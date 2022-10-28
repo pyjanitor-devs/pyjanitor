@@ -37,13 +37,13 @@ jobs:
       - name: Build docs
         run: mkdocs build
 
-      - name: Test docs
-        run: pytest -m "documentation"
-
       - uses: actions/upload-artifact@v3
         with:
           name: website
           path: site/
+
+      - name: Test docs
+        run: pytest -m "documentation"
 
       - name: Deploy website
         if: ${{ github.event_name == 'pull_request' }}

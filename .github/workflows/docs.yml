@@ -30,10 +30,12 @@ jobs:
           environment-file: environment-dev.yml
           use-mamba: true
 
+      - name: Install pyjanitor
+        # use editable mode to avoid _pytest.pathlib.ImportPathMismatchError
+        run: pip install -e .
+
       - name: Build docs
-        run: |
-          pip install .
-          mkdocs build
+        run: mkdocs build
 
       - name: Test docs
         run: pytest -m "documentation"

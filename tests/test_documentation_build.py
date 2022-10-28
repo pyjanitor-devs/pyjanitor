@@ -6,7 +6,8 @@ import pytest
 
 
 # If `mkdocs` wasn't installed in environment, just skip.
-# Can't use `pytest.importorskip("mkdocs")`, 'mkdocs' is also a folder to pyjanitor.
+# Can't use `pytest.importorskip("mkdocs")`, 'mkdocs' is also
+# a folder name to pyjanitor project.
 pytest.importorskip("mkdocstrings")
 
 

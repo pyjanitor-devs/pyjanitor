@@ -29,6 +29,7 @@
 -   [ENH] Add explicit default parameter to `case_when` function. Issue #1159 @samukweku
 -   [BUG] pandas 1.5.x `_MergeOperation` doesn't have `copy` keyword anymore. Issue #1174 @Zeroto521
 -   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
+-   [INF] Merge two docs CIs (`docs-preview.yml` and `docs.yml`) to one. And add `documentation` pytest mark. PR #1183 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

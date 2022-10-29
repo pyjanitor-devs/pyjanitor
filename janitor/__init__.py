@@ -29,4 +29,4 @@ def get_features_targets(*args, **kwargs):
     return _get_features_targets(*args, **kwargs)
 
 
-__version__ = "0.23.1-lazy"
+__version__ = "0.23.1"

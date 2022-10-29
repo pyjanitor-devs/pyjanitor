@@ -6,3 +6,4 @@ natsort
 pandas_flavor
 multipledispatch
 scipy
+lazy_loader

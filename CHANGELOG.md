@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+-   [ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)
 -   [DOC] Updated developer guide docs.
 -   [ENH] Allow column selection/renaming within conditional_join. Issue #1102. Also allow first or last match. Issue #1020 @samukweku.
 -   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521

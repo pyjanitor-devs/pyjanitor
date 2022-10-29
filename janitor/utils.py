@@ -1,14 +1,23 @@
-"""Miscellaneous internal PyJanitor helper functions."""
+"""Miscellaneous mathematical operators.
+
+Lazy loading used here to speed up imports.
+"""
 
 import os
-import socket
 import sys
-from warnings import warn
-from functools import singledispatch, wraps
+import socket
 from typing import Callable, Dict, Iterable, Union
+from functools import singledispatch, wraps
+from warnings import warn
 
-import numpy as np
-import pandas as pd
+import lazy_loader as lazy
+
+scipy_special = lazy.load("scipy.special")
+ss = lazy.load("scipy.stats")
+pf = lazy.load("pandas_flavor")
+pd = lazy.load("pandas")
+np = lazy.load("numpy")
+pdtypes = lazy.load("pandas.api.types")
 
 
 def check(varname: str, value, expected_types: list):

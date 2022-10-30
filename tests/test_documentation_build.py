@@ -2,8 +2,6 @@
 
 import pytest
 
-import pytest
-
 
 # If `mkdocs` wasn't installed in environment, just skip.
 # Can't use `pytest.importorskip("mkdocs")`, 'mkdocs' is also

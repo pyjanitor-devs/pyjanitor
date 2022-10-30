@@ -1,10 +1,12 @@
 import numpy as np
 import pytest
 from hypothesis import given
+from hypothesis import settings
 from hypothesis.extra.pandas import series
 
 
 @given(s=series(dtype=np.number))
+@settings(deadline=None)
 def test_ecdf(s):
     """A simple execution test."""
     if s.isna().sum() > 0:

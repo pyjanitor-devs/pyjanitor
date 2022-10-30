@@ -166,6 +166,7 @@ def test_case_when_replacement_callable(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_case_when_default_array(df):
     """
     Test case_when for scenarios where `default` is array-like

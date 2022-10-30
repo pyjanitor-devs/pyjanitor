@@ -6,6 +6,7 @@ dependencies:
   - pandas
   - pandas-flavor
   - multipledispatch
+  - lazy_loader
   - scipy  # math, functions
 
   # optional

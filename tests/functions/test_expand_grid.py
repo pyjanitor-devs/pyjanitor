@@ -33,6 +33,7 @@ def test_others_empty():
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_df_key(df):
     """Raise error if df exists and df_key is not supplied."""
     with pytest.raises(KeyError):

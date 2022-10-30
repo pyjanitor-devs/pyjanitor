@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+-   [ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)
 -   [DOC] Updated developer guide docs.
 -   [ENH] Allow column selection/renaming within conditional_join. Issue #1102. Also allow first or last match. Issue #1020 @samukweku.
 -   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
@@ -29,6 +30,7 @@
 -   [ENH] Add explicit default parameter to `case_when` function. Issue #1159 @samukweku
 -   [BUG] pandas 1.5.x `_MergeOperation` doesn't have `copy` keyword anymore. Issue #1174 @Zeroto521
 -   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
+-   [INF] Merge two docs CIs (`docs-preview.yml` and `docs.yml`) to one. And add `documentation` pytest mark. PR #1183 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

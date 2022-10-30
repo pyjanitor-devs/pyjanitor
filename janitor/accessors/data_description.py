@@ -1,6 +1,8 @@
+import lazy_loader as lazy
 from typing import Dict, List, Union
-import pandas_flavor as pf
-import pandas as pd
+
+pf = lazy.load("pandas_flavor")
+pd = lazy.load("pandas")
 
 
 @pf.register_dataframe_accessor("data_description")

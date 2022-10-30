@@ -2,21 +2,15 @@
 
 import pytest
 
-
-# Even if 'mkdocs' is installed
-# 'mkdocs' is could be imported as <module 'mkdocs' (namespace)>
-# Need to check if 'mkdocs' has '__version__' attribute
-mkdocs = pytest.importorskip("mkdocs")
-mkdocs_installed = hasattr(mkdocs, "__version__")
+import pytest
 
 
-@pytest.mark.skipif(
-    not mkdocs_installed,
-    reason=(
-        "Requires the MkDocs library. "
-        "And only test documentation in documentation building CI."
-    ),
-)
+# If `mkdocs` wasn't installed in environment, just skip.
+# Can't use `pytest.importorskip("mkdocs")`, 'mkdocs' is also
+# a folder name to pyjanitor project.
+pytest.importorskip("mkdocstrings")
+
+
 @pytest.mark.documentation
 def test_docs_general_functions_present():
     """Test that all docs pages build correctly.

@@ -234,6 +234,7 @@ def test_empty_col_sort(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_empty_col_appearance(df):
     """
     Raise ValueError if a string is provided,

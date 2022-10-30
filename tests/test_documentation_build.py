@@ -1,6 +1,6 @@
 """Tests for documentation build."""
 
-import os	
+import os
 
 import pytest
 
@@ -19,7 +19,7 @@ def test_docs_general_functions_present():
     all of the functions are present in the docs.
     This is an awesome thing that we could use help with in the future.
     """
-    # Build docs using mkdocs	
+    # Build docs using mkdocs
     os.system("mkdocs build --clean")
 
     # We want to check that the following keywords are all present.

@@ -271,6 +271,7 @@ def test_all_None(df):
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_all_cat_None_1(df):
     """
     Test output where a string is provided.

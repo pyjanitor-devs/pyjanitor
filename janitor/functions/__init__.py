@@ -64,7 +64,7 @@ from .rename_columns import rename_column, rename_columns
 from .reorder_columns import reorder_columns
 from .round_to_fraction import round_to_fraction
 from .row_to_names import row_to_names
-from .select_columns import select_columns
+from .select import select_columns, select_rows
 from .shuffle import shuffle
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally

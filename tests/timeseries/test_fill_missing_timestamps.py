@@ -26,7 +26,16 @@ def test_fill_missing_timestamps(timeseries_dataframe):
     df1 = timeseries_dataframe.drop(timeseries_dataframe.index[random_number])
 
     # Fill missing timestamps
-    result = fill_missing_timestamps(df1, frequency="1H")
+    # fix for GH#1184 is to use the start and end from
+    # timeseries_dataframe
+    # imagine that the last row of df1 is removed, or the first entry
+    # the length check in the next line will fail
+    result = fill_missing_timestamps(
+        df1,
+        frequency="1H",
+        first_time_stamp=timeseries_dataframe.index.min(),
+        last_time_stamp=timeseries_dataframe.index.max(),
+    )
 
     # Testing if the missing timestamp has been filled
     assert len(result) == len(timeseries_dataframe)

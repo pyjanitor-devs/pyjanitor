@@ -15,7 +15,6 @@ from typing import (
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
 
-
 import pandas as pd
 from janitor.utils import check, _expand_grid
 from pandas.api.types import (
@@ -508,9 +507,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         elif isinstance(arr, int):
             arr = [arr]
         contents.append(arr)
-    contents = np.concatenate(contents)
-    # remove possible duplicates
-    return pd.unique(contents)
+    return np.concatenate(contents)
 
 
 def _select(

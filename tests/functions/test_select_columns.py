@@ -57,6 +57,7 @@ def test_select_column_names_missing_columns(dataframe, columns):
         dataframe.select_columns(columns)
 
 
+@pytest.mark.xfail(reason="return whatever user passes")
 @pytest.mark.functions
 @pytest.mark.parametrize(
     "invert,expected",
@@ -394,8 +395,7 @@ def test_boolean_list_multi(multiindex):
 
 def test_series_multi(multiindex):
     """Test pd.Series output on a MultiIndex"""
-    mapp = pd.Series(["bar"])
-    expected = multiindex.select_columns(mapp, slice("foo"))
+    expected = multiindex.select_columns(pd.Series("bar"), slice("baz", "foo"))
     actual = multiindex.loc(axis=1)["bar":"foo"]
     assert_frame_equal(expected, actual)
 

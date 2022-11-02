@@ -11,9 +11,11 @@ from typing import (
     Pattern,
     Union,
     Callable,
+    Any,
 )
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
+from dataclasses import dataclass
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
@@ -268,6 +270,19 @@ def _select_callable(arg, func: Callable, axis=None):
     return bools
 
 
+@dataclass
+class DropLabel:
+    """
+    Helper class for removing labels within the `select` syntax.
+    `label` can be any of the types supported in `_select_index`.
+    An array of integers not matching the labels is returned.
+    :param label: Label(s) to be dropped from the index.
+    :returns: A dataclass.
+    """
+
+    label: Any
+
+
 @singledispatch
 def _select_index(arg, df, axis):
     """
@@ -281,6 +296,27 @@ def _select_index(arg, df, axis):
         return getattr(df, axis).get_loc(arg)
     except Exception as exc:
         raise KeyError(f"No match was returned for {arg}") from exc
+
+
+@_select_index.register(DropLabel)  # noqa: F811
+def _column_sel_dispatch(cols, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Returns the inverse of the passed label(s).
+
+    Returns an array of integers.
+    """
+    arr = _select_index(cols.label, df, axis)
+    index = np.arange(getattr(df, axis).size)
+    if isinstance(arr, int):
+        arr = [arr]
+    elif isinstance(arr, slice):
+        arr = index[arr]
+    elif is_list_like(arr):
+        arr = np.asanyarray(arr)
+    if is_bool_dtype(arr):
+        return index[~arr]
+    return np.setdiff1d(index, arr)
 
 
 @_select_index.register(str)  # noqa: F811
@@ -484,6 +520,15 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             )
 
         return arg
+
+    # treat multiple DropLabel instances as a single unit
+    checks = (isinstance(entry, DropLabel) for entry in arg)
+    if sum(checks) > 1:
+        drop_labels = (entry for entry in arg if isinstance(entry, DropLabel))
+        drop_labels = [entry.label for entry in drop_labels]
+        drop_labels = DropLabel(drop_labels)
+        arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
+        arg.append(drop_labels)
 
     indices = [_select_index(entry, df, axis) for entry in arg]
 

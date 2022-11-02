@@ -6,7 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 from itertools import product
 
-from janitor.functions.utils import patterns
+from janitor.functions.utils import patterns, DropLabel
 
 
 @pytest.mark.functions
@@ -23,6 +23,32 @@ def test_select_column_names(dataframe, invert, expected):
     df = dataframe.select_columns(columns, invert=invert)
 
     assert_frame_equal(df, dataframe[expected])
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "invert,expected",
+    [
+        (True, ["a", "Bell__Chart", "cities"]),
+        (False, ["decorated-elephant", "animals@#$%^"]),
+    ],
+)
+def test_select_column_names_droplabel(dataframe, invert, expected):
+    "Base DataFrame"
+    columns = ["a", "Bell__Chart", "cities"]
+    df = dataframe.select_columns(DropLabel(columns), invert=invert)
+
+    assert_frame_equal(df, dataframe[expected])
+
+
+@pytest.mark.functions
+def test_select_column_names_droplabel_multiple(dataframe):
+    "Base DataFrame"
+    columns = ["a", "Bell__Chart", "cities"]
+    cols = [DropLabel(ent) for ent in columns]
+    df = dataframe.select_columns(*cols)
+
+    assert_frame_equal(df, dataframe.drop(columns=columns))
 
 
 @pytest.mark.functions

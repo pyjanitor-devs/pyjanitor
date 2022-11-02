@@ -31,6 +31,7 @@
 -   [ENH] `select_rows` function added for flexible row selection. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku
 -   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
 -   [INF] Merge two docs CIs (`docs-preview.yml` and `docs.yml`) to one. And add `documentation` pytest mark. PR #1183 @Zeroto521
+-   [INF] Merge `codecov.yml` (only works for the dev branch pushing event) into `tests.yml` (only works for PR event). PR #1185 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

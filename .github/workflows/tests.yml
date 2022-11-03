@@ -45,7 +45,7 @@ jobs:
         run: |
           conda activate pyjanitor-dev
           python -m pip install -e .
-          pytest -m "${{ matrix.test-subset }}"
+          pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-modules tests -m "${{ matrix.test-subset }}"
 
       # https://github.com/codecov/codecov-action
       - name: Upload code coverage

@@ -13,6 +13,7 @@ from janitor.testing_utils.strategies import categoricaldf_strategy
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_others_not_dict(df):
     """Raise Error if `others` is not a dictionary."""
     with pytest.raises(TypeError):
@@ -32,6 +33,7 @@ def test_others_empty():
 
 
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_df_key(df):
     """Raise error if df exists and df_key is not supplied."""
     with pytest.raises(KeyError):

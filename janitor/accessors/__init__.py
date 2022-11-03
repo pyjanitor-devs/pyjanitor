@@ -6,8 +6,9 @@ Lazy loading used here to speed up imports.
 import warnings
 from typing import Tuple
 
-
 import lazy_loader as lazy
+
+from janitor.accessors.data_description import DataDescription  # noqa: F401
 
 scipy_special = lazy.load("scipy.special")
 ss = lazy.load("scipy.stats")

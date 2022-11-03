@@ -556,13 +556,33 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
 
 def _select(
-    df: pd.DataFrame, args: tuple, invert: bool, axis: str
+    df: pd.DataFrame,
+    args: tuple,
+    invert: bool = False,
+    axis: str = "index",
+    rows=None,
+    columns=None,
 ) -> pd.DataFrame:
     """
     Index DataFrame on the index or columns.
 
     Returns a DataFrame.
     """
+    assert axis in {"both", "index", "columns"}
+    if axis == "both":
+        if rows is None:
+            rows = slice(None)
+        else:
+            if not is_list_like(rows):
+                rows = [rows]
+            rows = _select_index(rows, df, axis="index")
+        if columns is None:
+            columns = slice(None)
+        else:
+            if not is_list_like(columns):
+                columns = [columns]
+            columns = _select_index(columns, df, axis="columns")
+        return df.iloc[rows, columns]
     indices = _select_index(list(args), df, axis)
     if invert:
         rev = np.ones(getattr(df, axis).size, dtype=np.bool8)

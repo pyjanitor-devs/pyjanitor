@@ -2,7 +2,16 @@
 
 import os
 
+import pytest
 
+
+# If `mkdocs` wasn't installed in environment, just skip.
+# Can't use `pytest.importorskip("mkdocs")`, 'mkdocs' is also
+# a folder name to pyjanitor project.
+pytest.importorskip("mkdocstrings")
+
+
+@pytest.mark.documentation
 def test_docs_general_functions_present():
     """Test that all docs pages build correctly.
 

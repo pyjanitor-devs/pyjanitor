@@ -2,26 +2,37 @@
 
 ## [Unreleased]
 
+-   [ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)
 -   [DOC] Updated developer guide docs.
 -   [ENH] Allow column selection/renaming within conditional_join. Issue #1102. Also allow first or last match. Issue #1020 @samukweku.
 -   [ENH] New decorator `deprecated_kwargs` for breaking API. #1103 @Zeroto521
--   [ENH] Extend select_columns to support non-string columns. Also allow selection on MultiIndex columns via level parameter. Issue #1105 @samukweku
+-   [ENH] Extend select_columns to support non-string columns. Issue #1105 @samukweku
 -   [ENH] Performance improvement for groupby_topk. Issue #1093 @samukweku
 -   [ENH] `min_max_scale` drop `old_min` and `old_max` to fit sklearn's method API. Issue #1068 @Zeroto521
 -   [ENH] Add `jointly` option for `min_max_scale` support to transform each column values or entire values. Default transform each column, similar behavior to `sklearn.preprocessing.MinMaxScaler`. (Issue #1067, PR #1112, PR #1123) @Zeroto521
 -   [INF] Require pyspark minimal version is v3.2.0 to cut duplicates codes. Issue #1110 @Zeroto521
--   [ENH] Added support for extension arrays in `expand_grid`. Issue #1121 @samukweku
+-   [ENH] Add support for extension arrays in `expand_grid`. Issue #1121 @samukweku
 -   [ENH] Add `names_expand` and `index_expand` parameters to `pivot_wider` for exposing missing categoricals. Issue #1108 @samukweku
--   [ENH] Add fix  for slicing error when selecting columns in `pivot_wider`. Issue #1134 @samukweku
+-   [ENH] Add fix for slicing error when selecting columns in `pivot_wider`. Issue #1134 @samukweku
 -   [ENH] `dropna` parameter added to `pivot_longer`. Issue #1132 @samukweku
 -   [INF] Update `mkdocstrings` version and to fit its new coming features. PR #1138 @Zeroto521
 -   [BUG] Force `math.softmax` returning `Series`. PR #1139 @Zeroto521
 -   [INF] Set independent environment for building documentation. PR #1141 @Zeroto521
 -   [DOC] Add local documentation preview via github action artifact. PR #1149 @Zeroto521
 -   [ENH] Enable `encode_categorical` handle 2 (or more ) dimensions array. PR #1153 @Zeroto521
--   [ENH] Faster computation for a single non-equi join, with a numba engine. Issue #1102 @samukweku
+-   [TST] Fix testcases failing on Window. Issue #1160 @Zeroto521, and @samukweku
 -   [INF] Cancel old workflow runs via Github Action `concurrency`. PR #1161 @Zeroto521
 -   [BUG] Modify ignore_empty output in `concatenate_columns`. PR #1164 @Fu-Jie
+-   [ENH] Faster computation for non-equi join, with a numba engine. Speed improvement for left/right joins when `sort_by_appearance` is False. Issue #1102 @samukweku
+-   [BUG] Avoid `change_type` mutating original `DataFrame`. PR #1162 @Zeroto521
+-   [ENH] The parameter `column_name` of `change_type` totally supports inputing multi-column now. #1163 @Zeroto521
+-   [ENH] Fix error when `sort_by_appearance=True` is combined with `dropna=True`. Issue #1168 @samukweku
+-   [ENH] Add explicit default parameter to `case_when` function. Issue #1159 @samukweku
+-   [BUG] pandas 1.5.x `_MergeOperation` doesn't have `copy` keyword anymore. Issue #1174 @Zeroto521
+-   [ENH] `select_rows` function added for flexible row selection. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku
+-   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
+-   [INF] Merge two docs CIs (`docs-preview.yml` and `docs.yml`) to one. And add `documentation` pytest mark. PR #1183 @Zeroto521
+-   [INF] Merge `codecov.yml` (only works for the dev branch pushing event) into `tests.yml` (only works for PR event). PR #1185 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 

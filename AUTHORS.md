@@ -110,3 +110,4 @@ Contributors
 - [@apatao](https://github.com/apatao) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aapatao)
 - [@OdinTech3](https://github.com/OdinTech3) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pull/1094)
 - [@Fu-Jie](https://github.com/Fu-Jie) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?q=is%3Aclosed+mentions%3AFu-Jie)
+- [@asmirnov69](https://github.com/asmirnov69) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues/1059)

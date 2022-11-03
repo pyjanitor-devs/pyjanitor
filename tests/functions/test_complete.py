@@ -1,12 +1,13 @@
+from string import ascii_lowercase
+
 import numpy as np
 import pandas as pd
 import pytest
 from hypothesis import given
+from hypothesis import settings
 from pandas.testing import assert_frame_equal
-from janitor.testing_utils.strategies import (
-    categoricaldf_strategy,
-)
-from string import ascii_lowercase
+
+from janitor.testing_utils.strategies import categoricaldf_strategy
 
 
 @pytest.fixture
@@ -156,6 +157,7 @@ def test_type_explicit(fill_df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_all_strings_no_nulls(df):
     """
     Test `complete` output when *columns
@@ -177,6 +179,7 @@ def test_all_strings_no_nulls(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_dict(df):
     """
     Test `complete` output when *columns
@@ -228,6 +231,7 @@ def test_dict_extension_array(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_dict_numpy(df):
     """
     Test `complete` output when *columns
@@ -254,6 +258,7 @@ def test_dict_numpy(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_dict_Index(df):
     """
     Test `complete` output when *columns
@@ -282,6 +287,7 @@ def test_dict_Index(df):
 
 
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_dict_duplicated(df):
     """
     Test `complete` output when *columns
@@ -489,7 +495,7 @@ def test_explicit_scalar(fill_df):
         .reindex(columns=fill_df.columns)
         .sort_values(columns, ignore_index=True)
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 def test_explicit_scalar_cat(fill_df):
@@ -521,7 +527,7 @@ def test_explicit_scalar_cat(fill_df):
             }
         )
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 # https://tidyr.tidyverse.org/reference/complete.html
@@ -595,7 +601,7 @@ def test_explicit_dict(fill_df):
         ]
     )
 
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 def test_explicit_(fill_df):

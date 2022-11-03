@@ -1,14 +1,16 @@
-name: Build documentation
+name: documentation
 
 on:
   push:
     branches:
       - dev
+  pull_request:
+    branches:
+      - dev
 
 jobs:
-  build-docs:
+  build:
     runs-on: ubuntu-latest
-    name: Build documentation
 
     # https://github.com/marketplace/actions/setup-miniconda#use-a-default-shell
     defaults:
@@ -25,19 +27,43 @@ jobs:
         with:
           auto-update-conda: true
           miniforge-variant: Mambaforge
-          channels: conda-forge
-          activate-environment: pyjanitor-dev
           environment-file: environment-dev.yml
           use-mamba: true
 
+      - name: Install pyjanitor
+        # use editable mode to avoid _pytest.pathlib.ImportPathMismatchError
+        run: pip install -e .
+
       - name: Build docs
-        run: |
-          conda activate pyjanitor-dev
-          python -m ipykernel install --user --name pyjanitor-dev
-          pip install -e .
-          mkdocs build
+        run: mkdocs build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: website
+          path: site/
+
+      - name: Test docs
+        run: pytest -m "documentation"
+
+      - name: Docs preview
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: nwtgck/actions-netlify@v1.1
+        with:
+          publish-dir: "./site"
+          production-deploy: false
+          github-token: ${{ secrets.GHPAGES_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          alias: deploy-preview-${{ github.event.number }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
 
       - name: Deploy website
+        if: ${{ github.event_name == 'push' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token

@@ -15,7 +15,7 @@ from pandas.api.types import (
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
-    _select_column_names,
+    _select_index,
     _computations_expand_grid,
 )
 from janitor.utils import check
@@ -52,7 +52,7 @@ def pivot_longer(
     row axis.
 
     Column selection in `index` and `column_names` is possible using the
-    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     Example:
 
@@ -382,17 +382,35 @@ def _data_checks_pivot_longer(
                 "when the columns are a MultiIndex."
             )
 
+    is_multi_index = isinstance(df.columns, pd.MultiIndex)
+    indices = None
     if column_names is not None:
-        if is_list_like(column_names):
-            column_names = list(column_names)
-        column_names = _select_column_names(column_names, df)
-        column_names = list(column_names)
+        if is_multi_index:
+            column_names = _check_tuples_multiindex(
+                df.columns, column_names, "column_names"
+            )
+        else:
+            if is_list_like(column_names):
+                column_names = list(column_names)
+            indices = _select_index(column_names, df, axis="columns")
+            column_names = df.columns[indices]
+            if not is_list_like(column_names):
+                column_names = [column_names]
+            else:
+                column_names = list(column_names)
 
     if index is not None:
-        if is_list_like(index):
-            index = list(index)
-        index = _select_column_names(index, df)
-        index = list(index)
+        if is_multi_index:
+            index = _check_tuples_multiindex(df.columns, index, "index")
+        else:
+            if is_list_like(index):
+                index = list(index)
+            indices = _select_index(index, df, axis="columns")
+            index = df.columns[indices]
+            if not is_list_like(index):
+                index = [index]
+            else:
+                index = list(index)
 
     if index is None:
         if column_names is None:
@@ -1181,7 +1199,7 @@ def pivot_wider(
 
     Column selection in `index`, `names_from` and `values_from`
     is possible using the
-    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     A ValueError is raised if the combination
     of the `index` and `names_from` is not unique.
@@ -1455,27 +1473,69 @@ def _data_checks_pivot_wider(
     checking happens.
     """
 
+    is_multi_index = isinstance(df.columns, pd.MultiIndex)
+    indices = None
     if index is not None:
-        if is_list_like(index):
-            index = list(index)
-        index = _select_column_names(index, df)
-        index = list(index)
+        if is_multi_index:
+            if not isinstance(index, list):
+                raise TypeError(
+                    "For a MultiIndex column, pass a list of tuples "
+                    "to the index argument."
+                )
+            index = _check_tuples_multiindex(df.columns, index, "index")
+        else:
+            if is_list_like(index):
+                index = list(index)
+            indices = _select_index(index, df, axis="columns")
+            index = df.columns[indices]
+            if not is_list_like(index):
+                index = [index]
+            else:
+                index = list(index)
 
     if names_from is None:
         raise ValueError(
             "pivot_wider() is missing 1 required argument: 'names_from'"
         )
 
-    if is_list_like(names_from):
-        names_from = list(names_from)
-    names_from = _select_column_names(names_from, df)
-    names_from = list(names_from)
+    if is_multi_index:
+        if not isinstance(names_from, list):
+            raise TypeError(
+                "For a MultiIndex column, pass a list of tuples "
+                "to the names_from argument."
+            )
+        names_from = _check_tuples_multiindex(
+            df.columns, names_from, "names_from"
+        )
+    else:
+        if is_list_like(names_from):
+            names_from = list(names_from)
+        indices = _select_index(names_from, df, axis="columns")
+        names_from = df.columns[indices]
+        if not is_list_like(names_from):
+            names_from = [names_from]
+        else:
+            names_from = list(names_from)
 
     if values_from is not None:
-        if is_list_like(values_from):
-            values_from = list(values_from)
-        out = _select_column_names(values_from, df)
-        out = list(out)
+        if is_multi_index:
+            if not isinstance(values_from, list):
+                raise TypeError(
+                    "For a MultiIndex column, pass a list of tuples "
+                    "to the values_from argument."
+                )
+            out = _check_tuples_multiindex(
+                df.columns, values_from, "values_from"
+            )
+        else:
+            if is_list_like(values_from):
+                values_from = list(values_from)
+            indices = _select_index(values_from, df, axis="columns")
+            out = df.columns[indices]
+            if not is_list_like(out):
+                out = [out]
+            else:
+                out = list(out)
         # hack to align with pd.pivot
         if values_from == out[0]:
             values_from = out[0]
@@ -1550,3 +1610,27 @@ def _expand(indexer, retain_categories):
                 ordered=indexer.ordered,
             )
     return indexer
+
+
+def _check_tuples_multiindex(indexer, args, param):
+    """
+    Check entries for tuples,
+    if indexer is a MultiIndex.
+
+    Returns a list of tuples.
+    """
+    all_tuples = (isinstance(arg, tuple) for arg in args)
+    if not all(all_tuples):
+        raise TypeError(
+            f"{param} must be a list of tuples "
+            "when the columns are a MultiIndex."
+        )
+
+    not_found = set(args).difference(indexer)
+    if any(not_found):
+        raise KeyError(
+            f"Tuples {*not_found,} in the {param} "
+            "argument do not exist in the dataframe's columns."
+        )
+
+    return args

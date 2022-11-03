@@ -47,7 +47,7 @@ def conditional_join(
     especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
-    [`select_columns`][janitor.functions.select_columns.select_columns] syntax.
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     For strictly non-equi joins,
     involving either `>`, `<`, `>=`, `<=` operators,
@@ -143,7 +143,7 @@ def conditional_join(
     :param keep: Choose whether to return the first match,
         last match or all matches. Default is `all`.
     :param use_numba: Use numba, if installed, to accelerate the computation.
-        Default is `False`.
+        Applicable only to strictly non-equi joins. Default is `False`.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     """
 
@@ -1214,10 +1214,11 @@ def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
     Returns a Pandas DataFrame.
     """
 
-    df = df.select_columns(columns)
-
     if isinstance(columns, dict):
+        df = df.select_columns([*columns])
         df.columns = [columns.get(name, name) for name in df]
+    else:
+        df = df.select_columns(columns)
 
     return df
 

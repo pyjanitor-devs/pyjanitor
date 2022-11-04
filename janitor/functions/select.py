@@ -156,6 +156,7 @@ def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
         cobra       2
 
     Labels can be dropped with the `DropLabel` class:
+
         >>> df.select(rows=DropLabel('cobra'))
                     max_speed  shield
         viper               4       5

@@ -86,6 +86,9 @@ def select_rows(
     is with `.loc` or `.iloc` methods, as they are generally performant.
     `select_rows` is primarily for convenience.
 
+    !!! info "New in version 0.24.0"
+
+
     Example:
 
         >>> import pandas as pd
@@ -138,6 +141,8 @@ def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
     The preferred option when selecting columns or rows in a Pandas DataFrame
     is with `.loc` or `.iloc` methods, as they are generally performant.
     `select` is primarily for convenience.
+
+    !!! info "New in version 0.24.0"
 
     Example:
 

@@ -276,6 +276,9 @@ class DropLabel:
     Helper class for removing labels within the `select` syntax.
     `label` can be any of the types supported in `_select_index`.
     An array of integers not matching the labels is returned.
+
+    !!! info "New in version 0.24.0"
+
     :param label: Label(s) to be dropped from the index.
     :returns: A dataclass.
     """

@@ -274,7 +274,8 @@ def _select_callable(arg, func: Callable, axis=None):
 class DropLabel:
     """
     Helper class for removing labels within the `select` syntax.
-    `label` can be any of the types supported in `_select_index`.
+    `label` can be any of the types supported in the `select`,
+    `select_rows` and `select_columns` functions.
     An array of integers not matching the labels is returned.
 
     !!! info "New in version 0.24.0"

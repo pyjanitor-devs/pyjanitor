@@ -80,13 +80,15 @@ def select_rows(
 
     Optional ability to invert selection of rows available as well.
 
+
+    !!! info "New in version 0.24.0"
+
+
     !!!note
 
     The preferred option when selecting columns or rows in a Pandas DataFrame
     is with `.loc` or `.iloc` methods, as they are generally performant.
     `select_rows` is primarily for convenience.
-
-    !!! info "New in version 0.24.0"
 
 
     Example:
@@ -136,13 +138,16 @@ def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
 
     Selection can be inverted with the `DropLabel` class.
 
+
+    !!! info "New in version 0.24.0"
+
+
     !!!note
 
     The preferred option when selecting columns or rows in a Pandas DataFrame
     is with `.loc` or `.iloc` methods, as they are generally performant.
     `select` is primarily for convenience.
 
-    !!! info "New in version 0.24.0"
 
     Example:
 

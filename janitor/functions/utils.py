@@ -476,7 +476,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 f"{arg} is a boolean dtype and has wrong length: "
                 f"{len(arg)} instead of {len(index)}"
             )
-        return arg
+        return np.asanyarray(arg)
     try:
 
         if isinstance(arg, pd.Series):
@@ -540,11 +540,12 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     # or materialized if possible;
     # this offers more performance
     if len(indices) == 1:
-        if isinstance(indices[0], int):
+        if is_scalar(indices[0]):
             return indices
-        if is_list_like(indices[0]):
-            return np.asanyarray(indices[0])
-        return indices[0]
+        indices = indices[0]
+        if is_list_like(indices):
+            indices = np.asanyarray(indices)
+        return indices
     contents = []
     for arr in indices:
         if is_list_like(arr):

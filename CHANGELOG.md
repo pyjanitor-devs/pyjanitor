@@ -32,6 +32,7 @@
 -   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
 -   [INF] Merge two docs CIs (`docs-preview.yml` and `docs.yml`) to one. And add `documentation` pytest mark. PR #1183 @Zeroto521
 -   [INF] Merge `codecov.yml` (only works for the dev branch pushing event) into `tests.yml` (only works for PR event). PR #1185 @Zeroto521
+-   [TST] Fix failure for test/timeseries/test_fill_missing_timestamp. Issue #1184 @samukweku
 -   [BUG] Import `DataDescription` to fix: `AttributeError: 'DataFrame' object has no attribute 'data_description'`. PR #1191 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03

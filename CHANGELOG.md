@@ -28,7 +28,7 @@
 -   [ENH] Fix error when `sort_by_appearance=True` is combined with `dropna=True`. Issue #1168 @samukweku
 -   [ENH] Add explicit default parameter to `case_when` function. Issue #1159 @samukweku
 -   [BUG] pandas 1.5.x `_MergeOperation` doesn't have `copy` keyword anymore. Issue #1174 @Zeroto521
--   [ENH] `select_rows` function added for flexible row selection. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku
+-   [ENH] `select_rows` function added for flexible row selection. Generic `select` function added as well. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku
 -   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
 -   [INF] Merge two docs CIs (`docs-preview.yml` and `docs.yml`) to one. And add `documentation` pytest mark. PR #1183 @Zeroto521
 -   [INF] Merge `codecov.yml` (only works for the dev branch pushing event) into `tests.yml` (only works for PR event). PR #1185 @Zeroto521

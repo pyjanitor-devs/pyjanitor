@@ -53,10 +53,10 @@ jobs:
         run: python -m pip install -e .
 
       - name: Run not turtle unit tests
-        run: pytest -m "not turtle"
+        run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-modules --doctest-glob="janitor/*.py" --ignore-glob="nbconvert_config.py" tests -m "not turtle"
 
       - name: Run turtle unit tests
-        run: pytest -m "turtle"
+        run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-modules --doctest-glob="janitor/*.py" --ignore-glob="nbconvert_config.py" tests -m "turtle"
 
       # https://github.com/codecov/codecov-action
       - name: Upload code coverage

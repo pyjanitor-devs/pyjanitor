@@ -123,5 +123,5 @@ setup(
     extras_require=EXTRA_REQUIRES,
     python_requires=">=3.6",
     long_description=generate_long_description(),
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
 )

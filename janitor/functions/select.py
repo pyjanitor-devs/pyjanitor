@@ -26,9 +26,9 @@ def select_columns(
 
     !!!note
 
-    The preferred option when selecting columns or rows in a Pandas DataFrame
-    is with `.loc` or `.iloc` methods, as they are generally performant.
-    `select_columns` is primarily for convenience.
+        The preferred option when selecting columns or rows in a Pandas DataFrame
+        is with `.loc` or `.iloc` methods, as they are generally performant.
+        `select_columns` is primarily for convenience.
 
     Example:
 
@@ -86,9 +86,9 @@ def select_rows(
 
     !!!note
 
-    The preferred option when selecting columns or rows in a Pandas DataFrame
-    is with `.loc` or `.iloc` methods, as they are generally performant.
-    `select_rows` is primarily for convenience.
+        The preferred option when selecting columns or rows in a Pandas DataFrame
+        is with `.loc` or `.iloc` methods, as they are generally performant.
+        `select_rows` is primarily for convenience.
 
 
     Example:
@@ -144,9 +144,9 @@ def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
 
     !!!note
 
-    The preferred option when selecting columns or rows in a Pandas DataFrame
-    is with `.loc` or `.iloc` methods, as they are generally performant.
-    `select` is primarily for convenience.
+        The preferred option when selecting columns or rows in a Pandas DataFrame
+        is with `.loc` or `.iloc` methods, as they are generally performant.
+        `select` is primarily for convenience.
 
 
     Example:

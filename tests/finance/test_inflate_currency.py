@@ -137,6 +137,7 @@ def test_api_result_check(dataframe):
         )
 
 
+@pytest.mark.xfail(reason="Relies on external API call.")
 @pytest.mark.finance
 def test_to_year_available(dataframe):
     """Test inflation calculation fails with unavailable to_year."""

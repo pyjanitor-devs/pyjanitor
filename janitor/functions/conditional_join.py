@@ -1161,15 +1161,25 @@ def _range_indices(
     left_c, right_c = _convert_to_numpy_array(left_c, right_c)
     op = operator_map[op]
     pos = np.empty(left_c.size, dtype=np.intp)
+    counter = np.arange(left_c.size)
 
-    # better served in a compiled environment
-    # where we can break early
-    # parallelise the operation, as well as
-    # avoid the restrictive fixed size approach of numpy
-    # which isnt particularly helpful in a for loop
-    for ind in range(left_c.size):
-        out = op(left_c[ind], right_c)
-        pos[ind] = np.argmax(out)
+    # better than np.outer memory wise?
+    # using this for loop instead of np.outer
+    # allows us to break early and reduce the
+    # number of cartesian checks
+    # since as we iterate, we reduce the size of left_c
+    # speed wise, np.outer will be faster
+    # alternatively, the user can just use the numba option
+    # for more performance
+    for ind in range(right_c.size):
+        if not counter.size:
+            break
+        keep_rows = op(left_c, right_c[ind])
+        if not keep_rows.any():
+            continue
+        pos[counter[keep_rows]] = ind
+        counter = counter[~keep_rows]
+        left_c = left_c[~keep_rows]
 
     # no point searching within (a, b)
     # if a == b
@@ -1261,10 +1271,10 @@ def _create_frame(
     """
     Create final dataframe
     """
-    if df_columns:
+    if df_columns is not None:
         df = _cond_join_select_columns(df_columns, df)
 
-    if right_columns:
+    if right_columns is not None:
         right = _cond_join_select_columns(right_columns, right)
 
     if set(df.columns).intersection(right.columns):

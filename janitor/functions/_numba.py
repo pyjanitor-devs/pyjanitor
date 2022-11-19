@@ -261,6 +261,9 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
         # this function ensures the regions are properly aligned
         arr1, arr2 = indices
         region1, region2 = regions
+        # arr2 is used as the reference point
+        # because we are certain that at the very least
+        # it has the same items as arr1, but not more
         indexer = pd.Index(arr2).get_indexer(arr1)
         mask = indexer == -1
         if mask.any():

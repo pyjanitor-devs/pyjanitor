@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] address the `TypeError` when importing v0.24.0 (issue #1201 @xujiboy)
+
 ## [v0.24.0] - 2022-11-12
 
 -   [ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)

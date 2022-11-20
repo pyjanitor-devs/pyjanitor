@@ -727,7 +727,7 @@ def _get_regions(
     #  are present ---> l1 < r1 & l2 > r2
     #  For two non equi conditions, the matches are where
     #  the regions from group A (l1 < r1)
-    #  are also lower than the regions from group B (l2 > r2)
+    #  are also lower than the regions from group B (l2 < r2)
     #  This implementation is based on the algorithm outlined here:
     #  https://www.scitepress.org/papers/2018/68268/68268.pdf
     indices = _search_indices(left_c, right_c, strict, op_code)

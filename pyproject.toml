@@ -31,7 +31,7 @@ verbose = 2
 
 # https://docs.pytest.org/en/6.2.x/mark.html#registering-marks
 [tool.pytest.ini_options]
-markers = [   
+markers = [
     "functions: test for general functions",
     "biology: tests for biology",
     "chemistry: tests for chemistry",

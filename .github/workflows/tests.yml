@@ -37,15 +37,14 @@ jobs:
           auto-update-conda: true
           miniforge-variant: Mambaforge
           channels: conda-forge
-          activate-environment: pyjanitor-dev
           environment-file: environment-dev.yml
           use-mamba: true
 
+      - name: Install pyjanitor
+        run: python -m pip install -e .
+
       - name: Run unit tests
-        run: |
-          conda activate pyjanitor-dev
-          python -m pip install -e .
-          pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-modules --doctest-glob="janitor/*.py" --ignore-glob="nbconvert_config.py" tests -m "${{ matrix.test-subset }}"
+        run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-modules --doctest-glob="janitor/*.py" --ignore-glob="nbconvert_config.py" tests -m "${{ matrix.test-subset }}"
 
       # https://github.com/codecov/codecov-action
       - name: Upload code coverage

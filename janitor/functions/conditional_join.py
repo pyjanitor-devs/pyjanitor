@@ -1160,7 +1160,7 @@ def _range_indices(
     right_c = right_c._values
     left_c, right_c = _convert_to_numpy_array(left_c, right_c)
     op = operator_map[op]
-    pos = np.empty(left_c.size, dtype=np.intp)
+    pos = np.copy(search_indices)
     counter = np.arange(left_c.size)
 
     # better than np.outer memory wise?

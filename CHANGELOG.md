@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+-   [INF] Replace `pytest.ini` file with `pyproject.toml` file. PR #1204 @Zeroto521
 -   [INF] Extract docstrings tests from all tests. PR #1205 @Zeroto521
 
 ## [v0.24.0] - 2022-11-12

@@ -163,7 +163,7 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # 6 has no match in pair2 of value_2A/2B, so we discard
     # our final matching indices for the left and right pairs
     #########################################################
-    # left_index      right_indes
+    # left_index      right_index
     #     0              7
     #     4              5
     #     5              1

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+-   [INF] Replace `pytest.ini` file with `pyproject.toml` file. PR #1204 @Zeroto521
+
+## [v0.24.0] - 2022-11-12
+
 -   [ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)
 -   [DOC] Updated developer guide docs.
 -   [ENH] Allow column selection/renaming within conditional_join. Issue #1102. Also allow first or last match. Issue #1020 @samukweku.
@@ -321,7 +325,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.23.1...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.24.0...HEAD
+
+[v0.24.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.23.1...v0.24.0
 
 [v0.23.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.22.0...v0.23.1
 

@@ -354,9 +354,10 @@ def _conditional_join_type_check(
             f"'{right_column.name}' has {right_column.dtype} type."
         )
 
-    if (op != _JoinOperator.NOT_EQUAL.value) & (
-        not (is_numeric_dtype(left_column) or is_datetime64_dtype(left_column))
-    ):
+    number_or_date = is_numeric_dtype(left_column) or is_datetime64_dtype(
+        left_column
+    )
+    if (op != _JoinOperator.STRICTLY_EQUAL.value) & (not number_or_date):
         raise ValueError(
             "non-equi joins are supported "
             "only for datetime and numeric dtypes. "

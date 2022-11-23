@@ -355,7 +355,7 @@ def _conditional_join_type_check(
         )
 
     if (op in less_than_join_types.union(greater_than_join_types)) & (
-        (is_string_dtype(left_column) | is_categorical_dtype(left_column))
+        not (is_numeric_dtype(left_column) | is_datetime64_dtype(left_column))
     ):
         raise ValueError(
             "non-equi joins are supported "

@@ -490,12 +490,12 @@ def _less_than_indices(
     if left.min() > right.max():
         return None
 
-    any_nulls = pd.isna(left)
+    any_nulls = left.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
         left = left[~any_nulls]
-    any_nulls = pd.isna(right)
+    any_nulls = right.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
@@ -597,12 +597,12 @@ def _greater_than_indices(
     if left.max() < right.min():
         return None
 
-    any_nulls = pd.isna(left)
+    any_nulls = left.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
         left = left[~any_nulls]
-    any_nulls = pd.isna(right)
+    any_nulls = right.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
@@ -1129,10 +1129,10 @@ def _range_indices(
     # get rid of any nulls
     # this is helpful as we can convert extension arrays to numpy arrays safely
     # and simplify the search logic below
-    any_nulls = pd.isna(df[left_on])
+    any_nulls = df[left_on].isna()
     if any_nulls.any():
         left_c = left_c[~any_nulls]
-    any_nulls = pd.isna(right[right_on])
+    any_nulls = right[right_on].isna()
     if any_nulls.any():
         right_c = right_c[~any_nulls]
 

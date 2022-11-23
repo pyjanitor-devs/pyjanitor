@@ -354,10 +354,7 @@ def _conditional_join_type_check(
             f"'{right_column.name}' has {right_column.dtype} type."
         )
 
-    if (
-        (op in less_than_join_types.union(greater_than_join_types))
-        or op == _JoinOperator.NOT_EQUAL.value
-    ) & (
+    if (op != _JoinOperator.NOT_EQUAL.value) & (
         not (is_numeric_dtype(left_column) or is_datetime64_dtype(left_column))
     ):
         raise ValueError(

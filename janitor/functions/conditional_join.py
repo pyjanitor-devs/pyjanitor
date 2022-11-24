@@ -354,9 +354,10 @@ def _conditional_join_type_check(
             f"'{right_column.name}' has {right_column.dtype} type."
         )
 
-    if (op in less_than_join_types.union(greater_than_join_types)) & (
-        (is_string_dtype(left_column) | is_categorical_dtype(left_column))
-    ):
+    number_or_date = is_numeric_dtype(left_column) or is_datetime64_dtype(
+        left_column
+    )
+    if (op != _JoinOperator.STRICTLY_EQUAL.value) & (not number_or_date):
         raise ValueError(
             "non-equi joins are supported "
             "only for datetime and numeric dtypes. "
@@ -490,12 +491,12 @@ def _less_than_indices(
     if left.min() > right.max():
         return None
 
-    any_nulls = pd.isna(left)
+    any_nulls = left.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
         left = left[~any_nulls]
-    any_nulls = pd.isna(right)
+    any_nulls = right.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
@@ -597,12 +598,12 @@ def _greater_than_indices(
     if left.max() < right.min():
         return None
 
-    any_nulls = pd.isna(left)
+    any_nulls = left.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
         left = left[~any_nulls]
-    any_nulls = pd.isna(right)
+    any_nulls = right.isna()
     if any_nulls.all():
         return None
     if any_nulls.any():
@@ -1129,10 +1130,10 @@ def _range_indices(
     # get rid of any nulls
     # this is helpful as we can convert extension arrays to numpy arrays safely
     # and simplify the search logic below
-    any_nulls = pd.isna(df[left_on])
+    any_nulls = df[left_on].isna()
     if any_nulls.any():
         left_c = left_c[~any_nulls]
-    any_nulls = pd.isna(right[right_on])
+    any_nulls = right[right_on].isna()
     if any_nulls.any():
         right_c = right_c[~any_nulls]
 
@@ -1160,16 +1161,26 @@ def _range_indices(
     right_c = right_c._values
     left_c, right_c = _convert_to_numpy_array(left_c, right_c)
     op = operator_map[op]
-    pos = np.empty(left_c.size, dtype=np.intp)
+    pos = np.copy(search_indices)
+    counter = np.arange(left_c.size)
 
-    # better served in a compiled environment
-    # where we can break early
-    # parallelise the operation, as well as
-    # avoid the restrictive fixed size approach of numpy
-    # which isnt particularly helpful in a for loop
-    for ind in range(left_c.size):
-        out = op(left_c[ind], right_c)
-        pos[ind] = np.argmax(out)
+    # better than np.outer memory wise?
+    # using this for loop instead of np.outer
+    # allows us to break early and reduce the
+    # number of cartesian checks
+    # since as we iterate, we reduce the size of left_c
+    # speed wise, np.outer will be faster
+    # alternatively, the user can just use the numba option
+    # for more performance
+    for ind in range(right_c.size):
+        if not counter.size:
+            break
+        keep_rows = op(left_c, right_c[ind])
+        if not keep_rows.any():
+            continue
+        pos[counter[keep_rows]] = ind
+        counter = counter[~keep_rows]
+        left_c = left_c[~keep_rows]
 
     # no point searching within (a, b)
     # if a == b
@@ -1261,10 +1272,10 @@ def _create_frame(
     """
     Create final dataframe
     """
-    if df_columns:
+    if df_columns is not None:
         df = _cond_join_select_columns(df_columns, df)
 
-    if right_columns:
+    if right_columns is not None:
         right = _cond_join_select_columns(right_columns, right)
 
     if set(df.columns).intersection(right.columns):

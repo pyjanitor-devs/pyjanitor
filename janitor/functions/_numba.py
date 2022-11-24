@@ -163,7 +163,7 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # 6 has no match in pair2 of value_2A/2B, so we discard
     # our final matching indices for the left and right pairs
     #########################################################
-    # left_index      right_indes
+    # left_index      right_index
     #     0              7
     #     4              5
     #     5              1
@@ -261,6 +261,9 @@ def _numba_pair_le_lt(df: pd.DataFrame, right: pd.DataFrame, pair: list):
         # this function ensures the regions are properly aligned
         arr1, arr2 = indices
         region1, region2 = regions
+        # arr2 is used as the reference point
+        # because we are certain that at the very least
+        # it has the same items as arr1, but not more
         indexer = pd.Index(arr2).get_indexer(arr1)
         mask = indexer == -1
         if mask.any():
@@ -724,7 +727,7 @@ def _get_regions(
     #  are present ---> l1 < r1 & l2 > r2
     #  For two non equi conditions, the matches are where
     #  the regions from group A (l1 < r1)
-    #  are also lower than the regions from group B (l2 > r2)
+    #  are also lower than the regions from group B (l2 < r2)
     #  This implementation is based on the algorithm outlined here:
     #  https://www.scitepress.org/papers/2018/68268/68268.pdf
     indices = _search_indices(left_c, right_c, strict, op_code)

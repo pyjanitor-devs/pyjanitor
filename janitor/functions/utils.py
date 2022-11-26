@@ -3,6 +3,7 @@ import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
 import re
+from __future__ import annotations
 from typing import (
     Hashable,
     Iterable,

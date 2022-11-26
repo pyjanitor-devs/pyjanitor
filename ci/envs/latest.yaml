@@ -27,6 +27,7 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-xdist
+  - pytest-doctestplus
   - hypothesis
   - pandas-vet
   - interrogate

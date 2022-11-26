@@ -3,11 +3,11 @@
 Lazy loading used here to speed up imports.
 """
 
+from __future__ import annotations
 import os
 import sys
 import socket
 from typing import Callable, Dict, Iterable, Union, List
-from __future__ import annotations
 from functools import singledispatch, wraps
 from warnings import warn
 

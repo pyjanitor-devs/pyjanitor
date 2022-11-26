@@ -31,18 +31,17 @@ verbose = 2
 
 # https://docs.pytest.org/en/6.2.x/mark.html#registering-marks
 [tool.pytest.ini_options]
-addopts = "--cov=janitor/ --cov-report=html --cov-report=xml --cov-report=term-missing  --durations=0"
-
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "biology",
-    "chemistry",
-    "engineering",
-    "finance",
-    "functions: main janitor functions suite",
-    "ml: Machine learning-specific data cleaning functions.",
-    "spark_functions",
-    "timeseries",
-    "utils",
-    "xarray",
+    "functions: test for general functions",
+    "biology: tests for biology",
+    "chemistry: tests for chemistry",
+    "finance: tests for finance",
+    "utils: utility tests",
+    "engineering: tests for engineering",
+    "ml: tests for machine learning",
+    "spark_functions: tests for pyspark functions",
+    "xarray: tests for xarray functions",
+    "timeseries: tests for timeseries",
+    "documentation: tests for documentation",
+    "turtle: tests that take more than 5 seconds to execute",
 ]

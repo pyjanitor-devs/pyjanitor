@@ -53,6 +53,7 @@ jobs:
         run: python -m pip install -e .
 
       - name: Run docstrings tests
+        if: ${{ contains(matrix.env, 'latest.yaml') && contains(matrix.os, 'ubuntu') }}
         run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-only janitor
 
       - name: Run not turtle unit tests

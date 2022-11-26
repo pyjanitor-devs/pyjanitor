@@ -1,7 +1,7 @@
+from __future__ import annotations
 import operator
 from enum import Enum
 from typing import Union, Any, Optional, Hashable, Literal
-from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf

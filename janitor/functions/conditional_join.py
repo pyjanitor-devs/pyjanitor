@@ -115,6 +115,12 @@ def conditional_join(
         3        4         3         5
         4        4         3         6
 
+    !!! abstract "Version Changed"
+
+        - 0.24.0
+            - Added `df_columns`, `right_columns`, `keep` and `use_numba` parameters.
+
+
 
     :param df: A pandas DataFrame.
     :param right: Named Series or DataFrame to join to.
@@ -145,7 +151,7 @@ def conditional_join(
     :param use_numba: Use numba, if installed, to accelerate the computation.
         Applicable only to strictly non-equi joins. Default is `False`.
     :returns: A pandas DataFrame of the two merged Pandas objects.
-    """
+    """  # noqa: E501
 
     return _conditional_join_compute(
         df,

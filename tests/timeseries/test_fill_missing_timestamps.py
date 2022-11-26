@@ -29,7 +29,7 @@ def test_fill_missing_timestamps(timeseries_dataframe):
     # fix for GH#1184 is to use the start and end from
     # timeseries_dataframe
     # imagine that the last row of df1 is removed, or the first entry
-    # the length check in the next line will fail
+    # the length check in the assert line will fail
     result = fill_missing_timestamps(
         df1,
         frequency="1H",

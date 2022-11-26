@@ -6,7 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 from itertools import product
 
-from janitor.functions.utils import patterns
+from janitor.functions.utils import patterns, DropLabel
 
 
 @pytest.mark.functions
@@ -23,6 +23,32 @@ def test_select_column_names(dataframe, invert, expected):
     df = dataframe.select_columns(columns, invert=invert)
 
     assert_frame_equal(df, dataframe[expected])
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "invert,expected",
+    [
+        (True, ["a", "Bell__Chart", "cities"]),
+        (False, ["decorated-elephant", "animals@#$%^"]),
+    ],
+)
+def test_select_column_names_droplabel(dataframe, invert, expected):
+    "Base DataFrame"
+    columns = ["a", "Bell__Chart", "cities"]
+    df = dataframe.select_columns(DropLabel(columns), invert=invert)
+
+    assert_frame_equal(df, dataframe[expected])
+
+
+@pytest.mark.functions
+def test_select_column_names_droplabel_multiple(dataframe):
+    "Base DataFrame"
+    columns = ["a", "Bell__Chart", "cities"]
+    cols = [DropLabel(ent) for ent in columns]
+    df = dataframe.select_columns(*cols)
+
+    assert_frame_equal(df, dataframe.drop(columns=columns))
 
 
 @pytest.mark.functions
@@ -57,6 +83,7 @@ def test_select_column_names_missing_columns(dataframe, columns):
         dataframe.select_columns(columns)
 
 
+@pytest.mark.xfail(reason="return whatever user passes")
 @pytest.mark.functions
 @pytest.mark.parametrize(
     "invert,expected",
@@ -394,8 +421,7 @@ def test_boolean_list_multi(multiindex):
 
 def test_series_multi(multiindex):
     """Test pd.Series output on a MultiIndex"""
-    mapp = pd.Series(["bar"])
-    expected = multiindex.select_columns(mapp, slice("foo"))
+    expected = multiindex.select_columns(pd.Series("bar"), slice("baz", "foo"))
     actual = multiindex.loc(axis=1)["bar":"foo"]
     assert_frame_equal(expected, actual)
 

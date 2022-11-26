@@ -220,6 +220,13 @@ def pivot_longer(
         7   Austin    Texas  Watermelon      99   None     NaN
         8   Hoover  Alabama  Watermelon      43   None     NaN
 
+
+    !!! abstract "Version Changed"
+
+        - 0.24.0
+            - Added `dropna` parameter.
+
+
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         Should be either a single column name, or a list/tuple of
@@ -1259,6 +1266,13 @@ def pivot_wider(
         0  5.5       20       25       30       37
         1  6.1       22       18       19       29
 
+
+    !!! abstract "Version Changed"
+
+        - 0.24.0
+            - Added `reset_index`, `names_expand` and `index_expand` parameters.
+
+
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.
         It should be either a single column name, or a list of column names.
@@ -1293,7 +1307,7 @@ def pivot_wider(
         Applies only if `index` is a categorical column. Default is `False`.
     :returns: A pandas DataFrame that has been unpivoted from long to wide
         form.
-    """
+    """  # noqa: E501
 
     df = df.copy()
 

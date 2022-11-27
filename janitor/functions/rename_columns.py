@@ -5,6 +5,8 @@ import warnings
 
 from janitor.utils import check_column, deprecated_alias
 
+warnings.simplefilter("always", DeprecationWarning)
+
 
 @pf.register_dataframe_method
 @deprecated_alias(old="old_column_name", new="new_column_name")

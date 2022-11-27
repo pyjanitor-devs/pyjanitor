@@ -7,6 +7,7 @@ import pandas as pd
 import pandas_flavor as pf
 from janitor.utils import check, check_column, deprecated_alias
 from multipledispatch import dispatch
+import warnings
 
 
 @pf.register_dataframe_method
@@ -124,6 +125,11 @@ def fill_empty(
 
     This method mutates the original DataFrame.
 
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use [`jn.impute`][janitor.functions.impute.impute] instead.
+
     Example:
 
         >>> import pandas as pd
@@ -160,6 +166,14 @@ def fill_empty(
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `NaN` values filled.
     """
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `jn.impute` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
 

@@ -2,8 +2,11 @@
 from typing import Hashable, Iterable, Union
 import pandas_flavor as pf
 import pandas as pd
+import warnings
 
 from janitor.utils import deprecated_alias
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
@@ -17,6 +20,11 @@ def remove_columns(
     This method does not mutate the original DataFrame.
 
     Intended to be the method-chaining alternative to `del df[col]`.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Kindly use `pd.DataFrame.drop` instead.
 
     Example:
 
@@ -38,4 +46,11 @@ def remove_columns(
     :param column_names: The columns to remove.
     :returns: A pandas DataFrame.
     """
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `pd.DataFrame.drop` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return df.drop(columns=column_names)

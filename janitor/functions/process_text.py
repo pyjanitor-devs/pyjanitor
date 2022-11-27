@@ -1,8 +1,11 @@
 import inspect
+import warnings
 import pandas_flavor as pf
 import pandas as pd
 
 from janitor.utils import check, check_column, deprecated_alias
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
@@ -27,6 +30,11 @@ def process_text(
 
     A list of all the string methods in Pandas can be accessed [here](https://pandas.pydata.org/docs/user_guide/text.html#method-summary).
 
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use [`jn.transform_column`][janitor.functions.transform_columns.transform_column]
+        instead.
 
     Example:
 
@@ -68,6 +76,13 @@ def process_text(
     :raises KeyError: If `string_function` is not a Pandas string method.
     :raises ValueError: If the text function returns a DataFrame, instead of a Series.
     """  # noqa: E501
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `jn.transform_column` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     check("column_name", column_name, [str])
     check("string_function", string_function, [str])

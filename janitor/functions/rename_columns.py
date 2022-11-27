@@ -1,6 +1,7 @@
 from typing import Callable, Dict, Union
 import pandas_flavor as pf
 import pandas as pd
+import warnings
 
 from janitor.utils import check_column, deprecated_alias
 
@@ -15,6 +16,11 @@ def rename_column(
     """Rename a column in place.
 
     This method does not mutate the original DataFrame.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.rename` instead.
 
     Example: Change the name of column 'a' to 'a_new'.
 
@@ -36,6 +42,14 @@ def rename_column(
     :param new_column_name: The new column name.
     :returns: A pandas DataFrame with renamed columns.
     """  # noqa: E501
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `pd.DataFrame.rename` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     check_column(df, [old_column_name])
 
     return df.rename(columns={old_column_name: new_column_name})
@@ -50,6 +64,11 @@ def rename_columns(
     """Rename columns.
 
     This method does not mutate the original DataFrame.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.rename` instead.
 
     Example: Rename columns using a dictionary which maps old names to new names.
 
@@ -88,6 +107,13 @@ def rename_columns(
     :returns: A pandas DataFrame with renamed columns.
     :raises ValueError: if both `new_column_names` and `function` are None.
     """  # noqa: E501
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `pd.DataFrame.rename` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     if new_column_names is None and function is None:
         raise ValueError(

@@ -1,14 +1,21 @@
 import inspect
-import warnings
 import pandas_flavor as pf
 import pandas as pd
 
-from janitor.utils import check, check_column, deprecated_alias
+from janitor.utils import (
+    check,
+    check_column,
+    deprecated_alias,
+    refactored_function,
+)
 
-warnings.simplefilter("always", DeprecationWarning)
+
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `jn.transform_column` instead."
 
 
 @pf.register_dataframe_method
+@refactored_function(message=message)
 @deprecated_alias(column="column_name")
 def process_text(
     df: pd.DataFrame,
@@ -76,13 +83,6 @@ def process_text(
     :raises KeyError: If `string_function` is not a Pandas string method.
     :raises ValueError: If the text function returns a DataFrame, instead of a Series.
     """  # noqa: E501
-
-    warnings.warn(
-        "This function will be deprecated in a 1.x release. "
-        "Kindly use `jn.transform_column` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
 
     check("column_name", column_name, [str])
     check("string_function", string_function, [str])

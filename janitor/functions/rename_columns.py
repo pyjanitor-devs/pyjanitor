@@ -1,14 +1,16 @@
 from typing import Callable, Dict, Union
 import pandas_flavor as pf
 import pandas as pd
-import warnings
 
-from janitor.utils import check_column, deprecated_alias
+from janitor.utils import check_column, deprecated_alias, refactored_function
 
-warnings.simplefilter("always", DeprecationWarning)
+
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `pd.DataFrame.rename` instead."
 
 
 @pf.register_dataframe_method
+@refactored_function(message=message)
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
     df: pd.DataFrame,
@@ -45,19 +47,17 @@ def rename_column(
     :returns: A pandas DataFrame with renamed columns.
     """  # noqa: E501
 
-    warnings.warn(
-        "This function will be deprecated in a 1.x release. "
-        "Kindly use `pd.DataFrame.rename` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
     check_column(df, [old_column_name])
 
     return df.rename(columns={old_column_name: new_column_name})
 
 
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `pd.DataFrame.rename` instead."
+
+
 @pf.register_dataframe_method
+@refactored_function(message=message)
 def rename_columns(
     df: pd.DataFrame,
     new_column_names: Union[Dict, None] = None,
@@ -109,13 +109,6 @@ def rename_columns(
     :returns: A pandas DataFrame with renamed columns.
     :raises ValueError: if both `new_column_names` and `function` are None.
     """  # noqa: E501
-
-    warnings.warn(
-        "This function will be deprecated in a 1.x release. "
-        "Kindly use `pd.DataFrame.rename` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
 
     if new_column_names is None and function is None:
         raise ValueError(

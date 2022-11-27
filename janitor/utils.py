@@ -10,6 +10,7 @@ from typing import Callable, Dict, Iterable, Union
 from functools import singledispatch, wraps
 from warnings import warn
 
+
 import lazy_loader as lazy
 
 scipy_special = lazy.load("scipy.special")
@@ -320,8 +321,9 @@ def refactored_function(message: str) -> Callable:
     """  # noqa: E501
 
     def decorator(func):
+        @wraps(func)
         def emit_warning(*args, **kwargs):
-            warn(message, FutureWarning)
+            warn(message, FutureWarning, stacklevel=2)
             return func(*args, **kwargs)
 
         return emit_warning

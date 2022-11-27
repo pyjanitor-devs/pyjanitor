@@ -5,9 +5,13 @@ from typing import Hashable, Iterable, Union
 
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import check, check_column, deprecated_alias
+from janitor.utils import (
+    check,
+    check_column,
+    deprecated_alias,
+    refactored_function,
+)
 from multipledispatch import dispatch
-import warnings
 
 
 @pf.register_dataframe_method
@@ -113,7 +117,12 @@ class _FILLTYPE(Enum):
     DOWNUP = "ffill", "bfill"
 
 
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `jn.impute` instead."
+
+
 @pf.register_dataframe_method
+@refactored_function(message=message)
 @deprecated_alias(columns="column_names")
 def fill_empty(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
@@ -166,13 +175,6 @@ def fill_empty(
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `NaN` values filled.
     """
-
-    warnings.warn(
-        "This function will be deprecated in a 1.x release. "
-        "Kindly use `jn.impute` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
 
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)

@@ -2,14 +2,16 @@
 from typing import Hashable, Iterable, Union
 import pandas_flavor as pf
 import pandas as pd
-import warnings
 
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
 
-warnings.simplefilter("always", DeprecationWarning)
+
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `pd.DataFrame.drop` instead."
 
 
 @pf.register_dataframe_method
+@refactored_function(message=message)
 @deprecated_alias(columns="column_names")
 def remove_columns(
     df: pd.DataFrame,
@@ -47,10 +49,4 @@ def remove_columns(
     :returns: A pandas DataFrame.
     """
 
-    warnings.warn(
-        "This function will be deprecated in a 1.x release. "
-        "Kindly use `pd.DataFrame.drop` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     return df.drop(columns=column_names)

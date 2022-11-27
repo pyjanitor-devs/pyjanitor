@@ -40,9 +40,7 @@ def remove_empty(df: pd.DataFrame, reset_index: bool = True) -> pd.DataFrame:
     :returns: A pandas DataFrame.
     """  # noqa: E501
     outcome = df.isna()
-    outcome = df.loc[~outcome.all(axis=1), ~outcome.all(axis=0)].reset_index(
-        drop=True
-    )
+    outcome = df.loc[~outcome.all(axis=1), ~outcome.all(axis=0)]
     if reset_index:
         return outcome.reset_index(drop=True)
     return outcome

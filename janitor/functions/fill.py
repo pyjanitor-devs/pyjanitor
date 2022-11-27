@@ -1,6 +1,4 @@
 from collections.abc import Iterable as abcIterable
-from enum import Enum
-from operator import methodcaller
 from typing import Hashable, Iterable, Union
 
 import pandas as pd
@@ -63,53 +61,29 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     if not kwargs:
         return df
 
-    fill_types = {fill.name for fill in _FILLTYPE}
-    for column_name, fill_type in kwargs.items():
-        check("column_name", column_name, [Hashable])
-        check("fill_type", fill_type, [str])
-        if fill_type.upper() not in fill_types:
-            raise ValueError(
-                """
-                fill_type should be one of
-                up, down, updown, or downup.
-                """
-            )
-
     check_column(df, kwargs)
 
+    fill_types = "up", "down", "updown", "downup"
     new_values = {}
     for column_name, fill_type in kwargs.items():
-        direction = _FILLTYPE[fill_type.upper()].value
-        if isinstance(direction, str):
-            direction = methodcaller(direction)
-            output = direction(df[column_name])
+        check("fill_type", fill_type, [str])
+        if fill_type not in fill_types:
+            raise ValueError(
+                f"The direction for {column_name} "
+                "should be one of "
+                "up, down, updown, or downup."
+            )
+        if fill_type == "up":
+            output = df[column_name].bfill()
+        elif fill_type == "down":
+            output = df[column_name].ffill()
+        elif fill_type == "updown":
+            output = df[column_name].bfill().ffill()
         else:
-            direction = [methodcaller(entry) for entry in direction]
-            output = _chain_func(df[column_name], *direction)
+            output = df[column_name].ffill().bfill()
         new_values[column_name] = output
 
     return df.assign(**new_values)
-
-
-def _chain_func(column: pd.Series, *funcs):
-    """
-    Apply series of functions consecutively
-    to a Series.
-    https://blog.finxter.com/how-to-chain-multiple-function-calls-in-python/
-    """
-    new_value = column.copy()
-    for func in funcs:
-        new_value = func(new_value)
-    return new_value
-
-
-class _FILLTYPE(Enum):
-    """List of fill types for fill_direction."""
-
-    UP = "bfill"
-    DOWN = "ffill"
-    UPDOWN = "bfill", "ffill"
-    DOWNUP = "ffill", "bfill"
 
 
 @pf.register_dataframe_method

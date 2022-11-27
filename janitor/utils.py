@@ -3,10 +3,11 @@
 Lazy loading used here to speed up imports.
 """
 
+from __future__ import annotations
 import os
 import sys
 import socket
-from typing import Callable, Dict, Iterable, Union
+from typing import Callable, Dict, Iterable, Union, List
 from functools import singledispatch, wraps
 from warnings import warn
 
@@ -213,7 +214,7 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
 
 
 def deprecated_kwargs(
-    *arguments: list[str],
+    *arguments: List[str],
     message: str = (
         "The keyword argument '{argument}' of '{func_name}' is deprecated."
     ),

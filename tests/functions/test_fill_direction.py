@@ -167,3 +167,36 @@ def test_wrong_type_limit(df):
 def test_empty_directions(df):
     """Return dataframe if `directions` is empty."""
     assert_frame_equal(df.fill_direction(), df)
+
+
+def test_tuple_wrong_length(df):
+    """Raise ValueError if value for kwarg is a tuple and not of length 2."""
+    with pytest.raises(ValueError):
+        df.fill_direction(pet_type=("up",))
+
+
+def test_tuple_second_argument(df):
+    """
+    Raise TypeError if the second argument "
+    in the tuple is not a dictionary.
+    """
+    with pytest.raises(TypeError):
+        df.fill_direction(pet_type=("up", "not a dict"))
+
+
+def test_tuple_second_argument_inplace_present(df):
+    """
+    Raise TypeError if the second argument in the tuple
+    is a dictionary and has inplace as one of its keys.
+    """
+    with pytest.raises(
+        ValueError, match="inplace is not accepted as a keyword argument"
+    ):
+        df.fill_direction(pet_type=("up", {"inplace": "not accepted"}))
+
+
+def test_extra_arguments(df):
+    """Test output for keyword arguments"""
+    actual = df.fill_direction(pet_type=("down", {"limit": 3}))
+    expected = df.assign(pet_type=df.pet_type.ffill(limit=3))
+    assert_frame_equal(actual, expected)

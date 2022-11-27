@@ -49,10 +49,28 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         2     3   6.0  10.0  11.0  13.0
         3     4   7.0  10.0  11.0  13.0
 
+    Pass a dictionary of keyword arguments via a tuple,
+    where the first entry in the tuple is the direction,
+    while the second entry is the dictionary of keyword arguments:
+
+        >>> df.fill_direction(
+        ... col5 = ('down', {'downcast':'infer'}),
+        ... col4 = ('up', {'limit':1}),
+        ... )
+           col1  col2  col3  col4  col5
+        0     1   NaN   8.0   NaN   NaN
+        1     2   5.0   9.0  11.0  12.0
+        2     3   6.0  10.0  11.0  13.0
+        3     4   7.0   NaN   NaN  13.0
+
+
     :param df: A pandas DataFrame.
     :param kwargs: Key - value pairs of columns and directions.
         Directions can be either `down`, `up`, `updown`
         (fill up then down) and `downup` (fill down then up).
+        A tuple can be used to pass other keyword arguments, as
+        long as they are acceptable by `pd.DataFrame.bfill`
+        and `pd.DataFrame.ffill`.
     :returns: A pandas DataFrame with modified column(s).
     :raises ValueError: if direction supplied is not one of `down`, `up`,
         `updown`, or `downup`.
@@ -65,8 +83,25 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
     fill_types = "up", "down", "updown", "downup"
     new_values = {}
+    args = {}
     for column_name, fill_type in kwargs.items():
-        check("fill_type", fill_type, [str])
+        check("fill_type", fill_type, [str, tuple])
+        if isinstance(fill_type, tuple):
+            if len(fill_type) != 2:
+                raise ValueError(
+                    "The length of the tuple argument "
+                    f"for {column_name} should be 2."
+                )
+            fill_type, args = fill_type
+            check(
+                f"The second argument in the tuple for {column_name}",
+                args,
+                [dict],
+            )
+            if "inplace" in args:
+                raise ValueError(
+                    "inplace is not accepted as a keyword argument"
+                )
         if fill_type not in fill_types:
             raise ValueError(
                 f"The direction for {column_name} "
@@ -74,13 +109,13 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
                 "up, down, updown, or downup."
             )
         if fill_type == "up":
-            output = df[column_name].bfill()
+            output = df[column_name].bfill(**args)
         elif fill_type == "down":
-            output = df[column_name].ffill()
+            output = df[column_name].ffill(**args)
         elif fill_type == "updown":
-            output = df[column_name].bfill().ffill()
+            output = df[column_name].bfill().ffill(**args)
         else:
-            output = df[column_name].ffill().bfill()
+            output = df[column_name].ffill().bfill(**args)
         new_values[column_name] = output
 
     return df.assign(**new_values)

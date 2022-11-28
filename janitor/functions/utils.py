@@ -1,4 +1,6 @@
 """Utility functions for all of the functions submodule."""
+
+from __future__ import annotations
 import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
@@ -11,10 +13,11 @@ from typing import (
     Pattern,
     Union,
     Callable,
+    Any,
 )
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
-
+from dataclasses import dataclass
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
@@ -269,6 +272,23 @@ def _select_callable(arg, func: Callable, axis=None):
     return bools
 
 
+@dataclass
+class DropLabel:
+    """
+    Helper class for removing labels within the `select` syntax.
+    `label` can be any of the types supported in the `select`,
+    `select_rows` and `select_columns` functions.
+    An array of integers not matching the labels is returned.
+
+    !!! info "New in version 0.24.0"
+
+    :param label: Label(s) to be dropped from the index.
+    :returns: A dataclass.
+    """
+
+    label: Any
+
+
 @singledispatch
 def _select_index(arg, df, axis):
     """
@@ -282,6 +302,27 @@ def _select_index(arg, df, axis):
         return getattr(df, axis).get_loc(arg)
     except Exception as exc:
         raise KeyError(f"No match was returned for {arg}") from exc
+
+
+@_select_index.register(DropLabel)  # noqa: F811
+def _column_sel_dispatch(cols, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Returns the inverse of the passed label(s).
+
+    Returns an array of integers.
+    """
+    arr = _select_index(cols.label, df, axis)
+    index = np.arange(getattr(df, axis).size)
+    if isinstance(arr, int):
+        arr = [arr]
+    elif isinstance(arr, slice):
+        arr = index[arr]
+    elif is_list_like(arr):
+        arr = np.asanyarray(arr)
+    if is_bool_dtype(arr):
+        return index[~arr]
+    return np.setdiff1d(index, arr)
 
 
 @_select_index.register(str)  # noqa: F811
@@ -437,7 +478,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 f"{arg} is a boolean dtype and has wrong length: "
                 f"{len(arg)} instead of {len(index)}"
             )
-        return arg
+        return np.asanyarray(arg)
     try:
 
         if isinstance(arg, pd.Series):
@@ -486,17 +527,27 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
+    # treat multiple DropLabel instances as a single unit
+    checks = (isinstance(entry, DropLabel) for entry in arg)
+    if sum(checks) > 1:
+        drop_labels = (entry for entry in arg if isinstance(entry, DropLabel))
+        drop_labels = [entry.label for entry in drop_labels]
+        drop_labels = DropLabel(drop_labels)
+        arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
+        arg.append(drop_labels)
+
     indices = [_select_index(entry, df, axis) for entry in arg]
 
     # single entry does not need to be combined
     # or materialized if possible;
     # this offers more performance
     if len(indices) == 1:
-        if isinstance(indices[0], int):
+        if is_scalar(indices[0]):
             return indices
-        if is_list_like(indices[0]):
-            return np.asanyarray(indices[0])
-        return indices[0]
+        indices = indices[0]
+        if is_list_like(indices):
+            indices = np.asanyarray(indices)
+        return indices
     contents = []
     for arr in indices:
         if is_list_like(arr):
@@ -508,19 +559,37 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         elif isinstance(arr, int):
             arr = [arr]
         contents.append(arr)
-    contents = np.concatenate(contents)
-    # remove possible duplicates
-    return pd.unique(contents)
+    return np.concatenate(contents)
 
 
 def _select(
-    df: pd.DataFrame, args: tuple, invert: bool, axis: str
+    df: pd.DataFrame,
+    args: tuple,
+    invert: bool = False,
+    axis: str = "index",
+    rows=None,
+    columns=None,
 ) -> pd.DataFrame:
     """
     Index DataFrame on the index or columns.
 
     Returns a DataFrame.
     """
+    assert axis in {"both", "index", "columns"}
+    if axis == "both":
+        if rows is None:
+            rows = slice(None)
+        else:
+            if not is_list_like(rows):
+                rows = [rows]
+            rows = _select_index(rows, df, axis="index")
+        if columns is None:
+            columns = slice(None)
+        else:
+            if not is_list_like(columns):
+                columns = [columns]
+            columns = _select_index(columns, df, axis="columns")
+        return df.iloc[rows, columns]
     indices = _select_index(list(args), df, axis)
     if invert:
         rev = np.ones(getattr(df, axis).size, dtype=np.bool8)

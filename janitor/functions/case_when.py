@@ -90,6 +90,11 @@ def case_when(
     else:
         default
     ```
+    !!! abstract "Version Changed"
+
+        - 0.24.0
+            - Added `default` parameter.
+
 
     :param df: A pandas DataFrame.
     :param args: Variable argument of conditions and expected values.

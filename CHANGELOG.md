@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+-   [INF] Replace `pytest.ini` file with `pyproject.toml` file. PR #1204 @Zeroto521
+-   [INF] Extract docstrings tests from all tests. PR #1205 @Zeroto521
+-   [BUG] address the `TypeError` when importing v0.24.0 (issue #1201 @xujiboy and @joranbeasley)
+
+## [v0.24.0] - 2022-11-12
+
 -   [ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)
 -   [DOC] Updated developer guide docs.
 -   [ENH] Allow column selection/renaming within conditional_join. Issue #1102. Also allow first or last match. Issue #1020 @samukweku.
@@ -29,10 +35,12 @@
 -   [ENH] Fix error when `sort_by_appearance=True` is combined with `dropna=True`. Issue #1168 @samukweku
 -   [ENH] Add explicit default parameter to `case_when` function. Issue #1159 @samukweku
 -   [BUG] pandas 1.5.x `_MergeOperation` doesn't have `copy` keyword anymore. Issue #1174 @Zeroto521
--   [ENH] `select_rows` function added for flexible row selection. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku
+-   [ENH] `select_rows` function added for flexible row selection. Generic `select` function added as well. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku
 -   [TST] Compat with macos and window, to fix `FailedHealthCheck` Issue #1181 @Zeroto521
 -   [INF] Merge two docs CIs (`docs-preview.yml` and `docs.yml`) to one. And add `documentation` pytest mark. PR #1183 @Zeroto521
 -   [INF] Merge `codecov.yml` (only works for the dev branch pushing event) into `tests.yml` (only works for PR event). PR #1185 @Zeroto521
+-   [TST] Fix failure for test/timeseries/test_fill_missing_timestamp. Issue #1184 @samukweku
+-   [BUG] Import `DataDescription` to fix: `AttributeError: 'DataFrame' object has no attribute 'data_description'`. PR #1191 @Zeroto521
 
 ## [v0.23.1] - 2022-05-03
 
@@ -320,7 +328,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.23.1...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.24.0...HEAD
+
+[v0.24.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.23.1...v0.24.0
 
 [v0.23.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.22.0...v0.23.1
 

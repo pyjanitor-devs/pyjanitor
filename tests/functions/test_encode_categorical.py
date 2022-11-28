@@ -234,6 +234,7 @@ def test_empty_col_sort(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
+@settings(deadline=None)
 def test_empty_col_appearance(df):
     """
     Raise ValueError if a string is provided,
@@ -257,6 +258,7 @@ def test_empty_col_appearance(df):
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_all_None(df):
     """
     Test output where value is None.
@@ -269,6 +271,7 @@ def test_all_None(df):
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_all_cat_None_1(df):
     """
     Test output where a string is provided.

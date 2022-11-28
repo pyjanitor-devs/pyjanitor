@@ -5,6 +5,7 @@
 -   [INF] Replace `pytest.ini` file with `pyproject.toml` file. PR #1204 @Zeroto521
 -   [INF] Extract docstrings tests from all tests. PR #1205 @Zeroto521
 -   [BUG] address the `TypeError` when importing v0.24.0 (issue #1201 @xujiboy and @joranbeasley)
+-   [BUG] Modify ignore_empty output in `concatenate_columns`. Issue #1164 @Fu-Jie
 
 ## [v0.24.0] - 2022-11-12
 
@@ -28,7 +29,6 @@
 -   [ENH] Enable `encode_categorical` handle 2 (or more ) dimensions array. PR #1153 @Zeroto521
 -   [TST] Fix testcases failing on Window. Issue #1160 @Zeroto521, and @samukweku
 -   [INF] Cancel old workflow runs via Github Action `concurrency`. PR #1161 @Zeroto521
--   [BUG] Modify ignore_empty output in `concatenate_columns`. PR #1164 @Fu-Jie
 -   [ENH] Faster computation for non-equi join, with a numba engine. Speed improvement for left/right joins when `sort_by_appearance` is False. Issue #1102 @samukweku
 -   [BUG] Avoid `change_type` mutating original `DataFrame`. PR #1162 @Zeroto521
 -   [ENH] The parameter `column_name` of `change_type` totally supports inputing multi-column now. #1163 @Zeroto521

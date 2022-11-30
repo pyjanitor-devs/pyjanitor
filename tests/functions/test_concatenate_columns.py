@@ -28,7 +28,7 @@ def test_concatenate_columns_null_values(missingdata_df):
         new_column_name="index",
         ignore_empty=True,
     )
-    expected_values = ["1.0-1", "2.0-2", "nan-3"] * 3
+    expected_values = ["1.0-1", "2.0-2", "3"] * 3
     assert expected_values == df["index"].tolist()
 
 

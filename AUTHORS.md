@@ -112,3 +112,4 @@ Contributors
 - [@asmirnov69](https://github.com/asmirnov69) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%asmirnov69)
 - [@xujiboy](https://github.com/xujiboy) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%xujiboy)
 - [@joranbeasley](https://github.com/joranbeasley) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%joranbeasley)
+- [@Fu-Jie](https://github.com/Fu-Jie) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?q=is%3Aclosed+mentions%3AFu-Jie)

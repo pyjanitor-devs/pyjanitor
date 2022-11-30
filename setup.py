@@ -68,7 +68,7 @@ EXTRA_REQUIRES = {
 
 # add 'all' key to EXTRA_REQUIRES
 all_requires = []
-for k, v in EXTRA_REQUIRES.items():
+for _, v in EXTRA_REQUIRES.items():
     all_requires.extend(v)
 EXTRA_REQUIRES["all"] = set(all_requires)
 
@@ -83,11 +83,11 @@ def generate_long_description() -> str:
     """
     Extra chunks from README for PyPI description.
 
-    Target chunks must be contained within `.. pypi-doc` pair comments,
+    Target chunks must be contained within `<!-- pypi-doc -->` pair comments,
     so there must be an even number of comments in README.
 
     :returns: Extracted description from README.
-    :raises Exception: if odd number of `.. pypi-doc` comments
+    :raises Exception: If odd number of `<!-- pypi-doc -->` comments
         in README.
     """
     # Read the contents of README file
@@ -96,14 +96,15 @@ def generate_long_description() -> str:
         readme = f.read()
 
     # Find pypi-doc comments in README
-    indices = [m.start() for m in re.finditer(".. pypi-doc", readme)]
+    boundary = r"<!-- pypi-doc -->"
+    indices = [m.start() for m in re.finditer(boundary, readme)]
     if len(indices) % 2 != 0:
-        raise Exception("Odd number of `.. pypi-doc` comments in README")
+        raise Exception(f"Odd number of `{boundary}` comments in README")
 
     # Loop through pairs of comments and save text between pairs
     long_description = ""
     for i in range(0, len(indices), 2):
-        start_index = indices[i] + 11
+        start_index = indices[i] + len(boundary)
         end_index = indices[i + 1]
         long_description += readme[start_index:end_index]
     return long_description

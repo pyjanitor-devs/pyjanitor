@@ -1,6 +1,5 @@
 """Implementation of the `collapse_levels` function."""
 import pandas as pd
-import numpy as np
 import pandas_flavor as pf
 
 from janitor.utils import check
@@ -73,20 +72,8 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     if not isinstance(df.columns, pd.MultiIndex):
         return df
 
-    arr = df.columns
-    arr = [arr.get_level_values(num) for num in range(arr.nlevels)]
-    arr = [
-        entry.astype(str) if not pd.api.types.is_string_dtype(entry) else entry
-        for entry in arr
+    df.columns = [
+        sep.join(str(el) for el in tup if str(el) != "") for tup in df
     ]
-    start, *arr = arr
-    for entry in arr:
-        joiner = sep
-        cond = (start != "") & (entry != "")
-        if cond.any():
-            joiner = np.where(cond, sep, "")
-        start = start + joiner + entry
-
-    df.columns = start
 
     return df

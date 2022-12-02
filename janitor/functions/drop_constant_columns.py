@@ -34,11 +34,4 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
     :param df: Input Pandas DataFrame
     :returns: The Pandas DataFrame with the constant columns dropped.
     """
-    # Find the constant columns
-    constant_columns = []
-    for col in df.columns:
-        if len(df[col].unique()) == 1:
-            constant_columns.append(col)
-
-    # Drop constant columns from df and return it
-    return df.drop(labels=constant_columns, axis=1)
+    return df.loc[:, df.nunique().ne(1)]

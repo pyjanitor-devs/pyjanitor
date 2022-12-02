@@ -22,7 +22,7 @@ def test_collapse_levels_functionality_2level(
     multiindex_with_missing_dataframe,
 ):
 
-    assert (
+    assert all(
         multiindex_with_missing_dataframe.copy()  # noqa: PD011
         .collapse_levels()
         .columns.values

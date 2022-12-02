@@ -75,5 +75,4 @@ def get_dupes(
         all columns.
     :returns: The duplicate rows, as a pandas DataFrame.
     """
-    dupes = df.duplicated(subset=column_names, keep=False)
-    return df[dupes == True]  # noqa: E712
+    return df.loc[df.duplicated(subset=column_names, keep=False)]

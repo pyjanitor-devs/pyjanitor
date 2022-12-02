@@ -25,13 +25,13 @@ def test_collapse_levels_functionality_2level(
     assert (
         multiindex_with_missing_dataframe.copy()  # noqa: PD011
         .collapse_levels()
-        .columns.tolist()
+        .columns.values
         == ["a", "Normal  Distribution", "decorated-elephant_r.i.p-rhino :'("]
     )
     assert (
         multiindex_with_missing_dataframe.copy()  # noqa: PD011
         .collapse_levels(sep="AsDf")
-        .columns.tolist()
+        .columns.values
         == [
             "a",
             "Normal  Distribution",

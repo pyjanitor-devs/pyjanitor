@@ -74,10 +74,15 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
         return df
 
     arr = df.columns
-    arr = [arr.get_level_values(num).astype(str) for num in range(arr.nlevels)]
+    arr = [arr.get_level_values(num) for num in range(arr.nlevels)]
+    arr = [
+        entry.astype(str) if not pd.api.types.is_string_dtype(entry) else entry
+        for entry in arr
+    ]
     start, *arr = arr
     for entry in arr:
         cond = (start != "") & (entry != "")
-        start = np.where(cond, start + sep + entry, start + "" + entry)
+        joiner = np.where(cond, sep, "")
+        start = start + joiner + entry
 
     return df.set_axis(start, axis=1)

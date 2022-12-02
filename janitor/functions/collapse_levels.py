@@ -72,9 +72,10 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     if not isinstance(df.columns, pd.MultiIndex):
         return df
 
-    df.columns = [
-        sep.join(str(el) for el in tup if str(el) != "")
-        for tup in df  # noqa: PD011
-    ]
-
+    arr = df.columns
+    arr = [arr.get_level_values(num).astype(str) for num in range(arr.nlevels)]
+    start, *arr = arr
+    for entry in arr:
+        start = start + sep + entry
+    df.columns = start
     return df

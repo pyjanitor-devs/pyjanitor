@@ -2,14 +2,16 @@
 from typing import Set
 import pandas_flavor as pf
 import pandas as pd
-
-
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `set(df[column])` instead."
+from janitor.utils import refactored_function
 
 
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `set(df[column])` instead."
+    )
+)
 def toset(series: pd.Series) -> Set:
     """Return a set of the values.
 

@@ -4,9 +4,19 @@ import pandas_flavor as pf
 import pandas as pd
 
 
-@pf.register_series_method
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `set(df[column])` instead."
+
+
+@pf.register_dataframe_method
+@refactored_function(message=message)
 def toset(series: pd.Series) -> Set:
     """Return a set of the values.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `set(df[column])` instead.
 
     These are each a scalar type, which is a Python scalar
     (for str, int, float) or a pandas scalar

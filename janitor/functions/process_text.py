@@ -10,12 +10,13 @@ from janitor.utils import (
 )
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `jn.transform_column` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `jn.transform_columns` instead."
+    )
+)
 @deprecated_alias(column="column_name")
 def process_text(
     df: pd.DataFrame,

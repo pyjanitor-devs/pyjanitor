@@ -6,12 +6,13 @@ import pandas as pd
 from janitor.utils import deprecated_alias, refactored_function
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `pd.DataFrame.drop` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.drop` instead."
+    )
+)
 @deprecated_alias(columns="column_names")
 def remove_columns(
     df: pd.DataFrame,

@@ -1,16 +1,19 @@
 """Implementation for find_replace."""
 from typing import Dict
+from janitor.utils import refactored_function
+
 
 import pandas as pd
 import pandas_flavor as pf
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `pd.DataFrame.replace` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.replace` instead."
+    )
+)
 def find_replace(
     df: pd.DataFrame, match: str = "exact", **mappings
 ) -> pd.DataFrame:

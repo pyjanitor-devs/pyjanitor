@@ -6,7 +6,7 @@ from typing import Dict, Hashable, Iterable, List, Optional
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -96,6 +96,12 @@ def filter_string(
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.query` instead."
+    )
+)
 def filter_on(
     df: pd.DataFrame,
     criteria: str,

@@ -5,12 +5,13 @@ import pandas as pd
 from janitor.utils import check_column, deprecated_alias, refactored_function
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `pd.DataFrame.rename` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.rename` instead."
+    )
+)
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
     df: pd.DataFrame,
@@ -52,12 +53,13 @@ def rename_column(
     return df.rename(columns={old_column_name: new_column_name})
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `pd.DataFrame.rename` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.rename` instead."
+    )
+)
 def rename_columns(
     df: pd.DataFrame,
     new_column_names: Union[Dict, None] = None,

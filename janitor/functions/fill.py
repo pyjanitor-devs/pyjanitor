@@ -14,13 +14,13 @@ from janitor.utils import (
 from multipledispatch import dispatch
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `pd.DataFrame.assign` "
-message += "or `jn.transform_column` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
     Provide a method-chainable function for filling missing values
@@ -33,8 +33,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     !!!note
 
         This function will be deprecated in a 1.x release.
-        Please use `pd.DataFrame.assign` or
-        [`jn.transform_column`][janitor.functions.transform_columns.transform_column] instead.
+        Please use `pd.DataFrame.assign` instead.
 
     Example:
 

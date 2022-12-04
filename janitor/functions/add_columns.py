@@ -6,12 +6,13 @@ from typing import Union, List, Any, Tuple
 import numpy as np
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `pd.DataFrame.assign` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 @deprecated_alias(col_name="column_name")
 def add_column(
     df: pd.DataFrame,
@@ -133,7 +134,12 @@ message += "Kindly use `pd.DataFrame.assign` instead."
 
 
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 def add_columns(
     df: pd.DataFrame,
     fill_remaining: bool = False,

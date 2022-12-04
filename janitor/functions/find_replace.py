@@ -5,11 +5,22 @@ import pandas as pd
 import pandas_flavor as pf
 
 
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `pd.DataFrame.replace` instead."
+
+
 @pf.register_dataframe_method
+@refactored_function(message=message)
 def find_replace(
     df: pd.DataFrame, match: str = "exact", **mappings
 ) -> pd.DataFrame:
     """
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.replace` instead.
+
     Perform a find-and-replace action on provided columns.
 
     Depending on use case, users can choose either exact, full-value matching,

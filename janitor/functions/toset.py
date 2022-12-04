@@ -5,7 +5,7 @@ import pandas as pd
 from janitor.utils import refactored_function
 
 
-@pf.register_dataframe_method
+@pf.register_series_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "

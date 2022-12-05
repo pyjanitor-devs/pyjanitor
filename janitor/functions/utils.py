@@ -527,7 +527,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
-    # shortcut for scalars and single unique type
+    # shortcut for single unique dtype of scalars
     checks = (is_scalar(entry) for entry in arg)
     if all(checks):
         dtypes = {type(entry) for entry in arg}

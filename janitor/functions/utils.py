@@ -531,10 +531,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     checks = (is_scalar(entry) for entry in arg)
     if all(checks):
         dtypes = {type(entry) for entry in arg}
-        # for a small size, get_loc is sufficient
-        # hence the check on len(arg) > 10,
-        # which is an arbitrary value
-        if (len(dtypes) == 1) and (len(arg) > 10):
+        if len(dtypes) == 1:
             indices = index.get_indexer_for(arg)
             if (indices != -1).all():
                 return indices

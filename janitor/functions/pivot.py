@@ -135,12 +135,12 @@ def pivot_longer(
     Split the column labels for the above dataframe using named groups in `names_pattern`:
 
         >>> df.pivot_longer(
-            ...     index = 'id',
-            ...     names_pattern = r"new_?(?P<diagnosis>.+)_(?P<gender>.)(?P<age>\\d+)",
-            ... )
-               id diagnosis gender   age  value
-            0   1        sp      m  5564      2
-            1   1       rel      f    65      3
+        ...     index = 'id',
+        ...     names_pattern = r"new_?(?P<diagnosis>.+)_(?P<gender>.)(?P<age>\\d+)",
+        ... )
+            id diagnosis gender   age  value
+        0   1        sp      m  5564      2
+        1   1       rel      f    65      3
 
     Convert the dtypes of specific columns with `names_transform`:
 

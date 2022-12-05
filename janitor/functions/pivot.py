@@ -132,6 +132,16 @@ def pivot_longer(
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
+    Split the column labels for the above dataframe using named groups in `names_pattern`:
+
+        >>> df.pivot_longer(
+            ...     index = 'id',
+            ...     names_pattern = r"new_?(?P<diagnosis>.+)_(?P<gender>.)(?P<age>\\d+)",
+            ... )
+               id diagnosis gender   age  value
+            0   1        sp      m  5564      2
+            1   1       rel      f    65      3
+
     Convert the dtypes of specific columns with `names_transform`:
 
         >>> result = (df
@@ -476,21 +486,26 @@ def _data_checks_pivot_longer(
 
     if names_pattern is not None:
         check("names_pattern", names_pattern, [str, Pattern, list, tuple])
-        if names_to is None:
-            raise ValueError("Kindly provide values for names_to.")
         if isinstance(names_pattern, (str, Pattern)):
-            num_regex_grps = re.compile(names_pattern).groups
-
-            if len_names_to != num_regex_grps:
+            regex = re.compile(names_pattern)
+            if names_to is None:
+                if regex.groupindex:
+                    names_to = list(regex.groupindex.keys())
+                    len_names_to = len(names_to)
+                else:
+                    raise ValueError("Kindly provide values for names_to.")
+            if len_names_to != regex.groups:
                 raise ValueError(
                     f"The length of names_to does not match "
                     "the number of groups in names_pattern. "
                     f"The length of names_to is {len_names_to} "
                     "while the number of groups in the regex "
-                    f"is {num_regex_grps}."
+                    f"is {regex.groups}."
                 )
 
         elif isinstance(names_pattern, (list, tuple)):
+            if names_to is None:
+                raise ValueError("Kindly provide values for names_to.")
             for word in names_pattern:
                 check(f"{word} in names_pattern", word, [str, Pattern])
 

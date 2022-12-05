@@ -105,6 +105,12 @@ def test_name_pattern_no_names_to(df_checks):
         df_checks.pivot_longer(names_to=None, names_pattern="(.+)(.)")
 
 
+def test_name_pattern_seq_no_names_to(df_checks):
+    """Raise ValueError if names_pattern is a sequence and names_to is None."""
+    with pytest.raises(ValueError):
+        df_checks.pivot_longer(names_to=None, names_pattern=[".{2}", "\\d"])
+
+
 def test_name_pattern_groups_len(df_checks):
     """
     Raise ValueError if names_pattern
@@ -854,6 +860,33 @@ def test_not_dot_value_pattern(not_dot_value):
         "country",
         names_to=("event", "year"),
         names_pattern=r"(.+)_(.+)",
+        values_to="score",
+        sort_by_appearance=True,
+    )
+    result = result.sort_values(
+        ["country", "event", "year"], ignore_index=True
+    )
+    actual = not_dot_value.set_index("country")
+    actual.columns = actual.columns.str.split("_", expand=True)
+    actual.columns.names = ["event", "year"]
+    actual = (
+        actual.stack(["event", "year"])
+        .rename("score")
+        .sort_index()
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual)
+
+
+def test_not_dot_value_pattern_named_groups(not_dot_value):
+    """
+    Test output when names_pattern has named groups
+    """
+
+    result = not_dot_value.pivot_longer(
+        "country",
+        names_pattern=r"(?P<event>.+)_(?P<year>.+)",
         values_to="score",
         sort_by_appearance=True,
     )

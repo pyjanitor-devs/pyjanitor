@@ -183,6 +183,16 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
+    Replicate the above with named groups in `names_pattern`:
+
+        >>> df.pivot_longer(
+        ...     index="unit",
+        ...     names_pattern=r"(?P<_>x|y)_(?P<time>[0-9])(?P<__>_mean)",
+        ... )
+           unit time  x_mean  y_mean
+        0    50    1      10      30
+        1    50    2      20      40
+
     Multiple values_to:
 
         >>> df = pd.DataFrame(
@@ -490,7 +500,11 @@ def _data_checks_pivot_longer(
             regex = re.compile(names_pattern)
             if names_to is None:
                 if regex.groupindex:
-                    names_to = list(regex.groupindex.keys())
+                    names_to = regex.groupindex.keys()
+                    names_to = [
+                        ".value" if "".join(set(name)) == "_" else name
+                        for name in names_to
+                    ]
                     len_names_to = len(names_to)
                 else:
                     raise ValueError("Kindly provide values for names_to.")

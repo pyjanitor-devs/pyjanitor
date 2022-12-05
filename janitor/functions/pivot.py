@@ -183,7 +183,7 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
-    Replicate the above with named groups in `names_pattern`:
+    Replicate the above with named groups in `names_pattern` - use `_` instead of `.value`:
 
         >>> df.pivot_longer(
         ...     index="unit",
@@ -281,6 +281,10 @@ def pivot_longer(
         the same specification as pandas' `str.extract` method), or a
         list/tuple of regular expressions. If it is a single regex, the
         number of groups must match the length of `names_to`.
+        Named groups are supported, if `names_to` is none. `_` is used
+        instead of `.value` if part of the column name is to be retained
+        as a header in the new dataframe. `_` can be overloaded for
+        multiple `.value` calls - `_`, `__`, `___`, ...
         For a list/tuple of regular expressions,
         `names_to` must also be a list/tuple and the lengths of both
         arguments must match.

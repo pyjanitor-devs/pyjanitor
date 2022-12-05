@@ -101,13 +101,17 @@ def test_name_pattern_wrong_type(df_checks):
 
 def test_name_pattern_no_names_to(df_checks):
     """Raise ValueError if names_pattern and names_to is None."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Kindly provide values for names_to."
+    ):
         df_checks.pivot_longer(names_to=None, names_pattern="(.+)(.)")
 
 
 def test_name_pattern_seq_no_names_to(df_checks):
     """Raise ValueError if names_pattern is a sequence and names_to is None."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Kindly provide values for names_to."
+    ):
         df_checks.pivot_longer(names_to=None, names_pattern=[".{2}", "\\d"])
 
 

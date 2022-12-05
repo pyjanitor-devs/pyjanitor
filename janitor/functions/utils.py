@@ -527,9 +527,11 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
+    # add more checks here - int, datetime,
+    # useful shortcut
     checks = (isinstance(entry, str) for entry in arg)
     if all(checks):
-        indices = index.get_locs(arg)
+        indices = index.get_indexer_for(arg)
         if (indices != -1).all():
             return indices
     # treat multiple DropLabel instances as a single unit

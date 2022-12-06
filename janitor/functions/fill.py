@@ -127,12 +127,11 @@ class _FILLTYPE(Enum):
     DOWNUP = "ffill", "bfill"
 
 
-message = "This function will be deprecated in a 1.x release. "
-message += "Kindly use `jn.impute` instead."
-
-
 @pf.register_dataframe_method
-@refactored_function(message=message)
+@refactored_function(
+    message="This function will be deprecated in a 1.x release. "
+    "Kindly use `jn.impute` instead."
+)
 @deprecated_alias(columns="column_names")
 def fill_empty(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value

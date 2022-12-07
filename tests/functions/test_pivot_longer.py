@@ -1014,6 +1014,44 @@ def test_multiple_dot_value():
     assert_frame_equal(result, actual, check_dtype=False)
 
 
+def test_multiple_dot_value_named_group():
+    """Test output for multiple .value."""
+    df = pd.DataFrame(
+        {
+            "x_1_mean": [1, 2, 3, 4],
+            "x_2_mean": [1, 1, 0, 0],
+            "x_1_sd": [0, 1, 1, 1],
+            "x_2_sd": [0.739, 0.219, 1.46, 0.918],
+            "y_1_mean": [1, 2, 3, 4],
+            "y_2_mean": [1, 1, 0, 0],
+            "y_1_sd": [0, 1, 1, 1],
+            "y_2_sd": [-0.525, 0.623, -0.705, 0.662],
+            "unit": [1, 2, 3, 4],
+        }
+    )
+
+    result = df.pivot_longer(
+        index="unit",
+        names_pattern=r"(?P<_>x|y)_(?P<time>[0-9])(?P<__>_mean|_sd)",
+    ).astype({"time": int})
+
+    actual = df.set_index("unit")
+    cols = [ent.split("_") for ent in actual.columns]
+    actual.columns = [f"{start}_{end}{middle}" for start, middle, end in cols]
+    actual = (
+        pd.wide_to_long(
+            actual.reset_index(),
+            stubnames=["x_mean", "y_mean", "x_sd", "y_sd"],
+            i="unit",
+            j="time",
+        )
+        .sort_index(axis=1)
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual, check_dtype=False)
+
+
 @pytest.fixture
 def single_val():
     """fixture dataframe"""
@@ -1031,6 +1069,16 @@ def test_multiple_dot_value2(single_val):
 
     result = single_val.pivot_longer(
         index="id", names_to=(".value", ".value"), names_pattern="(.)(.)"
+    )
+
+    assert_frame_equal(result, single_val)
+
+
+def test_multiple_dot_value2_named_group(single_val):
+    """Test output for multiple .value."""
+
+    result = single_val.pivot_longer(
+        index="id", names_pattern="(?P<_>.)(?P<_____________>.)"
     )
 
     assert_frame_equal(result, single_val)

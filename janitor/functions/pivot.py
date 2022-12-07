@@ -575,7 +575,9 @@ def _data_checks_pivot_longer(
                 if regex.groupindex:
                     names_to = regex.groupindex.keys()
                     names_to = [
-                        ".value" if "".join(set(name)) == "_" else name
+                        ".value"
+                        if "_" in name and len(set(name)) == 1
+                        else name
                         for name in names_to
                     ]
                     len_names_to = len(names_to)

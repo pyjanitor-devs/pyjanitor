@@ -279,7 +279,10 @@ def pivot_longer(
         >>> df.pivot_longer(
         ...     index=["City", "State"],
         ...     column_names=slice("Mango", "Vodka"),
-        ...     names_pattern={"Fruit":{"Pounds":r"M|O|W"}, "Drink":{"Ounces":r"G|V"}},
+        ...     names_pattern={
+        ...        "Fruit": {"Pounds": r"M|O|W"},
+        ...        "Drink": {"Fruit": r"G|V"},
+        ...    },
         ...     )
               City    State       Fruit  Pounds  Drink  Ounces
         0  Houston    Texas       Mango       4    Gin    16.0

@@ -261,7 +261,7 @@ def pivot_longer(
         ...         column_names=slice("Mango", "Vodka"),
         ...         names_to=("Fruit", "Drink"),
         ...         values_to=("Pounds", "Ounces"),
-        ...         names_pattern=[r"M|O|W", r"G|V"],
+        ...         names_pattern=["M|O|W", "G|V"],
         ...     )
               City    State       Fruit  Pounds  Drink  Ounces
         0  Houston    Texas       Mango       4    Gin    16.0
@@ -280,8 +280,8 @@ def pivot_longer(
         ...     index=["City", "State"],
         ...     column_names=slice("Mango", "Vodka"),
         ...     names_pattern={
-        ...        "Fruit": {"Pounds": r"M|O|W"},
-        ...        "Drink": {"Fruit": r"G|V"},
+        ...        "Fruit": {"Pounds": "M|O|W"},
+        ...        "Drink": {"Ounces": "G|V"},
         ...    },
         ...     )
               City    State       Fruit  Pounds  Drink  Ounces

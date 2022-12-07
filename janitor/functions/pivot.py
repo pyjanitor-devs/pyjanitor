@@ -300,6 +300,12 @@ def pivot_longer(
         - 0.24.0
             - Added `dropna` parameter.
 
+    !!! abstract "Version Added"
+
+        - 0.24.1
+            - `names_pattern` can accept a dictionary.
+            - named groups supported in `names_pattern`.
+
 
     :param df: A pandas DataFrame.
     :param index: Name(s) of columns to use as identifier variables.

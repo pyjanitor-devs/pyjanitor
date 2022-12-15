@@ -342,6 +342,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             return index.get_loc(arg)
         except KeyError as exc:
             if _is_str_or_cat(index):
+                if arg == "*":
+                    return slice(None)
                 if isinstance(index, pd.MultiIndex):
                     index = index.get_level_values(0)
                 # label selection should be case sensitive

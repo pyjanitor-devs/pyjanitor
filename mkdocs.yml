@@ -37,6 +37,9 @@ nav:
   - Authors: AUTHORS.md
 
 plugins:
+  - exclude:
+      glob:
+        - api/utils.md
   - search
   - mkdocstrings:
       default_handler: python

@@ -24,6 +24,7 @@ dependencies:
   - mkdocs-material
   - mkdocstrings=0.18.1
   - mkdocstrings-python-legacy=0.2.2
+  - mkdocs-exclude
   - missingno
   - multipledispatch
   - mypy

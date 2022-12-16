@@ -27,8 +27,8 @@ def conditional_join(
     *conditions,
     how: Literal["inner", "left", "right"] = "inner",
     sort_by_appearance: bool = False,
-    df_columns: Optional[Any] = None,
-    right_columns: Optional[Any] = None,
+    df_columns: Optional[Any] = slice(None),
+    right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
 ) -> pd.DataFrame:
@@ -1272,11 +1272,19 @@ def _create_frame(
     """
     Create final dataframe
     """
-    if df_columns is not None:
-        df = _cond_join_select_columns(df_columns, df)
-
-    if right_columns is not None:
-        right = _cond_join_select_columns(right_columns, right)
+    if (df_columns is None) and (right_columns is None):
+        raise ValueError(
+            "df_columns and right_columns " "cannot both be None."
+        )
+    if df_columns is None:
+        df = pd.DataFrame([])
+    elif right_columns is None:
+        right = pd.DataFrame([])
+    else:
+        if df_columns != slice(None):
+            df = _cond_join_select_columns(df_columns, df)
+        if right_columns != slice(None):
+            right = _cond_join_select_columns(right_columns, right)
 
     if set(df.columns).intersection(right.columns):
         df, right = _create_multiindex_column(df, right)

@@ -28,6 +28,17 @@ def series():
     return pd.Series([2, 3, 4], name="B")
 
 
+def test_df_columns_right_columns_both_None(dummy, series):
+    """Raise if both df_columns and right_columns is None"""
+    with pytest.raises(
+        ValueError,
+        match="df_columns and right_columns " "cannot both be None.",
+    ):
+        dummy.conditional_join(
+            series, ("id", "B", ">"), df_columns=None, right_columns=None
+        )
+
+
 def test_df_multiindex(dummy, series):
     """Raise ValueError if `df` columns is a MultiIndex."""
     with pytest.raises(
@@ -2564,6 +2575,71 @@ def test_dual_ge_and_le_range_numbers_numba(df, right):
             ("A", "Integers", ">="),
             how="inner",
             use_numba=True,
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers_df_columns_only(df, right):
+    """Test output for multiple conditions and select df only."""
+
+    columns = ["A", "E"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("A", "Integers", ">="),
+            how="inner",
+            use_numba=False,
+            right_columns=None,
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers_right_only(df, right):
+    """Test output for multiple conditions and select right only."""
+
+    columns = ["Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("A", "Integers", ">="),
+            how="inner",
+            df_columns=None,
             sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)

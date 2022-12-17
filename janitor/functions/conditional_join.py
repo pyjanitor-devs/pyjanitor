@@ -31,6 +31,7 @@ def conditional_join(
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
+    indicator: Optional[bool, str] = False,
 ) -> pd.DataFrame:
     """
 
@@ -150,6 +151,14 @@ def conditional_join(
         last match or all matches. Default is `all`.
     :param use_numba: Use numba, if installed, to accelerate the computation.
         Applicable only to strictly non-equi joins. Default is `False`.
+    :param indicator: If True, adds a column to the output DataFrame
+        called “_merge” with information on the source of each row.
+        The column can be given a different name by providing a string argument.
+        The column will have a Categorical type with the value of “left_only”
+        for observations whose merge key only appears in the left DataFrame,
+        “right_only” for observations whose merge key
+        only appears in the right DataFrame, and “both” if the observation’s
+        merge key is found in both DataFrames.
     :returns: A pandas DataFrame of the two merged Pandas objects.
     """  # noqa: E501
 
@@ -163,6 +172,7 @@ def conditional_join(
         right_columns,
         keep,
         use_numba,
+        indicator,
     )
 
 
@@ -224,6 +234,7 @@ def _conditional_join_preliminary_checks(
     right_columns: Any,
     keep: str,
     use_numba: bool,
+    indicator: Union[bool, str],
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -300,6 +311,8 @@ def _conditional_join_preliminary_checks(
 
     check("use_numba", use_numba, [bool])
 
+    check("indicator", indicator, [bool, str])
+
     return (
         df,
         right,
@@ -310,6 +323,7 @@ def _conditional_join_preliminary_checks(
         right_columns,
         keep,
         use_numba,
+        indicator,
     )
 
 
@@ -379,6 +393,7 @@ def _conditional_join_compute(
     right_columns: Any,
     keep: str,
     use_numba: bool,
+    indicator: Union[bool, str],
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -396,6 +411,7 @@ def _conditional_join_compute(
         right_columns,
         keep,
         use_numba,
+        indicator,
     ) = _conditional_join_preliminary_checks(
         df,
         right,
@@ -406,6 +422,7 @@ def _conditional_join_compute(
         right_columns,
         keep,
         use_numba,
+        indicator,
     )
 
     eq_check = False
@@ -454,6 +471,7 @@ def _conditional_join_compute(
         sort_by_appearance,
         df_columns,
         right_columns,
+        indicator,
     )
 
 
@@ -1268,6 +1286,7 @@ def _create_frame(
     sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
+    indicator: Union[bool, str],
 ):
     """
     Create final dataframe
@@ -1286,25 +1305,29 @@ def _create_frame(
         if right_columns != slice(None):
             right = _cond_join_select_columns(right_columns, right)
 
-    if set(df.columns).intersection(right.columns):
+    if not df.columns.intersection(right.columns).empty:
         df, right = _create_multiindex_column(df, right)
 
-    if sort_by_appearance or (left_index.size == 0):
+    if indicator:
+        if isinstance(indicator, bool):
+            indicator = "_merge"
+        if indicator in df.columns.union(right.columns):
+            raise ValueError(
+                "Cannot use name of an existing column for indicator column"
+            )
+
+    if sort_by_appearance:
         if how in {"inner", "left"}:
-            right = right.take(right_index)
-            right.index = left_index
+            if not right.empty:
+                right = right.take(right_index)
+                right.index = left_index
         else:
-            df = df.take(left_index)
-            df.index = right_index
-        df = pd.merge(
-            df,
-            right,
-            left_index=True,
-            right_index=True,
-            sort=False,
-            copy=False,
-            how=how,
-        )
+            if not df.empty:
+                df = df.take(left_index)
+                df.index = right_index
+        df, right = df.align(right, join=how, axis=0, copy=False)
+        return df, right
+        df = pd.concat([df, right], axis=1, copy=False, sort=False)
         df.index = range(len(df))
         return df
 

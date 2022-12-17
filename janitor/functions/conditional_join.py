@@ -865,14 +865,9 @@ def _multiple_conditional_join_ne(
     # not equal typically combines less than
     # and greater than, so a lot more rows are returned
     # than just less than or greater than
-
-    # here we get indices for the first condition in conditions
-    # then use those indices to get the final indices,
-    # using _generate_indices
     first, *rest = conditions
     left_on, right_on, op = first
 
-    # get indices from the first condition
     indices = _generic_func_cond_join(
         df[left_on],
         right[right_on],
@@ -1292,42 +1287,56 @@ def _create_frame(
     Create final dataframe
     """
     if (df_columns is None) and (right_columns is None):
-        raise ValueError(
-            "df_columns and right_columns " "cannot both be None."
-        )
+        raise ValueError("df_columns and right_columns cannot both be None.")
+    if (df_columns is not None) and (df_columns != slice(None)):
+        df = _cond_join_select_columns(df_columns, df)
+    if (right_columns is not None) and (right_columns != slice(None)):
+        right = _cond_join_select_columns(right_columns, right)
     if df_columns is None:
         df = pd.DataFrame([])
     elif right_columns is None:
         right = pd.DataFrame([])
-    else:
-        if df_columns != slice(None):
-            df = _cond_join_select_columns(df_columns, df)
-        if right_columns != slice(None):
-            right = _cond_join_select_columns(right_columns, right)
 
     if not df.columns.intersection(right.columns).empty:
         df, right = _create_multiindex_column(df, right)
 
+    all_cols = None
     if indicator:
         if isinstance(indicator, bool):
             indicator = "_merge"
-        if indicator in df.columns.union(right.columns):
+        all_cols = df.columns.union(right.columns)
+        if indicator in all_cols:
             raise ValueError(
                 "Cannot use name of an existing column for indicator column"
             )
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            if not right.empty:
-                right = right.take(right_index)
-                right.index = left_index
+            right = right.reindex(right_index)
+            right.index = left_index
         else:
-            if not df.empty:
-                df = df.take(left_index)
-                df.index = right_index
+            df = df.reindex(left_index)
+            df.index = right_index
+        # adapted from pandas.merge private function
+        if indicator:
+            for i in ["_left_indicator", "_right_indicator"]:
+                if i in all_cols:
+                    raise ValueError(
+                        "Cannot use `indicator=True` option when "
+                        f"data contains a column named {i}"
+                    )
+            df = df.assign(_left_indicator=np.array(1, dtype=np.int8))
+            right = right.assign(_right_indicator=np.array(2, dtype=np.int8))
         df, right = df.align(right, join=how, axis=0, copy=False)
-        return df, right
         df = pd.concat([df, right], axis=1, copy=False, sort=False)
+        if indicator:
+            arr = df["_left_indicator"].fillna(0, downcast="infer") + df[
+                "_right_indicator"
+            ].fillna(0, downcast="infer")
+            arr = pd.Categorical(arr, categories=[1, 2, 3])
+            arr = arr.rename_categories(["left_only", "right_only", "both"])
+            df[indicator] = arr
+            df = df.drop(columns=["_left_indicator", "_right_indicator"])
         df.index = range(len(df))
         return df
 
@@ -1336,6 +1345,7 @@ def _create_frame(
         right: pd.DataFrame,
         left_index: pd.DataFrame,
         right_index: pd.DataFrame,
+        indicator: Union[bool, str],
     ) -> pd.DataFrame:
         """Create DataFrame for inner join"""
         df = {key: value._values[left_index] for key, value in df.items()}
@@ -1343,24 +1353,42 @@ def _create_frame(
             key: value._values[right_index] for key, value in right.items()
         }
         df.update(right)
+        if indicator:
+            df = _add_indicator(df, indicator, "inner", left_index.size)
         return pd.DataFrame(df, copy=False)
 
     if how == "inner":
-        return _inner(df, right, left_index, right_index)
+        return _inner(df, right, left_index, right_index, indicator)
 
     if how == "left":
         df_ = np.bincount(left_index, minlength=df.index.size) == 0
         df_ = df_.nonzero()[0]
         if not df_.size:
-            return _inner(df, right, left_index, right_index)
-        df_ = df.take(df_)
-        df = _inner(df, right, left_index, right_index)
+            return _inner(df, right, left_index, right_index, indicator)
+        df_ = df.reindex(df_)
+        if indicator:
+            df_ = _add_indicator(df_, indicator, "left", len(df_))
+        df = _inner(df, right, left_index, right_index, indicator)
         return pd.concat([df, df_], ignore_index=True)
     if how == "right":
         right_ = np.bincount(right_index, minlength=right.index.size) == 0
         right_ = right_.nonzero()[0]
         if not right_.size:
-            return _inner(df, right, left_index, right_index)
-        right_ = right.take(right_)
-        right = _inner(df, right, left_index, right_index)
+            return _inner(df, right, left_index, right_index, indicator)
+        right_ = right.reindex(right_)
+        if indicator:
+            right_ = _add_indicator(right_, indicator, "right", len(right_))
+        right = _inner(df, right, left_index, right_index, indicator)
         return pd.concat([right, right_], ignore_index=True)
+
+
+def _add_indicator(
+    df: pd.DataFrame, indicator: str, how: str, length: int
+) -> pd.DataFrame:
+    "Add indicator column to the DataFrame"
+    mapping = {"inner": "both", "left": "left_only", "right": "right_only"}
+    arr = pd.Categorical(
+        [mapping.get(how)], categories=["left_only", "right_only", "both"]
+    )
+    df[indicator] = arr.repeat(length)
+    return df

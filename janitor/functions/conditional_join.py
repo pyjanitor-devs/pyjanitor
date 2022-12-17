@@ -121,7 +121,10 @@ def conditional_join(
         - 0.24.0
             - Added `df_columns`, `right_columns`, `keep` and `use_numba` parameters.
 
+    !!! abstract "Version added"
 
+        - 0.24.1
+            - Added `indicator` parameter.
 
     :param df: A pandas DataFrame.
     :param right: Named Series or DataFrame to join to.

@@ -6,7 +6,7 @@
 -   [INF] Extract docstrings tests from all tests. PR #1205 @Zeroto521
 -   [BUG] address the `TypeError` when importing v0.24.0 (issue #1201 @xujiboy and @joranbeasley)
 -   [INF] Fixed issue with missing PyPI README. PR #1216 @thatlittleboy
-
+-   [ENH] Improve selection in `conditional_join`. Issue #1223 @samukweku
 ## [v0.24.0] - 2022-11-12
 
 -   [ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)

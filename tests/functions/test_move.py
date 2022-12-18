@@ -137,15 +137,15 @@ def test_move_invalid_args(dataframe):
     with pytest.raises(ValueError):
         # invalid axis
         _ = dataframe.move("a", "cities", axis="oops")
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         # invalid source row
         _ = dataframe.move(10_000, 0, axis=0)
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         # invalid target row
         _ = dataframe.move(0, 10_000, axis=0)
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         # invalid source column
         _ = dataframe.move("__oops__", "cities", axis=1)
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         # invalid target column
         _ = dataframe.move("a", "__oops__", axis=1)

@@ -68,8 +68,8 @@ def move(
     :returns: The dataframe with the Series moved.
     :raises ValueError: If `axis` is not `0` or `1`.
     :raises ValueError: If `position` is not `before` or `after`.
-    :raises ValueError: If  `source` row or column is not in dataframe.
-    :raises ValueError: If `target` row or column is not in dataframe.
+    :raises KeyError: If  `source` or `target` row or column
+        is not in dataframe.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
@@ -79,40 +79,23 @@ def move(
             f"Invalid position '{position}'. Can only be 'before' or 'after'."
         )
 
-    df = df.copy()
-    if axis == 0:
-        names = list(df.index)
-
-        if source not in names:
-            raise ValueError(f"Source row '{source}' not in dataframe.")
-
-        if target not in names:
-            raise ValueError(f"Target row '{target}' not in dataframe.")
-
-        names.remove(source)
-        pos = names.index(target)
-
-        if position == "after":
-            pos += 1
-        names.insert(pos, source)
-
-        df = df.loc[names, :]
+    if not axis:
+        names = df.index.tolist()
     else:
-        names = list(df.columns)
+        names = df.columns.tolist()
+    mapping = {0: "row", 1: "column"}
 
-        if source not in names:
-            raise ValueError(f"Source column '{source}' not in dataframe.")
+    if source not in names:
+        raise KeyError(f"Source {mapping[axis]} '{source}' not in dataframe.")
 
-        if target not in names:
-            raise ValueError(f"Target column '{target}' not in dataframe.")
+    if target not in names:
+        raise KeyError(f"Target {mapping[axis]} '{target}' not in dataframe.")
 
-        names.remove(source)
-        pos = names.index(target)
+    names.remove(source)
+    pos = names.index(target)
 
-        if position == "after":
-            pos += 1
-        names.insert(pos, source)
+    if position == "after":
+        pos += 1
+    names.insert(pos, source)
 
-        df = df.loc[:, names]
-
-    return df
+    return df.loc(axis=axis)[names]

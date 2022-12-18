@@ -1315,12 +1315,14 @@ def _create_frame(
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            if not right.empty:
-                right = right.take(right_index)
+            right = {
+                key: value._values[right_index] for key, value in right.items()
+            }
+            right = pd.DataFrame(right)
             right.index = left_index
         else:
-            if not df.empty:
-                df = df.take(left_index)
+            df = {key: value._values[left_index] for key, value in df.items()}
+            df = pd.DataFrame(df)
             df.index = right_index
         # adapted from pandas.merge private function
         if indicator:
@@ -1345,61 +1347,54 @@ def _create_frame(
         df.index = range(len(df))
         return df
 
-    def _inner(
-        df: pd.DataFrame,
-        right: pd.DataFrame,
-        left_index: pd.DataFrame,
-        right_index: pd.DataFrame,
-        indicator: Union[bool, str],
-    ) -> pd.DataFrame:
-        """Create DataFrame for inner join"""
-        df = {key: value._values[left_index] for key, value in df.items()}
-        right = {
-            key: value._values[right_index] for key, value in right.items()
-        }
-        df.update(right)
-        if indicator:
-            df = _add_indicator(df, indicator, "inner", left_index.size)
-        return pd.DataFrame(df, copy=False)
-
     if how == "inner":
         return _inner(df, right, left_index, right_index, indicator)
 
     if how == "left":
-        df_ = np.bincount(left_index, minlength=df.index.size) == 0
-        df_ = df_.nonzero()[0]
-        if not df_.size:
-            return _inner(df, right, left_index, right_index, indicator)
-        if not df.empty:
-            df_ = df.take(df_)
-        else:
-            df_ = pd.DataFrame([], index=df_)
-        if indicator:
-            df_ = _add_indicator(df_, indicator, "left", len(df_))
-        df = _inner(df, right, left_index, right_index, indicator)
-        return pd.concat([df, df_], ignore_index=True)
-    if how == "right":
-        right_ = np.bincount(right_index, minlength=right.index.size) == 0
-        right_ = right_.nonzero()[0]
-        if not right_.size:
-            return _inner(df, right, left_index, right_index, indicator)
-        if not right.empty:
-            right_ = right.take(right_)
-        else:
-            right_ = pd.DataFrame([], index=right_)
-        if indicator:
-            right_ = _add_indicator(right_, indicator, "right", len(right_))
-        right = _inner(df, right, left_index, right_index, indicator)
-        return pd.concat([right, right_], ignore_index=True)
+        arr = df
+        arr_ = np.bincount(left_index, minlength=arr.index.size) == 0
+    else:
+        arr = right
+        arr_ = np.bincount(right_index, minlength=arr.index.size) == 0
+    arr_ = arr_.nonzero()[0]
+    if not arr_.size:
+        return _inner(df, right, left_index, right_index, indicator)
+    if indicator:
+        length = arr_.size
+    arr_ = {key: value._values[arr_] for key, value in arr.items()}
+    if indicator:
+        arr_ = _add_indicator(
+            df=arr_, indicator=indicator, how=how, length=length
+        )
+    arr_ = pd.DataFrame(arr_, copy=False)
+    arr = _inner(df, right, left_index, right_index, indicator)
+    return pd.concat([arr, arr_], copy=False, sort=False, ignore_index=True)
 
 
 def _add_indicator(
-    df: pd.DataFrame, indicator: str, how: str, length: int
+    df: dict, indicator: str, how: str, length: int
 ) -> pd.DataFrame:
     "Add indicator column to the DataFrame"
     mapping = {"inner": "both", "left": "left_only", "right": "right_only"}
     arr = pd.Categorical(
-        [mapping.get(how)], categories=["left_only", "right_only", "both"]
+        [mapping[how]], categories=["left_only", "right_only", "both"]
     )
     df[indicator] = arr.repeat(length)
     return df
+
+
+def _inner(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_index: pd.DataFrame,
+    right_index: pd.DataFrame,
+    indicator: Union[bool, str],
+) -> pd.DataFrame:
+    """Create DataFrame for inner join"""
+
+    df = {key: value._values[left_index] for key, value in df.items()}
+    right = {key: value._values[right_index] for key, value in right.items()}
+    df.update(right)
+    if indicator:
+        df = _add_indicator(df, indicator, "inner", left_index.size)
+    return pd.DataFrame(df, copy=False)

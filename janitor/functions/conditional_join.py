@@ -1315,10 +1315,12 @@ def _create_frame(
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            right = right.reindex(right_index)
+            if not right.empty:
+                right = right.take(right_index)
             right.index = left_index
         else:
-            df = df.reindex(left_index)
+            if not df.empty:
+                df = df.take(left_index)
             df.index = right_index
         # adapted from pandas.merge private function
         if indicator:
@@ -1368,7 +1370,10 @@ def _create_frame(
         df_ = df_.nonzero()[0]
         if not df_.size:
             return _inner(df, right, left_index, right_index, indicator)
-        df_ = df.reindex(df_)
+        if not df.empty:
+            df_ = df.take(df_)
+        else:
+            df_ = pd.DataFrame([], index=df_)
         if indicator:
             df_ = _add_indicator(df_, indicator, "left", len(df_))
         df = _inner(df, right, left_index, right_index, indicator)
@@ -1378,7 +1383,10 @@ def _create_frame(
         right_ = right_.nonzero()[0]
         if not right_.size:
             return _inner(df, right, left_index, right_index, indicator)
-        right_ = right.reindex(right_)
+        if not right.empty:
+            right_ = right.take(right_)
+        else:
+            right_ = pd.DataFrame([], index=right_)
         if indicator:
             right_ = _add_indicator(right_, indicator, "right", len(right_))
         right = _inner(df, right, left_index, right_index, indicator)

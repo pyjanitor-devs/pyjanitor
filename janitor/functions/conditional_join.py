@@ -1172,10 +1172,12 @@ def _range_indices(
     left_on, right_on, op = second
     right_c = right.loc[right_index, right_on]
     left_c = df.loc[left_index, left_on]
+    strict = False
+    if op == _JoinOperator.LESS_THAN.value:
+        strict = True
     op = operator_map[op]
     # fastpath
     if right_c.is_monotonic_increasing:
-        # print('i am here')
         outcome = _less_than_indices(
             left_c,
             right_c,
@@ -1185,6 +1187,7 @@ def _range_indices(
         if outcome is None:
             return None
         left_c, pos = outcome
+        print(left_c, right_index, pos, left_index)
         if left_c.size < left_index.size:
             keep_rows = np.isin(left_index, left_c, assume_unique=True)
             search_indices = search_indices[keep_rows]
@@ -1227,6 +1230,11 @@ def _range_indices(
         search_indices = search_indices[keep_rows]
 
     repeater = search_indices - pos
+    if (repeater == 1).all():
+        # no point searching if the width is all 1
+        # this also implies that the intervals
+        # do not overlap on the right side
+        return left_index, right_index[pos]
     right_index = [
         right_index[start:end] for start, end in zip(pos, search_indices)
     ]

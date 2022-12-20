@@ -1172,31 +1172,46 @@ def _range_indices(
     left_on, right_on, op = second
     right_c = right.loc[right_index, right_on]
     left_c = df.loc[left_index, left_on]
-
-    left_c = left_c._values
-    right_c = right_c._values
-    left_c, right_c = _convert_to_numpy_array(left_c, right_c)
     op = operator_map[op]
-    pos = np.copy(search_indices)
-    counter = np.arange(left_c.size)
-
-    # better than np.outer memory wise?
-    # using this for loop instead of np.outer
-    # allows us to break early and reduce the
-    # number of cartesian checks
-    # since as we iterate, we reduce the size of left_c
-    # speed wise, np.outer will be faster
-    # alternatively, the user can just use the numba option
-    # for more performance
-    for ind in range(right_c.size):
-        if not counter.size:
-            break
-        keep_rows = op(left_c, right_c[ind])
-        if not keep_rows.any():
-            continue
-        pos[counter[keep_rows]] = ind
-        counter = counter[~keep_rows]
-        left_c = left_c[~keep_rows]
+    # fastpath
+    if right_c.is_monotonic_increasing:
+        # print('i am here')
+        outcome = _less_than_indices(
+            left_c,
+            right_c,
+            strict,
+            keep="first",
+        )
+        if outcome is None:
+            return None
+        left_c, pos = outcome
+        if left_c.size < left_index.size:
+            keep_rows = np.isin(left_index, left_c, assume_unique=True)
+            search_indices = search_indices[keep_rows]
+            left_index = left_c
+    else:
+        left_c = left_c._values
+        right_c = right_c._values
+        left_c, right_c = _convert_to_numpy_array(left_c, right_c)
+        pos = np.copy(search_indices)
+        counter = np.arange(left_c.size)
+        # better than np.outer memory wise?
+        # using this for loop instead of np.outer
+        # allows us to break early and reduce the
+        # number of cartesian checks
+        # since as we iterate, we reduce the size of left_c
+        # speed wise, np.outer will be faster
+        # alternatively, the user can just use the numba option
+        # for more performance
+        for ind in range(right_c.size):
+            if not counter.size:
+                break
+            keep_rows = op(left_c, right_c[ind])
+            if not keep_rows.any():
+                continue
+            pos[counter[keep_rows]] = ind
+            counter = counter[~keep_rows]
+            left_c = left_c[~keep_rows]
 
     # no point searching within (a, b)
     # if a == b
@@ -1227,7 +1242,6 @@ def _range_indices(
     left_c = df[left_on]._values[left_index]
     right_c = right[right_on]._values[right_index]
     ext_arr = is_extension_array_dtype(left_c)
-
     mask = op(left_c, right_c)
 
     if ext_arr:

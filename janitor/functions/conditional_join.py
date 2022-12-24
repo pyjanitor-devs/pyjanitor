@@ -828,9 +828,8 @@ def _range_indices(
 
     left_index, right_index, search_indices = outcome
     left_on, right_on, op = second
-
-    # right_c = right.loc[right_index, right_on]
-    # left_c = df.loc[left_index, left_on]
+    right_c = right.loc[right_index, right_on]
+    left_c = df.loc[left_index, left_on]
     # strict = False
     # if op == _JoinOperator.LESS_THAN.value:
     #     strict = True
@@ -839,8 +838,8 @@ def _range_indices(
     fastpath = right_c.is_monotonic_increasing
     if fastpath:
         outcome = _generic_func_cond_join(
-            left=df.loc[left_index, left_on],
-            right=right.loc[right_index, right_on],
+            left=left_c,
+            right=right_c,
             op=op,
             multiple_conditions=False,
             keep="first",
@@ -1010,14 +1009,10 @@ def _create_frame(
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            right = {
-                key: value._values[right_index] for key, value in right.items()
-            }
-            right = pd.DataFrame(right)
+            right = right.reindex(right_index)
             right.index = left_index
         else:
-            df = {key: value._values[left_index] for key, value in df.items()}
-            df = pd.DataFrame(df)
+            df = df.reindex(left_index)
             df.index = right_index
         # adapted from pandas.merge private function
         if indicator:
@@ -1027,8 +1022,10 @@ def _create_frame(
                         "Cannot use `indicator=True` option when "
                         f"data contains a column named {i}"
                     )
-            df = df.assign(_left_indicator=np.array(1, dtype=np.int8))
-            right = right.assign(_right_indicator=np.array(2, dtype=np.int8))
+            df = df.copy()
+            right = right.copy()
+            df["_left_indicator"] = np.array(1, dtype=np.int8)
+            right["_right_indicator"] = np.array(2, dtype=np.int8)
         df, right = df.align(right, join=how, axis=0, copy=False)
         df = pd.concat([df, right], axis=1, copy=False, sort=False)
         if indicator:
@@ -1038,7 +1035,13 @@ def _create_frame(
             arr = pd.Categorical(arr, categories=[1, 2, 3])
             arr = arr.rename_categories(["left_only", "right_only", "both"])
             df[indicator] = arr
-            df = df.drop(columns=["_left_indicator", "_right_indicator"])
+            if isinstance(df.columns, pd.MultiIndex):
+                level = 0
+            else:
+                level = None
+            df = df.drop(
+                columns=["_left_indicator", "_right_indicator"], level=level
+            )
         df.index = range(len(df))
         return df
 
@@ -1074,6 +1077,8 @@ def _add_indicator(
     arr = pd.Categorical(
         [mapping[how]], categories=["left_only", "right_only", "both"]
     )
+    if isinstance(next(iter(df)), tuple):
+        indicator = (indicator, "")
     df[indicator] = arr.repeat(length)
     return df
 

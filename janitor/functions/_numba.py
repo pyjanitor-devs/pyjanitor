@@ -181,7 +181,6 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
             op=mapping[op],
             multiple_conditions=True,
             keep="all",
-            use_numba=False,
         )
         if not outcome:
             return None

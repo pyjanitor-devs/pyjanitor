@@ -746,8 +746,6 @@ def _multiple_conditional_join_le_lt(
                 keep="all",
             )
 
-    # return indices
-
     if not indices:
         return None
 
@@ -807,18 +805,6 @@ def _range_indices(
         keep="all",
     )
 
-    # strict = False
-    # if op == _JoinOperator.GREATER_THAN.value:
-    #     strict = True
-
-    # outcome = _greater_than_indices(
-    #     left_c,
-    #     right_c,
-    #     strict,
-    #     multiple_conditions=True,
-    #     keep="all",
-    # )
-
     if outcome is None:
         return None
 
@@ -837,13 +823,6 @@ def _range_indices(
             multiple_conditions=False,
             keep="first",
         )
-        # outcome = _less_than_indices(
-        #     left_c,
-        #     right_c,
-        #     strict,
-        #     multiple_conditions=False,
-        #     keep="first",
-        # )
         if outcome is None:
             return None
         left_c, pos = outcome

@@ -175,6 +175,11 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
             left_c = df[left_on]
             right_c = right[right_on]
         left_on, right_on, op = pairing
+        # the flip is because the left Series
+        # is the control point
+        # and we can easily get the regions back
+        # by keeping track and using the logic
+        # explained below
         outcome = _generic_func_cond_join(
             left=right_c,
             right=left_c,

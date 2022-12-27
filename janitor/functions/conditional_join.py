@@ -56,8 +56,9 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    For strictly non-equi joins,
+    For strictly non-equi joins, particularly range joins,
     involving either `>`, `<`, `>=`, `<=` operators,
+    where the columns on the right are not both monotonically increasing,
     performance could be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
@@ -74,7 +75,6 @@ def conditional_join(
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
     The join is done only on the columns.
-    MultiIndex columns are not supported.
 
     For non-equi joins, only numeric and date columns are supported.
 
@@ -160,7 +160,7 @@ def conditional_join(
         last match or all matches. Default is `all`.
     :param use_numba: Use numba, if installed, to accelerate the computation.
         Applicable only to strictly non-equi joins. Default is `False`.
-    :param indicator: If True, adds a column to the output DataFrame
+    :param indicator: If `True`, adds a column to the output DataFrame
         called “_merge” with information on the source of each row.
         The column can be given a different name by providing a string argument.
         The column will have a Categorical type with the value of “left_only”
@@ -183,16 +183,6 @@ def conditional_join(
         use_numba,
         indicator,
     )
-
-
-operator_map = {
-    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
-    _JoinOperator.LESS_THAN.value: operator.lt,
-    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
-    _JoinOperator.GREATER_THAN.value: operator.gt,
-    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
-    _JoinOperator.NOT_EQUAL.value: operator.ne,
-}
 
 
 def _check_operator(op: str):
@@ -432,9 +422,7 @@ def _conditional_join_compute(
                 df, right, conditions, keep, use_numba
             )
         else:
-            result = _multiple_conditional_join_ne(
-                df, right, conditions, keep, use_numba
-            )
+            result = _multiple_conditional_join_ne(df, right, conditions, keep)
     else:
         left_on, right_on, op = conditions[0]
         if use_numba:
@@ -455,8 +443,6 @@ def _conditional_join_compute(
                 keep=keep,
             )
 
-    # return result
-
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -470,6 +456,16 @@ def _conditional_join_compute(
         right_columns,
         indicator,
     )
+
+
+operator_map = {
+    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
+    _JoinOperator.LESS_THAN.value: operator.lt,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
+    _JoinOperator.GREATER_THAN.value: operator.gt,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
+    _JoinOperator.NOT_EQUAL.value: operator.ne,
+}
 
 
 def _generate_indices(
@@ -508,7 +504,6 @@ def _multiple_conditional_join_ne(
     right: pd.DataFrame,
     conditions: list[tuple[pd.Series, pd.Series, str]],
     keep: str,
-    use_numba: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -751,8 +746,6 @@ def _multiple_conditional_join_le_lt(
                 keep="all",
             )
 
-    # return indices
-
     if not indices:
         return None
 
@@ -794,7 +787,8 @@ def _range_indices(
     right_c = right[right_on]
     left_on, right_on, _ = second
     # get rid of any nulls
-    # this is helpful as we can convert extension arrays to numpy arrays safely
+    # this is helpful as we can convert extension arrays
+    # to numpy arrays safely
     # and simplify the search logic below
     any_nulls = df[left_on].isna()
     if any_nulls.any():
@@ -811,18 +805,6 @@ def _range_indices(
         keep="all",
     )
 
-    # strict = False
-    # if op == _JoinOperator.GREATER_THAN.value:
-    #     strict = True
-
-    # outcome = _greater_than_indices(
-    #     left_c,
-    #     right_c,
-    #     strict,
-    #     multiple_conditions=True,
-    #     keep="all",
-    # )
-
     if outcome is None:
         return None
 
@@ -830,11 +812,8 @@ def _range_indices(
     left_on, right_on, op = second
     right_c = right.loc[right_index, right_on]
     left_c = df.loc[left_index, left_on]
-    # strict = False
-    # if op == _JoinOperator.LESS_THAN.value:
-    #     strict = True
-
-    # fastpath
+    # if True, we can use a binary search
+    # for more performance, instead of a linear search
     fastpath = right_c.is_monotonic_increasing
     if fastpath:
         outcome = _generic_func_cond_join(
@@ -844,13 +823,6 @@ def _range_indices(
             multiple_conditions=False,
             keep="first",
         )
-        # outcome = _less_than_indices(
-        #     left_c,
-        #     right_c,
-        #     strict,
-        #     multiple_conditions=False,
-        #     keep="first",
-        # )
         if outcome is None:
             return None
         left_c, pos = outcome

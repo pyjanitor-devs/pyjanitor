@@ -997,50 +997,35 @@ def _create_frame(
     if not df.columns.intersection(right.columns).empty:
         df, right = _create_multiindex_column(df, right)
 
-    all_cols = None
     if indicator:
         if isinstance(indicator, bool):
             indicator = "_merge"
-        all_cols = df.columns.union(right.columns)
-        if indicator in all_cols:
+        if indicator in df.columns.union(right.columns):
             raise ValueError(
                 "Cannot use name of an existing column for indicator column"
             )
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            right = right.reindex(right_index)
+            if not right.empty:
+                right = right.take(right_index)
             right.index = left_index
         else:
-            df = df.reindex(left_index)
+            if not df.empty:
+                df = df.take(left_index)
             df.index = right_index
-        # adapted from pandas.merge private function
-        if indicator:
-            for i in ["_left_indicator", "_right_indicator"]:
-                if i in all_cols:
-                    raise ValueError(
-                        "Cannot use `indicator=True` option when "
-                        f"data contains a column named {i}"
-                    )
-            df = df.copy()
-            right = right.copy()
-            df["_left_indicator"] = np.array(1, dtype=np.int8)
-            right["_right_indicator"] = np.array(2, dtype=np.int8)
         df, right = df.align(right, join=how, axis=0, copy=False)
         df = pd.concat([df, right], axis=1, copy=False, sort=False)
         if indicator:
-            arr = df["_left_indicator"].fillna(0, downcast="infer") + df[
-                "_right_indicator"
-            ].fillna(0, downcast="infer")
-            arr = pd.Categorical(arr, categories=[1, 2, 3])
-            arr = arr.rename_categories(["left_only", "right_only", "both"])
-            df[indicator] = arr
-            if isinstance(df.columns, pd.MultiIndex):
-                level = 0
+            if how == "right":
+                df.loc[right_index, indicator] = 3
+                df[indicator] = df[indicator].fillna(2)
             else:
-                level = None
-            df = df.drop(
-                columns=["_left_indicator", "_right_indicator"], level=level
+                df.loc[left_index, indicator] = 3
+                df[indicator] = df[indicator].fillna(1)
+            df[indicator] = pd.Categorical(df[indicator], categories=[1, 2, 3])
+            df[indicator] = df[indicator].cat.rename_categories(
+                ["left_only", "right_only", "both"]
             )
         df.index = range(len(df))
         return df
@@ -1066,7 +1051,8 @@ def _create_frame(
         )
     arr_ = pd.DataFrame(arr_, copy=False)
     arr = _inner(df, right, left_index, right_index, indicator)
-    return pd.concat([arr, arr_], copy=False, sort=False, ignore_index=True)
+    df = pd.concat([arr, arr_], copy=False, sort=False)
+    return df
 
 
 def _add_indicator(

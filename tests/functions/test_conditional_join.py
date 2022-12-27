@@ -94,36 +94,6 @@ def test_indicator_exists(dummy, series):
         dummy.conditional_join(series, ("id", "B", ">"), indicator="id")
 
 
-def test_left_indicator_exists(dummy, series):
-    """Raise ValueError if indicator is a dup of an existing column name."""
-    with pytest.raises(
-        ValueError,
-        match="Cannot use `indicator=True` option when "
-        "data contains a column named _left_indicator",
-    ):
-        dummy.assign(_left_indicator=1).conditional_join(
-            series,
-            ("_left_indicator", "B", ">"),
-            indicator=True,
-            sort_by_appearance=True,
-        )
-
-
-def test_right_indicator_exists(dummy, series):
-    """Raise ValueError if indicator is a dup of an existing column name."""
-    with pytest.raises(
-        ValueError,
-        match="Cannot use `indicator=True` option when "
-        "data contains a column named _right_indicator",
-    ):
-        dummy.conditional_join(
-            series.rename("_right_indicator"),
-            ("id", "_right_indicator", ">"),
-            indicator=True,
-            sort_by_appearance=True,
-        )
-
-
 def test_check_condition_length(dummy, series):
     """Raise ValueError if any condition is not length 3."""
     with pytest.raises(

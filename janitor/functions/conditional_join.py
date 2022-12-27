@@ -1014,8 +1014,8 @@ def _create_frame(
             if not df.empty:
                 df = df.take(left_index)
             df.index = right_index
-        df, right = df.align(right, join=how, axis=0, copy=False)
-        df = pd.concat([df, right], axis=1, copy=False, sort=False)
+        df = df.join(right, how=how)
+
         if indicator:
             if how == "right":
                 df.loc[right_index, indicator] = 3

@@ -1241,6 +1241,50 @@ def test_how_left(df, right):
 @pytest.mark.turtle
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
+def test_how_left_multiindex(df, right):
+    """Test output when `how==left`. "<="."""
+
+    expected = (
+        df[["A"]]
+        .assign(index=np.arange(len(df)))
+        .merge(right.Integers.rename("A"), how="cross")
+        .loc[lambda df: df.A_x <= df.A_y]
+    )
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        df[["A"]]
+        .merge(
+            expected[["A_y"]],
+            left_index=True,
+            right_index=True,
+            how="left",
+            indicator=True,
+            sort=False,
+        )
+        .sort_values(["A", "A_y"], ignore_index=True)
+        .reset_index(drop=True)
+    )
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right.Integers.rename("A"),
+            ("A", "A", "<="),
+            how="left",
+            indicator=True,
+        )
+        .collapse_levels()
+        .rename(columns={"left_A": "A", "right_A": "A_y"})
+        .select_columns("A", "A_y", "_merge")
+        .sort_values(["A", "A_y"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
 def test_how_left_sort(df, right):
     """Test output when `how==left`. "<="."""
 

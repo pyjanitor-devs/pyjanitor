@@ -1007,11 +1007,10 @@ def _create_frame(
 
     if how == "left":
         arr = df
-        arr_ = np.bincount(left_index, minlength=arr.index.size) == 0
+        arr_ = np.delete(df.index._values, left_index)
     else:
         arr = right
-        arr_ = np.bincount(right_index, minlength=arr.index.size) == 0
-    arr_ = arr_.nonzero()[0]
+        arr_ = np.delete(right.index._values, right_index)
     if not arr_.size:
         return _inner(df, right, left_index, right_index, indicator)
     if indicator:

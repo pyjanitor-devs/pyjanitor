@@ -75,7 +75,7 @@ def move(
     :param source: Columns or rows to move.
     :param target: Columns or rows to move adjacent to.
         If `None` and `position == 'before'`, `source`
-        is moved to the beginning; if `position == 'after`,
+        is moved to the beginning; if `position == 'after'`,
         `source` is moved to the end.
     :param position: Specifies the destination of the columns/rows.
         Values can be either `before` or `after`; defaults to `before`.

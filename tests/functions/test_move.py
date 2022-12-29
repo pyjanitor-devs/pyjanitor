@@ -183,7 +183,7 @@ def test_move_unique():
 
 
 def test_move_multiindex():
-    """Raise if the axis a MultiIndex"""
+    """Raise if the axis is a MultiIndex"""
     df = DataFrame(
         {
             ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},

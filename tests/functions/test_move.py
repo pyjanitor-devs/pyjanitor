@@ -1,5 +1,10 @@
 import pytest
-from pandas import testing
+
+from pandas import testing, DataFrame
+from hypothesis import given
+from hypothesis import settings
+
+from janitor.testing_utils.strategies import df_strategy
 
 
 @pytest.mark.functions
@@ -149,3 +154,42 @@ def test_move_invalid_args(dataframe):
     with pytest.raises(KeyError):
         # invalid target column
         _ = dataframe.move("a", "__oops__", axis=1)
+
+
+@pytest.mark.functions
+@given(df=df_strategy())
+@settings(deadline=None)
+def test_move_reorder_columns(df):
+    """Replicate reorder_columns"""
+    assert all(
+        df.move(source=df.columns, axis=1, position="after").columns
+        == df.columns
+    )
+
+    assert all(df.move(source=df.index, position="before").index == df.index)
+
+    assert all(
+        df.move(source=["animals@#$%^", "Bell__Chart"], axis=1).columns
+        == ["animals@#$%^", "Bell__Chart", "a", "decorated-elephant", "cities"]
+    )
+
+
+def test_move_unique():
+    """Raise if the axis is not unique"""
+    df = DataFrame({"a": [2, 4, 6], "b": [1, 3, 5], "c": [7, 8, 9]})
+    df.columns = ["a", "b", "b"]
+    with pytest.raises(AssertionError):
+        df.move(source="a", axis=1)
+
+
+def test_move_multiindex():
+    """Raise if the axis a MultiIndex"""
+    df = DataFrame(
+        {
+            ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
+            ("names", "aa"): {0: 67, 1: 80, 2: 64},
+            ("more_names", "aaa"): {0: 56, 1: 90, 2: 50},
+        }
+    )
+    with pytest.raises(AssertionError):
+        df.move(source="a", axis=1)

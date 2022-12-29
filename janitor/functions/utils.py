@@ -304,27 +304,6 @@ def _select_index(arg, df, axis):
         raise KeyError(f"No match was returned for {arg}") from exc
 
 
-@_select_index.register(DropLabel)  # noqa: F811
-def _column_sel_dispatch(cols, df, axis):  # noqa: F811
-    """
-    Base function for selection on a Pandas Index object.
-    Returns the inverse of the passed label(s).
-
-    Returns an array of integers.
-    """
-    arr = _select_index(cols.label, df, axis)
-    index = np.arange(getattr(df, axis).size)
-    if isinstance(arr, int):
-        arr = [arr]
-    elif isinstance(arr, slice):
-        arr = index[arr]
-    elif is_list_like(arr):
-        arr = np.asanyarray(arr)
-    if is_bool_dtype(arr):
-        return index[~arr]
-    return np.setdiff1d(index, arr)
-
-
 @_select_index.register(str)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -508,6 +487,20 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         raise KeyError(f"No match was returned for {arg}") from exc
 
 
+@_select_index.register(DropLabel)  # noqa: F811
+def _column_sel_dispatch(cols, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Returns the inverse of the passed label(s).
+
+    Returns an array of integers.
+    """
+    arr = _select_index(cols.label, df, axis)
+    index = np.arange(getattr(df, axis).size)
+    arr = _index_converter(arr, index)
+    return np.delete(index, arr)
+
+
 @_select_index.register(list)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -557,18 +550,21 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         if is_list_like(indices):
             indices = np.asanyarray(indices)
         return indices
-    contents = []
-    for arr in indices:
-        if is_list_like(arr):
-            arr = np.asanyarray(arr)
-        if is_bool_dtype(arr):
-            arr = arr.nonzero()[0]
-        elif isinstance(arr, slice):
-            arr = range(index.size)[arr]
-        elif isinstance(arr, int):
-            arr = [arr]
-        contents.append(arr)
-    return np.concatenate(contents)
+    indices = [_index_converter(arr, index) for arr in indices]
+    return np.concatenate(indices)
+
+
+def _index_converter(arr, index):
+    """Converts output from _select_index to an array_like"""
+    if is_list_like(arr):
+        arr = np.asanyarray(arr)
+    if is_bool_dtype(arr):
+        arr = arr.nonzero()[0]
+    elif isinstance(arr, slice):
+        arr = range(index.size)[arr]
+    elif isinstance(arr, int):
+        arr = [arr]
+    return arr
 
 
 def _select(

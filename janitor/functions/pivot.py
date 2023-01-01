@@ -1490,7 +1490,7 @@ def pivot_wider(
         form.
     """  # noqa: E501
 
-    df = df.copy()
+    df = df[:]  # pd.pivot already makes a copy
 
     return _computations_pivot_wider(
         df,

@@ -75,7 +75,7 @@ def impute(
     Imputing null values with median (using the `statistic_column_name`
     parameter):
 
-        >>> df.impute(column_name="score", statistic_column_name="median")
+        >>> df.impute(column_names="score", statistic_column_name="median")
            a  sales  score
         0  1    NaN    2.5
         1  2    NaN    3.0

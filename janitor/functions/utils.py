@@ -597,7 +597,7 @@ def _select(
         return df.iloc[rows, columns]
     indices = _select_index(list(args), df, axis)
     if invert:
-        rev = np.ones(getattr(df, axis).size, dtype=np.bool8)
+        rev = np.ones(getattr(df, axis).size, dtype=np.bool_)
         rev[indices] = False
         return df.iloc(axis=axis)[rev]
     return df.iloc(axis=axis)[indices]

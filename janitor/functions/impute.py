@@ -66,7 +66,7 @@ def impute(
 
     Imputing null values with 0 (using the `value` parameter):
 
-        >>> df.impute(column_name="sales", value=0.0)
+        >>> df.impute(column_names="sales", value=0.0)
            a  sales  score
         0  1    0.0    NaN
         1  2    0.0    3.0
@@ -77,9 +77,9 @@ def impute(
 
         >>> df.impute(column_name="score", statistic_column_name="median")
            a  sales  score
-        0  1    0.0    2.5
-        1  2    0.0    3.0
-        2  3    0.0    2.0
+        0  1    NaN    2.5
+        1  2    NaN    3.0
+        2  3    NaN    2.0
 
     :param df: A pandas DataFrame.
     :param column_names: The name of the column(s) on which to impute values.

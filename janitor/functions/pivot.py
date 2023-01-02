@@ -811,18 +811,16 @@ def _pivot_longer_names_pattern_str(
     mapping.columns = names_to
 
     if ".value" not in names_to:
-        if len(names_to) == 1:
-            df.columns = mapping.iloc[:, 0]
-        else:
-            df.columns = pd.MultiIndex.from_frame(mapping)
-        return _base_melt(
+        return _pivot_longer_not_dot_value(
             df=df,
             index=index,
-            values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
+            names_to=names_to,
+            values_to=values_to,
+            dropna=dropna,
+            names_transform=names_transform,
+            mapping=mapping,
         )
 
     return _pivot_longer_dot_value(
@@ -869,18 +867,16 @@ def _pivot_longer_names_sep(
     mapping.columns = names_to
 
     if ".value" not in names_to:
-        if len(names_to) == 1:
-            df.columns = mapping.iloc[:, 0]
-        else:
-            df.columns = pd.MultiIndex.from_frame(mapping)
-        return _base_melt(
+        return _pivot_longer_not_dot_value(
             df=df,
             index=index,
-            values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
+            names_to=names_to,
+            values_to=values_to,
+            dropna=dropna,
+            names_transform=names_transform,
+            mapping=mapping,
         )
 
     return _pivot_longer_dot_value(
@@ -892,6 +888,40 @@ def _pivot_longer_names_sep(
         dropna=dropna,
         names_transform=names_transform,
         mapping=mapping,
+    )
+
+
+def _pivot_longer_not_dot_value(
+    df: pd.DataFrame,
+    index: Union[dict, None],
+    sort_by_appearance: bool,
+    ignore_index: bool,
+    names_to: list,
+    values_to: str,
+    dropna: bool,
+    names_transform: Union[str, Callable, dict, None],
+    mapping: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Pivots the dataframe into the final form,
+    for scenarios where names_pattern is a string/regex,
+    or names_sep is provided, and .value is not in names_to.
+
+    Returns a DataFrame.
+    """
+
+    if len(names_to) == 1:
+        df.columns = mapping.iloc[:, 0]
+    else:
+        df.columns = pd.MultiIndex.from_frame(mapping)
+    return _base_melt(
+        df=df,
+        index=index,
+        values_to=values_to,
+        names_transform=names_transform,
+        dropna=dropna,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
     )
 
 

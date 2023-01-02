@@ -891,6 +891,54 @@ def _pivot_longer_names_sep(
     )
 
 
+def _ravel(df):
+    """
+    Flatten the dataframe into a single array.
+    """
+    # offers a fast route
+    # while still returning the underlying array
+    # which could be an extension array
+    # thus helping in preserving dtypes where possible
+    if df._mgr.any_extension_types:
+        values = df._mgr
+        values = [values.iget_values(i) for i in range(df.columns.size)]
+        return concat_compat(values)
+    return df._values.ravel(order="F")
+
+
+def _base_melt(
+    df: pd.DataFrame,
+    index: Union[dict, None],
+    values_to: str,
+    names_transform: Union[str, Callable, dict, None],
+    dropna: bool,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+) -> pd.DataFrame:
+    """
+    Applicable where there is no `.value` in names_to.
+    """
+
+    columns = df.columns
+    reps = len(columns)
+    outcome = {name: columns.get_level_values(name) for name in columns.names}
+
+    values = {values_to: _ravel(df=df)}
+
+    return _final_frame_longer(
+        df=df,
+        reps=reps,
+        index=index,
+        outcome=outcome,
+        values=values,
+        names_to=None,
+        dropna=dropna,
+        names_transform=names_transform,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
+
+
 def _pivot_longer_not_dot_value(
     df: pd.DataFrame,
     index: Union[dict, None],
@@ -920,49 +968,6 @@ def _pivot_longer_not_dot_value(
         values_to=values_to,
         names_transform=names_transform,
         dropna=dropna,
-        sort_by_appearance=sort_by_appearance,
-        ignore_index=ignore_index,
-    )
-
-
-def _base_melt(
-    df: pd.DataFrame,
-    index: Union[dict, None],
-    values_to: str,
-    names_transform: Union[str, Callable, dict, None],
-    dropna: bool,
-    sort_by_appearance: bool,
-    ignore_index: bool,
-) -> pd.DataFrame:
-    """
-    Applicable where there is no `.value` in names_to.
-    """
-
-    columns = df.columns
-    reps = len(columns)
-    outcome = {name: columns.get_level_values(name) for name in columns.names}
-
-    # offers a fast route
-    # while still returning the underlying array
-    # which could be an extension array
-    # thus helping in preserving dtypes where possible
-    if df._mgr.any_extension_types:
-        values = df._mgr
-        values = [values.iget_values(i) for i in range(df.columns.size)]
-        values = concat_compat(values)
-    else:
-        values = df._values.ravel(order="F")
-    values = {values_to: values}
-
-    return _final_frame_longer(
-        df=df,
-        reps=reps,
-        index=index,
-        outcome=outcome,
-        values=values,
-        names_to=None,
-        dropna=dropna,
-        names_transform=names_transform,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -1108,6 +1113,7 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
         df.columns = df.columns.get_level_values(0)
     else:
         df.columns = mapping
+
     outcome = _dict_from_grouped_names(df=df)
     return outcome, group_max
 
@@ -1118,11 +1124,10 @@ def _dict_from_grouped_names(df: pd.DataFrame) -> dict:
     Applicable when collating the values for `.value`,
     or when names_pattern is a list/tuple.
     """
-    outcome = defaultdict(list)
-    for num, name in enumerate(df.columns):
-        arr = df.iloc[:, num]._values
-        outcome[name].append(arr)
-    return {name: concat_compat(arr) for name, arr in outcome.items()}
+
+    outcome = df.groupby(df.columns, axis=1, sort=False, observed=True)
+    outcome = {key: _ravel(value) for key, value in outcome}
+    return outcome
 
 
 def _final_frame_longer(

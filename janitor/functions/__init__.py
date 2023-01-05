@@ -56,6 +56,7 @@ from .label_encode import label_encode
 from .limit_column_characters import limit_column_characters
 from .min_max_scale import min_max_scale
 from .move import move
+from .mutate import mutate
 from .pivot import pivot_longer, pivot_wider
 from .process_text import process_text
 from .remove_columns import remove_columns

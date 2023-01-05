@@ -11,3 +11,8 @@ def test_empty_args(dataframe):
     assert_frame_equal(dataframe.mutate(), dataframe)
 
 
+@pytest.mark.functions
+def test_dict_args(dataframe):
+    """Raise if arg is not a dict"""
+    with pytest.raises(TypeError):
+        dataframe.mutate(1)

@@ -84,4 +84,5 @@ def mutate(
     if not args:
         return df
 
- 
+    for arg in args:
+        check("Argument in the mutate function", arg, [dict])

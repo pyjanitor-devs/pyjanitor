@@ -44,9 +44,18 @@ def test_dict_nested_error(dataframe):
 def test_tuple_length_error(dataframe):
     """Raise if length of tuple is not 3"""
     with pytest.raises(
-        ValueError, match="The tuple length of Argument 0 should be 3,.+"
+        ValueError, match="The tuple length of argument 0 should be 3,.+"
     ):
         dataframe.mutate(("a", "sum"))
+
+
+@pytest.mark.functions
+def test_tuple_name_error(dataframe):
+    """Raise if name is provided, and is not a string"""
+    with pytest.raises(
+        TypeError, match="The third value in the tuple argument 0.+"
+    ):
+        dataframe.mutate(("a", "sum", 1))
 
 
 @pytest.mark.functions

@@ -105,8 +105,12 @@ def mutate(
         else:
             if len(arg) != 3:
                 raise ValueError(
-                    f"The tuple length of Argument {num} should be 3, "
+                    f"The tuple length of argument {num} should be 3, "
                     f"instead got {len(arg)}"
+                )
+            if arg[-1] is not None:
+                check(
+                    f"The third value in the tuple argument {num}", arg, [str]
                 )
 
     grp = None

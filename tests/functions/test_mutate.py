@@ -14,5 +14,24 @@ def test_empty_args(dataframe):
 @pytest.mark.functions
 def test_dict_args(dataframe):
     """Raise if arg is not a dict"""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="Argument 0 in the mutate function.+"):
         dataframe.mutate(1)
+
+@pytest.mark.functions
+def test_dict_args_val(dataframe):
+    """
+    Raise if arg is a dict,
+    key exist in the columns,
+    but the value is not a string or callable
+    """
+    with pytest.raises(TypeError, match="func for a in argument 0.+"):
+        dataframe.mutate({"a":1})
+
+@pytest.mark.functions
+def test_dict_nested(dataframe):
+    """
+    Raise if func in nested dict 
+    is a wrong type
+    """
+    with pytest.raises(TypeError, match="func in nested dictionary for a in argument 0.+"):
+        dataframe.mutate({"a":{"b":1}})

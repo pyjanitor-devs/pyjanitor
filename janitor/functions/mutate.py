@@ -3,16 +3,17 @@ from typing import Optional, Union
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.utils import check, deprecated_alias
+from janitor.utils import check, check_column, deprecated_alias
 from janitor.functions.utils import _select_index
-from typing import Any
+from typing import Any, Union
 
 
 @pf.register_dataframe_method
 def mutate(
     df: pd.DataFrame,
     *args,
-    by=Any
+    by:Any=None,
+    axis:Union[int, str]=0
 ) -> pd.DataFrame:
     """Coalesce two or more columns of data in order of column names provided.
 
@@ -84,5 +85,13 @@ def mutate(
     if not args:
         return df
 
-    for arg in args:
-        check("Argument in the mutate function", arg, [dict])
+    for num, arg in enumerate(args):
+        check(f"Argument {num} in the mutate function", arg, [dict])
+        if isinstance(arg, dict):
+            for col, func in arg.items():
+                check(f"func for {col} in argument {num}", func, [str, callable, dict])
+                if isinstance(func, dict):
+                    for _, value in func.items():
+                        check(f"func in nested dictionary for {col} in argument {num}", value, [str, callable])
+
+

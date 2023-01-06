@@ -95,3 +95,15 @@ def mutate(
                         check(f"func in nested dictionary for {col} in argument {num}", value, [str, callable])
 
 
+    df = df.copy()
+
+    for arg in args:
+        if isinstance(arg, dict):
+            for col, func in arg.items():
+                if isinstance(func, dict):
+                    for key, val in func.items():
+                        df[key] = df[col].apply(val)
+                else:
+                    df[col] = df[col].apply(func)
+
+    return df

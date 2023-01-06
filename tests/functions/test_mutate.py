@@ -35,3 +35,24 @@ def test_dict_nested(dataframe):
     """
     with pytest.raises(TypeError, match="func in nested dictionary for a in argument 0.+"):
         dataframe.mutate({"a":{"b":1}})
+
+@pytest.mark.functions
+def test_dict_str(dataframe):
+    """Test output for dict"""
+    expected = dataframe.assign(a = dataframe.a.transform('sqrt'))
+    actual = dataframe.mutate({"a":"sqrt"})
+    assert_frame_equal(expected, actual)
+
+@pytest.mark.functions
+def test_dict_callable(dataframe):
+    """Test output for dict"""
+    expected = dataframe.assign(a = dataframe.a.transform(np.sqrt))
+    actual = dataframe.mutate({"a":np.sqrt})
+    assert_frame_equal(expected, actual)
+
+@pytest.mark.functions
+def test_dict_nested(dataframe):
+    """Test output for dict"""
+    expected = dataframe.assign(b = dataframe.a.transform('sqrt'))
+    actual = dataframe.mutate({"a":{"b":"sqrt"}})
+    assert_frame_equal(expected, actual)

@@ -1,19 +1,18 @@
 """Function for mutation of a column or columns."""
-from typing import Optional, Union
+from typing import Any
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.utils import check, check_column, deprecated_alias
-from janitor.functions.utils import _select_index
-from typing import Any, Union
+from janitor.utils import check
+
+# from janitor.functions.utils import _select_index
 
 
 @pf.register_dataframe_method
 def mutate(
     df: pd.DataFrame,
     *args,
-    by:Any=None,
-    axis:Union[int, str]=0
+    by: Any = None,
 ) -> pd.DataFrame:
     """Coalesce two or more columns of data in order of column names provided.
 
@@ -89,18 +88,42 @@ def mutate(
         check(f"Argument {num} in the mutate function", arg, [dict])
         if isinstance(arg, dict):
             for col, func in arg.items():
-                check(f"func for {col} in argument {num}", func, [str, callable, dict])
+                check(
+                    f"func for {col} in argument {num}",
+                    func,
+                    [str, callable, dict],
+                )
                 if isinstance(func, dict):
-                    for _, value in func.items():
-                        check(f"func in nested dictionary for {col} in argument {num}", value, [str, callable])
+                    for _, funcn in func.items():
+                        check(
+                            f"func in nested dictionary for "
+                            f"{col} in argument {num}",
+                            funcn,
+                            [str, callable],
+                        )
 
-
+    grp = None
+    by_is_true = by is not None
+    if by_is_true and isinstance(by, dict):
+        grp = df.groupby(**by)
+    elif by_is_true:
+        grp = df.groupby(by)
     df = df.copy()
 
     for arg in args:
         if isinstance(arg, dict):
             for col, func in arg.items():
-                if isinstance(func, dict):
+                if isinstance(func, str) and by_is_true:
+                    df[col] = grp[col].transform(func)
+                elif callable(func) and by_is_true:
+                    df[col] = func(grp[col])
+                elif isinstance(func, dict) and by_is_true:
+                    for key, funcn in func.items():
+                        if isinstance(funcn, str):
+                            df[key] = grp[col].transform(funcn)
+                        else:
+                            df[key] = funcn(grp[col])
+                elif isinstance(func, dict):
                     for key, val in func.items():
                         df[key] = df[col].apply(val)
                 else:

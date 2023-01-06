@@ -49,6 +49,16 @@ def test_dict_str(dataframe):
 
 
 @pytest.mark.functions
+def test_dict_str_grouped(dataframe):
+    """Test output for dict on a groupby"""
+    expected = dataframe.assign(
+        a=dataframe.groupby("decorated-elephant").a.transform("sum")
+    )
+    actual = dataframe.mutate({"a": "sum"}, by="decorated-elephant")
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
 def test_dict_callable(dataframe):
     """Test output for dict"""
     expected = dataframe.assign(a=dataframe.a.transform(np.sqrt))
@@ -57,8 +67,44 @@ def test_dict_callable(dataframe):
 
 
 @pytest.mark.functions
+def test_dict_callable_grouped(dataframe):
+    """Test output for dict on a groupby"""
+    expected = dataframe.assign(
+        a=dataframe.groupby("decorated-elephant").a.transform(np.sum)
+    )
+    actual = dataframe.mutate(
+        {"a": lambda f: f.transform("sum")},
+        by={"by": "decorated-elephant", "sort": False},
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
 def test_dict_nested(dataframe):
     """Test output for dict"""
     expected = dataframe.assign(b=dataframe.a.transform("sqrt"))
     actual = dataframe.mutate({"a": {"b": "sqrt"}})
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_dict_nested_grouped_str(dataframe):
+    """Test output for dict on a groupby"""
+    expected = dataframe.assign(
+        b=dataframe.groupby("decorated-elephant").a.transform("sum")
+    )
+    actual = dataframe.mutate({"a": {"b": "sum"}}, by="decorated-elephant")
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_dict_nested_grouped_callable(dataframe):
+    """Test output for dict on a groupby"""
+    expected = dataframe.assign(
+        b=dataframe.groupby("decorated-elephant").a.transform(np.sum)
+    )
+    actual = dataframe.mutate(
+        {"a": {"b": lambda f: f.transform(np.sum)}},
+        by={"by": "decorated-elephant", "sort": False},
+    )
     assert_frame_equal(expected, actual)

@@ -12,7 +12,7 @@ def test_empty_args(dataframe):
 
 @pytest.mark.functions
 def test_dict_args_error(dataframe):
-    """Raise if arg is not a dict"""
+    """Raise if arg is not a dict/tuple"""
     with pytest.raises(TypeError, match="Argument 0 in the mutate function.+"):
         dataframe.mutate(1)
 
@@ -38,6 +38,15 @@ def test_dict_nested_error(dataframe):
         TypeError, match="func in nested dictionary for a in argument 0.+"
     ):
         dataframe.mutate({"a": {"b": 1}})
+
+
+@pytest.mark.functions
+def test_tuple_length_error(dataframe):
+    """Raise if length of tuple is not 3"""
+    with pytest.raises(
+        ValueError, match="The tuple length of Argument 0 should be 3,.+"
+    ):
+        dataframe.mutate(("a", "sum"))
 
 
 @pytest.mark.functions

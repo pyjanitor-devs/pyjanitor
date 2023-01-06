@@ -78,6 +78,7 @@ def mutate(
     :param df: A pandas DataFrame.
     :param args: Either a dictionary or a tuple.
     :param by: Column(s) to group by.
+    :raises ValueError: If a tuple is passed and the length is not 3.
     :returns: A pandas DataFrame with mutated columns.
     """
 
@@ -85,7 +86,7 @@ def mutate(
         return df
 
     for num, arg in enumerate(args):
-        check(f"Argument {num} in the mutate function", arg, [dict])
+        check(f"Argument {num} in the mutate function", arg, [dict, tuple])
         if isinstance(arg, dict):
             for col, func in arg.items():
                 check(
@@ -101,6 +102,12 @@ def mutate(
                             funcn,
                             [str, callable],
                         )
+        else:
+            if len(arg) != 3:
+                raise ValueError(
+                    f"The tuple length of Argument {num} should be 3, "
+                    f"instead got {len(arg)}"
+                )
 
     grp = None
     by_is_true = by is not None

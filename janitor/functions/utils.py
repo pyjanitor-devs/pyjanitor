@@ -15,6 +15,7 @@ from typing import (
     Union,
     Callable,
     Any,
+    NamedTuple,
 )
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
@@ -661,3 +662,15 @@ def _convert_to_numpy_array(
         left = left.to_numpy(copy=False)
         right = right.to_numpy(copy=False)
     return left, right
+
+
+class SD(NamedTuple):
+    """
+    Subset of Data.
+    Used in `mutate` and `summarize`
+    for computation on multiple columns
+    """
+
+    columns: Any
+    func: Union[str, Callable, list]
+    names: Optional[str] = None

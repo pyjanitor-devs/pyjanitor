@@ -672,5 +672,5 @@ class SD(NamedTuple):
     """
 
     columns: Any
-    func: Union[str, Callable, list]
+    func: Optional[str | Callable | list | tuple] = (None,)
     names: Optional[str] = None

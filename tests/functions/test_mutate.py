@@ -59,6 +59,15 @@ def test_tuple_name_error(dataframe):
 
 
 @pytest.mark.functions
+def test_tuple_func_error(dataframe):
+    """Raise if func is provided, and is not a string/callable/list/tuple"""
+    with pytest.raises(
+        TypeError, match="The second value in the tuple argument 0.+"
+    ):
+        dataframe.mutate(("a", 1, "name"))
+
+
+@pytest.mark.functions
 def test_dict_str(dataframe):
     """Test output for dict"""
     expected = dataframe.assign(a=dataframe.a.transform("sqrt"))

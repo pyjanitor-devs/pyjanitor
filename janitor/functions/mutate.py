@@ -110,7 +110,15 @@ def mutate(
                 )
             if arg[-1] is not None:
                 check(
-                    f"The third value in the tuple argument {num}", arg, [str]
+                    f"The third value in the tuple argument {num}",
+                    arg[-1],
+                    [str],
+                )
+            if arg[1] is not None:
+                check(
+                    f"The second value in the tuple argument {num}",
+                    arg[1],
+                    [str, callable, list, tuple],
                 )
 
     grp = None

@@ -12,8 +12,8 @@ def test_empty_args(dataframe):
 
 
 @pytest.mark.functions
-def test_type_args(dataframe):
-    """Raise if arg is not a tuple"""
+def test_dict_args_error(dataframe):
+    """Raise if arg is not a dict/tuple"""
     with pytest.raises(TypeError, match="Argument 0 in the mutate function.+"):
         dataframe.mutate({"a": "sum"})
 
@@ -28,50 +28,17 @@ def test_tuple_length_error_max(dataframe):
 
 
 @pytest.mark.functions
-def test_tuple_length_error_min(dataframe):
-    """Raise if length of tuple is < 2"""
+def test_tuple_length_error(dataframe):
+    """Raise if length of tuple is not 3"""
     with pytest.raises(
-        ValueError, match=r"Argument 0 should have a minimum length of 2.+"
+        ValueError, match="The tuple length of Argument 0 should be 3,.+"
     ):
-        dataframe.mutate(("a",))
+        dataframe.mutate(("a", "sum"))
 
 
 @pytest.mark.functions
-def test_tuple_name_error(dataframe):
-    """Raise if name is provided, and is not a string"""
-    with pytest.raises(
-        TypeError,
-        match=r"The names \(position 2 in the tuple\) for argument 0.+",
-    ):
-        dataframe.mutate(("a", "sum", 1))
-
-
-@pytest.mark.functions
-def test_tuple_func_error(dataframe):
-    """Raise if func is not a string/callable/list/tuple"""
-    with pytest.raises(
-        TypeError,
-        match=r"The function \(position 1 in the tuple\) for argument 0.+",
-    ):
-        dataframe.mutate(("a", 1, "name"))
-
-
-@pytest.mark.functions
-def test_tuple_func_seq_error(dataframe):
-    """Raise if func is a list/tuple, and its content is not str/callable"""
-    with pytest.raises(
-        TypeError, match=r"Entry 1 in the function sequence for argument 0.+"
-    ):
-        dataframe.mutate(("a", [np.sum, 1], "name"))
-
-
-args = [("a", lambda f: np.sqrt(f)), ("a", "sqrt"), ("a", np.sqrt)]
-
-
-@pytest.mark.parametrize("test_input", args)
-@pytest.mark.functions
-def test_args_various(dataframe, test_input):
-    """Test output for various arguments"""
+def test_dict_str(dataframe):
+    """Test output for dict"""
     expected = dataframe.assign(a=dataframe.a.transform("sqrt"))
     actual = dataframe.mutate(test_input)
     assert_frame_equal(expected, actual)

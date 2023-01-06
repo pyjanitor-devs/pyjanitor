@@ -103,40 +103,29 @@ def mutate(
 
     args_to_process = []
     for num, arg in enumerate(args):
-        check(f"Argument {num} in the mutate function", arg, [tuple])
-        if len(arg) < 2:
-            raise ValueError(
-                f"Argument {num} should have a minimum length of 2, "
-                f"instead got {len(arg)}"
-            )
-        if len(arg) > 3:
-            raise ValueError(
-                f"Argument {num} should have a maximum length of 3, "
-                f"instead got {len(arg)}"
-            )
-        entry = SD(*arg)
-        func = entry.func
-        names = entry.names_glue
-        check(
-            f"The function (position 1 in the tuple) for argument {num} ",
-            func,
-            [str, callable, list, tuple],
-        )
-        if isinstance(func, (list, tuple)):
-            for number, funcn in enumerate(func):
+        check(f"Argument {num} in the mutate function", arg, [dict, tuple])
+        if isinstance(arg, dict):
+            for col, func in arg.items():
                 check(
                     f"Entry {number} in the function sequence "
                     f"for argument {num}",
                     funcn,
                     [str, callable],
                 )
-        if names:
-            check(
-                f"The names (position 2 in the tuple) for argument {num} ",
-                names,
-                [str],
-            )
-        args_to_process.append(entry)
+                if isinstance(func, dict):
+                    for _, funcn in func.items():
+                        check(
+                            f"func in nested dictionary for "
+                            f"{col} in argument {num}",
+                            funcn,
+                            [str, callable],
+                        )
+        else:
+            if len(arg) != 3:
+                raise ValueError(
+                    f"The tuple length of Argument {num} should be 3, "
+                    f"instead got {len(arg)}"
+                )
 
     by_is_true = by is not None
     grp = None

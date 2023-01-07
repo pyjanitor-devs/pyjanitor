@@ -5,7 +5,8 @@ import pandas_flavor as pf
 
 from janitor.utils import check
 
-# from janitor.functions.utils import _select_index
+from janitor.functions.utils import _select_index, SD
+from pandas.core.common import apply_if_callable
 
 
 @pf.register_dataframe_method
@@ -90,35 +91,49 @@ def mutate(
         if isinstance(arg, dict):
             for col, func in arg.items():
                 check(
-                    f"func for {col} in argument {num}",
+                    f"The function for column {col} in argument {num}",
                     func,
                     [str, callable, dict],
                 )
                 if isinstance(func, dict):
                     for _, funcn in func.items():
                         check(
-                            f"func in nested dictionary for "
-                            f"{col} in argument {num}",
+                            f"The function in the nested dictionary for "
+                            f"column {col} in argument {num}",
                             funcn,
                             [str, callable],
                         )
         else:
-            if len(arg) != 3:
+            if len(arg) < 2:
                 raise ValueError(
-                    f"The tuple length of argument {num} should be 3, "
+                    f"Argument {num} should have a minimum length of 2, "
                     f"instead got {len(arg)}"
                 )
-            if arg[-1] is not None:
-                check(
-                    f"The third value in the tuple argument {num}",
-                    arg[-1],
-                    [str],
+            if len(arg) > 3:
+                raise ValueError(
+                    f"Argument {num} should have a maximum length of 3, "
+                    f"instead got {len(arg)}"
                 )
-            if arg[1] is not None:
+            _, func, names = SD(*arg)
+            check(
+                f"The function (position 1 in the tuple) for argument {num} ",
+                func,
+                [str, callable, list, tuple],
+            )
+            if isinstance(func, (list, tuple)):
+                for number, funcn in enumerate(func):
+                    check(
+                        f"Entry {number} in the function sequence "
+                        f"for argument {num}",
+                        funcn,
+                        [str, callable],
+                    )
+
+            if names is not None:
                 check(
-                    f"The second value in the tuple argument {num}",
-                    arg[1],
-                    [str, callable, list, tuple],
+                    f"The names (position 2 in the tuple) for argument {num} ",
+                    names,
+                    [str],
                 )
 
     grp = None
@@ -132,20 +147,35 @@ def mutate(
     for arg in args:
         if isinstance(arg, dict):
             for col, func in arg.items():
-                if isinstance(func, str) and by_is_true:
-                    df[col] = grp[col].transform(func)
-                elif callable(func) and by_is_true:
-                    df[col] = func(grp[col])
-                elif isinstance(func, dict) and by_is_true:
+                if by_is_true:
+                    val = grp[col]
+                else:
+                    val = df[col]
+                if isinstance(func, str):
+                    df[col] = val.transform(func)
+                elif callable(func):
+                    df[col] = apply_if_callable(func, val)
+                elif isinstance(func, dict):
                     for key, funcn in func.items():
                         if isinstance(funcn, str):
-                            df[key] = grp[col].transform(funcn)
+                            df[key] = val.transform(funcn)
                         else:
-                            df[key] = funcn(grp[col])
-                elif isinstance(func, dict):
-                    for key, val in func.items():
-                        df[key] = df[col].apply(val)
+                            df[key] = apply_if_callable(funcn, val)
+
+        else:
+            columns, func, names = SD(*arg)
+            columns = _select_index(columns, df, axis="columns")
+            columns = df.columns[columns]
+            for col in columns:
+                if by_is_true:
+                    val = grp[col]
                 else:
-                    df[col] = df[col].apply(func)
+                    val = df[col]
+                if isinstance(func, str):
+                    if names is not None:
+                        name = names.format(_col=col, _fn=func)
+                    elif isinstance(func, str):
+                        name = col
+                    df[name] = val.transform(func)
 
     return df

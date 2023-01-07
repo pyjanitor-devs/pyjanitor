@@ -91,7 +91,7 @@ def test_tuple_func_seq_error(dataframe):
         dataframe.mutate(("a", [np.sum, 1], "name"))
 
 
-args = [{"a": "sqrt"}, {"a": np.sqrt}, ("a", "sqrt")]
+args = [{"a": "sqrt"}, {"a": np.sqrt}, ("a", "sqrt"), ("a", np.sqrt)]
 
 
 @pytest.mark.parametrize("test_input", args)
@@ -157,4 +157,48 @@ def test_tuple_func_str_rename(dataframe):
     """Test output for tuple string function"""
     expected = dataframe.assign(a_sqrt=dataframe.a.transform("sqrt"))
     actual = dataframe.mutate(("a", "sqrt", "{_col}_{_fn}"))
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_tuple_func_callable_rename(dataframe):
+    """Test output for tuple string function"""
+    expected = dataframe.assign(a_sqrt=dataframe.a.transform("sqrt"))
+    actual = dataframe.mutate(("a", np.sqrt, "{_col}_{_fn}"))
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_tuple_func_list(dataframe):
+    """Test output for tuple list of functions"""
+    expected = dataframe.assign(a=dataframe.a.transform("sqrt").sum())
+    actual = dataframe.mutate(("a", [np.sqrt, np.sum]))
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_tuple_func_list_rename(dataframe):
+    """Test output for tuple list of functions"""
+    expected = dataframe.assign(
+        a_sqrt=dataframe.a.transform("sqrt"),
+        **{"a_<lambda>": dataframe.a.sum()},
+    )
+    actual = dataframe.mutate(
+        ("a", ["sqrt", lambda f: f.sum()], "{_col}_{_fn}")
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_tuple_func_list_grouped(dataframe):
+    """Test output for tuple list of functions"""
+    grp = dataframe.groupby("decorated-elephant")
+    expected = dataframe.assign(
+        a_sum=grp.a.transform("sum"), a_mean=grp.a.transform("mean")
+    )
+    func = lambda f: f.transform("mean")  # noqa: E731
+    func.__name__ = "mean"
+    actual = dataframe.mutate(
+        ("a", ["sum", func], "{_col}_{_fn}"), by="decorated-elephant"
+    )
     assert_frame_equal(expected, actual)

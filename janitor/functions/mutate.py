@@ -4,6 +4,7 @@ import pandas as pd
 import pandas_flavor as pf
 
 from janitor.utils import check
+from pandas.core.common import apply_if_callable
 
 from janitor.functions.utils import _select_index, SD
 from collections import Counter
@@ -86,9 +87,18 @@ def mutate(
     if not args:
         return df
 
+    by_is_true = by is not None
+
     for num, arg in enumerate(args):
         check(f"Argument {num} in the mutate function", arg, [dict, tuple])
         if isinstance(arg, dict):
+            for col, func in arg.items():
+                if isinstance(func, dict) and (not by_is_true):
+                    raise ValueError(
+                        "nested dictionary is supported only "
+                        "if an argument is provided to the `by` parameter."
+                    )
+        elif isinstance(arg, dict) and by_is_true:
             for col, func in arg.items():
                 check(
                     f"The function for column {col} in argument {num}",
@@ -129,7 +139,7 @@ def mutate(
                         [str, callable],
                     )
 
-            if names is not None:
+            if names:
                 check(
                     f"The names (position 2 in the tuple) for argument {num} ",
                     names,
@@ -137,7 +147,6 @@ def mutate(
                 )
 
     grp = None
-    by_is_true = by is not None
     if by_is_true and isinstance(by, dict):
         grp = df.groupby(**by)
     elif by_is_true:
@@ -147,71 +156,66 @@ def mutate(
     for arg in args:
         if isinstance(arg, dict):
             for col, func in arg.items():
-                if by_is_true:
-                    val = grp[col]
-                else:
-                    val = df[col]
-                if isinstance(func, str):
-                    df[col] = val.transform(func)
-                elif callable(func):
-                    df[col] = func(val)
+                if not by_is_true:  # same as assign
+                    df[col] = apply_if_callable(func, df)
                 elif isinstance(func, dict):
                     for key, funcn in func.items():
-                        if isinstance(funcn, str):
-                            df[key] = val.transform(funcn)
-                        else:
-                            df[key] = funcn(val)
+                        try:
+                            df[key] = grp[col].transform(funcn)
+                        except ValueError:
+                            df[key] = funcn(grp[col])
+                else:
+                    try:
+                        df[col] = grp[col].transform(func)
+                    except ValueError:
+                        df[col] = func(grp[col])
 
         else:
             columns, func, names = SD(*arg)
             columns = _select_index([columns], df, axis="columns")
             columns = df.columns[columns].tolist()
-            func_names = None
-            if isinstance(func, (list, tuple)):
-                func_names = [
-                    funcn.__name__ if callable(funcn) else funcn
-                    for funcn in func
-                ]
+            if isinstance(func, str) or callable(func):
+                func = [func]
+            counts = None
+            func_names = [
+                funcn.__name__ if callable(funcn) else funcn for funcn in func
+            ]
+            if len(func) > 1:
                 counts = Counter(func_names)
                 counts = {key: 0 for key, value in counts.items() if value > 1}
-                func_list = []
-                for funcn in func_names:
-                    if funcn in counts:
-                        func_list.append(f"{funcn}{counts[funcn]}")
-                        counts[funcn] += 1
-                    else:
-                        func_list.append(funcn)
-                func_names = dict(zip(func_list, func))
-            for col in columns:
-                if by_is_true:
-                    val = grp[col]
-                else:
-                    val = df[col]
-                if isinstance(func, str):
-                    if names is not None:
-                        name = names.format(_col=col, _fn=func)
-                    else:
-                        name = col
-                    df[name] = val.transform(func)
-                elif callable(func):
-                    if names is not None:
-                        name = names.format(_col=col, _fn=func.__name__)
-                    else:
-                        name = col
-                    df[name] = func(val)
-                else:
-                    for name, funcn in func_names.items():
-                        if names is not None:
-                            name = names.format(_col=col, _fn=name)
+                if counts:
+                    func_list = []
+                    for funcn in func_names:
+                        if funcn in counts:
+                            if names:
+                                name = f"{funcn}{counts[funcn]}"
+                            else:
+                                name = f"{counts[funcn]}"
+                            func_list.append(name)
+                            counts[funcn] += 1
                         else:
-                            name = col
-                        if isinstance(funcn, str) and by_is_true:
-                            df[name] = val.transform(funcn)
-                        elif isinstance(funcn, str):
+                            func_list.append(funcn)
+                    func_names = zip(func_list, func)
+            else:
+                func_names = zip(func_names, func)
+            func_names = tuple(func_names)
+            for col in columns:
+                for name, funcn in func_names:
+                    if names:
+                        name = names.format(_col=col, _fn=name)
+                    elif counts:
+                        name = f"{col}{name}"
+                    else:
+                        name = col
+                    if by_is_true:
+                        try:
+                            df[name] = grp[col].transform(funcn)
+                        except ValueError:
+                            df[name] = funcn(grp[col])
+                    else:
+                        try:
                             df[name] = df[col].transform(funcn)
-                        elif callable(funcn) and by_is_true:
-                            df[name] = funcn(val)
-                        elif callable(funcn):
+                        except ValueError:
                             df[name] = funcn(df[col])
 
     return df

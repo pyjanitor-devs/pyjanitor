@@ -93,19 +93,12 @@ def mutate(
         check(f"Argument {num} in the mutate function", arg, [dict, tuple])
         if isinstance(arg, dict):
             for col, func in arg.items():
-                if isinstance(func, dict) and (not by_is_true):
-                    raise ValueError(
-                        "nested dictionary is supported only "
-                        "if an argument is provided to the `by` parameter."
-                    )
-        elif isinstance(arg, dict) and by_is_true:
-            for col, func in arg.items():
-                check(
-                    f"The function for column {col} in argument {num}",
-                    func,
-                    [str, callable, dict],
-                )
                 if isinstance(func, dict):
+                    if not by_is_true:
+                        raise ValueError(
+                            "nested dictionary is supported only "
+                            "if an argument is provided to the `by` parameter."
+                        )
                     for _, funcn in func.items():
                         check(
                             f"The function in the nested dictionary for "
@@ -113,6 +106,13 @@ def mutate(
                             funcn,
                             [str, callable],
                         )
+                elif by_is_true:
+                    check(
+                        f"The function for column {col} in argument {num}",
+                        func,
+                        [str, callable, dict],
+                    )
+
         else:
             if len(arg) < 2:
                 raise ValueError(
@@ -156,7 +156,7 @@ def mutate(
     for arg in args:
         if isinstance(arg, dict):
             for col, func in arg.items():
-                if not by_is_true:  # same as assign
+                if not by_is_true:  # same as pd.DataFrame.assign
                     df[col] = apply_if_callable(func, df)
                 elif isinstance(func, dict):
                     for key, funcn in func.items():
@@ -173,37 +173,38 @@ def mutate(
         else:
             columns, func, names = SD(*arg)
             columns = _select_index([columns], df, axis="columns")
-            columns = df.columns[columns].tolist()
-            if isinstance(func, str) or callable(func):
+            columns = df.columns[columns]
+            if not isinstance(func, (list, tuple)):
                 func = [func]
-            counts = None
             func_names = [
                 funcn.__name__ if callable(funcn) else funcn for funcn in func
             ]
+            counts = None
+            dupes = set()
             if len(func) > 1:
                 counts = Counter(func_names)
                 counts = {key: 0 for key, value in counts.items() if value > 1}
-                if counts:
-                    func_list = []
-                    for funcn in func_names:
-                        if funcn in counts:
-                            if names:
-                                name = f"{funcn}{counts[funcn]}"
-                            else:
-                                name = f"{counts[funcn]}"
-                            func_list.append(name)
-                            counts[funcn] += 1
+            # deal with duplicate function names
+            if counts:
+                func_list = []
+                for funcn in func_names:
+                    if funcn in counts:
+                        if names:
+                            name = f"{funcn}{counts[funcn]}"
                         else:
-                            func_list.append(funcn)
-                    func_names = zip(func_list, func)
-            else:
-                func_names = zip(func_names, func)
-            func_names = tuple(func_names)
+                            name = f"{counts[funcn]}"
+                            dupes.add(name)
+                        func_list.append(name)
+                        counts[funcn] += 1
+                    else:
+                        func_list.append(funcn)
+                func_names = func_list
+            func_names = tuple(zip(func_names, func))
             for col in columns:
                 for name, funcn in func_names:
                     if names:
                         name = names.format(_col=col, _fn=name)
-                    elif counts:
+                    elif name in dupes:
                         name = f"{col}{name}"
                     else:
                         name = col

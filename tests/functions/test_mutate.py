@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from pandas.testing import assert_frame_equal
+from pandas.api.types import is_numeric_dtype
 
 
 @pytest.mark.functions
@@ -18,19 +19,6 @@ def test_dict_args_error(dataframe):
 
 
 @pytest.mark.functions
-def test_dict_args_val_error(dataframe):
-    """
-    Raise if arg is a dict,
-    key exist in the columns,
-    but the value is not a string or callable
-    """
-    with pytest.raises(
-        TypeError, match="The function for column a in argument 0.+"
-    ):
-        dataframe.mutate({"a": 1})
-
-
-@pytest.mark.functions
 def test_dict_nested_error(dataframe):
     """
     Raise if func in nested dict
@@ -41,7 +29,18 @@ def test_dict_nested_error(dataframe):
         match="The function in the nested dictionary "
         "for column a in argument 0.+",
     ):
-        dataframe.mutate({"a": {"b": 1}})
+        dataframe.mutate({"a": {"b": 1}}, by="decorated-elephant")
+
+
+@pytest.mark.functions
+def test_dict_nested(dataframe):
+    """Raise if dict is nested but by is not provided"""
+    with pytest.raises(
+        ValueError,
+        match="nested dictionary is supported only "
+        "if an argument is provided to the `by` parameter.",
+    ):
+        dataframe.mutate({"a": {"b": "sqrt"}})
 
 
 @pytest.mark.functions
@@ -91,7 +90,7 @@ def test_tuple_func_seq_error(dataframe):
         dataframe.mutate(("a", [np.sum, 1], "name"))
 
 
-args = [{"a": "sqrt"}, {"a": np.sqrt}, ("a", "sqrt"), ("a", np.sqrt)]
+args = [{"a": lambda f: f.a.transform(np.sqrt)}, ("a", "sqrt"), ("a", np.sqrt)]
 
 
 @pytest.mark.parametrize("test_input", args)
@@ -118,14 +117,6 @@ def test_args_various_grouped(dataframe, test_input, by):
         a=dataframe.groupby("decorated-elephant").a.transform("sum")
     )
     actual = dataframe.mutate(test_input, by=by)
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.functions
-def test_dict_nested(dataframe):
-    """Test output for dict"""
-    expected = dataframe.assign(b=dataframe.a.transform("sqrt"))
-    actual = dataframe.mutate({"a": {"b": "sqrt"}})
     assert_frame_equal(expected, actual)
 
 
@@ -202,3 +193,30 @@ def test_tuple_func_list_grouped(dataframe):
         ("a", ["sum", func], "{_col}_{_fn}"), by="decorated-elephant"
     )
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_tuple_func_list_grouped_dupes(dataframe):
+    """Test output for tuple list of functions"""
+    grp = dataframe.groupby("decorated-elephant")
+    expected = dataframe.assign(
+        a_sum0=grp.a.transform(np.sum), a_sum1=grp.a.transform("sum")
+    )
+    actual = dataframe.mutate(
+        ("a", ["sum", np.sum], "{_col}_{_fn}"), by="decorated-elephant"
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_tuple_func_list_dupes(dataframe):
+    """Test output for tuple list of functions"""
+    A = dataframe.select_dtypes("number").add_suffix("0").transform(np.sqrt)
+    B = dataframe.select_dtypes("number").add_suffix("1").transform("sqrt")
+    C = dataframe.select_dtypes("number").transform(abs)
+    expected = {**A, **B, **C}
+    expected = dataframe.assign(**expected)
+    actual = dataframe.mutate(
+        (dataframe.dtypes.map(is_numeric_dtype), ["sqrt", np.sqrt, abs])
+    )
+    assert_frame_equal(expected.sort_index(axis=1), actual.sort_index(axis=1))

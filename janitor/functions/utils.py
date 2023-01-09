@@ -673,4 +673,4 @@ class SD(NamedTuple):
 
     columns: Any
     func: Optional[str | Callable | list | tuple]
-    names: Optional[str] = None
+    names_glue: Optional[str] = None

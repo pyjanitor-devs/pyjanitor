@@ -16,73 +16,136 @@ def mutate(
     *args,
     by: Any = None,
 ) -> pd.DataFrame:
-    """Coalesce two or more columns of data in order of column names provided.
+    """
+    Transform columns or create new columns via a dictionary or a tuple.
 
-    Given the variable arguments of column names,
-    `coalesce` finds and returns the first non-missing value
-    from these columns, for every row in the input dataframe.
-    If all the column values are null for a particular row,
-    then the `default_value` will be filled in.
+    Similar to `pd.DataFrame.assign`,
+    with added flexibility for multiple columns.
 
-    If `target_column_name` is not provided,
-    then the first column is coalesced.
+    The computation should return a 1-D array like object
+    that is the same length as `df` or a scalar
+    that can be broadcasted to the same length as `df`.
 
-    This method does not mutate the original DataFrame.
+    Column transformation is also possible in the presence of `by`.
 
-    Example: Use `coalesce` with 3 columns, "a", "b" and "c".
+    A nested dictionary can be provided, in the presence of `by`,
+    for passing new column names - it is not required,
+    and not supported in the absence of `by`.
+    Have a look at the examples below for usage
+    in the presence and absence of `by`.
 
-        >>> import pandas as pd
-        >>> import numpy as np
-        >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": [np.nan, 1, np.nan],
-        ...     "b": [2, 3, np.nan],
-        ...     "c": [4, np.nan, np.nan],
-        ... })
-        >>> df.coalesce("a", "b", "c")
-             a    b    c
-        0  2.0  2.0  4.0
-        1  1.0  3.0  NaN
-        2  NaN  NaN  NaN
+    If the variable argument is a tuple,
+    it has to be of the form `(column_names, func, names_glue)`;
+    the `names_glue` argument is optional.
+    `column_names` can be selected with the
+    [`select_columns`][janitor.functions.select.select_columns]
+    syntax for flexibility.
+    The function `func` should be a string
+    (which is dispatched to `pd.transform`),
+    or a callable, or a list/tuple of strings/callables.
+    The `names_glue` argument allows for renaming, especially for
+    multiple columns or multiple functions.
+    The special values for `names_glue` are `_col`, which represents
+    the column name, and `_fn` which represents the function name.
+    Under the hood, it uses python's `str.format` method.
+    `janitor.SD` offers a more explicit form
+    of passing tuples to the `mutate` function.
 
-    Example: Provide a target_column_name.
-
-        >>> df.coalesce("a", "b", "c", target_column_name="new_col")
-             a    b    c  new_col
-        0  NaN  2.0  4.0      2.0
-        1  1.0  3.0  NaN      1.0
-        2  NaN  NaN  NaN      NaN
-
-    Example: Provide a default value.
+    Example: Transformation with a dictionary:
 
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor
         >>> df = pd.DataFrame({
-        ...     "a": [1, np.nan, np.nan],
-        ...     "b": [2, 3, np.nan],
+        ...     "col1": [5, 10, 15],
+        ...     "col2": [3, 6, 9],
+        ...     "col3": [10, 100, 1_000],
         ... })
-        >>> df.coalesce(
-        ...     "a", "b",
-        ...     target_column_name="new_col",
-        ...     default_value=-1,
-        ... )
-             a    b  new_col
-        0  1.0  2.0      1.0
-        1  NaN  3.0      3.0
-        2  NaN  NaN     -1.0
+        >>> df.mutate({"col4": df.col1.transform(np.log10)})
+           col1  col2  col3      col4
+        0     5     3    10  0.698970
+        1    10     6   100  1.000000
+        2    15     9  1000  1.176091
 
-    This is more syntactic diabetes! For R users, this should look familiar to
-    `dplyr`'s `coalesce` function; for Python users, the interface
-    should be more intuitive than the `pandas.Series.combine_first`
-    method.
+        >>> df.mutate(
+        ...     {"col4": df.col1.transform(np.log10),
+        ...      "col1": df.col1.transform(np.log10)}
+        ...     )
+               col1  col2  col3      col4
+        0  0.698970     3    10  0.698970
+        1  1.000000     6   100  1.000000
+        2  1.176091     9  1000  1.176091
+
+    Example: Transformation with a tuple:
+
+        >>> df.mutate(("col1", np.log10))
+               col1  col2  col3
+        0  0.698970     3    10
+        1  1.000000     6   100
+        2  1.176091     9  1000
+
+        >>> df.mutate(("col*", np.log10))
+               col1      col2  col3
+        0  0.698970  0.477121   1.0
+        1  1.000000  0.778151   2.0
+        2  1.176091  0.954243   3.0
+
+    Example: Transform with a tuple and create new columns, using `names_glue`:
+
+        >>> df.mutate(("col*", np.log10, "{_col}_log"))
+
+           col1  col2  col3  col1_log  col2_log  col3_log
+        0     5     3    10  0.698970  0.477121       1.0
+        1    10     6   100  1.000000  0.778151       2.0
+        2    15     9  1000  1.176091  0.954243       3.0
+
+        >>> df.mutate(("col*", np.log10, "{_col}_{_fn}"))
+
+           col1  col2  col3  col1_log10  col2_log10  col3_log10
+        0     5     3    10    0.698970    0.477121         1.0
+        1    10     6   100    1.000000    0.778151         2.0
+        2    15     9  1000    1.176091    0.954243         3.0
+
+    Example: Transformation in the presence of a groupby:
+
+        >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
+        ...         'avg_run': [3, 4, 1, 3, 2, 4],
+        ...         'avg_swim': [2, 1, 2, 2, 3, 4],
+        ...         'combine_id': [100200, 100200, 101200, 101200, 102201, 103202],
+        ...         'category': ['heats', 'heats', 'finals', 'finals', 'heats', 'finals']}
+        ...         })
+        >>> df = pd.DataFrame(data)
+        >>> df.mutate({"avg_run":"mean"}, by=['combine_id', 'category'])
+           avg_jump  avg_run  avg_swim  combine_id category
+        0         3      3.5         2      100200    heats
+        1         4      3.5         1      100200    heats
+        2         1      2.0         2      101200   finals
+        3         2      2.0         2      101200   finals
+        4         3      2.0         3      102201    heats
+        5         4      4.0         4      103202   finals
+        >>> df.mutate({"avg_run":{"avg_run_2":"mean"}}, by=['combine_id', 'category'])
+           avg_jump  avg_run  avg_swim  combine_id category  avg_run_2
+        0         3        3         2      100200    heats        3.5
+        1         4        4         1      100200    heats        3.5
+        2         1        1         2      101200   finals        2.0
+        3         2        3         2      101200   finals        2.0
+        4         3        2         3      102201    heats        2.0
+        5         4        4         4      103202   finals        4.0
+        >>> df.mutate(("avg*", "mean", "{_col}_2"), by=['combine_id', 'category'])
+           avg_jump  avg_run  avg_swim  combine_id category  avg_jump_2  avg_run_2  avg_swim_2
+        0         3        3         2      100200    heats         3.5        3.5         1.5
+        1         4        4         1      100200    heats         3.5        3.5         1.5
+        2         1        1         2      101200   finals         1.5        2.0         2.0
+        3         2        3         2      101200   finals         1.5        2.0         2.0
+        4         3        2         3      102201    heats         3.0        2.0         3.0
+        5         4        4         4      103202   finals         4.0        4.0         4.0
 
     :param df: A pandas DataFrame.
     :param args: Either a dictionary or a tuple.
     :param by: Column(s) to group by.
     :raises ValueError: If a tuple is passed and the length is not 3.
     :returns: A pandas DataFrame with mutated columns.
-    """
+    """  # noqa: E501
 
     if not args:
         return df
@@ -199,6 +262,7 @@ def mutate(
                     else:
                         func_list.append(funcn)
                 func_names = func_list
+            counts = None
             func_names = tuple(zip(func_names, func))
             for col in columns:
                 for name, funcn in func_names:

@@ -96,7 +96,6 @@ def mutate(
 
         >>> cols = SD(columns="col*", func=np.log10, names_glue="{_col}_log")
         >>> df.mutate(cols)
-
            col1  col2  col3  col1_log  col2_log  col3_log
         0     5     3    10  0.698970  0.477121       1.0
         1    10     6   100  1.000000  0.778151       2.0

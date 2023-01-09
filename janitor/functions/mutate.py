@@ -56,7 +56,59 @@ def mutate(
 
         >>> import pandas as pd
         >>> import numpy as np
-        >>> import janitor as jn
+        >>> import janitor
+        >>> df = pd.DataFrame({
+        ...     "col1": [5, 10, 15],
+        ...     "col2": [3, 6, 9],
+        ...     "col3": [10, 100, 1_000],
+        ... })
+        >>> df.mutate({"col4": df.col1.transform(np.log10)})
+           col1  col2  col3      col4
+        0     5     3    10  0.698970
+        1    10     6   100  1.000000
+        2    15     9  1000  1.176091
+
+        >>> df.mutate(
+        ...     {"col4": df.col1.transform(np.log10),
+        ...      "col1": df.col1.transform(np.log10)}
+        ...     )
+               col1  col2  col3      col4
+        0  0.698970     3    10  0.698970
+        1  1.000000     6   100  1.000000
+        2  1.176091     9  1000  1.176091
+
+    Example: Transformation with a tuple:
+
+        >>> df.mutate(("col1", np.log10))
+               col1  col2  col3
+        0  0.698970     3    10
+        1  1.000000     6   100
+        2  1.176091     9  1000
+
+        >>> df.mutate(("col*", np.log10))
+               col1      col2  col3
+        0  0.698970  0.477121   1.0
+        1  1.000000  0.778151   2.0
+        2  1.176091  0.954243   3.0
+
+    Example: Transform with a tuple and create new columns, using `names_glue`:
+        >>> cols = SD(columns="col*", func=np.log10, names_glue="{_col}_log")
+        >>> df.mutate(cols)
+
+           col1  col2  col3  col1_log  col2_log  col3_log
+        0     5     3    10  0.698970  0.477121       1.0
+        1    10     6   100  1.000000  0.778151       2.0
+        2    15     9  1000  1.176091  0.954243       3.0
+
+        >>> df.mutate(("col*", np.log10, "{_col}_{_fn}"))
+
+           col1  col2  col3  col1_log10  col2_log10  col3_log10
+        0     5     3    10    0.698970    0.477121         1.0
+        1    10     6   100    1.000000    0.778151         2.0
+        2    15     9  1000    1.176091    0.954243         3.0
+
+    Example: Transformation in the presence of a groupby:
+
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
         ...         'avg_run': [3, 4, 1, 3, 2, 4],
         ...         'combine_id': [100200, 100200,

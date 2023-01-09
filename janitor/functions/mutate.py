@@ -58,6 +58,9 @@ def mutate(
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor
+        >>> pd.set_option("display.max_columns", None)
+        >>> pd.set_option("display.expand_frame_repr", False)
+        >>> pd.set_option("max_colwidth", None)
         >>> df = pd.DataFrame({
         ...     "col1": [5, 10, 15],
         ...     "col2": [3, 6, 9],

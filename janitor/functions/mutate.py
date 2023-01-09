@@ -91,8 +91,8 @@ def mutate(
         2  1.176091  0.954243   3.0
 
     Example: Transform with a tuple and create new columns, using `names_glue`:
-
-        >>> df.mutate(("col*", np.log10, "{_col}_log"))
+        >>> cols = SD(columns="col*", func=np.log10, names_glue="{_col}_log")
+        >>> df.mutate(cols)
 
            col1  col2  col3  col1_log  col2_log  col3_log
         0     5     3    10  0.698970  0.477121       1.0

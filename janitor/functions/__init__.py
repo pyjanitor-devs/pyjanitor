@@ -68,6 +68,7 @@ from .select import select_columns, select_rows
 from .shuffle import shuffle
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
+from .summarize import summarize
 from .take_first import take_first
 from .then import then
 from .to_datetime import to_datetime
@@ -75,4 +76,4 @@ from .toset import toset
 from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
-from .utils import patterns, unionize_dataframe_categories, DropLabel
+from .utils import patterns, unionize_dataframe_categories, DropLabel, SD

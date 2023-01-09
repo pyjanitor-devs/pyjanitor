@@ -46,7 +46,7 @@ def mutate(
 
     The `names_glue` argument allows for renaming, especially for
     multiple columns or multiple functions.
-    The special values for `names_glue` are `_col`, which represents
+    The placeholders for `names_glue` are `_col`, which represents
     the column name, and `_fn` which represents the function name.
     Under the hood, it uses python's `str.format` method.
 

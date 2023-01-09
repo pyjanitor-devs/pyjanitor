@@ -32,6 +32,7 @@ from pandas.api.types import (
     is_bool_dtype,
 )
 import numpy as np
+import inspect
 from multipledispatch import dispatch
 from janitor.utils import check_column
 from functools import singledispatch
@@ -390,6 +391,15 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
     Returns an array of booleans.
     """
+    # special case for selecting dtypes columnwise
+    dtypes = (
+        arg.__name__
+        for _, arg in inspect.getmembers(pd.api.types, inspect.isfunction)
+        if arg.__name__.startswith("is") and arg.__name__.endswith("type")
+    )
+    if (arg.__name__ in dtypes) and (axis == "columns"):
+        bools = df.dtypes.map(arg)
+        return np.asanyarray(bools)
 
     return _select_callable(df, arg, axis)
 

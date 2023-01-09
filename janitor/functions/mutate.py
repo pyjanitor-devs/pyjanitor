@@ -22,6 +22,8 @@ def mutate(
     Similar to `pd.DataFrame.assign`,
     with added flexibility for multiple columns.
 
+    `mutate` does not apply to MultiIndex columns.
+
     The computation should return a 1-D array like object
     that is the same length as `df` or a scalar
     that can be broadcasted to the same length as `df`.
@@ -155,6 +157,8 @@ def mutate(
 
     if not args:
         return df
+
+    assert not isinstance(df.columns, pd.MultiIndex)
 
     by_is_true = by is not None
 

@@ -6,6 +6,13 @@ from pandas.api.types import is_numeric_dtype
 
 
 @pytest.mark.functions
+def test_multiIndex(multilevel_dataframe):
+    """Raise if columns is a multiindex"""
+    with pytest.raises(AssertionError):
+        multilevel_dataframe.mutate(("a", "sum"))
+
+
+@pytest.mark.functions
 def test_empty_args(dataframe):
     """Test output if args is empty"""
     assert_frame_equal(dataframe.mutate(), dataframe)

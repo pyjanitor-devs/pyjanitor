@@ -88,6 +88,7 @@ def summarize(
         103202     finals        4.0
 
     Summarize with a tuple:
+
         >>> cols = jn.SD(columns="avg*", func="mean", names_glue="{_col}_{_fn}")
         >>> df.summarize(cols)
            avg_jump_mean  avg_run_mean  avg_swim_mean

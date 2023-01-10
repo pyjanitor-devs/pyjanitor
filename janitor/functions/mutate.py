@@ -117,7 +117,6 @@ def mutate(
         ...         'avg_swim': [2, 1, 2, 2, 3, 4],
         ...         'combine_id': [100200, 100200, 101200, 101200, 102201, 103202],
         ...         'category': ['heats', 'heats', 'finals', 'finals', 'heats', 'finals']}
-        ...         })
         >>> df = pd.DataFrame(data)
         >>> df.mutate({"avg_run":"mean"}, by=['combine_id', 'category'])
            avg_jump  avg_run  avg_swim  combine_id category

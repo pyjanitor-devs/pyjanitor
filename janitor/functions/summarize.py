@@ -22,6 +22,8 @@ def summarize(
     It is a wrapper around `pd.DataFrame.agg`,
     with added flexibility for multiple columns.
 
+    Before reaching for `summarize`, try `pd.DataFrame.agg`.
+
     The computation should return a single row
     for the entire dataframe,
     or a row per group, if `by` is present.
@@ -31,9 +33,9 @@ def summarize(
     Have a look at the examples below for usage.
 
     If the variable argument is a tuple,
-    it has to be of the form `(column_names, func, names_glue)`;
+    it has to be of the form `(columns, func, names_glue)`;
     the `names_glue` argument is optional.
-    `column_names` can be selected with the
+    `columns` can be selected with the
     [`select_columns`][janitor.functions.select.select_columns]
     syntax for flexibility.
     The function `func` should be a string
@@ -49,98 +51,54 @@ def summarize(
     `janitor.SD` offers a more explicit form
     of passing tuples to the `summarize` function.
 
-    Example: Transformation with a dictionary:
+
+    Example - Summarize with a dictionary:
 
         >>> import pandas as pd
         >>> import numpy as np
-        >>> import janitor
+        >>> import janitor as jn
         >>> pd.set_option("display.max_columns", None)
         >>> pd.set_option("display.expand_frame_repr", False)
         >>> pd.set_option("max_colwidth", None)
-        >>> df = pd.DataFrame({
-        ...     "col1": [5, 10, 15],
-        ...     "col2": [3, 6, 9],
-        ...     "col3": [10, 100, 1_000],
-        ... })
-        >>> df.summarize({"col4": df.col1.transform(np.log10)})
-           col1  col2  col3      col4
-        0     5     3    10  0.698970
-        1    10     6   100  1.000000
-        2    15     9  1000  1.176091
-
-        >>> df.summarize(
-        ...     {"col4": df.col1.transform(np.log10),
-        ...      "col1": df.col1.transform(np.log10)}
-        ...     )
-               col1  col2  col3      col4
-        0  0.698970     3    10  0.698970
-        1  1.000000     6   100  1.000000
-        2  1.176091     9  1000  1.176091
-
-    Example: Transformation with a tuple:
-
-        >>> df.summarize(("col1", np.log10))
-               col1  col2  col3
-        0  0.698970     3    10
-        1  1.000000     6   100
-        2  1.176091     9  1000
-
-        >>> df.summarize(("col*", np.log10))
-               col1      col2  col3
-        0  0.698970  0.477121   1.0
-        1  1.000000  0.778151   2.0
-        2  1.176091  0.954243   3.0
-
-    Example: Transform with a tuple and create new columns, using `names_glue`:
-
-        >>> cols = SD(columns="col*", func=np.log10, names_glue="{_col}_log")
-        >>> df.summarize(cols)
-           col1  col2  col3  col1_log  col2_log  col3_log
-        0     5     3    10  0.698970  0.477121       1.0
-        1    10     6   100  1.000000  0.778151       2.0
-        2    15     9  1000  1.176091  0.954243       3.0
-
-        >>> df.summarize(("col*", np.log10, "{_col}_{_fn}"))
-           col1  col2  col3  col1_log10  col2_log10  col3_log10
-        0     5     3    10    0.698970    0.477121         1.0
-        1    10     6   100    1.000000    0.778151         2.0
-        2    15     9  1000    1.176091    0.954243         3.0
-
-    Example: Transformation in the presence of a groupby:
-
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
         ...         'avg_run': [3, 4, 1, 3, 2, 4],
         ...         'avg_swim': [2, 1, 2, 2, 3, 4],
         ...         'combine_id': [100200, 100200, 101200, 101200, 102201, 103202],
         ...         'category': ['heats', 'heats', 'finals', 'finals', 'heats', 'finals']}
-        ...         })
         >>> df = pd.DataFrame(data)
         >>> df.summarize({"avg_run":"mean"}, by=['combine_id', 'category'])
-           avg_jump  avg_run  avg_swim  combine_id category
-        0         3      3.5         2      100200    heats
-        1         4      3.5         1      100200    heats
-        2         1      2.0         2      101200   finals
-        3         2      2.0         2      101200   finals
-        4         3      2.0         3      102201    heats
-        5         4      4.0         4      103202   finals
+                             avg_run
+        combine_id category
+        100200     heats         3.5
+        101200     finals        2.0
+        102201     heats         2.0
+        103202     finals        4.0
 
+    Summarize with a new column name:
+
+        >>> df.summarize({"avg_run":{"avg_run_2":"mean"}})
+           avg_run_2
+        0   2.833333
         >>> df.summarize({"avg_run":{"avg_run_2":"mean"}}, by=['combine_id', 'category'])
-           avg_jump  avg_run  avg_swim  combine_id category  avg_run_2
-        0         3        3         2      100200    heats        3.5
-        1         4        4         1      100200    heats        3.5
-        2         1        1         2      101200   finals        2.0
-        3         2        3         2      101200   finals        2.0
-        4         3        2         3      102201    heats        2.0
-        5         4        4         4      103202   finals        4.0
+                            avg_run_2
+        combine_id category
+        100200     heats         3.5
+        101200     finals        2.0
+        102201     heats         2.0
+        103202     finals        4.0
 
-        >>> df.summarize(("avg*", "mean", "{_col}_2"), by=['combine_id', 'category'])
-           avg_jump  avg_run  avg_swim  combine_id category  avg_jump_2  avg_run_2  avg_swim_2
-        0         3        3         2      100200    heats         3.5        3.5         1.5
-        1         4        4         1      100200    heats         3.5        3.5         1.5
-        2         1        1         2      101200   finals         1.5        2.0         2.0
-        3         2        3         2      101200   finals         1.5        2.0         2.0
-        4         3        2         3      102201    heats         3.0        2.0         3.0
-        5         4        4         4      103202   finals         4.0        4.0         4.0
+    Summarize with a tuple:
+        >>> cols = jn.SD(columns="avg*", func="mean", names_glue="{_col}_{_fn}")
+        >>> df.summarize(cols)
+           avg_jump_mean  avg_run_mean  avg_swim_mean
+        0       2.833333      2.833333       2.333333
+        >>> df.summarize(cols, by=['combine_id', 'category'])
+                             avg_jump_mean  avg_run_mean  avg_swim_mean
+        combine_id category
+        100200     heats               3.5           3.5            1.5
+        101200     finals              1.5           2.0            2.0
+        102201     heats               3.0           2.0            3.0
+        103202     finals              4.0           4.0            4.0
 
     :param df: A pandas DataFrame.
     :param args: Either a dictionary or a tuple.
@@ -222,16 +180,12 @@ def summarize(
                             outcome = val.agg(funcn)
                         except (ValueError, AttributeError):
                             outcome = funcn(val)
-                        if is_scalar(outcome):
-                            outcome = [outcome]
                         aggs[key] = outcome
                 else:
                     try:
                         outcome = val.agg(func)
                     except (ValueError, AttributeError):
                         outcome = func(val)
-                    if is_scalar(outcome):
-                        outcome = [outcome]
                     aggs[col] = outcome
 
         else:
@@ -281,8 +235,9 @@ def summarize(
                         outcome = val.agg(funcn)
                     except (ValueError, AttributeError):
                         outcome = funcn(val)
-                    if is_scalar(outcome):
-                        outcome = [outcome]
                     aggs[name] = outcome
-
+    aggs = {
+        col: [outcome] if is_scalar(outcome) else outcome
+        for col, outcome in aggs.items()
+    }
     return pd.DataFrame(aggs, copy=False)

@@ -2,11 +2,17 @@ from typing import Hashable
 import pandas_flavor as pf
 import pandas as pd
 
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
 
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `jn.transform_columns` instead."
+    )
+)
 def to_datetime(
     df: pd.DataFrame, column_name: Hashable, **kwargs
 ) -> pd.DataFrame:
@@ -17,6 +23,12 @@ def to_datetime(
         df[column_name] = pd.to_datetime(df[column_name], **kwargs)
 
     This method mutates the original DataFrame.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use [`jn.transform_column`][janitor.functions.transform_columns.transform_column]
+        instead.
 
     Example: Converting a string column to datetime type with custom format.
 

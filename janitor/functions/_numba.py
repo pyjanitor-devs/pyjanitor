@@ -405,7 +405,7 @@ def _numba_single_join(
 @njit(parallel=True)
 def _numba_single_non_equi_keep_first(
     right_index: np.ndarray, starts, ends
-) -> tuple:
+) -> np.ndarray:
     """
     Generate all indices when keep = `first`
     Applies only to >, >= , <, <= operators.
@@ -420,7 +420,7 @@ def _numba_single_non_equi_keep_first(
 @njit(parallel=True)
 def _numba_single_non_equi_keep_last(
     right_index: np.ndarray, starts, ends
-) -> tuple:
+) -> np.ndarray:
     """
     Generate all indices when keep = `last`
     Applies only to >, >= , <, <= operators.

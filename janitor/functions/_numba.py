@@ -304,8 +304,6 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
             l_table2, side="left"
         )
         keep_rows = positions < ends
-        if not keep_rows.any():
-            return None
         if not keep_rows.all():
             positions = positions[keep_rows]
             ends = ends[keep_rows]

@@ -1,12 +1,18 @@
 import pandas_flavor as pf
 
-from janitor.utils import check, deprecated_alias
+from janitor.utils import check, deprecated_alias, refactored_function
 import pandas as pd
 from typing import Union, List, Any, Tuple
 import numpy as np
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 @deprecated_alias(col_name="column_name")
 def add_column(
     df: pd.DataFrame,
@@ -21,6 +27,11 @@ def add_column(
     ```python
     df[column_name] = value
     ```
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.assign` instead.
 
     Example: Add a column of constant values to the dataframe.
 
@@ -118,7 +129,17 @@ def add_column(
     return df
 
 
+message = "This function will be deprecated in a 1.x release. "
+message += "Kindly use `pd.DataFrame.assign` instead."
+
+
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 def add_columns(
     df: pd.DataFrame,
     fill_remaining: bool = False,
@@ -138,6 +159,11 @@ def add_columns(
     values correspond to the values of the new DataFrame column.
 
     Values passed can be scalar or iterable (list, ndarray, etc.)
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.assign` instead.
 
     Example: Inserting two more columns into a dataframe.
 

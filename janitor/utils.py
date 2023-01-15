@@ -11,6 +11,7 @@ from typing import Callable, Dict, Iterable, Union, List
 from functools import singledispatch, wraps
 from warnings import warn
 
+
 import lazy_loader as lazy
 
 scipy_special = lazy.load("scipy.special")
@@ -297,7 +298,7 @@ def deprecated_alias(**aliases) -> Callable:
     return decorator
 
 
-def refactored_function(message: str) -> Callable:
+def refactored_function(message: str, category=FutureWarning) -> Callable:
     """
     Used as a decorator when refactoring functions.
 
@@ -316,13 +317,15 @@ def refactored_function(message: str) -> Callable:
     ```
 
     :param message: Message to use in warning user about refactoring.
+    :param category: Type of Warning. Default is `FutureWarning`.
     :return: Your original function wrapped with the kwarg redirection
         function.
     """  # noqa: E501
 
     def decorator(func):
+        @wraps(func)
         def emit_warning(*args, **kwargs):
-            warn(message, FutureWarning)
+            warn(message, category, stacklevel=find_stack_level())
             return func(*args, **kwargs)
 
         return emit_warning
@@ -490,3 +493,31 @@ def is_connected(url: str) -> bool:
         )
         raise e
     return False
+
+
+def find_stack_level() -> int:
+    """
+    Find the first place in the stack that is not inside janitor
+    (tests notwithstanding).
+    Adapted from Pandas repo
+
+    :returns: stack level number
+    """
+
+    import janitor as jn
+    import inspect
+
+    pkg_dir = os.path.abspath(os.path.dirname(jn.__file__))
+    test_dir = os.path.join(os.path.dirname(pkg_dir), "tests")
+
+    # https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
+    frame = inspect.currentframe()
+    n = 0
+    while frame:
+        fname = inspect.getfile(frame)
+        if fname.startswith(pkg_dir) and not fname.startswith(test_dir):
+            frame = frame.f_back
+            n += 1
+        else:
+            break
+    return n

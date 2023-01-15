@@ -5,11 +5,22 @@ from typing import Hashable, Iterable, Union
 
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import check, check_column, deprecated_alias
+from janitor.utils import (
+    check,
+    check_column,
+    deprecated_alias,
+    refactored_function,
+)
 from multipledispatch import dispatch
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     """
     Provide a method-chainable function for filling missing values
@@ -19,6 +30,10 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     and pairs the column name with one of `up`, `down`, `updown`,
     and `downup`.
 
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.assign` instead.
 
     Example:
 
@@ -58,7 +73,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
     :returns: A pandas DataFrame with modified column(s).
     :raises ValueError: if direction supplied is not one of `down`, `up`,
         `updown`, or `downup`.
-    """
+    """  # noqa: E501
 
     if not kwargs:
         return df
@@ -113,6 +128,10 @@ class _FILLTYPE(Enum):
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message="This function will be deprecated in a 1.x release. "
+    "Kindly use `jn.impute` instead."
+)
 @deprecated_alias(columns="column_names")
 def fill_empty(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
@@ -123,6 +142,11 @@ def fill_empty(
     Super sugary syntax that wraps `pandas.DataFrame.fillna`.
 
     This method mutates the original DataFrame.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use [`jn.impute`][janitor.functions.impute.impute] instead.
 
     Example:
 
@@ -160,6 +184,7 @@ def fill_empty(
     :param value: The value that replaces the `NaN` values.
     :returns: A pandas DataFrame with `NaN` values filled.
     """
+
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
 

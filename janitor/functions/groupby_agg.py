@@ -2,11 +2,17 @@ from typing import Callable, List, Union
 import pandas_flavor as pf
 import pandas as pd
 
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
 
 
 @pf.register_dataframe_method
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `janitor.transform_column` instead."
+    )
+)
 def groupby_agg(
     df: pd.DataFrame,
     by: Union[List, Callable, str],
@@ -24,6 +30,13 @@ def groupby_agg(
     ```python
     df = df.assign(...=df.groupby(...)[...].transform(...))
     ```
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use
+        [`jn.transform_column`][janitor.functions.transform_columns.transform_column]
+        instead.
 
     Example: Basic usage.
 

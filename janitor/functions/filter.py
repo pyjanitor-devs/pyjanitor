@@ -6,7 +6,9 @@ from typing import Dict, Hashable, Iterable, List, Optional
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
@@ -94,6 +96,12 @@ def filter_string(
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.query` instead."
+    )
+)
 def filter_on(
     df: pd.DataFrame,
     criteria: str,
@@ -112,6 +120,12 @@ def filter_on(
     ```python
     df = df[df["score"] < 3]
     ```
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.query` instead.
+
 
     Example: Filter students who failed an exam (scored less than 50).
 
@@ -140,6 +154,14 @@ def filter_on(
         retained instead.
     :returns: A filtered pandas DataFrame.
     """
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `pd.DataFrame.query` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if complement:
         return df.query(f"not ({criteria})")
     return df.query(criteria)

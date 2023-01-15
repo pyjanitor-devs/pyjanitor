@@ -2,11 +2,23 @@
 from typing import Set
 import pandas_flavor as pf
 import pandas as pd
+from janitor.utils import refactored_function
 
 
 @pf.register_series_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `set(df[column])` instead."
+    )
+)
 def toset(series: pd.Series) -> Set:
     """Return a set of the values.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `set(df[column])` instead.
 
     These are each a scalar type, which is a Python scalar
     (for str, int, float) or a pandas scalar

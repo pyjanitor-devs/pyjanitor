@@ -658,6 +658,8 @@ class SD(NamedTuple):
     Subset of Data.
     Used in `mutate` and `summarize`
     for computation on multiple columns
+
+    !!! info "New in version 0.25.0"
     """
 
     columns: Any

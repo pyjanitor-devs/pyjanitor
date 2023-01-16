@@ -17,6 +17,9 @@ def summarize(
     by: Any = None,
 ) -> pd.DataFrame:
     """
+
+    !!! info "New in version 0.25.0"
+
     Reduction operation on columns via a tuple.
 
     It is a wrapper around `pd.DataFrame.agg`,
@@ -52,14 +55,15 @@ def summarize(
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor as jn
-        >>> pd.set_option("display.max_columns", None)
-        >>> pd.set_option("display.expand_frame_repr", False)
-        >>> pd.set_option("max_colwidth", None)
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
         ...         'avg_run': [3, 4, 1, 3, 2, 4],
         ...         'avg_swim': [2, 1, 2, 2, 3, 4],
-        ...         'combine_id': [100200, 100200, 101200, 101200, 102201, 103202],
-        ...         'category': ['heats', 'heats', 'finals', 'finals', 'heats', 'finals']}
+        ...         'combine_id': [100200, 100200,
+        ...                        101200, 101200,
+        ...                        102201, 103202],
+        ...         'category': ['heats', 'heats',
+        ...                      'finals', 'finals',
+        ...                      'heats', 'finals']}
         >>> df = pd.DataFrame(data)
         >>> df.summarize(("avg_run", "mean"), by=['combine_id', 'category'])
                              avg_run

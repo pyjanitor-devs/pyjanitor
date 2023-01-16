@@ -1,4 +1,4 @@
-"""Function for mutation of a column or columns."""
+"""Alternative function to pd.agg for summarizing data."""
 from typing import Any
 import pandas as pd
 import pandas_flavor as pf
@@ -27,10 +27,6 @@ def summarize(
     The computation should return a single row
     for the entire dataframe,
     or a row per group, if `by` is present.
-
-    A nested dictionary can be provided,
-    for passing new column names.
-    Have a look at the examples below for usage.
 
     If the variable argument is a tuple,
     it has to be of the form `(columns, func, names_glue)`;
@@ -66,7 +62,10 @@ def summarize(
         ...         'combine_id': [100200, 100200, 101200, 101200, 102201, 103202],
         ...         'category': ['heats', 'heats', 'finals', 'finals', 'heats', 'finals']}
         >>> df = pd.DataFrame(data)
-        >>> df.summarize({"avg_run":"mean"}, by=['combine_id', 'category'])
+        >>> (df
+        ... .select_columns('combine_id', 'category', 'avg_run')
+        ... .summarize({"avg_run":"mean"}, by=['combine_id', 'category'])
+        ... )
                              avg_run
         combine_id category
         100200     heats         3.5
@@ -76,10 +75,10 @@ def summarize(
 
     Summarize with a new column name:
 
-        >>> df.summarize({"avg_run":{"avg_run_2":"mean"}})
+        >>> df.summarize({"avg_run_2":df.avg_run.mean()})
            avg_run_2
         0   2.833333
-        >>> df.summarize({"avg_run":{"avg_run_2":"mean"}}, by=['combine_id', 'category'])
+        >>> df.summarize({"avg_run_2":lambda f: f.avg_run.mean(), by=['combine_id', 'category'])
                             avg_run_2
         combine_id category
         100200     heats         3.5

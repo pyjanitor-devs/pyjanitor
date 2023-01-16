@@ -156,14 +156,14 @@ def summarize(
             for col, func in arg.items():
                 val = grp if by_is_true else df
                 if isinstance(func, str):
-                    val = val[col]
+                    outcome = val[col].agg(func)
                 elif is_scalar(func):
-                    aggs[col] = func
-                    break
-                try:
-                    outcome = val.agg(func)
-                except (ValueError, AttributeError):
-                    outcome = func(val)
+                    outcome = func
+                else:
+                    try:
+                        outcome = val.agg(func)
+                    except (ValueError, AttributeError):
+                        outcome = func(val)
                 aggs[col] = outcome
         else:
             columns, func, names = SD(*arg)
@@ -205,10 +205,13 @@ def summarize(
                         name = f"{col}{name}"
                     else:
                         name = col
-                    try:
+                    if isinstance(funcn, str):
                         outcome = val.agg(funcn)
-                    except (ValueError, AttributeError):
-                        outcome = funcn(val)
+                    else:
+                        try:
+                            outcome = val.agg(funcn)
+                        except (ValueError, AttributeError):
+                            outcome = funcn(val)
                     aggs[name] = outcome
     aggs = {
         col: [outcome] if is_scalar(outcome) else outcome

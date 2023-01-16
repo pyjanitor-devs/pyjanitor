@@ -172,8 +172,11 @@ def summarize(
                     outcome = val.agg(funcn)
                 except (ValueError, AttributeError):
                     outcome = funcn(val)
-            if is_scalar(outcome):
-                outcome = [outcome]
-            aggs[name] = outcome
-
+            if isinstance(outcome, pd.DataFrame):
+                outcome.columns = f"{name}_" + outcome.columns
+                aggs.update(outcome)
+            else:
+                if is_scalar(outcome):
+                    outcome = [outcome]
+                aggs[name] = outcome
     return pd.DataFrame(aggs, copy=False)

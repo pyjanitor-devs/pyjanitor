@@ -158,3 +158,23 @@ def test_tuple_func_list_dupes(dataframe):
         (dataframe.dtypes.map(is_numeric_dtype), ["sum", np.sum, np.mean])
     ).astype(float)
     assert_frame_equal(expected.sort_index(axis=1), actual.sort_index(axis=1))
+
+
+@pytest.mark.functions
+def test_tuple_dataframe(dataframe):
+    """Test output if a dataframe is returned"""
+    df = [
+        {"A": "foo", "B": "one", "C": -0.575247, "D": 1.346061},
+        {"A": "bar", "B": "one", "C": 0.254161, "D": 1.511763},
+        {"A": "foo", "B": "two", "C": -1.143704, "D": 1.627081},
+        {"A": "bar", "B": "three", "C": 0.215897, "D": -0.990582},
+        {"A": "foo", "B": "two", "C": 1.193555, "D": -0.441652},
+        {"A": "bar", "B": "two", "C": -0.077118, "D": 1.211526},
+        {"A": "foo", "B": "one", "C": -0.40853, "D": 0.26852},
+        {"A": "foo", "B": "three", "C": -0.862495, "D": 0.02458},
+    ]
+
+    df = pd.DataFrame(df)
+    expected = df.groupby("A").C.describe().add_prefix("C_")
+    actual = df.summarize(("C", "describe"), by="A")
+    assert_frame_equal(expected, actual)

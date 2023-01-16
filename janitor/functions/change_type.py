@@ -35,7 +35,7 @@ def change_type(
 
      ```python
      df[col] = df[col].astype(dtype)
-    ```
+     ```
 
      !!!note
 

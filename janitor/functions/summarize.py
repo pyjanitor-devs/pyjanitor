@@ -109,14 +109,7 @@ def summarize(
 
     for num, arg in enumerate(args):
         check(f"Argument {num} in the summarize function", arg, [dict, tuple])
-        if isinstance(arg, dict):
-            for col, func in arg.items():
-                check(
-                    f"func for {col} in argument {num}",
-                    func,
-                    [str, callable],
-                )
-        else:
+        if isinstance(arg, tuple):
             if len(arg) < 2:
                 raise ValueError(
                     f"Argument {num} should have a minimum length of 2, "
@@ -164,6 +157,9 @@ def summarize(
                 val = grp if by_is_true else df
                 if isinstance(func, str):
                     val = val[col]
+                elif is_scalar(func):
+                    aggs[col] = func
+                    break
                 try:
                     outcome = val.agg(func)
                 except (ValueError, AttributeError):

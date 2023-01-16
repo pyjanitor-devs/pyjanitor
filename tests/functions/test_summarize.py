@@ -15,17 +15,6 @@ def test_dict_args_error(dataframe):
         dataframe.summarize(1)
 
 
-@pytest.mark.functions
-def test_dict_args_val_error(dataframe):
-    """
-    Raise if arg is a dict,
-    key exist in the columns,
-    but the value is not a string or callable
-    """
-    with pytest.raises(TypeError, match="func for a in argument 0.+"):
-        dataframe.summarize({"a": 1})
-
-
 func = lambda grp: grp.Revenue.sum() / grp.Quantity.sum()  # noqa: E731
 
 
@@ -95,6 +84,8 @@ def test_tuple_func_seq_error(dataframe):
 
 
 args = [
+    {"a": "sum"},
+    {"a": pd.Series([1, 2, 3] * 3).sum()},
     {"a": lambda df: df.a.sum()},
     ("a", "sum"),
     ("a", np.sum),

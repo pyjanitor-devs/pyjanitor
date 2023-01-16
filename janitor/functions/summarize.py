@@ -42,6 +42,10 @@ def summarize(
     `janitor.SD` offers a more explicit form
     of passing tuples to the `summarize` function.
 
+    `by` accepts a label, labels, mapping or function.
+    More arguments supported in `pd.DataFrame.groupby`
+    can be passed to `by` via a dictionary.
+
 
     Example:
 

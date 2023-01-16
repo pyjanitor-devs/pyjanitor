@@ -47,8 +47,8 @@ def summarize(
     can also be passed to `by` via a dictionary.
 
     `by` accepts a label, labels, mapping or function.
-    More arguments supported in `pd.DataFrame.groupby`
-    can be passed to `by` via a dictionary.
+    Arguments supported in `pd.DataFrame.groupby`
+    can also be passed to `by` via a dictionary.
 
 
     Example:

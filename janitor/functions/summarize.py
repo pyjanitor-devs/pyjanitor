@@ -75,7 +75,7 @@ def summarize(
 
     Summarize with a new column name:
 
-        >>> df.summarize({"avg_run_2":lambda df: df.avg_run.mean()})
+        >>> df.summarize({"avg_run_2":df.avg_run.mean()})
            avg_run_2
         0   2.833333
         >>> df.summarize({"avg_run_2":lambda f: f.avg_run.mean()}, by=['combine_id', 'category'])

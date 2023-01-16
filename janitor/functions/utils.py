@@ -19,6 +19,7 @@ from typing import (
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
 from dataclasses import dataclass
+from collections import Counter
 
 import pandas as pd
 from janitor.utils import check, _expand_grid
@@ -662,3 +663,41 @@ class SD(NamedTuple):
     columns: Any
     func: Optional[Union[str, Callable, list, tuple]]
     names_glue: Optional[str] = None
+
+
+def _process_SD(df, arg):
+    """
+    process SD for use in `mutate` or `summarize`
+    """
+    columns = arg.columns
+    func = arg.func
+    names = arg.names_glue
+    columns = _select_index([columns], df, axis="columns")
+    columns = df.columns[columns]
+    if not isinstance(func, (list, tuple)):
+        func = [func]
+    func_names = [
+        funcn.__name__ if callable(funcn) else funcn for funcn in func
+    ]
+    counts = None
+    dupes = set()
+    if len(func) > 1:
+        counts = Counter(func_names)
+        counts = {key: 0 for key, value in counts.items() if value > 1}
+    # deal with duplicate function names
+    if counts:
+        func_list = []
+        for funcn in func_names:
+            if funcn in counts:
+                if names:
+                    name = f"{funcn}{counts[funcn]}"
+                else:
+                    name = f"{counts[funcn]}"
+                    dupes.add(name)
+                func_list.append(name)
+                counts[funcn] += 1
+            else:
+                func_list.append(funcn)
+        func_names = func_list
+    counts = None
+    return columns, names, zip(func_names, func), dupes

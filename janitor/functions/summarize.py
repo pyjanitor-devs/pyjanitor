@@ -6,8 +6,8 @@ import pandas_flavor as pf
 from janitor.utils import check
 from pandas.api.types import is_scalar
 
-from janitor.functions.utils import _select_index, SD
-from collections import Counter
+from janitor.functions.utils import SD, _process_SD
+from itertools import product
 
 
 @pf.register_dataframe_method
@@ -17,7 +17,7 @@ def summarize(
     by: Any = None,
 ) -> pd.DataFrame:
     """
-    Reduction operation on columns via a dictionary or a tuple.
+    Reduction operation on columns via a tuple.
 
     It is a wrapper around `pd.DataFrame.agg`,
     with added flexibility for multiple columns.
@@ -28,8 +28,7 @@ def summarize(
     for the entire dataframe,
     or a row per group, if `by` is present.
 
-    If the variable argument is a tuple,
-    it has to be of the form `(columns, func, names_glue)`;
+    The argument should be of the form `(columns, func, names_glue)`;
     the `names_glue` argument is optional.
     `columns` can be selected with the
     [`select_columns`][janitor.functions.select.select_columns]
@@ -48,7 +47,7 @@ def summarize(
     of passing tuples to the `summarize` function.
 
 
-    Example - Summarize with a dictionary:
+    Example:
 
         >>> import pandas as pd
         >>> import numpy as np
@@ -62,9 +61,7 @@ def summarize(
         ...         'combine_id': [100200, 100200, 101200, 101200, 102201, 103202],
         ...         'category': ['heats', 'heats', 'finals', 'finals', 'heats', 'finals']}
         >>> df = pd.DataFrame(data)
-        >>> (df
-        ... .summarize({"avg_run":"mean"}, by=['combine_id', 'category'])
-        ... )
+        >>> df.summarize(("avg_run", "mean"), by=['combine_id', 'category'])
                              avg_run
         combine_id category
         100200     heats         3.5
@@ -74,10 +71,10 @@ def summarize(
 
     Summarize with a new column name:
 
-        >>> df.summarize({"avg_run_2":df.avg_run.mean()})
+        >>> df.summarize(("avg_run", "mean", "avg_run_2"))
            avg_run_2
         0   2.833333
-        >>> df.summarize({"avg_run_2":lambda f: f.avg_run.mean()}, by=['combine_id', 'category'])
+        >>> df.summarize(("avg_run", "mean", "avg_run_2"), by=['combine_id', 'category'])
                             avg_run_2
         combine_id category
         100200     heats         3.5
@@ -85,7 +82,7 @@ def summarize(
         102201     heats         2.0
         103202     finals        4.0
 
-    Summarize with a tuple:
+    Summarize with the placeholders in `names_glue`:
 
         >>> cols = jn.SD(columns="avg*", func="mean", names_glue="{_col}_{_fn}")
         >>> df.summarize(cols)
@@ -100,14 +97,15 @@ def summarize(
         103202     finals              4.0           4.0            4.0
 
     :param df: A pandas DataFrame.
-    :param args: Either a dictionary or a tuple.
+    :param args: A tuple.
     :param by: Column(s) to group by.
-    :raises ValueError: If a tuple is passed and the length is not 3.
+    :raises ValueError: If the tuple size is less than 2.
     :returns: A pandas DataFrame with summarized columns.
     """  # noqa: E501
 
+    args_to_process = []
     for num, arg in enumerate(args):
-        check(f"Argument {num} in the summarize function", arg, [dict, tuple])
+        check(f"Argument {num} in the summarize function", arg, [tuple])
         if isinstance(arg, tuple):
             if len(arg) < 2:
                 raise ValueError(
@@ -119,27 +117,30 @@ def summarize(
                     f"Argument {num} should have a maximum length of 3, "
                     f"instead got {len(arg)}"
                 )
-            _, func, names = SD(*arg)
-            check(
-                f"The function (position 1 in the tuple) for argument {num} ",
-                func,
-                [str, callable, list, tuple],
-            )
-            if isinstance(func, (list, tuple)):
-                for number, funcn in enumerate(func):
-                    check(
-                        f"Entry {number} in the function sequence "
-                        f"for argument {num}",
-                        funcn,
-                        [str, callable],
-                    )
-
-            if names:
+        entry = SD(*arg)
+        func = entry.func
+        names = entry.names_glue
+        check(
+            f"The function (position 1 in the tuple) for argument {num} ",
+            func,
+            [str, callable, list, tuple],
+        )
+        if isinstance(func, (list, tuple)):
+            for number, funcn in enumerate(func):
                 check(
-                    f"The names (position 2 in the tuple) for argument {num} ",
-                    names,
-                    [str],
+                    f"Entry {number} in the function sequence "
+                    f"for argument {num}",
+                    funcn,
+                    [str, callable],
                 )
+
+        if names:
+            check(
+                f"The names (position 2 in the tuple) for argument {num} ",
+                names,
+                [str],
+            )
+        args_to_process.append(entry)
 
     by_is_true = by is not None
     grp = None
@@ -150,70 +151,25 @@ def summarize(
 
     aggs = {}
 
-    for arg in args:
-        if isinstance(arg, dict):
-            for col, func in arg.items():
-                val = grp if by_is_true else df
-                if isinstance(func, str):
-                    outcome = val[col].agg(func)
-                elif is_scalar(func):
-                    outcome = func
-                else:
-                    try:
-                        outcome = val.agg(func)
-                    except (ValueError, AttributeError):
-                        outcome = func(val)
-                aggs[col] = outcome
-        else:
-            columns, func, names = SD(*arg)
-            columns = _select_index([columns], df, axis="columns")
-            columns = df.columns[columns]
-            if not isinstance(func, (list, tuple)):
-                func = [func]
-            func_names = [
-                funcn.__name__ if callable(funcn) else funcn for funcn in func
-            ]
-            counts = None
-            dupes = set()
-            if len(func) > 1:
-                counts = Counter(func_names)
-                counts = {key: 0 for key, value in counts.items() if value > 1}
-            # deal with duplicate function names
-            if counts:
-                func_list = []
-                for funcn in func_names:
-                    if funcn in counts:
-                        if names:
-                            name = f"{funcn}{counts[funcn]}"
-                        else:
-                            name = f"{counts[funcn]}"
-                            dupes.add(name)
-                        func_list.append(name)
-                        counts[funcn] += 1
-                    else:
-                        func_list.append(funcn)
-                func_names = func_list
-            counts = None
-            func_names = tuple(zip(func_names, func))
-            for col in columns:
-                val = grp[col] if by_is_true else df[col]
-                for name, funcn in func_names:
-                    if names:
-                        name = names.format(_col=col, _fn=name)
-                    elif name in dupes:
-                        name = f"{col}{name}"
-                    else:
-                        name = col
-                    if isinstance(funcn, str):
-                        outcome = val.agg(funcn)
-                    else:
-                        try:
-                            outcome = val.agg(funcn)
-                        except (ValueError, AttributeError):
-                            outcome = funcn(val)
-                    aggs[name] = outcome
-    aggs = {
-        col: [outcome] if is_scalar(outcome) else outcome
-        for col, outcome in aggs.items()
-    }
+    for arg in args_to_process:
+        columns, names, func_names_and_func, dupes = _process_SD(df, arg)
+        for col, (name, funcn) in product(columns, func_names_and_func):
+            val = grp[col] if by_is_true else df[col]
+            if names:
+                name = names.format(_col=col, _fn=name)
+            elif name in dupes:
+                name = f"{col}{name}"
+            else:
+                name = col
+            if isinstance(funcn, str):
+                outcome = val.agg(funcn)
+            else:
+                try:
+                    outcome = val.agg(funcn)
+                except (ValueError, AttributeError):
+                    outcome = funcn(val)
+            if is_scalar(outcome):
+                outcome = [outcome]
+            aggs[name] = outcome
+
     return pd.DataFrame(aggs, copy=False)

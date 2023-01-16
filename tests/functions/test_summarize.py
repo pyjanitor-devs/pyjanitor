@@ -6,25 +6,7 @@ from pandas.testing import assert_frame_equal
 from pandas.api.types import is_numeric_dtype
 
 
-@pytest.mark.functions
-def test_dict_args_error(dataframe):
-    """Raise if arg is not a dict/tuple"""
-    with pytest.raises(
-        TypeError, match="Argument 0 in the summarize function.+"
-    ):
-        dataframe.summarize(1)
-
-
 func = lambda grp: grp.Revenue.sum() / grp.Quantity.sum()  # noqa: E731
-
-
-@pytest.mark.functions
-def test_dict_agg_error(dataframe):
-    """
-    Raise if func triggers an attributeerror/valueerror
-    """
-    with pytest.raises(AttributeError):
-        dataframe.summarize({"a": func})
 
 
 @pytest.mark.functions
@@ -84,12 +66,9 @@ def test_tuple_func_seq_error(dataframe):
 
 
 args = [
-    {"a": "sum"},
-    {"a": pd.Series([1, 2, 3] * 3).sum()},
-    {"a": lambda df: df.a.sum()},
+    ("a", lambda df: df.sum()),
     ("a", "sum"),
     ("a", np.sum),
-    {"a": lambda f: np.sum(f.a)},
 ]
 
 

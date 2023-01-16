@@ -63,7 +63,6 @@ def summarize(
         ...         'category': ['heats', 'heats', 'finals', 'finals', 'heats', 'finals']}
         >>> df = pd.DataFrame(data)
         >>> (df
-        ... .select_columns('combine_id', 'category', 'avg_run')
         ... .summarize({"avg_run":"mean"}, by=['combine_id', 'category'])
         ... )
                              avg_run

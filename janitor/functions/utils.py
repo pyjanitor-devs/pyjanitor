@@ -19,6 +19,7 @@ from typing import (
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
 from dataclasses import dataclass
+from collections import Counter
 
 import pandas as pd
 from janitor.utils import check, _expand_grid

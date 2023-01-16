@@ -107,10 +107,19 @@ def summarize(
     :returns: A pandas DataFrame with summarized columns.
     """  # noqa: E501
 
+    args_to_process = []
     for num, arg in enumerate(args):
         check(f"Argument {num} in the summarize function", arg, [col])
         if arg.func is None:
             raise ValueError(f"Kindly provide a function for Argument {num}")
+
+        if names:
+            check(
+                f"The names (position 2 in the tuple) for argument {num} ",
+                names,
+                [str],
+            )
+        args_to_process.append(entry)
 
     by_is_true = by is not None
     grp = None

@@ -26,28 +26,7 @@ def test_dict_args_val_error(dataframe):
         dataframe.summarize({"a": 1})
 
 
-@pytest.mark.functions
-def test_dict_nested_error(dataframe):
-    """
-    Raise if func in nested dict
-    is a wrong type
-    """
-    with pytest.raises(
-        TypeError, match="func in nested dictionary for a in argument 0.+"
-    ):
-        dataframe.summarize({"a": {"b": 1}})
-
-
 func = lambda grp: grp.Revenue.sum() / grp.Quantity.sum()  # noqa: E731
-
-
-@pytest.mark.functions
-def test_nested_dict_agg_error(dataframe):
-    """
-    Raise if func triggers an attributeerror/valueerror
-    """
-    with pytest.raises(AttributeError):
-        dataframe.summarize({"a": {"b": func}})
 
 
 @pytest.mark.functions
@@ -115,7 +94,12 @@ def test_tuple_func_seq_error(dataframe):
         dataframe.summarize(("a", [np.sum, 1], "name"))
 
 
-args = [{"a": "sum"}, ("a", "sum"), ("a", np.sum), {"a": np.sum}]
+args = [
+    {"a": lambda df: df.a.sum()},
+    ("a", "sum"),
+    ("a", np.sum),
+    {"a": lambda f: np.sum(f.a)},
+]
 
 
 @pytest.mark.parametrize("test_input", args)
@@ -124,54 +108,6 @@ def test_args_various(dataframe, test_input):
     """Test output for various arguments"""
     expected = dataframe.agg({"a": ["sum"]}).reset_index(drop=True)
     actual = dataframe.summarize(test_input)
-    assert_frame_equal(expected, actual)
-
-
-args = [
-    ({"a": "sum"}, "decorated-elephant"),
-    ({"a": np.sum}, "decorated-elephant"),
-    (("a", "sum"), "decorated-elephant"),
-]
-
-
-@pytest.mark.parametrize("test_input,by", args)
-@pytest.mark.functions
-def test_args_various_grouped(dataframe, test_input, by):
-    """Test output for various arguments"""
-    expected = dataframe.groupby("decorated-elephant").agg({"a": "sum"})
-    actual = dataframe.summarize(test_input, by=by)
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.functions
-def test_dict_nested(dataframe):
-    """Test output for dict"""
-    expected = (
-        dataframe.agg({"a": ["sum"]})
-        .rename(columns={"a": "a_sum"})
-        .reset_index(drop=True)
-    )
-    actual = dataframe.summarize({"a": {"a_sum": "sum"}})
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.functions
-def test_dict_nested_grouped_str(dataframe):
-    """Test output for dict on a groupby"""
-    expected = dataframe.groupby("decorated-elephant").agg(a_sum=("a", "sum"))
-    actual = dataframe.summarize(
-        {"a": {"a_sum": "sum"}}, by="decorated-elephant"
-    )
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.functions
-def test_dict_nested_grouped_callable(dataframe):
-    """Test output for dict on a groupby"""
-    expected = dataframe.groupby("decorated-elephant").agg(a_sum=("a", "sum"))
-    actual = dataframe.summarize(
-        {"a": {"a_sum": np.sum}}, by={"by": "decorated-elephant"}
-    )
     assert_frame_equal(expected, actual)
 
 
@@ -231,7 +167,7 @@ def test_tuple_func_list_grouped_dupes(dataframe):
     grp = dataframe.groupby("decorated-elephant")
     expected = grp.agg(a_sum0=("a", "sum"), a_sum1=("a", "sum"))
     actual = dataframe.summarize(
-        ("a", ["sum", np.sum], "{_col}_{_fn}"), by="decorated-elephant"
+        ("a", ["sum", np.sum], "{_col}_{_fn}"), by={"by": "decorated-elephant"}
     )
     assert_frame_equal(expected, actual)
 

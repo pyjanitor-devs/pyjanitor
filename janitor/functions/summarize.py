@@ -115,17 +115,8 @@ def summarize(
                 check(
                     f"func for {col} in argument {num}",
                     func,
-                    [str, callable, dict],
+                    [str, callable],
                 )
-                if isinstance(func, dict):
-                    for _, funcn in func.items():
-                        check(
-                            f"func in nested dictionary for "
-                            f"{col} in argument {num}",
-                            funcn,
-                            [str, callable],
-                        )
-
         else:
             if len(arg) < 2:
                 raise ValueError(
@@ -171,24 +162,12 @@ def summarize(
     for arg in args:
         if isinstance(arg, dict):
             for col, func in arg.items():
-                if by_is_true:
-                    val = grp[col]
-                else:
-                    val = df[col]
-                if isinstance(func, dict):
-                    for key, funcn in func.items():
-                        try:
-                            outcome = val.agg(funcn)
-                        except (ValueError, AttributeError):
-                            outcome = funcn(val)
-                        aggs[key] = outcome
-                else:
-                    try:
-                        outcome = val.agg(func)
-                    except (ValueError, AttributeError):
-                        outcome = func(val)
-                    aggs[col] = outcome
-
+                val = grp if by_is_true else df
+                try:
+                    outcome = val.agg(func)
+                except (ValueError, AttributeError):
+                    outcome = func(val)
+                aggs[col] = outcome
         else:
             columns, func, names = SD(*arg)
             columns = _select_index([columns], df, axis="columns")
@@ -221,10 +200,7 @@ def summarize(
             counts = None
             func_names = tuple(zip(func_names, func))
             for col in columns:
-                if by_is_true:
-                    val = grp[col]
-                else:
-                    val = df[col]
+                val = grp[col] if by_is_true else df[col]
                 for name, funcn in func_names:
                     if names:
                         name = names.format(_col=col, _fn=name)

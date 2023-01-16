@@ -75,10 +75,10 @@ def summarize(
 
     Summarize with a new column name:
 
-        >>> df.summarize({"avg_run_2":df.avg_run.mean()})
+        >>> df.summarize({"avg_run_2":lambda df: df.avg_run.mean()})
            avg_run_2
         0   2.833333
-        >>> df.summarize({"avg_run_2":lambda f: f.avg_run.mean(), by=['combine_id', 'category'])
+        >>> df.summarize({"avg_run_2":lambda f: f.avg_run.mean()}, by=['combine_id', 'category'])
                             avg_run_2
         combine_id category
         100200     heats         3.5
@@ -162,6 +162,8 @@ def summarize(
         if isinstance(arg, dict):
             for col, func in arg.items():
                 val = grp if by_is_true else df
+                if isinstance(func, str):
+                    val = val[col]
                 try:
                     outcome = val.agg(func)
                 except (ValueError, AttributeError):

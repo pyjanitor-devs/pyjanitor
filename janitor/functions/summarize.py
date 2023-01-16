@@ -24,10 +24,6 @@ def summarize(
 
     Before reaching for `summarize`, try `pd.DataFrame.agg`.
 
-    The computation should return a single row
-    for the entire dataframe,
-    or a row per group, if `by` is present.
-
     The argument should be of the form `(columns, func, names_glue)`;
     the `names_glue` argument is optional.
     `columns` can be selected with the

@@ -104,17 +104,16 @@ def mutate(
     args_to_process = []
     for num, arg in enumerate(args):
         check(f"Argument {num} in the mutate function", arg, [tuple])
-        if isinstance(arg, tuple):
-            if len(arg) < 2:
-                raise ValueError(
-                    f"Argument {num} should have a minimum length of 2, "
-                    f"instead got {len(arg)}"
-                )
-            if len(arg) > 3:
-                raise ValueError(
-                    f"Argument {num} should have a maximum length of 3, "
-                    f"instead got {len(arg)}"
-                )
+        if len(arg) < 2:
+            raise ValueError(
+                f"Argument {num} should have a minimum length of 2, "
+                f"instead got {len(arg)}"
+            )
+        if len(arg) > 3:
+            raise ValueError(
+                f"Argument {num} should have a maximum length of 3, "
+                f"instead got {len(arg)}"
+            )
         entry = SD(*arg)
         func = entry.func
         names = entry.names_glue

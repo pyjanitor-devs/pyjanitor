@@ -6,7 +6,7 @@ import pandas_flavor as pf
 import pandas as pd
 
 from janitor.utils import deprecated_alias
-from janitor.functions.utils import _select_index
+from janitor.functions.utils import get_index_labels
 from itertools import product
 
 
@@ -102,8 +102,7 @@ def impute(
             "provided."
         )
 
-    column_names = _select_index([column_names], df, axis="columns")
-    column_names = df.columns[column_names]
+    column_names = get_index_labels([column_names], df, axis="columns")
 
     if value is not None:
         value = dict(product(column_names, [value]))

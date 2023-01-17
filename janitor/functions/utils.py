@@ -577,6 +577,13 @@ def _index_converter(arr, index):
     return arr
 
 
+def get_index_labels(arg, df, axis):
+    """Convenience function to get actual labels from column/index"""
+    assert axis in {"index", "columns"}
+    index = getattr(df, axis)
+    return index[_select_index(arg, df, axis)]
+
+
 def _select(
     df: pd.DataFrame,
     args: tuple,

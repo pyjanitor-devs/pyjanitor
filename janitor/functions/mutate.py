@@ -103,7 +103,7 @@ def mutate(
 
     args_to_process = []
     for num, arg in enumerate(args):
-        check(f"Argument {num} in the summarize function", arg, [tuple])
+        check(f"Argument {num} in the mutate function", arg, [tuple])
         if isinstance(arg, tuple):
             if len(arg) < 2:
                 raise ValueError(

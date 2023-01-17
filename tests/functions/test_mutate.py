@@ -12,6 +12,13 @@ def test_empty_args(dataframe):
 
 
 @pytest.mark.functions
+def test_type_args(dataframe):
+    """Raise if arg is not a tuple"""
+    with pytest.raises(TypeError, match="Argument 0 in the mutate function.+"):
+        dataframe.mutate({"a": "sum"})
+
+
+@pytest.mark.functions
 def test_tuple_length_error_max(dataframe):
     """Raise if length of tuple is > 3"""
     with pytest.raises(

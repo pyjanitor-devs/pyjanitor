@@ -12,38 +12,6 @@ def test_empty_args(dataframe):
 
 
 @pytest.mark.functions
-def test_dict_args_error(dataframe):
-    """Raise if arg is not a dict/tuple"""
-    with pytest.raises(TypeError, match="Argument 0 in the mutate function.+"):
-        dataframe.mutate(1)
-
-
-@pytest.mark.functions
-def test_dict_nested_error(dataframe):
-    """
-    Raise if func in nested dict
-    is a wrong type
-    """
-    with pytest.raises(
-        TypeError,
-        match="The function in the nested dictionary "
-        "for column a in argument 0.+",
-    ):
-        dataframe.mutate({"a": {"b": 1}}, by="decorated-elephant")
-
-
-@pytest.mark.functions
-def test_dict_nested(dataframe):
-    """Raise if dict is nested but by is not provided"""
-    with pytest.raises(
-        ValueError,
-        match="nested dictionary is supported only "
-        "if an argument is provided to the `by` parameter.",
-    ):
-        dataframe.mutate({"a": {"b": "sqrt"}})
-
-
-@pytest.mark.functions
 def test_tuple_length_error_max(dataframe):
     """Raise if length of tuple is > 3"""
     with pytest.raises(
@@ -90,7 +58,7 @@ def test_tuple_func_seq_error(dataframe):
         dataframe.mutate(("a", [np.sum, 1], "name"))
 
 
-args = [{"a": lambda f: f.a.transform(np.sqrt)}, ("a", "sqrt"), ("a", np.sqrt)]
+args = [("a", lambda f: np.sqrt(f)), ("a", "sqrt"), ("a", np.sqrt)]
 
 
 @pytest.mark.parametrize("test_input", args)
@@ -103,9 +71,8 @@ def test_args_various(dataframe, test_input):
 
 
 args = [
-    ({"a": "sum"}, "decorated-elephant"),
-    ({"a": lambda f: f.transform("sum")}, "decorated-elephant"),
     (("a", "sum"), "decorated-elephant"),
+    (("a", lambda f: f.sum()), "decorated-elephant"),
 ]
 
 
@@ -117,29 +84,6 @@ def test_args_various_grouped(dataframe, test_input, by):
         a=dataframe.groupby("decorated-elephant").a.transform("sum")
     )
     actual = dataframe.mutate(test_input, by=by)
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.functions
-def test_dict_nested_grouped_str(dataframe):
-    """Test output for dict on a groupby"""
-    expected = dataframe.assign(
-        b=dataframe.groupby("decorated-elephant").a.transform("sum")
-    )
-    actual = dataframe.mutate({"a": {"b": "sum"}}, by="decorated-elephant")
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.functions
-def test_dict_nested_grouped_callable(dataframe):
-    """Test output for dict on a groupby"""
-    expected = dataframe.assign(
-        b=dataframe.groupby("decorated-elephant").a.transform(np.sum)
-    )
-    actual = dataframe.mutate(
-        {"a": {"b": lambda f: f.transform(np.sum)}},
-        by={"by": "decorated-elephant", "sort": False},
-    )
     assert_frame_equal(expected, actual)
 
 

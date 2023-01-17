@@ -139,7 +139,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     it can be used to select columns in the index or columns_names
     arguments of `pivot_longer` function.
 
-    **Warning**:
+    !!!warning
 
         This function is deprecated. Kindly use `re.compile` instead.
 
@@ -578,7 +578,24 @@ def _index_converter(arr, index):
 
 
 def get_index_labels(arg, df, axis):
-    """Convenience function to get actual labels from column/index"""
+    """
+    Convenience function to get actual labels from column/index
+
+    !!! info "New in version 0.25.0"
+
+    :param arg: Valid inputs include: an exact column name to look for,
+        a shell-style glob string (e.g. `*_thing_*`),
+        a regular expression,
+        a callable,
+        or variable arguments of all the aforementioned.
+        A sequence of booleans is also acceptable.
+        A dictionary can be used for selection
+        on a MultiIndex on different levels.
+    :param df: The pandas DataFrame object.
+    :param axis: Should be either `index` or `columns`.
+    :returns: A pandas Index.
+
+    """
     assert axis in {"index", "columns"}
     index = getattr(df, axis)
     return index[_select_index(arg, df, axis)]

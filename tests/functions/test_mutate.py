@@ -134,7 +134,7 @@ def test_tuple_func_list_grouped(dataframe):
     func = lambda f: f.transform("mean")  # noqa: E731
     func.__name__ = "mean"
     actual = dataframe.mutate(
-        ("a", ["sum", func], "{_col}_{_fn}"), by="decorated-elephant"
+        ("a", ["sum", func], "{_col}_{_fn}"), by={"by": "decorated-elephant"}
     )
     assert_frame_equal(expected, actual)
 

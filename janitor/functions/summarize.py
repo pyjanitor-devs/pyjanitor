@@ -20,12 +20,14 @@ def summarize(
 
     !!! info "New in version 0.25.0"
 
+    !!!note
+
+        Before reaching for `summarize`, try `pd.DataFrame.agg`.
+
     Reduction operation on columns via a tuple.
 
     It is a wrapper around `pd.DataFrame.agg`,
     with added flexibility for multiple columns.
-
-    Before reaching for `summarize`, try `pd.DataFrame.agg`.
 
     The argument should be of the form `(columns, func, names_glue)`;
     the `names_glue` argument is optional.
@@ -35,6 +37,7 @@ def summarize(
     The function `func` should be a string
     (which is dispatched to `pd.Series.agg`),
     or a callable, or a list/tuple of strings/callables.
+    The function is called on each column in `columns`.
 
     The `names_glue` argument allows for renaming, especially for
     multiple columns or multiple functions.

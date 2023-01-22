@@ -15,6 +15,9 @@ theme:
   features:
     - navigation.instant
     # - navigation.tabs
+    - navigation.top
+    - toc.follow
+    - content.code.copy
   language: en
 
 # We customize the navigation by hand to control the order

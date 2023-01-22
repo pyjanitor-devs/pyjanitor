@@ -87,7 +87,7 @@ selecting the correct kernel from the top right corner of JupyterLab!
     For PyCharm users,
     here are some `instructions <PYCHARM_USERS.html>`__  to get your Conda environment set up.
 
-### Install the pre-commit hooks.
+### Install the pre-commit hooks
 
 `pre-commit` hooks are available
 to run code formatting checks automagically before git commits happen.

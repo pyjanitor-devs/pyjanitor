@@ -24,7 +24,6 @@ theme:
 # in which pages show up.
 nav:
   - Home: index.md
-  - Development Guide: devguide.md
   - API Reference:
       - Functions: api/functions.md
       - Biology: api/biology.md
@@ -38,6 +37,7 @@ nav:
       - Timeseries: api/timeseries.md
       - Utils: api/utils.md
       - XArray: api/xarray.md
+  - Development Guide: devguide.md
   - Changelog: CHANGELOG.md
   - Authors: AUTHORS.md
 

@@ -172,8 +172,8 @@ formatted and that all tests still pass.
 
 To do so:
 
-* Run `python -m flake8 --exclude nbconvert_config.py janitor` to check code styling problems
-* Run `python -m black -c pyproject.toml` to format your code.
+* Run `make lint` to check code styling problems.
+* Run `make format` to format your code.
 * Run `python -m interrogate -c pyproject.toml` to check your code for missing docstring.
 * Run `darglint -v 2` to check quality of your docstrings.
 * Run `python -m pytest` to run all unit tests.

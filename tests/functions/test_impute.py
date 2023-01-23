@@ -1,5 +1,6 @@
 """Tests for the `impute` functions"""
 import pytest
+from pandas.testing import assert_frame_equal
 
 
 @pytest.mark.functions
@@ -7,6 +8,15 @@ def test_impute_single_value(missingdata_df):
     """Check if constant value is imputed correctly."""
     df = missingdata_df.impute("a", 5)
     assert set(df["a"]) == set([1, 2, 5])
+
+
+@pytest.mark.functions
+def test_impute_single_value_multiple_columns(missingdata_df):
+    """Check if constant value is imputed correctly."""
+    df = missingdata_df.impute(["a", "Bell__Chart"], 5)
+    assert_frame_equal(
+        missingdata_df.assign(**df.loc[:, ["a", "Bell__Chart"]].fillna(5)), df
+    )
 
 
 @pytest.mark.functions

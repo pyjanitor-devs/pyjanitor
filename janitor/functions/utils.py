@@ -535,7 +535,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     if all(checks):
         dtypes = {type(entry) for entry in arg}
         if len(dtypes) == 1:
-            indices = index.get_indexer_for(arg)
+            indices = index.get_indexer_for(list(arg))
             if (indices != -1).all():
                 return indices
     # treat multiple DropLabel instances as a single unit

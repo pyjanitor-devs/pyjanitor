@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - dev
-    paths: &test-watch
+    paths:
       - "janitor/**"
       - "tests/**"
       - ".codecov.yml"
@@ -13,7 +13,11 @@ on:
   pull_request:
     branches:
       - dev
-    paths: *test-watch
+    paths:
+      - "janitor/**"
+      - "tests/**"
+      - ".codecov.yml"
+      - ".github/workflows/tests.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

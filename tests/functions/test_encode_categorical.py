@@ -36,11 +36,11 @@ def test_encode_categorical(df):
 @settings(deadline=None)
 def test_encode_categorical_missing_column(df):
     """
-    Raise ValueError for missing columns
+    Raise KeyError for missing columns
     when only one arguments is provided to
     `column_names`.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         df.encode_categorical("aloha")
 
 
@@ -49,11 +49,11 @@ def test_encode_categorical_missing_column(df):
 @settings(deadline=None)
 def test_encode_categorical_missing_columns(df):
     """
-    Raise ValueError for missing columns
+    Raise KeyError for missing columns
     when the number of arguments to `column_names`
     is more than one.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         df.encode_categorical(["animals@#$%^", "cities", "aloha"])
 
 
@@ -62,10 +62,10 @@ def test_encode_categorical_missing_columns(df):
 @settings(deadline=None)
 def test_encode_categorical_invalid_input(df):
     """
-    Raise ValueError for wrong input type
+    Raise KeyError for wrong input type
     for `column_names`.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         df.encode_categorical(1)
 
 
@@ -74,10 +74,10 @@ def test_encode_categorical_invalid_input(df):
 @settings(deadline=None)
 def test_encode_categorical_invalid_input_2(df):
     """
-    Raise TypeError for wrong input type
+    Raise KeyError for wrong input type
     for `column_names`.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises(KeyError):
         df.encode_categorical({"names"})
 
 

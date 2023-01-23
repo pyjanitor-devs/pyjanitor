@@ -1000,10 +1000,12 @@ def _create_frame(
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            right = right.reindex(right_index)
+            if not right.empty:
+                right = right.take(right_index)
             right.index = left_index
         else:
-            df = df.reindex(left_index)
+            if not df.empty:
+                df = df.take(left_index)
             df.index = right_index
         df = df.join(right, how=how)
 

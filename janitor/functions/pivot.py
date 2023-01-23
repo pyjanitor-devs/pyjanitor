@@ -280,10 +280,10 @@ def pivot_longer(
         ...     index=["City", "State"],
         ...     column_names=slice("Mango", "Vodka"),
         ...     names_pattern={
-        ...        "Fruit": {"Pounds": "M|O|W"},
-        ...        "Drink": {"Ounces": "G|V"},
-        ...    },
-        ...     )
+        ...         "Fruit": {"Pounds": "M|O|W"},
+        ...         "Drink": {"Ounces": "G|V"},
+        ...     },
+        ... )
               City    State       Fruit  Pounds  Drink  Ounces
         0  Houston    Texas       Mango       4    Gin    16.0
         1   Austin    Texas       Mango      10    Gin   200.0
@@ -299,9 +299,6 @@ def pivot_longer(
 
         - 0.24.0
             - Added `dropna` parameter.
-
-    !!! abstract "Version Added"
-
         - 0.24.1
             - `names_pattern` can accept a dictionary.
             - named groups supported in `names_pattern`.

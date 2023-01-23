@@ -826,6 +826,7 @@ def _range_indices(
         if outcome is None:
             return None
         left_c, pos = outcome
+        print(left_c, right_index, pos, left_index)
         if left_c.size < left_index.size:
             keep_rows = np.isin(left_index, left_c, assume_unique=True)
             search_indices = search_indices[keep_rows]

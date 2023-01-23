@@ -1000,14 +1000,10 @@ def _create_frame(
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            right = {
-                key: value._values[right_index] for key, value in right.items()
-            }
-            right = pd.DataFrame(right)
+            right = right.reindex(right_index)
             right.index = left_index
         else:
-            df = {key: value._values[left_index] for key, value in df.items()}
-            df = pd.DataFrame(df)
+            df = df.reindex(left_index)
             df.index = right_index
         df = df.join(right, how=how)
 

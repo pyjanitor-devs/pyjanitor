@@ -922,6 +922,33 @@ def test_not_dot_value_pattern(not_dot_value):
     assert_frame_equal(result, actual)
 
 
+def test_not_dot_value_pattern_named_groups(not_dot_value):
+    """
+    Test output when names_pattern has named groups
+    """
+
+    result = not_dot_value.pivot_longer(
+        "country",
+        names_pattern=r"(?P<event>.+)_(?P<year>.+)",
+        values_to="score",
+        sort_by_appearance=True,
+    )
+    result = result.sort_values(
+        ["country", "event", "year"], ignore_index=True
+    )
+    actual = not_dot_value.set_index("country")
+    actual.columns = actual.columns.str.split("_", expand=True)
+    actual.columns.names = ["event", "year"]
+    actual = (
+        actual.stack(["event", "year"])
+        .rename("score")
+        .sort_index()
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual)
+
+
 def test_not_dot_value_sep_single_column(not_dot_value):
     """
     Test output when names_sep and no dot_value

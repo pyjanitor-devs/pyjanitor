@@ -598,6 +598,8 @@ def _data_checks_pivot_longer(
                 )
 
         elif isinstance(names_pattern, (list, tuple)):
+            if names_to is None:
+                raise ValueError("Kindly provide values for names_to.")
             for word in names_pattern:
                 check(f"'{word}' in names_pattern", word, [str, Pattern])
             len_names_to = len(names_to)
@@ -1487,7 +1489,7 @@ def pivot_wider(
         form.
     """  # noqa: E501
 
-    df = df[:]  # pd.pivot already makes a copy
+    df = df.copy()
 
     return _computations_pivot_wider(
         df,

@@ -1,6 +1,8 @@
 import pytest
+import numpy as np
+import pandas as pd
 
-from pandas import testing, DataFrame
+from pandas.testing import assert_series_equal, assert_index_equal
 from hypothesis import given
 from hypothesis import settings
 
@@ -22,7 +24,7 @@ def test_move_row(dataframe):
     result = dataframe.move(source=source, target=target, axis=0)
 
     # Verify
-    testing.assert_series_equal(result.iloc[target - 1, :], row)
+    assert_series_equal(result.iloc[target - 1, :], row)
 
 
 @pytest.mark.functions
@@ -42,7 +44,7 @@ def test_move_row_after(dataframe):
     )
 
     # Verify
-    testing.assert_series_equal(result.iloc[target, :], row)
+    assert_series_equal(result.iloc[target, :], row)
 
 
 @pytest.mark.functions
@@ -64,7 +66,7 @@ def test_move_row_strings(dataframe):
     result = dataframe.move(source=source, target=target, axis=0)
 
     # Verify
-    testing.assert_series_equal(result.iloc[target_index - 1, :], row)
+    assert_series_equal(result.iloc[target_index - 1, :], row)
 
 
 @pytest.mark.functions
@@ -88,7 +90,7 @@ def test_move_row_after_strings(dataframe):
     )
 
     # Verify
-    testing.assert_series_equal(result.iloc[target_index, :], row)
+    assert_series_equal(result.iloc[target_index, :], row)
 
 
 @pytest.mark.functions
@@ -108,7 +110,7 @@ def test_move_col(dataframe):
     result = dataframe.move(source=source, target=target, axis=1)
 
     # Verify
-    testing.assert_series_equal(result.iloc[:, target_index - 1], col)
+    assert_series_equal(result.iloc[:, target_index - 1], col)
 
 
 @pytest.mark.functions
@@ -130,7 +132,7 @@ def test_move_col_after(dataframe):
     )
 
     # Verify
-    testing.assert_series_equal(result.iloc[:, target_index], col)
+    assert_series_equal(result.iloc[:, target_index], col)
 
 
 @pytest.mark.functions
@@ -176,7 +178,7 @@ def test_move_reorder_columns(df):
 
 def test_move_unique():
     """Raise if the axis is not unique"""
-    df = DataFrame({"a": [2, 4, 6], "b": [1, 3, 5], "c": [7, 8, 9]})
+    df = pd.DataFrame({"a": [2, 4, 6], "b": [1, 3, 5], "c": [7, 8, 9]})
     df.columns = ["a", "b", "b"]
     with pytest.raises(AssertionError):
         df.move(source="a", axis=1)
@@ -184,7 +186,7 @@ def test_move_unique():
 
 def test_move_multiindex():
     """Raise if the axis is a MultiIndex"""
-    df = DataFrame(
+    df = pd.DataFrame(
         {
             ("name", "a"): {0: "Wilbur", 1: "Petunia", 2: "Gregory"},
             ("names", "aa"): {0: 67, 1: 80, 2: 64},
@@ -193,3 +195,27 @@ def test_move_multiindex():
     )
     with pytest.raises(AssertionError):
         df.move(source="a", axis=1)
+
+
+np.random.seed(9)
+df = pd.DataFrame(np.random.random(size=(5, 10)), columns=list("abcdefghij"))
+
+
+def test_move_source_target_seq():
+    """Test output when both source and targets are sequences"""
+    expected = df.move(source=["j", "a"], target=["c", "e"], axis=1).columns
+    actual = pd.Index(
+        ["b", "j", "a", "c", "d", "e", "f", "g", "h", "i"], dtype="object"
+    )
+    assert_index_equal(expected, actual)
+
+
+def test_move_source_target_seq_after():
+    """Test output when both source and targets are sequences"""
+    expected = df.move(
+        source=["j", "a"], target=["c", "e"], position="after", axis=1
+    ).columns
+    actual = pd.Index(
+        ["b", "c", "d", "e", "j", "a", "f", "g", "h", "i"], dtype="object"
+    )
+    assert_index_equal(expected, actual)

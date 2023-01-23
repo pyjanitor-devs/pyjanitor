@@ -10,6 +10,8 @@
 -   [INF] Migrated docstring style from Sphinx to Google for better compatibility with `mkdocstrings`. PR #1235 @thatlittleboy
 -   [DEPR] Add deprecation warnings for `process_text`, `rename_column`, `rename_columns`, `filter_on`, `remove_columns`, `fill_direction`. #1045 @samukweku
 -   [ENH] `pivot_longer` now supports named groups where `names_pattern` is a regular expression. A dictionary can now be passed to `names_pattern`, and is internally evaluated as a list/tuple of regular expressions. Issue #1209 @samukweku
+-   [ENH] Add `mutate` function. Issue #1226 @samukweku
+
 
 ## [v0.24.0] - 2022-11-12
 

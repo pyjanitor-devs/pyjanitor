@@ -6,6 +6,9 @@ from pandas.testing import assert_frame_equal
 from pandas import NA
 
 
+df = [1, 2, 3]
+
+
 @pytest.fixture
 def df_checks():
     """fixture dataframe"""
@@ -69,13 +72,13 @@ def test_subtype_names_to(df_checks):
     and the wrong type is provided for entries
     in names_to.
     """
-    with pytest.raises(TypeError, match="1 in names_to.+"):
+    with pytest.raises(TypeError, match="'1' in names_to.+"):
         df_checks.pivot_longer(names_to=[1])
 
 
 def test_duplicate_names_to(df_checks):
     """Raise error if names_to contains duplicates."""
-    with pytest.raises(ValueError, match="y is duplicated in names_to."):
+    with pytest.raises(ValueError, match="'y' is duplicated in names_to."):
         df_checks.pivot_longer(names_to=["y", "y"], names_pattern="(.+)(.)")
 
 
@@ -101,8 +104,18 @@ def test_name_pattern_wrong_type(df_checks):
 
 def test_name_pattern_no_names_to(df_checks):
     """Raise ValueError if names_pattern and names_to is None."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Kindly provide values for names_to."
+    ):
         df_checks.pivot_longer(names_to=None, names_pattern="(.+)(.)")
+
+
+def test_name_pattern_seq_no_names_to(df_checks):
+    """Raise ValueError if names_pattern is a sequence and names_to is None."""
+    with pytest.raises(
+        ValueError, match="Kindly provide values for names_to."
+    ):
+        df_checks.pivot_longer(names_to=None, names_pattern=[".{2}", "\\d"])
 
 
 def test_name_pattern_groups_len(df_checks):
@@ -124,7 +137,7 @@ def test_names_pattern_wrong_subtype(df_checks):
     Raise TypeError if names_pattern is a list/tuple
     and wrong subtype is supplied.
     """
-    with pytest.raises(TypeError, match="1 in names_pattern.+"):
+    with pytest.raises(TypeError, match="'1' in names_pattern.+"):
         df_checks.pivot_longer(
             names_to=["ht", "num"], names_pattern=[1, "\\d"]
         )
@@ -215,7 +228,7 @@ def test_values_to_names_seq_names_to(df_checks):
     and intersects with names_to.
     """
     with pytest.raises(
-        ValueError, match="salvo in values_to already exists in names_to."
+        ValueError, match="'salvo' in values_to already exists in names_to."
     ):
         df_checks.pivot_longer(
             values_to=["salvo"], names_pattern=["ht"], names_to="salvo"
@@ -234,7 +247,9 @@ def test_sub_values_to(df_checks):
 
 def test_duplicate_values_to(df_checks):
     """Raise error if values_to is a sequence, and contains duplicates."""
-    with pytest.raises(ValueError, match="salvo is duplicated in values_to."):
+    with pytest.raises(
+        ValueError, match="'salvo' is duplicated in values_to."
+    ):
         df_checks.pivot_longer(
             names_to=["x", "y"],
             names_pattern=[r"ht", r"\d"],
@@ -790,6 +805,40 @@ def test_names_pattern_list():
     assert_frame_equal(result, actual)
 
 
+def test_names_pattern_dict():
+    """Test output for names_pattern if dict."""
+
+    df = pd.DataFrame(
+        {
+            "Activity": ["P1", "P2"],
+            "General": ["AA", "BB"],
+            "m1": ["A1", "B1"],
+            "t1": ["TA1", "TB1"],
+            "m2": ["A2", "B2"],
+            "t2": ["TA2", "TB2"],
+            "m3": ["A3", "B3"],
+            "t3": ["TA3", "TB3"],
+        }
+    )
+
+    result = df.pivot_longer(
+        index=["Activity", "General"],
+        names_pattern={"M": "^m", "Task": "^t"},
+        sort_by_appearance=True,
+    ).loc[:, ["Activity", "General", "Task", "M"]]
+
+    actual = (
+        pd.wide_to_long(
+            df, i=["Activity", "General"], stubnames=["t", "m"], j="number"
+        )
+        .set_axis(["Task", "M"], axis="columns")
+        .droplevel(-1)
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual)
+
+
 @pytest.fixture
 def not_dot_value():
     """Fixture DataFrame"""
@@ -854,6 +903,33 @@ def test_not_dot_value_pattern(not_dot_value):
         "country",
         names_to=("event", "year"),
         names_pattern=r"(.+)_(.+)",
+        values_to="score",
+        sort_by_appearance=True,
+    )
+    result = result.sort_values(
+        ["country", "event", "year"], ignore_index=True
+    )
+    actual = not_dot_value.set_index("country")
+    actual.columns = actual.columns.str.split("_", expand=True)
+    actual.columns.names = ["event", "year"]
+    actual = (
+        actual.stack(["event", "year"])
+        .rename("score")
+        .sort_index()
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual)
+
+
+def test_not_dot_value_pattern_named_groups(not_dot_value):
+    """
+    Test output when names_pattern has named groups
+    """
+
+    result = not_dot_value.pivot_longer(
+        "country",
+        names_pattern=r"(?P<event>.+)_(?P<year>.+)",
         values_to="score",
         sort_by_appearance=True,
     )
@@ -941,6 +1017,44 @@ def test_multiple_dot_value():
     assert_frame_equal(result, actual, check_dtype=False)
 
 
+def test_multiple_dot_value_named_group():
+    """Test output for multiple .value."""
+    df = pd.DataFrame(
+        {
+            "x_1_mean": [1, 2, 3, 4],
+            "x_2_mean": [1, 1, 0, 0],
+            "x_1_sd": [0, 1, 1, 1],
+            "x_2_sd": [0.739, 0.219, 1.46, 0.918],
+            "y_1_mean": [1, 2, 3, 4],
+            "y_2_mean": [1, 1, 0, 0],
+            "y_1_sd": [0, 1, 1, 1],
+            "y_2_sd": [-0.525, 0.623, -0.705, 0.662],
+            "unit": [1, 2, 3, 4],
+        }
+    )
+
+    result = df.pivot_longer(
+        index="unit",
+        names_pattern=r"(?P<_>x|y)_(?P<time>[0-9])(?P<__>_mean|_sd)",
+    ).astype({"time": int})
+
+    actual = df.set_index("unit")
+    cols = [ent.split("_") for ent in actual.columns]
+    actual.columns = [f"{start}_{end}{middle}" for start, middle, end in cols]
+    actual = (
+        pd.wide_to_long(
+            actual.reset_index(),
+            stubnames=["x_mean", "y_mean", "x_sd", "y_sd"],
+            i="unit",
+            j="time",
+        )
+        .sort_index(axis=1)
+        .reset_index()
+    )
+
+    assert_frame_equal(result, actual, check_dtype=False)
+
+
 @pytest.fixture
 def single_val():
     """fixture dataframe"""
@@ -958,6 +1072,16 @@ def test_multiple_dot_value2(single_val):
 
     result = single_val.pivot_longer(
         index="id", names_to=(".value", ".value"), names_pattern="(.)(.)"
+    )
+
+    assert_frame_equal(result, single_val)
+
+
+def test_multiple_dot_value2_named_group(single_val):
+    """Test output for multiple .value."""
+
+    result = single_val.pivot_longer(
+        index="id", names_pattern="(?P<_>.)(?P<_____________>.)"
     )
 
     assert_frame_equal(result, single_val)
@@ -1142,6 +1266,176 @@ def multiple_values_to():
     )
 
 
+def test_names_pattern_dict_names_to(multiple_values_to):
+    """
+    Raise Error if names_pattern is a dict
+    and one of the keys exists in the index
+    """
+    with pytest.raises(
+        ValueError, match="'City' in the names_pattern dictionary.+"
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "City": {"Pounds": r"M|O|W"},
+                "Drink": {"Ounces": r"G|V"},
+            },
+        )
+
+
+def test_names_pattern_dict_index(multiple_values_to):
+    """
+    Raise Error if names_pattern is a dict
+    and the key already exists in
+    """
+    with pytest.raises(
+        ValueError,
+        match="names_to should be None when names_pattern is a dictionary",
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_to=("Fruit", "Drink"),
+            names_pattern={
+                "Fruit": {"Pounds": r"M|O|W"},
+                "Drink": {"Ounces": r"G|V"},
+            },
+        )
+
+
+def test_names_pattern_dict_outer_key(multiple_values_to):
+    """
+    Raise Error if names_pattern is a dict
+    and the outer key is not a string
+    """
+    with pytest.raises(TypeError, match="'1' in names_pattern.+"):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                1: {"Pounds": r"M|O|W"},
+                "Drink": {"Ounces": r"G|V"},
+            },
+        )
+
+
+def test_names_pattern_nested_dict_length(multiple_values_to):
+    """
+    Raise Error if names_pattern is a nested dict
+    and the inner dictionary is not of length 1
+    """
+    with pytest.raises(
+        ValueError,
+        match="The length of the dictionary paired with 'Fruit' "
+        "in names_pattern should be length 1, instead got 2",
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={"Fruit": {"Pounds": r"M|O|W", "Drink": r"G|V"}},
+        )
+
+
+def test_names_pattern_nested_dict_inner_key(multiple_values_to):
+    """
+    Raise Error if names_pattern is a nested dict
+    and the inner key is not a string
+    """
+    with pytest.raises(
+        TypeError,
+        match="The key in the nested dictionary for 'Fruit' "
+        "in names_pattern should be a string.+",
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {1: r"M|O|W"},
+                "Drink": {"Ounces": r"G|V"},
+            },
+        )
+
+
+def test_names_pattern_nested_dict_inner_key_outer_key_dupe(
+    multiple_values_to,
+):
+    """
+    Raise Error if names_pattern is a nested dict
+    and the inner key is a dupe of the outer key
+    """
+    with pytest.raises(
+        ValueError,
+        match="'Fruit' in the nested dictionary already exists "
+        "as one of the main keys in names_pattern",
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {"Pounds": r"M|O|W"},
+                "Drink": {"Fruit": r"G|V"},
+            },
+        )
+
+
+def test_names_pattern_nested_dict_inner_key_index(multiple_values_to):
+    """
+    Raise Error if names_pattern is a nested dict
+    and the inner key already exists in the index
+    """
+    with pytest.raises(
+        ValueError,
+        match="'State' in the nested dictionary already exists "
+        "as a column label assigned to the index parameter.+",
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {"Pounds": r"M|O|W"},
+                "Drink": {"State": r"G|V"},
+            },
+        )
+
+
+def test_names_pattern_nested_dict_inner_value(multiple_values_to):
+    """
+    Raise Error if names_pattern is a nested dict
+    and the inner value is not a string/regex
+    """
+    with pytest.raises(
+        TypeError,
+        match="The value paired with 'Pounds' in the nested dictionary "
+        "in names_pattern.+",
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {"Pounds": [r"M|O|W"]},
+                "Drink": {"Ounces": r"G|V"},
+            },
+        )
+
+
+def test_names_pattern_dict_value(multiple_values_to):
+    """
+    Raise Error if names_pattern is a dict
+    and the value is not a string/regex
+    """
+    with pytest.raises(
+        TypeError,
+        match="The value paired with 'Fruit' "
+        "in the names_pattern dictionary.+",
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={"Fruit": [r"M|O|W"], "Drink": r"G|V"},
+        )
+
+
 def test_output_values_to_seq(multiple_values_to):
     """Test output when values_to is a list/tuple."""
 
@@ -1200,6 +1494,50 @@ def test_output_values_to_seq1(multiple_values_to):
         names_to=("Fruit", "Drink"),
         values_to=("Pounds", "Ounces"),
         names_pattern=[r"M|O|W", r"G|V"],
+        names_transform={"Fruit": "category", "Drink": "category"},
+    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+
+    assert_frame_equal(expected, actual)
+
+
+def test_output_names_pattern_nested_dictionary(multiple_values_to):
+    """Test output when names_pattern is a nested dictionary."""
+    # https://stackoverflow.com/a/51520155/7175713
+    df1 = multiple_values_to.melt(
+        id_vars=["City", "State"],
+        value_vars=["Mango", "Orange", "Watermelon"],
+        var_name="Fruit",
+        value_name="Pounds",
+    )
+    df2 = multiple_values_to.melt(
+        id_vars=["City", "State"],
+        value_vars=["Gin", "Vodka"],
+        var_name="Drink",
+        value_name="Ounces",
+    )
+
+    df1 = df1.set_index(
+        ["City", "State", df1.groupby(["City", "State"]).cumcount()]
+    )
+    df2 = df2.set_index(
+        ["City", "State", df2.groupby(["City", "State"]).cumcount()]
+    )
+
+    actual = (
+        pd.concat([df1, df2], axis=1)
+        .sort_index(level=2)
+        .reset_index(level=2, drop=True)
+        .reset_index()
+        .astype({"Fruit": "category", "Drink": "category"})
+    )
+
+    expected = multiple_values_to.pivot_longer(
+        index=["City", "State"],
+        column_names=slice("Mango", "Vodka"),
+        names_pattern={
+            "Fruit": {"Pounds": r"M|O|W"},
+            "Drink": {"Ounces": r"G|V"},
+        },
         names_transform={"Fruit": "category", "Drink": "category"},
     ).sort_values(["Fruit", "City", "State"], ignore_index=True)
 

@@ -415,10 +415,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     level_label = {}
     index = getattr(df, axis)
     if not isinstance(index, pd.MultiIndex):
-        raise TypeError(
-            "Index selection with a dictionary "
-            "applies only to a MultiIndex."
-        )
+        return _select_index(list(arg), df, axis)
     all_str = (isinstance(entry, str) for entry in arg)
     all_str = all(all_str)
     all_int = (isinstance(entry, int) for entry in arg)
@@ -511,6 +508,7 @@ def _column_sel_dispatch(cols, df, axis):  # noqa: F811
     return np.delete(index, arr)
 
 
+@_select_index.register(set)
 @_select_index.register(list)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """

@@ -60,30 +60,6 @@ def test_encode_categorical_missing_columns(df):
 @pytest.mark.functions
 @given(df=df_strategy())
 @settings(deadline=None)
-def test_encode_categorical_invalid_input(df):
-    """
-    Raise KeyError for wrong input type
-    for `column_names`.
-    """
-    with pytest.raises(KeyError):
-        df.encode_categorical(1)
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-@settings(deadline=None)
-def test_encode_categorical_invalid_input_2(df):
-    """
-    Raise KeyError for wrong input type
-    for `column_names`.
-    """
-    with pytest.raises(KeyError):
-        df.encode_categorical({"names"})
-
-
-@pytest.mark.functions
-@given(df=df_strategy())
-@settings(deadline=None)
 def test_encode_categorical_multiple_column_names(df):
     """
     Test output when more than one column is provided

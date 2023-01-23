@@ -979,12 +979,14 @@ def _create_frame(
 
     if sort_by_appearance:
         if how in {"inner", "left"}:
-            if not right.empty:
-                right = right.take(right_index)
+            right = {
+                key: value._values[right_index] for key, value in right.items()
+            }
+            right = pd.DataFrame(right)
             right.index = left_index
         else:
-            if not df.empty:
-                df = df.take(left_index)
+            df = {key: value._values[left_index] for key, value in df.items()}
+            df = pd.DataFrame(df)
             df.index = right_index
         df = df.join(right, how=how)
 

@@ -1,33 +1,33 @@
-# """Alternative function to pd.agg for summarizing data."""
-# from typing import Any
-# import pandas as pd
-# import pandas_flavor as pf
+"""Alternative function to pd.agg for summarizing data."""
+from typing import Any
+import pandas as pd
+import pandas_flavor as pf
 
-# from janitor.utils import check
-# from pandas.api.types import is_scalar
+from janitor.utils import check
+from pandas.api.types import is_scalar
 
 from janitor.functions.utils import col, _process_function, get_index_labels
 from itertools import product
 
 
-# @pf.register_dataframe_method
-# def summarize(
-#     df: pd.DataFrame,
-#     *args,
-#     by: Any = None,
-# ) -> pd.DataFrame:
-#     """
+@pf.register_dataframe_method
+def summarize(
+    df: pd.DataFrame,
+    *args,
+    by: Any = None,
+) -> pd.DataFrame:
+    """
 
-#     !!! info "New in version 0.25.0"
+    !!! info "New in version 0.25.0"
 
-#     !!!note
+    !!!note
 
-#         Before reaching for `summarize`, try `pd.DataFrame.agg`.
+        Before reaching for `summarize`, try `pd.DataFrame.agg`.
 
     Reduction operation on columns via the `janitor.Column` class.
 
-#     It is a wrapper around `pd.DataFrame.agg`,
-#     with added flexibility for multiple columns.
+    It is a wrapper around `pd.DataFrame.agg`,
+    with added flexibility for multiple columns.
 
     The `col` class allows for flexibility when aggregating.
 
@@ -51,7 +51,7 @@ from itertools import product
 #     can also be passed to `by` via a dictionary.
 
 
-#     Example:
+    Example:
 
         >>> import pandas as pd
         >>> import numpy as np
@@ -76,7 +76,7 @@ from itertools import product
         102201     heats         2.0
         103202     finals        4.0
 
-#     Summarize with a new column name:
+    Summarize with a new column name:
 
         >>> arg = col("avg_run").compute("mean").rename("avg_run_2")
         >>> df.summarize(arg)
@@ -117,13 +117,12 @@ from itertools import product
         if arg.func is None:
             raise ValueError(f"Kindly provide a function for Argument {num}")
 
-#         if names:
-#             check(
-#                 f"The names (position 2 in the tuple) for argument {num} ",
-#                 names,
-#                 [str],
-#             )
-#         args_to_process.append(entry)
+    by_is_true = by is not None
+    grp = None
+    if by_is_true and isinstance(by, dict):
+        grp = df.groupby(**by)
+    elif by_is_true:
+        grp = df.groupby(by)
 
     by_is_true = by is not None
     grp = None

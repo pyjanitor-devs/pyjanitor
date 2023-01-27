@@ -4,6 +4,7 @@ from __future__ import annotations
 import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
+from collections import Counter
 import re
 from typing import (
     Hashable,
@@ -36,6 +37,7 @@ import inspect
 from multipledispatch import dispatch
 from janitor.utils import check_column
 from functools import singledispatch
+from itertools import product
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -651,68 +653,69 @@ def _convert_to_numpy_array(
     return left, right
 
 
-# class SD(NamedTuple):
-#     """
-#     Subset of Data.
-#     Used in `mutate` and `summarize`
-#     for computation on multiple columns
+def _process_SD(df, arg):
+    """
+    process SD for use in `mutate` or `summarize`
+    """
+    columns = arg.cols
+    func = arg.func[0]
+    names = arg.names_glue
+    columns = _select_index([*columns], df, axis="columns")
+    columns = df.columns[columns]
+    if not isinstance(func, (list, tuple)):
+        func = [func]
+    func_names = [
+        funcn.__name__ if callable(funcn) else funcn for funcn in func
+    ]
+    counts = None
+    dupes = set()
+    if len(func) > 1:
+        counts = Counter(func_names)
+        counts = {key: 0 for key, value in counts.items() if value > 1}
+    # deal with duplicate function names
+    if counts:
+        func_list = []
+        for funcn in func_names:
+            if funcn in counts:
+                if names:
+                    name = f"{funcn}{counts[funcn]}"
+                else:
+                    name = f"{counts[funcn]}"
+                    dupes.add(name)
+                func_list.append(name)
+                counts[funcn] += 1
+            else:
+                func_list.append(funcn)
+        func_names = func_list
+    counts = None
+    func = product(func, [arg.func[-1]])
 
-#     !!! info "New in version 0.25.0"
-#     """
-
-#     columns: Any
-#     func: Optional[Union[str, Callable, list, tuple]]
-#     names_glue: Optional[str] = None
-
-
-# def _process_SD(df, arg):
-#     """
-#     process SD for use in `mutate` or `summarize`
-#     """
-#     columns = arg.columns
-#     func = arg.func
-#     names = arg.names_glue
-#     columns = _select_index([columns], df, axis="columns")
-#     columns = df.columns[columns]
-#     if not isinstance(func, (list, tuple)):
-#         func = [func]
-#     func_names = [
-#         funcn.__name__ if callable(funcn) else funcn for funcn in func
-#     ]
-#     counts = None
-#     dupes = set()
-#     if len(func) > 1:
-#         counts = Counter(func_names)
-#         counts = {key: 0 for key, value in counts.items() if value > 1}
-#     # deal with duplicate function names
-#     if counts:
-#         func_list = []
-#         for funcn in func_names:
-#             if funcn in counts:
-#                 if names:
-#                     name = f"{funcn}{counts[funcn]}"
-#                 else:
-#                     name = f"{counts[funcn]}"
-#                     dupes.add(name)
-#                 func_list.append(name)
-#                 counts[funcn] += 1
-#             else:
-#                 func_list.append(funcn)
-#         func_names = func_list
-#     counts = None
-#     return columns, names, zip(func_names, func), dupes
+    return columns, names, zip(func_names, func), dupes
 
 
 class SD:
-    def __init__(self, cols):
+    """
+    Subset of Data.
+    Used in `mutate` and `summarize`
+    for computation on multiple columns
+
+    !!! info "New in version 0.25.0"
+    """
+
+    def __init__(self, *cols):
         self.cols = cols
         self.func = None
         self.names_glue = None
 
     def add_fns(self, func, **kwargs):
+        check("Function", func, [str, list, tuple, callable])
+        if isinstance(func, (list, tuple)):
+            for funcn in func:
+                check("Function in list/tuple", funcn, [str, callable])
         self.func = (func, kwargs)
         return self
 
     def rename(self, name):
+        check("name", name, [str])
         self.names_glue = name
         return self

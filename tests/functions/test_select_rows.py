@@ -221,13 +221,26 @@ def test_boolean_multiindex(multiindex):
         multiindex.select_rows(lambda df: [True, False])
 
 
+def test_set(dates):
+    """
+    Test output if input is a set
+    """
+    assert_frame_equal(
+        dates.select_rows({"2011-01-31"}),
+        dates.loc[["2011-01-31"]],
+        check_freq=False,
+    )
+
+
 def test_dict_single_index(dates):
     """
-    Raise if a dictionary is passed,
-    and the index is not a MultiIndex
+    Test output for dict on a single index
     """
-    with pytest.raises(TypeError):
-        dates.select_rows({0: "2011-01-31"})
+    assert_frame_equal(
+        dates.select_rows({"2011-01-31": 1.3}),
+        dates.loc[["2011-01-31"]],
+        check_freq=False,
+    )
 
 
 def test_array(dates):

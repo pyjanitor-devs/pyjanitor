@@ -32,6 +32,7 @@ from pandas.api.types import (
     is_bool_dtype,
 )
 import numpy as np
+import inspect
 from multipledispatch import dispatch
 from janitor.utils import check_column
 from functools import singledispatch
@@ -138,7 +139,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     it can be used to select columns in the index or columns_names
     arguments of `pivot_longer` function.
 
-    **Warning**:
+    !!!warning
 
         This function is deprecated. Kindly use `re.compile` instead.
 
@@ -304,27 +305,6 @@ def _select_index(arg, df, axis):
         raise KeyError(f"No match was returned for {arg}") from exc
 
 
-@_select_index.register(DropLabel)  # noqa: F811
-def _column_sel_dispatch(cols, df, axis):  # noqa: F811
-    """
-    Base function for selection on a Pandas Index object.
-    Returns the inverse of the passed label(s).
-
-    Returns an array of integers.
-    """
-    arr = _select_index(cols.label, df, axis)
-    index = np.arange(getattr(df, axis).size)
-    if isinstance(arr, int):
-        arr = [arr]
-    elif isinstance(arr, slice):
-        arr = index[arr]
-    elif is_list_like(arr):
-        arr = np.asanyarray(arr)
-    if is_bool_dtype(arr):
-        return index[~arr]
-    return np.setdiff1d(index, arr)
-
-
 @_select_index.register(str)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -342,6 +322,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             return index.get_loc(arg)
         except KeyError as exc:
             if _is_str_or_cat(index):
+                if arg == "*":
+                    return slice(None)
                 if isinstance(index, pd.MultiIndex):
                     index = index.get_level_values(0)
                 # label selection should be case sensitive
@@ -409,6 +391,15 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
     Returns an array of booleans.
     """
+    # special case for selecting dtypes columnwise
+    dtypes = (
+        arg.__name__
+        for _, arg in inspect.getmembers(pd.api.types, inspect.isfunction)
+        if arg.__name__.startswith("is") and arg.__name__.endswith("type")
+    )
+    if (arg.__name__ in dtypes) and (axis == "columns"):
+        bools = df.dtypes.map(arg)
+        return np.asanyarray(bools)
 
     return _select_callable(df, arg, axis)
 
@@ -424,10 +415,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     level_label = {}
     index = getattr(df, axis)
     if not isinstance(index, pd.MultiIndex):
-        raise TypeError(
-            "Index selection with a dictionary "
-            "applies only to a MultiIndex."
-        )
+        return _select_index(list(arg), df, axis)
     all_str = (isinstance(entry, str) for entry in arg)
     all_str = all(all_str)
     all_int = (isinstance(entry, int) for entry in arg)
@@ -506,6 +494,21 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         raise KeyError(f"No match was returned for {arg}") from exc
 
 
+@_select_index.register(DropLabel)  # noqa: F811
+def _column_sel_dispatch(cols, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Returns the inverse of the passed label(s).
+
+    Returns an array of integers.
+    """
+    arr = _select_index(cols.label, df, axis)
+    index = np.arange(getattr(df, axis).size)
+    arr = _index_converter(arr, index)
+    return np.delete(index, arr)
+
+
+@_select_index.register(set)
 @_select_index.register(list)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -527,6 +530,14 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
+    # shortcut for single unique dtype of scalars
+    checks = (is_scalar(entry) for entry in arg)
+    if all(checks):
+        dtypes = {type(entry) for entry in arg}
+        if len(dtypes) == 1:
+            indices = index.get_indexer_for(list(arg))
+            if (indices != -1).all():
+                return indices
     # treat multiple DropLabel instances as a single unit
     checks = (isinstance(entry, DropLabel) for entry in arg)
     if sum(checks) > 1:
@@ -535,7 +546,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         drop_labels = DropLabel(drop_labels)
         arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
         arg.append(drop_labels)
-
     indices = [_select_index(entry, df, axis) for entry in arg]
 
     # single entry does not need to be combined
@@ -548,18 +558,45 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         if is_list_like(indices):
             indices = np.asanyarray(indices)
         return indices
-    contents = []
-    for arr in indices:
-        if is_list_like(arr):
-            arr = np.asanyarray(arr)
-        if is_bool_dtype(arr):
-            arr = arr.nonzero()[0]
-        elif isinstance(arr, slice):
-            arr = range(index.size)[arr]
-        elif isinstance(arr, int):
-            arr = [arr]
-        contents.append(arr)
-    return np.concatenate(contents)
+    indices = [_index_converter(arr, index) for arr in indices]
+    return np.concatenate(indices)
+
+
+def _index_converter(arr, index):
+    """Converts output from _select_index to an array_like"""
+    if is_list_like(arr):
+        arr = np.asanyarray(arr)
+    if is_bool_dtype(arr):
+        arr = arr.nonzero()[0]
+    elif isinstance(arr, slice):
+        arr = range(index.size)[arr]
+    elif isinstance(arr, int):
+        arr = [arr]
+    return arr
+
+
+def get_index_labels(arg, df, axis):
+    """
+    Convenience function to get actual labels from column/index
+
+    !!! info "New in version 0.25.0"
+
+    :param arg: Valid inputs include: an exact column name to look for,
+        a shell-style glob string (e.g. `*_thing_*`),
+        a regular expression,
+        a callable,
+        or variable arguments of all the aforementioned.
+        A sequence of booleans is also acceptable.
+        A dictionary can be used for selection
+        on a MultiIndex on different levels.
+    :param df: The pandas DataFrame object.
+    :param axis: Should be either `index` or `columns`.
+    :returns: A pandas Index.
+
+    """
+    assert axis in {"index", "columns"}
+    index = getattr(df, axis)
+    return index[_select_index(arg, df, axis)]
 
 
 def _select(
@@ -592,7 +629,7 @@ def _select(
         return df.iloc[rows, columns]
     indices = _select_index(list(args), df, axis)
     if invert:
-        rev = np.ones(getattr(df, axis).size, dtype=np.bool8)
+        rev = np.ones(getattr(df, axis).size, dtype=np.bool_)
         rev[indices] = False
         return df.iloc(axis=axis)[rev]
     return df.iloc(axis=axis)[indices]

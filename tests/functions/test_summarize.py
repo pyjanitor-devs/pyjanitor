@@ -30,6 +30,28 @@ def test_SD_name_error(dataframe):
 
 
 @pytest.mark.functions
+def test_SD_name_dupe_error(dataframe):
+    """Raise if names_glue already exists"""
+    with pytest.raises(
+        ValueError,
+        match=r"A name has already been assigned",
+    ):
+        dataframe.summarize(SD("a").add_fns("sum").rename("1").rename("name"))
+
+
+@pytest.mark.functions
+def test_SD_func_dupe_error(dataframe):
+    """Raise if func already exists"""
+    with pytest.raises(
+        ValueError,
+        match=r"A function has already been assigned",
+    ):
+        dataframe.summarize(
+            SD("a").add_fns("sum").add_fns(np.sum).rename("name")
+        )
+
+
+@pytest.mark.functions
 def test_SD_no_func_error(dataframe):
     """Raise if func is not provided"""
     with pytest.raises(

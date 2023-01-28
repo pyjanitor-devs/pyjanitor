@@ -708,6 +708,8 @@ class SD:
         self.names_glue = None
 
     def add_fns(self, func, **kwargs):
+        if self.func:
+            raise ValueError("A function has already been assigned")
         check("Function", func, [str, list, tuple, callable])
         if isinstance(func, (list, tuple)):
             for funcn in func:
@@ -716,6 +718,8 @@ class SD:
         return self
 
     def rename(self, name):
+        if self.names_glue:
+            raise ValueError("A name has already been assigned")
         check("name", name, [str])
         self.names_glue = name
         return self

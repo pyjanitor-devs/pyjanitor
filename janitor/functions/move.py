@@ -15,9 +15,8 @@ def move(
     position: str = "before",
     axis: int = 0,
 ) -> pd.DataFrame:
-    """Changes rows or columns positions in the dataframe.
-
-    It uses the
+    """
+    Changes rows or columns positions in the dataframe. It uses the
     [`select_columns`][janitor.functions.select.select_columns] or
     [`select_rows`][janitor.functions.select.select_rows] syntax,
     making it easy to move blocks of rows or columns at once.
@@ -73,24 +72,19 @@ def move(
         1  4  8  3
         2  6  9  5
 
-    Args:
-        df: The pandas DataFrame object.
-        source: Columns or rows to move.
-        target: Columns or rows to move adjacent to.
-            If `None` and `position == 'before'`, `source`
-            is moved to the beginning; if `position == 'after'`,
-            `source` is moved to the end.
-        position: Specifies the destination of the columns/rows.
-            Values can be either `before` or `after`; defaults to `before`.
-        axis: Axis along which the function is applied. 0 to move a
-            row, 1 to move a column.
-
-    Raises:
-        ValueError: If `axis` is not `0` or `1`.
-        ValueError: If `position` is not `before` or `after`.
-
-    Returns:
-        The dataframe with the Series moved.
+    :param df: The pandas DataFrame object.
+    :param source: Columns or rows to move.
+    :param target: Columns or rows to move adjacent to.
+        If `None` and `position == 'before'`, `source`
+        is moved to the beginning; if `position == 'after'`,
+        `source` is moved to the end.
+    :param position: Specifies the destination of the columns/rows.
+        Values can be either `before` or `after`; defaults to `before`.
+    :param axis: Axis along which the function is applied. 0 to move a
+        row, 1 to move a column.
+    :returns: The dataframe with the Series moved.
+    :raises ValueError: If `axis` is not `0` or `1`.
+    :raises ValueError: If `position` is not `before` or `after`.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")

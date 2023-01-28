@@ -42,8 +42,7 @@ def change_type(
         This function will be deprecated in a 1.x release.
         Please use `pd.DataFrame.astype` instead.
 
-    Examples:
-        Change the type of a column.
+    Example: Change the type of a column.
 
         >>> import pandas as pd
         >>> import janitor
@@ -63,8 +62,9 @@ def change_type(
         1    1   5.0
         2    2   1.0
 
-        Change the type of multiple columns. To change the type of all columns,
-        please use `DataFrame.astype` instead.
+    Example: Change the type of multiple columns.
+
+    Change the type of all columns, please use `DataFrame.astype` instead.
 
         >>> import pandas as pd
         >>> import janitor
@@ -75,19 +75,15 @@ def change_type(
         1    1     5
         2    2  True
 
-    Args:
-        df: A pandas DataFrame.
-        column_name: The column(s) in the dataframe.
-        dtype: The datatype to convert to. Should be one of the standard
-            Python types, or a numpy datatype.
-        ignore_exception: One of `{False, "fillna", "keep_values"}`.
-
-    Raises:
-        ValueError: If unknown option provided for `ignore_exception`.
-
-    Returns:
-        A pandas DataFrame with changed column types.
-    """  # noqa: E501
+    :param df: A pandas DataFrame.
+    :param column_name: The column(s) in the dataframe.
+    :param dtype: The datatype to convert to. Should be one of the standard
+        Python types, or a numpy datatype.
+    :param ignore_exception: one of `{False, "fillna", "keep_values"}`.
+    :returns: A pandas DataFrame with changed column types.
+    :raises ValueError: If unknown option provided for
+        `ignore_exception`.
+    """
 
     df = df.copy()  # avoid mutating the original DataFrame
     if not ignore_exception:

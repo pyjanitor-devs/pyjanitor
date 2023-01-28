@@ -29,10 +29,7 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
         1  2  leopard   Shanghai
         2  3     lion      Basel
 
-    Args:
-        df: Input Pandas DataFrame
-
-    Returns:
-        The Pandas DataFrame with the constant columns dropped.
+    :param df: Input Pandas DataFrame
+    :returns: The Pandas DataFrame with the constant columns dropped.
     """
     return df.loc[:, df.nunique().ne(1)]

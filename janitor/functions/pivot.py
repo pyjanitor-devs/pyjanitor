@@ -15,7 +15,7 @@ from pandas.api.types import (
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
-    _select_index,
+    get_index_labels,
     _computations_expand_grid,
 )
 from janitor.utils import check
@@ -481,7 +481,6 @@ def _data_checks_pivot_longer(
             )
 
     is_multi_index = isinstance(df.columns, pd.MultiIndex)
-    indices = None
     if column_names is not None:
         if is_multi_index:
             column_names = _check_tuples_multiindex(
@@ -490,8 +489,7 @@ def _data_checks_pivot_longer(
         else:
             if is_list_like(column_names):
                 column_names = list(column_names)
-            indices = _select_index(column_names, df, axis="columns")
-            column_names = df.columns[indices]
+            column_names = get_index_labels(column_names, df, axis="columns")
             if not is_list_like(column_names):
                 column_names = [column_names]
             else:
@@ -503,8 +501,7 @@ def _data_checks_pivot_longer(
         else:
             if is_list_like(index):
                 index = list(index)
-            indices = _select_index(index, df, axis="columns")
-            index = df.columns[indices]
+            index = get_index_labels(index, df, axis="columns")
             if not is_list_like(index):
                 index = [index]
             else:
@@ -1671,7 +1668,6 @@ def _data_checks_pivot_wider(
     """
 
     is_multi_index = isinstance(df.columns, pd.MultiIndex)
-    indices = None
     if index is not None:
         if is_multi_index:
             if not isinstance(index, list):
@@ -1683,8 +1679,7 @@ def _data_checks_pivot_wider(
         else:
             if is_list_like(index):
                 index = list(index)
-            indices = _select_index(index, df, axis="columns")
-            index = df.columns[indices]
+            index = get_index_labels(index, df, axis="columns")
             if not is_list_like(index):
                 index = [index]
             else:
@@ -1707,8 +1702,7 @@ def _data_checks_pivot_wider(
     else:
         if is_list_like(names_from):
             names_from = list(names_from)
-        indices = _select_index(names_from, df, axis="columns")
-        names_from = df.columns[indices]
+        names_from = get_index_labels(names_from, df, axis="columns")
         if not is_list_like(names_from):
             names_from = [names_from]
         else:
@@ -1727,8 +1721,7 @@ def _data_checks_pivot_wider(
         else:
             if is_list_like(values_from):
                 values_from = list(values_from)
-            indices = _select_index(values_from, df, axis="columns")
-            out = df.columns[indices]
+            out = get_index_labels(values_from, df, axis="columns")
             if not is_list_like(out):
                 out = [out]
             else:

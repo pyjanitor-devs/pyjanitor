@@ -7,6 +7,7 @@ from pandas.testing import assert_frame_equal
 from itertools import product
 
 from janitor.functions.utils import patterns, DropLabel
+from pandas.api.types import is_numeric_dtype
 
 
 @pytest.mark.functions
@@ -377,6 +378,14 @@ def test_callable_length(numbers):
         IndexError, match="The boolean array output from the callable.+"
     ):
         numbers.select_columns(lambda df: [True, False])
+
+
+@pytest.mark.functions
+def test_callable_dtype(dataframe):
+    """Test output when selecting columnns based on dtype"""
+    expected = dataframe.select_dtypes("number")
+    actual = dataframe.select_columns(is_numeric_dtype)
+    assert_frame_equal(expected, actual)
 
 
 def test_dict(multiindex):

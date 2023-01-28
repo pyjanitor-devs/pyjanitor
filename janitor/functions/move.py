@@ -1,21 +1,25 @@
 """Implementation of move."""
 import pandas_flavor as pf
 import pandas as pd
+import numpy as np
 
-from typing import Union
+from typing import Any
+from janitor.functions.utils import _select_index, _index_converter
 
 
 @pf.register_dataframe_method
 def move(
     df: pd.DataFrame,
-    source: Union[int, str],
-    target: Union[int, str],
+    source: Any,
+    target: Any = None,
     position: str = "before",
     axis: int = 0,
 ) -> pd.DataFrame:
     """
-    Moves a column or row to a position adjacent to another column or row in
-    the dataframe.
+    Changes rows or columns positions in the dataframe. It uses the
+    [`select_columns`][janitor.functions.select.select_columns] or
+    [`select_rows`][janitor.functions.select.select_rows] syntax,
+    making it easy to move blocks of rows or columns at once.
 
     This operation does not reset the index of the dataframe. User must
     explicitly do so.
@@ -56,20 +60,30 @@ def move(
         0  1  7  2
         1  3  8  4
         2  5  9  6
+        >>> df.move(source = 'c', target=None, position='before', axis=1)
+           c  a  b
+        0  7  2  1
+        1  8  4  3
+        2  9  6  5
+        >>> df.move(source = 'b', target=None, position='after', axis=1)
+           a  c  b
+        0  2  7  1
+        1  4  8  3
+        2  6  9  5
 
     :param df: The pandas DataFrame object.
-    :param source: Column or row to move.
-    :param target: Column or row to move adjacent to.
-    :param position: Specifies whether the Series is moved to before or
-        after the adjacent Series. Values can be either `before` or `after`;
-        defaults to `before`.
+    :param source: Columns or rows to move.
+    :param target: Columns or rows to move adjacent to.
+        If `None` and `position == 'before'`, `source`
+        is moved to the beginning; if `position == 'after'`,
+        `source` is moved to the end.
+    :param position: Specifies the destination of the columns/rows.
+        Values can be either `before` or `after`; defaults to `before`.
     :param axis: Axis along which the function is applied. 0 to move a
         row, 1 to move a column.
     :returns: The dataframe with the Series moved.
     :raises ValueError: If `axis` is not `0` or `1`.
     :raises ValueError: If `position` is not `before` or `after`.
-    :raises ValueError: If  `source` row or column is not in dataframe.
-    :raises ValueError: If `target` row or column is not in dataframe.
     """
     if axis not in [0, 1]:
         raise ValueError(f"Invalid axis '{axis}'. Can only be 0 or 1.")
@@ -79,40 +93,31 @@ def move(
             f"Invalid position '{position}'. Can only be 'before' or 'after'."
         )
 
-    df = df.copy()
-    if axis == 0:
-        names = list(df.index)
+    mapping = {0: "index", 1: "columns"}
+    names = getattr(df, mapping[axis])
 
-        if source not in names:
-            raise ValueError(f"Source row '{source}' not in dataframe.")
+    assert names.is_unique
+    assert not isinstance(names, pd.MultiIndex)
 
-        if target not in names:
-            raise ValueError(f"Target row '{target}' not in dataframe.")
-
-        names.remove(source)
-        pos = names.index(target)
-
+    index = np.arange(names.size)
+    source = _select_index([source], df, mapping[axis])
+    source = _index_converter(source, index)
+    if target is None:
         if position == "after":
-            pos += 1
-        names.insert(pos, source)
-
-        df = df.loc[names, :]
+            target = np.array([names.size])
+        else:
+            target = np.array([0])
     else:
-        names = list(df.columns)
+        target = _select_index([target], df, mapping[axis])
+        target = _index_converter(target, index)
+    index = np.delete(index, source)
 
-        if source not in names:
-            raise ValueError(f"Source column '{source}' not in dataframe.")
+    if position == "before":
+        position = index.searchsorted(target[0])
+    else:
+        position = index.searchsorted(target[-1]) + 1
+    start = index[:position]
+    end = index[position:]
+    position = np.concatenate([start, source, end])
 
-        if target not in names:
-            raise ValueError(f"Target column '{target}' not in dataframe.")
-
-        names.remove(source)
-        pos = names.index(target)
-
-        if position == "after":
-            pos += 1
-        names.insert(pos, source)
-
-        df = df.loc[:, names]
-
-    return df
+    return df.iloc(axis=axis)[position]

@@ -22,6 +22,18 @@ def dataframe():
     )
 
 
+def test_select_all_columns(dataframe):
+    """Test output for select"""
+    actual = dataframe.select(columns="*")
+    assert_frame_equal(actual, dataframe)
+
+
+def test_select_all_rows(dataframe):
+    """Test output for select"""
+    actual = dataframe.select(rows="*")
+    assert_frame_equal(actual, dataframe)
+
+
 def test_select_rows_only(dataframe):
     """Test output for rows only"""
     actual = dataframe.select(rows={"B": "two"})

@@ -1,3 +1,4 @@
+"""Implementation source for `bin_numeric`."""
 from typing import Optional, Union, Sequence
 import pandas_flavor as pf
 import pandas as pd
@@ -21,8 +22,7 @@ def bin_numeric(
     bins: Optional[Union[int, ScalarSequence, pd.IntervalIndex]] = 5,
     **kwargs,
 ) -> pd.DataFrame:
-    """
-    Generate a new column that labels bins for a specified numeric column.
+    """Generate a new column that labels bins for a specified numeric column.
 
     This method does not mutate the original DataFrame.
 
@@ -31,7 +31,8 @@ def bin_numeric(
 
     [pd_cut_docs]: https://pandas.pydata.org/docs/reference/api/pandas.cut.html
 
-    Example: Binning a numeric column with specific bin edges.
+    Examples:
+        Binning a numeric column with specific bin edges.
 
         >>> import pandas as pd
         >>> import janitor
@@ -47,14 +48,19 @@ def bin_numeric(
         3  12  (11, 15]
         4  15  (11, 15]
 
-    :param df: A pandas DataFrame.
-    :param from_column_name: The column whose data you want binned.
-    :param to_column_name: The new column to be created with the binned data.
-    :param bins: The binning strategy to be utilized. Read the `pd.cut`
-        documentation for more details.
-    :param **kwargs: Additional kwargs to pass to `pd.cut`, except `retbins`.
-    :return: A pandas DataFrame.
-    :raises ValueError: If `retbins` is passed in as a kwarg.
+    Args:
+        df: A pandas DataFrame.
+        from_column_name: The column whose data you want binned.
+        to_column_name: The new column to be created with the binned data.
+        bins: The binning strategy to be utilized. Read the `pd.cut`
+            documentation for more details.
+        **kwargs: Additional kwargs to pass to `pd.cut`, except `retbins`.
+
+    Raises:
+        ValueError: If `retbins` is passed in as a kwarg.
+
+    Returns:
+        A pandas DataFrame.
     """
     if "retbins" in kwargs:
         raise ValueError("`retbins` is not an acceptable keyword argument.")

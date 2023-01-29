@@ -22,8 +22,7 @@ from multipledispatch import dispatch
     )
 )
 def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
-    """
-    Provide a method-chainable function for filling missing values
+    """Provide a method-chainable function for filling missing values
     in selected columns.
 
     It is a wrapper for `pd.Series.ffill` and `pd.Series.bfill`,
@@ -35,8 +34,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         This function will be deprecated in a 1.x release.
         Please use `pd.DataFrame.assign` instead.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor as jn
         >>> df = pd.DataFrame(
@@ -66,13 +64,18 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         2     3   6.0  10.0  11.0  13.0
         3     4   7.0  10.0  11.0  13.0
 
-    :param df: A pandas DataFrame.
-    :param kwargs: Key - value pairs of columns and directions.
-        Directions can be either `down`, `up`, `updown`
-        (fill up then down) and `downup` (fill down then up).
-    :returns: A pandas DataFrame with modified column(s).
-    :raises ValueError: if direction supplied is not one of `down`, `up`,
-        `updown`, or `downup`.
+    Args:
+        df: A pandas DataFrame.
+        **kwargs: Key - value pairs of columns and directions.
+            Directions can be either `down`, `up`, `updown`
+            (fill up then down) and `downup` (fill down then up).
+
+    Raises:
+        ValueError: If direction supplied is not one of `down`, `up`,
+            `updown`, or `downup`.
+
+    Returns:
+        A pandas DataFrame with modified column(s).
     """  # noqa: E501
 
     if not kwargs:
@@ -84,10 +87,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         check("fill_type", fill_type, [str])
         if fill_type.upper() not in fill_types:
             raise ValueError(
-                """
-                fill_type should be one of
-                up, down, updown, or downup.
-                """
+                "fill_type should be one of up, down, updown, or downup."
             )
 
     check_column(df, kwargs)
@@ -136,8 +136,7 @@ class _FILLTYPE(Enum):
 def fill_empty(
     df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
 ) -> pd.DataFrame:
-    """
-    Fill `NaN` values in specified columns with a given value.
+    """Fill `NaN` values in specified columns with a given value.
 
     Super sugary syntax that wraps `pandas.DataFrame.fillna`.
 
@@ -148,8 +147,7 @@ def fill_empty(
         This function will be deprecated in a 1.x release.
         Please use [`jn.impute`][janitor.functions.impute.impute] instead.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
@@ -175,14 +173,16 @@ def fill_empty(
         1     2   4.0   5.0
         2     3   0.0   6.0
 
+    Args:
+        df: A pandas DataFrame.
+        column_names: A column name or an iterable (list
+            or tuple) of column names. If a single column name is passed in,
+            then only that column will be filled; if a list or tuple is passed
+            in, then those columns will all be filled with the same value.
+        value: The value that replaces the `NaN` values.
 
-    :param df: A pandas DataFrame.
-    :param column_names: column_names: A column name or an iterable (list
-        or tuple) of column names. If a single column name is passed in, then
-        only that column will be filled; if a list or tuple is passed in, then
-        those columns will all be filled with the same value.
-    :param value: The value that replaces the `NaN` values.
-    :returns: A pandas DataFrame with `NaN` values filled.
+    Returns:
+        A pandas DataFrame with `NaN` values filled.
     """
 
     check_column(df, column_names)

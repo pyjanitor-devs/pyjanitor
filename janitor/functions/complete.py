@@ -20,7 +20,8 @@ def complete(
     fill_value: Optional[Union[Dict, Any]] = None,
     explicit: bool = True,
 ) -> pd.DataFrame:
-    """
+    """Complete a data frame with missing combinations of data.
+
     It is modeled after tidyr's `complete` function, and is a wrapper around
     [`expand_grid`][janitor.functions.expand_grid.expand_grid], `pd.merge`
     and `pd.fillna`. In a way, it is the inverse of `pd.dropna`, as it exposes
@@ -31,8 +32,7 @@ def complete(
 
     MultiIndex columns are not supported.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> import numpy as np
@@ -57,7 +57,7 @@ def complete(
         3  1999      Agarum          1
         4  2004      Agarum          8
 
-    Expose missing pairings of `Year` and `Taxon`:
+        Expose missing pairings of `Year` and `Taxon`:
 
         >>> df.complete("Year", "Taxon", sort=True)
            Year       Taxon  Abundance
@@ -68,7 +68,7 @@ def complete(
         4  2004      Agarum        8.0
         5  2004  Saccharina        2.0
 
-    Expose missing years from 1999 to 2004 :
+        Expose missing years from 1999 to 2004:
 
         >>> df.complete(
         ...     {"Year": range(df.Year.min(), df.Year.max() + 1)},
@@ -89,7 +89,7 @@ def complete(
         10  2004      Agarum        8.0
         11  2004  Saccharina        2.0
 
-    Fill missing values:
+        Fill missing values:
 
         >>> df = pd.DataFrame(
         ...     dict(
@@ -122,8 +122,8 @@ def complete(
         6      2        2         b       0      99
         7      2        3         b       4       7
 
-    Limit the fill to only implicit missing values
-    by setting explicit to `False`:
+        Limit the fill to only implicit missing values
+        by setting explicit to `False`:
 
         >>> df.complete(
         ...     "group",
@@ -142,22 +142,25 @@ def complete(
         6      2        2         b     0.0    99.0
         7      2        3         b     4.0     7.0
 
-    :param df: A pandas DataFrame.
-    :param *columns: This refers to the columns to be
-        completed. It could be column labels (string type),
-        a list/tuple of column labels, or a dictionary that pairs
-        column labels with new values.
-    :param sort: Sort DataFrame based on *columns. Default is `False`.
-    :param by: label or list of labels to group by.
-        The explicit missing rows are returned per group.
-    :param fill_value: Scalar value to use instead of NaN
-        for missing combinations. A dictionary, mapping columns names
-        to a scalar value is also accepted.
-    :param explicit: Determines if only implicitly missing values
-        should be filled (`False`), or all nulls existing in the dataframe
-        (`True`). Default is `True`. `explicit` is applicable only
-        if `fill_value` is not `None`.
-    :returns: A pandas DataFrame with explicit missing rows, if any.
+    Args:
+        df: A pandas DataFrame.
+        *columns: This refers to the columns to be
+            completed. It could be column labels (string type),
+            a list/tuple of column labels, or a dictionary that pairs
+            column labels with new values.
+        sort: Sort DataFrame based on *columns.
+        by: Label or list of labels to group by.
+            The explicit missing rows are returned per group.
+        fill_value: Scalar value to use instead of NaN
+            for missing combinations. A dictionary, mapping columns names
+            to a scalar value is also accepted.
+        explicit: Determines if only implicitly missing values
+            should be filled (`False`), or all nulls existing in the dataframe
+            (`True`). `explicit` is applicable only
+            if `fill_value` is not `None`.
+
+    Returns:
+        A pandas DataFrame with explicit missing rows, if any.
     """
 
     if not columns:
@@ -281,8 +284,7 @@ def _computations_complete(
 def _generic_complete(
     df: pd.DataFrame, columns: list, all_strings: bool, sort: bool
 ):
-    """
-    Generate cartesian product for `_computations_complete`.
+    """Generate cartesian product for `_computations_complete`.
 
     Returns a DataFrame, with no duplicates.
     """
@@ -325,12 +327,13 @@ def _generic_complete(
 def _complete_column(column: str, df, sort):
     """
     Args:
-        column : str/list/dict
+        column: str/list/dict
         df: Pandas DataFrame
         sort: whether or not to sort the Series.
 
-    A Pandas Series/DataFrame with no duplicates,
-    or a dictionary of unique Pandas Series is returned.
+    Returns:
+        A Pandas Series/DataFrame with no duplicates,
+            or a dictionary of unique Pandas Series.
     """
     # the cost of checking uniqueness is expensive,
     # especially for large data
@@ -353,7 +356,7 @@ def _complete_column(column: str, df, sort):
 def _sub_complete_column(column, df, sort):  # noqa: F811
     """
     Args:
-        column : list
+        column: list
         df: Pandas DataFrame
         sort: whether or not to sort the DataFrame.
 
@@ -377,7 +380,7 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
 def _sub_complete_column(column, df, sort):  # noqa: F811
     """
     Args:
-        column : dictionary
+        column: dictionary
         df: Pandas DataFrame
         sort: whether or not to sort the Series.
 

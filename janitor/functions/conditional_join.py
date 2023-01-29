@@ -32,9 +32,7 @@ def conditional_join(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
 ) -> pd.DataFrame:
-    """
-
-    The conditional_join function operates similarly to `pd.merge`,
+    """The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,
     or a combination of equi and non-equi joins.
 
@@ -77,8 +75,7 @@ def conditional_join(
     a single index column is returned; else, a MultiIndex column
     is returned.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df1 = pd.DataFrame({"value_1": [2, 5, 7, 1, 3, 4]})
@@ -120,37 +117,37 @@ def conditional_join(
         - 0.24.0
             - Added `df_columns`, `right_columns`, `keep` and `use_numba` parameters.
 
+    Args:
+        df: A pandas DataFrame.
+        right: Named Series or DataFrame to join to.
+        *conditions: Variable argument of tuple(s) of the form
+            `(left_on, right_on, op)`, where `left_on` is the column
+            label from `df`, `right_on` is the column label from `right`,
+            while `op` is the operator. The operator can be any of
+            `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
+            the and(`&`) operator is used to combine the results
+            of the individual conditions.
+        how: Indicates the type of join to be performed.
+            It can be one of `inner`, `left`, `right`.
+            Full outer join is not supported. Defaults to `inner`.
+        sort_by_appearance: This is useful for scenarios where the user wants
+            the original order maintained.
+            If `True` and `how = left`, the row order from the left dataframe
+            is preserved; if `True` and `how = right`, the row order
+            from the right dataframe is preserved.
+        df_columns: Columns to select from `df`.
+            It can be a single column or a list of columns.
+            It is also possible to rename the output columns via a dictionary.
+        right_columns: Columns to select from `right`.
+            It can be a single column or a list of columns.
+            It is also possible to rename the output columns via a dictionary.
+        keep: Choose whether to return the first match,
+            last match or all matches.
+        use_numba: Use numba, if installed, to accelerate the computation.
+            Applicable only to strictly non-equi joins.
 
-
-    :param df: A pandas DataFrame.
-    :param right: Named Series or DataFrame to join to.
-    :param conditions: Variable argument of tuple(s) of the form
-        `(left_on, right_on, op)`, where `left_on` is the column
-        label from `df`, `right_on` is the column label from `right`,
-        while `op` is the operator. The operator can be any of
-        `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
-        the and(`&`) operator is used to combine the results
-        of the individual conditions.
-    :param how: Indicates the type of join to be performed.
-        It can be one of `inner`, `left`, `right`.
-        Full outer join is not supported. Defaults to `inner`.
-    :param sort_by_appearance: Default is `False`.
-        This is useful for scenarios where the user wants
-        the original order maintained.
-        If `True` and `how = left`, the row order from the left dataframe
-        is preserved; if `True` and `how = right`, the row order
-        from the right dataframe is preserved.
-    :param df_columns: Columns to select from `df`.
-        It can be a single column or a list of columns.
-        It is also possible to rename the output columns via a dictionary.
-    :param right_columns: Columns to select from `right`.
-        It can be a single column or a list of columns.
-        It is also possible to rename the output columns via a dictionary.
-    :param keep: Choose whether to return the first match,
-        last match or all matches. Default is `all`.
-    :param use_numba: Use numba, if installed, to accelerate the computation.
-        Applicable only to strictly non-equi joins. Default is `False`.
-    :returns: A pandas DataFrame of the two merged Pandas objects.
+    Returns:
+        A pandas DataFrame of the two merged Pandas objects.
     """  # noqa: E501
 
     return _conditional_join_compute(

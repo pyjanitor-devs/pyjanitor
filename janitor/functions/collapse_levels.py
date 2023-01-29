@@ -23,8 +23,7 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     this through a simple string-joining of all the names across different
     levels in a single column.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -55,16 +54,23 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     Before applying `.collapse_levels`, the `.agg` operation returns a
     multi-level column DataFrame whose columns are `(level 1, level 2)`:
 
-        [("max_speed", "mean"), ("max_speed", "median")]
+    ```python
+    [("max_speed", "mean"), ("max_speed", "median")]
+    ```
 
     `.collapse_levels` then flattens the column MultiIndex into a single
     level index with names:
 
-        ["max_speed_mean", "max_speed_median"]
+    ```python
+    ["max_speed_mean", "max_speed_median"]
+    ```
 
-    :param df: A pandas DataFrame.
-    :param sep: String separator used to join the column level names.
-    :returns: A pandas DataFrame with single-level column index.
+    Args:
+        df: A pandas DataFrame.
+        sep: String separator used to join the column level names.
+
+    Returns:
+        A pandas DataFrame with single-level column index.
     """  # noqa: E501
     check("sep", sep, [str])
 

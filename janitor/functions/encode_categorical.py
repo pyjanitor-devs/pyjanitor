@@ -43,7 +43,8 @@ def encode_categorical(
 
     `column_names` and `kwargs` parameters cannot be used at the same time.
 
-    Example: Using `column_names`
+    Examples:
+        Using `column_names`
 
         >>> import pandas as pd
         >>> import janitor
@@ -72,7 +73,7 @@ def encode_categorical(
         >>> enc_df["foo"].cat.ordered
         False
 
-    Example: Using `kwargs` to specify an ordered categorical.
+        Using `kwargs` to specify an ordered categorical.
 
         >>> import pandas as pd
         >>> import janitor
@@ -94,15 +95,20 @@ def encode_categorical(
         >>> enc_df["foo"].cat.ordered
         True
 
-    :param df: A pandas DataFrame object.
-    :param column_names: A column name or an iterable (list or tuple)
-        of column names.
-    :param **kwargs: A mapping from column name to either `None`,
-        `'sort'` or `'appearance'`, or a 1-D array. This is useful
-        in creating categorical columns that are ordered, or
-        if the user needs to explicitly specify the categories.
-    :returns: A pandas DataFrame.
-    :raises ValueError: If both `column_names` and `kwargs` are provided.
+    Args:
+        df: A pandas DataFrame object.
+        column_names: A column name or an iterable (list or tuple)
+            of column names.
+        **kwargs: A mapping from column name to either `None`,
+            `'sort'` or `'appearance'`, or a 1-D array. This is useful
+            in creating categorical columns that are ordered, or
+            if the user needs to explicitly specify the categories.
+
+    Raises:
+        ValueError: If both `column_names` and `kwargs` are provided.
+
+    Returns:
+        A pandas DataFrame.
     """  # noqa: E501
 
     if all((column_names, kwargs)):

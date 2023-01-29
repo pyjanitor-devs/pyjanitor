@@ -1,3 +1,4 @@
+"""Implementation source for `case_when`."""
 from pandas.core.common import apply_if_callable
 from typing import Any
 import pandas_flavor as pf
@@ -13,39 +14,7 @@ warnings.simplefilter("always", DeprecationWarning)
 def case_when(
     df: pd.DataFrame, *args, default: Any = None, column_name: str
 ) -> pd.DataFrame:
-    """
-    Create a column based on a condition or multiple conditions.
-
-    Example usage:
-
-        >>> import pandas as pd
-        >>> import janitor
-        >>> df = pd.DataFrame(
-        ...     {
-        ...         "a": [0, 0, 1, 2, "hi"],
-        ...         "b": [0, 3, 4, 5, "bye"],
-        ...         "c": [6, 7, 8, 9, "wait"],
-        ...     }
-        ... )
-        >>> df
-            a    b     c
-        0   0    0     6
-        1   0    3     7
-        2   1    4     8
-        3   2    5     9
-        4  hi  bye  wait
-        >>> df.case_when(
-        ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a,
-        ...     (df.b == 0) & (df.a == 0), "x",
-        ...     default = df.c,
-        ...     column_name = "value",
-        ... )
-            a    b     c value
-        0   0    0     6     x
-        1   0    3     7     0
-        2   1    4     8     8
-        3   2    5     9     9
-        4  hi  bye  wait    hi
+    """Create a column based on a condition or multiple conditions.
 
     Similar to SQL and dplyr's case_when
     with inspiration from `pydatatable` if_else function.
@@ -90,35 +59,69 @@ def case_when(
     else:
         default
     ```
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": [0, 0, 1, 2, "hi"],
+        ...         "b": [0, 3, 4, 5, "bye"],
+        ...         "c": [6, 7, 8, 9, "wait"],
+        ...     }
+        ... )
+        >>> df
+            a    b     c
+        0   0    0     6
+        1   0    3     7
+        2   1    4     8
+        3   2    5     9
+        4  hi  bye  wait
+        >>> df.case_when(
+        ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a,
+        ...     (df.b == 0) & (df.a == 0), "x",
+        ...     default = df.c,
+        ...     column_name = "value",
+        ... )
+            a    b     c value
+        0   0    0     6     x
+        1   0    3     7     0
+        2   1    4     8     8
+        3   2    5     9     9
+        4  hi  bye  wait    hi
+
     !!! abstract "Version Changed"
 
         - 0.24.0
             - Added `default` parameter.
 
+    Args:
+        df: A pandas DataFrame.
+        args: Variable argument of conditions and expected values.
+            Takes the form
+            `condition0`, `value0`, `condition1`, `value1`, ... .
+            `condition` can be a 1-D boolean array, a callable, or a string.
+            If `condition` is a callable, it should evaluate
+            to a 1-D boolean array. The array should have the same length
+            as the DataFrame. If it is a string, it is computed on the dataframe,
+            via `df.eval`, and should return a 1-D boolean array.
+            `result` can be a scalar, a 1-D array, or a callable.
+            If `result` is a callable, it should evaluate to a 1-D array.
+            For a 1-D array, it should have the same length as the DataFrame.
+        default: This is the element inserted in the output
+            when all conditions evaluate to False.
+            Can be scalar, 1-D array or callable.
+            If callable, it should evaluate to a 1-D array.
+            The 1-D array should be the same length as the DataFrame.
+        column_name: Name of column to assign results to. A new column
+            is created if it does not already exist in the DataFrame.
 
-    :param df: A pandas DataFrame.
-    :param args: Variable argument of conditions and expected values.
-        Takes the form
-        `condition0`, `value0`, `condition1`, `value1`, ... .
-        `condition` can be a 1-D boolean array, a callable, or a string.
-        If `condition` is a callable, it should evaluate
-        to a 1-D boolean array. The array should have the same length
-        as the DataFrame. If it is a string, it is computed on the dataframe,
-        via `df.eval`, and should return a 1-D boolean array.
-        `result` can be a scalar, a 1-D array, or a callable.
-        If `result` is a callable, it should evaluate to a 1-D array.
-        For a 1-D array, it should have the same length as the DataFrame.
-    :param default: scalar, 1-D array or callable.
-        This is the element inserted in the output
-        when all conditions evaluate to False.
-        If callable, it should evaluate to a 1-D array.
-        The 1-D array should be the same length as the DataFrame.
+    Raises:
+        ValueError: If condition/value fails to evaluate.
 
-    :param column_name: Name of column to assign results to. A new column
-        is created, if it does not already exist in the DataFrame.
-    :raises ValueError: if condition/value fails to evaluate.
-    :returns: A pandas DataFrame.
-    """
+    Returns:
+        A pandas DataFrame.
+    """  # noqa: E501
     # Preliminary checks on the case_when function.
     # The bare minimum checks are done; the remaining checks
     # are done within `pd.Series.mask`.

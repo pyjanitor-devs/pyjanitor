@@ -97,7 +97,7 @@ def case_when(
 
     Args:
         df: A pandas DataFrame.
-        args: Variable argument of conditions and expected values.
+        *args: Variable argument of conditions and expected values.
             Takes the form
             `condition0`, `value0`, `condition1`, `value1`, ... .
             `condition` can be a 1-D boolean array, a callable, or a string.

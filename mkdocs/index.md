@@ -10,8 +10,8 @@ provides a clean API for cleaning data.
 
 ## Quick start
 
-- Installation: `conda install -c conda-forge pyjanitor`
-- Check out the collection of [general functions](https://pyjanitor-devs.github.io/pyjanitor/api/functions/)
+- Installation: `conda install -c conda-forge pyjanitor`. Read more installation instructions [here](https://pyjanitor-devs.github.io/pyjanitor/#installation).
+- Check out the collection of [general functions](https://pyjanitor-devs.github.io/pyjanitor/api/functions/).
 
 ## Why janitor?
 

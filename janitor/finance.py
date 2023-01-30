@@ -1,7 +1,4 @@
-"""
-Finance-specific data cleaning functions.
-"""
-
+"""Finance-specific data cleaning functions."""
 import json
 from datetime import date
 from functools import lru_cache
@@ -11,7 +8,6 @@ import pandas_flavor as pf
 import requests
 
 from janitor.errors import JanitorError
-
 from .utils import check, deprecated_alias, is_connected
 
 
@@ -415,7 +411,13 @@ def convert_currency(
     historical_date: date = None,
     make_new_column: bool = False,
 ) -> pd.DataFrame:
-    """Deprecated function."""
+    """Deprecated function.
+
+    <!--
+    # noqa: DAR101
+    # noqa: DAR401
+    -->
+    """
     raise JanitorError(
         "The `convert_currency` function has been temporarily disabled due to "
         "exchangeratesapi.io disallowing free pinging of its API. "
@@ -630,52 +632,53 @@ def inflate_currency(
     the currency's country.
 
     The provided country can be any economy name or code from the World Bank
-    [list of economies]
-    (https://databank.worldbank.org/data/download/site-content/CLASS.xls).
+    [list of economies](https://databank.worldbank.org/data/download/site-content/CLASS.xls).
 
     **Note**: This method mutates the original DataFrame.
 
-    Method chaining usage example:
+    Examples:
 
-    >>> import pandas as pd
-    >>> import janitor.finance
-    >>> df = pd.DataFrame({"profit":[100.10, 200.20, 300.30, 400.40, 500.50]})
-    >>> df
-       profit
-    0   100.1
-    1   200.2
-    2   300.3
-    3   400.4
-    4   500.5
-    >>> df.inflate_currency(
-    ...    column_name='profit',
-    ...    country='USA',
-    ...    currency_year=2015,
-    ...    to_year=2018,
-    ...    make_new_column=True
-    ... )
-       profit  profit_2018
-    0   100.1   106.050596
-    1   200.2   212.101191
-    2   300.3   318.151787
-    3   400.4   424.202382
-    4   500.5   530.252978
+        >>> import pandas as pd
+        >>> import janitor.finance
+        >>> df = pd.DataFrame({"profit":[100.10, 200.20, 300.30, 400.40, 500.50]})
+        >>> df
+           profit
+        0   100.1
+        1   200.2
+        2   300.3
+        3   400.4
+        4   500.5
+        >>> df.inflate_currency(
+        ...    column_name='profit',
+        ...    country='USA',
+        ...    currency_year=2015,
+        ...    to_year=2018,
+        ...    make_new_column=True
+        ... )
+           profit  profit_2018
+        0   100.1   106.050596
+        1   200.2   212.101191
+        2   300.3   318.151787
+        3   400.4   424.202382
+        4   500.5   530.252978
 
+    Args:
+        df: A pandas DataFrame.
+        column_name: Name of the column containing monetary
+            values to inflate.
+        country: The country associated with the currency being inflated.
+            May be any economy or code from the World Bank
+            [List of economies](https://databank.worldbank.org/data/download/site-content/CLASS.xls).
+        currency_year: The currency year to inflate from.
+            The year should be 1960 or later.
+        to_year: The currency year to inflate to.
+            The year should be 1960 or later.
+        make_new_column: Generates new column for inflated currency if
+            True, otherwise, inflates currency in place.
 
-    :param df: A pandas DataFrame.
-    :param column_name: Name of the column containing monetary
-        values to inflate.
-    :param country: The country associated with the currency being inflated.
-        May be any economy or code from the World Bank [List of economies]
-        (https://databank.worldbank.org/data/download/site-content/CLASS.xls).
-    :param currency_year: The currency year to inflate from.
-        The year should be 1960 or later.
-    :param to_year: The currency year to inflate to.
-        The year should be 1960 or later.
-    :param make_new_column: Generates new column for inflated currency if
-        True, otherwise, inflates currency in place.
-    :returns: The dataframe with inflated currency column.
-    """
+    Returns:
+        The DataFrame with inflated currency column.
+    """  # noqa: E501
 
     inflator = _inflate_currency(country, currency_year, to_year)
 
@@ -695,17 +698,21 @@ def convert_stock(stock_symbol: str) -> str:
     queries an API for the companies full name and returns
     it
 
-    Functional usage example:
+    Examples:
 
-    ```python
-    import janitor.finance
+        ```python
+        import janitor.finance
+        janitor.finance.convert_stock("aapl")
+        ```
 
-    janitor.finance.convert_stock("aapl")
-    ```
+    Args:
+        stock_symbol: Stock ticker Symbol
 
-    :param stock_symbol: Stock ticker Symbol
-    :raises ConnectionError: Internet connection is not available
-    :returns: Full company name
+    Raises:
+        ConnectionError: Internet connection is not available
+
+    Returns:
+        Full company name
     """
     if is_connected("www.google.com"):
         stock_symbol = stock_symbol.upper()
@@ -721,17 +728,19 @@ def get_symbol(symbol: str):
     This is a helper function to get a companies full
     name based on the stock symbol.
 
-    Functional usage example:
+    Examples:
 
-    ```python
-    import janitor.finance
+        ```python
+        import janitor.finance
+        janitor.finance.get_symbol("aapl")
+        ```
 
-    janitor.finance.get_symbol("aapl")
-    ```
+    Args:
+        symbol: This is our stock symbol that we use
+            to query the api for the companies full name.
 
-    :param symbol: This is our stock symbol that we use
-        to query the api for the companies full name.
-    :return: Company full name
+    Returns:
+        Company full name
     """
     result = requests.get(
         "http://d.yimg.com/autoc."

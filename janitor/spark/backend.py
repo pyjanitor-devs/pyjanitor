@@ -20,12 +20,14 @@ except ImportError:
 def register_dataframe_method(method):
     """Register a function as a method attached to the Pyspark DataFrame.
 
-    NOTE
-    ----
-    Modified based on pandas_flavor.register.
+    !!! note
 
-    .. # noqa: DAR101 method
-    .. # noqa: DAR201
+        Modified based on pandas_flavor.register.
+
+    <!--
+    # noqa: DAR101 method
+    # noqa: DAR201
+    -->
     """
 
     def inner(*args, **kwargs):

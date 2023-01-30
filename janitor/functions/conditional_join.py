@@ -24,7 +24,7 @@ from janitor.functions.utils import _convert_to_numpy_array
 def conditional_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
-    *conditions,
+    *conditions: Any,
     how: Literal["inner", "left", "right"] = "inner",
     sort_by_appearance: bool = False,
     df_columns: Optional[Any] = None,

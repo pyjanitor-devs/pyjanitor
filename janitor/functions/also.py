@@ -1,11 +1,13 @@
 """Implementation source for chainable function `also`."""
-from typing import Callable
+from typing import Any, Callable
 import pandas_flavor as pf
 import pandas as pd
 
 
 @pf.register_dataframe_method
-def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
+def also(
+    df: pd.DataFrame, func: Callable, *args: Any, **kwargs: Any
+) -> pd.DataFrame:
     """Run a function with side effects.
 
     This function allows you to run an arbitrary function

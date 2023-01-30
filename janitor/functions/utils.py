@@ -42,7 +42,8 @@ warnings.simplefilter("always", DeprecationWarning)
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
+    *dataframes: Any,
+    column_names: Optional[Iterable[pd.CategoricalDtype]] = None,
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for

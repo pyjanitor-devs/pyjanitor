@@ -1,5 +1,5 @@
 """Function for performing coalesce."""
-from typing import Optional, Union
+from typing import Any, Optional, Union
 import pandas as pd
 import pandas_flavor as pf
 
@@ -11,7 +11,7 @@ from janitor.functions.utils import get_index_labels
 @deprecated_alias(columns="column_names", new_column_name="target_column_name")
 def coalesce(
     df: pd.DataFrame,
-    *column_names,
+    *column_names: Any,
     target_column_name: Optional[str] = None,
     default_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:

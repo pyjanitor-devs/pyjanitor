@@ -2,6 +2,7 @@
 import json
 from datetime import date
 from functools import lru_cache
+from typing import Optional
 
 import pandas as pd
 import pandas_flavor as pf
@@ -723,7 +724,7 @@ def convert_stock(stock_symbol: str) -> str:
         )
 
 
-def get_symbol(symbol: str):
+def get_symbol(symbol: str) -> Optional[str]:
     """
     This is a helper function to get a companies full
     name based on the stock symbol.

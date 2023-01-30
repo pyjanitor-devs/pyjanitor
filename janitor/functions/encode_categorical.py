@@ -1,6 +1,6 @@
 import warnings
 from enum import Enum
-from typing import Hashable, Iterable, Union
+from typing import Any, Hashable, Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from janitor.functions.utils import get_index_labels
 def encode_categorical(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Encode the specified columns with Pandas' [category dtype][cat].
 

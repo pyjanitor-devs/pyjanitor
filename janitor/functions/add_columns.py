@@ -145,7 +145,7 @@ def add_column(
 def add_columns(
     df: pd.DataFrame,
     fill_remaining: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Add multiple columns to the dataframe.
 

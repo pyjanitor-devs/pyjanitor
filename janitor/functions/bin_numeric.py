@@ -1,5 +1,5 @@
 """Implementation source for `bin_numeric`."""
-from typing import Optional, Union, Sequence
+from typing import Any, Optional, Union, Sequence
 import pandas_flavor as pf
 import pandas as pd
 
@@ -20,7 +20,7 @@ def bin_numeric(
     from_column_name: str,
     to_column_name: str,
     bins: Optional[Union[int, ScalarSequence, pd.IntervalIndex]] = 5,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Generate a new column that labels bins for a specified numeric column.
 

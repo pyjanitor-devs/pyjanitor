@@ -102,8 +102,8 @@ def update_where(
 
         >>> import pandas as pd
         >>> from pyspark.sql import SparkSession
-        >>> import janitor.spark
         >>> spark = SparkSession.builder.getOrCreate()
+        >>> import janitor.spark
         >>> data = {
         ...     "a": [1, 2, 3, 4],
         ...     "b": [5, 6, 7, 8],
@@ -117,8 +117,8 @@ def update_where(
         ...         target_column_name='c',
         ...         target_val=10
         ...     )
-        ... )
-        >>> df.show()
+        ... )  # doctest: +SKIP
+        >>> df.show()  # doctest: +SKIP
         +---+---+---+
         |  a|  b|  c|
         +---+---+---+

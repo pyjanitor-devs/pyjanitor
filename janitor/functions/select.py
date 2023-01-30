@@ -1,3 +1,4 @@
+from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 from janitor.utils import deprecated_alias
@@ -8,7 +9,7 @@ from janitor.functions.utils import _select, DropLabel  # noqa: F401
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
     df: pd.DataFrame,
-    *args,
+    *args: Any,
     invert: bool = False,
 ) -> pd.DataFrame:
     """Method-chainable selection of columns.
@@ -65,7 +66,7 @@ def select_columns(
 @pf.register_dataframe_method
 def select_rows(
     df: pd.DataFrame,
-    *args,
+    *args: Any,
     invert: bool = False,
 ) -> pd.DataFrame:
     """Method-chainable selection of rows.
@@ -125,7 +126,9 @@ def select_rows(
 
 
 @pf.register_dataframe_method
-def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
+def select(
+    df: pd.DataFrame, *, rows: Any = None, columns: Any = None
+) -> pd.DataFrame:
     """Method-chainable selection of rows and columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,

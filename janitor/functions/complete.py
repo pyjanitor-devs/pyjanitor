@@ -14,7 +14,7 @@ from janitor.functions.utils import _computations_expand_grid
 @pf.register_dataframe_method
 def complete(
     df: pd.DataFrame,
-    *columns,
+    *columns: Any,
     sort: bool = False,
     by: Optional[Union[list, str]] = None,
     fill_value: Optional[Union[Dict, Any]] = None,

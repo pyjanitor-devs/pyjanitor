@@ -1,4 +1,5 @@
 """Implementation of the `sort_naturally` function."""
+from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 from natsort import index_natsorted
@@ -6,7 +7,7 @@ from natsort import index_natsorted
 
 @pf.register_dataframe_method
 def sort_naturally(
-    df: pd.DataFrame, column_name: str, **natsorted_kwargs
+    df: pd.DataFrame, column_name: str, **natsorted_kwargs: Any
 ) -> pd.DataFrame:
     """Sort a DataFrame by a column using *natural* sorting.
 

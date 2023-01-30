@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import sys
 import socket
-from typing import Callable, Dict, Iterable, Union, List
+from typing import Any, Callable, Dict, Iterable, Union, List
 from functools import singledispatch, wraps
 from warnings import warn
 
@@ -196,7 +196,7 @@ def import_message(
         print(f"{installation}")
 
 
-def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
+def idempotent(func: Callable, df: pd.DataFrame, *args: Any, **kwargs: Any):
     """Raises an error if a function operating on a DataFrame is not
     idempotent.
 

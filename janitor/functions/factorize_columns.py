@@ -1,5 +1,5 @@
 """Implementation of the `factorize_columns` function"""
-from typing import Hashable, Iterable, Union
+from typing import Any, Hashable, Iterable, Union
 import pandas_flavor as pf
 import pandas as pd
 
@@ -11,7 +11,7 @@ def factorize_columns(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable],
     suffix: str = "_enc",
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Converts labels into numerical data.
 

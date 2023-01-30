@@ -1,7 +1,7 @@
 from collections.abc import Iterable as abcIterable
 from enum import Enum
 from operator import methodcaller
-from typing import Hashable, Iterable, Union
+from typing import Any, Hashable, Iterable, Union
 
 import pandas as pd
 import pandas_flavor as pf
@@ -21,7 +21,7 @@ from multipledispatch import dispatch
         "Please use `pd.DataFrame.assign` instead."
     )
 )
-def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+def fill_direction(df: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
     """Provide a method-chainable function for filling missing values
     in selected columns.
 
@@ -134,7 +134,9 @@ class _FILLTYPE(Enum):
 )
 @deprecated_alias(columns="column_names")
 def fill_empty(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable],
+    value: Any,
 ) -> pd.DataFrame:
     """Fill `NaN` values in specified columns with a given value.
 

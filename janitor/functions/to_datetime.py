@@ -1,5 +1,5 @@
 """Implementation source for `to_datetime`."""
-from typing import Hashable
+from typing import Any, Hashable
 import pandas_flavor as pf
 import pandas as pd
 
@@ -15,7 +15,7 @@ from janitor.utils import deprecated_alias, refactored_function
     )
 )
 def to_datetime(
-    df: pd.DataFrame, column_name: Hashable, **kwargs
+    df: pd.DataFrame, column_name: Hashable, **kwargs: Any
 ) -> pd.DataFrame:
     """Convert column to a datetime type, in-place.
 

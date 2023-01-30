@@ -3,7 +3,7 @@ import os
 import subprocess
 from glob import glob
 from io import StringIO
-from typing import Iterable, Union, TYPE_CHECKING, NamedTuple
+from typing import Any, Iterable, Union, TYPE_CHECKING, NamedTuple
 
 
 import pandas as pd
@@ -17,7 +17,9 @@ from itertools import chain
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
 def read_csvs(
-    files_path: Union[str, Iterable[str]], separate_df: bool = False, **kwargs
+    files_path: Union[str, Iterable[str]],
+    separate_df: bool = False,
+    **kwargs: Any,
 ) -> Union[pd.DataFrame, dict]:
     """Read multiple CSV files and return a dictionary of DataFrames, or
     one concatenated DataFrame.
@@ -82,7 +84,7 @@ def read_csvs(
     return dfs_dict
 
 
-def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
+def read_commandline(cmd: str, **kwargs: Any) -> pd.DataFrame:
     """Read a CSV file based on a command-line command.
 
     For example, you may wish to run the following command on `sep-quarter.csv`
@@ -281,7 +283,7 @@ def xlsx_cells(
     border: bool = False,
     protection: bool = False,
     comment: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> Union[dict, pd.DataFrame]:
     """Imports data from spreadsheet without coercing it into a rectangle.
 

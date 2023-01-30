@@ -1,5 +1,6 @@
 """Implementation source for `process_text`."""
 import inspect
+from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 
@@ -23,7 +24,7 @@ def process_text(
     df: pd.DataFrame,
     column_name: str,
     string_function: str,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Apply a Pandas string method to an existing column.
 

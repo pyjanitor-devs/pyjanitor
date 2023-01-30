@@ -1,5 +1,5 @@
 """Implementation for find_replace."""
-from typing import Dict
+from typing import Dict, Any
 from janitor.utils import refactored_function
 
 import pandas as pd
@@ -14,7 +14,7 @@ import pandas_flavor as pf
     )
 )
 def find_replace(
-    df: pd.DataFrame, match: str = "exact", **mappings
+    df: pd.DataFrame, match: str = "exact", **mappings: Any
 ) -> pd.DataFrame:
     """Perform a find-and-replace action on provided columns.
 

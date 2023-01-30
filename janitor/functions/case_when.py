@@ -12,7 +12,7 @@ warnings.simplefilter("always", DeprecationWarning)
 
 @pf.register_dataframe_method
 def case_when(
-    df: pd.DataFrame, *args, default: Any = None, column_name: str
+    df: pd.DataFrame, *args: Any, default: Any = None, column_name: str
 ) -> pd.DataFrame:
     """Create a column based on a condition or multiple conditions.
 

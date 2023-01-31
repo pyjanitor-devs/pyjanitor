@@ -26,7 +26,6 @@ def count_cumulative_unique(
     This method does not mutate the original DataFrame.
 
     Examples:
-
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -53,7 +52,7 @@ def count_cumulative_unique(
         4       B        8                     4
         5       b        9                     4
 
-    Example: Cumulative counts, ignoring casing.
+        Cumulative counts, ignoring casing.
 
         >>> df.count_cumulative_unique(
         ...     column_name="letters",
@@ -68,17 +67,22 @@ def count_cumulative_unique(
         4       B        8                     2
         5       b        9                     2
 
-    :param df: A pandas DataFrame.
-    :param column_name: Name of the column containing values from which a
-        running count of unique values will be created.
-    :param dest_column_name: The name of the new column containing the
-        cumulative count of unique values that will be created.
-    :param case_sensitive: Whether or not uppercase and lowercase letters
-        will be considered equal. Only valid with string-like columns.
-    :returns: A pandas DataFrame with a new column containing a cumulative
-        count of unique values from another column.
-    :raises TypeError: If `case_sensitive` is False when counting a non-string
-        `column_name`.
+    Args:
+        df: A pandas DataFrame.
+        column_name: Name of the column containing values from which a
+            running count of unique values will be created.
+        dest_column_name: The name of the new column containing the
+            cumulative count of unique values that will be created.
+        case_sensitive: Whether or not uppercase and lowercase letters
+            will be considered equal. Only valid with string-like columns.
+
+    Raises:
+        TypeError: If `case_sensitive` is False when counting a non-string
+            `column_name`.
+
+    Returns:
+        A pandas DataFrame with a new column containing a cumulative
+            count of unique values from another column.
     """
     check_column(df, column_name)
     check_column(df, dest_column_name, present=False)

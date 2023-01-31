@@ -9,6 +9,7 @@ from typing import (
     Hashable,
     Iterable,
     List,
+    Literal,
     Optional,
     Pattern,
     Union,
@@ -41,7 +42,8 @@ warnings.simplefilter("always", DeprecationWarning)
 
 
 def unionize_dataframe_categories(
-    *dataframes, column_names: Optional[Iterable[pd.CategoricalDtype]] = None
+    *dataframes: Any,
+    column_names: Optional[Iterable[pd.CategoricalDtype]] = None,
 ) -> List[pd.DataFrame]:
     """
     Given a group of dataframes which contain some categorical columns, for
@@ -59,29 +61,35 @@ def unionize_dataframe_categories(
     `object`, losing out on dramatic speed gains you get from the former
     format.
 
-    Usage example for concatenation of categorical column-containing
-    dataframes:
+    Examples:
+        Usage example for concatenation of categorical column-containing
+        dataframes:
 
-    Instead of:
+        Instead of:
 
-    ```python
-    concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
-    ```
+        ```python
+        concatenated_df = pd.concat([df1, df2, df3], ignore_index=True)
+        ```
 
-    which in your case has resulted in `category` -> `object` conversion,
-    use:
+        which in your case has resulted in `category` -> `object` conversion,
+        use:
 
-    ```python
-    unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
-    concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
-    ```
+        ```python
+        unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
+        concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+        ```
 
-    :param dataframes: The dataframes you wish to unionize the categorical
-        objects for.
-    :param column_names: If supplied, only unionize this subset of columns.
-    :returns: A list of the category-unioned dataframes in the same order they
-        were provided.
-    :raises TypeError: If any of the inputs are not pandas DataFrames.
+    Args:
+        *dataframes: The dataframes you wish to unionize the categorical
+            objects for.
+        column_names: If supplied, only unionize this subset of columns.
+
+    Raises:
+        TypeError: If any of the inputs are not pandas DataFrames.
+
+    Returns:
+        A list of the category-unioned dataframes in the same order they
+            were provided.
     """
 
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
@@ -134,19 +142,21 @@ def unionize_dataframe_categories(
 
 
 def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
-    """
-    This function converts a string into a compiled regular expression;
-    it can be used to select columns in the index or columns_names
+    """This function converts a string into a compiled regular expression.
+
+    It can be used to select columns in the index or columns_names
     arguments of `pivot_longer` function.
 
     !!!warning
 
         This function is deprecated. Kindly use `re.compile` instead.
 
-    :param regex_pattern: string to be converted to compiled regular
-        expression.
-    :returns: A compile regular expression from provided
-        `regex_pattern`.
+    Args:
+        regex_pattern: String to be converted to compiled regular
+            expression.
+
+    Returns:
+        A compile regular expression from provided `regex_pattern`.
     """
     warnings.warn(
         "This function is deprecated. Kindly use `re.compile` instead.",
@@ -275,16 +285,16 @@ def _select_callable(arg, func: Callable, axis=None):
 
 @dataclass
 class DropLabel:
-    """
-    Helper class for removing labels within the `select` syntax.
+    """Helper class for removing labels within the `select` syntax.
+
     `label` can be any of the types supported in the `select`,
     `select_rows` and `select_columns` functions.
     An array of integers not matching the labels is returned.
 
     !!! info "New in version 0.24.0"
 
-    :param label: Label(s) to be dropped from the index.
-    :returns: A dataclass.
+    Args:
+        label: Label(s) to be dropped from the index.
     """
 
     label: Any
@@ -292,8 +302,7 @@ class DropLabel:
 
 @singledispatch
 def _select_index(arg, df, axis):
-    """
-    Base function for selection on a Pandas Index object.
+    """Base function for selection on a Pandas Index object.
 
     Returns either an integer, a slice,
     a sequence of booleans, or an array of integers,
@@ -307,8 +316,8 @@ def _select_index(arg, df, axis):
 
 @_select_index.register(str)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
-    """
-    Base function for selection on a Pandas Index object.
+    """Base function for selection on a Pandas Index object.
+
     Applies only to strings.
     It is also applicable to shell-like glob strings,
     which are supported by `fnmatch`.
@@ -343,8 +352,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
 @_select_index.register(re.Pattern)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
-    """
-    Base function for selection on a Pandas Index object.
+    """Base function for selection on a Pandas Index object.
+
     Applies only to regular expressions.
     `re.compile` is required for the regular expression.
 
@@ -575,24 +584,27 @@ def _index_converter(arr, index):
     return arr
 
 
-def get_index_labels(arg, df, axis):
-    """
-    Convenience function to get actual labels from column/index
+def get_index_labels(
+    arg, df: pd.DataFrame, axis: Literal["index", "columns"]
+) -> pd.Index:
+    """Convenience function to get actual labels from column/index
 
     !!! info "New in version 0.25.0"
 
-    :param arg: Valid inputs include: an exact column name to look for,
-        a shell-style glob string (e.g. `*_thing_*`),
-        a regular expression,
-        a callable,
-        or variable arguments of all the aforementioned.
-        A sequence of booleans is also acceptable.
-        A dictionary can be used for selection
-        on a MultiIndex on different levels.
-    :param df: The pandas DataFrame object.
-    :param axis: Should be either `index` or `columns`.
-    :returns: A pandas Index.
+    Args:
+        arg: Valid inputs include: an exact column name to look for,
+            a shell-style glob string (e.g. `*_thing_*`),
+            a regular expression,
+            a callable,
+            or variable arguments of all the aforementioned.
+            A sequence of booleans is also acceptable.
+            A dictionary can be used for selection
+            on a MultiIndex on different levels.
+        df: The pandas DataFrame object.
+        axis: Should be either `index` or `columns`.
 
+    Returns:
+        A pandas Index.
     """
     assert axis in {"index", "columns"}
     index = getattr(df, axis)

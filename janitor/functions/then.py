@@ -1,3 +1,4 @@
+"""Implementation source for `then`."""
 from typing import Callable
 import pandas_flavor as pf
 import pandas as pd
@@ -9,7 +10,8 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
     This method does not mutate the original DataFrame.
 
-    Example: A trivial example using a lambda `func`.
+    Examples:
+        A trivial example using a lambda `func`.
 
         >>> import pandas as pd
         >>> import janitor
@@ -20,12 +22,15 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
         1  4  16
         2  6  18
 
-    :param df: A pandas DataFrame.
-    :param func: A function you would like to run in the method chain.
-        It should take one parameter and return one parameter, each being the
-        DataFrame object. After that, do whatever you want in the middle.
-        Go crazy.
-    :returns: A pandas DataFrame.
+    Args:
+        df: A pandas DataFrame.
+        func: A function you would like to run in the method chain.
+            It should take one parameter and return one parameter, each being
+            the DataFrame object. After that, do whatever you want in the
+            middle. Go crazy.
+
+    Returns:
+        A pandas DataFrame.
     """
     df = func(df)
     return df

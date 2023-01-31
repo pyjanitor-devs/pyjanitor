@@ -17,7 +17,8 @@ def get_dupes(
 
     This method does not mutate the original DataFrame.
 
-    Method chaining syntax:
+    Examples:
+        Method chaining syntax:
 
         >>> import pandas as pd
         >>> import janitor
@@ -39,7 +40,7 @@ def get_dupes(
         2   bag        75
         4   bag        75
 
-    Optional `column_names` usage:
+        Optional `column_names` usage:
 
         >>> import pandas as pd
         >>> import janitor
@@ -68,11 +69,14 @@ def get_dupes(
         2   bag        75
         4   bag        75
 
-    :param df: The pandas DataFrame object.
-    :param column_names: (optional) A column name or an iterable
-        (list or tuple) of column names. Following pandas API, this only
-        considers certain columns for identifying duplicates. Defaults to using
-        all columns.
-    :returns: The duplicate rows, as a pandas DataFrame.
+    Args:
+        df: The pandas DataFrame object.
+        column_names: A column name or an iterable
+            (list or tuple) of column names. Following pandas API, this only
+            considers certain columns for identifying duplicates. Defaults
+            to using all columns.
+
+    Returns:
+        The duplicate rows, as a pandas DataFrame.
     """
     return df.loc[df.duplicated(subset=column_names, keep=False)]

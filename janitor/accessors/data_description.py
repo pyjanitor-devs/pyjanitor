@@ -45,9 +45,12 @@ class DataDescription:
     def set_description(self, desc: Union[List, Dict]):
         """Update the description for each of the columns in the DataFrame.
 
-        :param desc: The structure containing the descriptions to update
-        :raises ValueError: if length of description list does not match
-            number of columns in DataFrame.
+        Args:
+            desc: The structure containing the descriptions to update
+
+        Raises:
+            ValueError: If length of description list does not match
+                number of columns in DataFrame.
         """
         if isinstance(desc, list):
             if len(desc) != len(self._data.columns):

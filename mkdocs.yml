@@ -1,9 +1,17 @@
+# Project information
 site_name: pyjanitor documentation
 site_url: https://pyjanitor-devs.github.io/pyjanitor
+site_description: >-
+  Python implementation of the R package janitor
+
+# Repository
+repo_name: "pyjanitor-devs/pyjanitor"
+repo_url: "https://github.com/pyjanitor-devs/pyjanitor"
+
+# Configuration
+docs_dir: mkdocs/
 watch:
   - janitor/
-
-docs_dir: mkdocs/
 
 theme:
   name: "material"
@@ -20,6 +28,7 @@ theme:
     - content.code.copy
   language: en
 
+# Page tree
 # We customize the navigation by hand to control the order
 # in which pages show up.
 nav:
@@ -42,17 +51,18 @@ nav:
 
 plugins:
   - search
+  - autorefs
   - mkdocstrings:
       default_handler: python
       handlers:
         python:
           options:
+            docstring_style: "google"
+            docstring_options:
+              trim_doctest_flags: true
+            show_root_toc_entry: false
             show_submodules: true
             show_source: true
-          # https://github.com/mkdocstrings/mkdocstrings/issues/278#issuecomment-831411193
-          selection:
-            docstring_style: restructured-text
-      # custom_templates: templates
 # - mknotebooks:
 #     execute: true
 #     write_markdown: true
@@ -85,6 +95,3 @@ extra_css:
   # Theme names are available here: https://highlightjs.org/static/demo/
   # Not sure how the theme names map onto CSS filenames though.
   - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/nord.min.css
-
-repo_name: "pyjanitor-devs/pyjanitor"
-repo_url: "https://github.com/pyjanitor-devs/pyjanitor"

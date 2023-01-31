@@ -25,8 +25,7 @@ def min_max_scale(
     column_name: str | int | list[str | int] | pd.Index = None,
     jointly: bool = False,
 ) -> pd.DataFrame:
-    """
-    Scales DataFrame to between a minimum and maximum value.
+    """Scales DataFrame to between a minimum and maximum value.
 
     One can optionally set a new target **minimum** and **maximum** value
     using the `feature_range` keyword argument.
@@ -37,8 +36,7 @@ def min_max_scale(
     be regnozied as the one to jointly scale. Otherwise, each column of data
     will be scaled separately.
 
-    Example: Basic usage.
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
@@ -51,7 +49,7 @@ def min_max_scale(
         0  0.5  0.0
         1  1.0  0.5
 
-    Example: Setting custom minimum and maximum.
+        Setting custom minimum and maximum.
 
         >>> import pandas as pd
         >>> import janitor
@@ -65,7 +63,7 @@ def min_max_scale(
         0   50.0   0.0
         1  100.0  50.0
 
-    Example: Apply min-max to the selected columns.
+        Apply min-max to the selected columns.
 
         >>> import pandas as pd
         >>> import janitor
@@ -90,11 +88,11 @@ def min_max_scale(
         0    0.0  0  1
         1  100.0  1  0
 
-    The aforementioned example might be applied to something like scaling the
-    isoelectric points of amino acids. While technically they range from
-    approx 3-10, we can also think of them on the pH scale which ranges from
-    1 to 14. Hence, 3 gets scaled not to 0 but approx. 0.15 instead, while 10
-    gets scaled to approx. 0.69 instead.
+        The aforementioned example might be applied to something like scaling the
+        isoelectric points of amino acids. While technically they range from
+        approx 3-10, we can also think of them on the pH scale which ranges from
+        1 to 14. Hence, 3 gets scaled not to 0 but approx. 0.15 instead, while 10
+        gets scaled to approx. 0.69 instead.
 
     !!! summary "Version Changed"
 
@@ -102,16 +100,21 @@ def min_max_scale(
             - Deleted `old_min`, `old_max`, `new_min`, and `new_max` options.
             - Added `feature_range`, and `jointly` options.
 
-    :param df: A pandas DataFrame.
-    :param feature_range: (optional) Desired range of transformed data.
-    :param column_name: (optional) The column on which to perform scaling.
-    :param jointly: (bool) Scale the entire data if Ture.
-    :returns: A pandas DataFrame with scaled data.
-    :raises ValueError: if `feature_range` isn't tuple type.
-    :raises ValueError: if the length of `feature_range` isn't equal to two.
-    :raises ValueError: if the element of `feature_range` isn't number type.
-    :raises ValueError: if `feature_range[1]` <= `feature_range[0]`.
-    """
+    Args:
+        df: A pandas DataFrame.
+        feature_range: Desired range of transformed data.
+        column_name: The column on which to perform scaling.
+        jointly: Scale the entire data if True.
+
+    Raises:
+        ValueError: If `feature_range` isn't tuple type.
+        ValueError: If the length of `feature_range` isn't equal to two.
+        ValueError: If the element of `feature_range` isn't number type.
+        ValueError: If `feature_range[1]` <= `feature_range[0]`.
+
+    Returns:
+        A pandas DataFrame with scaled data.
+    """  # noqa: E501
 
     if not (
         isinstance(feature_range, (tuple, list))

@@ -1,4 +1,5 @@
 """Implementation of the `sort_naturally` function."""
+from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 from natsort import index_natsorted
@@ -6,7 +7,7 @@ from natsort import index_natsorted
 
 @pf.register_dataframe_method
 def sort_naturally(
-    df: pd.DataFrame, column_name: str, **natsorted_kwargs
+    df: pd.DataFrame, column_name: str, **natsorted_kwargs: Any
 ) -> pd.DataFrame:
     """Sort a DataFrame by a column using *natural* sorting.
 
@@ -14,16 +15,21 @@ def sort_naturally(
     the default lexiographical sorting provided by `pandas`.
     For example, given the following list of items:
 
-        ["A1", "A11", "A3", "A2", "A10"]
+    ```python
+    ["A1", "A11", "A3", "A2", "A10"]
+    ```
 
-    lexicographical sorting would give us:
+    Lexicographical sorting would give us:
 
-
-        ["A1", "A10", "A11", "A2", "A3"]
+    ```python
+    ["A1", "A10", "A11", "A2", "A3"]
+    ```
 
     By contrast, "natural" sorting would give us:
 
-        ["A1", "A2", "A3", "A10", "A11"]
+    ```python
+    ["A1", "A2", "A3", "A10", "A11"]
+    ```
 
     This function thus provides *natural* sorting
     on a single column of a dataframe.
@@ -34,14 +40,13 @@ def sort_naturally(
     in the naturally sorted order.
 
     Natural sorting is provided by the Python package
-    [natsort](https://natsort.readthedocs.io/en/master/index.html)
+    [natsort](https://natsort.readthedocs.io/en/master/index.html).
 
     All keyword arguments to `natsort` should be provided
     after the column name to sort by is provided.
     They are passed through to the `natsorted` function.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
@@ -67,11 +72,14 @@ def sort_naturally(
         5  B12      7
         4  B51      4
 
-    :param df: A pandas DataFrame.
-    :param column_name: The column on which natural sorting should take place.
-    :param natsorted_kwargs: Keyword arguments to be passed
-        to natsort's `natsorted` function.
-    :returns: A sorted pandas DataFrame.
+    Args:
+        df: A pandas DataFrame.
+        column_name: The column on which natural sorting should take place.
+        **natsorted_kwargs: Keyword arguments to be passed
+            to natsort's `natsorted` function.
+
+    Returns:
+        A sorted pandas DataFrame.
     """
     new_order = index_natsorted(df[column_name], **natsorted_kwargs)
     return df.iloc[new_order, :]

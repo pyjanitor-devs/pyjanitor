@@ -1,4 +1,4 @@
-"""Implementation for drop_duplicate_columns."""
+"""Implementation for `drop_duplicate_columns`."""
 from typing import Hashable
 import pandas_flavor as pf
 import pandas as pd
@@ -17,8 +17,7 @@ def drop_duplicate_columns(
     The corresponding tidyverse R's library is:
     `select(-<column_name>_<nth_index + 1>)`
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -38,11 +37,14 @@ def drop_duplicate_columns(
         1  3  4  7
         2  4  5  8
 
-    :param df: A pandas DataFrame
-    :param column_name: Name of duplicated columns.
-    :param nth_index: Among the duplicated columns,
-        select the nth column to drop.
-    :return: A pandas DataFrame
+    Args:
+        df: A pandas DataFrame
+        column_name: Name of duplicated columns.
+        nth_index: Among the duplicated columns,
+            select the nth column to drop.
+
+    Returns:
+        A pandas DataFrame
     """
     col_indexes = [
         col_idx

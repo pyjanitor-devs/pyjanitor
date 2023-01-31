@@ -18,8 +18,7 @@ def get_features_targets(
     target_column_names: Union[str, Union[List, Tuple], Hashable],
     feature_column_names: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Get the features and targets as separate DataFrames/Series.
+    """Get the features and targets as separate DataFrames/Series.
 
     This method does not mutate the original DataFrame.
 
@@ -31,6 +30,7 @@ def get_features_targets(
     - If `feature_column_names` is not passed in, then we will assume that
     the rest of the columns are feature columns, and return them.
 
+    Examples:
         >>> import pandas as pd
         >>> import janitor.ml
         >>> df = pd.DataFrame(
@@ -48,15 +48,18 @@ def get_features_targets(
         1  2  7.89
         2  3  4.56
 
-    :param df: The pandas DataFrame object.
-    :param target_column_names: Either a column name or an
-        iterable (list or tuple) of column names that are the target(s) to be
-        predicted.
-    :param feature_column_names: (optional) The column name or
-        iterable of column names that are the features (a.k.a. predictors)
-        used to predict the targets.
-    :returns: `(X, Y)` the feature matrix (`X`) and the target matrix (`Y`).
-        Both are pandas DataFrames.
+    Args:
+        df: The pandas DataFrame object.
+        target_column_names: Either a column name or an
+            iterable (list or tuple) of column names that are the target(s) to
+            be predicted.
+        feature_column_names: The column name or
+            iterable of column names that are the features (a.k.a. predictors)
+            used to predict the targets.
+
+    Returns:
+        `(X, Y)` the feature matrix (`X`) and the target matrix (`Y`).
+            Both are pandas DataFrames.
     """
     Y = df[target_column_names]
 

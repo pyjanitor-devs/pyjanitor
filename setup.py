@@ -16,17 +16,19 @@ def read(*parts):
 
 
 def read_requirements(*parts):
-    """
-    Return requirements from parts.
+    """Return requirements from parts.
 
     Given a requirements.txt (or similar style file),
     returns a list of requirements.
     Assumes anything after a single '#' on a line is a comment, and ignores
     empty lines.
 
-    :param parts: list of filenames which contain the installation "parts",
-        i.e. submodule-specific installation requirements
-    :returns: A compiled list of requirements.
+    Args:
+        parts: List of filenames which contain the installation "parts",
+            i.e. submodule-specific installation requirements
+
+    Returns:
+        A compiled list of requirements.
     """
     requirements = []
     for line in read(*parts).splitlines():
@@ -80,15 +82,17 @@ pprint(EXTRA_REQUIRES)
 
 
 def generate_long_description() -> str:
-    """
-    Extra chunks from README for PyPI description.
+    """Extra chunks from README for PyPI description.
 
     Target chunks must be contained within `<!-- pypi-doc -->` pair comments,
     so there must be an even number of comments in README.
 
-    :returns: Extracted description from README.
-    :raises Exception: If odd number of `<!-- pypi-doc -->` comments
-        in README.
+    Raises:
+        Exception: If odd number of `<!-- pypi-doc -->` comments
+            in README.
+
+    Returns:
+        Extracted description from README.
     """
     # Read the contents of README file
     this_directory = Path(__file__).parent

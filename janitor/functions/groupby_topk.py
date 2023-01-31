@@ -18,8 +18,7 @@ def groupby_topk(
     ascending: bool = True,
     ignore_index: bool = True,
 ) -> pd.DataFrame:
-    """
-    Return top `k` rows from a groupby of a set of columns.
+    """Return top `k` rows from a groupby of a set of columns.
 
     Returns a DataFrame that has the top `k` values per `column`,
     grouped by `by`. Under the hood it uses `nlargest/nsmallest`,
@@ -29,9 +28,7 @@ def groupby_topk(
     No sorting is done to the `by` column(s); the order is maintained
     in the final output.
 
-
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
@@ -49,7 +46,7 @@ def groupby_topk(
         3   43   2   pass
         4   21   5   fail
 
-    Ascending top 3:
+        Ascending top 3:
 
         >>> df.groupby_topk(by="result", column="age", k=3)
            age  id result
@@ -59,7 +56,7 @@ def groupby_topk(
         3   21   5   fail
         4   22   6   fail
 
-    Descending top 2:
+        Descending top 2:
 
         >>> df.groupby_topk(
         ...     by="result", column="age", k=2, ascending=False, ignore_index=False
@@ -70,25 +67,28 @@ def groupby_topk(
         2   22   6   fail
         4   21   5   fail
 
+    Args:
+        df: A pandas DataFrame.
+        by: Column name(s) to group input DataFrame `df` by.
+        column: Name of the column that determines `k` rows
+            to return.
+        k: Number of top rows to return for each group.
+        dropna: If `True`, and `NA` values exist in `by`, the `NA`
+            values are not used in the groupby computation to get the relevant
+            `k` rows. If `False`, and `NA` values exist in `by`, then the `NA`
+            values are used in the groupby computation to get the relevant
+            `k` rows.
+        ascending: If `True`, the smallest top `k` rows,
+            determined by `column` are returned; if `False, the largest top `k`
+            rows, determined by `column` are returned.
+        ignore_index: If `True`, the original index is ignored.
+            If `False`, the original index for the top `k` rows is retained.
 
-    :param df: A pandas DataFrame.
-    :param by: Column name(s) to group input DataFrame `df` by.
-    :param column: Name of the column that determines `k` rows
-        to return.
-    :param k: Number of top rows to return for each group.
-    :param dropna: If `True`, and `NA` values exist in `by`, the `NA`
-        values are not used in the groupby computation to get the relevant
-        `k` rows. If `False`, and `NA` values exist in `by`, then the `NA`
-        values are used in the groupby computation to get the relevant
-        `k` rows. The default is `True`.
-    :param ascending: Default is `True`. If `True`, the smallest top `k` rows,
-        determined by `column` are returned; if `False, the largest top `k` rows,
-        determined by `column` are returned.
-    :param ignore_index: Default `True`. If `True`,
-        the original index is ignored. If `False`, the original index
-        for the top `k` rows is retained.
-    :returns: A pandas DataFrame with top `k` rows per `column`, grouped by `by`.
-    :raises ValueError: if `k` is less than 1.
+    Raises:
+        ValueError: If `k` is less than 1.
+
+    Returns:
+        A pandas DataFrame with top `k` rows per `column`, grouped by `by`.
     """  # noqa: E501
 
     if isinstance(by, Hashable):

@@ -46,7 +46,8 @@ def transform_column(
 
     This method does not mutate the original DataFrame.
 
-    Example: Transform a column in-place with an element-wise function.
+    Examples:
+        Transform a column in-place with an element-wise function.
 
         >>> import pandas as pd
         >>> import janitor
@@ -68,7 +69,8 @@ def transform_column(
         1   8   pyjanitor
         2  15  grapefruit
 
-    Example: Transform a column in-place with an column-wise function.
+    Examples:
+        Transform a column in-place with an column-wise function.
 
         >>> df.transform_column(
         ...     column_name="b",
@@ -80,21 +82,23 @@ def transform_column(
         1  3  pyjan
         2  4  grape
 
-    :param df: A pandas DataFrame.
-    :param column_name: The column to transform.
-    :param function: A function to apply on the column.
-    :param dest_column_name: The column name to store the transformation result
-        in. Defaults to None, which will result in the original column
-        name being overwritten. If a name is provided here, then a new column
-        with the transformed values will be created.
-    :param elementwise: Whether to apply the function elementwise or not.
-        If `elementwise` is True, then the function's first argument
-        should be the data type of each datum in the column of data,
-        and should return a transformed datum.
-        If `elementwise` is False, then the function's should expect
-        a pandas Series passed into it, and return a pandas Series.
+    Args:
+        df: A pandas DataFrame.
+        column_name: The column to transform.
+        function: A function to apply on the column.
+        dest_column_name: The column name to store the transformation result
+            in. Defaults to None, which will result in the original column
+            name being overwritten. If a name is provided here, then a new
+            column with the transformed values will be created.
+        elementwise: Whether to apply the function elementwise or not.
+            If `elementwise` is True, then the function's first argument
+            should be the data type of each datum in the column of data,
+            and should return a transformed datum.
+            If `elementwise` is False, then the function's should expect
+            a pandas Series passed into it, and return a pandas Series.
 
-    :returns: A pandas DataFrame with a transformed column.
+    Returns:
+        A pandas DataFrame with a transformed column.
     """
     check_column(df, column_name)
 
@@ -140,7 +144,8 @@ def transform_columns(
     column name in `column_names` to its corresponding new column name.
     Note that all column names must be strings.
 
-    Example: log10 transform a list of columns, replacing original columns.
+    Examples:
+        log10 transform a list of columns, replacing original columns.
 
         >>> import numpy as np
         >>> import pandas as pd
@@ -161,7 +166,7 @@ def transform_columns(
         1  1.000000  0.778151   2.0
         2  1.176091  0.954243   3.0
 
-    Example: Using the `suffix` parameter to create new columns.
+        Using the `suffix` parameter to create new columns.
 
         >>> df.transform_columns(["col1", "col3"], np.log10, suffix="_log")
            col1  col2  col3  col1_log  col3_log
@@ -169,7 +174,7 @@ def transform_columns(
         1    10     6   100  1.000000       2.0
         2    15     9  1000  1.176091       3.0
 
-    Example: Using the `new_column_names` parameter to create new columns.
+        Using the `new_column_names` parameter to create new columns.
 
         >>> df.transform_columns(
         ...     ["col1", "col3"],
@@ -181,21 +186,25 @@ def transform_columns(
         1    10     6   2.0    1.000000
         2    15     9   3.0    1.176091
 
-    :param df: A pandas DataFrame.
-    :param column_names: An iterable of columns to transform.
-    :param function: A function to apply on each column.
-    :param suffix: Suffix to use when creating new columns to hold
-        the transformed values.
-    :param elementwise: Passed on to `transform_column`; whether or not
-        to apply the transformation function elementwise (True)
-        or columnwise (False).
-    :param new_column_names: An explicit mapping of old column names in
-        `column_names` to new column names. If any column specified in
-        `column_names` is not a key in this dictionary, the transformation
-        will happen in-place for that column.
-    :returns: A pandas DataFrame with transformed columns.
-    :raises ValueError: If both `suffix` and `new_column_names` are
-        specified.
+    Args:
+        df: A pandas DataFrame.
+        column_names: An iterable of columns to transform.
+        function: A function to apply on each column.
+        suffix: Suffix to use when creating new columns to hold
+            the transformed values.
+        elementwise: Passed on to [`transform_column`][janitor.functions.transform_columns.transform_column]; whether or not
+            to apply the transformation function elementwise (True)
+            or columnwise (False).
+        new_column_names: An explicit mapping of old column names in
+            `column_names` to new column names. If any column specified in
+            `column_names` is not a key in this dictionary, the transformation
+            will happen in-place for that column.
+
+    Raises:
+        ValueError: If both `suffix` and `new_column_names` are specified.
+
+    Returns:
+        A pandas DataFrame with transformed columns.
     """  # noqa: E501
     check("column_names", column_names, [list, tuple])
     check_column(df, column_names)

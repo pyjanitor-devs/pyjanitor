@@ -6,7 +6,7 @@ import pandas_flavor as pf
 from janitor.utils import check
 from pandas.api.types import is_scalar
 
-from janitor.functions.utils import SD, _process_SD
+from janitor.functions.utils import col, _process_function, get_index_labels
 from itertools import product
 
 
@@ -24,7 +24,7 @@ def summarize(
 
         Before reaching for `summarize`, try `pd.DataFrame.agg`.
 
-    Reduction operation on columns via the `janitor.SD` class.
+    Reduction operation on columns via the `janitor.Column` class.
 
     It is a wrapper around `pd.DataFrame.agg`,
     with added flexibility for multiple columns.
@@ -70,7 +70,7 @@ def summarize(
         ...                      'finals', 'finals',
         ...                      'heats', 'finals']}
         >>> df = pd.DataFrame(data)
-        >>> arg = SD("avg_run").add_fns("mean")
+        >>> arg = col("avg_run").compute("mean")
         >>> df.summarize(arg, by=['combine_id', 'category'])
                              avg_run
         combine_id category
@@ -81,7 +81,7 @@ def summarize(
 
     Summarize with a new column name:
 
-        >>> arg = SD("avg_run").add_fns("mean").rename("avg_run_2")
+        >>> arg = col("avg_run").compute("mean").rename("avg_run_2")
         >>> df.summarize(arg)
            avg_run_2
         0   2.833333
@@ -95,7 +95,7 @@ def summarize(
 
     Summarize with the placeholders in `names_glue`:
 
-        >>> cols = SD("avg*").add_fns("mean").rename("{_col}_{_fn}")
+        >>> cols = col("avg*").compute("mean").rename("{_col}_{_fn}")
         >>> df.summarize(cols)
            avg_jump_mean  avg_run_mean  avg_swim_mean
         0       2.833333      2.833333       2.333333
@@ -108,14 +108,14 @@ def summarize(
         103202     finals              4.0           4.0            4.0
 
     :param df: A pandas DataFrame.
-    :param args: instance(s) of the `janitor.SD` class.
+    :param args: instance(s) of the `janitor.Col` class.
     :param by: Column(s) to group by.
     :raises ValueError: If a function is not provided for any of the arguments.
     :returns: A pandas DataFrame with summarized columns.
     """  # noqa: E501
 
     for num, arg in enumerate(args):
-        check(f"Argument {num} in the summarize function", arg, [SD])
+        check(f"Argument {num} in the summarize function", arg, [col])
         if arg.func is None:
             raise ValueError(f"Kindly provide a function for Argument {num}")
 
@@ -123,23 +123,33 @@ def summarize(
     grp = None
     if by_is_true and isinstance(by, dict):
         grp = df.groupby(**by)
+    elif by_is_true and isinstance(by, col):
+        if by.func:
+            raise ValueError(
+                "Function assignment is not required within the by."
+            )
+        cols = get_index_labels([*by.cols], df, axis="columns")
+        if by.remove_cols:
+            exclude = get_index_labels([*by.remove_cols], df, axis="columns")
+            cols = cols.difference(exclude, sort=False)
+        grp = df.groupby(cols.tolist())
     elif by_is_true:
         grp = df.groupby(by)
 
     aggs = {}
 
     for arg in args:
-        columns, names, func_names_and_func, dupes = _process_SD(df, arg)
-        for col, (name, (funcn, kwargs)) in product(
+        columns, names, func_names_and_func, dupes = _process_function(df, arg)
+        for col_name, (name, (funcn, kwargs)) in product(
             columns, func_names_and_func
         ):
-            val = grp[col] if by_is_true else df[col]
+            val = grp[col_name] if by_is_true else df[col_name]
             if names:
-                name = names.format(_col=col, _fn=name)
+                name = names.format(_col=col_name, _fn=name)
             elif name in dupes:
-                name = f"{col}{name}"
+                name = f"{col_name}{name}"
             else:
-                name = col
+                name = col_name
             if isinstance(funcn, str):
                 outcome = val.agg(funcn, **kwargs)
             else:

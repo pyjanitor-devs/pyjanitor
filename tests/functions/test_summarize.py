@@ -4,81 +4,95 @@ import pandas as pd
 
 from pandas.testing import assert_frame_equal
 from pandas.api.types import is_numeric_dtype
-from janitor import SD
+from janitor import col
 
 
 func = lambda grp: grp.Revenue.sum() / grp.Quantity.sum()  # noqa: E731
 
 
 @pytest.mark.functions
-def test_SD_agg_error(dataframe):
+def test_Column_agg_error(dataframe):
     """
     Raise if func triggers an attributeerror/valueerror
     """
     with pytest.raises(AttributeError):
-        dataframe.summarize(SD("a").add_fns(func))
+        dataframe.summarize(col("a").compute(func))
 
 
 @pytest.mark.functions
-def test_SD_name_error(dataframe):
+def test_Column_exclude_error(dataframe):
+    """
+    Raise if a label is to be excluded,
+    but a func is already assigned
+    """
+    with pytest.raises(
+        ValueError,
+        match="exclude should be applied before a function is assigned",
+    ):
+        dataframe.summarize(col("a", "b").compute("sum").exclude("a"))
+
+
+@pytest.mark.functions
+def test_Column_name_no_func_error(dataframe):
+    """Raise if name is provided, and there is no function"""
+    with pytest.raises(
+        ValueError,
+        match="rename is only applicable "
+        "if there is a function to be applied.",
+    ):
+        dataframe.summarize(col("a").rename("1"))
+
+
+@pytest.mark.functions
+def test_Column_name_error(dataframe):
     """Raise if name is provided, and is not a string"""
     with pytest.raises(
         TypeError,
-        match=r"name should be.+",
+        match=r"names should be.+",
     ):
-        dataframe.summarize(SD("a").add_fns("sum").rename(1))
+        dataframe.summarize(col("a").compute("sum").rename(1))
 
 
 @pytest.mark.functions
-def test_SD_name_dupe_error(dataframe):
-    """Raise if names_glue already exists"""
+def test_Column_name_dupe_error(dataframe):
+    """Raise if names already exists"""
     with pytest.raises(
         ValueError,
         match=r"A name has already been assigned",
     ):
-        dataframe.summarize(SD("a").add_fns("sum").rename("1").rename("name"))
+        dataframe.summarize(col("a").compute("sum").rename("1").rename("name"))
 
 
 @pytest.mark.functions
-def test_SD_func_dupe_error(dataframe):
+def test_Column_func_dupe_error(dataframe):
     """Raise if func already exists"""
     with pytest.raises(
         ValueError,
         match=r"A function has already been assigned",
     ):
         dataframe.summarize(
-            SD("a").add_fns("sum").add_fns(np.sum).rename("name")
+            col("a").compute("sum").compute(np.sum).rename("name")
         )
 
 
 @pytest.mark.functions
-def test_SD_no_func_error(dataframe):
+def test_Column_no_func_error(dataframe):
     """Raise if func is not provided"""
     with pytest.raises(
         ValueError,
         match=r"Kindly provide a function for Argument 0",
     ):
-        dataframe.summarize(SD("a"))
+        dataframe.summarize(col("a"))
 
 
 @pytest.mark.functions
-def test_SD_func_error(dataframe):
+def test_Column_func_error(dataframe):
     """Raise if func is a wrong type"""
     with pytest.raises(
         TypeError,
         match=r"Function should be.+",
     ):
-        dataframe.summarize(SD("a").add_fns(1).rename("name"))
-
-
-@pytest.mark.functions
-def test_SD_func_seq_error(dataframe):
-    """Raise if func is a list and contains wrong type"""
-    with pytest.raises(
-        TypeError,
-        match=r"Function in list/tuple.+",
-    ):
-        dataframe.summarize(SD("a").add_fns(["sum", 1]).rename("name"))
+        dataframe.summarize(col("a").compute("sum", 1).rename("name"))
 
 
 args = [
@@ -93,7 +107,7 @@ args = [
 def test_args_various(dataframe, func):
     """Test output for various arguments"""
     expected = dataframe.agg({"a": ["sum"]}).reset_index(drop=True)
-    actual = dataframe.summarize(SD("a").add_fns(func))
+    actual = dataframe.summarize(col("a").compute(func))
     assert_frame_equal(expected, actual)
 
 
@@ -109,7 +123,7 @@ def test_args_rename(dataframe, cols, fn, names):
         .rename(columns={"a": "a_sum"})
         .reset_index(drop=True)
     )
-    actual = dataframe.summarize(SD(cols).add_fns(fn).rename(names))
+    actual = dataframe.summarize(col(cols).compute(fn).rename(names))
     assert_frame_equal(expected, actual)
 
 
@@ -117,7 +131,7 @@ def test_args_rename(dataframe, cols, fn, names):
 def test_args_func_list(dataframe):
     """Test output for list of functions"""
     expected = dataframe.agg({"a": ["sum"]}).reset_index(drop=True)
-    actual = dataframe.summarize(SD("a").add_fns(["mean", "sum"]))
+    actual = dataframe.summarize(col("a").compute("mean", "sum"))
     assert_frame_equal(expected, actual)
 
 
@@ -131,7 +145,7 @@ def test_args_func_list_rename(dataframe):
         .T.reset_index(drop=True)
     )
     actual = dataframe.summarize(
-        SD("a").add_fns(["mean", "sum"]).rename("{_col}_{_fn}")
+        col("a").compute("mean", "sum").rename("{_col}_{_fn}")
     ).astype(float)
     assert_frame_equal(expected, actual)
 
@@ -142,7 +156,7 @@ def test_args_func_list_grouped(dataframe):
     grp = dataframe.groupby("decorated-elephant")
     expected = grp.agg(a_sum=("a", "sum"), a_mean=("a", "mean"))
     actual = dataframe.summarize(
-        SD("a").add_fns(["sum", "mean"]).rename("{_col}_{_fn}"),
+        col("a").compute("sum", "mean").rename("{_col}_{_fn}"),
         by="decorated-elephant",
     )
 
@@ -155,7 +169,7 @@ def test_args_func_list_grouped_dupes(dataframe):
     grp = dataframe.groupby("decorated-elephant")
     expected = grp.agg(a_sum0=("a", "sum"), a_sum1=("a", "sum"))
     actual = dataframe.summarize(
-        SD("a").add_fns(["sum", "sum"]).rename("{_col}_{_fn}"),
+        col("a").compute("sum", "sum").rename("{_col}_{_fn}"),
         by={"by": "decorated-elephant"},
     )
 
@@ -175,9 +189,7 @@ def test_tuple_func_list_dupes(dataframe):
         axis=1,
     )
     actual = dataframe.summarize(
-        SD(dataframe.dtypes.map(is_numeric_dtype)).add_fns(
-            ["sum", np.sum, np.mean]
-        )
+        col(is_numeric_dtype).compute("sum", np.sum, np.mean)
     ).astype(float)
     assert_frame_equal(expected.sort_index(axis=1), actual.sort_index(axis=1))
 
@@ -198,5 +210,5 @@ def test_dataframe():
 
     df = pd.DataFrame(df)
     expected = df.groupby("A").C.describe().add_prefix("C_")
-    actual = df.summarize(SD("C").add_fns("describe"), by="A")
+    actual = df.summarize(col("C").compute("describe"), by="A")
     assert_frame_equal(expected, actual)

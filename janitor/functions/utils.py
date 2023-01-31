@@ -401,6 +401,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     )
     if (arg.__name__ in dtypes) and (axis == "columns"):
         bools = df.dtypes.map(arg)
+        if not bools.any():
+            raise KeyError(f"No match was returned for {arg}")
         return np.asanyarray(bools)
 
     return _select_callable(df, arg, axis)
@@ -653,17 +655,17 @@ def _convert_to_numpy_array(
     return left, right
 
 
-def _process_SD(df, arg):
+def _process_function(df, arg):
     """
-    process SD for use in `mutate` or `summarize`
+    process function(s) assigned to `janitor.Column`.
     """
     columns = arg.cols
     func = arg.func[0]
-    names = arg.names_glue
-    columns = _select_index([*columns], df, axis="columns")
-    columns = df.columns[columns]
-    if not isinstance(func, (list, tuple)):
-        func = [func]
+    names = arg.names
+    columns = get_index_labels([*columns], df, axis="columns")
+    if arg.remove_cols:
+        exclude = get_index_labels([*arg.remove_cols], df, axis="columns")
+        columns = columns.difference(exclude, sort=False)
     func_names = [
         funcn.__name__ if callable(funcn) else funcn for funcn in func
     ]
@@ -693,33 +695,67 @@ def _process_SD(df, arg):
     return columns, names, zip(func_names, func), dupes
 
 
-class SD:
+class col:
     """
-    Subset of Data.
-    Used in `mutate` and `summarize`
-    for computation on multiple columns
+    Used to build an expression,
+    where the value is not computed,
+    until called within a relevant
+    `janitor` function.
 
     !!! info "New in version 0.25.0"
     """
 
     def __init__(self, *cols):
         self.cols = cols
+        self.remove_cols = None
         self.func = None
-        self.names_glue = None
+        self.names = None
 
-    def add_fns(self, func, **kwargs):
+    def exclude(self, *args):
+        """
+        args: A tuple of labels to exclude.
+        """
         if self.func:
-            raise ValueError("A function has already been assigned")
-        check("Function", func, [str, list, tuple, callable])
-        if isinstance(func, (list, tuple)):
-            for funcn in func:
-                check("Function in list/tuple", funcn, [str, callable])
-        self.func = (func, kwargs)
+            raise ValueError(
+                "exclude should be applied before a function is assigned."
+            )
+        self.remove_cols = args
         return self
 
-    def rename(self, name):
-        if self.names_glue:
+    def compute(self, *args, **kwargs):
+        """
+        :param args: A tuple of functions,
+              which can be either a string,
+             or a callable. If it is a string, it
+             should be one of the accepted function
+             strings in Pandas.
+        :param kwargs: parameters to pass to the function
+        :raises ValueError: If function is already assigned.
+        :returns: A col class.
+        """
+        if self.func:
+            raise ValueError("A function has already been assigned")
+        for func in args:
+            check("Function", func, [str, callable])
+        self.func = args, kwargs
+        return self
+
+    def rename(self, names):
+        """
+        Used to assign new names to columns
+        after applying a function.
+
+        :param names: new name to assign to columns created from compute
+        :raises ValueError: if there is no assigned function.
+        :returns: A col class
+        """
+        if not self.func:
+            raise ValueError(
+                "rename is only applicable if "
+                "there is a function to be applied."
+            )
+        if self.names:
             raise ValueError("A name has already been assigned")
-        check("name", name, [str])
-        self.names_glue = name
+        check("names", names, [str])
+        self.names = names
         return self

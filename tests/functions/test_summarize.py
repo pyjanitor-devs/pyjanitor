@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 
 from pandas.testing import assert_frame_equal
-from pandas.api.types import is_numeric_dtype
+from pandas.api.types import is_numeric_dtype, is_string_dtype
 from janitor import col
 
 
@@ -17,6 +17,20 @@ def test_Column_agg_error(dataframe):
     """
     with pytest.raises(AttributeError):
         dataframe.summarize(col("a").compute(func))
+
+
+@pytest.mark.functions
+def test_Column_by_error(dataframe):
+    """
+    Raise if `by` is a col class, and has a function
+    assigned to it
+    """
+    with pytest.raises(
+        ValueError, match="Function assignment is not required within by"
+    ):
+        dataframe.summarize(
+            col("a").compute("sum"), by=col("b").compute("size")
+        )
 
 
 @pytest.mark.functions
@@ -210,5 +224,7 @@ def test_dataframe():
 
     df = pd.DataFrame(df)
     expected = df.groupby("A").C.describe().add_prefix("C_")
-    actual = df.summarize(col("C").compute("describe"), by="A")
+    actual = df.summarize(
+        col("C").compute("describe"), by=col(is_string_dtype).exclude("B")
+    )
     assert_frame_equal(expected, actual)

@@ -736,14 +736,19 @@ class col:
 
     def compute(self, *args, **kwargs):
         """
-        :param args: A tuple of functions,
-              which can be either a string,
-             or a callable. If it is a string, it
-             should be one of the accepted function
-             strings in Pandas.
-        :param kwargs: parameters to pass to the function
-        :raises ValueError: If function is already assigned.
-        :returns: A col class.
+        Args:
+            args: A tuple of functions,
+                  which can be either a string,
+                  or a callable. If it is a string, it
+                  should be one of the accepted function
+                  strings in Pandas.
+            kwargs: parameters to pass to the function
+
+        Raises:
+            ValueError: If function is already assigned.
+
+        Returns:
+            A col class.
         """
         if self.func:
             raise ValueError("A function has already been assigned")
@@ -757,9 +762,14 @@ class col:
         Used to assign new names to columns
         after applying a function.
 
-        :param names: new name to assign to columns created from compute
-        :raises ValueError: if there is no assigned function.
-        :returns: A col class
+        Args:
+            names: new name to assign to columns created from compute
+
+        Raises:
+            ValueError: if there is no assigned function.
+
+        Returns:
+            A col class
         """
         if not self.func:
             raise ValueError(

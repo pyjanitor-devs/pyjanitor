@@ -24,7 +24,7 @@ def summarize(
 
         Before reaching for `summarize`, try `pd.DataFrame.agg`.
 
-    Reduction operation on columns via the `janitor.Column` class.
+    Reduction operation on columns via the `janitor.col` class.
 
     It is a wrapper around `pd.DataFrame.agg`,
     with added flexibility for multiple columns.
@@ -46,9 +46,9 @@ def summarize(
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 
-#     `by` accepts a label, labels, mapping or function.
-#     Arguments supported in `pd.DataFrame.groupby`
-#     can also be passed to `by` via a dictionary.
+    `by` accepts a label, labels, mapping or function.
+    Arguments supported in `pd.DataFrame.groupby`
+    can also be passed to `by` via a dictionary.
 
 
     Example:
@@ -69,7 +69,7 @@ def summarize(
         >>> df = pd.DataFrame(data)
         >>> arg = col("avg_run").compute("mean")
         >>> df.summarize(arg, by=['combine_id', 'category'])
-                             avg_run
+                                avg_run
         combine_id category
         100200     heats         3.5
         101200     finals        2.0
@@ -80,7 +80,7 @@ def summarize(
 
         >>> arg = col("avg_run").compute("mean").rename("avg_run_2")
         >>> df.summarize(arg)
-           avg_run_2
+            avg_run_2
         0   2.833333
         >>> df.summarize(arg, by=['combine_id', 'category'])
                             avg_run_2
@@ -94,24 +94,28 @@ def summarize(
 
         >>> cols = col("avg*").compute("mean").rename("{_col}_{_fn}")
         >>> df.summarize(cols)
-           avg_jump_mean  avg_run_mean  avg_swim_mean
+            avg_jump_mean  avg_run_mean  avg_swim_mean
         0       2.833333      2.833333       2.333333
         >>> df.summarize(cols, by=['combine_id', 'category'])
-                             avg_jump_mean  avg_run_mean  avg_swim_mean
+                                avg_jump_mean  avg_run_mean  avg_swim_mean
         combine_id category
         100200     heats               3.5           3.5            1.5
         101200     finals              1.5           2.0            2.0
         102201     heats               3.0           2.0            3.0
         103202     finals              4.0           4.0            4.0
 
-    :param df: A pandas DataFrame.
-    :param args: instance(s) of the `janitor.col` class.
-    :param by: Column(s) to group by.
-    :raises ValueError: If a function is not provided for any of the arguments.
-    :returns: A pandas DataFrame with summarized columns.
+    Args:
+        df: A pandas DataFrame.
+        args: instance(s) of the `janitor.col` class.
+        by: Column(s) to group by.
+
+    Raises:
+        ValueError: If a function is not provided.
+
+    Returns:
+        A pandas DataFrame with summarized columns.
     """  # noqa: E501
 
-    args_to_process = []
     for num, arg in enumerate(args):
         check(f"Argument {num} in the summarize function", arg, [col])
         if arg.func is None:
@@ -147,7 +151,7 @@ def summarize(
     elif by_is_true:
         grp = df.groupby(by)
 
-#     aggs = {}
+    aggs = {}
 
     for arg in args:
         columns, names, func_names_and_func, dupes = _process_function(df, arg)

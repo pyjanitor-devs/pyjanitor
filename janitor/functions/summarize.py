@@ -131,21 +131,6 @@ def summarize(
     elif by_is_true:
         grp = df.groupby(by)
 
-    by_is_true = by is not None
-    grp = None
-    if by_is_true and isinstance(by, dict):
-        grp = df.groupby(**by)
-    elif by_is_true and isinstance(by, col):
-        if by.func:
-            raise ValueError("Function assignment is not required within by")
-        cols = get_index_labels([*by.cols], df, axis="columns")
-        if by.remove_cols:
-            exclude = get_index_labels([*by.remove_cols], df, axis="columns")
-            cols = cols.difference(exclude, sort=False)
-        grp = df.groupby(cols.tolist())
-    elif by_is_true:
-        grp = df.groupby(by)
-
     aggs = {}
 
     for arg in args:

@@ -33,7 +33,7 @@ def summarize(
 
     It has a `compute` method, for adding the functions that will
     be applied to the columns, and is of the form `.compute(*args, **kwargs)`.
-    The variable `args` argument accepts the functions, while the
+    The variable `args` argument accepts the function(s), while the
     keyword arguments `kwargs` accepts parameters to be passed to the
     functions.
 
@@ -46,12 +46,7 @@ def summarize(
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 
-    `by` accepts a label, labels, mapping or function.
-    Arguments supported in `pd.DataFrame.groupby`
-    can also be passed to `by` via a dictionary.
-
-
-    Example:
+    Examples:
 
         >>> import pandas as pd
         >>> import numpy as np

@@ -29,27 +29,20 @@ def summarize(
     It is a wrapper around `pd.DataFrame.agg`,
     with added flexibility for multiple columns.
 
-    The argument should be of the form `(columns, func, names_glue)`;
-    the `names_glue` argument is optional.
-    `janitor.SD` allows for flexible column selection with the
-    [`select_columns`][janitor.functions.select.select_columns]
-    syntax.
-    The function `func`, added via `janitor.SD.add_fns` method
-    should be a string (which is dispatched to `pd.Series.agg`),
-    or a callable, or a list/tuple of strings/callables.
-    The function is called on each column in `columns`.
-    Additional parameters can be passed as keyword arguments in the
-    `add_fns` method for `janitor.SD`.
+    The `col` class allows for flexibility when aggregating.
 
-    The optional `janitor.SD` `names_glue` argument
-    (passed via the `janitor.SD.rename` method) allows for renaming.
-    For single columns, simply pass the new column name.
-    For multiple columns, use the `names_glue` specification -
-    the placeholders for `names_glue` are `_col`, which represents
-    the column name, and `_fn` which represents the function name.
-    Under the hood, it uses python's `str.format` method.
+    It has a `compute` method, for adding the functions that will
+    be applied to the columns, and is of the form `.compute(*args, **kwargs)`.
+    The variable `args` argument accepts the functions, while the
+    keyword arguments `kwargs` accepts parameters to be passed to the
+    functions.
 
-    `by` accepts a label, labels, mapping or function.
+    There is also a `rename` method, for renaming the columns after
+    aggregation. It is a single string, which can also be used as
+    a glue, with `_col` as a placeholder for column name,
+    and `_fn` as a placeholder for function name.
+
+    `by` accepts a label, labels, mapping, function, or `col` class.
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 

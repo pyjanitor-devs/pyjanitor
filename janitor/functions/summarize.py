@@ -86,7 +86,7 @@ def summarize(
         102201     heats         2.0
         103202     finals        4.0
 
-    Summarize with the placeholders in `names_glue`:
+    Summarize with the placeholders when renaming:
 
         >>> cols = col("avg*").compute("mean").rename("{_col}_{_fn}")
         >>> df.summarize(cols)
@@ -101,7 +101,7 @@ def summarize(
         103202     finals              4.0           4.0            4.0
 
     :param df: A pandas DataFrame.
-    :param args: instance(s) of the `janitor.Col` class.
+    :param args: instance(s) of the `janitor.col` class.
     :param by: Column(s) to group by.
     :raises ValueError: If a function is not provided for any of the arguments.
     :returns: A pandas DataFrame with summarized columns.

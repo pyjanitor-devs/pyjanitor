@@ -79,16 +79,22 @@ def impute(
         1  2    NaN    3.0
         2  3    NaN    2.0
 
-    :param df: A pandas DataFrame.
-    :param column_names: The name of the column(s) on which to impute values.
-    :param value: The value used for imputation, passed into `.fillna` method
-        of the underlying pandas Series.
-    :param statistic_column_name: The column statistic to impute.
-    :returns: An imputed pandas DataFrame.
-    :raises ValueError: If both `value` and `statistic_column_name` are
-        provided.
-    :raises KeyError: If `statistic_column_name` is not one of `mean`,
-        `average`, `median`, `mode`, `minimum`, `min`, `maximum`, or `max`.
+    Args:
+        df: A pandas DataFrame.
+        column_names: The name of the column(s) on which to impute values.
+        value: The value used for imputation, passed into `.fillna` method
+            of the underlying pandas Series.
+        statistic_column_name: The column statistic to impute.
+
+    Raises:
+        ValueError: If both `value` and `statistic_column_name` are
+            provided.
+        KeyError: If `statistic_column_name` is not one of `mean`,
+            `average`, `median`, `mode`, `minimum`, `min`, `maximum`, or
+            `max`.
+
+    Returns:
+        An imputed pandas DataFrame.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if (value is None) and (statistic_column_name is None):

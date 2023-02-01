@@ -657,7 +657,7 @@ def _convert_to_numpy_array(
 
 def _process_function(df, arg):
     """
-    process function(s) assigned to `janitor.Column`.
+    process function(s) assigned to `janitor.col`.
     """
     columns = arg.cols
     func = arg.func[0]

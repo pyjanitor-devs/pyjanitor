@@ -1,5 +1,4 @@
 """Alternative function to pd.agg for summarizing data."""
-
 from typing import Any
 import pandas as pd
 import pandas_flavor as pf

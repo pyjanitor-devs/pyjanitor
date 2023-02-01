@@ -4,6 +4,7 @@ from __future__ import annotations
 import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
+from collections import Counter
 import re
 from typing import (
     Hashable,
@@ -14,7 +15,6 @@ from typing import (
     Union,
     Callable,
     Any,
-    NamedTuple,
 )
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
@@ -33,9 +33,11 @@ from pandas.api.types import (
     is_bool_dtype,
 )
 import numpy as np
+import inspect
 from multipledispatch import dispatch
 from janitor.utils import check_column
 from functools import singledispatch
+from itertools import product
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -139,7 +141,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     it can be used to select columns in the index or columns_names
     arguments of `pivot_longer` function.
 
-    **Warning**:
+    !!!warning
 
         This function is deprecated. Kindly use `re.compile` instead.
 
@@ -305,27 +307,6 @@ def _select_index(arg, df, axis):
         raise KeyError(f"No match was returned for {arg}") from exc
 
 
-@_select_index.register(DropLabel)  # noqa: F811
-def _column_sel_dispatch(cols, df, axis):  # noqa: F811
-    """
-    Base function for selection on a Pandas Index object.
-    Returns the inverse of the passed label(s).
-
-    Returns an array of integers.
-    """
-    arr = _select_index(cols.label, df, axis)
-    index = np.arange(getattr(df, axis).size)
-    if isinstance(arr, int):
-        arr = [arr]
-    elif isinstance(arr, slice):
-        arr = index[arr]
-    elif is_list_like(arr):
-        arr = np.asanyarray(arr)
-    if is_bool_dtype(arr):
-        return index[~arr]
-    return np.setdiff1d(index, arr)
-
-
 @_select_index.register(str)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -343,6 +324,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             return index.get_loc(arg)
         except KeyError as exc:
             if _is_str_or_cat(index):
+                if arg == "*":
+                    return slice(None)
                 if isinstance(index, pd.MultiIndex):
                     index = index.get_level_values(0)
                 # label selection should be case sensitive
@@ -410,6 +393,17 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
     Returns an array of booleans.
     """
+    # special case for selecting dtypes columnwise
+    dtypes = (
+        arg.__name__
+        for _, arg in inspect.getmembers(pd.api.types, inspect.isfunction)
+        if arg.__name__.startswith("is") and arg.__name__.endswith("type")
+    )
+    if (arg.__name__ in dtypes) and (axis == "columns"):
+        bools = df.dtypes.map(arg)
+        if not bools.any():
+            raise KeyError(f"No match was returned for {arg}")
+        return np.asanyarray(bools)
 
     return _select_callable(df, arg, axis)
 
@@ -425,10 +419,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     level_label = {}
     index = getattr(df, axis)
     if not isinstance(index, pd.MultiIndex):
-        raise TypeError(
-            "Index selection with a dictionary "
-            "applies only to a MultiIndex."
-        )
+        return _select_index(list(arg), df, axis)
     all_str = (isinstance(entry, str) for entry in arg)
     all_str = all(all_str)
     all_int = (isinstance(entry, int) for entry in arg)
@@ -507,6 +498,21 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         raise KeyError(f"No match was returned for {arg}") from exc
 
 
+@_select_index.register(DropLabel)  # noqa: F811
+def _column_sel_dispatch(cols, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Returns the inverse of the passed label(s).
+
+    Returns an array of integers.
+    """
+    arr = _select_index(cols.label, df, axis)
+    index = np.arange(getattr(df, axis).size)
+    arr = _index_converter(arr, index)
+    return np.delete(index, arr)
+
+
+@_select_index.register(set)
 @_select_index.register(list)  # noqa: F811
 def _index_dispatch(arg, df, axis):  # noqa: F811
     """
@@ -528,6 +534,14 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
+    # shortcut for single unique dtype of scalars
+    checks = (is_scalar(entry) for entry in arg)
+    if all(checks):
+        dtypes = {type(entry) for entry in arg}
+        if len(dtypes) == 1:
+            indices = index.get_indexer_for(list(arg))
+            if (indices != -1).all():
+                return indices
     # treat multiple DropLabel instances as a single unit
     checks = (isinstance(entry, DropLabel) for entry in arg)
     if sum(checks) > 1:
@@ -536,7 +550,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         drop_labels = DropLabel(drop_labels)
         arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
         arg.append(drop_labels)
-
     indices = [_select_index(entry, df, axis) for entry in arg]
 
     # single entry does not need to be combined
@@ -549,18 +562,45 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         if is_list_like(indices):
             indices = np.asanyarray(indices)
         return indices
-    contents = []
-    for arr in indices:
-        if is_list_like(arr):
-            arr = np.asanyarray(arr)
-        if is_bool_dtype(arr):
-            arr = arr.nonzero()[0]
-        elif isinstance(arr, slice):
-            arr = range(index.size)[arr]
-        elif isinstance(arr, int):
-            arr = [arr]
-        contents.append(arr)
-    return np.concatenate(contents)
+    indices = [_index_converter(arr, index) for arr in indices]
+    return np.concatenate(indices)
+
+
+def _index_converter(arr, index):
+    """Converts output from _select_index to an array_like"""
+    if is_list_like(arr):
+        arr = np.asanyarray(arr)
+    if is_bool_dtype(arr):
+        arr = arr.nonzero()[0]
+    elif isinstance(arr, slice):
+        arr = range(index.size)[arr]
+    elif isinstance(arr, int):
+        arr = [arr]
+    return arr
+
+
+def get_index_labels(arg, df, axis):
+    """
+    Convenience function to get actual labels from column/index
+
+    !!! info "New in version 0.25.0"
+
+    :param arg: Valid inputs include: an exact column name to look for,
+        a shell-style glob string (e.g. `*_thing_*`),
+        a regular expression,
+        a callable,
+        or variable arguments of all the aforementioned.
+        A sequence of booleans is also acceptable.
+        A dictionary can be used for selection
+        on a MultiIndex on different levels.
+    :param df: The pandas DataFrame object.
+    :param axis: Should be either `index` or `columns`.
+    :returns: A pandas Index.
+
+    """
+    assert axis in {"index", "columns"}
+    index = getattr(df, axis)
+    return index[_select_index(arg, df, axis)]
 
 
 def _select(
@@ -593,7 +633,7 @@ def _select(
         return df.iloc[rows, columns]
     indices = _select_index(list(args), df, axis)
     if invert:
-        rev = np.ones(getattr(df, axis).size, dtype=np.bool8)
+        rev = np.ones(getattr(df, axis).size, dtype=np.bool_)
         rev[indices] = False
         return df.iloc(axis=axis)[rev]
     return df.iloc(axis=axis)[indices]
@@ -615,13 +655,107 @@ def _convert_to_numpy_array(
     return left, right
 
 
-class SD(NamedTuple):
+def _process_function(df, arg):
     """
-    Subset of Data.
-    Used in `mutate` and `summarize`
-    for computation on multiple columns
+    process function(s) assigned to `janitor.Column`.
+    """
+    columns = arg.cols
+    func = arg.func[0]
+    names = arg.names
+    columns = get_index_labels([*columns], df, axis="columns")
+    if arg.remove_cols:
+        exclude = get_index_labels([*arg.remove_cols], df, axis="columns")
+        columns = columns.difference(exclude, sort=False)
+    func_names = [
+        funcn.__name__ if callable(funcn) else funcn for funcn in func
+    ]
+    counts = None
+    dupes = set()
+    if len(func) > 1:
+        counts = Counter(func_names)
+        counts = {key: 0 for key, value in counts.items() if value > 1}
+    # deal with duplicate function names
+    if counts:
+        func_list = []
+        for funcn in func_names:
+            if funcn in counts:
+                if names:
+                    name = f"{funcn}{counts[funcn]}"
+                else:
+                    name = f"{counts[funcn]}"
+                    dupes.add(name)
+                func_list.append(name)
+                counts[funcn] += 1
+            else:
+                func_list.append(funcn)
+        func_names = func_list
+    counts = None
+    func = product(func, [arg.func[-1]])
+
+    return columns, names, zip(func_names, func), dupes
+
+
+class col:
+    """
+    Used to build an expression,
+    where the value is not computed,
+    until called within a relevant
+    `janitor` function.
+
+    !!! info "New in version 0.25.0"
     """
 
-    columns: Any
-    func: Optional[Union[str, Callable, list, tuple]]
-    names_glue: Optional[str] = None
+    def __init__(self, *cols):
+        self.cols = cols
+        self.remove_cols = None
+        self.func = None
+        self.names = None
+
+    def exclude(self, *args):
+        """
+        args: A tuple of labels to exclude.
+        """
+        if self.func:
+            raise ValueError(
+                "exclude should be applied before a function is assigned."
+            )
+        self.remove_cols = args
+        return self
+
+    def compute(self, *args, **kwargs):
+        """
+        :param args: A tuple of functions,
+              which can be either a string,
+             or a callable. If it is a string, it
+             should be one of the accepted function
+             strings in Pandas.
+        :param kwargs: parameters to pass to the function
+        :raises ValueError: If function is already assigned.
+        :returns: A col class.
+        """
+        if self.func:
+            raise ValueError("A function has already been assigned")
+        for func in args:
+            check("Function", func, [str, callable])
+        self.func = args, kwargs
+        return self
+
+    def rename(self, names):
+        """
+        Used to assign new names to columns
+        after applying a function.
+
+        :param names: new name to assign to columns created from compute
+        :raises ValueError: if there is no assigned function.
+        :returns: A col class
+        """
+        if not self.func:
+            raise ValueError(
+                "rename is only applicable if "
+                "there is a function to be applied."
+            )
+        if self.names:
+            raise ValueError("A name has already been assigned")
+        check("names", names, [str])
+        self.names = names
+        return self

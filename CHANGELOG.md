@@ -4,9 +4,11 @@
 
 -   [INF] Replace `pytest.ini` file with `pyproject.toml` file. PR #1204 @Zeroto521
 -   [INF] Extract docstrings tests from all tests. PR #1205 @Zeroto521
--   [BUG] address the `TypeError` when importing v0.24.0 (issue #1201 @xujiboy and @joranbeasley)
+-   [BUG] Address the `TypeError` when importing v0.24.0 (issue #1201 @xujiboy and @joranbeasley)
 -   [INF] Fixed issue with missing PyPI README. PR #1216 @thatlittleboy
+-   [INF] Update some `mkdocs` compatibility code. PR #1231 @thatlittleboy
 -   [DEPR] Add deprecation warnings for `process_text`, `rename_column`, `rename_columns`, `filter_on`, `remove_columns`, `fill_direction`. #1045 @samukweku
+-   [ENH] `pivot_longer` now supports named groups where `names_pattern` is a regular expression. A dictionary can now be passed to `names_pattern`, and is internally evaluated as a list/tuple of regular expressions. Issue #1209 @samukweku
 -   [ENH] Add `summarize` function. Issue #1225 @samukweku
 
 ## [v0.24.0] - 2022-11-12

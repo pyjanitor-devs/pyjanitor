@@ -1,29 +1,29 @@
 """Implementation of `impute` function"""
-from typing import Any, Hashable, Optional
+from typing import Any, Optional
 
-import lazy_loader as lazy
-import numpy as np
+
 import pandas_flavor as pf
 import pandas as pd
 
 from janitor.utils import deprecated_alias
-
-ss = lazy.load("scipy.stats")
+from janitor.functions.utils import get_index_labels
+from itertools import product
 
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
+@deprecated_alias(column_name="column_names")
 @deprecated_alias(statistic="statistic_column_name")
 def impute(
     df: pd.DataFrame,
-    column_name: Hashable,
+    column_names: Any,
     value: Optional[Any] = None,
     statistic_column_name: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     Method-chainable imputation of values in a column.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Underneath the hood, this function calls the `.fillna()` method available
     to every `pandas.Series` object.
@@ -34,8 +34,11 @@ def impute(
     take on the value provided.
 
     If `statistic_column_name` is provided, then all null values in the
-    selected column will take on the summary statistic value of other non-null
-    values.
+    selected column(s) will take on the summary statistic value
+    of other non-null values.
+
+    Column selection in `column_names` is possible using the
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     Currently supported statistics include:
 
@@ -63,7 +66,7 @@ def impute(
 
     Imputing null values with 0 (using the `value` parameter):
 
-        >>> df.impute(column_name="sales", value=0.0)
+        >>> df.impute(column_names="sales", value=0.0)
            a  sales  score
         0  1    0.0    NaN
         1  2    0.0    3.0
@@ -72,14 +75,14 @@ def impute(
     Imputing null values with median (using the `statistic_column_name`
     parameter):
 
-        >>> df.impute(column_name="score", statistic_column_name="median")
+        >>> df.impute(column_names="score", statistic_column_name="median")
            a  sales  score
-        0  1    0.0    2.5
-        1  2    0.0    3.0
-        2  3    0.0    2.0
+        0  1    NaN    2.5
+        1  2    NaN    3.0
+        2  3    NaN    2.0
 
     :param df: A pandas DataFrame.
-    :param column_name: The name of the column on which to impute values.
+    :param column_names: The name of the column(s) on which to impute values.
     :param value: The value used for imputation, passed into `.fillna` method
         of the underlying pandas Series.
     :param statistic_column_name: The column statistic to impute.
@@ -90,42 +93,46 @@ def impute(
         `average`, `median`, `mode`, `minimum`, `min`, `maximum`, or `max`.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
+    if (value is None) and (statistic_column_name is None):
+        raise ValueError("Kindly specify a value or a statistic_column_name")
+
     if value is not None and statistic_column_name is not None:
         raise ValueError(
             "Only one of `value` or `statistic_column_name` should be "
             "provided."
         )
 
-    # If statistic is provided, then we compute the relevant summary statistic
-    # from the other data.
-    funcs = {
-        "mean": np.mean,
-        "average": np.mean,  # aliased
-        "median": np.median,
-        "mode": ss.mode,
-        "minimum": np.min,
-        "min": np.min,  # aliased
-        "maximum": np.max,
-        "max": np.max,  # aliased
-    }
-    if statistic_column_name is not None:
+    column_names = get_index_labels([column_names], df, axis="columns")
+
+    if value is not None:
+        value = dict(product(column_names, [value]))
+
+    else:
+        # If statistic is provided, then we compute
+        # the relevant summary statistic
+        # from the other data.
+        funcs = {
+            "mean": "mean",
+            "average": "mean",  # aliased
+            "median": "median",
+            "mode": "mode",
+            "minimum": "min",
+            "min": "min",  # aliased
+            "maximum": "max",
+            "max": "max",  # aliased
+        }
         # Check that the statistic keyword argument is one of the approved.
         if statistic_column_name not in funcs:
             raise KeyError(
                 f"`statistic_column_name` must be one of {funcs.keys()}."
             )
 
-        value = funcs[statistic_column_name](
-            df[column_name].dropna().to_numpy()
-        )
-        # special treatment for mode, because scipy stats mode returns a
-        # moderesult object.
-        if statistic_column_name == "mode":
-            value = value.mode[0]
+        value = dict(product(column_names, [funcs[statistic_column_name]]))
 
-    # The code is architected this way - if `value` is not provided but
-    # statistic is, we then overwrite the None value taken on by `value`, and
-    # use it to set the imputation column.
-    if value is not None:
-        df[column_name] = df[column_name].fillna(value)
-    return df
+        value = df.agg(value)
+
+        # special treatment for mode
+        if statistic_column_name == "mode":
+            value = {key: val.at[0] for key, val in value.items()}
+
+    return df.fillna(value=value)

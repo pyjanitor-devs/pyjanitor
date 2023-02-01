@@ -7,6 +7,7 @@ from pandas.testing import assert_frame_equal
 from itertools import product
 
 from janitor.functions.utils import patterns, DropLabel
+from pandas.api.types import is_numeric_dtype, is_string_dtype
 
 
 @pytest.mark.functions
@@ -176,6 +177,15 @@ def df_strings():
 def numbers():
     """pytest fixture"""
     return pd.DataFrame([np.random.randn(20)], columns=range(20))
+
+
+def test_callable_not_found(numbers):
+    """
+    Raise KeyError if one of pd.api.types,
+    and there is no True.
+    """
+    with pytest.raises(KeyError, match="No match was returned.+"):
+        numbers.select_columns(is_string_dtype)
 
 
 def test_col_not_found(numbers):
@@ -377,6 +387,14 @@ def test_callable_length(numbers):
         IndexError, match="The boolean array output from the callable.+"
     ):
         numbers.select_columns(lambda df: [True, False])
+
+
+@pytest.mark.functions
+def test_callable_dtype(dataframe):
+    """Test output when selecting columnns based on dtype"""
+    expected = dataframe.select_dtypes("number")
+    actual = dataframe.select_columns(is_numeric_dtype)
+    assert_frame_equal(expected, actual)
 
 
 def test_dict(multiindex):

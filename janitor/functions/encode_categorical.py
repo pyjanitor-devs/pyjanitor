@@ -7,7 +7,8 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_list_like
 
-from janitor.utils import check, check_column, deprecated_alias
+from janitor.utils import check_column, deprecated_alias
+from janitor.functions.utils import get_index_labels
 
 
 @pf.register_dataframe_method
@@ -112,10 +113,7 @@ def encode_categorical(
     # kwargs takes care of scenarios where user wants an ordered category
     # or user supplies specific categories to create the categorical
     if column_names is not None:
-        check("column_names", column_names, [list, tuple, Hashable])
-        if isinstance(column_names, Hashable):
-            column_names = [column_names]
-        check_column(df, column_names)
+        column_names = get_index_labels([column_names], df, axis="columns")
         dtypes = {col: "category" for col in column_names}
         return df.astype(dtypes)
 

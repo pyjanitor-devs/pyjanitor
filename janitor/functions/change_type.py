@@ -24,65 +24,65 @@ def change_type(
 ) -> pd.DataFrame:
     """Change the type of a column.
 
-     This method does not mutate the original DataFrame.
+    This method does not mutate the original DataFrame.
 
-     Exceptions that are raised can be ignored. For example, if one has a mixed
-     dtype column that has non-integer strings and integers, and you want to
-     coerce everything to integers, you can optionally ignore the non-integer
-     strings and replace them with `NaN` or keep the original value.
+    Exceptions that are raised can be ignored. For example, if one has a mixed
+    dtype column that has non-integer strings and integers, and you want to
+    coerce everything to integers, you can optionally ignore the non-integer
+    strings and replace them with `NaN` or keep the original value.
 
-     Intended to be the method-chaining alternative to:
+    Intended to be the method-chaining alternative to:
 
-     ```python
-     df[col] = df[col].astype(dtype)
+    ```python
+    df[col] = df[col].astype(dtype)
     ```
 
-     !!!note
+    !!!note
 
-         This function will be deprecated in a 1.x release.
-         Please use `pd.DataFrame.astype` instead.
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.astype` instead.
 
-     Example: Change the type of a column.
+    Example: Change the type of a column.
 
-         >>> import pandas as pd
-         >>> import janitor
-         >>> df = pd.DataFrame({"col1": range(3), "col2": ["m", 5, True]})
-         >>> df
-            col1  col2
-         0     0     m
-         1     1     5
-         2     2  True
-         >>> df.change_type(
-         ...     "col1", dtype=str,
-         ... ).change_type(
-         ...     "col2", dtype=float, ignore_exception="fillna",
-         ... )
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"col1": range(3), "col2": ["m", 5, True]})
+        >>> df
            col1  col2
-         0    0   NaN
-         1    1   5.0
-         2    2   1.0
+        0     0     m
+        1     1     5
+        2     2  True
+        >>> df.change_type(
+        ...     "col1", dtype=str,
+        ... ).change_type(
+        ...     "col2", dtype=float, ignore_exception="fillna",
+        ... )
+          col1  col2
+        0    0   NaN
+        1    1   5.0
+        2    2   1.0
 
-     Example: Change the type of multiple columns.
+    Example: Change the type of multiple columns.
 
-     Change the type of all columns, please use `DataFrame.astype` instead.
+    Change the type of all columns, please use `DataFrame.astype` instead.
 
-         >>> import pandas as pd
-         >>> import janitor
-         >>> df = pd.DataFrame({"col1": range(3), "col2": ["m", 5, True]})
-         >>> df.change_type(['col1', 'col2'], str)
-           col1  col2
-         0    0     m
-         1    1     5
-         2    2  True
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"col1": range(3), "col2": ["m", 5, True]})
+        >>> df.change_type(['col1', 'col2'], str)
+          col1  col2
+        0    0     m
+        1    1     5
+        2    2  True
 
-     :param df: A pandas DataFrame.
-     :param column_name: The column(s) in the dataframe.
-     :param dtype: The datatype to convert to. Should be one of the standard
-         Python types, or a numpy datatype.
-     :param ignore_exception: one of `{False, "fillna", "keep_values"}`.
-     :returns: A pandas DataFrame with changed column types.
-     :raises ValueError: If unknown option provided for
-         `ignore_exception`.
+    :param df: A pandas DataFrame.
+    :param column_name: The column(s) in the dataframe.
+    :param dtype: The datatype to convert to. Should be one of the standard
+        Python types, or a numpy datatype.
+    :param ignore_exception: one of `{False, "fillna", "keep_values"}`.
+    :returns: A pandas DataFrame with changed column types.
+    :raises ValueError: If unknown option provided for
+        `ignore_exception`.
     """
 
     df = df.copy()  # avoid mutating the original DataFrame

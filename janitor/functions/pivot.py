@@ -15,7 +15,7 @@ from pandas.api.types import (
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
-    _select_index,
+    get_index_labels,
     _computations_expand_grid,
 )
 from janitor.utils import check
@@ -132,6 +132,16 @@ def pivot_longer(
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
+    Split the column labels for the above dataframe using named groups in `names_pattern`:
+
+        >>> df.pivot_longer(
+        ...     index = 'id',
+        ...     names_pattern = r"new_?(?P<diagnosis>.+)_(?P<gender>.)(?P<age>\\d+)",
+        ... )
+            id diagnosis gender   age  value
+        0   1        sp      m  5564      2
+        1   1       rel      f    65      3
+
     Convert the dtypes of specific columns with `names_transform`:
 
         >>> result = (df
@@ -173,6 +183,50 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
+    Replicate the above with named groups in `names_pattern` - use `_` instead of `.value`:
+
+        >>> df.pivot_longer(
+        ...     index="unit",
+        ...     names_pattern=r"(?P<_>x|y)_(?P<time>[0-9])(?P<__>_mean)",
+        ... )
+           unit time  x_mean  y_mean
+        0    50    1      10      30
+        1    50    2      20      40
+
+    Reshape dataframe by passing a sequence to `names_pattern`:
+
+        >>> df = pd.DataFrame({'hr1': [514, 573],
+        ...                    'hr2': [545, 526],
+        ...                    'team': ['Red Sox', 'Yankees'],
+        ...                    'year1': [2007, 2007],
+        ...                    'year2': [2008, 2008]})
+        >>> df
+           hr1  hr2     team  year1  year2
+        0  514  545  Red Sox   2007   2008
+        1  573  526  Yankees   2007   2008
+        >>> df.pivot_longer(
+        ...     index = 'team',
+        ...     names_to = ['year', 'hr'],
+        ...     names_pattern = ['year', 'hr']
+        ... )
+              team   hr  year
+        0  Red Sox  514  2007
+        1  Yankees  573  2007
+        2  Red Sox  545  2008
+        3  Yankees  526  2008
+
+    Reshape above dataframe by passing a dictionary to `names_pattern`:
+
+        >>> df.pivot_longer(
+        ...     index = 'team',
+        ...     names_pattern = {"year":"year", "hr":"hr"}
+        ... )
+              team   hr  year
+        0  Red Sox  514  2007
+        1  Yankees  573  2007
+        2  Red Sox  545  2008
+        3  Yankees  526  2008
+
     Multiple values_to:
 
         >>> df = pd.DataFrame(
@@ -207,7 +261,7 @@ def pivot_longer(
         ...         column_names=slice("Mango", "Vodka"),
         ...         names_to=("Fruit", "Drink"),
         ...         values_to=("Pounds", "Ounces"),
-        ...         names_pattern=[r"M|O|W", r"G|V"],
+        ...         names_pattern=["M|O|W", "G|V"],
         ...     )
               City    State       Fruit  Pounds  Drink  Ounces
         0  Houston    Texas       Mango       4    Gin    16.0
@@ -220,11 +274,34 @@ def pivot_longer(
         7   Austin    Texas  Watermelon      99   None     NaN
         8   Hoover  Alabama  Watermelon      43   None     NaN
 
+    Replicate the above transformation with a nested dictionary passed to `names_pattern`:
+
+        >>> df.pivot_longer(
+        ...     index=["City", "State"],
+        ...     column_names=slice("Mango", "Vodka"),
+        ...     names_pattern={
+        ...         "Fruit": {"Pounds": "M|O|W"},
+        ...         "Drink": {"Ounces": "G|V"},
+        ...     },
+        ... )
+              City    State       Fruit  Pounds  Drink  Ounces
+        0  Houston    Texas       Mango       4    Gin    16.0
+        1   Austin    Texas       Mango      10    Gin   200.0
+        2   Hoover  Alabama       Mango      90    Gin    34.0
+        3  Houston    Texas      Orange      10  Vodka    20.0
+        4   Austin    Texas      Orange       8  Vodka    33.0
+        5   Hoover  Alabama      Orange      14  Vodka    18.0
+        6  Houston    Texas  Watermelon      40   None     NaN
+        7   Austin    Texas  Watermelon      99   None     NaN
+        8   Hoover  Alabama  Watermelon      43   None     NaN
 
     !!! abstract "Version Changed"
 
         - 0.24.0
             - Added `dropna` parameter.
+        - 0.24.1
+            - `names_pattern` can accept a dictionary.
+            - named groups supported in `names_pattern`.
 
 
     :param df: A pandas DataFrame.
@@ -257,13 +334,27 @@ def pivot_longer(
         or regular expression. `names_sep` does not work with MultiIndex
         columns.
     :param names_pattern: Determines how the column name is broken up.
-        It can be a regular expression containing matching groups (it takes
-        the same specification as pandas' `str.extract` method), or a
-        list/tuple of regular expressions. If it is a single regex, the
-        number of groups must match the length of `names_to`.
+        It can be a regular expression containing matching groups.
+        Under the hood it is processed with pandas' `str.extract` function.
+        If it is a single regex, the number of groups must match
+        the length of `names_to`.
+        Named groups are supported, if `names_to` is none. `_` is used
+        instead of `.value` as a placeholder in named groups.
+        `_` can be overloaded for multiple `.value`
+        calls - `_`, `__`, `___`, ...
+        `names_pattern` can also be a list/tuple of regular expressions
+        It can also be a list/tuple of strings;
+        the strings will be treated as regular expressions.
+        Under the hood it is processed with pandas' `str.contains` function.
         For a list/tuple of regular expressions,
         `names_to` must also be a list/tuple and the lengths of both
         arguments must match.
+        `names_pattern` can also be a dictionary, where the keys are
+        the new column names, while the values can be a regular expression
+        or a string which will be evaluated as a regular expression.
+        Alternatively, a nested dictionary can be used, where the sub
+        key(s) are associated with `values_to`. Please have a look
+        at the examples for usage.
         `names_pattern` does not work with MultiIndex columns.
     :param names_transform: Use this option to change the types of columns that
         have been transformed to rows. This does not applies to the values' columns.
@@ -390,7 +481,6 @@ def _data_checks_pivot_longer(
             )
 
     is_multi_index = isinstance(df.columns, pd.MultiIndex)
-    indices = None
     if column_names is not None:
         if is_multi_index:
             column_names = _check_tuples_multiindex(
@@ -399,8 +489,7 @@ def _data_checks_pivot_longer(
         else:
             if is_list_like(column_names):
                 column_names = list(column_names)
-            indices = _select_index(column_names, df, axis="columns")
-            column_names = df.columns[indices]
+            column_names = get_index_labels(column_names, df, axis="columns")
             if not is_list_like(column_names):
                 column_names = [column_names]
             else:
@@ -412,8 +501,7 @@ def _data_checks_pivot_longer(
         else:
             if is_list_like(index):
                 index = list(index)
-            indices = _select_index(index, df, axis="columns")
-            index = df.columns[indices]
+            index = get_index_labels(index, df, axis="columns")
             if not is_list_like(index):
                 index = [index]
             else:
@@ -428,34 +516,40 @@ def _data_checks_pivot_longer(
         if column_names is None:
             column_names = df.columns.difference(index, sort=False).tolist()
 
-    len_names_to = 0
     if names_to is not None:
         if isinstance(names_to, str):
             names_to = [names_to]
         elif isinstance(names_to, tuple):
             names_to = [*names_to]
+
         check("names_to", names_to, [list, str, tuple])
 
         uniques = set()
         for word in names_to:
-            check(f"{word} in names_to", word, [str])
+            check(f"'{word}' in names_to", word, [str])
             if (word in uniques) and (word != ".value"):
-                raise ValueError(f"{word} is duplicated in names_to.")
+                raise ValueError(f"'{word}' is duplicated in names_to.")
             uniques.add(word)
 
-        len_names_to = len(names_to)
     else:
         if not any((names_sep, names_pattern)):
             names_to = ["variable"]
 
     check("values_to", values_to, [str, list, tuple])
-    if isinstance(values_to, (list, tuple)) and (
-        not isinstance(names_pattern, (list, tuple))
-    ):
-        raise TypeError(
-            "values_to can be a list/tuple only "
-            "if names_pattern is a list/tuple."
-        )
+    if isinstance(values_to, (list, tuple)):
+        if not isinstance(names_pattern, (list, tuple)):
+            raise TypeError(
+                "values_to can be a list/tuple only "
+                "if names_pattern is a list/tuple."
+            )
+        if index:
+            exclude = set(values_to).intersection(index)
+            if exclude:
+                raise ValueError(
+                    f"Labels {*exclude, } in values_to already exist as "
+                    "column labels assigned to the dataframe's "
+                    "index parameter. Kindly use unique labels."
+                )
     if (
         (names_sep is None)
         and (names_pattern is None)
@@ -475,25 +569,40 @@ def _data_checks_pivot_longer(
         )
 
     if names_pattern is not None:
-        check("names_pattern", names_pattern, [str, Pattern, list, tuple])
-        if names_to is None:
-            raise ValueError("Kindly provide values for names_to.")
+        check(
+            "names_pattern", names_pattern, [str, Pattern, list, tuple, dict]
+        )
         if isinstance(names_pattern, (str, Pattern)):
-            num_regex_grps = re.compile(names_pattern).groups
-
-            if len_names_to != num_regex_grps:
+            regex = re.compile(names_pattern)
+            if names_to is None:
+                if regex.groupindex:
+                    names_to = regex.groupindex.keys()
+                    names_to = [
+                        ".value"
+                        if ("_" in name) and (len(set(name)) == 1)
+                        else name
+                        for name in names_to
+                    ]
+                    len_names_to = len(names_to)
+                else:
+                    raise ValueError("Kindly provide values for names_to.")
+            else:
+                len_names_to = len(names_to)
+            if len_names_to != regex.groups:
                 raise ValueError(
                     f"The length of names_to does not match "
                     "the number of groups in names_pattern. "
                     f"The length of names_to is {len_names_to} "
                     "while the number of groups in the regex "
-                    f"is {num_regex_grps}."
+                    f"is {regex.groups}."
                 )
 
         elif isinstance(names_pattern, (list, tuple)):
+            if names_to is None:
+                raise ValueError("Kindly provide values for names_to.")
             for word in names_pattern:
-                check(f"{word} in names_pattern", word, [str, Pattern])
-
+                check(f"'{word}' in names_pattern", word, [str, Pattern])
+            len_names_to = len(names_to)
             if len(names_pattern) != len_names_to:
                 raise ValueError(
                     f"The length of names_to does not match "
@@ -521,12 +630,91 @@ def _data_checks_pivot_longer(
                     check(f"{word} in values_to", word, [str])
                     if word in names_to:
                         raise ValueError(
-                            f"{word} in values_to already exists in names_to."
+                            f"'{word}' in values_to "
+                            "already exists in names_to."
                         )
 
                     if word in uniques:
-                        raise ValueError(f"{word} is duplicated in values_to.")
+                        raise ValueError(
+                            f"'{word}' is duplicated in values_to."
+                        )
                     uniques.add(word)
+        # outer keys belong to names_to
+        # if the values are dicts,
+        # then the inner key belongs to values_to
+        # inner keys should not exist in the outer keys
+        # non keys belong to names_pattern
+        elif isinstance(names_pattern, dict):
+            if names_to is not None:
+                raise ValueError(
+                    "names_to should be None "
+                    "when names_pattern is a dictionary"
+                )
+            for key, value in names_pattern.items():
+                check(f"'{key}' in names_pattern", key, [str])
+                if index and (key in index):
+                    raise ValueError(
+                        f"'{key}' in the names_pattern dictionary "
+                        "already exists as a column label "
+                        "assigned to the index parameter. "
+                        "Kindly use a unique name"
+                    )
+            names_to = list(names_pattern)
+            is_dict = (
+                isinstance(arg, dict) for _, arg in names_pattern.items()
+            )
+            if all(is_dict):
+                values_to = []
+                patterns = []
+                for key, value in names_pattern.items():
+                    if len(value) != 1:
+                        raise ValueError(
+                            "The length of the dictionary paired "
+                            f"with '{key}' in names_pattern "
+                            "should be length 1, instead got "
+                            f"{len(value)}"
+                        )
+                    for k, v in value.items():
+                        if not isinstance(k, str):
+                            raise TypeError(
+                                "The key in the nested dictionary "
+                                f"for '{key}' in names_pattern "
+                                "should be a string, instead got {type(k)}"
+                            )
+                        if k in names_pattern:
+                            raise ValueError(
+                                f"'{k}' in the nested dictionary "
+                                "already exists as one of the main "
+                                "keys in names_pattern"
+                            )
+                        if index and (k in index):
+                            raise ValueError(
+                                f"'{k}' in the nested dictionary "
+                                "already exists as a column label "
+                                "assigned to the index parameter. "
+                                "Kindly use a unique name"
+                            )
+                        check(
+                            f"The value paired with '{k}' "
+                            "in the nested dictionary in names_pattern",
+                            v,
+                            [str, Pattern],
+                        )
+                        patterns.append(v)
+                        values_to.append(k)
+            else:
+                patterns = []
+                for key, value in names_pattern.items():
+                    check(
+                        f"The value paired with '{key}' "
+                        "in the names_pattern dictionary",
+                        value,
+                        [str, Pattern],
+                    )
+
+                    patterns.append(value)
+            names_pattern = patterns
+            patterns = None
 
     if names_sep is not None:
         check("names_sep", names_sep, [str, Pattern])
@@ -707,14 +895,6 @@ def _pivot_longer_names_pattern_sequence(
     names_pattern is provided, and is a list/tuple.
     """
     values_to_is_a_sequence = isinstance(values_to, (list, tuple))
-    if values_to_is_a_sequence and index:
-        exclude = set(values_to).intersection(index)
-        if exclude:
-            raise ValueError(
-                f"Labels {*exclude, } in values_to already exist as "
-                "column labels assigned to the dataframe's index parameter. "
-                "Kindly use unique labels."
-            )
     values = df.columns
 
     mapping = [
@@ -1488,7 +1668,6 @@ def _data_checks_pivot_wider(
     """
 
     is_multi_index = isinstance(df.columns, pd.MultiIndex)
-    indices = None
     if index is not None:
         if is_multi_index:
             if not isinstance(index, list):
@@ -1500,8 +1679,7 @@ def _data_checks_pivot_wider(
         else:
             if is_list_like(index):
                 index = list(index)
-            indices = _select_index(index, df, axis="columns")
-            index = df.columns[indices]
+            index = get_index_labels(index, df, axis="columns")
             if not is_list_like(index):
                 index = [index]
             else:
@@ -1524,8 +1702,7 @@ def _data_checks_pivot_wider(
     else:
         if is_list_like(names_from):
             names_from = list(names_from)
-        indices = _select_index(names_from, df, axis="columns")
-        names_from = df.columns[indices]
+        names_from = get_index_labels(names_from, df, axis="columns")
         if not is_list_like(names_from):
             names_from = [names_from]
         else:
@@ -1544,8 +1721,7 @@ def _data_checks_pivot_wider(
         else:
             if is_list_like(values_from):
                 values_from = list(values_from)
-            indices = _select_index(values_from, df, axis="columns")
-            out = df.columns[indices]
+            out = get_index_labels(values_from, df, axis="columns")
             if not is_list_like(out):
                 out = [out]
             else:

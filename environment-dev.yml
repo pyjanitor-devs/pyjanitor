@@ -4,15 +4,11 @@ channels:
 dependencies:
   - python=3.9
   - biopython
-  - black=22.1.0
+  - black=22.12.0 # keep this in sync with `.pre-commit-config.yaml`
   - bump2version=1.0.1
   - cairo
   - conda
-  - darglint
-  - doc8
-  - flake8
   - hypothesis
-  - interrogate
   - ipykernel
   - ipython
   - isort
@@ -38,8 +34,6 @@ dependencies:
   - pipreqs
   - pip-tools
   - pre-commit
-  - pyflakes
-  - pylint
   - pyspark>=3.2.0
   - pytest
   - pytest-cov

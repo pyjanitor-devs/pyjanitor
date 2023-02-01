@@ -1,5 +1,7 @@
 site_name: pyjanitor documentation
 site_url: https://pyjanitor-devs.github.io/pyjanitor
+watch:
+  - janitor/
 
 docs_dir: mkdocs/
 
@@ -11,15 +13,17 @@ theme:
   icon:
     logo: "fontawesome/solid/book"
   features:
-    - instant
-    # - tabs
+    - navigation.instant
+    # - navigation.tabs
+    - navigation.top
+    - toc.follow
+    - content.code.copy
   language: en
 
 # We customize the navigation by hand to control the order
 # in which pages show up.
 nav:
   - Home: index.md
-  - Development Guide: devguide.md
   - API Reference:
       - Functions: api/functions.md
       - Biology: api/biology.md
@@ -31,8 +35,8 @@ nav:
       - Math: api/math.md
       # - PySpark: api/pyspark.md  # will be added back later
       - Timeseries: api/timeseries.md
-      - Utils: api/utils.md
       - XArray: api/xarray.md
+  - Development Guide: devguide.md
   - Changelog: CHANGELOG.md
   - Authors: AUTHORS.md
 
@@ -49,8 +53,6 @@ plugins:
           selection:
             docstring_style: restructured-text
       # custom_templates: templates
-      watch:
-        - janitor/
 # - mknotebooks:
 #     execute: true
 #     write_markdown: true
@@ -67,11 +69,9 @@ markdown_extensions:
   - pymdownx.highlight:
       use_pygments: false
   - pymdownx.inlinehilite
-  # - pymdownx.tabbed
-  # - pymdownx.arithmatex
-  # - pymdownx.details
-  # - pymdownx.superfences
-  # - markdown.extensions.attr_list
+  # - pymdownx.tabbed:
+  #     alternate_style: true
+  - pymdownx.superfences
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML

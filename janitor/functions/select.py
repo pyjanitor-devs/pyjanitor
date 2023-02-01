@@ -1,3 +1,4 @@
+from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 from janitor.utils import deprecated_alias
@@ -8,11 +9,10 @@ from janitor.functions.utils import _select, DropLabel  # noqa: F401
 @deprecated_alias(search_cols="search_column_names")
 def select_columns(
     df: pd.DataFrame,
-    *args,
+    *args: Any,
     invert: bool = False,
 ) -> pd.DataFrame:
-    """
-    Method-chainable selection of columns.
+    """Method-chainable selection of columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
@@ -30,8 +30,7 @@ def select_columns(
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select_columns` is primarily for convenience.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"col1": [1, 2], "foo": [3, 4], "col2": [5, 6]})
@@ -44,18 +43,21 @@ def select_columns(
         0     1     5
         1     2     6
 
-    :param df: A pandas DataFrame.
-    :param args: Valid inputs include: an exact column name to look for,
-        a shell-style glob string (e.g. `*_thing_*`),
-        a regular expression,
-        a callable,
-        or variable arguments of all the aforementioned.
-        A sequence of booleans is also acceptable.
-        A dictionary can be used for selection on a MultiIndex on different levels.
-    :param invert: Whether or not to invert the selection.
-        This will result in the selection of the complement of the columns
-        provided.
-    :returns: A pandas DataFrame with the specified columns selected.
+    Args:
+        df: A pandas DataFrame.
+        *args: Valid inputs include: an exact column name to look for,
+            a shell-style glob string (e.g. `*_thing_*`),
+            a regular expression,
+            a callable,
+            or variable arguments of all the aforementioned.
+            A sequence of booleans is also acceptable.
+            A dictionary can be used for selection on a MultiIndex on different levels.
+        invert: Whether or not to invert the selection.
+            This will result in the selection of the complement of the columns
+            provided.
+
+    Returns:
+        A pandas DataFrame with the specified columns selected.
     """  # noqa: E501
 
     return _select(df, args=args, invert=invert, axis="columns")
@@ -64,11 +66,10 @@ def select_columns(
 @pf.register_dataframe_method
 def select_rows(
     df: pd.DataFrame,
-    *args,
+    *args: Any,
     invert: bool = False,
 ) -> pd.DataFrame:
-    """
-    Method-chainable selection of rows.
+    """Method-chainable selection of rows.
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
@@ -90,9 +91,7 @@ def select_rows(
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select_rows` is primarily for convenience.
 
-
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = {"col1": [1, 2], "foo": [3, 4], "col2": [5, 6]}
@@ -107,26 +106,30 @@ def select_rows(
         col1  1  2
         col2  5  6
 
-    :param df: A pandas DataFrame.
-    :param args: Valid inputs include: an exact index name to look for,
-        a shell-style glob string (e.g. `*_thing_*`),
-        a regular expression,
-        a callable,
-        or variable arguments of all the aforementioned.
-        A sequence of booleans is also acceptable.
-        A dictionary can be used for selection on a MultiIndex on different levels.
-    :param invert: Whether or not to invert the selection.
-        This will result in the selection of the complement of the rows
-        provided.
-    :returns: A pandas DataFrame with the specified rows selected.
+    Args:
+        df: A pandas DataFrame.
+        *args: Valid inputs include: an exact index name to look for,
+            a shell-style glob string (e.g. `*_thing_*`),
+            a regular expression,
+            a callable,
+            or variable arguments of all the aforementioned.
+            A sequence of booleans is also acceptable.
+            A dictionary can be used for selection on a MultiIndex on different levels.
+        invert: Whether or not to invert the selection.
+            This will result in the selection of the complement of the rows
+            provided.
+
+    Returns:
+        A pandas DataFrame with the specified rows selected.
     """  # noqa: E501
     return _select(df, args=args, invert=invert, axis="index")
 
 
 @pf.register_dataframe_method
-def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
-    """
-    Method-chainable selection of rows and columns.
+def select(
+    df: pd.DataFrame, *, rows: Any = None, columns: Any = None
+) -> pd.DataFrame:
+    """Method-chainable selection of rows and columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
@@ -148,9 +151,7 @@ def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select` is primarily for convenience.
 
-
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame([[1, 2], [4, 5], [7, 8]],
@@ -165,29 +166,32 @@ def select(df: pd.DataFrame, *, rows=None, columns=None) -> pd.DataFrame:
                shield
         cobra       2
 
-    Labels can be dropped with the `DropLabel` class:
+        Labels can be dropped with the `DropLabel` class:
 
         >>> df.select(rows=DropLabel('cobra'))
                     max_speed  shield
         viper               4       5
         sidewinder          7       8
 
-    :param df: A pandas DataFrame.
-    :param rows: Valid inputs include: an exact label to look for,
-        a shell-style glob string (e.g. `*_thing_*`),
-        a regular expression,
-        a callable,
-        or variable arguments of all the aforementioned.
-        A sequence of booleans is also acceptable.
-        A dictionary can be used for selection on a MultiIndex on different levels.
-    :param columns: Valid inputs include: an exact label to look for,
-        a shell-style glob string (e.g. `*_thing_*`),
-        a regular expression,
-        a callable,
-        or variable arguments of all the aforementioned.
-        A sequence of booleans is also acceptable.
-        A dictionary can be used for selection on a MultiIndex on different levels.
-    :returns: A pandas DataFrame with the specified rows and/or columns selected.
+    Args:
+        df: A pandas DataFrame.
+        rows: Valid inputs include: an exact label to look for,
+            a shell-style glob string (e.g. `*_thing_*`),
+            a regular expression,
+            a callable,
+            or variable arguments of all the aforementioned.
+            A sequence of booleans is also acceptable.
+            A dictionary can be used for selection on a MultiIndex on different levels.
+        columns: Valid inputs include: an exact label to look for,
+            a shell-style glob string (e.g. `*_thing_*`),
+            a regular expression,
+            a callable,
+            or variable arguments of all the aforementioned.
+            A sequence of booleans is also acceptable.
+            A dictionary can be used for selection on a MultiIndex on different levels.
+
+    Returns:
+        A pandas DataFrame with the specified rows and/or columns selected.
     """  # noqa: E501
 
     return _select(df, args=None, rows=rows, columns=columns, axis="both")

@@ -1,4 +1,5 @@
-from typing import Hashable
+"""Implementation source for `to_datetime`."""
+from typing import Any, Hashable
 import pandas_flavor as pf
 import pandas as pd
 
@@ -14,13 +15,15 @@ from janitor.utils import deprecated_alias, refactored_function
     )
 )
 def to_datetime(
-    df: pd.DataFrame, column_name: Hashable, **kwargs
+    df: pd.DataFrame, column_name: Hashable, **kwargs: Any
 ) -> pd.DataFrame:
     """Convert column to a datetime type, in-place.
 
     Intended to be the method-chaining equivalent of:
 
-        df[column_name] = pd.to_datetime(df[column_name], **kwargs)
+    ```python
+    df[column_name] = pd.to_datetime(df[column_name], **kwargs)
+    ```
 
     This method mutates the original DataFrame.
 
@@ -30,7 +33,8 @@ def to_datetime(
         Please use [`jn.transform_column`][janitor.functions.transform_columns.transform_column]
         instead.
 
-    Example: Converting a string column to datetime type with custom format.
+    Examples:
+        Converting a string column to datetime type with custom format.
 
         >>> import pandas as pd
         >>> import janitor
@@ -50,10 +54,13 @@ def to_datetime(
 
     [pd_docs]: https://pandas.pydata.org/docs/reference/api/pandas.to_datetime.html
 
-    :param df: A pandas DataFrame.
-    :param column_name: Column name.
-    :param kwargs: Provide any kwargs that `pd.to_datetime` can take.
-    :returns: A pandas DataFrame with updated datetime data.
+    Args:
+        df: A pandas DataFrame.
+        column_name: Column name.
+        **kwargs: Provide any kwargs that `pd.to_datetime` can take.
+
+    Returns:
+        A pandas DataFrame with updated datetime data.
     """  # noqa: E501
     df[column_name] = pd.to_datetime(df[column_name], **kwargs)
 

@@ -1,3 +1,4 @@
+"""Implementation source for `flag_nulls`."""
 from typing import Hashable, Iterable, Optional, Union
 import pandas_flavor as pf
 import pandas as pd
@@ -13,13 +14,14 @@ def flag_nulls(
     columns: Optional[Union[str, Iterable[str], Hashable]] = None,
 ) -> pd.DataFrame:
     """Creates a new column to indicate whether you have null values in a given
-    row. If the columns parameter is not set, looks across the entire
+    row.
+
+    If the columns parameter is not set, looks across the entire
     DataFrame, otherwise will look only in the columns you set.
 
     This method does not mutate the original DataFrame.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -38,16 +40,21 @@ def flag_nulls(
         2  None  7.0          0
         3     z  8.0          0
 
-    :param df: Input pandas DataFrame.
-    :param column_name: Name for the output column.
-    :param columns: List of columns to look at for finding null values. If you
-        only want to look at one column, you can simply give its name. If set
-        to None (default), all DataFrame columns are used.
-    :returns: Input dataframe with the null flag column.
-    :raises ValueError: if `column_name` is already present in the
-        DataFrame.
-    :raises ValueError: if any column within `columns` is not present in
-        the DataFrame.
+    Args:
+        df: Input pandas DataFrame.
+        column_name: Name for the output column.
+        columns: List of columns to look at for finding null values. If you
+            only want to look at one column, you can simply give its name.
+            If set to None (default), all DataFrame columns are used.
+
+    Raises:
+        ValueError: If `column_name` is already present in the
+            DataFrame.
+        ValueError: If any column within `columns` is not present in
+            the DataFrame.
+
+    Returns:
+        Input dataframe with the null flag column.
 
     <!--
     # noqa: DAR402

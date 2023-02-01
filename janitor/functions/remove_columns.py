@@ -29,8 +29,7 @@ def remove_columns(
         This function will be deprecated in a 1.x release.
         Kindly use `pd.DataFrame.drop` instead.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"a": [2, 4, 6], "b": [1, 3, 5], "c": [7, 8, 9]})
@@ -45,9 +44,12 @@ def remove_columns(
         1  3
         2  5
 
-    :param df: A pandas DataFrame.
-    :param column_names: The columns to remove.
-    :returns: A pandas DataFrame.
+    Args:
+        df: A pandas DataFrame.
+        column_names: The columns to remove.
+
+    Returns:
+        A pandas DataFrame.
     """
 
     return df.drop(columns=column_names)

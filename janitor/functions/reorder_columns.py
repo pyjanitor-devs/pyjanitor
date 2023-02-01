@@ -1,3 +1,4 @@
+"""Implementation source for `reorder_columns`."""
 from typing import Hashable, Iterable, Union
 import pandas_flavor as pf
 import pandas as pd
@@ -18,8 +19,7 @@ def reorder_columns(
 
     This method does not mutate the original DataFrame.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"col1": [1, 1, 1], "col2": [2, 2, 2], "col3": [3, 3, 3]})
@@ -34,17 +34,22 @@ def reorder_columns(
         1     3     1     2
         2     3     1     2
 
-    Notice that the column order of `df` is now `col3`, `col1`, `col2`.
+        Notice that the column order of `df` is now `col3`, `col1`, `col2`.
 
     Internally, this function uses `DataFrame.reindex` with `copy=False`
     to avoid unnecessary data duplication.
 
-    :param df: `DataFrame` to reorder
-    :param column_order: A list of column names or Pandas `Index`
-        specifying their order in the returned `DataFrame`.
-    :returns: A pandas DataFrame with reordered columns.
-    :raises IndexError: if a column within `column_order` is not found
-        within the DataFrame.
+    Args:
+        df: `DataFrame` to reorder
+        column_order: A list of column names or Pandas `Index`
+            specifying their order in the returned `DataFrame`.
+
+    Raises:
+        IndexError: If a column within `column_order` is not found
+            within the DataFrame.
+
+    Returns:
+        A pandas DataFrame with reordered columns.
     """  # noqa: E501
     check("column_order", column_order, [list, tuple, pd.Index])
 

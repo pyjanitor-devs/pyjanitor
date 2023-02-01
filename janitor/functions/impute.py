@@ -20,8 +20,7 @@ def impute(
     value: Optional[Any] = None,
     statistic_column_name: Optional[str] = None,
 ) -> pd.DataFrame:
-    """
-    Method-chainable imputation of values in a column.
+    """Method-chainable imputation of values in a column.
 
     This method does not mutate the original DataFrame.
 
@@ -48,8 +47,7 @@ def impute(
     - `minimum` (also aliased by `min`)
     - `maximum` (also aliased by `max`)
 
-    Example:
-
+    Examples:
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
@@ -64,7 +62,7 @@ def impute(
         1  2    NaN    3.0
         2  3    NaN    2.0
 
-    Imputing null values with 0 (using the `value` parameter):
+        Imputing null values with 0 (using the `value` parameter):
 
         >>> df.impute(column_names="sales", value=0.0)
            a  sales  score
@@ -72,8 +70,8 @@ def impute(
         1  2    0.0    3.0
         2  3    0.0    2.0
 
-    Imputing null values with median (using the `statistic_column_name`
-    parameter):
+        Imputing null values with median (using the `statistic_column_name`
+        parameter):
 
         >>> df.impute(column_names="score", statistic_column_name="median")
            a  sales  score
@@ -81,16 +79,22 @@ def impute(
         1  2    NaN    3.0
         2  3    NaN    2.0
 
-    :param df: A pandas DataFrame.
-    :param column_names: The name of the column(s) on which to impute values.
-    :param value: The value used for imputation, passed into `.fillna` method
-        of the underlying pandas Series.
-    :param statistic_column_name: The column statistic to impute.
-    :returns: An imputed pandas DataFrame.
-    :raises ValueError: If both `value` and `statistic_column_name` are
-        provided.
-    :raises KeyError: If `statistic_column_name` is not one of `mean`,
-        `average`, `median`, `mode`, `minimum`, `min`, `maximum`, or `max`.
+    Args:
+        df: A pandas DataFrame.
+        column_names: The name of the column(s) on which to impute values.
+        value: The value used for imputation, passed into `.fillna` method
+            of the underlying pandas Series.
+        statistic_column_name: The column statistic to impute.
+
+    Raises:
+        ValueError: If both `value` and `statistic_column_name` are
+            provided.
+        KeyError: If `statistic_column_name` is not one of `mean`,
+            `average`, `median`, `mode`, `minimum`, `min`, `maximum`, or
+            `max`.
+
+    Returns:
+        An imputed pandas DataFrame.
     """
     # Firstly, we check that only one of `value` or `statistic` are provided.
     if (value is None) and (statistic_column_name is None):

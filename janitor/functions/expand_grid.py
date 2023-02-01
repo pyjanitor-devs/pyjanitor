@@ -1,3 +1,4 @@
+"""Implementation source for `expand_grid`."""
 from typing import Dict, Optional
 import pandas_flavor as pf
 import pandas as pd
@@ -14,8 +15,7 @@ def expand_grid(
     *,
     others: Optional[Dict] = None,
 ) -> pd.DataFrame:
-    """
-    Creates a DataFrame from a cartesian combination of all inputs.
+    """Creates a DataFrame from a cartesian combination of all inputs.
 
     It is not restricted to DataFrame;
     it can work with any list-like structure
@@ -23,7 +23,6 @@ def expand_grid(
 
     If method-chaining to a DataFrame, a string argument
     to `df_key` parameter must be provided.
-
 
     Data types are preserved in this function,
     including pandas' extension array dtypes.
@@ -44,8 +43,7 @@ def expand_grid(
     method; the user can also decide to drop any of the levels, via pandas'
     `droplevel` method.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor as jn
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
@@ -60,7 +58,7 @@ def expand_grid(
         4  2  1  2
         5  2  1  3
 
-    Expand_grid works with non-pandas objects:
+        `expand_grid` works with non-pandas objects:
 
         >>> data = {"x": [1, 2, 3], "y": [1, 2]}
         >>> jn.expand_grid(others=data)
@@ -73,15 +71,20 @@ def expand_grid(
         4  3  1
         5  3  2
 
-    :param df: A pandas DataFrame.
-    :param df_key: name of key for the dataframe.
-        It becomes part of the column names of the dataframe.
-    :param others: A dictionary that contains the data
-        to be combined with the dataframe.
-        If no dataframe exists, all inputs
-        in `others` will be combined to create a DataFrame.
-    :returns: A pandas DataFrame of the cartesian product.
-    :raises KeyError: if there is a DataFrame and `df_key` is not provided.
+    Args:
+        df: A pandas DataFrame.
+        df_key: Name of key for the dataframe.
+            It becomes part of the column names of the dataframe.
+        others: A dictionary that contains the data
+            to be combined with the dataframe.
+            If no dataframe exists, all inputs
+            in `others` will be combined to create a DataFrame.
+
+    Raises:
+        KeyError: If there is a DataFrame and `df_key` is not provided.
+
+    Returns:
+        A pandas DataFrame of the cartesian product.
     """
 
     if not others:

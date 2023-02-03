@@ -166,9 +166,9 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 
 def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
-    """
-    This function raises errors if columns in `kwargs` are
+    """This function raises errors if columns in `kwargs` are
     absent from the dataframe's columns.
+
     It also raises errors if the value in `kwargs`
     is not a string (`'appearance'` or `'sort'`), or a 1D array.
 
@@ -176,12 +176,17 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
     If all checks pass, a dictionary of column names and value is returned.
 
-    :param df: The pandas DataFrame object.
-    :param **kwargs: A pairing of column name and value.
-    :returns: A dictionary.
-    :raises TypeError: If `value` is not a 1-D array, or a string.
-    :raises ValueError: If `value` is a 1-D array, and contains nulls,
-        or is non-unique.
+    Args:
+        df: The pandas DataFrame object.
+        **kwargs: A pairing of column name and value.
+
+    Raises:
+        TypeError: If `value` is not a 1-D array, or a string.
+        ValueError: If `value` is a 1-D array, and contains nulls,
+            or is non-unique.
+
+    Returns:
+        A dictionary.
     """
 
     check_column(df, kwargs)

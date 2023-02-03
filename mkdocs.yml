@@ -16,8 +16,10 @@ watch:
 theme:
   name: "material"
   palette:
-    primary: "blue grey"
-    accent: "blue grey"
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: "blue grey"
+      accent: "light blue"
   icon:
     logo: "fontawesome/solid/book"
   features:

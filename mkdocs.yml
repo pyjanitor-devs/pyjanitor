@@ -74,12 +74,10 @@ plugins:
 #     binder_service_name: "gh"
 #     binder_branch: "master"
 
-# Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
 markdown_extensions:
-  # - codehilite
   - admonition
   - pymdownx.highlight:
-      use_pygments: false
+      use_pygments: true
   - pymdownx.inlinehilite
   # - pymdownx.tabbed:
   #     alternate_style: true
@@ -87,13 +85,6 @@ markdown_extensions:
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
-  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js
-  - js/config.js
 
 extra_css:
-  - css/nb_mods.css
   - css/apidocs.css
-  # This sets the theme for syntax highlighting.
-  # Theme names are available here: https://highlightjs.org/static/demo/
-  # Not sure how the theme names map onto CSS filenames though.
-  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/nord.min.css

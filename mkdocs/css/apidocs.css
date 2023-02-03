@@ -44,3 +44,10 @@ div.doc-contents:not(.first) {
   border-radius: 0.1rem;
   content: "/";
 }
+
+/* prevent selection of chevron in example blocks
+ * cf. https://mkdocstrings.github.io/recipes/#prevent-selection-of-prompts-and-output-in-python-code-blocks
+ */
+.highlight .gp, .highlight .go { /* Generic.Prompt, Generic.Output */
+    user-select: none;
+}

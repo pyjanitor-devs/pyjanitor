@@ -49,7 +49,6 @@ def summarize(
     can also be passed to `by` via a dictionary.
 
     Examples:
-
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor as jn
@@ -73,7 +72,7 @@ def summarize(
         102201     heats         2.0
         103202     finals        4.0
 
-    Summarize with a new column name:
+        Summarize with a new column name:
 
         >>> arg = col("avg_run").compute("mean").rename("avg_run_2")
         >>> df.summarize(arg)
@@ -87,7 +86,7 @@ def summarize(
         102201     heats         2.0
         103202     finals        4.0
 
-    Summarize with the placeholders when renaming:
+        Summarize with the placeholders when renaming:
 
         >>> cols = col("avg*").compute("mean").rename("{_col}_{_fn}")
         >>> df.summarize(cols)
@@ -100,6 +99,18 @@ def summarize(
         101200     finals              1.5           2.0            2.0
         102201     heats               3.0           2.0            3.0
         103202     finals              4.0           4.0            4.0
+
+        Pass the `col` class to `by`:
+
+        >>> df.summarize(cols, by=col("c*"))
+                                avg_jump_mean  avg_run_mean  avg_swim_mean
+        combine_id category
+        100200     heats               3.5           3.5            1.5
+        101200     finals              1.5           2.0            2.0
+        102201     heats               3.0           2.0            3.0
+        103202     finals              4.0           4.0            4.0
+
+
 
     Args:
         df: A pandas DataFrame.

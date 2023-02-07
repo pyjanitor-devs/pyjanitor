@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
 import pandas as pd
+import re
 
 from pandas.testing import assert_frame_equal
-from pandas.api.types import is_numeric_dtype, is_string_dtype
+from pandas.api.types import is_string_dtype
 from janitor import col
 
 
@@ -17,6 +18,17 @@ def test_Column_agg_error(dataframe):
     """
     with pytest.raises(AttributeError):
         dataframe.summarize(col("a").compute(func))
+
+
+@pytest.mark.functions
+def test_Column_type_error(dataframe):
+    """
+    Raise if column is not an instance of janitor.col
+    """
+    with pytest.raises(
+        TypeError, match="Argument 0 in the summarize function.+"
+    ):
+        dataframe.summarize(dataframe.a.mean())
 
 
 @pytest.mark.functions
@@ -144,8 +156,25 @@ def test_args_rename(dataframe, cols, fn, names):
 @pytest.mark.functions
 def test_args_func_list(dataframe):
     """Test output for list of functions"""
-    expected = dataframe.agg({"a": ["sum"]}).reset_index(drop=True)
-    actual = dataframe.summarize(col("a").compute("mean", "sum"))
+    expected = dataframe.agg({"a": ["mean", "sum"]})
+    actual = (
+        dataframe.summarize(col("a").compute("mean", "sum"))
+        .stack(level=1)
+        .droplevel(0)
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_args_func_list_lambda(dataframe):
+    """Test output for list of functions"""
+    expected = dataframe.groupby("cities").agg(
+        {"a": [lambda f: f.mean(), lambda f: f.sum()]}
+    )
+    actual = dataframe.summarize(
+        col("a").compute(lambda f: f.mean(), lambda f: f.sum()),
+        by={"by": "cities"},
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -179,38 +208,34 @@ def test_args_func_list_grouped(dataframe):
 
 @pytest.mark.functions
 def test_args_func_list_grouped_dupes(dataframe):
-    """Test output for list of functions"""
-    grp = dataframe.groupby("decorated-elephant")
-    expected = grp.agg(a_sum0=("a", "sum"), a_sum1=("a", "sum"))
-    actual = dataframe.summarize(
-        col("a").compute("sum", "sum").rename("{_col}_{_fn}"),
-        by={"by": "decorated-elephant"},
-    )
-
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.functions
-def test_tuple_func_list_dupes(dataframe):
-    """Test output for tuple list of functions"""
-    # horrible hack
-    expected = {
-        (f"{key}0", f"{key}1", key): value.agg(["sum", np.sum, "mean"]).array
-        for key, value in dataframe.select_dtypes("number").items()
-    }
-    expected = pd.concat(
-        [pd.DataFrame([val], columns=key) for key, val in expected.items()],
-        axis=1,
-    )
-    actual = dataframe.summarize(
-        col(is_numeric_dtype).compute("sum", np.sum, np.mean)
-    ).astype(float)
-    assert_frame_equal(expected.sort_index(axis=1), actual.sort_index(axis=1))
+    """Raise for duplicate agg label"""
+    with pytest.raises(
+        ValueError,
+        match="a_sum already exists as a label for an aggregated column",
+    ):
+        dataframe.summarize(
+            col("a").compute("sum", "sum").rename("{_col}_{_fn}"),
+            by={"by": "decorated-elephant"},
+        )
 
 
 @pytest.mark.functions
-def test_dataframe():
-    """Test output if a dataframe is returned"""
+def test_args_func_list_grouped_dupes_tuple(dataframe):
+    """Raise for duplicate agg label"""
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "('a', 'sum') already exists as a label for an aggregated column"
+        ),
+    ):
+        dataframe.summarize(
+            col("a").compute("sum", "sum"),
+            by={"by": "decorated-elephant"},
+        )
+
+
+@pytest.fixture
+def df():
     df = [
         {"A": "foo", "B": "one", "C": -0.575247, "D": 1.346061},
         {"A": "bar", "B": "one", "C": 0.254161, "D": 1.511763},
@@ -222,9 +247,46 @@ def test_dataframe():
         {"A": "foo", "B": "three", "C": -0.862495, "D": 0.02458},
     ]
 
-    df = pd.DataFrame(df)
-    expected = df.groupby("A").C.describe().add_prefix("C_")
+    return pd.DataFrame(df)
+
+
+@pytest.mark.functions
+def test_dataframe(df):
+    """Test output if a dataframe is returned"""
+    expected = df.groupby("A").C.describe()
     actual = df.summarize(
-        col("C").compute("describe"), by=col(is_string_dtype).exclude("B")
+        col("A", "C").exclude("A").compute("describe"),
+        by=col(is_string_dtype).exclude("B"),
     )
+
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.functions
+def test_dataframe_dupes(df):
+    """Raise if duplicate labels already exist"""
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "('C', 'mean') already exists as a label for an aggregated column"
+        ),
+    ):
+        df.summarize(
+            col("A", "C").exclude("A").compute("mean", "describe"),
+            by=col(is_string_dtype).exclude("B"),
+        )
+
+
+@pytest.mark.functions
+def test_dataframe_dupes1(df):
+    """Raise if duplicate labels already exist"""
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "('C', 'mean') already exists as a label for an aggregated column"
+        ),
+    ):
+        df.summarize(
+            col("A", "C").exclude("A").compute("describe", "mean"),
+            by=col(is_string_dtype).exclude("B"),
+        )

@@ -4,7 +4,6 @@ from __future__ import annotations
 import fnmatch
 import warnings
 from collections.abc import Callable as dispatch_callable
-from collections import Counter
 import re
 from typing import (
     Hashable,
@@ -38,7 +37,6 @@ import inspect
 from multipledispatch import dispatch
 from janitor.utils import check_column
 from functools import singledispatch
-from itertools import product
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -665,46 +663,6 @@ def _convert_to_numpy_array(
         left = left.to_numpy(copy=False)
         right = right.to_numpy(copy=False)
     return left, right
-
-
-def _process_function(df, arg):
-    """
-    process function(s) assigned to `janitor.col`.
-    """
-    columns = arg.cols
-    func = arg.func[0]
-    names = arg.names
-    columns = get_index_labels([*columns], df, axis="columns")
-    if arg.remove_cols:
-        exclude = get_index_labels([*arg.remove_cols], df, axis="columns")
-        columns = columns.difference(exclude, sort=False)
-    func_names = [
-        funcn.__name__ if callable(funcn) else funcn for funcn in func
-    ]
-    counts = None
-    dupes = set()
-    if len(func) > 1:
-        counts = Counter(func_names)
-        counts = {key: 0 for key, value in counts.items() if value > 1}
-    # deal with duplicate function names
-    if counts:
-        func_list = []
-        for funcn in func_names:
-            if funcn in counts:
-                if names:
-                    name = f"{funcn}{counts[funcn]}"
-                else:
-                    name = f"{counts[funcn]}"
-                    dupes.add(name)
-                func_list.append(name)
-                counts[funcn] += 1
-            else:
-                func_list.append(funcn)
-        func_names = func_list
-    counts = None
-    func = product(func, [arg.func[-1]])
-
-    return columns, names, zip(func_names, func), dupes
 
 
 class col:

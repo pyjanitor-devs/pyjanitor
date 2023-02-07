@@ -217,11 +217,6 @@ def summarize(
                     )
                 aggregates[name] = value
         else:
-            if col_name in aggregates:
-                raise ValueError(
-                    f"{col_name} already exists as a label "
-                    "for an aggregated column"
-                )
             if is_scalar(outcome):
                 outcome = [outcome]
             aggregates[col_name] = outcome

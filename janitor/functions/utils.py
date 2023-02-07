@@ -1,11 +1,17 @@
 """Utility functions for all of the functions submodule."""
 
 from __future__ import annotations
+
 import fnmatch
+import inspect
+import re
 import warnings
 from collections.abc import Callable as dispatch_callable
-import re
+from dataclasses import dataclass
+from functools import singledispatch
 from typing import (
+    Any,
+    Callable,
     Hashable,
     Iterable,
     List,
@@ -13,30 +19,25 @@ from typing import (
     Optional,
     Pattern,
     Union,
-    Callable,
-    Any,
 )
-from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
-from pandas.core.common import is_bool_indexer
-from dataclasses import dataclass
 
-import pandas as pd
-from janitor.utils import check, _expand_grid
-from pandas.api.types import (
-    union_categoricals,
-    is_scalar,
-    is_list_like,
-    is_datetime64_dtype,
-    is_string_dtype,
-    is_categorical_dtype,
-    is_extension_array_dtype,
-    is_bool_dtype,
-)
 import numpy as np
-import inspect
+import pandas as pd
 from multipledispatch import dispatch
-from janitor.utils import check_column
-from functools import singledispatch
+from pandas.api.types import (
+    is_bool_dtype,
+    is_categorical_dtype,
+    is_datetime64_dtype,
+    is_extension_array_dtype,
+    is_list_like,
+    is_scalar,
+    is_string_dtype,
+    union_categoricals,
+)
+from pandas.core.common import is_bool_indexer
+from pandas.core.dtypes.generic import ABCExtensionArray, ABCPandasArray
+
+from janitor.utils import _expand_grid, check, check_column
 
 warnings.simplefilter("always", DeprecationWarning)
 

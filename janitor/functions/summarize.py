@@ -1,14 +1,14 @@
 """Alternative function to pd.agg for summarizing data."""
+from collections import defaultdict
+from itertools import product
 from typing import Any
+
 import pandas as pd
 import pandas_flavor as pf
-
-from janitor.utils import check
 from pandas.api.types import is_scalar
 
 from janitor.functions.utils import col, get_index_labels
-from itertools import product
-from collections import defaultdict
+from janitor.utils import check
 
 
 @pf.register_dataframe_method

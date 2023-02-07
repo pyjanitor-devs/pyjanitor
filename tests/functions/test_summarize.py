@@ -1,12 +1,12 @@
-import numpy as np
-import pytest
-import pandas as pd
 import re
 
-from pandas.testing import assert_frame_equal
+import numpy as np
+import pandas as pd
+import pytest
 from pandas.api.types import is_string_dtype
-from janitor import col
+from pandas.testing import assert_frame_equal
 
+from janitor import col
 
 func = lambda grp: grp.Revenue.sum() / grp.Quantity.sum()  # noqa: E731
 

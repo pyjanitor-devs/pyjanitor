@@ -740,3 +740,14 @@ class col:
         check("names", names, [str])
         self.names = names
         return self
+
+
+def _get_columns_for_col(df, cols, exclude=None):
+    """
+    Retrieve columns for the col class
+    """
+    cols = get_index_labels([*cols], df, axis="columns")
+    if exclude:
+        exclude = get_index_labels([*exclude], df, axis="columns")
+        cols = cols.difference(exclude, sort=False)
+    return cols

@@ -7,7 +7,7 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_scalar
 
-from janitor.functions.utils import col, get_index_labels
+from janitor.functions.utils import col, _get_columns_for_col
 from janitor.utils import check
 
 
@@ -134,10 +134,9 @@ def summarize(
     unique_funcs = set()
     tuples_exist = False
     for arg in args:
-        columns = get_index_labels([*arg.cols], df, axis="columns")
-        if arg.remove_cols:
-            exclude = get_index_labels([*arg.remove_cols], df, axis="columns")
-            columns = columns.difference(exclude, sort=False)
+        columns = _get_columns_for_col(
+            df, cols=arg.cols, exclude=arg.remove_cols
+        )
         funcns, kwargs = arg.func
         funcs = (
             funcn.__name__ if callable(funcn) else funcn for funcn in funcns
@@ -195,10 +194,7 @@ def summarize(
     elif by_is_true and isinstance(by, col):
         if by.func:
             raise ValueError("Function assignment is not required within by")
-        cols = get_index_labels([*by.cols], df, axis="columns")
-        if by.remove_cols:
-            exclude = get_index_labels([*by.remove_cols], df, axis="columns")
-            cols = cols.difference(exclude, sort=False)
+        cols = _get_columns_for_col(df, cols=by.cols, exclude=by.remove_cols)
         grp = df.groupby(cols.tolist())
     elif by_is_true:
         grp = df.groupby(by)

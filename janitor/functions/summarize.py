@@ -26,6 +26,7 @@ def summarize(
         Before reaching for `summarize`, try `pd.DataFrame.agg`.
 
     Reduction operation on columns via the `janitor.col` class.
+    The function is called on each column.
 
     It is a wrapper around `pd.DataFrame.agg`,
     with added flexibility for multiple columns.
